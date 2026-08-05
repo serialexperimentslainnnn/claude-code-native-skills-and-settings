@@ -55,8 +55,7 @@ seguridad de 2026 ya usan "VMware ESX" (VMSA-2026-0006). Aquí se usan indistint
   triaje/SLA de CVE; `observability-standards` — telemetría como práctica.
 - `finops-standards` — **el coste por VM como unidad económica y el método de comparación son
   suyos**; aquí el **modelo de licencia** del producto que alimenta ese cálculo.
-- `enterprise-architecture-standards` — portfolio y ADR; `migration-projects-standards` (**Ola 7,
-  planificada**) — ejecución de la migración; `windows-server-ad-standards` — el invitado Windows;
+- `enterprise-architecture-standards` — portfolio y ADR; `migration-projects-standards` — ejecución de la migración; `windows-server-ad-standards` — el invitado Windows;
   `hyper-v-standards` y `xen-standards` — hipervisores alternativos, cada uno el suyo.
 
 ## 2. Versión, calendario y modelo de licencia (la sección cara)

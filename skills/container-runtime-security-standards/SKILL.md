@@ -49,6 +49,8 @@ y **detectar que el MAC se ha desactivado, se ha eludido o que un proceso ha esc
 si el problema es un AVC o una etiqueta, es de allí); `linux-hardening-standards` (**baseline del SO
 del nodo**: CIS/STIG, `sysctl`, auditd, SSH, montajes, arranque medido — el nodo endurecido es su
 frontera; aquí solo los `sysctl` y capabilities específicos del runtime y por qué importan);
+`operating-systems-standards` (**el mecanismo es suyo**: qué es de verdad un namespace, qué aísla
+un cgroup y qué **no** aísla ninguno de los dos; **aquí seccomp, el escape y su detección**);
 `onprem-standards` (paraguas de plataforma: hardware, hipervisor, flota, plano OOB);
 `incident-response-forensics-standards` (**el proceso forense completo**: fases, cadena de custodia,
 orden de volatilidad, imaging, timeline, Velociraptor/Volatility — **aquí solo qué artefacto de

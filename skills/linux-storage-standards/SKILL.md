@@ -66,7 +66,12 @@ de aquí, el modelo de caché del disco virtual y su definición son suyos), `ha
 (**Ola 2, planificada**: almacenamiento **compartido** — cluster LVM, GFS2/OCFS2, fencing y quórum;
 aquí el almacenamiento **de un host**), `object-storage-standards` (**Ola 2, planificada**: S3 y su
 modelo de consistencia y durabilidad, radicalmente distinto al de bloques — no se diseña un sistema
-de objetos con criterio de filesystem), `networking-standards` (la red que sostiene iSCSI/NFS:
+de objetos con criterio de filesystem), `file-servers-standards` (**el protocolo de compartición de
+ficheros y su exposición**: `smb.conf` y `/etc/exports`, dialecto, mapeo de identidad, ACL del
+recurso publicado y su auditoría — **si la respuesta se escribe en `/etc/exports`, es suya**; aquí
+el **lado cliente** del montaje NFS y todo el bloque, incluido el `target` iSCSI de `targetcli`,
+que no es compartición de ficheros sino un disco crudo con un solo dueño),
+`networking-standards` (la red que sostiene iSCSI/NFS:
 VLAN, MTU/jumbo frames, rutas; aquí el lado cliente y sus timeouts).
 
 ## 2. Decisiones por defecto

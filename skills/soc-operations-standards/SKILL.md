@@ -58,7 +58,7 @@ de notificar y evidencia de auditoría), `itsm-itil-standards` (**el ticket y el
 contractual**, incluido el del MSSP), `sre-practice-standards` (diseño de la rotación de
 guardia y salud de la operación), `mlsecops-standards` y `ai-governance-standards` (si hay IA
 en la cadena de decisión), `macos-fleet-standards` y `endpoint-security-standards`
-(**Ola 7, planificada**: el agente y la telemetría del puesto).
+(el agente y la telemetría del puesto).
 
 ## 2. Decisiones por defecto
 

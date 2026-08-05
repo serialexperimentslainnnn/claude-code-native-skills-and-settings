@@ -68,6 +68,9 @@ Disparadores: `aws s3`, `aws s3api`, `mc` (MinIO Client), `s3cmd`, `rclone` y su
   problema es de aquella skill, no de esta — no montes S3.
 - `zfs-standards`: pools, datasets y `zfs send`. Un backend de objetos no sustituye a un pool local ni
   al revés.
+- `ceph-standards`: **la topología del clúster RADOS, `ceph osd`, el mapa CRUSH, los pools y el
+  esquema de protección (réplica frente a *erasure coding*) son suyos**; aquí S3 como interfaz —
+  política de bucket, versionado, Object Lock, clases y ciclo de vida— por delante de RGW.
 - `proxmox-ve-standards` (**existe ya en disco**): *datastores* de Proxmox Backup Server sobre S3 —
   el producto y su configuración son suyos; las propiedades exigibles al bucket (Object Lock,
   versionado, credencial, clase, coste), de aquí.
@@ -147,7 +150,7 @@ impedancia:
 |---|---|---|
 | API | **S3 como estándar de facto**. Todo lo que escribas, contra el SDK de S3 | APIs propietarias solo si aportan algo que S3 no da; la portabilidad vale más de lo que parece el día que cambias de proveedor |
 | Servicio gestionado frente a propio | **Gestionado por defecto** (S3, Blob, GCS). Se paga por durabilidad, disponibilidad y por no operar discos | Auto-alojado solo con los criterios de §7 |
-| Auto-alojado, escala grande y multi-servicio | **Ceph RGW** — Tentacle **v20.2.2** (jun-2026); v20.2.0 nov-2025, v20.2.1 abr-2026. Object Lock en *governance* y *compliance*; en Tentacle, `PutObjectLockConfiguration` **ya permite habilitar Object Lock en un bucket versionado existente** (antes solo en la creación) | Coste real: operar Ceph es un trabajo, no una tarea |
+| Auto-alojado, escala grande y multi-servicio | **Ceph RGW** — Tentacle **v20.2.3** (05-ago-2026); v20.2.0 nov-2025, v20.2.1 abr-2026, v20.2.2 jun-2026. **Squid 19.2.x tiene EOL estimado el 31-10-2026**: no arranques nada nuevo ahí. Topología, `ceph osd`, pools y EC en `ceph-standards`. Object Lock en *governance* y *compliance*; en Tentacle, `PutObjectLockConfiguration` **ya permite habilitar Object Lock en un bucket versionado existente** (antes solo en la creación) | Coste real: operar Ceph es un trabajo, no una tarea |
 | Auto-alojado, pequeño y geo-distribuido | **Garage** v2.3.0 (16-abr-2026), AGPL-3.0, ligero y honesto sobre sus límites | **NO SIRVE como ancla de inmutabilidad**: no implementa versionado de bucket (`GetBucketVersioning` es un *stub* que responde "no habilitado") y por tanto **no hay Object Lock**; tampoco implementa ACL ni políticas S3 (usa su propio modelo de claves por bucket) ni *erasure coding* |
 | Auto-alojado con licencia permisiva | **SeaweedFS** 4.40 (20-jul-2026), núcleo **Apache-2.0** | **Open-core**: reparación automática de *erasure coding*, PITR y admin OIDC están en la Enterprise de pago por TB. Y hay **incidencia abierta de que el modo *compliance* de Object Lock no impide el borrado** (issue #8350, v4.12): **valida el WORM en tu versión antes de confiar en él** |
 | **MinIO** | **No es la opción por defecto para un despliegue nuevo.** AGPLv3; la UI de administración se retiró de la Community Edition (commit de feb-2025, polémica en jun-2025) y quedó en la comercial **AIStor**; el proyecto de GitHub pasó a **modo mantenimiento** y **su última release era RELEASE.2025-10-15**, es decir ~9,5 meses sin publicar a ago-2026 | Justificable solo si ya está desplegado y operado, o si se compra AIStor con los ojos abiertos (tarifa de partida citada públicamente en el orden de **96.000 $/año hasta 400 TB útiles** — verifícala). Existe un *fork* del navegador (OpenMaxIO), que **no resuelve** el mantenimiento del servidor. **Este es el dato que más se cita de memoria y peor envejecido está: verifícalo (§8)** |
@@ -471,7 +474,8 @@ de los feeds Atom**, nunca del render HTML de la página de Releases.
    Existe el *fork* del navegador OpenMaxIO. **Comprueba si ha habido releases nuevas, si el modo
    mantenimiento sigue, y qué funciones adicionales se han movido a AIStor** antes de recomendarlo o
    descartarlo.
-2. **Ceph RGW**: versión estable vigente (a ago-2026, **Tentacle v20.2.2**, jun-2026), y el estado de
+2. **Ceph RGW**: versión estable vigente (a ago-2026, **Tentacle v20.2.3**, 05-ago-2026, con EOL
+   estimado 01-06-2027; Squid 19.2.x muere el 31-10-2026), y el estado de
    Object Lock —incluida la novedad de Tentacle de poder habilitarlo sobre un bucket versionado
    existente— y de la corrección del `RetainUntilDate` posterior a 2106 (**no repara bloqueos ya
    escritos**).

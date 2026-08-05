@@ -51,9 +51,9 @@ que la personaliza y el instalador que la crea), `windows-server-ad-standards` (
 `cicd-standards` (el pipeline que construye la imagen), `network-troubleshooting-standards` (**"el
 PXE no arranca" como diagnóstico reactivo**), `bcdr-standards` (reconstrucción como estrategia de
 recuperación), `homelab-standards` (proporcionalidad: un `cloud-localds` y un ISO bastan, no montes
-Foreman), `datacenter-facilities-standards` (**Ola 7, planificada**: rack, energía y el recorrido
-físico del servidor antes de que exista una IP), `hpc-standards` (**Ola 7, planificada**:
-aprovisionamiento masivo de nodos, arranque sin disco, `xCAT`/Warewulf).
+Foreman), `datacenter-facilities-standards` (rack, energía y el recorrido
+físico del servidor antes de que exista una IP), `hpc-standards`
+(aprovisionamiento masivo de nodos, arranque sin disco, `xCAT`/Warewulf).
 
 ## 2. Decisiones por defecto
 

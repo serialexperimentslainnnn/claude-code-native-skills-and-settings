@@ -1,6 +1,6 @@
 ---
 name: cryptography-pki-standards
-description: Applied cryptography and PKI standards. Use when choosing algorithms or modes (AES-GCM, ChaCha20-Poly1305, Ed25519, RSA-PSS), Argon2id password hashing, TLS 1.3 config, testssl.sh, ACME/Let's Encrypt, step-ca, cert-manager, mTLS, HSM/KMS key rotation, cosign/GPG signing, post-quantum migration.
+description: Applied cryptography and PKI standards. Use when choosing algorithms or modes (AES-GCM, ChaCha20-Poly1305, Ed25519, RSA-PSS), Argon2id password hashing, TLS 1.3 config, testssl.sh, ACME/Let's Encrypt, step-ca, cert-manager, mTLS, HSM/KMS key rotation, cosign/GPG signing, crypto agility and CBOM inventory.
 ---
 
 # Estándares de criptografía aplicada y PKI
@@ -17,9 +17,13 @@ reto DNS-01), diseño de PKI interna y jerarquía de CA, mTLS y pinning, gestió
 con HSM/KMS (envelope encryption, wrapping, rotación, custodia), firma de código y
 artefactos, cifrado de backups, e inventario y migración post-cuántica.
 
-**No aplica**: ver `networking-standards` (terminación TLS en el borde, proxies, WireGuard,
-DNSSEC), `kubernetes-standards` (despliegue de cert-manager y verificación de firma en
-admission), `cicd-standards` (firma de artefactos dentro del pipeline y OIDC del runner),
+**No aplica**: ver `post-quantum-crypto-standards` (**frontera crítica**: la PKI, el ciclo de vida
+del certificado y la cripto clásica se deciden **aquí**; **toda la transición post-cuántica es
+suya** — estado de FIPS 203/204/205/206 y HQC, calendarios de NIST IR 8547 y CNSA 2.0, híbridos en
+TLS/SSH/IPsec y orden de migración por tipo de dato. Si la pregunta lleva fecha de migración o
+nombre de algoritmo PQC, manda la otra), `networking-standards` (terminación TLS en el borde,
+proxies, WireGuard, DNSSEC), `kubernetes-standards` (despliegue de cert-manager y verificación de
+firma en admission), `cicd-standards` (firma de artefactos dentro del pipeline y OIDC del runner),
 `identity-access-management-standards` (tokens, sesiones y política de autenticación),
 `appsec-standards` (uso inseguro de cripto detectado en revisión de código),
 `secrets-management-standards` (**Ola 1, ya escrita**: almacenamiento y distribución de secretos
@@ -157,30 +161,22 @@ Mínimos de OWASP (agosto 2026) — **suben con el hardware, re-verifica (§8)**
   destinatarios híbridos post-cuánticos `mlkem768x25519` y `age-inspect`) o el cifrado
   nativo de restic (0.18.x, zstd por defecto desde 0.14), kopia o borg.
 
-### Post-cuántico
+### Post-cuántico — **cedido a `post-quantum-crypto-standards`**
 
-- Modelo de amenaza real hoy: **"harvest now, decrypt later"** → prioriza confidencialidad
-  a largo plazo (VPN, backups, tráfico interceptable) antes que firmas.
-- Los estándares NIST ya existen: **ML-KEM (FIPS 203)**, **ML-DSA (FIPS 204)**, **SLH-DSA
-  (FIPS 205)**; FN-DSA (FIPS 206) y HQC van por detrás — verifica su estado (§8).
-- Calendario: NIST IR 8547 plantea **deprecar RSA/ECC clásicos hacia 2030 y prohibirlos
-  hacia 2035**, y CNSA 2.0 fija hitos propios por categoría para sistemas de seguridad
-  nacional. **Confirma fechas exactas antes de comprometer un plan (§8).**
-- Qué ya puedes hacer:
-  - **SSH**: OpenSSH negocia híbrido por defecto desde 10.0 (`mlkem768x25519-sha256`; 9.9
-    lo introdujo, 10.1 avisa cuando el KEX **no** es post-cuántico). Fija
-    `KexAlgorithms mlkem768x25519-sha256,sntrup761x25519-sha512@openssh.com` donde ambos
-    extremos lo soporten.
-  - **TLS**: intercambio híbrido X25519+ML-KEM cuando cliente y servidor lo soporten
-    (nombre exacto del grupo y soporte por versión: verificar).
-  - **Firma**: AWS KMS ofrece ML-DSA (GA desde 2025-06-13; `ML_DSA_44/65/87` en HSMs FIPS
-    140-3 nivel 3) y AWS Private CA lo integra; Google Cloud KMS llevó a GA ML-DSA, SLH-DSA
-    y ML-KEM (variantes *external-mu* incluidas); Azure Key Vault/Managed HSM aún estaba
-    desplegándolo en 2026 — comprueba disponibilidad por región antes de diseñar.
-- **Agilidad criptográfica** como requisito: algoritmo y versión de clave como metadato del
-  dato cifrado, capa de cripto aislada tras una interfaz, y **CBOM** (CycloneDX 1.6 =
-  ECMA-424 introdujo activos criptográficos; 1.7 los refina) generado en CI para saber qué
-  algoritmos usas realmente. Sin inventario no hay migración.
+Toda la transición vive allí: estado real de FIPS 203/204/205/206 y HQC, calendarios de
+NIST IR 8547 y CNSA 2.0 con su procedencia, híbridos en TLS/SSH/IPsec con punto de código y
+soporte por versión, tamaños de clave y de firma, y el orden de migración por tipo de dato.
+**No dupliques aquí ninguna de esas fechas**: caducan y divergen.
+
+Lo que sí sigue siendo de esta skill, porque es cripto aplicada y no transición:
+
+- **Agilidad criptográfica** como requisito de diseño: algoritmo y versión de clave como
+  metadato del dato cifrado, capa de cripto aislada tras una interfaz, y **CBOM**
+  (CycloneDX 1.6 = ECMA-424 introdujo activos criptográficos; 1.7 los refina) generado en
+  CI para saber qué algoritmos usas realmente. Sin inventario no hay migración — y el
+  inventario se hace con las herramientas de esta skill, se explota con las de la otra.
+- Cifrado de backups con clave que no viva en el sistema respaldado: `age` (v1.1.x ya
+  incorpora destinatarios híbridos `mlkem768x25519`) o el cifrado nativo de restic/kopia/borg.
 
 ## 4. Calidad y testing (gates de CI)
 

@@ -46,7 +46,11 @@ interés comercial en que te muevas. Datos verificados (ago-2026, fuentes en §8
   oferta cloud**, no el Business Suite 7 que caduca en 2027. En un documento, escribe siempre la
   versión.
 
-**No aplica**: `legacy-modernization-standards` es el paraguas del bloque,
+**No aplica**: `erp-sap-standards` (**SAP como decisión de empresa**: calendario de mantenimiento,
+RISE/GROW y modelo de despliegue, licenciamiento, acceso indirecto y auditoría anual, gobierno del
+dato maestro. **Arbitraje en una línea: *si se escribe en un objeto del repositorio es de ABAP; si
+se firma en un contrato o se declara en una medición de licencia, es de ERP***).
+`legacy-modernization-standards` es el paraguas del bloque,
 `migration-projects-standards` la ejecución del corte a S/4HANA (ensayo, ventana, cuadre del dato,
 convivencia, rollback y apagado del ECC de origen) y
 `enterprise-architecture-standards` (**ya escrita**) pone el inventario, el modelo TIME y las "R" de

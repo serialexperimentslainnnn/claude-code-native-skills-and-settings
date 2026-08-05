@@ -58,7 +58,10 @@ que colisiona de verdad: **aquí el endurecimiento del servidor y de la flota** 
 `sysctl`, auditd, sudoers, SELinux/AppArmor, aplicado por configuración centralizada—; **allí el
 puesto de trabajo**, cuyo modelo de amenaza es distinto: cifrado de disco, claves en hardware,
 extensiones del editor y `curl | sh` como cadena de suministro, y credenciales de desarrollo. **Un
-baseline de servidor aplicado a una estación de desarrollo no la endurece, la inutiliza**).
+baseline de servidor aplicado a una estación de desarrollo no la endurece, la inutiliza**),
+`endpoint-security-standards` (**el EDR/XDR de terceros y la postura del protector de cifrado en
+flota son suyos** —incluidos los límites reales del agente en Linux—; aquí el control del baseline
+que se aplica por configuración centralizada y se mide con `oscap`).
 
 Planificadas — hasta que existan, esta skill es criterio provisional en su solapa:
 `container-runtime-security-standards` (**Ola 1**: seccomp, eBPF/Falco, detección de escape de

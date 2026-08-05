@@ -49,7 +49,7 @@ lo es como plan indefinido.
   detección**), `endpoint-security-standards`, `firewall-policy-standards`, `networking-standards`,
   `iac-standards`, `grc-compliance-standards`, `legacy-modernization-standards` y
   `migration-projects-standards` (**estas dos, suyas la estrategia de cartera y la ejecución del
-  proyecto; aquí qué implica técnicamente cada opción**). **Ola 7 las planificadas.**
+  proyecto; aquí qué implica técnicamente cada opción**).
 - `ibm-i-rpg-standards` (**ya escrita**): **IBM i es otro sistema operativo**, no una variante de
   AIX — comparten Power y HMC/LPAR y nada más. `mainframe-zos-cobol-standards` y `mumps-standards`:
   mismo cajón mental, criterio no extrapolable.

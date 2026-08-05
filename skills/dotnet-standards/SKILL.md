@@ -17,7 +17,9 @@ Datos de versión verificados a **2026-08**: SIEMPRE re-verificar por web antes 
   (**.NET Framework 4.x**: mantenimiento, lo que no tiene puerto —WebForms, WCF de servidor,
   Workflow, `AppDomain`, *remoting*— y la ruta de migración), `vbnet-standards` (**el lenguaje
   VB.NET, congelado por decisión de Microsoft**), `vb6-standards` y `classic-asp-standards`
-  (**sin soporte de IDE ni de lenguaje: congelar, aislar o reescribir**). **Lo que sí es de aquí, y
+  (**sin soporte de IDE ni de lenguaje: congelar, aislar o reescribir**) y `pascal-delphi-standards`
+  (**Delphi / Object Pascal como origen habitual de migración a .NET**: el criterio de contención y
+  salida de esa plataforma es suyo). **Lo que sí es de aquí, y
   conviene decirlo alto: el destino de cualquiera de esas migraciones** — la calidad del código
   resultante (SDK, versión LTS, ASP.NET Core, EF Core, NuGet, publicación, contenedor) se rige por
   esta skill, no por la de origen. Ver también `api-design-standards` (diseño del contrato HTTP/gRPC — aquí solo su

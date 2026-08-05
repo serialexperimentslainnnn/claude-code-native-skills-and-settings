@@ -280,7 +280,97 @@ falta**, y **cambiarle la prioridad a "guarda primero, investiga después"**. Co
 reanudado dos veces acabó entregando las dos skills. **Relanzarlo de cero habría tirado toda la
 investigación web ya pagada.**
 
-## PUNTO DE CONTINUACIÓN — actualizado 2026-08-04 (leer esto primero)
+## PUNTO DE CONTINUACIÓN — actualizado 2026-08-05 (leer esto primero)
+
+**Estado: 215 skills, 79.848 líneas.** Los tres gates mecánicos en verde (`./check.sh`, EXIT=0).
+Coste de índice: **25.150 palabras/turno**. Sesión cerrada por el usuario; nada quedó a medias en
+disco (un agente murió antes de escribir su primer fichero, sin pérdida de trabajo escrito).
+
+**Ola 7: 27 de 28 lotes COMPLETOS.** Escritos en esta sesión (83 skills): lotes 4, 5, 6, 10, 11, 12,
+15, 17, 18, 21, 22, 23, 24, 25, 26, 27, el cierre de los parciales 9/16/20, y las dos pasadas de
+reciprocidad.
+
+### LO PRIMERO AL RETOMAR, en este orden
+
+1. **Lote 28 — es lo único que falta para cerrar el catálogo.** `chaos-engineering-standards` +
+   `streaming-multimedia-standards` + `gaming-infrastructure-standards`. **Los tres directorios NO
+   existen: no hay nada que reaprovechar.** El encargo detallado (contenido, fronteras y avisos) está
+   redactado y es recuperable del historial de la sesión; si no, re-derivarlo de la tabla del plan de
+   lanzamiento. Dos skills ya lo citan y esperan de él: `game-development:58` y `xr-standards:76`
+   reclaman `gaming-infrastructure-standards` con la frontera *"toda la infra de servidores de partida
+   y matchmaking-como-servicio"*.
+2. **Tercera pasada de marcas de ola obsoletas — deuda detectada y NO cerrada.** El mismo defecto que
+   ya se corrigió dos veces, pero con **otra redacción que el `grep 'Ola 7, planificada'` no caza**:
+   `linux-hardening` §1 tiene un bloque *"Planificadas — hasta que existan, esta skill es criterio
+   provisional"* con **cinco skills que ya existen** (`container-runtime-security`,
+   `detection-engineering`, `bcdr`, `linux-administration`, `rhel-fedora`); lo mismo en `ctf-lab`
+   (4 skills, marcadas "Ola 1") y en `linux-administration` (bloque "Ola 2"). **Buscar por
+   *"hasta que exista"*, *"criterio provisional"*, *"planificada"* y *"Ola N"*, no solo por la cadena
+   larga.**
+3. **Test de colisión de disparadores**: no se ejecuta desde las 132 skills y ahora hay 215. Script en
+   `claude-code-skills-standards` §4.3; hay que **ampliar la `STOP`** con el vocabulario nuevo
+   (verticales regulados, redes de operador, hardware). Sospechas concretas a arbitrar:
+   `cloud-security-posture` ↔ las tres nubes, `physical-security` ↔ `datacenter-facilities` (CCTV y
+   control de acceso los reclamaban ambas), `rpa-workflow-automation` ↔ `lowcode-governance`
+   (Power Automate), `erp-sap` ↔ `abap-sap`, `blockchain-web3` ↔ `solidity`.
+4. **Repaso final de composición** (ver BACKLOG punto 3): escenarios multidominio + grafo de
+   delegación sin ciclos ni destinos muertos. Es el gate que cierra el catálogo.
+5. **`./install.sh`** — reescrito esta sesión al modelo *planchar* (copia repo → `~/.claude`, no
+   symlink), validado con `--dry-run` pero **NO ejecutado todavía**. `~/.claude/skills` sigue siendo
+   una copia vieja y divergente. La memoria del proyecto **sí** quedó enlazada al repo.
+6. **Commit**: hay ~101 ficheros sin commitear. El usuario no pidió commit; recordar la identidad
+   (Lain + GPG de la YubiKey) y verificar `git config user.email` antes.
+
+### Fronteras arbitradas a mano en esta sesión (no repetir el análisis)
+- **`cryptography-pki` cedió la transición post-cuántica** a `post-quantum-crypto-standards`: sección
+  reducida a puntero, `description` sin el trigger `post-quantum migration`, y frontera en §1. Se
+  quedó la agilidad criptográfica y el CBOM, que son cripto aplicada y no transición.
+- **`onprem` §1.2 ganó 10 filas** (facilities, server-hardware, os-provisioning, cmdb, hpc, edge,
+  file-servers, web-app-servers, mail-servers) y su §1.1 dejó de reclamar hardware físico y BMC.
+- **`gpu-computing` ↔ `datacenter-facilities`**: no se pudo ceder entero porque `gpu-computing` ya
+  reclamaba densidad y refrigeración líquida en un arbitraje **explícito contra `green-it`**. Repartido
+  por capa: la **sala** (densidad por rack, distribución eléctrica, CDU) a facilities; el **TDP y el
+  requisito térmico del acelerador** se quedan en `gpu-computing` y se entregan como dato. Cederlo del
+  todo obliga a tocar también la cláusula de `green-it`: **decisión pendiente, no es cirugía**.
+- **`macos-fleet` ↔ `endpoint-security`**: `macos-fleet` ya reclamaba la custodia de la clave de
+  FileVault vía MDM y `developer-workstation` se lo reconocía por escrito. Reparto final:
+  `endpoint-security` **exige y mide** la postura; `macos-fleet` aplica el perfil MDM y custodia la
+  clave.
+
+### Hallazgo de método nº 16 — el resumidor de WebFetch FABRICA articulado normativo (2026-08-05)
+Ya estaba documentado que inventa años y que invierte frases. **Esto es peor y es nuevo**: al pedir el
+**art. 9 del RGPD** a EUR-Lex devolvió un texto inventado — **omitía "biometric data"**, insertaba
+*"criminal convictions and offences"* (que es el **art. 10**) y atribuía a la letra (i) el contenido de
+la (g). Solo salió correcto al **forzar reproducción carácter a carácter contra una página corta**.
+Consecuencias operativas, ya incorporadas a los prompts y a la memoria del proyecto:
+- Para articulado, **"pide verbatim" no basta**: hay que pedir la **página corta** (el artículo suelto,
+  no el reglamento consolidado — **EUR-Lex trunca los documentos grandes**) y reproducción literal.
+- **El 403 es la norma, no la excepción**, y no se combate insistiendo. Confirmados en esta sesión:
+  `iso.org`, `etsi.org`, `cisa.gov`, `media.defense.gov`, `sap.com`, `bailii.org`,
+  `health.ec.europa.eu`, `unrealengine.com` (+429 en la copia archivada), `salesforce.com/pricing`,
+  `pcisecuritystandards.org` (PDF), `epsg.org`, `ibm.com/quantum`. Ante bloqueo: otra vía o **hueco
+  declarado**.
+- **Funcionó de sobra**: un agente escribió 4 skills con **cero WebSearch**, todo WebFetch en crudo.
+
+### Cifras folclóricas desmentidas en esta sesión (con su origen)
+No volver a citarlas; están desmentidas dentro de las skills correspondientes.
+- **"100 ms de latencia = 1 % de ventas"**: blog de 2006 + diapositiva sobre un experimento **interno
+  de Amazon nunca publicado**. Sin diseño, sin muestra, sin definir "ventas".
+- **"La MFA bloquea el 99,9 %"**: dato **observacional** de 2019 con adopción del ~11 % (sesgo de
+  denominador). El propio Microsoft publica hoy **">99,2 %"**.
+- **"El 99 % de los fallos en la nube serán culpa del cliente"**: *predicción* de Gartner que en
+  circulación pasó a hecho y cambió "responsabilidad compartida" por "error del usuario".
+- **"55-75 % de proyectos ERP fracasan"**: los datos propios de la consultora citada dan **~22-26 %**,
+  sobre muestra autoseleccionada entre candidatos a rescate.
+- **"84 % de migraciones de datos fracasan"**: Bloor 2007, medía *overrun or aborted* — una semana de
+  retraso y un proyecto abortado en el mismo cubo.
+- **"70 % de carritos abandonados"**: media de 50 estudios de proveedor, rango 55-84 %, sin definición
+  común.
+- **Ahorro de SD-WAN frente a MPLS**: **no existe** estudio independiente con metodología transparente.
+- **65.000 TPS de Solana**: su whitepaper dice **710k teóricos** en análisis sobre red de 1 Gbps.
+- **Supremacía cuántica de Sycamore**: **refutada experimentalmente** (1.432 GPUs, 7× más rápido).
+
+## PUNTO DE CONTINUACIÓN ANTERIOR — 2026-08-04 (histórico)
 
 **Estado: 132 de ~267 skills. Olas 0-6 COMPLETAS. Solo queda la Ola 7.**
 53.098 líneas. Los tres gates mecánicos en verde: `name` == directorio, `**No aplica**` presente,
@@ -331,6 +421,68 @@ olas anteriores.
 3. **La prueba funcional de activación nunca se ha hecho** — abrir un fichero real de cada dominio
    y comprobar que salta la skill correcta. Todo el trabajo de fronteras está validado
    *mecánicamente* pero jamás *funcionalmente*. Es la deuda más importante de las tres.
+
+## BACKLOG — al cerrar el catálogo (decisión del usuario, 2026-08-05)
+
+1. **Pasada de sinergia `CLAUDE.md` ↔ catálogo.** Cuando estén escritas todas las skills, hay que
+   **reescribir el `CLAUDE.md` para que encaje con el catálogo, no para que lo repita**. Hoy el
+   `CLAUDE.md` lleva doctrina extensa de dominios que **ya tienen skill dueña** (seguridad, redes,
+   DevOps/SRE, DevSecOps, arquitectura, testing, agile): eso se escribió cuando no existía ninguna
+   de las ~267. Criterio de la pasada, análogo al que ya se aplicó cinco veces dentro del catálogo
+   (*cuando nace la skill dueña, la vecina suelta el trigger*): el `CLAUDE.md` **se queda con lo
+   transversal e invariante** —cómo se trabaja, cómo se responde, qué se verifica, quién es el
+   usuario, el norte de calidad y KISS— y **cede el criterio de dominio** a su skill, que se carga
+   sola cuando la tarea la dispara. Ganancia doble: menos contexto fijo por turno y una sola fuente
+   de verdad por tema. **Riesgo a vigilar: no dejar huérfano ningún criterio** — antes de borrar un
+   bloque, comprobar que su skill dueña existe y lo cubre de verdad. Hacerlo **bloque a bloque, con
+   el catálogo cerrado**, nunca a mitad de una ola.
+
+   **LÍMITE DURO, fijado por el usuario el 2026-08-05: no se tocan las premisas personales.** Lo
+   que se cede son los bloques de **criterio técnico de dominio** que ya tienen skill dueña. Lo que
+   **no se toca jamás**: idioma, norte de calidad, KISS, estilo de respuesta, quién es el usuario y
+   cómo interpretarlo, método de trabajo, disciplina a alta velocidad, rendimiento, e identidad y
+   firma de commits. No son doctrina duplicable en una skill: son el contrato de trabajo, y ninguna
+   skill de dominio los cubre. **Ante la duda sobre si un bloque es premisa o criterio de dominio,
+   no se borra: se pregunta.** La cláusula está también al principio del propio `CLAUDE.md`, para
+   que no dependa de que alguien lea este backlog.
+2. **Skill `project-map`** (creada el 2026-08-05, fuera del patrón `-standards` porque es de
+   procedimiento, no de dominio): genera y mantiene `PROJECTMAP.md` en cualquier repo. La directriz
+   que obliga a crearlo y sostenerlo ya está en el `CLAUDE.md` (§ Método de trabajo). **Pendiente de
+   validación en uso real**: comprobar en un repo ajeno que el mapa ahorra exploración de verdad y
+   que la regla de mantenimiento "en el mismo turno" se sostiene sin recordatorio.
+
+3. **Repaso final de composición: que se active el CONJUNTO correcto y que se pueda trabajar con
+   él** (decisión del usuario, 2026-08-05). Es la fase que cierra el catálogo, y **corrige el
+   criterio de la deuda nº3 de arriba**, que estaba mal formulado: decía *"que salte la skill
+   correcta **y solo esa**"*. Para una tarea real eso es falso — un despliegue toca a la vez código,
+   SRE, redes, seguridad, datos y coste, que es exactamente el principio de **cohesión entre roles**
+   del `CLAUDE.md`. El objetivo no es que gane una skill: es que **se active el conjunto pertinente
+   y que ese conjunto sea utilizable a la vez**.
+
+   Cuatro defectos a cazar, ninguno detectable por los gates mecánicos actuales:
+   - **Contradicción entre co-activadas**: dos skills que se cargan juntas y mandan cosas
+     incompatibles (una fija un default que la otra veta). Hoy nada lo comprueba.
+   - **Bucle de delegación**: `A` dice "esto es de `B`", `B` dice "esto es de `A`". La frontera
+     existe en ambos lados y aun así nadie decide. Detectable en parte de forma mecánica siguiendo
+     las líneas `**No aplica**` como grafo dirigido y buscando ciclos.
+   - **Hueco por delegación cruzada**: `A` y `B` se lo ceden mutuamente a `C`, y `C` no lo cubre.
+     El grafo también lo destapa: destino inexistente o sin la sección correspondiente.
+   - **Monopolio de disparador**: una skill demasiado golosa que se activa siempre y desplaza a las
+     que de verdad tocaban. El síntoma es que aparece en escenarios de dominios ajenos.
+
+   Método propuesto (ejecutar con el catálogo cerrado, no antes): **escenarios de tarea realistas y
+   multidominio**, no ficheros sueltos —"desplegar un servicio nuevo en Kubernetes con datos
+   personales y presupuesto ajustado", "migrar un AS/400 a un ERP moderno", "montar un clúster de
+   entrenamiento multi-nodo"—, y para cada uno anotar **qué conjunto debería activarse**, qué se
+   activa de verdad, y **leer juntas las co-activadas buscando contradicción explícita**. Lo que
+   falle se arregla como siempre: **estrechando la `description` de la vecina, no engordando el
+   cuerpo**. Es el patrón que ya funcionó cinco veces (`onprem`, `windows-server-ad`,
+   `microservices`, `technical-hiring`, `cryptography-pki`).
+
+   Salida esperada: un gate nuevo en `claude-code-skills-standards` §4 —**grafo de delegación sin
+   ciclos ni destinos muertos**— y la tabla de escenarios con su conjunto esperado, para poder
+   reejecutar el repaso cuando el catálogo crezca. Sin esa tabla, el repaso no es repetible y habrá
+   que re-derivarlo entero la próxima vez.
 
 ### Plan de lanzamiento de la Ola 7 (derivado el 2026-08-04; ejecutar sin re-derivarlo)
 

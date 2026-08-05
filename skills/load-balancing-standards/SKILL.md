@@ -30,8 +30,8 @@ el descubrimiento de `microservices-architecture-standards`**, **Service, Ingres
 `identity-access-management-standards`, TLS y PKI de `cryptography-pki-standards`, métricas y paneles
 de `observability-standards`, el SLO de `sre-practice-standards`, **la metodología de medir y el
 modelo de carga de `performance-engineering-standards`**, el método reactivo de
-`network-troubleshooting-standards`, y el paraguas de `onprem-standards` (con
-`datacenter-facilities-standards` y `hpc-standards` en **Ola 7, planificadas**). Entre las tres
+`network-troubleshooting-standards`, y el paraguas de `onprem-standards` (junto a
+`datacenter-facilities-standards` y `hpc-standards`). Entre las tres
 hermanas de esta tanda: `wireless-standards` es la **red de acceso**, ésta la **red de servicio** y
 `high-speed-interconnect-standards` la **red de cómputo**; **el error del dominio es aplicarles el
 mismo criterio**.

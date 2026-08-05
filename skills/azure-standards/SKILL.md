@@ -25,7 +25,10 @@ aplicación: OAuth 2.1/OIDC, SAML, passkeys, SCIM, motores de autorización — 
 control de acceso a la **plataforma** y sus RBAC roles), `cryptography-pki-standards` (elección de
 algoritmos y ciclo de vida de claves; aquí solo Key Vault/Managed HSM como servicio),
 `vulnerability-management-standards` (workflow de triaje y SLA; aquí solo Defender for Cloud como
-fuente de hallazgos), `appsec-standards` (seguridad del código de la aplicación),
+fuente de hallazgos), `cloud-security-posture-standards` (**lo transversal a las tres nubes**:
+línea base multi-suscripción, permiso efectivo, caminos de ataque y la elección de CSPM/CNAPP;
+**aquí el servicio de Azure concreto y su configuración**),
+`appsec-standards` (seguridad del código de la aplicación),
 `observability-standards` (OTel y Prometheus vendor-neutral; aquí solo Azure Monitor y su coste),
 `sre-practice-standards` (SLO, on-call, postmortems), `grc-compliance-standards` (marco normativo y
 evidencia de auditoría), `networking-standards` (redes físicas, on-prem e híbridas; aquí VNet),

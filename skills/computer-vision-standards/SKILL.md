@@ -57,10 +57,16 @@ tu iluminación.
   `data-engineering-standards` y `data-governance-quality-standards` (ingesta, linaje y calidad del
   dato), `python-standards`, `finops-standards` y `green-it-standards` (coste y huella de la
   inferencia), `grc-compliance-standards`, `webgl-webgpu-standards` (inferencia en el navegador) y
-  `embedded-iot-standards` (**Ola 7, planificada**: el dispositivo de borde como sistema).
+  `embedded-iot-standards` (el dispositivo de borde como sistema).
+- `xr-standards` y `robotics-ros-standards`: **el SLAM y la percepción son de aquí**; **el consumo
+  del resultado y su temporización son suyos** — el presupuesto de fotograma y la latencia
+  movimiento-a-fotón allí, el ciclo de control y la QoS del mensaje que transporta la detección
+  allá. Una detección correcta que llega tarde es un fallo suyo, no de la métrica de aquí.
 - Skills hermanas de modalidad: `nlp-standards` (texto) y `multimodal-genai-standards` (generación
   de imagen, audio y vídeo). **Son tres modalidades, no tres niveles**: ninguna es prerrequisito de
-  otra.
+  otra. **Regla de arbitraje con `multimodal-genai-standards`, recíproca y ya declarada en su §1:
+  si la salida son cajas, máscaras, *keypoints* o etiquetas, es de aquí; si es prosa, descripción,
+  extracción semántica de un documento o un artefacto generado, es suya.**
 
 ## 2. Decisiones por defecto
 

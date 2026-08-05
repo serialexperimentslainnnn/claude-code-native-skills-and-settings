@@ -49,7 +49,7 @@ TrueNAS— (§6); y **cuándo no elegir BSD** (§7).
   `secrets-management-standards`, `vulnerability-management-standards`,
   `detection-engineering-standards` (**suya la detección en el endpoint y sus reglas**),
   `endpoint-security-standards`, `grc-compliance-standards`, `iac-standards`,
-  `legacy-modernization-standards` y `migration-projects-standards` (**Ola 7 las planificadas**).
+  `legacy-modernization-standards` y `migration-projects-standards`.
 - `podman-systemd-containers-standards` y `kubernetes-standards`: **el ecosistema de contenedores
   es suyo**; aquí solo la comparación honesta con jails (§4).
 - `aix-solaris-hpux-standards` y `macos-fleet-standards`: **BSD no es Unix propietario** —no se

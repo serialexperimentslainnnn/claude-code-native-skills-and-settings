@@ -39,6 +39,8 @@ Triggers: `.wasm`, `.wat`, ficheros `.wit` y `wit-bindgen`, `wasm-tools`, `wasm-
   el presupuesto de fotograma y la degradación a WebGL2 son suyos**), `pwa-standards` (**Ola 6**: el
   *service worker* que cachea y sirve el módulo, y su modelo de actualización, son suyos — un `.wasm`
   precacheado con una estrategia equivocada es un binario viejo servido rápido).
+- `compilers-dsl-standards` (**emitir Wasm desde un backend propio es suyo**: gramática, IR,
+  generación de código y diagnósticos; **aquí el target, el runtime, el sandbox y el artefacto**).
 - `appsec-standards` (metodología: modelado de amenazas, clases de vulnerabilidad, ASVS; **aquí** el
   sandbox concreto, la superficie de importaciones y los límites de recursos).
 - `local-inference-standards` y `gpu-computing-standards` (si Wasm aparece por inferencia en el

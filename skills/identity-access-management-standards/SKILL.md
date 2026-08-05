@@ -29,7 +29,10 @@ certificados), `cicd-standards` (configuración del pipeline que consume OIDC),
 `windows-server-ad-standards` (el **directorio** y la plataforma Windows: bosque, GPO, Kerberos y
 NTLM, Tier 0/PAW, gMSA/dMSA, `krbtgt`, AD CS — aquí la federación e identidad modernas que se
 apoyan encima o lo sustituyen), `incident-response-forensics-standards` (revocación masiva de
-sesiones y tokens durante un compromiso de identidad), `privacy-engineering-standards` (el dato
+sesiones y tokens durante un compromiso de identidad), `identity-threat-detection-standards`
+(**el ataque contra la identidad, su detección y su respuesta** —robo de sesión, abuso de token,
+consentimiento OAuth malicioso, revocación como contención—; **aquí la arquitectura de identidad,
+SSO, MFA y el ciclo de vida de la cuenta**), `privacy-engineering-standards` (el dato
 personal que contiene el directorio y su ciclo de vida).
 
 ## 2. Decisiones por defecto

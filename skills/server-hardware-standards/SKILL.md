@@ -29,7 +29,7 @@ HPE SPP/iLO, Lenovo XCC, "¿RAID hardware o HBA?", modo IT, `smartctl`, TBW, DWP
 
 **No aplica**: ver `onprem-standards` (**paraguas de plataforma y tabla de enrutado §1.2**: la flota
 como conjunto, la elección de hipervisor y sus invariantes; **aquí la máquina individual y su
-componente**), `datacenter-facilities-standards` (**Ola 7, planificada**: **todo lo que está fuera
+componente**), `datacenter-facilities-standards` (**todo lo que está fuera
 del chasis** —rack, PDU, circuitos, UPS, refrigeración, pasillo caliente/frío, densidad por rack,
 recepción y retirada física—. Frontera en una línea: *si va atornillado al rack pero no dentro del
 servidor, es suyo*), `cmdb-inventory-standards` (**el registro del activo**: número de serie como
@@ -47,8 +47,8 @@ BMC son de aquí**), `vulnerability-management-standards` (triaje de CVE de firm
 CVSS/EPSS/**KEV**), `green-it-standards` (huella y reporte, y el criterio de que **alargar la vida
 útil suele pesar más que optimizar el consumo**), `finops-standards` (coste en nube),
 `homelab-standards` (**economía del material *enterprise* usado**), `gpu-computing-standards` y
-`high-speed-interconnect-standards` (aceleradores e InfiniBand/RoCE), `hpc-standards` (**Ola 7,
-planificada**: nodo de cálculo y densidad), `macos-fleet-standards` y
+`high-speed-interconnect-standards` (aceleradores e InfiniBand/RoCE), `hpc-standards`
+(nodo de cálculo y densidad), `macos-fleet-standards` y
 `developer-workstation-standards` (el puesto, no el servidor).
 
 ## 2. Decisiones por defecto

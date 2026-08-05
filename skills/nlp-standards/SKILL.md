@@ -73,7 +73,11 @@ queda o se destila a un modelo pequeño** (§3.2).
   `grc-compliance-standards`.
 - Skills hermanas de modalidad: `computer-vision-standards` (imagen y vídeo) y
   `multimodal-genai-standards` (generación de imagen, audio y vídeo). **Son tres modalidades, no
-  tres niveles**: ninguna es prerrequisito de otra.
+  tres niveles**: ninguna es prerrequisito de otra. **Regla de arbitraje con
+  `multimodal-genai-standards`: la etiqueta, el vector y el tramo de texto son de aquí; la prosa,
+  la extracción semántica y la generación sobre imagen, audio, vídeo o documento —incluido
+  convertir un PDF o un escaneo en texto utilizable— son suyas.** Si el documento ya es texto
+  digital limpio, extraerlo y aplicar PLN es más barato, exacto y auditable que mirarlo con un VLM.
 
 ## 2. Decisiones por defecto
 

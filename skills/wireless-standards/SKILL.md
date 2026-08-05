@@ -30,8 +30,8 @@ certificado de cliente y el MDM que lo distribuye son de `identity-access-manage
 la PKI, de `cryptography-pki-standards`), la metodología de medir y el modelo de carga de
 `performance-engineering-standards`, métricas y alertas de `observability-standards`, el SLO de
 `sre-practice-standards`, el método reactivo de `network-troubleshooting-standards`, la detección de
-`detection-engineering-standards`, y el paraguas de `onprem-standards` (con
-`datacenter-facilities-standards` y `hpc-standards` en **Ola 7, planificadas**). Entre las tres
+`detection-engineering-standards`, y el paraguas de `onprem-standards` (junto a
+`datacenter-facilities-standards` y `hpc-standards`). Entre las tres
 hermanas de esta tanda: `wireless-standards` es la **red de acceso**,
 `load-balancing-standards` la **red de servicio** y `high-speed-interconnect-standards` la **red de
 cómputo**; **el error del dominio es aplicarles el mismo criterio**.

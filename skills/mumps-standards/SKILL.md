@@ -48,7 +48,7 @@ decisión de migrar o no.
   retirar; **aquí el criterio técnico de esta plataforma**.
 - `migration-projects-standards`: suya la **ejecución del corte** — ensayo, ventana, convivencia con
   el sistema clínico nuevo y su reconciliación, cuadre del dato, rollback y apagado del origen.
-- `healthtech-fhir-standards` (**Ola 7, planificada**): **suyo todo el criterio de
+- `healthtech-fhir-standards`: **suyo todo el criterio de
   interoperabilidad clínica** — perfiles FHIR, recursos, terminologías (SNOMED CT, LOINC),
   IHE y el detalle de HL7 v2. Aquí solo **por qué el dato clínico sale por ahí y no por SQL** (§6).
 - `enterprise-architecture-standards` (**ya escrita**): inventario, modelo **TIME** y las **"R"**.
@@ -159,8 +159,8 @@ decisión de migrar o no.
   v2** es lo instalado en hospitales; **FHIR**, el destino de toda integración nueva.
 - **Criterio**: todo consumidor externo entra por interfaz clínica estándar, nunca leyendo globals
   ni tablas proyectadas; la proyección SQL se reserva a informes internos bajo control.
-- **El detalle de recursos, perfiles, terminologías y conformidad es de `healthtech-fhir-standards`
-  (Ola 7, planificada).** La fachada es además **el desacople que hace posible congelar el núcleo**
+- **El detalle de recursos, perfiles, terminologías y conformidad es de
+  `healthtech-fhir-standards`.** La fachada es además **el desacople que hace posible congelar el núcleo**
   (§7): los consumidores pasan a depender de un contrato, no de la forma del global.
 
 ## 7. Migrar, no migrar y prohibiciones
@@ -242,7 +242,7 @@ Antes de fijar nada en un proyecto real, comprobar por web:
    con asesoría legal y con `opensource-licensing-standards`; no lo resuelvas con esta tabla.
 7. CVEs y avisos de seguridad de la implementación y de los componentes de integración (motores
    HL7, gateways web).
-8. **Estado de `healthtech-fhir-standards`** (planificada en la Ola 7): cuando exista, **todo el
-   criterio de interoperabilidad clínica es suyo** y esta skill solo lo referencia.
+8. **`healthtech-fhir-standards` ya existe**: **todo el criterio de interoperabilidad clínica es
+   suyo** y esta skill solo lo referencia.
 
 Si la web contradice este documento, **manda la web** y señala la discrepancia.

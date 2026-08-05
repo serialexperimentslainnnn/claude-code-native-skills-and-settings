@@ -55,6 +55,10 @@ adivinando.
   su parametrización (`HNSW`/`IVFFlat`, `m`, `ef_*`, `lists`, `probes`, `halfvec`) son de esta
   skill; el motor que lo aloja, su operación y su respaldo son suyos.** Redis/Valkey y Kafka en la
   ingesta, también suyos.
+- `multimodal-genai-standards`: **el parseo del documento no textual** — convertir un PDF, un
+  escaneo o una imagen en texto utilizable (OCR clásico frente a VLM, anclaje espacial, coste por
+  página) es suyo. **Aquí, qué se indexa de ese texto, cómo se trocea y cómo se recupera.**
+  Frontera recíproca, ya declarada en su §1.
 - `object-storage-standards`: el almacenamiento de los documentos originales (S3/MinIO/Ceph),
   ciclo de vida, versionado y coste de egreso.
 - `privacy-engineering-standards`: dato personal, minimización, DPIA, consentimiento. **El derecho

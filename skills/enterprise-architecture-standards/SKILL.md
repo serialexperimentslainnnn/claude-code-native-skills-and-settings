@@ -40,6 +40,9 @@ cuellos de botella, la bajada a decisiones de equipo y las métricas de la funci
   el estado operativo y el inventario sobre la decisión de cartera.
 - `platform-engineering-standards` (la plataforma interna como producto y su camino pavimentado;
   **aquí el estándar que la plataforma implementa, no su implementación**).
+- `lowcode-governance-standards` (**suyos el catálogo de herramientas personales y su gobierno** —
+  entornos, DLP de conectores, identidad del flujo, flujos huérfanos—; **la app low-code que pasa a
+  ser crítica entra en el inventario de aplicaciones de aquí**, con dueño, coste y ciclo de vida).
 - `tech-leadership-standards` (la decisión de invertir, la negociación y el registro organizativo;
   aquí el criterio técnico de cartera que la alimenta).
 - `project-management-standards` (cómo se entrega el programa de migración; aquí qué se migra y por

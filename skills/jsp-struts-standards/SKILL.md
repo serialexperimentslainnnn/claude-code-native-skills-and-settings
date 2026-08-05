@@ -54,8 +54,7 @@ internet y sin parchear, no se "detecta" cuando la explotan: se detecta meses de
 WildFly, WebLogic, WebSphere, httpd/nginx delante, límites, hilos, TLS, `server.xml`— y aquí solo
 aparece el acoplamiento que decide la migración (§2). `jvm-spring-standards` (**ya escrita**) manda
 sobre **Java moderno y Spring, que son el destino** de esta migración: la calidad del código
-resultante se rige por su criterio, no por éste. `legacy-modernization-standards` (**Ola 7,
-planificada**) es el paraguas y `enterprise-architecture-standards` (**ya escrita**) pone inventario,
+resultante se rige por su criterio, no por éste. `legacy-modernization-standards` (**ya escrita**) es el paraguas y `enterprise-architecture-standards` (**ya escrita**) pone inventario,
 modelo TIME y las "R" —aquí qué implica técnicamente cada opción—, con `refactoring-tech-debt-standards`
 y `testing-qa-standards` (**ya escritas**: *strangler fig*, caracterización sin tests),
 `project-management-standards`, `tech-leadership-standards`, `cicd-standards` y `git-workflow-standards`.

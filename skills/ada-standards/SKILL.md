@@ -30,12 +30,12 @@ Cubre: versiones del lenguaje y su soporte; distribuciones de GNAT y su licencia
 gestor; tipos, subtipos y contratos como mecanismo de diseño; SPARK y los niveles de adopción;
 tasking y perfiles de tiempo real; interoperabilidad; y la comparación honesta con Rust.
 
-**No aplica**: ver `safety-critical` (**Ola 7, planificada**: **suyo todo el proceso de seguridad
+**No aplica**: ver `safety-critical-standards` (**suyo todo el proceso de seguridad
 funcional y certificación** — análisis de peligros, asignación de DAL/SIL/ASIL, objetivos y
 evidencias de DO-178C/DO-330, EN 50128, IEC 61508, ISO 26262, cualificación de herramientas,
 trazabilidad de requisitos, auditoría y relación con la autoridad; **aquí solo qué aporta el
-lenguaje y la prueba formal a esas evidencias, y con qué flags**), `embedded-iot` (**Ola 7,
-planificada**: el objetivo físico — MCU, arranque, memoria, periféricos, RTOS, consumo, actualización
+lenguaje y la prueba formal a esas evidencias, y con qué flags**), `embedded-iot-standards`
+(el objetivo físico — MCU, arranque, memoria, periféricos, RTOS, consumo, actualización
 en campo; **aquí el código Ada que corre encima y la elección de runtime restringido**),
 `rust-standards` (**el competidor directo en memoria segura y la comparación obligada de §7**: el
 Rust y su toolchain son suyos; **la elección entre ambos para un proyecto de alta integridad se
@@ -48,8 +48,7 @@ es Ada), `assembly-standards` (código máquina insertado y su justificación),
 complementa**), `cicd-standards` (la pipeline que ejecuta los gates de §4),
 `git-workflow-standards`, `opensource-licensing-standards` (**la excepción de runtime de GNAT es el
 dato que decide si puedes distribuir tu binario**, §2), `grc-compliance-standards` (marco
-normativo general), `refactoring-tech-debt-standards`, `legacy-modernization-standards` (**Ola 7,
-planificada**: hay mucho Ada 83/95 antiguo que no es "alta integridad", solo viejo — la decisión de
+normativo general), `refactoring-tech-debt-standards`, `legacy-modernization-standards` (hay mucho Ada 83/95 antiguo que no es "alta integridad", solo viejo — la decisión de
 cartera es suya).
 
 ## 2. Decisiones por defecto / Toolchain
@@ -258,7 +257,7 @@ Antes de fijar nada en un proyecto real, comprobar por web:
    cualificados, y SIL 4 y DO-178C DAL C como soporte; release 26.02.0 con ASIL B para el
    subconjunto de `core`. **Este matiz se malinterpreta en fuentes secundarias, incluidas académicas.**
 8. **Ediciones vigentes de las normas** (DO-178C/DO-330, EN 50128, IEC 61508, ISO 26262) y sus
-   nombres de nivel **verbatim** — con `safety-critical` (Ola 7, planificada), que cuando exista es
+   nombres de nivel **verbatim** — con `safety-critical-standards`, que es
    **la dueña de todo ese criterio**.
 9. CVEs y avisos del compilador, del runtime, del RTOS y de las librerías C enlazadas.
 

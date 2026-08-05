@@ -37,7 +37,9 @@ aprovisiona, comparte, monitoriza y paga: driver, CUDA, MIG, cuotas, coste; **el
 `rag-standards` (capa de aplicación de IA), `ai-governance-standards` (gobernanza y cumplimiento),
 `c-standards`/`cpp-standards` (**el código nativo al otro lado de un `ccall`**: memoria, UB,
 sanitizers, ABI; la frontera desde Julia —`ccall`, `Ptr`, `GC.@preserve`, `unsafe_*`, JLL— es de
-aquí), `cicd-standards` (la pipeline que ejecuta los gates de §4), `kubernetes-standards` (imagen y
+aquí), `fortran-standards` (**el kernel Fortran al otro lado de un `ccall`**: `bind(c)`,
+contigüidad, orden de índices, modelo de paralelismo y flags del compilador son suyos; la frontera
+desde Julia es de aquí), `cicd-standards` (la pipeline que ejecuta los gates de §4), `kubernetes-standards` (imagen y
 despliegue), `appsec-standards` (modelado de amenazas agnóstico; aquí solo los *sinks* de Julia),
 `vulnerability-management-standards` (triaje y SLA del hallazgo; aquí solo el estado del escaneo),
 `secrets-management-standards`, `observability-standards` (pipeline OTel/Prometheus; aquí solo la

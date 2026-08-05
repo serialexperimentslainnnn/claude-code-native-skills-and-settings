@@ -77,7 +77,10 @@ y cede**: el orden de volatilidad manda sobre el diagnóstico de rendimiento; re
 arregla" destruye evidencia), `bcdr-standards`, `grc-compliance-standards`, `perl-standards` (**Ola 5**: el Perl del sistema es
 parte de la distribución y **no se toca**; el Perl de aplicación y su gestión de dependencias son
 suyos), `lua-standards` (**Ola 5**: la configuración de nginx es de red y plataforma; el Lua
-embebido en él, suyo).
+embebido en él, suyo), `operating-systems-standards` (**el pomo de systemd es de aquí, la
+semántica del kernel que hay detrás es suya**: qué hace de verdad `memory.high` frente a
+`memory.max`, cuándo entra el OOM killer y con qué criterio; aquí cómo se declara en la unidad y
+cómo se diagnostica).
 
 Planificadas — hasta que existan, esta skill es criterio provisional en su solapa:
 `linux-storage-standards` (**Ola 2**: LVM, multipath, NVMe, diseño y tuning de filesystems,

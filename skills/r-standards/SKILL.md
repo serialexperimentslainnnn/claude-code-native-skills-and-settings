@@ -36,7 +36,10 @@ se aprovisiona, comparte, monitoriza y paga; el código R que la usa, de aquí),
 `llm-app-engineering-standards` y `rag-standards` (capa de aplicación de IA), `ai-governance-standards`
 (gobernanza del modelo y cumplimiento normativo), `c-standards`/`cpp-standards` (**el código nativo
 al otro lado de `Rcpp`/`cpp11`**: memoria, UB, sanitizers, flags del compilador; la frontera con R
-—`SEXP`, protección de GC, empaquetado— es de aquí), `cicd-standards` (la pipeline que ejecuta los
+—`SEXP`, protección de GC, empaquetado— es de aquí), `fortran-standards` (**el kernel Fortran al
+otro lado de `.Fortran()` o de un paquete con `src/*.f90`**: `bind(c)`, contigüidad, orden de
+índices y flags del compilador son suyos; la frontera desde R es de aquí),
+`cicd-standards` (la pipeline que ejecuta los
 gates de §4), `kubernetes-standards` (despliegue de la imagen), `appsec-standards` (modelado de
 amenazas agnóstico; aquí solo los *sinks* de R), `vulnerability-management-standards` (triaje y SLA
 del hallazgo; aquí solo el escaneo del proyecto), `secrets-management-standards`,

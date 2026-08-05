@@ -36,7 +36,10 @@ practica en casa se aplica fuera sin autorización escrita), `developer-workstat
 (**Ola 6**: **la máquina con la que se trabaja no es el laboratorio**. El puesto se aprovisiona
 como código, se endurece y se reconstruye; el laboratorio existe para romperse. **Prohibido usar
 la estación de trabajo como servidor del laboratorio**: mezcla los dos modelos de amenaza y hace
-que un experimento roto te deje sin herramienta de trabajo).
+que un experimento roto te deje sin herramienta de trabajo), `home-automation-standards`
+(**el dispositivo, el protocolo y la automatización de la vivienda son suyos** —Zigbee/Z-Wave/
+Matter, Home Assistant y sus automatizaciones, VLAN de IoT, cámaras y privacidad doméstica—;
+**aquí el servidor y el laboratorio** que hay debajo).
 
 **Frontera en las dos direcciones, explícita:**
 - Si el sistema tiene **usuarios ajenos a tu casa, datos de terceros, SLA, obligación regulatoria o

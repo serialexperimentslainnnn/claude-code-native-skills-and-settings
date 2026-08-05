@@ -48,7 +48,9 @@ simplicidad, y la decisión es económica), `proxmox-ve-standards` y `libvirt-kv
 definición del disco de la VM y el modelo de caché del hipervisor son suyos),
 `ha-clustering-standards` (**Ola 2, planificada**: almacenamiento compartido y fencing — **ZFS no
 es un filesystem de cluster**, ver §7), `object-storage-standards` (**Ola 2, planificada**: S3),
-`kubernetes-standards` (CSI, PV/PVC), `observability-standards` (diseño de métricas y alertas; aquí
+`file-servers-standards` (**el snapshot se crea aquí y se publica allí**: las *Previous Versions*
+que ve un cliente Windows salen de un snapshot ZFS expuesto por SMB con `shadow_copy2`, cuya
+configuración es suya), `kubernetes-standards` (CSI, PV/PVC), `observability-standards` (diseño de métricas y alertas; aquí
 solo **qué** hay que vigilar de ZFS), `cryptography-pki-standards` (elección de algoritmo y custodia
 de la clave de `keylocation`; aquí solo el uso operativo del cifrado nativo),
 `linux-hardening-standards` (`noexec`/`nosuid`/`nodev` como control de seguridad, aunque se

@@ -42,7 +42,7 @@ licencia aceptable** de cada herramienta que se adopte). También frontera: `sre
 `identity-access-management-standards`, `linux-hardening-standards`,
 `vulnerability-management-standards`, `finops-standards`, `offensive-security-standards` (**esta skill
 es defensiva**), y `network-vendors-standards`, `wan-legacy-standards`, `telco-5g-standards`,
-`high-speed-interconnect-standards` y `datacenter-facilities-standards` (**Ola 7, planificadas**).
+`high-speed-interconnect-standards` y `datacenter-facilities-standards`.
 
 **Principio rector**: **automatizar una red mal diseñada la rompe más rápido y en más sitios a la
 vez.** La automatización no arregla el diseño: lo multiplica. Por eso el orden es **primero leer y

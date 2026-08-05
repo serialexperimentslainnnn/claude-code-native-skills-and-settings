@@ -58,7 +58,7 @@ simulacros y del archivado), `grc-compliance-standards` (obligación regulatoria
 notificación y evidencia de auditoría), `networking-standards` y `firewall-policy-standards`
 (salida SMTP, egress y reputación de IP), `observability-standards` (plataforma de
 telemetría), `itsm-itil-standards` (el ticket y el SLA), `macos-fleet-standards` y
-`endpoint-security-standards` (**Ola 7, planificada**: el cliente de correo y lo que pasa
+`endpoint-security-standards` (el cliente de correo y lo que pasa
 tras el clic), `ai-governance-standards` y `mlsecops-standards` (si el filtro decide con un
 modelo: gobierno, sesgo y evaluación).
 

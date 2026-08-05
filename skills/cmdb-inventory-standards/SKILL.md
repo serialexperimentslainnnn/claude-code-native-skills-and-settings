@@ -53,7 +53,7 @@ grafo como dato mantenido), `opensource-licensing-standards` (licencias **de dep
 aquí licencias **compradas** frente a lo instalado), `finops-standards` (coste y etiquetado en nube),
 `data-governance-quality-standards` (calidad del dato como disciplina general),
 `macos-fleet-standards` y `developer-workstation-standards` (**el MDM es la fuente de inventario del
-endpoint**), `datacenter-facilities-standards` (**Ola 7, planificada**: rack, energía y espacio
+endpoint**), `datacenter-facilities-standards` (rack, energía y espacio
 físico — aquí solo su representación en DCIM).
 
 ## 2. Decisiones por defecto

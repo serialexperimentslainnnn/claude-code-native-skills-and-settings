@@ -41,7 +41,8 @@ Ruby y la cola de jobs), `crystal-standards` (**Ola 5, ya escrita** — frontera
 confusión es real: **la compatibilidad de Crystal con Ruby es de sintaxis, no de semántica ni de
 librerías**. No hay gemas, ni `method_missing` en tiempo de ejecución, ni monkey patching dinámico:
 un fichero Ruby no se porta cambiándole la extensión. Si el motivo para migrar es el rendimiento,
-mídelo primero con YJIT).
+mídelo primero con YJIT), `smalltalk-standards` (**linaje directo**: el modelo de objetos y de
+mensajes de Ruby viene de ahí; el Smalltalk vivo —Pharo, Squeak, GemStone/S, VAST— es suyo).
 
 ## 2. Toolchain por defecto
 

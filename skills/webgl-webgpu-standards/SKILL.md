@@ -55,6 +55,11 @@ síntoma clásico: "en móvil se ve bien un rato y luego se queda en negro".
 - `webassembly-standards` (**ya escrita**) — **el módulo Wasm y su runtime son suyos**; es frecuente en
   este dominio (transcodificadores KTX2/Basis, físicas, motores portados). Aquí solo su interacción con
   la GPU y con el presupuesto de fotograma.
+- `game-development-standards` — **el bucle de simulación y la simulación misma son suyos** (orden de
+  actualización, físicas, ECS, presupuesto de fotograma como restricción de arquitectura). **Aquí la
+  API gráfica y su coste**: pipelines, *bind groups*, *draw calls*, texturas y pérdida de contexto.
+- `xr-standards` — **el modelo de sesión y el confort son suyos** (WebXR, reproyección, latencia
+  movimiento-a-fotón, cinetosis como requisito funcional); aquí el render dentro de ese marco.
 - `pwa-standards` — service worker, instalación y offline. Una PWA puede contener un canvas WebGPU: son
   capas distintas. La caché de assets 3D pesados es de allí; su formato y su coste en GPU, de aquí.
 - `caching-cdn-standards` (entrega de modelos y texturas, rangos y compresión en tránsito),

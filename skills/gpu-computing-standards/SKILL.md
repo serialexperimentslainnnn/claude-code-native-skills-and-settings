@@ -54,7 +54,13 @@ importa y por qué), `sre-practice-standards` (SLO, capacidad como práctica),
 `networking-standards` (la red del cluster; InfiniBand/RoCE queda **fuera de ambas** hasta que
 tenga dueño: marcar como hueco), `firewall-policy-standards`,
 `identity-access-management-standards`, `grc-compliance-standards`,
-`python-standards`, `julia-standards` y `r-standards` (código que usa la GPU), `cpp-standards` y `c-standards` (**los kernels CUDA/HIP
+`datacenter-facilities-standards` (**la sala**: densidad por rack, distribución eléctrica y
+refrigeración líquida —CDU, circuito, pasillo— **son suyas**; aquí el TDP y el requisito térmico
+del acelerador que se les entrega como dato),
+`python-standards`, `julia-standards` y `r-standards` (código que usa la GPU),
+`fortran-standards` (**recíproco ya declarado desde su §1**: el `!$acc`/`!$omp target` que se
+escribe en el `.f90` y su corrección son suyos; el kernel, la ocupación y el modelo de
+programación de GPU, de aquí), `cpp-standards` y `c-standards` (**los kernels CUDA/HIP
 son C++ y esa cercanía confunde**: el modelo de programación de la GPU —jerarquía de hilos, memoria
 compartida, ocupación, *streams*, coalescencia— es de aquí; el **C++ del host** —estándar, RAII,
 gestión de dependencias, `clang-tidy`, tests— es suyo), `green-it-standards` (**Ola 6**: la densidad de rack, el TDP, la refrigeración líquida y el consumo

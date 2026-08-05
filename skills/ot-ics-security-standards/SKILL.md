@@ -48,7 +48,12 @@ y por qué**), `grc-compliance-standards` (marco, SoA, aceptación de riesgo),
 en el centro de control), `routing-switching-standards` (switching, MLAG, 802.1X),
 `bcdr-standards` (BIA, RTO/RPO), `backup-recovery-standards` (copia y restore),
 `onprem-standards` (plataforma física), `offensive-security-standards` (ejercicio ofensivo
-autorizado; esta skill no lo ejecuta), `threat-intelligence-standards` (indicador y actor).
+autorizado; esta skill no lo ejecuta), `threat-intelligence-standards` (indicador y actor),
+`air-gapped-standards` (**arbitraje, recíproco desde su §1**: el aislamiento **del proceso
+físico** —Purdue, DMZ de nivel 3.5, zonas y conductos, diodo— es de aquí; **el enclave aislado
+como modo de operación general —datos, servidores, espejo interno, tiempo y PKI sin salida— es
+suyo**), `robotics-ros-standards` (**el robot industrial**: ROS 2, QoS y middleware, y la
+seguridad de máquina del brazo son suyos; aquí la celda como zona dentro del proceso).
 
 ## 2. Decisiones por defecto
 

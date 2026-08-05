@@ -63,7 +63,10 @@ secretos — **frontera compartida**: un secreto filtrado o un secreto usado des
 anómalo es un **caso de detección mío**, alimentado por su telemetría de gestor y de
 escaneo), `grc-compliance-standards` (el control normativo que exige monitorización y su
 evidencia), `identity-access-management-standards` (diseño del IdP, políticas de acceso
-condicional y flujos OAuth — yo detecto su abuso, no los configuro).
+condicional y flujos OAuth — yo detecto su abuso, no los configuro),
+`threat-intelligence-standards` (**frontera bidireccional**: la hipótesis, el indicador y su
+caducidad son suyos, la regla es mía — y **el retorno de *sightings* es suyo**: un indicador que
+caduca por falta de avistamientos se retira allí, con su criterio, no aquí).
 
 ## 2. Decisiones por defecto
 

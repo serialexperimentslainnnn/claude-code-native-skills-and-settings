@@ -98,7 +98,9 @@ lenguaje —`python-standards`, `go-standards`, `rust-standards`, `typescript-st
 `java`/`jvm-spring-standards`, etc.— (**el gestor de paquetes concreto, su fichero de bloqueo
 y el comando de escaneo de su ecosistema son suyos**; la política que ese comando aplica es de
 aquí). Con `green-it-standards`: **la licencia de las herramientas de medición de carbono se
-rige por esta skill**.
+rige por esta skill**. **Aquí solo la licencia *libre***: la **licencia comercial propietaria** y
+la **auditoría de fabricante** —usuario nombrado, acceso indirecto, medición y declaración anual—
+son de `erp-sap-standards` y `crm-salesforce-standards`.
 
 ## 2. Decisiones por defecto
 

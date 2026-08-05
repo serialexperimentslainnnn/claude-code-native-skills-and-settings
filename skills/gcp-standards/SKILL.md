@@ -26,7 +26,10 @@ aplicación: OAuth 2.1/OIDC, SAML, passkeys, SCIM — aquí Cloud IAM como contr
 **plataforma**), `cryptography-pki-standards` (elección de algoritmos y ciclo de vida de claves;
 aquí solo Cloud KMS y Secret Manager como servicios),
 `vulnerability-management-standards` (workflow de triaje y SLA; aquí solo Security Command Center
-como fuente de hallazgos), `appsec-standards` (seguridad del código de la aplicación),
+como fuente de hallazgos), `cloud-security-posture-standards` (**lo transversal a las tres nubes**:
+línea base multi-proyecto, permiso efectivo, caminos de ataque y la elección de CSPM/CNAPP;
+**aquí el servicio de GCP concreto y su configuración**),
+`appsec-standards` (seguridad del código de la aplicación),
 `observability-standards` (OTel y Prometheus vendor-neutral; aquí solo Cloud Observability y su
 coste), `sre-practice-standards` (SLO, error budget, on-call y postmortems — la práctica SRE es
 agnóstica aunque nazca en Google), `grc-compliance-standards` (marco normativo y evidencia de

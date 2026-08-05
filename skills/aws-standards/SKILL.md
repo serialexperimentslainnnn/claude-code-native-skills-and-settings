@@ -24,7 +24,10 @@ federación OIDC desde el runner), `identity-access-management-standards` (IdP d
 2.1/OIDC, SAML, passkeys, SCIM — aquí IAM/Identity Center como control de acceso a la **plataforma**),
 `cryptography-pki-standards` (elección de algoritmos y ciclo de vida de claves; aquí solo KMS como
 servicio), `vulnerability-management-standards` (workflow de triaje y SLA; aquí solo Security Hub /
-Inspector como fuente de hallazgos), `appsec-standards` (seguridad del código de la aplicación),
+Inspector como fuente de hallazgos), `cloud-security-posture-standards` (**lo transversal a las
+tres nubes**: línea base multi-cuenta, permiso efectivo, caminos de ataque y la elección de
+CSPM/CNAPP; **aquí el servicio de AWS concreto y su configuración**),
+`appsec-standards` (seguridad del código de la aplicación),
 `observability-standards` (OTel y Prometheus vendor-neutral; aquí solo CloudWatch y su coste),
 `sre-practice-standards` (SLO, on-call, postmortems), `grc-compliance-standards` (marco normativo y
 evidencia de auditoría), `networking-standards` (redes físicas, on-prem e híbridas; aquí VPC),

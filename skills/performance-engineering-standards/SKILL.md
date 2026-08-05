@@ -61,7 +61,9 @@ decisión de arquitectura con coste de coherencia**, §6.5), `networking-standar
 *retransmits*, captura; aquí solo situar la red en el árbol de sospechosos y entregarles el
 caso), `kubernetes-standards` (*requests*/*limits*, HPA, *throttling* de CPU por cgroup),
 `linux-administration-standards` y `linux-storage-standards` (el ajuste del sistema y del
-almacenamiento), `finops-standards` (**el coste como métrica y su presupuesto**; aquí el coste
+almacenamiento), `operating-systems-standards` (***"¿cómo se mide?" es de aquí; "¿qué mecanismo
+del SO produce ese número?" es suyo*** — planificador, gestión de memoria, coste real de una
+llamada al sistema, garantías de `fsync`), `finops-standards` (**el coste como métrica y su presupuesto**; aquí el coste
 solo aparece como argumento para dimensionar) y `microservices-architecture-standards` (el
 reparto de responsabilidades entre servicios; aquí el reparto del **presupuesto de latencia**
 entre ellos, §3.3), `refactoring-tech-debt-standards` (**Ola 6** — **optimizar no es refactorizar**: refactorizar

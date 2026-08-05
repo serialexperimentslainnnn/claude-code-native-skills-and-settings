@@ -60,6 +60,9 @@ prompt **no** es una de ellas y no se mitiga con las mismas técnicas),
 `identity-access-management-standards` (identidad del agente como principal, tokens de vida
 corta, elevación JIT), `secrets-management-standards` (custodia de las credenciales que usa),
 `container-runtime-security-standards` (sandbox de lo que el agente ejecuta),
+`rpa-workflow-automation-standards` (**un agente que pulsa botones es RPA**: hereda de allí la
+identidad propia del robot, la bóveda de credenciales, la cola de trabajo, la idempotencia ante
+fallo parcial y la parada — no se rediseña aquí),
 `firewall-policy-standards` (egress del agente: la pata de comunicación de la tríada letal),
 `kubernetes-standards`, `observability-standards` (los tres pilares y OpenTelemetry),
 `sre-practice-standards` (SLO, error budget, operación), `detection-engineering-standards`

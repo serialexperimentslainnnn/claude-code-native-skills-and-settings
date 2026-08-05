@@ -56,6 +56,11 @@ saliendo la versión antigua".
   CRDT y el motor de sincronización), `api-design-standards` (el contrato, la idempotencia y los
   ETags que hacen posible reintentar), `streaming-cdc-standards` (propagación de cambios).
   **Offline-first es un modelo de datos, no una caché** (§3): la caché es de aquí, el modelo es de allí.
+- `cross-platform-desktop-standards` — **el escritorio multiplataforma es suyo** (Electron, Tauri,
+  Avalonia, Qt: empaquetado, firma y notarización, actualización, integración con el sistema).
+  **Aquí la web instalable**; si la decisión termina en "hace falta una app de escritorio", el resto
+  es suyo. Arbitraje para Flutter, .NET MAUI y Compose Multiplatform: escritorio allí, tienda móvil
+  en `mobile-standards`.
 - `webgl-webgpu-standards` — canvas, GPU y presupuesto de fotograma. Una PWA puede contener un canvas
   WebGPU: son capas distintas y no se solapan.
 - `appsec-standards` (metodología y triaje; aquí los controles concretos del service worker),

@@ -35,7 +35,10 @@ passkeys del lado del IdP; aquí solo su uso desde el dispositivo y el almacenam
 Keychain/Keystore), `cryptography-pki-standards` (elección de algoritmos y certificate pinning como
 criterio; aquí su aplicación con las APIs de la plataforma), `cicd-standards` (la pipeline; la
 **firma y distribución** en App Store/Play sí es de esta skill), `observability-standards` (backend
-de telemetría; aquí crash reporting y métricas de cliente).
+de telemetría; aquí crash reporting y métricas de cliente), `cross-platform-desktop-standards`
+(**el escritorio multiplataforma es suyo**: empaquetado, firma y notarización, actualización e
+integración con el sistema. **Arbitraje para Flutter, .NET MAUI y Compose Multiplatform: el
+objetivo escritorio se decide allí, el objetivo móvil y su tienda, aquí**).
 
 **Regla cero**: detecta el proyecto real primero (versiones en `Package.swift`/
 `libs.versions.toml`, targets mínimos, arquitectura existente) y respeta sus convenciones;

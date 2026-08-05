@@ -62,7 +62,10 @@ contención durante un compromiso), `identity-access-management-standards` (iden
 y elevación JIT frente al acceso por IP), `onprem-standards` (paraguas de plataforma),
 `homelab-standards` (laboratorio propio: la frontera es el rigor exigido, no el tamaño),
 `bcdr-standards` (restauración del ruleset como parte de la recuperación),
-`offensive-security-standards` (validación ofensiva de la política, con alcance y autorización).
+`offensive-security-standards` (validación ofensiva de la política, con alcance y autorización),
+`ot-ics-security-standards` (**qué conducto puede existir entre zonas industriales lo decide ella**
+—zonas y conductos IEC 62443-3-2, DMZ de nivel 3.5, diodo de datos—; **aquí se escribe, se aprueba
+y se gobierna la regla que lo implementa**).
 
 **Ola 2, planificadas** — hasta que existan, esta skill es criterio provisional en su solapa:
 `vpn-standards` (**el túnel es suyo; la política que filtra el tráfico que sale del túnel es

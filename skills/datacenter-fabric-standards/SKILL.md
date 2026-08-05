@@ -31,7 +31,7 @@ de malla interna, no la política de Internet); `network-troubleshooting-standar
 reactivo** cuando la malla ya falla); `network-automation-standards` (**decide cómo se genera, se
 prueba y se aplica** esta configuración, y su telemetría); `high-speed-interconnect-standards`
 (**ya escrita**: **InfiniBand y RoCE como interconexión de cómputo son suyos**; aquí sólo la
-Ethernet que los transporta); `datacenter-facilities-standards` (**Ola 7, planificada**: **la planta
+Ethernet que los transporta); `datacenter-facilities-standards` (**la planta
 física es suya** — energía, refrigeración, racks, cableado); `kubernetes-standards` (**decide lo que va
 por encima**: CNI, Service, Ingress, NetworkPolicy, service mesh); `firewall-policy-standards`
 (**decide qué flujo se permite entre inquilinos y zonas**); `finops-standards` (coste por puerto,
@@ -39,8 +39,8 @@ por encima**: CNI, Service, Ingress, NetworkPolicy, service mesh); `firewall-pol
 `observability-standards`, `sre-practice-standards`, `secrets-management-standards`,
 `linux-hardening-standards`, `vulnerability-management-standards`,
 `identity-access-management-standards`, `offensive-security-standards` (**esta skill es defensiva**),
-`vpn-standards`, `dns-standards`, y `network-vendors-standards`, `telco-5g-standards` y
-`wan-legacy-standards` (**Ola 7, planificadas**).
+`vpn-standards`, `dns-standards`, `network-vendors-standards`, `telco-5g-standards` y
+`wan-legacy-standards`.
 
 **Principio rector**: **el centro de datos moderno se diseña como una malla enrutada, no como una red
 conmutada grande.** La capa 2 se reduce al mínimo y se transporta encapsulada sobre routing; el
@@ -267,7 +267,7 @@ documento de arquitectura.
    ingeniería, **no medidas verificadas**.
 8. **`high-speed-interconnect-standards` ya existe**: InfiniBand, RoCE v2, iWARP, el gestor de
    subred, el bloqueo mutuo por PFC visto desde el interconector y NVMe over Fabrics **son suyos**.
-   `datacenter-facilities-standards` sigue **planificada**: la planta física —energía, refrigeración,
-   cableado— continúa sin cubrir. No la improvises aquí.
+   `datacenter-facilities-standards` **también existe**: la planta física —energía, refrigeración,
+   cableado— es suya. No la improvises aquí.
 
 Si la web contradice este documento, **manda la web** y señala la discrepancia.

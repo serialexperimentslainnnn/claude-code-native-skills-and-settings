@@ -58,6 +58,9 @@ obligación de que la máquina local pueda reproducirla**: mismas versiones de r
 formateadores, mismos *hooks*. Un *lint* que pasa en local y falla en CI es un fallo de esta
 skill), `container-runtime-security-standards` y `podman-systemd-containers-standards` (el
 runtime de contenedores y su endurecimiento; aquí solo su uso como entorno de desarrollo),
+`endpoint-security-standards` (**el EDR de terceros y la postura del protector de cifrado en
+flota** —qué producto, qué se le exige y cómo se mide la cobertura— **son suyos**; aquí el
+cifrado y las claves de esta máquina como decisión de quien la usa),
 `ai-agent-workflow-standards` (**recíproco ya declarado desde su lado**: **el proceso de trabajo
 con agentes de código es suyo** — qué se le pide, cómo se revisa su salida, cómo se integra en
 el flujo, la inyección indirecta de instrucciones, la rendición de cuentas del diff.

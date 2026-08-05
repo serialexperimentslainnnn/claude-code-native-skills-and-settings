@@ -69,7 +69,10 @@ transversal de retención, inmutabilidad y verificación es suyo y este document
 `linux-storage-standards` (LVM y LVM-thin, multipath, iniciador iSCSI, NVMe, filesystems y LUKS
 **por debajo** del storage de PVE: `storage.cfg` es de aquí, `lvs`/`multipath -ll`/`iscsiadm` son
 suyos), `object-storage-standards` (**Ola 2, planificada**: el bucket S3 que respalda un
-datastore de PBS), `linux-administration-standards` (el SO Debian del nodo: systemd, journald,
+datastore de PBS), `ceph-standards` (**todo lo de Ceph que `pveceph` no expone**: mapa CRUSH y
+dominios de fallo, dimensionado de daemons, PGs, BlueStore, *scrubbing* y actualización entre
+releases con nombre — aquí solo el Ceph hiperconvergido tal y como PVE lo integra),
+`linux-administration-standards` (el SO Debian del nodo: systemd, journald,
 diagnóstico), `linux-hardening-standards` (baseline CIS del nodo, `sshd_config`, auditd),
 `selinux-standards` (MAC; PVE usa **AppArmor** para LXC — los perfiles son de allí),
 `networking-standards` (**diseño** de red: VLAN, routing, BGP; aquí solo la configuración del nodo y

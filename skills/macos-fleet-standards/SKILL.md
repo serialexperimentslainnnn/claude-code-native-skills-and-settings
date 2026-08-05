@@ -40,7 +40,9 @@ Las tres afirmaciones que ordenan el resto:
   equipo** (Platform SSO, §5).
 - `grc-compliance-standards` (**suyos marco de control y evidencia**; aquí la línea base técnica que
   la produce), `detection-engineering-standards` (**suyas la detección en el endpoint y sus
-  reglas**), `endpoint-security-standards` (**Ola 7**: suyo el producto de protección del puesto),
+  reglas**), `endpoint-security-standards` (**suyo el producto de protección del puesto**: el EDR
+  de terceros, su exigencia y su medida, y **la postura del protector de cifrado en flota** —qué
+  se exige y cómo se mide; aquí el perfil MDM que lo aplica y custodia la clave de FileVault—),
   `secrets-management-standards`, `vulnerability-management-standards`.
 - `onprem-standards` (**paraguas de plataforma con la tabla de enrutado**), `homelab-standards`,
   `linux-administration-standards`, `rhel-fedora-standards`, `linux-hardening-standards`,
@@ -48,7 +50,7 @@ Las tres afirmaciones que ordenan el resto:
   `firewall-policy-standards`, `networking-standards`, `iac-standards`,
   `os-provisioning-standards`, `server-hardware-standards`, `backup-recovery-standards`,
   `bcdr-standards`, `ha-clustering-standards`, `legacy-modernization-standards`,
-  `migration-projects-standards` (**Ola 7 las planificadas**).
+  `migration-projects-standards`.
 - `aix-solaris-hpux-standards` y `bsd-systems-standards`: **macOS no es una flota de servidores** y
   **BSD no es Unix propietario**. El apellido "Unix" junta a las tres y no comparten casi nada
   operativo: aquí el objeto gestionado es un **puesto de trabajo con dueño humano**.

@@ -38,7 +38,7 @@ de dispositivo); `finops-standards` (tránsito y puertos). También frontera: `d
 `sre-practice-standards`, `linux-hardening-standards`, `vulnerability-management-standards`,
 `offensive-security-standards` (**esta skill es defensiva**), y `network-vendors-standards`,
 `wan-legacy-standards`, `telco-5g-standards`, `high-speed-interconnect-standards` y
-`datacenter-facilities-standards` (**Ola 7, planificadas**).
+`datacenter-facilities-standards`.
 
 **Principio rector**: **una decisión de capa 2 se paga durante diez años.** Diseña para que **la
 convergencia no dependa de STP** y para que **ningún prefijo salga sin autorización explícita**.

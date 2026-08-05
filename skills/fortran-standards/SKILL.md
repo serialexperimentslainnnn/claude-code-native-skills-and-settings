@@ -26,7 +26,7 @@ real, disciplina de lenguaje (`implicit none`, módulos, `allocatable`, `kind`),
 C, paralelismo (`do concurrent`, coarrays, OpenMP, OpenACC, MPI), flags de aviso y comprobación,
 build (CMake, fpm) y la decisión de reescribir o no.
 
-**No aplica**: ver `hpc` (**Ola 7, planificada**: el clúster y su explotación — Slurm, `sbatch`,
+**No aplica**: ver `hpc-standards` (el clúster y su explotación — Slurm, `sbatch`,
 colas, particiones, planificación, contabilidad, sistemas de ficheros paralelos, dimensionado del
 trabajo y **la ejecución y escalado de MPI a nivel de sitio**; **aquí solo el código Fortran y la
 elección de su modelo de paralelismo**), `gpu-computing-standards` (**la GPU como recurso**: driver,
@@ -244,7 +244,7 @@ Antes de fijar nada en un proyecto real, comprobar por web:
 7. **Progreso de F202Y/"Fortran 2028"** en WG5/J3 (genéricos, preprocesador estandarizado): para no
    diseñar contra features que aún no existen.
 8. **CVEs** de MPI, HDF5, NetCDF, BLAS/LAPACK y del compilador, y licencias de las librerías que
-   enlaces. **Estado de `hpc` (Ola 7, planificada)**: cuando exista, **el criterio de clúster, Slurm,
-   colas y escalado es suyo**.
+   enlaces. **`hpc-standards` ya existe**: **el criterio de clúster, Slurm, colas y escalado es
+   suyo**.
 
 Si la web contradice este documento, **manda la web** y señala la discrepancia.

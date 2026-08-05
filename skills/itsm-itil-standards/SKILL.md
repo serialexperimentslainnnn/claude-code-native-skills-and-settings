@@ -64,6 +64,9 @@ Corolario operativo: **un proceso sin dueño nombrado no existe** — existe la 
   vista de arquitectura (ciclo de vida, capacidad de negocio, *fit*), la CMDB es la vista operativa
   (qué está desplegado y de qué depende). **Un mismo objeto, dos vistas: si se mantienen dos fuentes
   de verdad sin dueño único, ambas se degradan** — nombrar cuál es autoritativa por atributo.
+- `cmdb-inventory-standards`: **el modelo de datos del CI, su identificador estable, el
+  descubrimiento, la reconciliación entre fuentes y la frescura del registro son suyos**. Aquí el
+  proceso que lo consume y la decisión de servicio que se toma con él.
 - `project-management-standards`: la **entrega** del servicio nuevo o cambiado. Recíproca:
   **el proyecto entrega, el servicio opera**; el traspaso es un artefacto con criterios de aceptación
   (§3) y **un proyecto que entrega algo que nadie puede operar no ha terminado**.

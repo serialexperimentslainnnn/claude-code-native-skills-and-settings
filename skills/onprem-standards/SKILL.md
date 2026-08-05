@@ -19,11 +19,9 @@ versión, flag o parámetro concreto, **verifica en la web antes de fijarlo** (s
 
 - **Diseño de plataforma completa**: qué capas existen, quién es dueño de cada una, cómo encajan
   cómputo, almacenamiento, red, respaldo y observabilidad en un CPD o sala propia.
-- **Hardware y físico**: dimensionado y capacidad, rack, alimentación redundante, UPS,
-  refrigeración, ciclo de vida y garantía del hardware.
-- **Plano de gestión out-of-band**: BMC/IPMI/iDRAC/iLO, consola serie, KVM sobre IP.
 - **Elección de plataforma de virtualización** y salida de VMware; topología de cluster y quórum.
-- **Convenciones de flota**: inventario como código, naming, IPAM, reconstruibilidad desde cero.
+- **Coherencia de flota**: que naming, IPAM y reconstruibilidad desde cero existan y sean los
+  mismos en todas las capas — el *cómo* de cada una lo deciden sus dueñas (§1.2).
 - **Cadencia de parcheo y de fin de vida** de toda la flota.
 - **Enrutado**: ante una tarea de infra, decidir qué skill profunda aplica (§1.2).
 
@@ -69,6 +67,15 @@ versión, flag o parámetro concreto, **verifica en la web antes de fijarlo** (s
 | Túneles y acceso remoto: WireGuard, IPsec, mallas | `vpn-standards` | existe |
 | "No conecta / va lento": diagnóstico reactivo de red | `network-troubleshooting-standards` | existe |
 | S3 y almacenamiento de objetos, Object Lock, ciclo de vida | `object-storage-standards` | existe |
+| Rack, energía, UPS, grupo electrógeno, refrigeración, incendios, acceso físico | `datacenter-facilities-standards` | existe |
+| Servidor físico: dimensionado, BMC/Redfish, firmware, garantía, discos, renovación | `server-hardware-standards` | existe |
+| Instalación desatendida: PXE/UEFI HTTP boot, Kickstart, cloud-init, Ignition, imagen dorada | `os-provisioning-standards` | existe |
+| Inventario y CMDB: NetBox/GLPI/Snipe-IT, descubrimiento, reconciliación, ciclo de vida del activo | `cmdb-inventory-standards` | existe |
+| Clúster de cálculo: Slurm, MPI, colas, filesystem paralelo | `hpc-standards` | existe |
+| Flota de nodos remotos: actualización A/B, operación desconectada, cero-toque | `edge-computing-standards` | existe |
+| Compartición de ficheros: Samba/SMB, NFS, ACLs, shadow copies | `file-servers-standards` | existe |
+| Servidor web y de aplicaciones: nginx/Apache/IIS, Tomcat, WSGI | `web-app-servers-standards` | existe |
+| Correo: MTA, buzones, entrega y recepción | `mail-servers-standards` | existe |
 
 **Todas las capas tienen ya dueño.** Este documento no contiene criterio provisional de ninguna:
 si la tarea cae en una fila de la tabla, manda esa skill. Lo que queda aquí es lo que **no** cabe

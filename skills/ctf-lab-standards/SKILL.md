@@ -51,7 +51,10 @@ desechable; allí para prestar servicio y por eso se le hace backup), `appsec-st
 `networking-standards` (diseño de red real, VLANs y firewalling de producción),
 `kubernetes-standards`, `bash-linux-scripting-standards` (calidad del tooling propio),
 `grc-compliance-standards`, `cryptography-pki-standards`,
-`identity-access-management-standards`, las skills de nube y de lenguaje. Planificadas:
+`identity-access-management-standards`, `air-gapped-standards` (**suyos el registro/espejo
+interno y el aislamiento de red como disciplina**; **aquí la dirección de la amenaza es la
+inversa**: allí el aislamiento protege al recinto del mundo, aquí protege al mundo del
+laboratorio), las skills de nube y de lenguaje. Planificadas:
 `incident-response-forensics-standards` (**Ola 1**: forense e IR reales — aquí solo la
 categoría forense de un CTF, que se le parece poco),
 `detection-engineering-standards` (**Ola 1**), `linux-hardening-standards` (**Ola 1**),

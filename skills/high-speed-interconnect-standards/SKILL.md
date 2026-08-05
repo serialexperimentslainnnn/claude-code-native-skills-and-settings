@@ -27,14 +27,14 @@ monitorización** (aquí sólo **qué exige el interconector y cómo se valida e
 `routing-switching-standards` posee el campus, la política BGP y la seguridad del plano de control, y
 `network-automation-standards` la configuración como código. Hacia fuera: **la GPU y su cómputo son
 de `gpu-computing-standards`**, **el planificador de trabajos y el dimensionado del clúster, de
-`hpc-standards` (Ola 7, planificada)**, el sistema de ficheros y el bloque local de
+`hpc-standards`**, el sistema de ficheros y el bloque local de
 `linux-storage-standards`, el objeto de `object-storage-standards`, la metodología de medir y el
 modelo de carga de `performance-engineering-standards`, métricas y alertas de
 `observability-standards`, el SLO de `sre-practice-standards`, el método reactivo de
 `network-troubleshooting-standards`, el filtrado de `firewall-policy-standards`, la identidad de
 `identity-access-management-standards`, la malla de `microservices-architecture-standards`, la caché
 de `caching-cdn-standards`, los contenedores de `kubernetes-standards`, y el paraguas de
-`onprem-standards` (con `datacenter-facilities-standards`, **Ola 7**, dueña de la planta física).
+`onprem-standards` (con `datacenter-facilities-standards`, dueña de la planta física).
 Entre las tres hermanas de esta tanda: `wireless-standards` es la **red de acceso**,
 `load-balancing-standards` la **red de servicio** y ésta la **red de cómputo**; **el error del
 dominio es aplicarles el mismo criterio**.
@@ -138,7 +138,7 @@ plano de gestión y otro personal. Tratarla como "una VLAN más" es el error car
 - **verbs / rdma-core** es la base; casi nadie debería programar ahí directamente. **UCX** es la capa
   de transporte que usan MPI y otras bibliotecas: si algo va mal en MPI, el diagnóstico suele estar en
   UCX —transporte seleccionado, dispositivo elegido, memoria registrada—, no en el conmutador. **MPI**
-  (Open MPI, MPICH) y el planificador son de `hpc-standards` (**Ola 7, planificada**).
+  (Open MPI, MPICH) y el planificador son de `hpc-standards`.
 - **Colectivas de GPU (NCCL/RCCL)**: el entrenamiento distribuido depende de que elijan el transporte
   correcto y de que **GPUDirect RDMA** esté realmente activo (tarjeta y GPU en un dominio PCIe/NUMA
   razonable). **Verifícalo, no lo supongas**: la degradación silenciosa habitual es caer a un camino
@@ -268,7 +268,5 @@ entrenamiento. **Es análisis de mercado, no dato técnico**: no lo uses como ar
    `datacenter-fabric-standards` también constan como no verificados).
 5. **Cifras de latencia de NVMe/TCP frente a NVMe/RoCE**: las fuentes dan rangos, no medidas
    reproducibles. Mide en tu hardware antes de justificar RDMA con ellas.
-6. **`hpc-standards` y `datacenter-facilities-standards` son Ola 7, planificadas**: hasta que existan,
-   el planificador y la planta física quedan **sin cubrir por el catálogo**. No los improvises aquí.
 
 Si la web contradice este documento, **manda la web** y señala la discrepancia.

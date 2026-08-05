@@ -92,6 +92,9 @@ Kafka; **aquí el mecanismo de cluster que promueve o conmuta** — ver §5.2, d
 que para PostgreSQL la respuesta por defecto **no** es Pacemaker), `linux-storage-standards`
 (LVM, multipath, iSCSI, filesystems locales y LUKS **por debajo** del recurso de cluster),
 `zfs-standards` (el pool; ZFS **no es** un filesystem de cluster y no se monta en dos nodos),
+`ceph-standards` (**confusión frecuente: el quórum de monitores de Ceph no es el quórum de
+Corosync, y Ceph no usa STONITH** — su alta disponibilidad la da RADOS por réplica y mapa CRUSH,
+no un gestor de recursos; el dimensionado de MON/OSD y sus dominios de fallo son suyos),
 `linux-administration-standards` (**systemd**: un recurso gestionado por el cluster **no se
 toca con `systemctl`** — ya está prohibido allí y aquí se confirma), `networking-standards`
 (diseño de la red, VLAN, VRRP a nivel de red, MTU; aquí el uso de la red por el cluster y sus
