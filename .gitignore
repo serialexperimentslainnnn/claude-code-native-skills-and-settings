@@ -1,0 +1,7 @@
+# Respaldos que genera install.sh
+backup-*/
+
+# Ruido de entorno
+.idea/
+.DS_Store
+*.swp
