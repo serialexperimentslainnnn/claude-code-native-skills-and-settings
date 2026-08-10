@@ -30,11 +30,11 @@ que no lo supere, se elimina.
 Corolario: **la incertidumbre no se elimina declarando una fecha; se acota y se declara.**
 
 **No aplica**:
-- `product-discovery-standards` (**Ola 6, planificada**): **qué se construye y por qué** — problema,
+- `product-discovery-standards`: **qué se construye y por qué** — problema,
   usuario, hipótesis, validación, priorización por valor y decisión de matar una idea. Aquí, **cómo se
   entrega lo ya decidido**. Frontera dura: si la discusión es *"¿merece la pena esto?"*, no es esta
   skill; si es *"¿cuándo y con qué riesgo estará?"*, sí.
-- `tech-leadership-standards` (**Ola 6, planificada**): decisiones técnicas, diseño de equipo,
+- `tech-leadership-standards`: decisiones técnicas, diseño de equipo,
   desarrollo profesional, *career ladder* y la conversación individual. Aquí no se gestionan personas,
   se gestiona trabajo.
 - `sre-practice-standards`: **las métricas DORA y el trabajo no planificado son suyos**, igual que SLO,
@@ -44,28 +44,34 @@ Corolario: **la incertidumbre no se elimina declarando una fecha; se acota y se 
   **el proyecto entrega, el servicio opera.** El traspaso es un artefacto con criterios de aceptación
   (lista canónica en su §3) y **un proyecto que entrega algo que nadie puede operar no ha terminado**:
   sin dueño de servicio, runbook, alerta y restauración probada, el proyecto sigue abierto.
-- `testing-qa-standards` y `code-review-standards` (ya escritas): la ***Definition of Done* técnica
+- `erp-sap-standards` y las skills de vertical de paquete: **cuando el proyecto es implantar
+  software de terceros, tres de las cinco variables de §2 dejan de ser negociables aquí** — la
+  fecha la puede fijar un fin de mantenimiento, el alcance lo acota lo que el paquete hace de
+  serie, y el coste depende de una métrica de licencia que cambia con decisiones de arquitectura.
+  **Eso no es una restricción externa cualquiera: es el marco del proyecto**, y se lee en su skill
+  antes de comprometer nada aquí.
+- `testing-qa-standards` y `code-review-standards`: la ***Definition of Done* técnica
   vive allí** — cobertura, gates, criterios de merge. Aquí la DoD de **entrega** (aceptado por el
   interesado, desplegado, operable, comunicado). No se duplican: la DoD de gestión **incluye por
   referencia** la técnica, no la reescribe.
 - `git-workflow-standards`: tamaño de PR, ramas, versionado y release. La cadencia de integración es
   suya; aquí sus consecuencias sobre el flujo.
 - `cicd-standards`: pipeline y automatización de despliegue.
-- `enterprise-architecture-standards` (**Ola 6, planificada**): hoja de ruta de capacidades, gobierno
+- `enterprise-architecture-standards`: hoja de ruta de capacidades, gobierno
   de arquitectura y la cartera de aplicaciones. La cartera de **proyectos** se cruza con ella: qué
   proyecto toca qué capacidad.
-- `finops-standards` (**Ola 6, en curso**): **el coste como restricción medida** — presupuesto cloud,
+- `finops-standards`: **el coste como restricción medida** — presupuesto cloud,
   unidad económica, previsión de gasto. Aquí el coste es una de las variables del compromiso; su
   modelado y control corresponden allí.
 - `grc-compliance-standards`: obligaciones regulatorias que condicionan el alcance y las evidencias
   formales de aprobación exigidas por un marco.
-- `refactoring-tech-debt-standards` (**Ola 6**): **qué deuda existe, cuánto cuesta su interés y qué
+- `refactoring-tech-debt-standards`: **qué deuda existe, cuánto cuesta su interés y qué
   técnica la paga es suyo**; **cómo se financia ese trabajo dentro de la entrega es de aquí** —
   porcentaje fijo de capacidad, oportunismo o proyecto dedicado, y la negociación con las partes
   interesadas. Aviso que ambas comparten y que esta skill debe sostener ante presión: **el proyecto
   dedicado de "limpieza" suele fracasar** porque compite con funcionalidad y pierde; la asignación
   sostenida de capacidad es lo que sí funciona.
-- `software-architecture-patterns-standards` (**Ola 6**): el criterio técnico de estilo, límites y
+- `software-architecture-patterns-standards`: el criterio técnico de estilo, límites y
   decisiones registradas es suyo; aquí el plan, el riesgo y el compromiso de fechas que rodean esa
   decisión.
 
@@ -147,7 +153,12 @@ alguna respuesta cae en la columna derecha, el enfoque predictivo puro está des
 | ¿Se conocen los requisitos con detalle suficiente para construir? | Sí, y están estables | No, o se aprenderán al usar el producto |
 | ¿Cuánto cuesta cambiar de opinión tarde? | Poco (obra sobre plano, migración con destino fijo) | Mucho (producto con usuarios, integración desconocida) |
 | ¿Hay obligación contractual o regulatoria de alcance y fecha fijos? | Sí | No |
-| ¿Se puede entregar valor en trozos usables? | No (indivisible: una migración, una certificación) | Sí |
+| ¿Se puede entregar valor en trozos usables? | No (una certificación; **el corte final** de una migración) | Sí |
+
+> **Matiz que `migration-projects-standards` obliga a hacer**: *migración* no es sinónimo de
+> *indivisible*. Lo indivisible es **el corte**, y su default es **por olas**, con la primera
+> deliberadamente pequeña y reversible; el corte único solo con sus condiciones verificadas. Tratar
+> el proyecto entero como un bloque es lo que produce el *big bang* que ambas skills prohíben.
 
 **Híbrido honesto**: el proyecto tiene **fases con naturaleza distinta** y cada una usa su enfoque, con
 la frontera declarada — p. ej. hardware y obra civil predictivos con fecha de entrega, software encima

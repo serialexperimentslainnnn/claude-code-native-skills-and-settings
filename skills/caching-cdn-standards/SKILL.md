@@ -35,12 +35,13 @@ lento y por qué (§6.4).
 Foundation) como motor de caché por defecto** frente a Redis 8+ tri-licenciado, y el criterio
 básico de TTL y cache-aside. **Esta skill profundiza y no la contradice**: allí se elige el
 motor y se declara la licencia, aquí se decide la política de desalojo, la estrategia de
-invalidación y el comportamiento ante fallo), `networking-standards` (**el proxy inverso y el
-balanceador como pieza de red son suyos**: HAProxy, nginx, Traefik y Caddy — su despliegue,
-versiones, TLS, health checks, topología y hardening. **Aquí solo su rol como caché de
+invalidación y el comportamiento ante fallo), `load-balancing-standards` (**el proxy inverso y el
+balanceador son suyos**: HAProxy, nginx, Traefik y Caddy — elección, comprobaciones de salud,
+drenaje, terminación TLS, topología y hardening; `networking-standards` es la troncal y ya les
+delega esa profundidad. **Aquí solo su rol como caché de
 respuestas HTTP**: `proxy_cache`, clave de caché, coherencia con el borde y con el origen. La
-frontera es limpia: *nginx como servidor y proxy → `networking-standards`; nginx como caché →
-esta skill*), `api-design-standards` (**el contrato HTTP es suyo**: `ETag` obligatorio por
+frontera es limpia: *nginx como proxy y balanceador → `load-balancing-standards`; nginx como
+caché → esta skill*), `api-design-standards` (**el contrato HTTP es suyo**: `ETag` obligatorio por
 recurso, `If-Match`/`If-None-Match`, `412`/`428`, `304`, y la exigencia de declarar
 `Cache-Control` y `Vary` correctos en toda respuesta. **Aquí el comportamiento de la
 infraestructura que consume esas cabeceras**: qué hace el borde con ellas, `s-maxage` vs
@@ -67,14 +68,17 @@ existir *porque la base de datos no aguanta*. Si la causa es un N+1, una consult
 una PK mal elegida, **la respuesta correcta es arreglar la consulta, no añadir una caché** —
 §6.4), `rag-standards`/`llm-app-engineering-standards` (caché semántica de prompts y
 respuestas de LLM: dominio propio, con su propio criterio de acierto), `lua-standards`
-(**Ola 5**: **la plataforma es de aquí** —nginx/OpenResty y su configuración, upstreams, TLS,
+(**la plataforma es de aquí** —nginx/OpenResty y su configuración, upstreams, TLS,
 política de caché y purga; Redis/Valkey y su memoria, persistencia y expulsión—; **el Lua que corre
 dentro es suyo**: los scripts `EVAL`/`EVALSHA` y su determinismo, y el código de las fases
 `access_by_lua`/`content_by_lua` con su prohibición dura de llamadas bloqueantes en el ciclo de
-eventos), `web-performance-standards` (**Ola 6**: **la política de caché, el CDN, las cabeceras y
+eventos), `streaming-multimedia-standards` (**el pipeline de vídeo/audio es suyo** —empaquetado
+HLS/DASH, duración de segmento, escalera de bitrates, DRM—; **aquí la CDN que sirve esos
+segmentos**: un segmento HLS es un objeto HTTP cacheable más, y su TTL, sus cabeceras y su coste
+de egreso se deciden aquí), `web-performance-standards` (**la política de caché, el CDN, las cabeceras y
 la purga son de aquí**; **el efecto medido en el cliente** —LCP, TTFB al percentil 75, datos de
 campo— **es suyo**. Una caché que mejora el *hit ratio* y no mueve la métrica de usuario no ha
-resuelto nada), `pwa-standards` (**Ola 6** — **aviso operativo, no solo frontera**: la caché de un
+resuelto nada), `pwa-standards` (**aviso operativo, no solo frontera**: la caché de un
 *service worker* es **otra capa, por delante de todo lo que decide esta skill**, y puede **anular
 la política de caché del CDN y del origen**. Un despliegue que no se ve en el navegador suele ser
 un `sw.js` sirviendo HTML viejo, no un fallo de purga. El criterio de esa capa —qué se precachea,

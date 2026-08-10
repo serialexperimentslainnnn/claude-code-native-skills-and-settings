@@ -37,17 +37,25 @@ una clave destruida y un campo que nunca se pidió, sí.
   la **ingeniería y el control técnico verificable**; allí, el sistema de gestión que lo certifica.
   Regla de arbitraje: si la pregunta se responde con un documento firmado, es de `grc`; si se
   responde ejecutando una consulta, un test o un despliegue, es de esta skill.
+- `data-governance-quality-standards`: **el catálogo, la propiedad del dato y la escala de
+  clasificación corporativa son suyos**, y clasificar un activo es un acto de negocio que firma su
+  dueño. Aquí, **el gate técnico por campo** —sin `clase`, `propósito` y `retención` no se
+  mergea—. **Regla de precedencia, porque los dos gates conviven**: el suyo decide *quién* clasifica
+  y con qué escala, el de aquí decide *que no entre código sin la etiqueta puesta*. Si el dueño no
+  ha clasificado, el campo no pasa: el gate técnico no inventa la clase, la exige.
 - `data-platform-standards`: la traducción a **el almacén concreto** — retención por particiones y
   `retention.ms`, TTL de caché, cifrado en reposo del motor, tombstones de Kafka, RLS. Aquí, la
   **obligación, el alcance completo del borrado y su verificación extremo a extremo** (que incluye
   almacenes que esa skill no cubre: índices de búsqueda, colas, data lake, backups y terceros).
-- `bcdr-standards` (**Ola 1**): la política de **retención e inmutabilidad del respaldo** y el plan
-  de recuperación. Frontera declarada en ambos lados: la obligación de suprimir y su implementación
-  técnica son de esta skill; la ventana de retención del backup, su inmutabilidad y el orden de
-  recuperación son de `bcdr`. El conflicto entre ambas (§3.5) se resuelve por diseño, no discutiendo.
+- `backup-recovery-standards`: **la ventana de retención del repositorio, su inmutabilidad y el
+  esquema GFS son suyos**; aquí la obligación de suprimir y su implementación técnica.
+- `bcdr-standards`: **el RTO/RPO y el orden de recuperación** derivados del negocio, y el plan de
+  continuidad. Frontera declarada en ambos lados: la obligación de suprimir es de esta skill; el
+  objetivo de recuperación, de `bcdr`; **la retención concreta de la copia, de
+  `backup-recovery-standards`**. El conflicto entre ambas (§3.5) se resuelve por diseño, no discutiendo.
 - `cryptography-pki-standards`: elección de algoritmos, gestión y custodia de claves, KMS/HSM. Aquí
   solo el **patrón** (clave por sujeto) y la exigencia de que la destrucción sea real y auditable.
-- `secrets-management-standards` (**Ola 1, planificada**): secretos de aplicación; un dato personal
+- `secrets-management-standards`: secretos de aplicación; un dato personal
   no es un secreto y no se gestiona igual.
 - `identity-access-management-standards`: autenticación y autorización de quien accede al dato,
   incluida la verificación de identidad del solicitante de un derecho.
@@ -60,11 +68,11 @@ una clave destruida y un campo que nunca se pidió, sí.
   que ingeniería debe poder responder en horas (§5). El criterio de notificar es de legal/DPO.
 - `api-design-standards`, las skills de lenguaje y `kubernetes-standards`/`cicd-standards`: el
   contrato, el código y la tubería por los que circula el dato.
-- `ai-governance-standards` (**Ola 3, planificada**): gobierno del sistema de IA — riesgo del
+- `ai-governance-standards`: gobierno del sistema de IA — riesgo del
   modelo, evaluación, documentación técnica y obligaciones de proveedor bajo el AI Act. Aquí, la
   **privacidad del dato que lo alimenta**: base de licitud del entrenamiento, memorización y
   extracción, y derechos sobre un modelo ya entrenado.
-- `technical-hiring-standards` (**Ola 6**): el diseño del proceso de selección, su rúbrica y su
+- `technical-hiring-standards`: el diseño del proceso de selección, su rúbrica y su
   validez son suyos; **los datos personales de las candidaturas son de aquí** — base de licitud,
   minimización, plazo de conservación y **borrado efectivo en todas las copias, incluida la del
   sistema de seguimiento y la de los correos de los entrevistadores**. Precondición dura que ambas
@@ -323,7 +331,10 @@ sesión grabada de front-end.
 - **Retención del log = retención del dato que contiene.** Un log con PII a 400 días es un almacén de
   PII a 400 días, y entra en el alcance de la supresión (§3.5).
 - Grabación de sesión y mapas de calor: consentimiento previo, enmascarado de campos por defecto y
-  exclusión total de formularios sensibles. Detalle del pipeline en `observability-standards`.
+  exclusión total de formularios sensibles. **Es analítica de producto, no telemetría de
+  operación**: `observability-standards` no la cubre y no debe usarse como coartada para meterla
+  en el mismo pipeline. Su justificación de negocio es de `analytics-bi-standards`; el
+  tratamiento y la base de licitud, de aquí.
 
 ### Transferencias internacionales (estado ago-2026, **verifícalo**)
 

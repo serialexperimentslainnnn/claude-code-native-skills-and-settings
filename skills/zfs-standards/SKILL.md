@@ -31,7 +31,7 @@ no lleva LVM ni mdadm debajo**, ZFS es a la vez gestor de volúmenes y filesyste
 discos crudos), `onprem-standards` (paraguas de plataforma: su §2 fija el criterio de filesystem
 —ZFS con mirrors o RAIDZ2— y esta skill lo desarrolla sin contradecirlo; su §1.3 fija los
 invariantes), `bcdr-standards` (RTO/RPO, orden de recuperación, ejercicios de DR: **un snapshot no
-es un backup**, ver §3.5), `backup-recovery-standards` (**Ola 2, planificada** — la **estrategia y
+es un backup**, ver §3.5), `backup-recovery-standards` (la **estrategia y
 mecánica del respaldo**: herramienta, repositorio, retención GFS, inmutabilidad, catálogo,
 procedimiento de restore; aquí solo el snapshot y `zfs send` como **mecanismo de bajo nivel**, no
 como plan de copia), `linux-administration-standards` (día a día del SO:
@@ -44,10 +44,10 @@ del dataset donde vive PostgreSQL es **de esta skill**; el `shared_buffers`, el 
 los índices y el PITR son **suyos** — ver §3.2), `homelab-standards` (btrfs y snapshots en
 laboratorio, criterio de coste, ruido y consumo: allí ZFS compite con btrfs por RAM y por
 simplicidad, y la decisión es económica), `proxmox-ve-standards` y `libvirt-kvm-standards`
-(**Ola 2, planificadas**: almacenamiento de VMs — el zvol y su `volblocksize` son de aquí, la
+(almacenamiento de VMs — el zvol y su `volblocksize` son de aquí, la
 definición del disco de la VM y el modelo de caché del hipervisor son suyos),
-`ha-clustering-standards` (**Ola 2, planificada**: almacenamiento compartido y fencing — **ZFS no
-es un filesystem de cluster**, ver §7), `object-storage-standards` (**Ola 2, planificada**: S3),
+`ha-clustering-standards` (almacenamiento compartido y fencing — **ZFS no
+es un filesystem de cluster**, ver §7), `object-storage-standards` (S3),
 `file-servers-standards` (**el snapshot se crea aquí y se publica allí**: las *Previous Versions*
 que ve un cliente Windows salen de un snapshot ZFS expuesto por SMB con `shadow_copy2`, cuya
 configuración es suya), `kubernetes-standards` (CSI, PV/PVC), `observability-standards` (diseño de métricas y alertas; aquí
@@ -218,7 +218,7 @@ expresen como propiedades ZFS; el criterio de rendimiento y layout es de aquí).
 - **Un snapshot NO es un backup.** Vive en el mismo pool: un fallo de vdev, un `zpool destroy`, un
   ransomware con root o un incendio se lo llevan con el original. El snapshot es *undo* barato y
   punto de consistencia para la copia. **La estrategia de respaldo —qué se copia, adónde, con qué
-  retención, inmutabilidad y verificación de restore— es de `backup-recovery-standards` (Ola 2), y
+  retención, inmutabilidad y verificación de restore— es de `backup-recovery-standards`, y
   el RTO/RPO y el orden de recuperación de `bcdr-standards`.** Esta skill solo fija el mecanismo.
 - Snapshots recursivos y atómicos por dataset (`zfs snapshot -r`); nomenclatura con timestamp
   ordenable (`autosnap_2026-08-02_00:00:00_daily`).

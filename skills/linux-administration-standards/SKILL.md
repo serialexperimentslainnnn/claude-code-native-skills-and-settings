@@ -74,26 +74,26 @@ Linux; el ticket Kerberos que no valida por deriva de reloj también es de aquí
 `incident-management-standards` (la declaración del incidente, el IC y la comunicación mientras tú
 diagnosticas), `incident-response-forensics-standards` (**si el host puede estar comprometido, para
 y cede**: el orden de volatilidad manda sobre el diagnóstico de rendimiento; reiniciar "a ver si se
-arregla" destruye evidencia), `bcdr-standards`, `grc-compliance-standards`, `perl-standards` (**Ola 5**: el Perl del sistema es
+arregla" destruye evidencia), `bcdr-standards`, `grc-compliance-standards`, `perl-standards` (el Perl del sistema es
 parte de la distribución y **no se toca**; el Perl de aplicación y su gestión de dependencias son
-suyos), `lua-standards` (**Ola 5**: la configuración de nginx es de red y plataforma; el Lua
+suyos), `lua-standards` (la configuración de nginx es de red y plataforma; el Lua
 embebido en él, suyo), `operating-systems-standards` (**el pomo de systemd es de aquí, la
 semántica del kernel que hay detrás es suya**: qué hace de verdad `memory.high` frente a
 `memory.max`, cuándo entra el OOM killer y con qué criterio; aquí cómo se declara en la unidad y
 cómo se diagnostica).
 
-Planificadas — hasta que existan, esta skill es criterio provisional en su solapa:
-`linux-storage-standards` (**Ola 2**: LVM, multipath, NVMe, diseño y tuning de filesystems,
+Además:
+`linux-storage-standards` (LVM, multipath, NVMe, diseño y tuning de filesystems,
 `fstrim`, RAID software — **aquí solo el montaje del día a día**: `fstab` vs. unidades `.mount`,
 `systemd-mount`, autofs, y "el disco está lleno"; **allí** cómo se dimensiona y se afina),
-`backup-recovery-standards` (**Ola 2**: mecánica de copia y restore),
-`podman-systemd-containers-standards` (**Ola 2**: Podman y Quadlet — **frontera precisa**: las
+`backup-recovery-standards` (mecánica de copia y restore),
+`podman-systemd-containers-standards` (Podman y Quadlet — **frontera precisa**: las
 unidades `.container`/`.pod`/`.volume`/`.image` de Quadlet y su generador son suyas; el
 comportamiento de systemd que las ejecuta —`Type=notify`, orden, `Restart=`, cgroup, journal— es de
-aquí), `zfs-standards`, `ha-clustering-standards` (**Ola 2**: Pacemaker/Corosync — un recurso
+aquí), `zfs-standards`, `ha-clustering-standards` (Pacemaker/Corosync — un recurso
 gestionado por el cluster **no se toca con `systemctl`**, §7), `dns-standards`,
 `firewall-policy-standards`, `vpn-standards`, `libvirt-kvm-standards`, `proxmox-ve-standards`,
-`network-troubleshooting-standards` (**Ola 2 — frontera delicada y explícita**: el diagnóstico
+`network-troubleshooting-standards` (**frontera delicada y explícita**: el diagnóstico
 **del host** es de esta skill —¿la interfaz está `UP`?, ¿el gestor de red correcto la gestiona?,
 ¿hay ruta por defecto?, ¿`resolvectl status` resuelve?, ¿el socket está en `LISTEN` con `ss -ltnp`?,
 ¿el servicio falla por límite de recursos o por dependencia?—; el diagnóstico **de la red** es suyo

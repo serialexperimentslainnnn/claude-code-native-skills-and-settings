@@ -66,13 +66,13 @@ del SO produce ese número?" es suyo*** — planificador, gestión de memoria, c
 llamada al sistema, garantías de `fsync`), `finops-standards` (**el coste como métrica y su presupuesto**; aquí el coste
 solo aparece como argumento para dimensionar) y `microservices-architecture-standards` (el
 reparto de responsabilidades entre servicios; aquí el reparto del **presupuesto de latencia**
-entre ellos, §3.3), `refactoring-tech-debt-standards` (**Ola 6** — **optimizar no es refactorizar**: refactorizar
+entre ellos, §3.3), `refactoring-tech-debt-standards` (**optimizar no es refactorizar**: refactorizar
 cambia la estructura **sin** cambiar el comportamiento observable; optimizar cambia una
 característica observable —la latencia— y por tanto **se mide antes y después y se justifica con
 ese dato**. El criterio de deuda, su registro y su financiación son suyos; la metodología de
 encontrar y demostrar la mejora, de aquí. Y el aviso que comparten: **el código optimizado caduca**
 y necesita fecha de revisión, mientras que un refactor bien hecho no),
-`green-it-standards` (**Ola 6**: **la metodología de medir antes de tocar,
+`green-it-standards` (**la metodología de medir antes de tocar,
 perfilar y demostrar la mejora es de aquí**; **la métrica de energía y de carbono es suya**, con
 su propia contabilidad y sus propias trampas. Aviso que ambas comparten: **eficiencia de código y
 reducción de huella no son lo mismo** — el orden de impacto real empieza por apagar lo ocioso y

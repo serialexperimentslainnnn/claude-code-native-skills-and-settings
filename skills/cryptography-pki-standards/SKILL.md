@@ -26,16 +26,21 @@ proxies, WireGuard, DNSSEC), `kubernetes-standards` (despliegue de cert-manager 
 firma en admission), `cicd-standards` (firma de artefactos dentro del pipeline y OIDC del runner),
 `identity-access-management-standards` (tokens, sesiones y política de autenticación),
 `appsec-standards` (uso inseguro de cripto detectado en revisión de código),
-`secrets-management-standards` (**Ola 1, ya escrita**: almacenamiento y distribución de secretos
-ya generados), `assembly-standards` (**Ola 5** — **frontera crítica**: la elección de algoritmo,
+`secrets-management-standards` (almacenamiento y distribución de secretos
+ya generados), `assembly-standards` (**frontera crítica**: la elección de algoritmo,
 curva, modo, tamaño de clave y todo el ciclo de vida de las claves se decide **aquí**; allí solo la
 **implementación** de tiempo constante —sin ramas ni accesos a memoria dependientes del secreto— y
 el borrado de secretos que el compilador no puede optimizar. La regla que ambas repiten y que no
 admite excepción: **PROHIBIDO implementar criptografía propia**; se usa una biblioteca auditada, y
 si alguien está escribiendo ensamblador criptográfico, la pregunta previa es por qué),
-`solidity-standards` (**Ola 5**: el uso de las primitivas que ya expone la cadena —verificación de
+`solidity-standards` (el uso de las primitivas que ya expone la cadena —verificación de
 firma, EIP-712, `ecrecover` y su maleabilidad— es suyo; la elección y custodia de las claves,
-de aquí).
+de aquí), `govtech-eidas-standards` (**el régimen eIDAS es suyo**: firma electrónica avanzada
+frente a cualificada, prestador cualificado y listas de confianza, sello de tiempo cualificado,
+formatos AdES y su conservación a largo plazo, y qué valor probatorio tiene cada uno. **Aquí la
+criptografía que hay debajo** —algoritmo, curva, custodia en HSM, cadena y revocación—; la
+regla que evita el error caro: **una firma técnicamente válida no es una firma cualificada**,
+y eso lo decide su marco, no el algoritmo).
 
 ## 2. Decisiones por defecto
 

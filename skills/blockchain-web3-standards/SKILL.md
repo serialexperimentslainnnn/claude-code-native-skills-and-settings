@@ -80,7 +80,7 @@ ofensivas con alcance y autorización; **esta skill es defensiva**), `observabil
 `vulnerability-management-standards` (triaje de CVE del cliente de nodo),
 `opensource-licensing-standards` (licencias del stack), `rust-standards` / `go-standards` /
 `typescript-standards` (el lenguaje de los servicios que hablan con la cadena),
-`quantum-computing-standards` (Ola 7, planificada; nada que ver con "web3 cuántico").
+`quantum-computing-standards` (nada que ver con "web3 cuántico").
 
 ## 2. Decisiones por defecto
 

@@ -73,7 +73,7 @@ tratamiento de datos de mirada se **diseña** con esta skill y se **gobierna** c
 responsable del despliegue, evaluaciones, gobernanza— es suyo**; aquí solo el disparador concreto:
 inferencia de emociones a partir de biometría), `deep-learning-standards` y
 `local-inference-standards` (entrenar y servir modelos), `performance-engineering-standards`
-(metodología de perfilado), `gaming-infrastructure` (**Ola 7, planificada**: servidores y sesiones
+(metodología de perfilado), `gaming-infrastructure-standards` (servidores y sesiones
 multiusuario), `frontend-web-platform-standards` (la página que aloja la experiencia WebXR),
 `embedded-iot-standards` (el dispositivo como objeto físico; aquí se asume hardware ajeno).
 

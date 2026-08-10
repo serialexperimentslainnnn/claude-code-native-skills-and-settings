@@ -36,12 +36,12 @@ SO frente al diseño de red que se fija aquí),
 ruleset nftables/firewalld, dueño, aprobación y caducidad de cada regla, filtrado de egress,
 revisión de reglas sombreadas y huérfanas), `dns-standards` (**el servidor DNS, su zona y sus
 datos**: SOA y TTL, DNSSEC, registros de correo, DoT/DoH, secuestro de dominio), y
-`vpn-standards` y `network-troubleshooting-standards` (**Ola 2, planificadas**: túneles y
+`vpn-standards` y `network-troubleshooting-standards` (túneles y
 diagnóstico). Esta skill conserva **topología, direccionamiento y VLAN, routing y BGP, MTU/MSS de
 diseño, proxies y balanceo, overlays, plano de gestión OOB y elección de plataforma de perímetro**,
 más el gobierno de la red como código.
 
-**Delegación de profundidad (Ola 7, ya escritas)** — esta skill es la **troncal**: fija el criterio
+**Delegación de profundidad** — esta skill es la **troncal**: fija el criterio
 general y **entrega el detalle** a tres skills que sí lo cubren. Si la respuesta exige más que el
 principio, es de ellas:
 - `routing-switching-standards`: **campus y borde en profundidad** — STP y acceso enrutado, MLAG,
@@ -105,8 +105,11 @@ existe, y lo que no se puede diagnosticar por capas no está en producción.
   ambos sentidos: tras cada cambio, el SoT queda actualizado o el cambio no está terminado.
 
 **Segmentación**
-- Zonas mínimas: gestión (OOB) / servidores / usuarios / IoT-OT / DMZ / almacenamiento y
-  replicación / invitados. Una VLAN = un dominio de broadcast = una subred = una zona de
+- Zonas mínimas: gestión (OOB) / servidores / usuarios / IoT / DMZ / almacenamiento y
+  replicación / invitados. **La zonificación industrial no es una de estas zonas y no se diseña
+  con este criterio**: niveles Purdue, conductos con nivel de seguridad, DMZ de nivel 3.5 y el
+  aislamiento del SIS son de `ot-ics-security-standards`, y allí *Safety* manda sobre
+  disponibilidad. Meter la planta en una VLAN "IoT-OT" de esta lista es el error clásico. Una VLAN = un dominio de broadcast = una subred = una zona de
   política. **Default-deny entre zonas**, cada flujo permitido con dueño y motivo escrito.
 - Microsegmentación este-oeste donde el dato lo justifique (NIST SP 800-207 y SP 800-215
   como marco): la ubicación en la red no otorga confianza.

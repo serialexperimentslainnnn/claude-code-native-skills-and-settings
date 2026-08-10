@@ -32,7 +32,7 @@ línea base multi-suscripción, permiso efectivo, caminos de ataque y la elecci�
 `observability-standards` (OTel y Prometheus vendor-neutral; aquí solo Azure Monitor y su coste),
 `sre-practice-standards` (SLO, on-call, postmortems), `grc-compliance-standards` (marco normativo y
 evidencia de auditoría), `networking-standards` (redes físicas, on-prem e híbridas; aquí VNet),
-`dotnet-standards` (el código C# de la aplicación que se despliega encima), `finops-standards` (**Ola 6** — **método frente a servicio**: el modelo de precio de cada servicio de Azure, sus reservas y planes de ahorro y sus palancas concretas son de aquí; **la unidad económica, la política de etiquetas y su gate, la normalización con FOCUS, el reparto de coste compartido y el criterio de cobertura de compromisos son suyos**. *Si la respuesta cambia al cambiar de proveedor, es suya; si depende del catálogo de Azure, es de aquí*), `platform-engineering-standards` (**Ola 6**: la abstracción interna ofrecida encima de estos servicios).
+`dotnet-standards` (el código C# de la aplicación que se despliega encima), `finops-standards` (**método frente a servicio**: el modelo de precio de cada servicio de Azure, sus reservas y planes de ahorro y sus palancas concretas son de aquí; **la unidad económica, la política de etiquetas y su gate, la normalización con FOCUS, el reparto de coste compartido y el criterio de cobertura de compromisos son suyos**. *Si la respuesta cambia al cambiar de proveedor, es suya; si depende del catálogo de Azure, es de aquí*), `platform-engineering-standards` (la abstracción interna ofrecida encima de estos servicios).
 
 ## 2. Decisiones por defecto (servicio de referencia por caso de uso)
 

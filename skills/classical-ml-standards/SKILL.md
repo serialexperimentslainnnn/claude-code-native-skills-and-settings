@@ -67,7 +67,7 @@ supuestos, otros modos de fallo y otra economía.
   `r-standards`, `julia-standards` (lenguaje y entorno); `finops-standards`, `green-it-standards`
   (coste y huella); `mlsecops-standards` (envenenamiento, procedencia, ataques);
   `gpu-computing-standards` (la GPU como recurso); `computer-vision-standards`, `nlp-standards`,
-  `multimodal-genai-standards` (**Ola 7**: aplicaciones por modalidad).
+  `multimodal-genai-standards` (aplicaciones por modalidad).
 
 ## 2. Decisiones por defecto
 

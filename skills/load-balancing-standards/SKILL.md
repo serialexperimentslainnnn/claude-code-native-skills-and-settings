@@ -30,7 +30,10 @@ el descubrimiento de `microservices-architecture-standards`**, **Service, Ingres
 `identity-access-management-standards`, TLS y PKI de `cryptography-pki-standards`, métricas y paneles
 de `observability-standards`, el SLO de `sre-practice-standards`, **la metodología de medir y el
 modelo de carga de `performance-engineering-standards`**, el método reactivo de
-`network-troubleshooting-standards`, y el paraguas de `onprem-standards` (junto a
+`network-troubleshooting-standards`, **la asignación de sesiones de servidores de partida de
+`gaming-infrastructure-standards`** (un servidor de juego es con estado y no interrumpible:
+**asignar una sesión no es balancear**, y aplicarle drenaje o salud por petición lo rompe),
+y el paraguas de `onprem-standards` (junto a
 `datacenter-facilities-standards` y `hpc-standards`). Entre las tres
 hermanas de esta tanda: `wireless-standards` es la **red de acceso**, ésta la **red de servicio** y
 `high-speed-interconnect-standards` la **red de cómputo**; **el error del dominio es aplicarles el

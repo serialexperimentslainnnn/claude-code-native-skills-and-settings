@@ -54,11 +54,11 @@ desechable; allí para prestar servicio y por eso se le hace backup), `appsec-st
 `identity-access-management-standards`, `air-gapped-standards` (**suyos el registro/espejo
 interno y el aislamiento de red como disciplina**; **aquí la dirección de la amenaza es la
 inversa**: allí el aislamiento protege al recinto del mundo, aquí protege al mundo del
-laboratorio), las skills de nube y de lenguaje. Planificadas:
-`incident-response-forensics-standards` (**Ola 1**: forense e IR reales — aquí solo la
+laboratorio), las skills de nube y de lenguaje. Además:
+`incident-response-forensics-standards` (forense e IR reales — aquí solo la
 categoría forense de un CTF, que se le parece poco),
-`detection-engineering-standards` (**Ola 1**), `linux-hardening-standards` (**Ola 1**),
-`container-runtime-security-standards` (**Ola 1**).
+`detection-engineering-standards`, `linux-hardening-standards`,
+`container-runtime-security-standards`.
 
 ## 2. Decisiones por defecto
 

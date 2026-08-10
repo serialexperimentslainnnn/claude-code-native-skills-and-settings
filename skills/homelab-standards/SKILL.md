@@ -33,7 +33,7 @@ de entrenamiento y sus ToS — la frontera es el propósito y el aislamiento, no
 lab comparte red o credenciales con los servicios del homelab, está mal diseñado) y
 `offensive-security-standards` (ejercicio autorizado contra sistemas de terceros: nada de lo que se
 practica en casa se aplica fuera sin autorización escrita), `developer-workstation-standards`
-(**Ola 6**: **la máquina con la que se trabaja no es el laboratorio**. El puesto se aprovisiona
+(**la máquina con la que se trabaja no es el laboratorio**. El puesto se aprovisiona
 como código, se endurece y se reconstruye; el laboratorio existe para romperse. **Prohibido usar
 la estación de trabajo como servidor del laboratorio**: mezcla los dos modelos de amenaza y hace
 que un experimento roto te deje sin herramienta de trabajo), `home-automation-standards`

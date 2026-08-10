@@ -12,8 +12,8 @@ Datos de versión verificados a **2026-08**: SIEMPRE re-verificar por web antes 
 
 - Aplica a: servicios backend C# (APIs, workers, gRPC), librerías NuGet internas, tooling CLI en .NET.
 - Triggers: ficheros `.cs`, `.csproj`, `.sln`/`.slnx`, `Directory.Build.props`, `Directory.Packages.props`, `global.json`, `appsettings*.json`, `.editorconfig`; menciones a .NET, ASP.NET Core, EF Core, NuGet, xUnit, Native AOT.
-- **No aplica**: Unity (versión de C#/runtime propia). **El legacy de Microsoft tiene dueños propios
-  desde la Ola 7**, y la frontera va en las dos direcciones: `dotnet-framework-legacy-standards`
+- **No aplica**: Unity (versión de C#/runtime propia). **El legacy de Microsoft tiene dueños
+  propios**, y la frontera va en las dos direcciones: `dotnet-framework-legacy-standards`
   (**.NET Framework 4.x**: mantenimiento, lo que no tiene puerto —WebForms, WCF de servidor,
   Workflow, `AppDomain`, *remoting*— y la ruta de migración), `vbnet-standards` (**el lenguaje
   VB.NET, congelado por decisión de Microsoft**), `vb6-standards` y `classic-asp-standards`
@@ -29,7 +29,7 @@ Datos de versión verificados a **2026-08**: SIEMPRE re-verificar por web antes 
   `data-platform-standards` (modelado, índices y tuning del motor; aquí solo EF Core y sus
   migraciones), `sql-standards` (**el lenguaje SQL**, incluido el que EF Core genera y el que se
   escribe a mano en `FromSql`: joins, CTEs, `NULL`, predicados SARGables y parametrización),
-  `webassembly-standards` (**Ola 5**: Blazor WebAssembly y `dotnet wasm` compilan a Wasm — el
+  `webassembly-standards` (Blazor WebAssembly y `dotnet wasm` compilan a Wasm — el
   runtime, los límites del sandbox y **el tamaño del artefacto descargado**, que aquí es la métrica
   crítica, se deciden con su criterio; el C#/F# y su build, aquí),
   `ocaml-fsharp-standards` (**el lenguaje F#**: idiomas, uniones discriminadas, *computation

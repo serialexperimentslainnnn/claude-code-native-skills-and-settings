@@ -1,4 +1,0 @@
-- [Catálogo de skills IT](skills-catalog-roadmap.md) — el estado vive en `~/.claude/SKILLS-ROADMAP.md`: leerlo antes de continuar.
-- [WebFetch inventa fechas](webfetch-inventa-fechas.md) — su resumidor falsea años e invierte frases; usar API/feeds y citas verbatim.
-- [GitHub Releases no es la fuente](github-releases-no-es-la-fuente.md) — proyectos que se mudan dan falsos abandonos; contrastar con la web oficial y leer el LICENSE en crudo.
-- [Máxima paralelización](usuario-maxima-paralelizacion.md) — seguir sin pedir permiso entre fases; el coste de tokens no es criterio.

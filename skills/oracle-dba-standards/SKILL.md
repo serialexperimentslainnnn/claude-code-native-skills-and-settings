@@ -48,7 +48,7 @@ Disparadores: `sqlplus`, `rman`, `dgmgrl`, `srvctl`, `crsctl`, `asmcmd`, `lsnrct
   > **"¿cómo se hace la copia?" es de `backup-recovery`** (herramienta, repositorio, 3-2-1, GFS,
   > dedup, cifrado del repo, integridad, catálogo, procedimiento de restore); **"¿cuánto podemos
   > perder, en qué orden lo levantamos y quién lo decide?" es de `bcdr`**.
-- `plsql-oracle-forms-standards` (**Ola 7**): **PL/SQL como lenguaje de programa** —paquetes,
+- `plsql-oracle-forms-standards`: **PL/SQL como lenguaje de programa** —paquetes,
   `BULK COLLECT`/`FORALL`, manejo de excepciones, SQL dinámico y sus *binds*, `AUTHID`, utPLSQL— y
   **Oracle Forms/Reports como capa de aplicación** son suyos; **aquí el motor**: parámetros,
   optimizador y estadísticas, RMAN y Data Guard, licenciamiento y el camino de salida hacia

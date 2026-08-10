@@ -55,7 +55,7 @@ cómo se escribe el código que lo implementa. OCaml/Haskell/F# aparecen aquí p
 reenvío de alcance), `webassembly-standards` (**Wasm como destino y como runtime es suyo**: target
 `wasm32-*`, Component Model y WIT, límites del *sandbox*, *fuel*/epoch y presupuesto de tamaño del
 módulo. Aquí solo la decisión de **emitir** Wasm desde tu backend y qué pierdes al hacerlo),
-`lowcode-governance-standards` (**Ola 7, en curso**: **la plataforma low-code como producto de
+`lowcode-governance-standards` (**la plataforma low-code como producto de
 terceros y su gobierno** —ciclo de vida, propiedad, catálogo, licencias, *shadow IT*— es suya.
 Frontera limpia: **construir un lenguaje es de aquí; gobernar el uso de uno que compraste, de
 ella**. Un editor visual de flujos que serializa a JSON es una plataforma, no un DSL de este

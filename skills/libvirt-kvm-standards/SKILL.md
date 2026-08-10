@@ -50,7 +50,7 @@ Disparadores: `virsh` (`define`, `edit`, `dumpxml`, `start`, `migrate`, `snapsho
   la pertenencia al grupo del socket, es decir, todo o nada sobre el host.
 - Hay **decenas de VMs** que alguien debe operar sin leer XML.
 
-**Ola 2 planificada / vecina**: si el requisito es HA de **servicios Linux** (no de VMs), es
+**Vecina**: si el requisito es HA de **servicios Linux** (no de VMs), es
 `ha-clustering-standards`. Levantar VMs con Pacemaker + `VirtualDomain` sobre almacenamiento
 compartido es técnicamente posible y **casi nunca la elección correcta frente a una plataforma**:
 sumas fencing, filesystem de cluster y un stack más que mantener para reimplementar peor lo que PVE
@@ -63,7 +63,7 @@ usa `virsh`; allí viven cluster, quórum, HA, fencing, PBS, RBAC, SDN, LXC y el
 importación desde VMware. Regla: **si la respuesta se escribe con `virsh` o con XML, es de aquí; si
 se escribe con `qm`/`pct`/`pve*` o tocando `/etc/pve`, es de allí**), `onprem-standards` (**paraguas**:
 su §2 fija la elección de hipervisor y su §1.3 los invariantes de plataforma), `ha-clustering-standards`
-(**Ola 2, planificada**: Pacemaker/Corosync, fencing, recursos — §1.1),
+(Pacemaker/Corosync, fencing, recursos — §1.1),
 `zfs-standards` (**el pool y el zvol por debajo**: topología de vdev, `ashift`, y sobre todo el
 `volblocksize` del zvol que respalda un disco — **el diseño del pool y las propiedades del zvol son
 suyos; el `<disk>` del dominio, su `cache`, su `io` y su `discard` son de aquí**),
@@ -91,7 +91,7 @@ mecanismo de aquí, el orden de volatilidad y la cadena de custodia son suyos),
 `windows-server-ad-standards` (invitados Windows: drivers **virtio-win**, licenciamiento, AD),
 `homelab-standards` (host KVM de laboratorio donde el criterio es coste, ruido y consumo),
 `ctf-lab-standards` (VMs desechables y aisladas para detonar binarios: allí el aislamiento es el
-propósito), `vmware-standards`, `hyper-v-standards` y `xen-standards` (**Ola 7**: los otros
+propósito), `vmware-standards`, `hyper-v-standards` y `xen-standards` (los otros
 hipervisores, cada uno con su skill. **La importación de un disco `.vmdk` o `.vhdx` y la conversión
 del formato son de aquí**; **el inventario de lo que hay que migrar, su licencia y lo que se pierde
 al salir son de la skill del hipervisor de origen**. Aviso que las cuatro comparten: **un CVE de
@@ -140,7 +140,7 @@ afectado).
 - **VM o contenedor**: la VM aporta **kernel propio y una frontera de seguridad de verdad**; el
   contenedor aporta densidad y arranque rápido. Multi-tenencia, código no confiable, kernel distinto
   o requisito regulatorio de aislamiento → **VM**. Todo lo demás, contenedor
-  (`kubernetes-standards`, `podman-systemd-containers-standards` — Ola 2).
+  (`kubernetes-standards`, `podman-systemd-containers-standards`).
 
 ### 3.2 `machine type`: fíjalo o te romperá
 

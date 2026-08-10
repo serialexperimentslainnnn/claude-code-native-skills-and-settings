@@ -1,9 +1,10 @@
 # Catálogo de skills — estado y hoja de ruta
 
 > Fichero de continuidad del proyecto de catálogo exhaustivo de skills IT.
-> Última actualización: **2026-08-02**. Plan completo en `~/.claude/plans/validated-swimming-treehouse.md`.
+> Última actualización: **2026-08-10**. Plan completo en `~/.claude/plans/validated-swimming-treehouse.md`.
+> **CATÁLOGO COMPLETO: 218/218.** Ver "PUNTO DE CONTINUACIÓN — 2026-08-10" más abajo.
 
-## Estado: 82 de ~267 skills
+## Estado histórico: 82 de ~267 skills (2026-08-02)
 
 **Ola 0 — agujeros del núcleo: COMPLETA (13/13).**
 **Pasada de revisión de la Ola 0: COMPLETA** (ver "Pasada de revisión" abajo).
@@ -280,7 +281,321 @@ falta**, y **cambiarle la prioridad a "guarda primero, investiga después"**. Co
 reanudado dos veces acabó entregando las dos skills. **Relanzarlo de cero habría tirado toda la
 investigación web ya pagada.**
 
-## PUNTO DE CONTINUACIÓN — actualizado 2026-08-05 (leer esto primero)
+## PUNTO DE CONTINUACIÓN — actualizado 2026-08-10 (leer esto primero)
+
+**Estado: 218 skills, 80.388 líneas — EL CATÁLOGO ESTÁ COMPLETO (218/218).** Los tres gates
+mecánicos en verde (`./check.sh`, EXIT=0). Coste de índice: 25.383 palabras/turno. Nada quedó
+a medias en disco. **Sin commitear**: ~130 ficheros modificados + 3 skills nuevas (el usuario
+no ha pedido commit; identidad Lain + GPG YubiKey, verificar `git config user.email` antes).
+
+### Hecho en la sesión del 2026-08-10
+
+1. **Lote 28 ESCRITO — cierra la Ola 7 y el catálogo**: `chaos-engineering-standards` (161),
+   `streaming-multimedia-standards` (180), `gaming-infrastructure-standards` (179). Un solo
+   agente, verificación web completa. Hallazgos que invalidan criterio previo:
+   - **Unity Multiplay deprecado el 1-abr-2026** (continuidad solo vía "Multiplay by Rocket
+     Science"); **Agones en CNCF Sandbox** (aceptado 2025-12-21), v1.58.0, K8s 1.33-1.35;
+     **Open Match parado de facto** (última release soporta K8s 1.24/1.25; `open-match2` con
+     actividad baja); **GameLift cambió su modelo de coste en 2026** (ancho de banda gratis
+     gen 6+, scale-to-zero) — toda comparativa anterior invalidada.
+   - **Codecs**: Access Advance absorbió el pool HEVC/VVC de Via LA (dic-2025, "VCL Advance");
+     los pools de **distribución** cobran ya al servicio de streaming; **Dolby demandó a Snap
+     (mar-2026) por patentes de AV1** — "AV1 royalty-free" ya no es un hecho cerrado. AV2 spec
+     final may-2026, sin parque.
+   - **Netflix chaosmonkey sin push desde ene-2025** (SimianArmy archivado 2021) → vetado.
+     **ffmpeg 9.0** (2026-08-04); MediaMTX v1.20.0 (MIT) con MoQ; **MoQ sigue en draft-17**.
+   - Huecos §8: precios Gremlin/Wowza/Ant Media/Edgegap, tarifas por unidad de los pools de
+     patentes, matriz `cbcs`/`cenc` por plataforma, CVE-2026-33186 de Litmus.
+2. **Tercera pasada de marcas de ola: COMPLETA y mucho más ancha que lo previsto** — no eran
+   3 ficheros sino **~200 sitios en ~90 ficheros**. Eliminadas TODAS las variantes:
+   `(**Ola N, planificada/s**)`, `(**Ola N, escrita/s**)`, `(**Ola N, en curso**)`,
+   `(**Ola N, hermana**)`, `(Ola N)` a secas, `(**existe, Ola N**)`, `(**ya escrita**)`,
+   "puede estar escribiéndose ahora". Los bloques *"Planificadas — hasta que existan, esta
+   skill es criterio provisional"* de `dns`, `firewall-policy`, `selinux`,
+   `linux-administration`, `linux-hardening` y `rhel-fedora` reescritos a "Además:". El gate 3
+   del meta-skill (`claude-code-skills-standards`) actualizado: ya no admite "planificadas",
+   exige que **todas** las citadas existan. **Verificado: `grep 'Ola [0-9]' skills/*/SKILL.md`
+   devuelve cero**; los ~22 restos de "planificad*" son prosa legítima (mantenimiento
+   planificado, switchover, etc.), revisados línea a línea.
+3. **Citas del lote 28 normalizadas**: `game-development:57` y `xr:76` ya apuntan a
+   `gaming-infrastructure-standards` con nombre completo y sin marca.
+4. **Fronteras recíprocas del lote 28 escritas por el orquestador** (los agentes solo
+   reportan): `sre-practice`, `bcdr` y `testing-qa` → `chaos-engineering`; `caching-cdn` y
+   `frontend-web-platform` → `streaming-multimedia`; `load-balancing` y `edge-computing` →
+   `gaming-infrastructure`. **Decisión tomada**: `webgl-webgpu` → `streaming-multimedia` NO se
+   escribe (no compiten por el mismo artefacto; el criterio anti-inflación manda).
+5. De paso, limpiados restos históricos: `bcdr` ya no marca `windows-server-ad` como
+   "en curso", `incident-*` sin bloques "Planificadas", `mcp`/`ai-agents` sin "existe, Ola 3".
+
+6. **Test de colisión de disparadores: EJECUTADO Y CERRADO (2026-08-10).** La `STOP` original
+   daba **420 pares** sobre 218 skills — el gate estaba inservible. Ampliada con ~220 términos
+   genéricos (dos iteraciones: primero el vocabulario de las olas 5-7, después el ruido que
+   quedaba) → **41 pares**. De ellos, **8 solapes reales**, corregidos **estrechando la
+   `description` de la vecina, nunca el cuerpo** (el patrón de siempre, ahora con 8 casos más):
+   - `onprem` → cede hardware físico, BMC/IPMI/iDRAC/iLO, warranty, y sala (UPS, cooling, rack)
+     a `server-hardware` y `datacenter-facilities`. **Tercera poda de `onprem`**; su description
+     queda como paraguas de enrutado, flota e invariantes. Bajó de 9 y 6 términos a ruido.
+   - `dns` → cede SPF/DKIM/DMARC/MTA-STS/TLS-RPT a `email-security` (que ya era su dueña
+     declarada desde `mail-servers`). Conserva zona, DNSSEC, TLSA/DANE, resolvers.
+   - `datacenter-fabric` ↔ `high-speed-interconnect`: **reparto por capa**, no por tema. La
+     configuración de Ethernet sin pérdidas en el switch (PFC/ETS/DCBX/ECN/DCQCN) es de la
+     fabric; el transporte RDMA, su diagnóstico y el *deadlock* visto desde el interconector
+     son suyos. `fabric` soltó `RDMA`, `interconnect` soltó `PFC deadlock` y `oversubscription`.
+   - `abap-sap` ↔ `erp-sap`: la **conversión a S/4HANA como proyecto** (brownfield/greenfield/
+     selective, licencias, mantenimiento) es de `erp-sap`; `abap-sap` se queda con **qué rompe
+     esa conversión en el código custom**. `erp-sap` soltó `OData`, que es desarrollo.
+   - `edge-computing` → cede RAUC/SWUpdate/Mender/hawkBit y la identidad por TPM/secure element
+     a `embedded-iot`; conserva rpm-ostree/bootc/greenboot/balenaOS, que son Linux completo.
+   - `os-provisioning` → cede `bootc-image-builder` y `rpm-ostree` a `rhel-fedora`; conserva la
+     instalación a disco de un host *image mode*, Kickstart, PXE, Cobbler/Foreman/MAAS.
+   - `game-development` → cede `matchmaking` a `gaming-infrastructure` (cesión ya pactada al
+     escribir el lote 28); conserva el flujo de lobby y *party* en el cliente.
+   Resultado: **35 pares, ninguno ≥8**, todos justificados como inherentes y **documentados en
+   §4.3 del meta-skill**: tres nubes, familia de seguridad por nombre de norma, **familia de
+   obligación legal europea** (`act`/`directive`/`omnibus`/`decreto`), cripto
+   (`tls`/`1.3`/`ikev2`/RFC 9370), motores de juego, orquestadores de datos, y el homónimo
+   `escrow` (BitLocker frente a FileVault). **La `STOP` ampliada está guardada dentro del
+   script de §4.3**: el gate vuelve a ser reproducible y da 35 exactos al reejecutarlo.
+7. **Grafo de delegación: LIMPIO (2026-08-10).** 4.741 aristas sobre 218 nodos. Corregido el
+   único **destino muerto** (`claude-code-skills` citaba `technical-documentation-standards`,
+   que no existe → `knowledge-management-standards`) y las dos **huérfanas** de dominio, que
+   ahora tienen entrada por su frontera real: `gis-geoespacial` ← `data-platform` (PostGIS y el
+   dato espacial frente al motor que lo hospeda) y `govtech-eidas` ← `cryptography-pki` (**una
+   firma técnicamente válida no es una firma cualificada**: el régimen eIDAS es suyo, la cripto
+   de debajo es de PKI). Queda una sola huérfana, `project-map`, y es correcto: es skill de
+   procedimiento y se invoca desde el `CLAUDE.md`, no desde otra skill. De paso se cerró el
+   último resto de marca obsoleta: la §1 de `data-platform` decía que los motores fuera de
+   PostgreSQL/Redis/Kafka *"tendrán skill propia"* — ya existen las nueve y ahora las enruta.
+   Los nodos más citados (`observability` 141, `vulnerability-management` 126, `cicd` 125) son
+   destinos transversales legítimos, no monopolios de disparador.
+
+8. **Repaso de composición: EJECUTADO (2026-08-10).** 4 agentes, 8 escenarios multidominio
+   (K8s con datos personales y SLO; AS/400→SAP; clúster GPU multi-nodo; sede electrónica
+   española; ransomware con AD comprometido; monolito .NET Framework→contenedores; juego
+   multijugador con pagos y directo; fábrica OT con ML predictivo). Los agentes **no editan,
+   reportan**; las correcciones las aplicó el orquestador. **Es la fase que más defectos ha
+   encontrado de todo el proyecto, y ninguno lo veían los gates mecánicos.** Aplicado:
+
+   **Falsedades de hecho (lo más grave, porque el agente las obedece):**
+   - `gpu-computing` declaraba en §1 y §8 que **InfiniBand/RoCE "no tiene dueño en el catálogo"**
+     y que había que improvisar — cuando `high-speed-interconnect-standards` existe desde la Ola 7
+     y la citan `hpc`, `networking`, `datacenter-fabric` y `datacenter-facilities`. Era el único
+     "sin dueño" falso de las 218. Corregido en los dos sitios.
+   - `claude-code-skills` citaba `technical-documentation-standards`, que no existe.
+   - `data-platform` decía que nueve motores *"tendrán skill propia"*; ya existen las nueve.
+
+   **Contradicciones entre co-activadas** (una fija un default que la otra veta):
+   - **`chaos-engineering` no excluía OT/ICS ni sistemas con función de seguridad.** Su §7 daba
+     producción como "meta explícita" y ninguna de sus seis exclusiones era *"el fallo hiere
+     personas"*. **Es el hallazgo más caro del repaso**: la skill nueva autorizaba inyectar
+     fallos en una planta con SIS. Añadido límite duro (proceso físico, OT/ICS, SIS, dispositivo
+     médico, automoción, ferroviario, aviación → banco o gemelo, nunca planta) y la frontera
+     recíproca en `ot-ics-security`. Regla que lo resume: **el blast radius se mide en
+     peticiones, no en personas**.
+   - `chaos-engineering` ↔ `gaming-infrastructure`: PodChaos sobre una flota Agones mata pods
+     `Allocated`, que es exactamente lo que la otra prohíbe. Acotado a `Ready` + ruta de
+     reposición, escrito en ambos lados.
+   - `finops` prohíbe que un presupuesto pare despliegues de producción; `platform-engineering`
+     imponía cuota de coste en admisión, que es justo eso. Repartido: la cuota frena **recursos
+     nuevos y efímeros**, nunca el rollout de un servicio ya en producción.
+   - `observability` calculaba el *burn rate* sobre **30 días** y `sre-practice` fija **28
+     rolling**: misma alerta, número distinto. Y `observability` ofrecía *"relajar el SLO"* como
+     mitigación de poco tráfico, en un dominio que su propia §1 cede a SRE. Ambas corregidas.
+   - `networking` listaba una zona "IoT-OT" entre sus zonas mínimas, con criterio de TI, mientras
+     `ot-ics-security` exige zonas y conductos Purdue con SL. Corregido y enrutado.
+   - `timeseries-db` autoriza bajar la resolución del histórico antes que comprar disco; eso
+     **destruye el dataset de entrenamiento** que `mlops` exige poder reconstruir. Escrita la
+     comprobación previa en ambos lados.
+   - `data-governance` metía **secretos y dato personal en el mismo nivel** de clasificación,
+     contra la frontera que declaran `privacy` y `secrets-management` (*un dato personal no es un
+     secreto*). Los secretos salen de la escala: no se clasifican, se custodian.
+   - `project-management` clasificaba *"una migración"* como indivisible, contra el default por
+     olas de `migration-projects`. Lo indivisible es **el corte**, no el proyecto.
+   - `testing-qa` prohíbe datos personales reales en pruebas *sin excepción*, y
+     `migration-projects` exige ensayo con datos reales **enmascarados**. Escrita la excepción
+     única del catálogo, con su condición.
+   - `ibm-i-rpg` se contradecía en dos viñetas: cartera → `legacy-modernization` en una, "R" → EA
+     en la otra. Fijados los tres niveles: **cartera = EA, sistema = `legacy-modernization`,
+     plataforma = aquí**.
+
+   **Huecos por delegación cruzada** (A cede a B, B cede a A, nadie decide):
+   - **Retención de logs**: `privacy` la enviaba a `observability` y `observability` a `privacy`.
+     Ahora hay números por defecto en `observability` (trazas 7 d, logs 30 d, métricas 13 meses)
+     y el plazo normativo se delega en `grc-compliance`.
+   - **Renegociar a la baja un SLO por coste**: `finops` exigía una firma que no podía obtener y
+     `sre` solo contemplaba el caso contrario. Escrito el procedimiento en ambas: FinOps aporta
+     el coste por nueve, **el objetivo lo cambia quien responde del SLO**, por ADR y comunicado.
+   - **La ventana de retención del respaldo** la reclamaban `bcdr` y `backup-recovery` a la vez,
+     y `privacy` enrutaba a la equivocada. Corregido el puntero de `privacy`.
+   - **La tienda de un juego**: `gaming-infrastructure` la cedía *"si la reclama"* (única cesión
+     condicional del catálogo) y `e-commerce` no la reclamaba → el PCI DSS nunca se activaba.
+     Cesión ahora firme en ambos lados.
+   - **Subtítulos y audiodescripción**: `accessibility` fija el requisito, `streaming-multimedia`
+     no los mencionaba y no se citaban. Escrita la mecánica de entrega (WebVTT/TTML/IMSC,
+     CEA-608/708, declaración en el manifiesto) con la regla que ambas sostienen: **una pista que
+     el empaquetador no declara no existe para el usuario**.
+   - **Grabación de sesión**: `privacy` mandaba el detalle a `observability`, que no lo cubre. Es
+     analítica de producto, no telemetría de operación; corregido.
+
+   **Punteros obsoletos y reciprocidades que faltaban**: `caching-cdn` enviaba proxy y *health
+   checks* a `networking`, que ya se los había cedido a `load-balancing`; `ot-ics-security` no
+   citaba a ninguna de las cuatro que le ceden (`embedded-iot`, `edge-computing`,
+   `safety-critical`, `physical-security`); `observability` no citaba a `timeseries-db`,
+   `finops` ni `platform-engineering`; `refactoring-tech-debt` no citaba a
+   `legacy-modernization` ni a `migration-projects` pese a ser **la árbitro de la reescritura**
+   invocada desde ellas; `routing-switching` no advertía que **la red de planta no es un campus**
+   y sus defaults de acceso rompen un anillo PROFINET; `grc-compliance` no citaba a
+   `govtech-eidas`; `vmware` y `hyper-v` no enrutaban el caso *"el hipervisor es la víctima"*.
+   Todo escrito.
+
+   **Duplicación de fuente**: los plazos de notificación (RGPD 72 h, NIS2 24/72/1 mes, DORA
+   4/24/72/1 mes, ENS) están en **tres** skills con los mismos números. Hoy coinciden; la primera
+   actualización parcial los rompe. Declarada **fuente única `grc-compliance-standards`** en las
+   otras dos, sin borrar las tablas, y añadido a su `description` el disparador de notificación
+   de brecha —que no tenía, así que no se activaba en un escenario de ransomware—.
+
+9. **Los dos huecos aprobados por el usuario: ESCRITOS (2026-08-10).** Decisión suya en ambos
+   casos: **sección dentro de la skill existente, no skill nueva** — el catálogo se queda en 218.
+   - **`bcdr-standards` §3.6 — el entorno de recuperación aislado (IRE / *clean room*)**, que
+     cuatro skills exigían y ninguna especificaba. Fija los **tres aislamientos** —red, identidad
+     y **gestión**— con el aviso de cuál se hace mal: *"una red separada impecable administrada
+     con el DA de siempre"*, y *"si el plano de gestión es el mismo, no hay aislamiento, por
+     muchas VLAN que se dibujen"*. Más: de qué medio se restaura (inmutable/offline en solo
+     lectura, binarios del fabricante, **nunca del share del entorno caído**), orden interno
+     *identity-first*, seis afirmaciones exigibles para declararlo limpio con **tres firmas
+     distintas** (seguridad, negocio, director de crisis), qué es preaprovisionable y qué no, y
+     tres niveles de coste con el mínimo aceptable definido. Verificado contra Microsoft Learn
+     (*AD Forest Recovery*, texto completo) y DORA art. **12(3)** —*"physically and logically
+     segregated from the source ICT system"*, en fuente secundaria: declarado como pendiente de
+     contraste con EUR-Lex—. **Hueco declarado que importa: no existe norma pública que
+     especifique el IRE**; el término es de fabricante, así que se usa como criterio de
+     ingeniería, no como requisito citable. La CISA #StopRansomware Guide dio **403 en cisa.gov y
+     en los espejos**, así que no se cita ninguna de sus frases (séptimo caso del patrón de 403).
+     Enrutado aplicado después en las tres vecinas: `backup-recovery` §3.7, `windows-server-ad`
+     §3.9 —**alineando el término: un laboratorio protege al mundo de lo que corre dentro; un IRE
+     protege a lo que corre dentro del mundo**— e `incident-response-forensics`, con la frontera
+     en las dos direcciones: *aquella produce el punto limpio, el IRE lo consume*. De paso se
+     corrigió una referencia rota que ya existía: `ai-governance` apuntaba a `bcdr` §3.7 para
+     dependencia de proveedor, que está en §5.
+   - **`kubernetes-standards` §3 — nodos y contenedores Windows** y **§6 — colas batch y gang
+     scheduling**, con §7 y §8 ampliadas y triggers nuevos en la `description`. Todo verificado
+     contra **fuente primaria en crudo** (`raw.githubusercontent.com` del repo de la doc,
+     `api.github.com`, la API de manifiestos de MCR y los `LICENSE`), no contra el resumidor.
+     Hallazgos que cambian criterio:
+     - **Kubernetes no soporta el aislamiento Hyper-V**, así que el "escape de contenedor
+       Windows" del que se habla no existe en clúster: el proceso comparte kernel con el host.
+     - **Solo WS2022 y WS2025** son versiones de nodo soportadas, y la **matriz host↔imagen es
+       dura**: la incompatibilidad se manifiesta como `0xc0370101`, no como un aviso.
+     - **`servercore` no fija `USER`** → corre como `ContainerAdministrator`; `nanoserver` sí fija
+       `ContainerUser` (medido en el *config blob* de MCR, no supuesto). Tamaños medidos:
+       nanoserver 0,19 GB / servercore 2,3 GB / server 6,55 GB.
+     - **Buena parte del `securityContext` de Linux se ignora en silencio** en Windows y el PSS
+       `restricted` queda mutilado (seccomp, capabilities y privesc son *Linux only*): aplicar el
+       invariante de Linux allí da una falsa sensación de endurecimiento. Es el fallo peligroso.
+     - **WS2022 termina soporte mainstream el 14-oct-2026** y *"containers follow the same
+       lifecycle dates"*; el parcheo es **rebuild mensual**, sin *servicing stack*.
+     - **Kueue v0.19.0 sigue en `v1beta2`** (no hay v1 GA) y **Volcano es CNCF *Incubating***, no
+       graduado. `ResourceQuota` **rechaza con 403, no encola**: por eso no sustituye a una cola.
+     - Dos fallos del instrumental confirmados otra vez: **WebFetch inventó una URL**
+       (`kueae.sigs.k8s.io`) y **el feed Atom de Volcano da un `updated` de v1.15.0 posterior al
+       de v1.15.1**, que llevaría a concluir que la vieja es la nueva. Ambos evitados por crudo.
+     Cerrados con esto **dos huecos declarados** que arrastraban `hpc-standards` §8 y
+     `gpu-computing` §8 (*"estado, madurez y licencia de Volcano y Kueue: no verificados"*), y
+     enrutados ambos a `kubernetes-standards` §6. Sigue abierto lo de Slinky/Slurm-en-K8s.
+10. **Correcciones estructurales del repaso: APLICADAS (2026-08-10).**
+    - **`edge-computing` renumerada a la convención**: usaba §4 y §5 para prohibiciones y
+      verificación, y era **la única del catálogo que rompía el esquema** — con el agravante de
+      que sus propias referencias internas ya apuntaban a §8, que no existía. Ahora §7 y §8, con
+      la omisión de §4 y §6 declarada como pide la plantilla.
+    - **La imagen A/B ya no la reclaman dos skills.** Corte espejado en ambos lados y por lo que
+      hay debajo, no por dónde está la caja: **imagen de firmware** (MCUboot, RAUC, SWUpdate,
+      Mender, hawkBit, ranuras con contador de rollback) → `embedded-iot`; **imagen de SO
+      completo** (rpm-ostree, bootc, greenboot, balenaOS) → `edge-computing`. Y lo que no cambia
+      de lado: **la campaña sobre la flota** —olas, *kill switch*, criterio de parada— es de
+      `edge-computing` con cualquier mecanismo, porque es un problema de flota, no de placa.
+    - **Una sola taxonomía de "R".** `enterprise-architecture` añade `rebuild` al final de su
+      orden obligatorio y declara la equivalencia con `legacy-modernization` (*replace* = 
+      `repurchase`); ésta declara que usa la misma lista. Y se resuelve el conflicto de fondo:
+      **el orden de evaluación es de cartera, no de sistema** — la skill de la plataforma puede
+      invertirlo *con justificación escrita*, y a veces debe (en IBM i, modernizar dentro suele
+      ser mucho más barato que comprar, y casi nadie agota esa vía antes de migrar).
+    - **"Congelación" tenía tres significados incompatibles** en `legacy-modernization`,
+      `migration-projects` y `erp-sap`. Desambiguadas en los tres sitios: congelar *un sistema*
+      (años, con contención) ≠ congelación *de cambios* alrededor de un corte (días, **con fecha
+      de fin publicada**) ≠ congelación de transportes SAP (el caso anterior en un paisaje SAP).
+      `erp-sap` no exigía fecha de fin, que es justo lo que `migration-projects` prohíbe.
+
+11. **Los tres huecos de contenido del repaso: CERRADOS (2026-08-10).** Escritos por agente con
+    verificación web; el enrutado recíproco lo aplicó después el orquestador.
+    - **`ibm-i-rpg` §3.4 — dónde vive la lógica de negocio en IBM i y cómo se localiza.** Era el
+      hueco más grave del escenario AS/400→SAP: `legacy-modernization` hace de la caracterización
+      **el gate de todo el proyecto** y cedía la técnica a `refactoring-tech-debt`, que cede a la
+      plataforma, que no lo cubría — cesión circular a un vacío. Ahora enumera los **ocho sitios**
+      donde se esconde la regla (RPG fijo con ciclo e indicadores, CL, *triggers* y restricciones
+      que se ejecutan sin que nadie los llame, validación declarada en DDS **que solo se aplica
+      pasando por pantalla, no por ODBC/SQL/DFU**, la propia secuencia 5250 como control de
+      proceso, puntos de salida, `*QRYDFN` de Query/400 y las hojas de cálculo colgadas por ODBC
+      donde suele estar el cálculo real), con las herramientas y **sus puntos ciegos declarados**
+      (llamadas dinámicas, SQL dinámico, `*LIBL`), el filtro regla-frente-a-fontanería y los
+      entregables del gate.
+    - **`ibm-i-rpg` §3.5 — Db2 for i como origen de migración/CDC.** Diarios y receptores como
+      equivalente del binlog, con las trampas que rompen una carga **en silencio**:
+      `MNGRCV(*SYSTEM)` borrando receptores no procesados, la **caché de diario (opción 42) que
+      oculta entradas a `DSPJRN`/`RCVJRNE` y al diario remoto**, campos empaquetados con nibbles
+      inválidos, fechas numéricas con ventana de siglo implícita, **ficheros multi-miembro de los
+      que SQL lee solo el primero y parece correcto**, y CCSID 65535. Todo contra `ibm.com/docs`.
+    - **`erp-sap` §3.8 — primera implantación desde un legacy no-SAP.** Toda la §3.1 asumía un ECC
+      previo, así que el caso "llego a SAP desde un AS/400" no tenía criterio. Se numeró al final
+      **para no romper ~15 referencias cruzadas internas**, con puntero desde §3.1. Fija: por qué
+      sin sistema SAP de origen **no hay línea base** (ni Readiness Check ni USMM), *fit-to-standard*
+      con la **carga de la prueba sobre la desviación**, big bang frente a fases con la prohibición
+      de fasear por módulo dentro de la misma sociedad, **toda interfaz de convivencia nace con
+      fecha de apagado y dueño**, nunca dos escritores del mismo objeto maestro, sizing por FUE sin
+      histórico, y siete señales de **cuándo SAP no es la respuesta** con regla de parada. Cierra
+      diciendo que **no hay tasa de fracaso citable**: son criterio, no estadística.
+    Verificaciones que conviene retener: **sap.com respondió esta vez** y dio verbatim el
+    *fit-to-standard* de Explore; **la responsabilidad de una *customer local version* es del
+    cliente o su partner**, verbatim; y **SAP se contradice consigo mismo** sobre si el Cloud
+    Localization Toolkit está en *early adopter* o GA. Nada de precios entró al documento: las
+    cifras que aparecieron eran estimaciones de partner sin metodología.
+    Enrutado recíproco aplicado: `streaming-cdc` ↔ `ibm-i-rpg` (**su catálogo de mecanismos no
+    incluía Db2 for i**, y de ahí no debe inferirse que no tiene captura por log: la tiene, y es
+    de las más antiguas), `legacy-modernization` → `ibm-i-rpg` §3.4, `erp-sap` ↔ `ibm-i-rpg`,
+    `migration-projects` → `erp-sap` y `project-management` → `erp-sap` (**cuando el proyecto es
+    implantar un paquete, tres de sus cinco variables dejan de ser negociables**). Corrección al
+    informe del agente de SAP: afirmaba que `ibm-i-rpg` no citaba `migration-projects`, y sí lo
+    hacía. El test de colisión subió a 37 por las descriptions ampliadas y volvió a **35** tras
+    meter siete genéricos más en la `STOP`; el par `ibm-i-rpg` ↔ `mainframe-zos-cobol` (`db2`,
+    `ebcdic`, `packed`) queda documentado como **inherente**: es vocabulario de fabricante, y las
+    dos declaran expresamente que son plataformas distintas que la gente mete en el mismo saco.
+
+### LO SIGUIENTE AL RETOMAR, en este orden
+
+1. **Decidir sobre los huecos de cobertura que el repaso dejó sin dueño** — son decisión del
+   usuario porque implican crecer el catálogo o declarar deuda: **trust & safety / moderación de
+   contenido y DSA** (aparece solo en `gaming-infrastructure`, y `grc-compliance` no lo
+   menciona), **mantenimiento predictivo como disciplina** (RUL, censura, coste asimétrico del
+   falso negativo: cero coincidencias en 218 skills, y es el corazón del escenario de fábrica),
+   **MES/ISA-95 nivel 3 y gemelo digital** (cero, y `ot-ics` usa el gemelo como default de
+   pruebas), **modelo de tenencia de clúster para carga regulada** (`kubernetes` no contiene la
+   palabra "tenant"), **SFU/WebRTC conversacional a escala**, y **TCO de capex on-prem**
+   (`finops` es íntegramente de nube).
+2. **Cuestión de diseño pendiente, también del usuario**: las 218 `description` están en inglés y
+   enumeran artefactos; los enunciados reales en español y en lenguaje de negocio **no activan
+   skills clave** (`observability` no salta con "SLO comprometido", `secrets-management` ni
+   `identity-access-management` con "servicio nuevo con datos personales", `classical-ml` no
+   salta con "mantenimiento predictivo" — cero coincidencias en el catálogo). Añadir una frase de
+   escenario a esas descriptions choca con la regla *"disparadores por artefacto, cero
+   conceptos"* del meta-skill: **hay que decidir si esa regla se matiza**, midiendo antes el
+   coste de índice.
+3. **`./install.sh`** — modelo *planchar* validado con `--dry-run` pero **NO ejecutado**:
+   `~/.claude/skills` sigue siendo copia vieja y divergente. Tras ejecutarlo, la sesión
+   siguiente ya carga las 218.
+4. **Commit** cuando el usuario lo pida (no lo ha pedido).
+5. Después: **pasada de sinergia `CLAUDE.md` ↔ catálogo** (BACKLOG punto 1, con su límite
+   duro: las premisas personales NO se tocan).
+
+## PUNTO DE CONTINUACIÓN ANTERIOR — 2026-08-05 (histórico)
 
 **Estado: 215 skills, 79.848 líneas.** Los tres gates mecánicos en verde (`./check.sh`, EXIT=0).
 Coste de índice: **25.150 palabras/turno**. Sesión cerrada por el usuario; nada quedó a medias en

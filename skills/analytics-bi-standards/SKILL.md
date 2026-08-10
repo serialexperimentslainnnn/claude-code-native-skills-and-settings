@@ -62,20 +62,20 @@ números distintos"**, "el informe tarda dos minutos en abrir", "esto lo mira al
   **como servicios gestionados**: aprovisionamiento, red, IAM y facturación son suyos).
 - `streaming-cdc-standards`: la captura y el procesado en movimiento. Aquí solo el consumo: **un
   cuadro de mando "en tiempo real" sin nadie que actúe en esa latencia es gasto, no capacidad**.
-- `product-discovery-standards` (**Ola 6**): **el cuadro de mando, la definición canónica de la
+- `product-discovery-standards`: **el cuadro de mando, la definición canónica de la
   métrica y su gobierno son de aquí**; **decidir qué se construye a partir de ese número es suyo**,
   igual que el diseño del experimento que lo mueve. Aviso que ambas comparten: **una métrica se
   degrada en cuanto se convierte en objetivo** —ley de Goodhart—, y por eso una métrica de negocio
   necesita métricas de guardia, no solo un umbral.
-- `r-standards` y `julia-standards` (**Ola 5, escritas**): **sustituir un cuadro de mando por un
+- `r-standards` y `julia-standards`: **sustituir un cuadro de mando por un
   informe de Quarto/R Markdown o por una app de Shiny es una decisión de esta skill** —quién
   consume, con qué latencia, quién mantiene la definición de la métrica y qué pasa cuando el autor
   se va—; **el código de ese informe o de esa app** —`renv`, estructura, tests, despliegue y su
   seguridad— es de `r-standards`. Aviso que ambas comparten: **una app de Shiny en producción es
   una aplicación web**, con su superficie de ataque y su coste de operación, no un informe.
-- **Ola 4, planificadas**: `timeseries-db-standards`,
+- `timeseries-db-standards`,
   `message-brokers-standards`, `oracle-dba-standards`, `sqlserver-dba-standards`,
-  `mysql-mariadb-dba-standards`, `caching-cdn-standards`.
+  `mysql-mariadb-dba-standards`, `caching-cdn-standards`: sus motores y su operación.
 
 ### La pregunta previa
 

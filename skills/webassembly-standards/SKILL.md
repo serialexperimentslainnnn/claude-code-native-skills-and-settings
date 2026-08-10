@@ -25,7 +25,7 @@ Triggers: `.wasm`, `.wat`, ficheros `.wit` y `wit-bindgen`, `wasm-tools`, `wasm-
 - **Lenguaje de origen** (**suyo**: cómo se escribe el código, su build, sus tests, su lint;
   **aquí**: el target Wasm, el runtime, el modelo de componentes, los límites del sandbox y el tamaño
   del artefacto): `rust-standards`, `c-standards`, `cpp-standards`, `go-standards`,
-  `dotnet-standards`, `typescript-standards`, `dart-standards` (**Ola 6**: el lenguaje Dart, `pub`,
+  `dotnet-standards`, `typescript-standards`, `dart-standards` (el lenguaje Dart, `pub`,
   los lint y los tests son suyos; que Flutter web compile a WasmGC es de aquí).
 - `kubernetes-standards` y `container-runtime-security-standards` (**Wasm como alternativa o
   complemento al contenedor**: el runtime de contenedores, la admisión, las políticas del clúster y
@@ -33,10 +33,10 @@ Triggers: `.wasm`, `.wat`, ficheros `.wit` y `wit-bindgen`, `wasm-tools`, `wasm-
   host importa son de **aquí**).
 - `caching-cdn-standards` (el *edge* como plataforma: caché, invalidación, propagación y coste; aquí
   solo el módulo que se ejecuta en él y sus límites).
-- `webgl-webgpu-standards` (**Ola 6**: los dos se cruzan constantemente porque los motores gráficos
+- `webgl-webgpu-standards` (los dos se cruzan constantemente porque los motores gráficos
   portados desde C++ llegan como Wasm y los transcodificadores de textura son módulos Wasm. **El
   módulo, su tamaño, su runtime y sus importaciones son de aquí**; **el canvas, el pipeline de GPU,
-  el presupuesto de fotograma y la degradación a WebGL2 son suyos**), `pwa-standards` (**Ola 6**: el
+  el presupuesto de fotograma y la degradación a WebGL2 son suyos**), `pwa-standards` (el
   *service worker* que cachea y sirve el módulo, y su modelo de actualización, son suyos — un `.wasm`
   precacheado con una estrategia equivocada es un binario viejo servido rápido).
 - `compilers-dsl-standards` (**emitir Wasm desde un backend propio es suyo**: gramática, IR,

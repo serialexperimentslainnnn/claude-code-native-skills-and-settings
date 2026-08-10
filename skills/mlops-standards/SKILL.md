@@ -42,32 +42,38 @@ software; se degrada en silencio con el código intacto.** Tres consecuencias qu
 
 **No aplica**:
 
-- `data-engineering-standards` (**Ola 4, escrita**): **el pipeline de datos que alimenta al modelo
+- `timeseries-db-standards`: **el motor de la serie temporal y su política de retención son
+  suyos**, y esa política es una **restricción de esta skill, no un detalle de almacenamiento**:
+  el *rollup* que baja la resolución del histórico destruye el conjunto de entrenamiento y con él
+  la reproducibilidad que aquí se exige. Regla: **antes de aceptar un downsampling, declara qué
+  señales alimentan un modelo y consérvalas crudas**; si no se puede, el modelo deja de ser
+  reconstruible y eso se registra como deuda, no se descubre al reentrenar.
+- `data-engineering-standards`: **el pipeline de datos que alimenta al modelo
   es suyo** — ingesta, ELT, idempotencia, *backfill*, Parquet, coste de escaneo, frescura y
   observabilidad del dato. Comparten orquestador (Airflow, Dagster, Prefect) y eso es solape
   inherente, no de propiedad. **Regla de arbitraje: si el artefacto producido es una tabla que
   consume gente o BI, es suya; si es un modelo entrenado o las *features* que lo alimentan, es de
   esta skill.** El *feature store* y el *train/serve skew* son de aquí.
-- `classical-ml-standards`, `deep-learning-standards` y `model-finetuning-standards` (**Ola 7,
-  escritas** — **frontera de "antes y después"**): **cómo se entrena y se evalúa un modelo es suyo**
+- `classical-ml-standards`, `deep-learning-standards` y `model-finetuning-standards`
+  (**frontera de "antes y después"**): **cómo se entrena y se evalúa un modelo es suyo**
   —partición y fuga de datos, validación, métricas y calibración, umbral de decisión, bucle de
   entrenamiento, y el orden prompt → recuperación → **ajuste fino**—; **el ciclo de vida en
   producción es de aquí**: registro, versionado, *feature store*, despliegue, deriva, reentrenamiento
   y *train/serve skew*. Corrección de esta skill: donde decía que *"un fine-tuning propio cruza a
   esta skill"*, **el criterio de ajuste fino es ahora de `model-finetuning-standards`**; lo que
   sigue siendo de aquí es el registro, la promoción y la operación del artefacto resultante.
-- `r-standards` y `julia-standards` (**Ola 5, escritas**): **el ciclo de vida del modelo es de esta
+- `r-standards` y `julia-standards`: **el ciclo de vida del modelo es de esta
   skill** —registro, versionado, *feature store*, despliegue, monitorización de deriva,
   reentrenamiento, *train/serve skew*—, **con independencia del lenguaje en que se entrene**;
   **cómo se escribe ese R o ese Julia** —`renv` y reproducibilidad de la librería, estabilidad de
   tipos, tests, estilo, empaquetado— es de esas skills. El caso peligroso que ambas partes deben
   reconocer: **un análisis exploratorio que se convierte en servicio sin reescribirse** es deuda
   que aquí se cobra en producción.
-- `data-warehouse-modeling-standards` (**Ola 4, escrita**): grano, hechos y dimensiones, SCD,
+- `data-warehouse-modeling-standards`: grano, hechos y dimensiones, SCD,
   dimensiones conformadas y la definición canónica de una métrica de negocio. **Una tabla de
   *features* no es un mart** y no se rige por su modelado; pero si tus *features* se derivan de
   marts, su grano y su historización son de allí.
-- `llm-app-engineering-standards` (**Ola 3, escrita** — *la confusión más común de este dominio,
+- `llm-app-engineering-standards` (*la confusión más común de este dominio,
   y se declara explícitamente*): **construir producto sobre un LLM de terceros no es MLOps.** No
   entrenas nada, no tienes pesos, no hay deriva de *tu* modelo sino cambios de versión del
   proveedor, y el "registro de modelos" es una cadena en un fichero de configuración. Allí viven
@@ -75,13 +81,13 @@ software; se degrada en silencio con el código intacto.** Tres consecuencias qu
   gasto. **Regla de arbitraje: si el artefacto que promueves son pesos que tú produjiste, es de
   esta skill; si es un prompt y un identificador de modelo ajeno, es suya.** Un *fine-tuning*
   propio cruza a esta skill; llamar a un modelo afinado por el proveedor, no.
-- `llm-evaluation-standards` (**Ola 3, escrita**): **la medición de calidad es suya** — conjuntos
+- `llm-evaluation-standards`: **la medición de calidad es suya** — conjuntos
   de evaluación, LLM-as-judge y su calibración, assertions deterministas, significancia, gates de
   regresión en CI, anotación de trazas. Aquí se **exige la evaluación como gate** (§4) y se define
   **qué se registra para que sea reproducible y comparable entre versiones de modelo**; la
   metodología de medir vive allí. Frontera fina: **el número lo produce ella, la decisión de
   promover o revertir con ese número es de aquí.**
-- `mlsecops-standards` (**Ola 3, escrita**): lo **adversario y la cadena de suministro del
+- `mlsecops-standards`: lo **adversario y la cadena de suministro del
   modelo** — procedencia e integridad de pesos de terceros, `safetensors` frente a formatos con
   `pickle`, `trust_remote_code`, `picklescan`/`modelscan`, firma de artefactos y pin por digest,
   AIBOM/ML-BOM, envenenamiento de datos y de pesos, *backdoors*, extracción, inversión e
@@ -92,7 +98,7 @@ software; se degrada en silencio con el código intacto.** Tres consecuencias qu
   suministro se **enuncian aquí como prohibición operativa** y se **analizan allí**. Si la
   pregunta es "¿me pueden atacar por aquí?", es suya; si es "¿cómo lo despliego y lo vigilo?", es
   de esta skill.
-- `ai-governance-standards` (**Ola 3, escrita — esta misma ola**): **decide y responde; aquí se
+- `ai-governance-standards`: **decide y responde; aquí se
   opera.** El **registro de modelos** (artefactos que tú entrenas y sirves, con sus métricas y su
   linaje) es de esta skill; el **inventario de sistemas de IA** —que incluye herramientas de
   terceros que tú no operas, SaaS con IA embebida y la IA en la sombra— es suyo. La clasificación

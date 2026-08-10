@@ -33,7 +33,7 @@ problema, meter un LLM es añadir coste, latencia y no determinismo permanentes 
 
 **No aplica**:
 
-- **`model-finetuning-standards`** (**Ola 7, escrita** — cierra el orden de escalada que esta skill
+- **`model-finetuning-standards`** (cierra el orden de escalada que esta skill
   empieza): **primero prompt (aquí), después recuperación (`rag-standards`), y solo entonces ajuste
   fino (allí)**. El criterio que evita el error caro y que ambas partes sostienen: **el ajuste fino
   arregla formato, estilo y consistencia de tarea; NO arregla el desconocimiento de hechos**, que es
@@ -53,7 +53,7 @@ problema, meter un LLM es añadir coste, latencia y no determinismo permanentes 
   cubre la aplicación de **un solo turno o un pipeline determinista que tú orquestas**; allí, el
   bucle donde el modelo decide qué hacer a continuación. Si el flujo de control lo escribes tú, es
   de esta skill; si lo decide el modelo, es suya.
-- `llm-evaluation-standards` (**Ola 3, planificada**): **la evaluación es suya** — conjuntos de
+- `llm-evaluation-standards`: **la evaluación es suya** — conjuntos de
   evaluación, LLM-as-judge y su calibración, regresión de prompts, métricas y su significancia.
   Aquí se **exige como gate** (§4) y se define qué se versiona para que la evaluación sea
   reproducible, pero el cómo se mide vive allí.
@@ -63,13 +63,13 @@ problema, meter un LLM es añadir coste, latencia y no determinismo permanentes 
   `llm-evaluation-standards` respectivamente.
 - `mcp-standards`: el protocolo MCP, sus primitivas, transportes, autorización y la seguridad de sus
   servidores (tool poisoning, rug pull, confused deputy).
-- `mlsecops-standards` (**Ola 3, planificada**): seguridad del **ciclo de vida del modelo** — red
+- `mlsecops-standards`: seguridad del **ciclo de vida del modelo** — red
   teaming de IA, envenenamiento de datos y pesos, procedencia del modelo.
-- `local-inference-standards` (**Ola 3, planificada**): servir modelos abiertos (vLLM, llama.cpp,
+- `local-inference-standards`: servir modelos abiertos (vLLM, llama.cpp,
   Ollama, SGLang), cuantización, batching, KV cache del servidor.
-- `gpu-computing-standards`, `mlops-standards` (**Ola 3, planificadas**): hardware y ciclo de vida
+- `gpu-computing-standards`, `mlops-standards`: hardware y ciclo de vida
   de modelos propios.
-- `ai-governance-standards` (**Ola 3, planificada**): el AI Act como gobierno, clasificación de
+- `ai-governance-standards`: el AI Act como gobierno, clasificación de
   riesgo, obligaciones de transparencia y documentación regulatoria.
 - `appsec-standards`: las clases de vulnerabilidad clásicas (OWASP Top 10 web/API, ASVS, STRIDE) y
   el triaje de hallazgos. **La inyección de prompt y el OWASP Top 10 for LLM Applications son de

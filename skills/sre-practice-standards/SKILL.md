@@ -32,29 +32,32 @@ incidente de fiabilidad**: si ambas divergen, manda aquella),
 `incident-response-forensics-standards` (incidente de **seguridad**: contención sin destruir
 evidencia, adquisición, cadena de custodia, erradicación y recuperación, notificación regulatoria),
 `bcdr-standards` (continuidad y DR como programa: RTO/RPO, sitios alternos,
-ejercicios de recuperación completa), `itsm-itil-standards` (**Ola 6, planificada** — proceso de servicio: catálogo, CAB, gestión de
-peticiones, cumplimiento contractual), `web-performance-standards` (**Ola 6**: **el SLO del
+ejercicios de recuperación completa), `chaos-engineering-standards` (**el diseño y la mecánica
+del experimento de caos son suyos** —hipótesis de estado estable, herramienta de inyección,
+*blast radius*, condiciones de aborto—; **el game day como práctica de fiabilidad y el SLO que
+sirve de estado estable son de aquí**), `itsm-itil-standards` (proceso de servicio: catálogo, CAB, gestión de
+peticiones, cumplimiento contractual), `web-performance-standards` (**el SLO del
 servicio y su error budget son de aquí**; **la experiencia percibida en el navegador** —Core Web
 Vitals, RUM al percentil 75— **es suya**. Un servicio puede cumplir su SLO de disponibilidad y
 latencia de servidor y aun así ser lento para el usuario: son dos medidas distintas y ninguna
-sustituye a la otra), `performance-engineering-standards` (**Ola 6, en curso**: *"¿cuánta latencia
+sustituye a la otra), `performance-engineering-standards` (*"¿cuánta latencia
 podemos permitirnos y qué hacemos si la superamos?"* es de aquí; *"¿por qué es lenta y qué la
-arregla?"* es suya), `knowledge-management-standards` (**Ola 6**: **el contenido del runbook —qué comprueba, qué comando
+arregla?"* es suya), `knowledge-management-standards` (**el contenido del runbook —qué comprueba, qué comando
 se ejecuta, qué se escala— es de aquí**; **que exista, tenga dueño, fecha de revisión y se haya
 ejecutado al menos una vez es criterio suyo**. La regla que ambas sostienen: **un runbook que nadie
 ha ejecutado es ficción**, y descubrirlo durante un incidente es la peor forma de averiguarlo),
-`tech-leadership-standards` (**Ola 6**: **las métricas DORA y los SLO son de aquí y miden
+`tech-leadership-standards` (**las métricas DORA y los SLO son de aquí y miden
 sistemas y equipos**; **la prohibición de usarlas para evaluar personas se refuerza allí**, porque
 esa presión llega de la línea de gestión y no del equipo. Ninguna de las dos skills acepta un
-"DORA por ingeniero"), `finops-standards` (**Ola 6** — **fiabilidad frente a coste es un trade-off explícito**: la
+"DORA por ingeniero"), `finops-standards` (**fiabilidad frente a coste es un trade-off explícito**: la
 redundancia, el sobredimensionado y el multi-AZ se deciden aquí con el error budget como árbitro;
 **cuánto cuesta esa decisión y en qué unidad económica se expresa, allí**. Ninguna de las dos
-recorta a la otra sin decisión declarada), `platform-engineering-standards` (**Ola 6**: **la
+recorta a la otra sin decisión declarada), `platform-engineering-standards` (**la
 plataforma interna también es un servicio y se le aplican SLO, on-call y error budget de aquí**; su
 diseño como producto, su camino pavimentado y su adopción son suyos), `itsm-itil-standards`
-(**Ola 6**: **un SLA contractual no es un SLO** — el SLA y su régimen de créditos son suyos, el SLO
+(**un SLA contractual no es un SLO** — el SLA y su régimen de créditos son suyos, el SLO
 y su error budget son de aquí, y confundirlos produce compromisos imposibles u objetivos internos
-sin sentido), `testing-qa-standards` (**Ola 6**: canary, *feature flags* y *shadow traffic*
+sin sentido), `testing-qa-standards` (canary, *feature flags* y *shadow traffic*
 **se diseñan allí como tipo de prueba**; la decisión de desplegar así, por fiabilidad y error
 budget, es de aquí).
 
@@ -251,6 +254,12 @@ leen **juntos**: subir despliegues mientras crece el change failure rate no es m
   agota, decide la política acordada. Eso convierte un conflicto político en una regla.
 - Si el equipo nunca consume budget, **está siendo demasiado conservador**: sobra fiabilidad y falta
   velocidad — sube el ritmo o baja el objetivo (y ahorra el coste).
+- **Bajar el objetivo porque el coste no lo sostiene**: es la contraparte legítima del punto
+  anterior y **se decide aquí, no en la hoja de coste**. `finops-standards` aporta cuánto cuesta
+  cada nueve; **la firma es de quien responde del SLO**, va en un ADR con el impacto en el usuario
+  declarado, y se comunica a quien consume el servicio. Un objetivo que baja para que deje de
+  sonar la alerta —o para cuadrar un presupuesto sin decirlo— no es una renegociación: es un
+  compromiso roto en silencio.
 - Fiabilidad extra por encima del SLO no se vende: cada nueve adicional multiplica el coste y los usuarios ya
   no lo perciben (su red, su móvil y sus dependencias imponen un techo). Dilo con números en la discusión.
 

@@ -36,27 +36,27 @@ pipeline invoca; el segundo, además, en runners Windows y en el paso `pwsh`),
 pipeline, los gates, la firma, el SBOM, OIDC y la seguridad del runner se deciden aquí**; **cómo se
 escribe el `Jenkinsfile` como código Groovy** —declarativo frente a *scripted*, CPS y `@NonCPS`,
 Shared Libraries, el sandbox de Script Security y la aprobación de scripts— **es suyo**. La regla
-que no se negocia por ninguna de las dos partes: **PROHIBIDO desactivar el sandbox**), `observability-standards` (métricas DORA y telemetría del propio pipeline), `opensource-licensing-standards` (**Ola 6**: **la pipeline ejecuta el gate de licencias** —el
+que no se negocia por ninguna de las dos partes: **PROHIBIDO desactivar el sandbox**), `observability-standards` (métricas DORA y telemetría del propio pipeline), `opensource-licensing-standards` (**la pipeline ejecuta el gate de licencias** —el
 runner, el job, la caché y la firma del artefacto son de aquí—; **el umbral, la lista de licencias
 permitidas, el proceso de excepción y qué rompe el build son suyos**. Y el SBOM que esta skill ya
 genera para firma y procedencia **tiene un segundo consumidor**: las obligaciones de licencia),
-`platform-engineering-standards` (**Ola 6**: **el diseño de la pipeline concreta, sus gates y su
+`platform-engineering-standards` (**el diseño de la pipeline concreta, sus gates y su
 seguridad son de aquí**; **que exista una plantilla de pipeline en el camino pavimentado, quién la
-mantiene y cómo se deprecia, es suyo**), `finops-standards` (**Ola 6**: el coste del propio CI
+mantiene y cómo se deprecia, es suyo**), `finops-standards` (el coste del propio CI
 —minutos de runner, cachés, artefactos— es una unidad económica más y se mide con su método),
-`developer-workstation-standards` (**Ola 6** — **la paridad entre lo que corre en local y lo que
+`developer-workstation-standards` (**la paridad entre lo que corre en local y lo que
 corre aquí**: la misma versión de runtime, el mismo formateador y el mismo linter, fijados en el
 repositorio y no en la máquina. **Si el gate solo falla en CI, el problema es de aprovisionamiento
-del puesto, no de la pipeline**), `ai-agent-workflow-standards` (**Ola 6**: **el agente que corre
+del puesto, no de la pipeline**), `ai-agent-workflow-standards` (**el agente que corre
 en un job es una identidad más y se le acota el token y el alcance aquí**; qué tarea se le delega y
-cómo se revisa su cambio, allí), `testing-qa-standards` (**Ola 6**: **la pipeline y el umbral que rompe el build son de aquí**;
+cómo se revisa su cambio, allí), `testing-qa-standards` (**la pipeline y el umbral que rompe el build son de aquí**;
 **qué se prueba, en qué proporción y con qué criterio de calidad, allí**), `code-review-standards`
-(**Ola 6**: lo que comprueba una máquina antes del merge es de aquí; **lo que revisa una persona y
+(lo que comprueba una máquina antes del merge es de aquí; **lo que revisa una persona y
 con qué criterio, allí** — y la regla que ambas comparten: **si se discute formato en una revisión,
 falta un formateador en esta pipeline**), `accessibility-standards` y `web-performance-standards`
-(**Ola 6**: el gate se ejecuta aquí; **el criterio de conformidad y el umbral los fijan ellas**),
+(el gate se ejecuta aquí; **el criterio de conformidad y el umbral los fijan ellas**),
 `solidity-standards`
-(**Ola 5**: la pipeline y sus gates genéricos son de aquí; **el gate específico de despliegue de un
+(la pipeline y sus gates genéricos son de aquí; **el gate específico de despliegue de un
 contrato es suyo y es más duro que el de cualquier otro artefacto** — no se despliega sin tests
 invariantes, sin auditoría externa y sin plan de incidente en cadena escrito **antes**, porque no
 existe el rollback).

@@ -12,8 +12,8 @@ Aplica a todo trabajo en Go: ficheros `.go`, `go.mod`/`go.sum`, `.golangci.yml`,
 **No aplica**: ver `api-design-standards` (diseño del contrato HTTP/gRPC: recursos, códigos, paginación, RFC 9457, versionado — aquí solo su implementación con `net/http`/chi/gRPC), `microservices-architecture-standards` (corte de servicios, eventos, sagas, resiliencia distribuida), `appsec-standards` (modelado de amenazas y clases de vulnerabilidad agnósticas del stack; aquí solo los sinks y flags concretos de Go), `rust-standards` (la otra skill de lenguaje de sistemas: elección Go-vs-Rust por workload, no por inercia), `data-platform-standards` (modelado, índices y tuning del motor; aquí solo el uso de `database/sql`/sqlc), `cicd-standards` (la pipeline que ejecuta los gates), `kubernetes-standards` (imagen OCI, despliegue y el `Dockerfile` de producción), `observability-standards` (pipeline OTel/Prometheus; aquí solo la instrumentación en el código), `git-workflow-standards` (rama, commits y tagging SemVer, que en Go **es** el mecanismo de publicación del módulo), `bash-linux-scripting-standards` (scripts de sistema), `c-standards` y `cpp-standards` (**el lado
 nativo de cgo**: el código C que se compila y sus flags son suyos; la frontera cgo —coste de la
 llamada, punteros que cruzan, `runtime.Pinner`— es de aquí, y la regla sigue siendo **evitar cgo
-salvo necesidad**), `sql-standards` (el SQL que sqlc genera o que escribes a mano), `webassembly-standards` (**Ola 5**:
-`GOOS=wasip1` y TinyGo son objetivos de compilación suyos, junto con el runtime, los límites del
+salvo necesidad**), `sql-standards` (el SQL que sqlc genera o que escribes a mano), `webassembly-standards`
+(`GOOS=wasip1` y TinyGo son objetivos de compilación suyos, junto con el runtime, los límites del
 sandbox y el tamaño del artefacto; el Go que se escribe es de aquí — y el aviso que ambas
 comparten: **el runtime de Go pesa**, TinyGo existe por eso y no es Go completo). **Elección de
 lenguaje** (manda la skill del lenguaje elegido): `python-standards`, `typescript-standards`,
@@ -21,7 +21,7 @@ lenguaje** (manda la skill del lenguaje elegido): `python-standards`, `typescrip
 (**la comparación más relevante para servicios concurrentes**: Go da concurrencia barata sobre un
 runtime único; la BEAM da aislamiento por proceso y supervisión — no es lo mismo), `scala-standards`,
 `clojure-standards`, `haskell-fp-standards`, `ocaml-fsharp-standards`, `zig-standards`,
-`nim-standards`, `crystal-standards` (**Ola 5**: las tres compiten con Go en "binario sin
+`nim-standards`, `crystal-standards` (las tres compiten con Go en "binario sin
 dependencias" con ecosistemas mucho menores).
 
 ## 2. Toolchain por defecto

@@ -48,7 +48,7 @@ modelado y de consulta es de aquí**), las skills de lenguaje (drivers Bolt/Grem
 `vector-db-standards` (**búsqueda vectorial y operación de un índice ANN: suyas**, aunque
 los motores de grafo hayan añadido índices vectoriales), `data-engineering-standards` (los
 pipelines que cargan el grafo), `data-warehouse-modeling-standards` (modelado analítico).
-**Ola 4, planificadas**: `search-engines-standards` (búsqueda
+Además: `search-engines-standards` (búsqueda
 por relevancia), `timeseries-db-standards`, `lakehouse-standards`
 (analítica), `streaming-cdc-standards`, `data-governance-quality-standards`,
 `analytics-bi-standards`, `caching-cdn-standards`, `message-brokers-standards`,

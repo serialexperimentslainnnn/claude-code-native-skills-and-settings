@@ -40,8 +40,14 @@ run() { if [ "$DRY_RUN" = 1 ]; then log "[dry-run] $*"; else "$@"; fi; }
 
 # Lo que se plancha: <ruta en el repo>:<ruta bajo ~/.claude>. Nada más. El resto del repo
 # (roadmap, plantilla, planes) es material de trabajo y no pinta nada en la instalación.
-FILES=( "CLAUDE.md:CLAUDE.md" )
+FILES=( "CLAUDE.md:CLAUDE.md" "core-directives.md:core-directives.md" )
 DIRS=( "skills:skills" )
+
+# El hook que reinyecta `core-directives.md` en cada turno. Es lo único que impide que las
+# directrices se diluyan según crece la conversación: un documento cargado al inicio pierde contra
+# el patrón de los últimos turnos, y el harness sí lo reinyecta siempre.
+SETTINGS="$CLAUDE_HOME/settings.json"
+HOOK_CMD='jq -n --rawfile d "$HOME/.claude/core-directives.md" '"'"'{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$d}}'"'"' 2>/dev/null || true'
 
 # La memoria de Claude Code vive bajo un directorio por proyecto cuyo nombre deriva de la ruta de
 # trabajo: cada '/' y cada '.' se sustituyen por '-'.
@@ -55,6 +61,49 @@ sanity_check() {
   done
   [ "$missing" = 0 ] || { echo "Repositorio incompleto; abortando." >&2; exit 1; }
   command -v rsync >/dev/null || { echo "Falta rsync; abortando." >&2; exit 1; }
+  command -v jq >/dev/null || { echo "Falta jq (lo necesita el hook de directrices); abortando." >&2; exit 1; }
+}
+
+# Fusiona el hook en settings.json SIN pisar el resto: ese fichero es del usuario (env, permisos,
+# modelo) y aquí solo se añade una entrada. Idempotente: si ya está exactamente igual, no toca nada.
+install_hook() {
+  local tmp existing
+  [ -f "$SETTINGS" ] || { log "creando $SETTINGS"; run mkdir -p "$CLAUDE_HOME"; [ "$DRY_RUN" = 1 ] || echo '{}' > "$SETTINGS"; }
+
+  if [ -f "$SETTINGS" ] && ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
+    echo "settings.json no es JSON válido; no lo toco. Arréglalo y reinstala." >&2
+    return 1
+  fi
+
+  existing="$(jq -r --arg c "$HOOK_CMD" '
+      [.hooks.UserPromptSubmit // [] | .[] | .hooks[]? | select(.command == $c)] | length
+    ' "$SETTINGS" 2>/dev/null || echo 0)"
+  if [ "$existing" != "0" ]; then log "hook de directrices ya instalado"; return 0; fi
+
+  backup "$SETTINGS"
+  log "hook: UserPromptSubmit -> reinyecta core-directives.md en cada turno"
+  if [ "$DRY_RUN" = 1 ]; then
+    log "[dry-run] jq merge del hook en $SETTINGS"
+    return 0
+  fi
+  tmp="$(mktemp)"
+  # Se eliminan primero las versiones antiguas de ESTE hook (identificadas por el marcador) para no
+  # acumular duplicados al reinstalar tras cambiar el comando.
+  jq --arg c "$HOOK_CMD" '
+    .hooks //= {}
+    | .hooks.UserPromptSubmit //= []
+    | .hooks.UserPromptSubmit |= map(
+        .hooks |= map(select((.command // "") | contains("core-directives.md") | not))
+      ) | .hooks.UserPromptSubmit |= map(select((.hooks | length) > 0))
+    | .hooks.UserPromptSubmit += [{
+        hooks: [{
+          type: "command",
+          command: $c,
+          timeout: 10,
+          statusMessage: "Re-anchoring core directives"
+        }]
+      }]
+  ' "$SETTINGS" > "$tmp" && mv -- "$tmp" "$SETTINGS"
 }
 
 # Respalda el destino solo si existe y difiere de lo que vamos a poner.
@@ -114,10 +163,13 @@ install_all() {
     run ln -s "$REPO/memory" "$MEMORY_TARGET"
   fi
 
+  install_hook
+
   echo
   echo "Hecho. Abre una sesión con:  cd $REPO && claude"
   [ -d "$BACKUP" ] && echo "Lo anterior quedó en: $BACKUP"
   echo "Comprueba los gates con:     ./check.sh"
+  echo "Revisa el hook con:          /hooks   (o jq .hooks $SETTINGS)"
 }
 
 uninstall_all() {
@@ -134,6 +186,25 @@ uninstall_all() {
   if [ -L "$MEMORY_TARGET" ]; then
     log "quitando enlace: $MEMORY_TARGET"
     run rm -f -- "$MEMORY_TARGET"
+  fi
+
+  # El hook se quita del settings.json sin tocar el resto de la configuración del usuario.
+  if [ -f "$SETTINGS" ] && jq -e '[.hooks.UserPromptSubmit // [] | .[] | .hooks[]? |
+        select((.command // "") | contains("core-directives.md"))] | length > 0' "$SETTINGS" >/dev/null 2>&1; then
+    backup "$SETTINGS"
+    log "quitando hook de directrices de $SETTINGS"
+    if [ "$DRY_RUN" != 1 ]; then
+      tmp="$(mktemp)"
+      jq '
+        if .hooks.UserPromptSubmit then
+          .hooks.UserPromptSubmit |= map(
+            .hooks |= map(select((.command // "") | contains("core-directives.md") | not))
+          ) | .hooks.UserPromptSubmit |= map(select((.hooks | length) > 0))
+        else . end
+        | if (.hooks.UserPromptSubmit // []) == [] then del(.hooks.UserPromptSubmit) else . end
+        | if (.hooks // {}) == {} then del(.hooks) else . end
+      ' "$SETTINGS" > "$tmp" && mv -- "$tmp" "$SETTINGS"
+    fi
   fi
 
   local last

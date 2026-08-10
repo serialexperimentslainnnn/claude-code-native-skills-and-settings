@@ -68,10 +68,10 @@ aquí **el peso que ese sistema añade al bundle y el coste de sus dependencias*
 diseño es una de las mayores fuentes de JavaScript no usado, y el presupuesto se defiende aquí),
 `cms-jamstack-standards` (el CMS y su modelado son suyos; aquí **el coste medido de sus imágenes y
 de sus scripts de terceros**, que suele dominar el LCP de un sitio de contenido),
-`webgl-webgpu-standards` (**Ola 6** — **son dos presupuestos distintos y no se mezclan**: aquí las
+`webgl-webgpu-standards` (**son dos presupuestos distintos y no se mezclan**: aquí las
 Core Web Vitals y el presupuesto de carga; allí **el presupuesto de fotograma y el coste de GPU**.
 Un canvas puede ir a 60 fps y arruinar el INP de la página, o al revés: ninguna de las dos métricas
-predice a la otra), `pwa-standards` (**Ola 6**: la caché del *service worker* cambia radicalmente
+predice a la otra), `pwa-standards` (la caché del *service worker* cambia radicalmente
 las métricas de visita repetida — **medir solo la primera visita oculta lo que hace una PWA**, y
 una caché mal configurada sirve rápido una versión vieja, que no es una mejora).
 

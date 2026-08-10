@@ -53,7 +53,7 @@ servicio — aquí la configuración local: `sudoers`, `pam_faillock`, `AllowGro
 `appsec-standards` (vulnerabilidades del código de aplicación), `homelab-standards` (laboratorio
 personal: la frontera es el rigor exigido, no el tamaño), `offensive-security-standards`
 (verificación ofensiva del endurecimiento, con alcance y autorización), `ctf-lab-standards`
-(laboratorio de entrenamiento desechable), `developer-workstation-standards` (**Ola 6** — frontera
+(laboratorio de entrenamiento desechable), `developer-workstation-standards` (frontera
 que colisiona de verdad: **aquí el endurecimiento del servidor y de la flota** —baseline CIS/STIG,
 `sysctl`, auditd, sudoers, SELinux/AppArmor, aplicado por configuración centralizada—; **allí el
 puesto de trabajo**, cuyo modelo de amenaza es distinto: cifrado de disco, claves en hardware,
@@ -63,12 +63,12 @@ baseline de servidor aplicado a una estación de desarrollo no la endurece, la i
 flota son suyos** —incluidos los límites reales del agente en Linux—; aquí el control del baseline
 que se aplica por configuración centralizada y se mide con `oscap`).
 
-Planificadas — hasta que existan, esta skill es criterio provisional en su solapa:
-`container-runtime-security-standards` (**Ola 1**: seccomp, eBPF/Falco, detección de escape de
-contenedor y seguridad del runtime), `detection-engineering-standards` (**Ola 1**: qué se hace con
-la telemetría de auditd — reglas Sigma, casos de uso, SIEM), `bcdr-standards` (**Ola 1**: RTO/RPO y
-continuidad), `linux-administration-standards` (**Ola 2**: día a día del SO, systemd, paquetes,
-usuarios sin ángulo de seguridad), `rhel-fedora-standards` (**Ola 2**: particularidades de la
+Además:
+`container-runtime-security-standards` (seccomp, eBPF/Falco, detección de escape de
+contenedor y seguridad del runtime), `detection-engineering-standards` (qué se hace con
+la telemetría de auditd — reglas Sigma, casos de uso, SIEM), `bcdr-standards` (RTO/RPO y
+continuidad), `linux-administration-standards` (día a día del SO, systemd, paquetes,
+usuarios sin ángulo de seguridad), `rhel-fedora-standards` (particularidades de la
 familia RHEL — `dnf5`, `rpm-ostree`, `bootc`, image builder).
 
 ## 2. Decisiones por defecto
@@ -272,7 +272,7 @@ Ejes, con el criterio de por qué:
 - **Reglas mínimas útiles**. Una lista de 400 reglas copiada de un repo genérico produce gigabytes
   al día, satura el disco, degrada el host y **no la lee nadie**: es pérdida de señal disfrazada de
   cumplimiento. La inteligencia de detección (TTP, firmas de herramienta) vive en el SIEM como
-  reglas Sigma, no en el ruleset de auditd — ver `detection-engineering-standards` (Ola 1).
+  reglas Sigma, no en el ruleset de auditd — ver `detection-engineering-standards`.
 - Núcleo defendible: cambios en `/etc/passwd`, `/etc/shadow`, `/etc/group`, `sudoers` y
   `sudoers.d`; ejecución de binarios SUID/SGID relevantes; `execve` de shells por cuentas de
   servicio; carga/descarga de módulos; cambios de hora; montajes; modificación de la configuración

@@ -39,13 +39,16 @@ protocolos de campo —Modbus, DNP3, PROFINET, IEC 60870-5-104, OPC UA—, monit
 ventana de parada. **Frontera operativa: si el aparato *actúa sobre un proceso físico industrial* y
 su fallo es un problema de seguridad de personas, es suyo; si es un producto conectado de consumo,
 edificio, retail, medición o logística, es de aquí.** Un controlador que caiga en ambos lados se
-diseña bajo esta skill y **se gobierna bajo la suya**), `edge-computing-standards` (**Ola 7, en
-curso** — hermana directa: **suyo el nodo con Linux completo, el cómputo desplazado al borde, la
+diseña bajo esta skill y **se gobierna bajo la suya**), `edge-computing-standards` (**hermana
+directa**: **suyo el nodo con Linux completo, el cómputo desplazado al borde, la
 flota como sistema distribuido, la sincronización y la orquestación remota**; **aquí el dispositivo
 como objeto físico**: silicio, arranque, memoria, energía, periféricos, imagen del firmware y su
 actualización. Regla de arbitraje: *"¿qué se ejecuta en el borde y cómo se coordina la flota?" es
 suyo; "¿qué imagen arranca en esa placa, cómo se firma y cómo se sustituye sin ladrillarla?" es de
-aquí*), `c-standards`, `cpp-standards`, `rust-standards`, `ada-standards` y `zig-standards` (**el
+aquí*. **Corte espejado del actualizador A/B**: MCUboot, RAUC, SWUpdate, Mender y hawkBit —imagen
+de firmware, ranuras y contador de rollback— son de aquí; rpm-ostree, bootc, greenboot y balenaOS
+—imagen de SO completo— son suyos; y **la campaña sobre la flota es suya siempre**, con cualquier
+mecanismo), `c-standards`, `cpp-standards`, `rust-standards`, `ada-standards` y `zig-standards` (**el
 lenguaje y su toolchain son suyos**, incluidos `-std=`, MISRA C/CERT C, sanitizers, flags de
 hardening del binario, runtime restringido de Ada y `no_std` de Rust — **aquí solo qué restricciones
 impone el objetivo**: sin `malloc`, sin excepciones, sin libc completa, tamaño de pila acotado),

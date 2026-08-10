@@ -52,14 +52,14 @@ Corolario operativo: **un proceso sin dueño nombrado no existe** — existe la 
   sale de este proceso.
 - `observability-standards`: la telemetría con la que se detecta y se diagnostica.
 - `onprem-standards`, `homelab-standards`: la plataforma sobre la que corre el servicio.
-- `knowledge-management-standards` (**Ola 6, planificada**): la **base de conocimiento** — autoría,
+- `knowledge-management-standards`: la **base de conocimiento** — autoría,
   revisión, caducidad y curación de artículos. Aquí solo su **enganche al proceso**: el KEDB y el
   artículo obligatorio en el cierre de un problema.
-- `platform-engineering-standards` (**Ola 6, en curso**): el portal interno de desarrollador y el
+- `platform-engineering-standards`: el portal interno de desarrollador y el
   catálogo de *software templates*. La frontera es el cliente: **plataforma sirve a equipos internos
   con autoservicio; ITSM sirve a un cliente con un compromiso**. El portal no sustituye al catálogo
   de servicios ni al revés.
-- `enterprise-architecture-standards` (**Ola 6, planificada**): el **inventario de aplicaciones y
+- `enterprise-architecture-standards`: el **inventario de aplicaciones y
   capacidades**. Se cruza con la CMDB y el catálogo de servicios: el inventario de aplicaciones es la
   vista de arquitectura (ciclo de vida, capacidad de negocio, *fit*), la CMDB es la vista operativa
   (qué está desplegado y de qué depende). **Un mismo objeto, dos vistas: si se mantienen dos fuentes

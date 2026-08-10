@@ -45,7 +45,7 @@ proceso a medio ejecutar.** Un robot que falla en el paso 7 de 12 deja una factu
 asentar, un pedido creado sin confirmar, un pago iniciado sin conciliar. La caída se ve; el estado
 inconsistente, no. Todo §3.3 existe por esto.
 
-**No aplica**: ver `lowcode-governance-standards` (**Ola 7, en curso** — hermana directa y con
+**No aplica**: ver `lowcode-governance-standards` (hermana directa y con
 frontera nítida, porque Power Automate aparece en las dos: **suyo el gobierno de la plataforma
 low-code** —catálogo de aplicaciones y flujos, entornos y su ciclo de vida (ALM), *citizen
 developers* y su habilitación, políticas de prevención de pérdida de datos de conectores, *shadow

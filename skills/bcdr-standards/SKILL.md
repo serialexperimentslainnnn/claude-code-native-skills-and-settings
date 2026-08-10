@@ -1,6 +1,6 @@
 ---
 name: bcdr-standards
-description: Business continuity and disaster recovery as a program. Use for a business impact analysis (BIA), deriving RTO/RPO/MTPD from business impact rather than from what infrastructure can do today, mapping the dependency graph and the recovery sequence, choosing between backup-restore, pilot light, warm standby and active-active, multi-region or multi-cloud DR posture, who declares a disaster and under which activation criteria, crisis communication and alternate site, DR drills from walkthrough to live failover and failback, ransomware recovery with immutable or offline copies and backup infrastructure isolated from the production domain, identity-first recovery sequencing, SaaS and vendor dependency with exit and data-protection responsibility, encryption key escrow held outside the backed-up system, measured versus committed recovery objectives, ISO 22301 and ISO/TS 22317, and the continuity, backup and resilience-testing duties of DORA Articles 11-12 and NIS2 Article 21(2)(c).
+description: Business continuity and disaster recovery as a program. Use for a business impact analysis (BIA), deriving RTO/RPO/MTPD from business impact rather than from what infrastructure can do today, mapping the dependency graph and the recovery sequence, choosing between backup-restore, pilot light, warm standby and active-active, multi-region or multi-cloud DR posture, who declares a disaster and under which activation criteria, crisis communication and alternate site, DR drills from walkthrough to live failover and failback, ransomware recovery with immutable or offline copies and backup infrastructure isolated from the production domain, building an isolated recovery environment (IRE) or clean room where restored systems are rebuilt and declared trustworthy before reconnection, identity-first recovery sequencing, SaaS and vendor dependency with exit and data-protection responsibility, encryption key escrow held outside the backed-up system, measured versus committed recovery objectives, ISO 22301 and ISO/TS 22317, and the continuity, backup and resilience-testing duties of DORA Articles 11-12 and NIS2 Article 21(2)(c).
 ---
 
 # Estándares de continuidad de negocio y recuperación ante desastres (BC/DR)
@@ -21,8 +21,10 @@ Triggers: "BIA", "análisis de impacto", "RTO", "RPO", "MTPD", "MTO", "plan de c
 alterno", "DR site", "pilot light", "warm standby", "activo-activo", "multi-región", "multi-nube",
 "orden de recuperación", "cadena de dependencias", "failover", "conmutación por error",
 "tabletop de DR", "simulacro de recuperación", "recuperación de ransomware", "copia inmutable",
-"aislamiento del backup", "recuperación del directorio", "recuperación del bosque", "salida de
-proveedor", "ISO 22301", "DORA art. 11-12", "NIS2 art. 21(2)(c)".
+"aislamiento del backup", "recuperación del directorio", "recuperación del bosque", "entorno de
+recuperación aislado", "IRE", "clean room", "sala limpia", "entorno limpio de recuperación",
+"reconstruir en aislado", "salida de proveedor", "ISO 22301", "DORA art. 11-12",
+"NIS2 art. 21(2)(c)".
 
 **Principio rector**: **el RTO y el RPO no los elige quien restaura, los deriva el impacto en el
 negocio** — y si no están derivados de un BIA, son deseos con formato de número. Corolario doble y
@@ -30,7 +32,7 @@ no negociable: **un plan no ensayado no existe** y **un backup sin restore proba
 (invariante compartido con `onprem-standards` §1.3).
 
 **No aplica**:
-- `backup-recovery-standards` (**Ola 2, planificada**) — **la colisión más probable de todo el
+- `backup-recovery-standards` — **la colisión más probable de todo el
   catálogo; frontera quirúrgica**: allí vive la **mecánica** del respaldo (elección de herramienta,
   repositorio, topología 3-2-1, cadencia de trabajos, deduplicación, cifrado del repositorio,
   esquemas de retención GFS, verificación de integridad, catálogo, y el procedimiento concreto de
@@ -38,8 +40,8 @@ no negociable: **un plan no ensayado no existe** y **un backup sin restore proba
   negocio (RTO/RPO), en qué **orden** se recupera, quién declara el desastre, con qué ejercicio se
   demuestra y qué se comunica. Regla de arbitraje en una línea: **"¿cómo se hace la copia?" es de
   `backup-recovery`; "¿cuánto podemos perder, en qué orden lo levantamos y quién lo decide?" es de
-  esta skill.** Hasta que exista, aplica aquí solo el principio (3-2-1, inmutabilidad, restore
-  probado) y **no desarrolles la mecánica**.
+  esta skill.** Aquí solo el principio (3-2-1, inmutabilidad, restore probado); **la mecánica no
+  se desarrolla aquí**, se delega en ella.
 - `incident-management-standards`: el proceso de gestión del incidente — declaración, severidad,
   Incident Commander, comunicación, postmortem. **La frontera es de escala y está declarada en ambos
   lados**: mientras el impacto es recuperable dentro del servicio, es un incidente y manda aquella
@@ -50,7 +52,11 @@ no negociable: **un plan no ensayado no existe** y **un backup sin restore proba
 - `incident-response-forensics-standards`: la respuesta técnica al compromiso. Frontera crítica en
   ransomware: **la recuperación no empieza hasta que la erradicación está verificada**; restaurar
   desde un punto posterior al compromiso inicial restaura también al atacante. El punto de
-  restauración limpio lo determina la investigación, no la prisa por volver.
+  restauración limpio lo determina la investigación, no la prisa por volver. **El forense se hace en
+  su entorno de análisis, no en el de recuperación** (§3.6).
+- `ctf-lab-standards`: laboratorio de entrenamiento y de detonación de muestras. **El entorno de
+  recuperación aislado (§3.6) no es eso**: allí lo malicioso se ejecuta a propósito; aquí la premisa
+  de trabajo es que **no hay nada malicioso ejecutándose**.
 - `sre-practice-standards`: la fiabilidad **cotidiana** — SLI/SLO, error budget y su política, burn
   rate, guardia, capacidad. **Frontera de régimen**: el error budget gobierna lo cotidiano y admite
   degradación parcial; el **RTO/RPO gobierna el desastre**, donde el servicio no está degradado sino
@@ -59,17 +65,23 @@ no negociable: **un plan no ensayado no existe** y **un backup sin restore proba
 - `grc-compliance-standards`: **ISO 22301 como sistema de gestión certificable**, SoA, registro de
   riesgos, evidencia de auditoría, cláusulas contractuales y registro de terceros. Aquí, la
   **ingeniería de la continuidad**: el número, la cadena, el ejercicio y su medición.
-- `privacy-engineering-standards` (**Ola 1**): frontera declarada en ambos lados en el **borrado**.
+- `privacy-engineering-standards`: frontera declarada en ambos lados en el **borrado**.
   La obligación de suprimir y su implementación técnica (incluida la reaplicación de supresiones
-  tras un restore) son de aquella skill; **la ventana de retención del respaldo y su inmutabilidad
-  son de esta**. Diseño que resuelve el conflicto: cifrado por sujeto desde el día 1.
+  tras un restore) son de aquella skill; **la ventana de retención concreta y la inmutabilidad del
+  repositorio son de `backup-recovery-standards`** —esta skill solo fija el RPO del que se
+  deriva—. Diseño que resuelve el conflicto: cifrado por sujeto desde el día 1.
 - `onprem-standards`: paraguas de plataforma — hierro, hipervisor, redundancia física, topología de
   cluster. Sus invariantes (§1.3) mandan y este documento no los contradice; su §6 marcaba como
   provisional exactamente lo que aquí se desarrolla.
-- `ha-clustering-standards` (**Ola 2, planificada**): Pacemaker/Corosync, quórum, fencing, recursos.
+- `ha-clustering-standards`: Pacemaker/Corosync, quórum, fencing, recursos.
   **HA no es DR** (§3.1): la HA absorbe el fallo de un componente dentro del mismo dominio de fallo;
   el DR asume que el dominio entero desaparece.
-- `windows-server-ad-standards` (**existe ya en disco**): el procedimiento concreto de recuperación
+- `chaos-engineering-standards`: **el experimento de resiliencia continuo y acotado es suyo**
+  —hipótesis de estado estable, inyección de fallo, *blast radius*, condiciones de aborto—;
+  **el drill de DR completo —failover de sitio, RTO/RPO, declaración— es de aquí**. La línea:
+  si se ensaya el plan de continuidad, es de aquí; si se inyecta un fallo para refutar una
+  hipótesis en operación normal, es suyo.
+- `windows-server-ad-standards`: el procedimiento concreto de recuperación
   del bosque de Active Directory desde copia de estado del sistema, Tier 0, `ntdsutil` y la higiene
   del directorio. Aquí, **su posición en el orden de recuperación** (§3.3), el criterio de que sin
   identidad no se recupera nada y la exigencia de ensayarlo.
@@ -100,6 +112,7 @@ diseñar sistemas que cumplen; la interpretación de la obligación la fija lega
 | Cadencia mínima de ejercicios | **Tabletop semestral** + **simulación parcial anual** + **failover real anual** de los servicios de tier 1 | Anual completo si el tier lo justifica; **nunca** menos de un ejercicio real al año — es lo que DORA exige explícitamente al sector financiero (§5) |
 | Escenario de diseño dominante | **Ransomware** (incluye compromiso de la identidad y del propio sistema de respaldo), por encima de la pérdida de CPD | El escenario "se quema el CPD" es más fácil que el real: no lo uses como único ejercicio |
 | Copias de respaldo | **Al menos una inmutable u offline**, con la infraestructura de respaldo **aislada del dominio de identidad de producción** | Backup accesible con credenciales de administrador de dominio = backup que el atacante borra primero |
+| Dónde se restaura tras un compromiso | **Entorno de recuperación aislado (IRE)** con los tres aislamientos —red, **identidad** y plano de gestión— (§3.6), preaprovisionado en frío y con **tiempo de construcción medido** dentro del RTO | Bajo demanda desde IaC en cuenta separada por defecto; permanente y dedicado solo si el RTO o la norma lo exigen. **PROHIBIDO** reconstruir sobre el dominio comprometido o administrar el IRE con credenciales de producción |
 | Custodia de claves | **Fuera del sistema respaldado**, con procedimiento de recuperación probado y separación de funciones | Backup cifrado cuya clave solo vive dentro del sistema perdido = pérdida total con pasos extra |
 | Terceros y SaaS | **Tu proveedor caído es tu desastre.** Cada SaaS crítico entra en el BIA con su propio RTO/RPO, su plan de salida y **backup propio de tus datos** | Asumir que el SaaS respalda tus datos por ti: no lo hace (§5) |
 | Verificación | **RTO/RPO medidos en ejercicio, con volúmenes reales**, publicados junto a los comprometidos | Números "estimados" en una diapositiva: se descubren falsos el día que importan |
@@ -227,15 +240,155 @@ Reglas:
   a MAC, integraciones salientes con IP de origen en lista blanca del tercero, y **la propia
   infraestructura de respaldo y monitorización**.
 
-### 3.6 Ejercicios: la única prueba de que el plan existe
+### 3.6 El entorno de recuperación aislado (IRE / *clean room*)
+
+Cuando el desastre es un **compromiso** y no un incendio, la producción deja de ser un sitio donde
+restaurar: no se puede demostrar que esté limpia, y si el directorio está comprometido ni siquiera
+hay una identidad con la que administrarla. El **entorno de recuperación aislado** es el lugar donde
+se restaura, se limpia, se valida y se **declara apto** un servicio antes de devolverlo a producción.
+Su producto no es un servidor encendido: es **confianza reconstruida y firmada**. Con el directorio
+comprometido, **es el primer entregable físico del plan** — sin él no hay dónde restaurar nada.
+
+**Qué no es** (o deja de serlo):
+- **No es un laboratorio de entrenamiento ni de detonación de muestras** (`ctf-lab-standards`): allí
+  la amenaza se ejecuta a propósito y el aislamiento protege al mundo del laboratorio; aquí la
+  premisa es que **nada malicioso se está ejecutando** y el aislamiento protege al entorno del mundo.
+- **No es el entorno forense** (`incident-response-forensics-standards`): adquisición, *timeline*,
+  cadena de custodia y estación de análisis son suyos. El IRE **consume** el resultado de esa
+  investigación —punto limpio, IOC, lista de persistencia— y **no lo produce**.
+- **No es preproducción, ni entorno de pruebas, ni capacidad de picos.** Un IRE con un segundo uso
+  tiene usuarios, credenciales, integraciones y rutas de producción: ya no es un IRE.
+- **No es una copia**: es cómputo, red, almacenamiento y plano de gestión. El repositorio inmutable
+  es el insumo; el IRE es la máquina que lo convierte en servicio.
+
+**Los tres aislamientos que lo definen** — los tres, o no hay IRE:
+
+1. **De red.** *Default-deny* real: sin ruta a producción ni a la red de gestión, y sin Internet
+   salvo salidas **nominales, justificadas, temporales y registradas** (firmas y consola del EDR,
+   activación de licencias, descarga verificada de un binario). **DNS y NTP propios dentro del IRE**:
+   si resuelve nombres contra producción, no está aislado — y el reloj no es un detalle, porque
+   Kerberos, TLS y la correlación de logs dependen de él (§3.3, paso 5). El aislamiento se
+   **comprueba desde dentro** (intento explícito de alcanzar y de resolver producción, con resultado
+   registrado), no se supone por el diagrama.
+2. **De identidad — el que más veces se hace mal.** Directorio, credenciales y MFA **propios del
+   IRE**, creados fuera del dominio comprometido, **sin confianzas ni federación** con él. El fallo
+   clásico: se monta una red separada impecable y se administra con la cuenta de administrador de
+   dominio de siempre — la que el atacante controla —, con lo que el aislamiento dura hasta el primer
+   inicio de sesión. Corolario de **origen limpio**: se administra **desde un dispositivo construido
+   desde cero de fuente confiable** (estación de administración nueva), no desde el portátil del
+   administrador ni desde un salto de producción. Microsoft lo dice literalmente para el compromiso
+   sistémico de identidad: *"ensure any actions taken are performed from a trusted device built from
+   a clean source"* (verificado ago-2026, §8).
+3. **De gestión.** Hipervisor, almacenamiento, consola de respaldo, herramienta de despliegue,
+   monitorización y el propio acceso fuera de banda (IPMI/KVM) **fuera del dominio que se recupera**,
+   con cuentas locales propias y MFA independiente. **Si el plano de gestión es el mismo, no hay
+   aislamiento**, por muchas VLAN que se dibujen: quien controla el hipervisor controla todas las
+   máquinas restauradas dentro de él. Es la continuación directa del criterio de §2 (respaldo fuera
+   del dominio) y del alcance de Tier 0 de `windows-server-ad-standards`.
+
+DORA convierte parte de esto en obligación para su sector: al restaurar con sistemas propios exige
+usar sistemas TIC **"física y lógicamente segregados del sistema TIC de origen"** (art. 12(3);
+verificado ago-2026 sobre fuente secundaria — contrástalo con el texto oficial antes de citarlo,
+§8).
+
+**De qué medio se restaura y con qué se instala**:
+- **Solo desde la copia inmutable u offline.** La copia en línea vive en el mismo plano de identidad
+  y de red que el atacante: su integridad no es demostrable, y demostrarla es exactamente lo que se
+  necesita. La copia se **monta en solo lectura** y se restaura **hacia** el IRE, nunca al revés; la
+  credencial que el IRE usa contra el repositorio **lee y no borra**.
+- **Catálogo del respaldo y material de cifrado entran primero.** Sin ellos, el repositorio inmutable
+  es ruido caro (§4, gate 8).
+- **El binario viene de medio confiable, no del entorno comprometido.** ISO, imágenes base, agentes,
+  controladores, paquetes y plantillas de IaC se obtienen del origen del fabricante con **firma o
+  hash verificado**, o de medio sellado guardado en frío. **Jamás** del *share* de instaladores, del
+  registro de imágenes interno, del servidor de despliegue ni de la plantilla de oro del entorno
+  caído: son precisamente los sitios donde una puerta trasera sobrevive al restore.
+- **Preferencia estructural**: **reconstruir el sistema desde origen confiable e IaC y restaurar solo
+  el dato**, en vez de restaurar la imagen completa — es más rápido y no arrastra la persistencia del
+  atacante (coherente con `backup-recovery-standards` §3.8; la elección entre ambas vías se hace
+  **explícita** y se ensaya la elegida).
+
+**Orden de reconstrucción dentro del IRE — *identity-first***. Es la cadena de §3.3 comprimida y con
+el compromiso como premisa:
+
+```
+0. Plano de gestión del IRE + estación de administración construida de origen limpio
+1. Red interna del IRE, DNS y NTP propios, verificación del aislamiento
+2. Catálogo de respaldo y material de cifrado
+3. IDENTIDAD: directorio restaurado del punto que fija la investigación, en aislamiento,
+   con eliminación de persistencia y rotaciones  → nada más se restaura hasta cerrar esto
+4. Secretos y PKI: lo que vivía en el dominio comprometido se REEMITE, no se restaura
+5. Datos y aplicaciones por tier, en orden de dependencia
+6. Validación funcional con negocio + barrido de IOC + EDR reportando
+```
+
+- **Cada capa se valida antes de apilar la siguiente**: el IRE existe para que el problema aparezca
+  ahí y no en producción; apilar sin validar convierte el entorno limpio en una segunda copia del
+  desastre.
+- El **procedimiento concreto** del directorio (DSRM, limpieza de metadatos, FSMO, RID, doble
+  rotación de `krbtgt`) es de `windows-server-ad-standards` §3.9. **Aquí, la exigencia de que ocurra
+  dentro del IRE y antes que todo lo demás.**
+
+**Criterio de "limpio": qué hay que poder afirmar antes de reconectar.** No es "pasó el antivirus".
+Por escrito, con evidencia y con lo que **no** se pudo determinar declarado explícitamente:
+- el punto de restauración es **anterior al compromiso inicial según la investigación**, no según la
+  fecha de detección;
+- el vector está cerrado y **probado**, y la persistencia se ha buscado específicamente y eliminado
+  (gate 7 de `incident-response-forensics-standards`);
+- las credenciales del alcance están rotadas, **incluidas las que solo existen dentro de lo
+  restaurado** (cuentas de servicio, claves embebidas, tokens de integración, certificados de
+  cliente): rotar la mitad es no rotar;
+- los IOC del caso se han barrido sobre lo restaurado y el **EDR está instalado y reportando antes**
+  de la reconexión, no después;
+- lo restaurado **hace lo que tiene que hacer** (prueba funcional validada por negocio), no solo
+  arranca;
+- la vigilancia reforzada posterior está activa y con ventana definida.
+
+**Quién lo firma**: la aptitud **técnica de seguridad** (erradicación verificada) la firma el
+responsable de la investigación; la **funcional**, el enlace con negocio; y la **reconexión a
+producción la autoriza el director de crisis** (§3.4), con marca temporal y registro. Son tres
+preguntas distintas y **una sola firma no cubre las tres**.
+
+**Cuándo se construye — la trampa.** Un IRE diseñado el día del incidente se diseña sin identidad con
+la que autenticarse, sin la documentación (que estaba en el dominio caído) y sin margen para comprar
+ni contratar nada. Reparto obligatorio:
+- **Preaprovisionado y probado en frío** (no negociable): identidad de emergencia del IRE y su
+  credencial *break-glass* en custodia física o sellada; acceso al repositorio inmutable y a las
+  claves, con su procedimiento de separación de funciones; runbook, inventario y contactos fuera de
+  banda; plano de gestión separado con cuentas locales propias; y la **decisión escrita de dónde se
+  levanta**, con capacidad, contratos y licencias comprobados.
+- **Improvisable el día D**: dimensionado exacto, número de máquinas, direccionamiento interno y qué
+  servicios del tier se levantan primero.
+- **Regla de corte**: **lo que exija autenticarse contra el dominio comprometido, o contratar,
+  comprar o esperar a un tercero, no es improvisable** — o está resuelto en frío, o no existe.
+- **Se ejercita contra él**: la restauración de prueba y la simulación parcial (§3.7) se ejecutan
+  **en el IRE**, no en un entorno de test cómodo. Es la única forma de saber que el IRE existe y
+  cuánto tarda en existir.
+
+**Coste y proporcionalidad.** Un IRE permanente y dedicado es caro y **no siempre se justifica**;
+lo que no es opcional es tener **decidido y probado cómo se obtiene uno**. Escala, de mínimo a
+máximo:
+
+| Nivel | Qué es | Cuándo basta |
+|---|---|---|
+| **Mínimo aceptable** | Los preaprovisionados de arriba + **procedimiento escrito y ensayado** de levantar el IRE bajo demanda, con el **tiempo de construcción medido** y contado dentro del RTO | Es el suelo **para todos**. Si el tiempo de construcción no se ha medido, el RTO de un escenario de compromiso es ficción |
+| **Bajo demanda en nube o desde IaC** | Cuenta, suscripción o *tenant* **separado** —otro dominio de fallo administrativo (§5)—, plantillas listas y despliegue probado periódicamente | **Opción por defecto para la mayoría**: coste cercano a cero en reposo y tiempo de construcción acotado y medible |
+| **Permanente y dedicado** | Capacidad encendida, sin otro uso, con su plano de gestión y su identidad propios | Solo si el RTO del tier 1 no admite el tiempo de construirlo, o si la norma o el contrato lo exigen |
+
+Los costes que se olvidan y deciden el ejercicio: **licencias y soporte** del software que hay que
+levantar allí (más de una está atada a hardware, MAC o a un servidor de activación en Internet que el
+IRE no alcanza), y el **tiempo y el coste de recuperación** desde clase de almacenamiento de archivo.
+Ambos se comprueban en frío, no el día D.
+
+### 3.7 Ejercicios: la única prueba de que el plan existe
 
 Escala progresiva; ninguna sustituye a la siguiente:
 
 1. **Tabletop** (semestral): mesa, sin sistemas. Se prueban **decisiones, roles, autoridad y
    comunicación**. Barato y descubre siempre algo: normalmente que nadie sabe quién declara.
-2. **Simulación parcial** (anual): restauración real de un servicio a un entorno aislado, con datos
-   reales y **volumen real**, cronometrada. Descubre que el RTO estimado era optimista por un factor
-   de 3 a 10.
+2. **Simulación parcial** (anual): restauración real de un servicio **al IRE** (§3.6), con datos
+   reales y **volumen real**, cronometrada — incluyendo el tiempo de **construir el propio IRE**.
+   Descubre que el RTO estimado era optimista por un factor de 3 a 10.
 3. **Failover real** (anual para tier 1): se conmuta el servicio de verdad, en ventana acordada, y se
    opera desde el sitio alterno **el tiempo suficiente para que aparezcan los problemas** (horas, no
    diez minutos). Incluye la **vuelta** (*failback*), que es la mitad olvidada y a menudo la más
@@ -299,8 +452,8 @@ Reglas del ejercicio:
   Restaurar el directorio no es restaurar una copia: es **restaurar la confianza** —copia limpia
   anterior al compromiso, entorno aislado, eliminación de persistencia (cuentas privilegiadas
   ocultas, `AdminSDHolder`, `SidHistory`, GPO manipuladas), validación y solo después reconexión—.
-  Ensáyalo en un entorno aislado antes de necesitarlo; el procedimiento concreto para AD irá a
-  `windows-server-ad-standards` (Ola 1, en curso).
+  **Ese entorno aislado es el IRE de §3.6, y se preaprovisiona antes de necesitarlo**; el
+  procedimiento concreto para AD es de `windows-server-ad-standards` (§3.9).
 - **El punto de restauración limpio lo determina la investigación**, no la prisa: el compromiso
   inicial suele ser muy anterior a la detección, así que la **profundidad de retención** debe cubrir
   el *dwell time* plausible (meses, no días). Coordina con `incident-response-forensics-standards`.
@@ -415,6 +568,22 @@ continuidad real que un manual de 200 páginas sin ensayar.
 - ❌ Claves de cifrado del respaldo custodiadas **solo** dentro del sistema respaldado.
 - ❌ Restaurar tras un compromiso sin erradicación verificada, o desde un punto posterior al
   compromiso inicial.
+- ❌ Reconstruir **sobre el dominio comprometido**, o unir el entorno de recuperación a ese dominio
+  "para poder administrarlo".
+- ❌ Administrar el IRE con **credenciales de administración de producción**, o desde el equipo
+  habitual del administrador en vez de una estación construida desde cero de origen confiable.
+- ❌ Conectar el IRE a la red de producción o a la de gestión **"solo un momento"** —copiar un
+  fichero, consultar un dato, instalar un agente—: desde ese instante deja de ser un IRE y hay que
+  volver a empezar.
+- ❌ Plano de gestión (hipervisor, consola de respaldo, despliegue, IPMI) **compartido** con el
+  entorno que se recupera: eso no es aislamiento, es una VLAN.
+- ❌ Dar por **limpio** lo que solo ha pasado un antivirus: sin barrido de IOC del caso, sin EDR
+  reportando antes de reconectar y sin firma de erradicación verificada, no hay reconexión.
+- ❌ Restaurar en el IRE desde la copia **en línea**, o instalar binarios, imágenes o plantillas
+  procedentes del entorno comprometido.
+- ❌ IRE compartido con preproducción, pruebas o capacidad de picos.
+- ❌ IRE que solo existe en el papel: **sin ensayo y sin tiempo de construcción medido dentro del
+  RTO** no es una capacidad, es una intención.
 - ❌ Retención más corta que el *dwell time* plausible de un atacante.
 - ❌ Plan que vive únicamente en el sistema que se cae (wiki, SharePoint, gestor de contraseñas).
 - ❌ Un solo héroe por tarea crítica; plan que asume que todo el mundo está disponible y localizable.
@@ -471,8 +640,35 @@ Antes de fijar cualquier cifra, artículo, edición o herramienta, **búscalo �
    secundaria son un modo de fallo clásico y silencioso.
 9. **Recuperación de identidad**: procedimiento vigente de recuperación del bosque de Active
    Directory / Entra ID en la documentación de Microsoft y el estado de las herramientas de terceros
-   antes de apoyarte en ellas. **Hueco declarado**: no se ha contrastado el procedimiento oficial en
-   esta revisión.
+   antes de apoyarte en ellas. Verificado ago-2026 en fuente primaria (*AD Forest Recovery — Perform
+   initial recovery*, Microsoft Learn): el primer DC escribible se restaura **con el cable de red
+   desconectado o el adaptador en otra red**, y después los DC recuperados se unen a *"a common
+   network that is isolated from the rest of the environment"* para validar salud y replicación
+   antes de tocar producción. Verifica que la página sigue diciendo eso antes de citarla.
+10. **Entorno de recuperación aislado (§3.6)**:
+    - **DORA art. 12(3)** —restauración con sistemas *"physically and logically segregated from the
+      source ICT system"*— verificado ago-2026 **sobre fuente secundaria**: **contrástalo contra el
+      texto del Reglamento (UE) 2022/2554 en EUR-Lex** antes de citarlo como requisito, y comprueba
+      si el RTS aplicable lo desarrolla.
+    - **Origen limpio para administrar**: la formulación *"ensure any actions taken are performed
+      from a trusted device built from a clean source"* procede de *Recovering from systemic identity
+      compromise* (Microsoft Learn, Azure security fundamentals), verificada ago-2026 vía resultado
+      de búsqueda; **no se abrió la página completa** — reverifica antes de citarla textualmente.
+    - **Hueco declarado — no hay norma pública que especifique el IRE**: el término procede de
+      documentación de fabricante (Broadcom/VMware lo define como *"an industry accepted acronym for
+      Isolated Recovery Environment, ... a clean and secure network environment used specifically for
+      recovery from ransomware attacks"*, verificado ago-2026) y **NIST SP 800-184** (2016, versión
+      final vigente) no lo nombra como concepto. Trátalo como **criterio de ingeniería, no como
+      requisito citable**, y si necesitas respaldo normativo usa DORA art. 12(3) o el CIR (UE)
+      2024/2690 (§2 de esta lista).
+    - **Hueco declarado — CISA**: no se pudo recuperar el texto del **#StopRansomware Guide** (la
+      web de CISA y los PDF espejo devolvieron HTTP 403 en esta revisión), así que **no se cita**
+      ninguna de sus frases sobre VLAN de recuperación limpia ni sobre medio de instalación
+      confiable. Recupéralo y contrástalo antes de apoyarte en él.
+    - **Producto de IRE de fabricante** (VMware Live Cyber Recovery, Rubrik, Commvault Cloud, Dell
+      PowerProtect Cyber Recovery, Veeam y equivalentes): qué aísla realmente, si incluye identidad
+      propia y qué queda a tu cargo. **No verificado en esta revisión**; el criterio de §3.6 vale
+      con independencia del producto, y así debe usarse.
 
 Si no puedes verificar, **dilo explícitamente en vez de suponer**.
 Si la web contradice este documento, **manda la web** y señala la discrepancia.

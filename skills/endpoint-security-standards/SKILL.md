@@ -50,7 +50,7 @@ claves; aquí solo la **postura** de cifrado del disco), `privacy-engineering-st
 personal, minimización y clasificación que el DLP presupone), `grc-compliance-standards`
 (marco de control y evidencia), `email-security-standards` (el correo como canal de entrada),
 `mobile-standards` (iOS/Android como plataforma de aplicación),
-`ot-ics-security-standards` (**Ola 7, hermana**: el endpoint industrial que **no admite
+`ot-ics-security-standards` (**hermana**: el endpoint industrial que **no admite
 agente** y por qué), `offensive-security-standards` (ejercicio ofensivo con alcance y
 autorización por escrito; esta skill no lo ejecuta), `threat-intelligence-standards`.
 

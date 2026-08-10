@@ -53,26 +53,26 @@ baselines CIS/STIG, medición con OpenSCAP/Lynis, auditd — mismo criterio, otr
 `onprem-standards` (paraguas de plataforma: hardware, hipervisor, plano OOB, topología de flota —
 sus invariantes aplican, y **la virtualización que hospeda un DC es Tier 0 por definición**);
 `networking-standards` (segmentación, firewall entre zonas, DNS como servicio de red — aquí el DNS
-integrado en AD y los puertos que exige el dominio); `detection-engineering-standards` (**Ola 1,
-planificada**. **Frontera decidida**: *qué evento de AD importa y por qué* es de esta skill; *el
+integrado en AD y los puertos que exige el dominio); `detection-engineering-standards`
+(**frontera decidida**: *qué evento de AD importa y por qué* es de esta skill; *el
 ciclo de vida de la regla* —cobertura ATT&CK, tuning, umbrales, test, SIEM— es suyo);
 `observability-standards` (recogida, retención e integridad de esos eventos);
 `incident-response-forensics-standards` (**el proceso forense y la respuesta al compromiso**:
 contención, imaging, timeline, erradicación y rotación masiva de credenciales — **aquí solo qué
 artefacto del directorio existe y qué exige su recuperación**); `incident-management-standards`
-(gobierno del incidente); `bcdr-standards` (**Ola 1, planificada**: RTO/RPO, plan de continuidad y
+(gobierno del incidente); `bcdr-standards` (RTO/RPO, plan de continuidad y
 ejercicios de DR **de la organización** — **la recuperación del bosque en concreto es de aquí**, por
 ser un procedimiento propio del directorio y no una restauración de servidor);
 `vulnerability-management-standards` (triaje, SLA y seguimiento de EOL);
-`secrets-management-standards` (**Ola 1, planificada**: custodia y rotación de secretos de
+`secrets-management-standards` (custodia y rotación de secretos de
 aplicación); `grc-compliance-standards` (el control exigido por ISO/ENS/NIST y su evidencia);
 `dotnet-standards` (el código C# que corre encima); `powershell-standards` (**frontera recíproca y
 constante**: aquí se decide **qué** se administra —bosque, OU, GPO, Kerberos, gMSA, Tier 0— y **qué
 módulo y cmdlet** lo hace; **cómo se escribe el script** —verbos aprobados, `SupportsShouldProcess`
 con `-WhatIf`, `Set-StrictMode`, manejo de errores, `PSScriptAnalyzer`, Pester, JEA y firma— es
 suyo. **Prohibido duplicar aquí criterio de lenguaje.**); `iac-standards` (Ansible/Terraform como
-herramienta); `cicd-standards`; `offensive-security-standards` y `ctf-lab-standards` (**Ola 1, ya en
-disco**: ejercicio ofensivo con alcance y autorización por escrito, y laboratorio aislado — esta
+herramienta); `cicd-standards`; `offensive-security-standards` y `ctf-lab-standards`
+(ejercicio ofensivo con alcance y autorización por escrito, y laboratorio aislado — esta
 skill es defensiva); `homelab-standards` (dominio de laboratorio con criterio proporcional);
 `container-runtime-security-standards` y `kubernetes-standards` (la otra plataforma cuyo compromiso
 es total — mismo criterio de contención por capas, dominio distinto).
@@ -381,7 +381,10 @@ es total — mismo criterio de contención por capas, dominio distinto).
   **no es restaurable**, y ese es el error que se descubre en el peor momento.
 - **La Papelera de AD activada** (recuperación de objetos borrados sin restaurar) es un control
   distinto y complementario: cubre el borrado accidental, no el compromiso.
-- **Ensayo obligatorio**: recuperación de bosque probada **en laboratorio aislado**, al menos
+- **Ensayo obligatorio**: recuperación de bosque probada en el **entorno de recuperación aislado
+  (IRE)** que especifica `bcdr-standards` §3.6 —no es un "laboratorio": un laboratorio protege al
+  mundo de lo que corre dentro, un IRE protege a lo que corre dentro del mundo, y en particular
+  del dominio comprometido—, al menos
   anualmente y tras cambios estructurales, con **tiempo medido** y runbook actualizado con lo
   aprendido. El proceso completo se cuenta en días, no en horas: si tu RTO dice otra cosa, el RTO es
   ficción. El marco de continuidad y los RTO/RPO organizativos son de `bcdr-standards`; **este
@@ -399,7 +402,7 @@ es total — mismo criterio de contención por capas, dominio distinto).
 2. **Grafo de rutas de ataque con métrica de reducción.** Ejecución recurrente de BloodHound CE, con
    número de caminos a Tier 0 y **evidencia de aristas cortadas** entre ejecuciones. Cada camino
    nuevo tiene dueño y fecha.
-3. **Recuperación de bosque ensayada** en laboratorio aislado, con **tiempo real medido**, runbook
+3. **Recuperación de bosque ensayada** en el IRE (`bcdr-standards` §3.6), con **tiempo real medido**, runbook
    actualizado, contraseña de DSRM verificada y comprobación de que el backup está dentro del
    *tombstone lifetime*. Sin ensayo, se declara explícitamente que **no existe capacidad de
    recuperación**, y eso sube al registro de riesgos.

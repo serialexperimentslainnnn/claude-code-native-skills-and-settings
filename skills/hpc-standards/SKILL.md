@@ -98,8 +98,10 @@ Spack **1.2.x**, Lustre LTS **2.15.x** con rama de características **2.17.x**.
     terminar**, con reserva de nodos completos, *backfill* y tiempo límite como contrato.
   - Un trabajo MPI necesita **planificación en pandilla** (*gang scheduling*): todos los rangos
     arrancan a la vez o no arranca ninguno. El planificador por defecto de K8s no lo hace; hay
-    proyectos que lo añaden (Volcano, Kueue, Slinky/Slurm-en-K8s) y **verificar su estado y
-    madurez es obligatorio antes de apostar** (§8).
+    proyectos que lo añaden (Volcano, Kueue, Slinky/Slurm-en-K8s). **El criterio de colas y
+    *gang scheduling* dentro del clúster es de `kubernetes-standards` §6**, que los tiene
+    verificados; **el criterio de cuándo esa carga no debe correr en Kubernetes es de aquí** y
+    manda sobre la elección de herramienta. Slinky sigue sin verificar (§8).
   - Falta el equivalente nativo de **fairshare y contabilidad de consumo por proyecto**, que es
     la razón de ser de un clúster compartido.
   - **Cuándo sí**: cargas de servicio, inferencia, portales, CI y flujos de datos alrededor del
@@ -398,9 +400,11 @@ Antes de fijar cualquier dato de este documento:
 4. **Nombres y gobernanza**: Apptainer ↔ Singularity (cambio de nombre al entrar en la Linux
    Foundation, más un producto comercial homónimo de otra empresa) y GPFS ↔ Spectrum Scale ↔
    **IBM Storage Scale**. Comprobar de cuál habla la documentación que se esté leyendo.
-5. **Kubernetes para HPC**: estado, madurez y licencia de Volcano, Kueue y de las
-   integraciones Slurm–Kubernetes. **Hueco declarado**: no se ha verificado ninguno en esta
-   pasada; se citan como opciones a evaluar, no como recomendación.
+5. **Kubernetes para HPC**: ~~estado y licencia de Volcano y Kueue~~ — **hueco CERRADO**: están
+   verificados en `kubernetes-standards` §6 (con su versión, API, gobernanza y licencia); usa
+   aquella y re-verifica allí. **Sigue abierto**: las integraciones Slurm–Kubernetes (Slinky y
+   equivalentes), que no se han verificado y se citan como opción a evaluar, no como
+   recomendación.
 6. **Versiones**: Open MPI (5.0.x observado), MPICH, Apptainer (1.5.x), Spack (1.2.x), Lustre
    (LTS **2.15.x**, rama de características **2.17.x**) — y la **matriz de compatibilidad de
    kernel y de cliente/servidor** del sistema de ficheros, que es la que rompe una migración.

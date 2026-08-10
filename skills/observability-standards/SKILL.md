@@ -33,10 +33,18 @@ SIEM y reglas de detección; la frontera es el propósito, no la herramienta —
 ambas, aquí para diagnosticar, allí para detectar), `incident-management-standards` (declaración
 del incidente, mando y comunicación, una vez la alerta ha disparado),
 `privacy-engineering-standards` (PII que se cuela en logs, trazas y métricas, y su retención),
-`web-performance-standards` (**Ola 6**: **la plataforma de telemetría, el pipeline OTel y las
+`web-performance-standards` (**la plataforma de telemetría, el pipeline OTel y las
 alertas son de aquí**; **qué métrica de experiencia real de usuario se recoge, en qué percentil se
 decide y con qué umbral** es suya — el RUM entra por esta plataforma pero lo interpreta ella),
-`performance-engineering-standards` (**Ola 6, en curso**: el perfilado continuo se ingiere y se
+`timeseries-db-standards` (**frontera declarada desde su lado y que esta skill acepta**: la serie
+de **negocio o de proceso** —telemetría de sensor, histórico industrial, medición que alguien
+consulta como dato— es suya, con su motor y su retención; **aquí la telemetría de la plataforma**
+—métricas, trazas y logs del sistema para operarlo—. **No se mezclan en el mismo clúster**, y
+Prometheus no es el destino de un dato de proceso), `finops-standards` (**el coste de la
+telemetría es una unidad económica más y se mide con su método**; aquí qué se emite, con qué
+cardinalidad y cuánto se retiene — la cardinalidad es la palanca de coste, y esta skill la posee),
+`platform-engineering-standards` (el *stack* de telemetría como producto interno del camino
+pavimentado), `performance-engineering-standards` (el perfilado continuo se ingiere y se
 almacena aquí; **qué se perfila y cómo se lee un *flame graph*** es suyo).
 
 **Principio rector**: sin telemetría no hay producción, pero **el coste es una restricción
@@ -165,7 +173,12 @@ processors:
   a la red interna, no un buzón abierto. Mínimo privilegio en los exportadores y credenciales
   desde gestor de secretos, jamás en el YAML del repo.
 - **Retención por finalidad y minimización** (GDPR): la telemetría operativa no es un
-  almacén de datos personales. Define retención corta por defecto y justifica cada excepción.
+  almacén de datos personales. **Defaults de esta skill, para que exista un número y no una
+  intención**: trazas **7 días**, logs de aplicación **30 días**, métricas agregadas **13 meses**
+  (comparación interanual). Todo lo que exceda esos plazos se justifica por escrito con su
+  finalidad, y si la finalidad es normativa **el plazo lo fija `grc-compliance-standards`, no
+  esta skill**. La minimización y el dato personal dentro de la telemetría son de
+  `privacy-engineering-standards`; **el número por defecto y el coste de sostenerlo son de aquí**.
 - Grafana: RBAC por equipo, acceso anónimo desactivado, credenciales de datasource
   provisionadas por secreto (nunca embebidas en JSON de dashboard exportado).
 - Los **logs de auditoría/seguridad se separan** de la telemetría operativa: integridad,
@@ -210,11 +223,16 @@ processors:
   responde a: ¿hay impacto en el usuario y hay algo que hacer **ahora**? Si no, no es página.
 - **Multi-window multi-burn-rate** sobre el error budget (SRE Workbook, cap. 5): ventana
   corta y larga que deben cumplirse a la vez, con varios niveles (p. ej. 14,4× en 1h+5m para
-  el 2% del presupuesto de 30 días, y niveles más lentos para el desgaste sostenido). La
+  el 2% del presupuesto, y niveles más lentos para el desgaste sostenido). **La ventana del
+  presupuesto la fija `sre-practice-standards` (28 días *rolling* por defecto) y esta skill la
+  toma de allí**: calcular el *burn rate* sobre otra ventana produce una alerta distinta con el
+  mismo nombre, que es el error caro. La
   ventana larga es lo que evita despertar a alguien por un pico de 5 minutos ya resuelto.
 - Limitación conocida: con **poco tráfico** el burn rate pierde señal (pocas muestras en la
-  ventana). Mitiga agrupando servicios, con tráfico sintético o relajando el SLO — no
-  fingiendo que la alerta funciona.
+  ventana). Mitiga agrupando servicios o con tráfico sintético — no fingiendo que la alerta
+  funciona. **Cambiar el objetivo no es una mitigación de esta skill**: el SLO y su
+  renegociación son de `sre-practice-standards`, y un objetivo que se baja para que la alerta
+  calle es un objetivo falseado.
 - Alertmanager: árbol de rutas por equipo/severidad, `group_by` con las etiquetas que
   definen *un* incidente (no `...`), `inhibit_rules` para que la causa raíz silencie a los
   derivados, `mute_time_intervals` para ventanas conocidas, y **silencios siempre con

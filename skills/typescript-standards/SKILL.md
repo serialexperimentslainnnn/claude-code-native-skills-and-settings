@@ -22,29 +22,29 @@ gates de §4), `kubernetes-standards` (imagen OCI y despliegue), `observability-
 OTel; aquí solo la instrumentación en el código), `git-workflow-standards` (rama, commits y tagging
 SemVer; la publicación en npm sí es de esta skill), `identity-access-management-standards` (flujos
 OAuth 2.1/OIDC y emisión de tokens; aquí solo cómo los consume y verifica la app), `sql-standards`
-(**Ola 5**: el SQL que Prisma, Drizzle o Kysely generan, y el que se escribe a mano),
-`testing-qa-standards` (**Ola 6**: **el runner y su configuración —Vitest, Playwright— son de
+(el SQL que Prisma, Drizzle o Kysely generan, y el que se escribe a mano),
+`testing-qa-standards` (**el runner y su configuración —Vitest, Playwright— son de
 aquí**; **el reparto entre niveles, el criterio de cobertura, la política de tests inestables y qué
 rompe el build son suyos**. El criterio de §4 de esta skill se conserva como convención concreta del
 stack, pero **si contradice a `testing-qa-standards`, manda la suya**),
-`frontend-web-platform-standards` (**Ola 6**: **lo que decide el navegador y el estándar** —HTML, CSS,
+`frontend-web-platform-standards` (**lo que decide el navegador y el estándar** —HTML, CSS,
 APIs de la plataforma, modelo de carga, CSP y seguridad del cliente, presupuesto de *bundle* y la
 herramienta de build—; **aquí el lenguaje**: `tsconfig.json`, tipado, linting y publicación en npm.
 Regla de arbitraje espejada desde su §1: *si la respuesta cambiaría al cambiar de framework, es de
 `frontend-frameworks-standards`; si seguiría siendo cierta en cualquiera, es de
 `frontend-web-platform-standards`; si no cambiaría al cambiar de navegador ni de framework, es de
-aquí*), `frontend-frameworks-standards` (**Ola 6**: elección de framework, modelo de renderizado
+aquí*), `frontend-frameworks-standards` (elección de framework, modelo de renderizado
 —CSR/SSR/SSG/ISR/islas/RSC—, enrutado, carga de datos y estructura de la aplicación),
-`webassembly-standards` (**Ola 5**: el módulo Wasm, su runtime, sus límites y su tamaño son suyos;
+`webassembly-standards` (el módulo Wasm, su runtime, sus límites y su tamaño son suyos;
 el JS/TS que lo carga y el coste del cruce de frontera JS↔Wasm se deciden con su criterio, y la
 regla que ambas comparten es que **para manipular el DOM no compensa Wasm**), `solidity-standards`
-(**Ola 5**: el contrato y su criterio de seguridad son suyos; **los scripts de despliegue y los
+(el contrato y su criterio de seguridad son suyos; **los scripts de despliegue y los
 tests en TypeScript de Hardhat con `viem`/`ethers` se escriben con el criterio de aquí** — y una
 clave privada de despliegue **nunca** vive en un `.env` versionado ni en el código del script). **Elección de
 lenguaje** (manda la skill del lenguaje elegido): `python-standards`, `go-standards`,
 `rust-standards`, `jvm-spring-standards`, `dotnet-standards`, `php-standards`, `ruby-standards`,
 `elixir-erlang-standards`, `scala-standards`, `clojure-standards`, `haskell-fp-standards`,
-`ocaml-fsharp-standards` (**Ola 5**).
+`ocaml-fsharp-standards`.
 
 ## 2. Toolchain por defecto
 

@@ -34,7 +34,7 @@ con más de 5.000 mensajes/día, primero desviando a Correo no deseado; (3) **co
 lleva meses y se destruye en horas**. Con eso sobre la mesa, la pregunta correcta no es "¿qué MTA
 uso?" sino "**¿por qué no un relé gestionado?**".
 
-**No aplica** — el reparto del catálogo: **`email-security-standards` (Ola 7) posee SPF, DKIM,
+**No aplica** — el reparto del catálogo: **`email-security-standards` posee SPF, DKIM,
 DMARC, MTA-STS, TLS-RPT, BIMI, el filtrado antiphishing, el BEC y la política de correo**; aquí solo
 **el servidor que los implementa** (dónde vive la clave, qué firma y qué verifica), y **no se
 duplica ni un registro**; **`dns-standards` posee los registros** —MX, PTR, TXT y su operación—,

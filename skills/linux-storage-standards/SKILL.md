@@ -45,7 +45,7 @@ un host lento, aquí como herramienta de atribución dentro de la pila de bloque
 invariantes), `homelab-standards` (btrfs con snapshots y su tooling en **laboratorio personal**,
 donde el criterio es coste, ruido y consumo; aquí btrfs se juzga por estabilidad de feature en
 producción, §3.4), `bcdr-standards` (RTO/RPO, orden de recuperación, ejercicios de DR),
-`backup-recovery-standards` (**Ola 2, planificada** — herramienta de copia, repositorio, retención,
+`backup-recovery-standards` (herramienta de copia, repositorio, retención,
 inmutabilidad y procedimiento de restore; **un snapshot de LVM o de btrfs no es un backup**, §3.2 y
 §3.4: aquí se dan como mecanismo de punto de consistencia, nunca como estrategia de respaldo),
 `data-platform-standards` (**el motor de datos encima**: el filesystem, su alineación y el layout
@@ -61,10 +61,10 @@ CSI presenta al pod es suyo), `observability-standards` (diseño de métricas y 
 hay que vigilar), `incident-response-forensics-standards` (adquisición de imagen forense y cadena
 de custodia: si el objetivo es preservar evidencia, manda allí — aquí el diagnóstico y la
 reparación, que **destruyen evidencia**), `proxmox-ve-standards` y `libvirt-kvm-standards`
-(**Ola 2, planificadas**: almacenamiento de VMs — el LV o el fichero de imagen y su alineación son
+(almacenamiento de VMs — el LV o el fichero de imagen y su alineación son
 de aquí, el modelo de caché del disco virtual y su definición son suyos), `ha-clustering-standards`
-(**Ola 2, planificada**: almacenamiento **compartido** — cluster LVM, GFS2/OCFS2, fencing y quórum;
-aquí el almacenamiento **de un host**), `object-storage-standards` (**Ola 2, planificada**: S3 y su
+(almacenamiento **compartido** — cluster LVM, GFS2/OCFS2, fencing y quórum;
+aquí el almacenamiento **de un host**), `object-storage-standards` (S3 y su
 modelo de consistencia y durabilidad, radicalmente distinto al de bloques — no se diseña un sistema
 de objetos con criterio de filesystem), `file-servers-standards` (**el protocolo de compartición de
 ficheros y su exposición**: `smb.conf` y `/etc/exports`, dialecto, mapeo de identidad, ACL del
@@ -151,7 +151,7 @@ aplicación
   exception fijo** que, si se llena, **invalida el snapshot**; penalizan cada escritura del origen;
   no son baratos ni infinitos. Los thin snapshots son mucho mejores pero comparten el destino del
   thin pool. En ambos casos: **punto de consistencia para hacer la copia, nunca la copia**
-  (`backup-recovery-standards`, Ola 2).
+  (`backup-recovery-standards`).
 - **LVM sobre RAID**: `md` debajo y LVM encima es la combinación clásica y predecible. `lvcreate
   --type raid1/raid5` (dm-raid) existe y usa el mismo motor del kernel, pero deja el diagnóstico
   repartido entre `lvs` y `/proc/mdstat`: elige uno y sé coherente. ❌ Apilar LVM sobre LVM.

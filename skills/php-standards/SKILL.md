@@ -21,7 +21,7 @@ OCI, PHP-FPM en contenedor y despliegue), `onprem-standards` (el servidor web/PH
 hardening), `observability-standards` (pipeline OTel; aquí solo la instrumentación),
 `git-workflow-standards` (rama, commits y tagging SemVer; la publicación en Packagist sí es de esta
 skill), `identity-access-management-standards` (diseño del IdP; aquí solo cómo lo consume la app),
-`sql-standards` (**Ola 5**: el SQL que Doctrine o Eloquent generan, y el que se escribe a mano).
+`sql-standards` (el SQL que Doctrine o Eloquent generan, y el que se escribe a mano).
 **Elección de lenguaje** (manda la skill del lenguaje elegido): `python-standards`,
 `typescript-standards`, `go-standards`, `jvm-spring-standards`, `dotnet-standards`,
 `ruby-standards` (**la comparación más directa**: Laravel y Rails ocupan el mismo hueco; la

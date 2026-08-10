@@ -14,7 +14,7 @@ diseño de `description`, problemas de activación ("la skill no salta" / "salta
 es"), y la decisión de dónde vive una regla.
 
 **No aplica**: `update-config` (configuración del harness en `settings.json`, hooks y
-permisos), `technical-documentation-standards` (documentación de producto, ADR, runbooks),
+permisos), `knowledge-management-standards` (documentación para personas: ADR, runbooks, README),
 `ai-agent-workflow-standards` (cómo se usan agentes de forma segura, no cómo se escriben
 sus skills).
 
@@ -42,7 +42,7 @@ cuando la skill se activa. Optimiza la descripción para el enrutado, el cuerpo 
 - No poner plantillas ni ficheros de referencia dentro de `~/.claude/skills/`: cualquier
   directorio con `SKILL.md` se registra y contamina el índice. Fuera del árbol.
 - Cuerpo con las 8 secciones canónicas (ver `~/.claude/SKILL-TEMPLATE.md`).
-- **Frontera explícita en §1** (`**No aplica**: ver `knowledge-management-standards` (**Ola 6** — frontera limpia y fácil de confundir:
+- **Frontera explícita en §1** (`**No aplica**: ver `knowledge-management-standards` (frontera limpia y fácil de confundir:
 **la documentación para personas es suya** —Diátaxis, docs as code, README, runbook, guía de
 incorporación, dueño y fecha de revisión—; **aquí la autoría de skills**, que son instrucciones para
 un modelo con un coste de índice y un criterio de activación propios. Una skill no es documentación
@@ -72,8 +72,7 @@ Gates antes de dar una skill por buena:
 2. **Descripción sin relleno**: no hay cuota de palabras (§3) — el gate es que **cada término
    sea un disparador**. Si una descripción es larga porque enumera servicios o extensiones,
    está bien; si lo es por prosa conceptual, se recorta esa prosa, nunca los triggers.
-3. **Frontera declarada**: existe la línea `**No aplica**` y las skills citadas existen o
-   están planificadas (marcar las planificadas como tales, con su ola).
+3. **Frontera declarada**: existe la línea `**No aplica**` y todas las skills citadas existen.
    Test mecánico del catálogo — solape de términos disparadores entre pares de la misma familia:
    ```bash
    python3 - <<'EOF'
@@ -103,7 +102,57 @@ Gates antes de dar una skill por buena:
    organization organizational internal external corporate enterprise product delivery
    framework frameworks method methods model models standard standards guide guidance
    licence licensing cost costs price pricing plan planning scope quality risk risks
-   documentation docs document documents page pages content contents""".split())
+   documentation docs document documents page pages content contents
+   standards. code. decision. it. all. network. own itself about someone nobody covers
+   application app apps applications component components module modules package packages library
+   libraries plugin plugins tool tools suite suites stack layer layers
+   migration migrating migrate legacy modernization rewrite replacing replacement
+   evaluating checking check checks validation verifying tracking managing manager
+   configuration setup provisioning deployment deploying deployed environment environments
+   runtime native custom dynamic static shared distributed hybrid remote offline online live
+   support supported unsupported maintenance updates update refresh release releases freeze
+   version versions edition editions
+   test tests testing gate gates rule ruleset criteria constraint constraints
+   error errors failure failures problem problems issue issues
+   node nodes host hosts cluster clusters server servers instance instances machine machines
+   disk memory cpu port ports path paths directory root
+   user users group groups identity credential credentials token tokens secret secrets
+   certificate certificates encryption signing rotation trust
+   traffic route routes egress ingress exposure
+   image images container containers registry
+   agent agents automation automated scripts script scheduling
+   event events session sessions channel channels protocol protocols format formats
+   inventory assets asset record records tree naming named set sets lists list
+   type types classes classification
+   compliance regulation regulations iso iso/iec nist rfc
+   availability recovery rollback hardening telemetry monitoring observability
+   third-party saas proprietary vendor-managed training weights inference serving
+   publishing shipping pinning feature features functions
+   context switch split plus full quotas quota limit rates rate templates template
+   latency slow breaks cannot never safe red blue green 2.0 3.0 1.0
+   actually enough such several defining citing works hand read reading picking judging
+   closure handover stakeholder stakeholders status lead leads operations declaring
+   community cycle feed feeds knowledge relationship relationships analytics detection
+   comparing specifying scoping reconciling moving securing responding defending
+   build builds repository repo entry manual drift discovery
+   class fixed backlog reports feedback performance technical
+   low minimum captive count regex first-class whose owns skill umbrella estate
+   sources programs devices device element parts media controller
+   history durability evolution warranted rollout canary streaming
+   findings guardrails admission workload infrastructure
+   volume assessment indicator indicators triage triaging tier tiering fatigue
+   bias calibrating rubric scoring validity budgeting injection output prompt
+   idle exhaustion ephemeral endpoints keepalive
+   connect extensions subscriptions software integration messages
+   cooling power rack room feeds ups density thermal liquid physical
+   boot secure attestation uefi fleet kernel driver
+   per-class label handling agreement auditing semantic retain retire rehost replatform
+   cognitive load topologies sense dora toil reduction slos
+   automate desktop flows orphaned studio admin center cmdlets
+   gateway upstream bootstrap proxy termination timeouts blocks prefix routed
+   spectrum roaming standalone ghz controls poisoning sla idempotent retries
+   non-deterministic article articles duties
+   date expiry landscape functional local option private""".split())
    d={}
    for p in glob.glob("*/SKILL.md"):
        desc=re.search(r'^description:\s*(.+)$',open(p).read(),re.M).group(1)
@@ -122,7 +171,34 @@ Gates antes de dar una skill por buena:
    - la familia de seguridad, que comparte **nombres de norma** (`nis2`, `dora`, `iso`, `gdpr`) y
      de framework (`att`): son vocabulario del dominio, no reclamación del mismo trabajo. Lo que
      los separa es la línea `**No aplica**`, que debe existir en **ambos** lados y decir qué
-     decide cada una.
+     decide cada una;
+   - las skills con obligación legal europea (`accessibility`, `e-commerce`, `ai-governance`,
+     `green-it`, `govtech-eidas`, `technical-hiring`), que comparten `act`, `directive`,
+     `european`, `omnibus`, `decreto`: mismo motivo que la familia de seguridad;
+   - la cripto (`cryptography-pki` ↔ `post-quantum-crypto` ↔ `vpn`) por `tls`, `1.3`, `ikev2`,
+     `rfc 9370`: el algoritmo es el vocabulario, el reparto está en §1 de cada una;
+   - los motores de juego (`game-development` ↔ `xr`) por `unity`, `unreal`, `godot`;
+   - los orquestadores de datos (`data-engineering` ↔ `mlops`) por `airflow`, `dagster`,
+     `prefect` — declarado explícitamente como inherente en el cuerpo de `mlops`;
+   - `endpoint-security` ↔ `macos-fleet` por `escrow`/`mdm`/`macos`, que son **homónimos**
+     (BitLocker frente a FileVault) con arbitraje escrito en ambos §1;
+   - `ibm-i-rpg` ↔ `mainframe-zos-cobol` por `db2`, `ebcdic`, `packed`, `decimal`, `ibm`: es
+     vocabulario del fabricante, y **las dos declaran expresamente en su §1 que son plataformas
+     distintas que la gente mete en el mismo saco** y que no se extrapola criterio entre ellas.
+     El solape de términos es justo la razón por la que esa frontera está escrita.
+
+   **Ejecución del 2026-08-10 sobre 218 skills**: la `STOP` original daba **420 pares** (gate
+   inservible). Ampliada con ~220 términos genéricos → **41 pares**, de los que **8 eran solapes
+   reales** y se corrigieron **estrechando la `description` de la vecina, nunca el cuerpo**:
+   `onprem` cedió el hardware físico, el BMC y la sala a `server-hardware` y
+   `datacenter-facilities` (tercera poda de esta skill, el patrón de siempre);
+   `dns` cedió SPF/DKIM/DMARC/MTA-STS/TLS-RPT a `email-security`; `datacenter-fabric` conservó
+   la configuración PFC/ETS/DCBX del switch y soltó RDMA, mientras `high-speed-interconnect`
+   soltó el *deadlock* por PFC y la sobresuscripción; `abap-sap` cedió la conversión a S/4HANA
+   como proyecto a `erp-sap` (y aquella soltó OData); `edge-computing` cedió RAUC/SWUpdate/Mender
+   y la identidad por TPM a `embedded-iot`; `os-provisioning` cedió `bootc-image-builder` y
+   `rpm-ostree` a `rhel-fedora`; `game-development` cedió `matchmaking` a
+   `gaming-infrastructure`. Resultado final: **35 pares, ninguno ≥8, todos inherentes.**
 4. **Prueba funcional real**: abrir un fichero representativo del dominio y comprobar que
    se activa **esa** skill y no una vecina. Una skill que nunca se dispara es peor que no
    tenerla: paga índice y no aporta.

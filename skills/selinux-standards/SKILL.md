@@ -47,13 +47,13 @@ de red y firewall entre zonas; el registro de puertos con `semanage port` es de 
 `homelab-standards`, `offensive-security-standards` (verificación ofensiva del confinamiento, con
 alcance y autorización).
 
-Planificadas — hasta que existan, esta skill es criterio provisional en su solapa:
-`container-runtime-security-standards` (**Ola 1**: seguridad del runtime — seccomp, eBPF/Falco,
+Además:
+`container-runtime-security-standards` (seguridad del runtime — seccomp, eBPF/Falco,
 detección de escape de contenedor. **Frontera precisa: el MAC del contenedor es de esta skill**
 —`container_t`, `container-selinux`, `:z`/`:Z`, udica, perfiles AppArmor del contenedor—; **la
 detección en tiempo de ejecución de que algo ha escapado es suya**),
-`detection-engineering-standards` (**Ola 1**: convertir los AVC en reglas de detección y casos de
-uso del SIEM), `linux-administration-standards` y `rhel-fedora-standards` (**Ola 2**: día a día del
+`detection-engineering-standards` (convertir los AVC en reglas de detección y casos de
+uso del SIEM), `linux-administration-standards` y `rhel-fedora-standards` (día a día del
 SO y particularidades de la familia RHEL).
 
 ## 2. Decisiones por defecto

@@ -48,9 +48,9 @@ declarada"*, *"el postmortem no nombra personas y el líder lo defiende ante dir
   es *"¿cuándo estará y con qué riesgo?"*, es suya; si es *"¿cómo se construye y quién lo decide?"*,
   es de aquí. **El formato de registro de decisiones es el mismo en ambas** (§3.3) para no bifurcar
   el repositorio.
-- `product-discovery-standards` (**Ola 6, planificada**): **qué se construye y por qué** — problema,
+- `product-discovery-standards`: **qué se construye y por qué** — problema,
   usuario, hipótesis, priorización por valor y decisión de matar una idea. Aquí no se decide el qué.
-- `enterprise-architecture-standards` (**ya escrita**): gobierno de arquitectura de la
+- `enterprise-architecture-standards`: gobierno de arquitectura de la
   organización, hoja de ruta de capacidades y cartera de aplicaciones. Aquí el alcance es el equipo
   y su vecindad inmediata, no la empresa. Recíproca declarada en su §1.
 - `software-architecture-patterns-standards` y `refactoring-tech-debt-standards` (**ya escritas**):
@@ -79,7 +79,7 @@ declarada"*, *"el postmortem no nombra personas y el líder lo defiende ante dir
   codificación es suya** — qué tarea se delega, ficheros de instrucciones, permisos, revisión del
   diff, atribución. Aquí solo **la decisión de adoptarla, quién paga su coste organizativo y qué
   métricas NO se usan para justificarla** (§3.11).
-- `knowledge-management-standards` (**Ola 6, planificada**): dónde vive la documentación y cómo se
+- `knowledge-management-standards`: dónde vive la documentación y cómo se
   mantiene viva. Aquí, la obligación de que la decisión quede escrita.
 
 ## 2. Decisiones por defecto

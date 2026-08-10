@@ -37,7 +37,7 @@ pegamento de comandos, es suyo; si necesita estructuras de datos y tests, vuelve
 esté escrito en Ruby; el **Ruby que se escribe** dentro — librerías, custom resources, tests — es de
 esta skill), `observability-standards` (estrategia y pipeline de telemetría; aquí la instrumentación
 en el código), `message-brokers-standards` (Kafka/RabbitMQ como infraestructura; aquí el consumidor
-Ruby y la cola de jobs), `crystal-standards` (**Ola 5, ya escrita** — frontera nombrada porque la
+Ruby y la cola de jobs), `crystal-standards` (frontera nombrada porque la
 confusión es real: **la compatibilidad de Crystal con Ruby es de sintaxis, no de semántica ni de
 librerías**. No hay gemas, ni `method_missing` en tiempo de ejecución, ni monkey patching dinámico:
 un fichero Ruby no se porta cambiándole la extensión. Si el motivo para migrar es el rendimiento,

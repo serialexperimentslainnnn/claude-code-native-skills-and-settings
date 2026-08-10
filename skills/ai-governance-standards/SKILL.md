@@ -61,7 +61,7 @@ mayoría de los "comités de IA" y de las "políticas de IA" existentes fallan e
   AI Act son fuente y no se contradicen**: los de esta skill se han verificado
   independientemente contra el DOUE y **coinciden**; si alguna vez divergen, gana la fuente
   oficial y se corrigen ambas skills.
-- **`mlops-standards`** (**Ola 3, escrita — esta misma ola**): **opera; aquí se decide y se
+- **`mlops-standards`**: **opera; aquí se decide y se
   responde.** El **registro de modelos** —artefactos que tu organización entrena y sirve, con su
   linaje, métricas y promoción— es suyo. El **inventario de sistemas de IA** es mío y **es otra
   cosa**: incluye herramientas SaaS de terceros que tú no operas, IA embebida en productos que ya
@@ -69,7 +69,7 @@ mayoría de los "comités de IA" y de las "políticas de IA" existentes fallan e
   en mi inventario (y al revés), y ambos casos son un fallo.** Además: el *fairness* como
   **número medido** es suyo (su §6.5); **qué disparidad es aceptable, quién lo firma y qué pasa
   si se supera, es mío**.
-- **`mlsecops-standards`** (**Ola 3, escrita**): seguridad del ciclo de vida y de la cadena de
+- **`mlsecops-standards`**: seguridad del ciclo de vida y de la cadena de
   suministro del modelo — procedencia y firma de pesos, envenenamiento, *backdoors*, extracción,
   inversión, *red teaming*, AIBOM, MITRE ATLAS, OWASP GenAI. Vocabulario compartido inevitable:
   ambos citamos **NIST AI RMF** y artículos del **AI Act**. La línea: **allí el RMF y el art. 15
@@ -78,11 +78,11 @@ mayoría de los "comités de IA" y de las "políticas de IA" existentes fallan e
   técnico pongo?", es suya; si es "¿quién responde, con qué evidencia y ante quién?", es mía.
   Un **incidente de seguridad** de un sistema de IA puede ser a la vez incidente técnico (suyo) e
   **incidente grave notificable del art. 73** (§3.8, mío).
-- `llm-evaluation-standards` (**Ola 3, escrita**): **la medición de calidad es suya**. Aquí se
+- `llm-evaluation-standards`: **la medición de calidad es suya**. Aquí se
   **exige** evaluación documentada como condición de aprobación de un caso de uso, pero la
   metodología (eval sets, jueces, calibración, significancia) vive allí.
 - `llm-app-engineering-standards`, `rag-standards`, `ai-agents-standards`, `mcp-standards`,
-  `local-inference-standards`, `gpu-computing-standards` (**Ola 3, escritas**): **construcción**.
+  `local-inference-standards`, `gpu-computing-standards`: **construcción**.
   Aquí no se dice cómo se escribe un prompt ni cómo se acota un bucle de agente; se dice qué casos
   de uso están permitidos, quién lo aprueba y qué hay que poder demostrar después.
 - **`claude-api`** (sin sufijo `-standards`, **skill instalada, referencia canónica del lado
@@ -96,10 +96,10 @@ mayoría de los "comités de IA" y de las "políticas de IA" existentes fallan e
   `identity-access-management-standards` (quién accede a qué herramienta de IA y con qué
   identidad — **el control técnico que hace cumplir la política de §3.4**),
   `secrets-management-standards`, `vulnerability-management-standards`, `appsec-standards`,
-  `bcdr-standards` (**dependencia de un proveedor de IA como riesgo de continuidad**, §3.7),
+  `bcdr-standards` (**dependencia de un proveedor de IA como riesgo de continuidad**, §5),
   `data-platform-standards`, `observability-standards`, `sre-practice-standards`,
   `cicd-standards`, `kubernetes-standards`, `offensive-security-standards`.
-- **`technical-hiring-standards`** (**Ola 6**) — *cruce con obligación legal real*: **mío el
+- **`technical-hiring-standards`** — *cruce con obligación legal real*: **mío el
   encuadre normativo** —clasificación del sistema de cribado como alto riesgo del Anexo III punto 4,
   papel de proveedor frente a desplegador, evaluación de impacto en derechos fundamentales,
   supervisión humana significativa, registro en el inventario de sistemas de IA—; **suyo el diseño

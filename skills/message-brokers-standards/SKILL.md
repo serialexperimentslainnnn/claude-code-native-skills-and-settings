@@ -37,7 +37,7 @@ particiones ponemos?", "hay que subir de versión mayor sin parar".
   `SELECT ... FOR UPDATE SKIP LOCKED` para colas de trabajo**, que es la alternativa que esta skill
   refuerza en §2.1. Aquí, **la operación profunda del broker, las alternativas a Kafka y el criterio
   de elección entre familias**.
-- `elixir-erlang-standards` (**Ola 5** — frontera nombrada porque es una confusión real):
+- `elixir-erlang-standards` (frontera nombrada porque es una confusión real):
   `Phoenix.PubSub` y el paso de mensajes de la BEAM **no son un broker**. Viven dentro del clúster
   de aplicación, sin durabilidad, sin reintento y sin retención: si el proceso muere, el mensaje se
   pierde. **Si el mensaje debe sobrevivir al proceso que lo emitió, hace falta un broker y manda
@@ -53,7 +53,7 @@ particiones ponemos?", "hay que subir de versión mayor sin parar".
 - `microservices-architecture-standards`: **outbox, sagas, eventos de dominio, propiedad del dato
   por servicio y resiliencia distribuida son suyos.** Aquí, el transporte por debajo. Un broker **no
   resuelve** la atomicidad entre escribir en tu base y publicar: eso es outbox, y es suyo.
-- `timeseries-db-standards` (**hermana de Ola 4; línea declarada en ambos lados**): **un broker
+- `timeseries-db-standards` (**línea declarada en ambos lados**): **un broker
   transporta las medidas, una base de series temporales las almacena para consultarlas.** Se cruzan
   en la ingesta IoT: el broker recibe del dispositivo, un consumidor escribe por lotes en el
   almacén. **El broker no es el almacén** (§7).
@@ -73,8 +73,8 @@ particiones ponemos?", "hay que subir de versión mayor sin parar".
   tests y empaquetado de los clientes y de las aplicaciones son suyos), `python-standards`,
   `aws-standards`/`azure-standards`/`gcp-standards` (**MSK, Event Hubs, Pub/Sub, SQS/SNS y demás
   gestionados**: sus límites, cuotas, IAM y precio concretos son suyos; **aquí el criterio de cuándo
-  el gestionado es la respuesta correcta**, §2.4), `caching-cdn-standards` (**Ola 4, planificada**:
-  **Redis/Valkey como caché es suya**; **Redis Streams o listas usados como cola son de aquí**, y el
+  el gestionado es la respuesta correcta**, §2.4), `caching-cdn-standards`
+  (**Redis/Valkey como caché es suya**; **Redis Streams o listas usados como cola son de aquí**, y el
   criterio está en §2.3).
 
 **Principio rector**: **un broker no es una decisión de tecnología, es una decisión de topología.**
@@ -149,7 +149,7 @@ rehace la arquitectura, no la configuración.**
 | **Mensajería ligera** | **NATS 2.14.4** (30-jul-2026) | **Apache 2.0** (*verbatim* del `LICENSE`). **Gobernanza resuelta**: tras el intento de Synadia de relicenciar bajo BSL y reclamar la marca (mar-abr 2025), el acuerdo con la CNCF (may-2025) **asignó las marcas a la Linux Foundation** y dejó repositorios y dominio bajo la CNCF, con el núcleo garantizado en Apache 2.0 | Baja latencia, huella mínima, borde/IoT. **JetStream** añade persistencia y flujos cuando hace falta durabilidad |
 | **Gestionado del proveedor** | **La respuesta correcta más veces de las que se admite** | Servicios y límites concretos en las skills de nube | §2.4 |
 | **MQTT** (borde/IoT) | Broker MQTT dedicado delante, puente hacia el log | Producto y versión **no verificados** en esta revisión (§8) | Cuando el productor es un dispositivo de campo. **No expongas el broker principal a los dispositivos** |
-| **Redis/Valkey como cola** | **No** por defecto | El uso como caché es de `caching-cdn-standards` (**Ola 4, planificada**) | Aceptable solo para trabajo efímero y tolerante a pérdida, **declarado como tal en ADR**, con su durabilidad y su HA evaluadas aparte. Nunca "aprovechando" la instancia de caché |
+| **Redis/Valkey como cola** | **No** por defecto | El uso como caché es de `caching-cdn-standards` | Aceptable solo para trabajo efímero y tolerante a pérdida, **declarado como tal en ADR**, con su durabilidad y su HA evaluadas aparte. Nunca "aprovechando" la instancia de caché |
 
 **Estado que hay que decir**: **ActiveMQ y los brokers JMS clásicos** siguen siendo válidos donde ya
 existen y hay integración JMS de verdad; **no son la elección para algo nuevo** salvo requisito de

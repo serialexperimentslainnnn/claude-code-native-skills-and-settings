@@ -22,7 +22,7 @@ tests, compilación (JIT/AOT/JS/Wasm), interop nativa y publicación de paquetes
 navegación y ciclo de vida de la plataforma, permisos, almacenamiento seguro en el dispositivo
 —Keychain/Keystore—, firma, publicación en App Store y Google Play, rollout y actualizaciones,
 rendimiento percibido y accesibilidad móvil; **aquí solo el lenguaje Dart, `pub`, los lint, el
-formato, los tests y la compilación**), `webassembly-standards` (**Ola 6**: el objetivo de
+formato, los tests y la compilación**), `webassembly-standards` (el objetivo de
 compilación Wasm, el runtime, los límites del sandbox y el tamaño del artefacto son suyos; aquí solo
 el lado Dart —`dart:js_interop`, `package:web`, `--wasm`— del cruce), `api-design-standards` (diseño
 del contrato HTTP/GraphQL/gRPC que consume o expone el código Dart), `appsec-standards` (modelado de

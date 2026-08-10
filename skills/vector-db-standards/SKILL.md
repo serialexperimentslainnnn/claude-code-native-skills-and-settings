@@ -65,8 +65,8 @@ tarda seis horas, es de aquí.
 - `nosql-standards`, `graph-db-standards`, `timeseries-db-standards`, `data-warehouse-modeling-standards`,
   `lakehouse-standards`, `streaming-cdc-standards`, `data-governance-quality-standards`,
   `analytics-bi-standards`, `caching-cdn-standards`, `message-brokers-standards`,
-  `oracle-dba-standards`, `sqlserver-dba-standards`, `mysql-mariadb-dba-standards`
-  (**Ola 4, planificadas**): sus motores.
+  `oracle-dba-standards`, `sqlserver-dba-standards`, `mysql-mariadb-dba-standards`:
+  sus motores.
 - `data-engineering-standards`: el pipeline que alimenta el índice (orquestación, backfill
   idempotente, watermarks). Aquí solo el destino y su coste de escritura.
 - `privacy-engineering-standards`: dato personal, minimización, DPIA, derecho de supresión.

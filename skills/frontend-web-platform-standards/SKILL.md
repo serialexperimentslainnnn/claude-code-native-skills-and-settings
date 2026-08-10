@@ -35,18 +35,21 @@ o `<Image>` de Astro es detalle de allí.
 - `typescript-standards` — **el lenguaje TS/JS, `tsconfig.json`, el tipado, el lint con Biome/ESLint y
   el empaquetado para publicar en npm son suyos**. Aquí el bundle como *presupuesto de bytes servidos*
   y el build como herramienta, no las reglas del lenguaje ni la config del compilador.
-- `accessibility-standards` (**Ola 6, ya escrita**) — WCAG 2.2, ARIA, navegación por teclado, tecnología
+- `accessibility-standards` — WCAG 2.2, ARIA, navegación por teclado, tecnología
   asistiva y la auditoría son suyos. Aquí solo el HTML semántico como base estructural: elegir el
   elemento correcto es decisión de plataforma, **exigirlo como conformidad es de ella**.
-- `web-performance-standards` (**Ola 6, en curso**) — Core Web Vitals, presupuestos de rendimiento y su
+- `web-performance-standards` — Core Web Vitals, presupuestos de rendimiento y su
   medición son suyos. Aquí las decisiones de carga (orden, prioridad, formato) que los determinan.
-- `design-systems-standards` (**ya escrita** — **el contrato público del componente y el gobierno del
+- `design-systems-standards` (**el contrato público del componente y el gobierno del
   sistema como producto versionado**: tokens, API de props, política de cambios rompientes,
   documentación y adopción. Aquí el CSS y las APIs del navegador con las que se implementa),
-  `cms-jamstack-standards` (**ya escrita** — **dónde vive el contenido, quién lo edita y cómo se
+  `cms-jamstack-standards` (**dónde vive el contenido, quién lo edita y cómo se
   publica**: modelado, previsualización, y la invalidación de caché al publicar),
-  `pwa-standards` (service worker, manifest, offline), `webgl-webgpu-standards`
-  (**Ola 6, en curso**), `i18n-standards` (**ya escrita** — **aquí las propiedades lógicas de CSS y
+  `pwa-standards` (service worker, manifest, offline), `webgl-webgpu-standards`,
+  `streaming-multimedia-standards` (**el pipeline de vídeo/audio es suyo** —ingesta,
+  transcodificación, empaquetado HLS/DASH, DRM—; **aquí `<video>`, Media Source Extensions y EME
+  como APIs de la plataforma web** que consumen lo que aquel pipeline entrega),
+  `i18n-standards` (**aquí las propiedades lógicas de CSS y
   la decisión de polirrellenar `Intl`/`Temporal`**; **allí qué se formatea y con qué reglas**:
   catálogos de mensajes, ICU MessageFormat, categorías plurales de CLDR, colación, normalización
   Unicode y zonas horarias. Regla útil: si el problema es *dónde cae el margen en RTL*, es de aquí;

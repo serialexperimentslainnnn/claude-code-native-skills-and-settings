@@ -62,7 +62,7 @@ cuellos de botella, la bajada a decisiones de equipo y las métricas de la funci
   `product-discovery-standards` (qué se construye y para quién). **El paisaje decide qué sistemas
   existen; el descubrimiento, qué se construye; la documentación es lo que queda escrito de ambas
   decisiones.**
-- **Skills de plataforma heredada** (**Ola 7**): `mainframe-zos-cobol-standards`,
+- **Skills de plataforma heredada**: `mainframe-zos-cobol-standards`,
   `ibm-i-rpg-standards`, `mumps-standards`, `dotnet-framework-legacy-standards`,
   `aix-solaris-hpux-standards` y las demás del bloque legacy. **Aquí se decide qué se hace con una
   aplicación** —el modelo TIME, la "R" de modernización elegida, el coste y el dueño—; **allí, qué
@@ -233,8 +233,19 @@ repurchase, refactor/re-architect, retire, retain**.
   verbatim contra su documentación oficial en esta pasada (dos intentos de recuperación fallidos);
   **verificar en la guía prescriptiva de AWS antes de usarla en un documento formal** (§8).
 - **Orden de evaluación obligatorio, y esto sí es criterio**: `retire` → `retain` → `repurchase` →
-  `rehost`/`relocate` → `replatform` → `refactor`. **Se evalúa apagar antes que mover, y comprar
-  antes que reescribir.** Reescribir es la opción más cara y la que más a menudo se elige primero.
+  `rehost`/`relocate` → `replatform` → `refactor` → `rebuild`. **Se evalúa apagar antes que mover,
+  y comprar antes que reescribir.** Reescribir es la opción más cara y la que más a menudo se
+  elige primero.
+- **`rebuild` (reescribir desde cero) existe y cierra la lista**: `legacy-modernization-standards`
+  §2.3 lo trata como estrategia propia y lo condiciona a las excepciones de
+  `refactoring-tech-debt-standards` §6.2. **Las dos listas son la misma**, con esta equivalencia:
+  el *replace* de aquella es el `repurchase` de aquí, y su `refactor/rearchitect` es este
+  `refactor`. Al citar, decir de qué lista se habla.
+- **El orden es de cartera, no de sistema**: fija por dónde se empieza a mirar cuando hay cien
+  aplicaciones. **La skill de la plataforma concreta puede invertirlo con justificación escrita**,
+  y a veces debe — en IBM i, por ejemplo, modernizar dentro (ILE, SQL, APIs) suele ser
+  dramáticamente más barato que comprar, y casi nadie agota esa vía antes de plantear la
+  migración. Invertir el orden sin escribir por qué es saltarse el criterio, no adaptarlo.
 - `rehost` a la nube **sin plan de replatform posterior con fecha** traslada la deuda y añade
   factura: se acepta solo con motivo de plazo (cierre de CPD, fin de soporte de hardware) escrito.
 - **Ninguna R se aplica a la cartera entera**: se decide por aplicación, con el coste de §3.1

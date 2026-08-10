@@ -169,7 +169,7 @@ migración terminada**: la validación la da la suite de pruebas, no el icono ve
 ## 6. Operación y entorno
 
 - **IIS y `web.config`**: la app decide *handlers*, *modules*, autenticación y `system.web`; el sitio,
-  el *app pool* y el TLS del *listener* son de `web-app-servers-standards` (Ola 7). No duplicar.
+  el *app pool* y el TLS del *listener* son de `web-app-servers-standards`. No duplicar.
 - **GAC y COM**: registrar en el GAC o depender de `regasm` ata el despliegue a la máquina. Queda
   **documentado como dependencia de máquina**, automatizado y versionado; nunca paso manual.
 - **Build reproducible**: `msbuild.exe` de una versión fijada de Visual Studio o de los *Build

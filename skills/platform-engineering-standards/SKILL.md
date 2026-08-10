@@ -45,13 +45,13 @@ identidad **de la plataforma** como sujeto privilegiado —§5), `secrets-manage
 `container-runtime-security-standards` (aislamiento y detección en tiempo de ejecución de lo que la
 plataforma despliega), `api-design-standards` (**el contrato de la API de la plataforma se diseña
 con sus reglas**: versionado, errores, paginación, compatibilidad; aquí solo la obligación de que
-esa API *exista* y sea un contrato), `developer-workstation-standards` (**Ola 6, en curso**: la
+esa API *exista* y sea un contrato), `developer-workstation-standards` (la
 máquina del desarrollador, sus dotfiles y su entorno local; **aquí lo que corre del lado del
 servidor**; el punto de encuentro es el entorno de desarrollo reproducible, que se decide allí),
 `testing-qa-standards` y `code-review-standards` (estrategia de prueba y control de calidad del
 diff; **la plataforma las aplica a su propio código como cualquier producto, no las redefine**),
 `tech-leadership-standards`, `enterprise-architecture-standards`, `itsm-itil-standards`,
-`knowledge-management-standards` y `product-discovery-standards` (**Ola 6, planificadas**: gobierno,
+`knowledge-management-standards` y `product-discovery-standards` (gobierno,
 arquitectura de empresa, gestión de servicio y conocimiento; **la plataforma es un producto y su
 descubrimiento de necesidades se rige por `product-discovery-standards`** — aquí no se reinventa
 cómo se entrevista a un usuario), `microservices-architecture-standards` (descomposición en
@@ -322,6 +322,11 @@ proceso de tickets con más pasos. Las dos, siempre juntas:
   con: qué regla, por qué existe, qué cambiar y a quién preguntar.
 - **Cuotas por espacio de nombres/equipo** como límite superior de daño (recursos y coste). Una
   cuota que nadie ha alcanzado nunca está mal calibrada o es decorativa: revísala.
+  **Límite duro, alineado con `finops-standards` §7**: una cuota puede **frenar la creación de
+  recursos nuevos**, y en no-producción puede frenarla del todo; **PROHIBIDO que topar la cuota
+  bloquee el despliegue de una versión nueva de un servicio que ya corre en producción** —eso
+  convierte una desviación contable en un incidente de disponibilidad—. Si la cuota se alcanza en
+  producción, la admisión **avisa y escala al dueño del presupuesto**, no deniega el rollout.
 - **Entornos efímeros**: los tres requisitos son **TTL obligatorio**, **destrucción automática
   verificada** (y alertada si falla) y **datos no productivos**. Un entorno efímero que sobrevive es
   un entorno permanente sin dueño, sin parches y con datos de origen desconocido. Prohibido crear
@@ -524,8 +529,8 @@ distintos tiene que sostener un equipo, y cuántas horas al mes dedica a algo qu
 - **Hoja de ruta pública para sus usuarios**, con lo que **no** se va a hacer escrito de forma
   explícita. Un "no" claro permite al equipo resolverlo por su cuenta; el silencio le hace esperar.
 - **Descubrimiento de necesidades con método**, no por el ticket que más grita ni por lo que al
-  equipo de plataforma le apetece construir. La técnica es de `product-discovery-standards` (Ola 6,
-  planificada); lo obligatorio aquí es que exista una vía formal y que **el uso de la salida
+  equipo de plataforma le apetece construir. La técnica es de
+  `product-discovery-standards`; lo obligatorio aquí es que exista una vía formal y que **el uso de la salida
   documentada (§3.3) sea una de sus entradas**.
 - **Soporte con canal, horario y expectativa de respuesta publicados.** Un producto interno sin
   soporte declarado se abandona en el primer bloqueo.

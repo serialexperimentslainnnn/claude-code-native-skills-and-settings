@@ -64,7 +64,7 @@ bosque, GPO, Kerberos/NTLM, `krbtgt`, AD CS, Tier 0/PAW, delegación, higiene de
 recuperación del bosque. **Aquí solo el puente**: cómo un compromiso en el directorio se convierte
 en compromiso del tenant en la nube y al revés), `azure-standards`/`aws-standards`/`gcp-standards`
 (**la configuración del tenant y de su IAM de plataforma**: acceso condicional, PIM, gobernanza,
-políticas y condiciones. Aquí, su abuso), `cloud-security-posture-standards` (**Ola 7, hermana**:
+políticas y condiciones. Aquí, su abuso), `cloud-security-posture-standards` (**hermana**:
 el permiso excesivo **en frío** —derecho efectivo, comodines, caminos de ataque por permisos—;
 **aquí el uso indebido en caliente** de una identidad legítima), `endpoint-security-standards`
 (**el puesto y su EDR**: el infostealer que roba la cookie del navegador se detiene y se detecta

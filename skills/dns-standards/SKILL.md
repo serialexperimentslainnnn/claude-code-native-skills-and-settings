@@ -1,6 +1,6 @@
 ---
 name: dns-standards
-description: DNS service architecture, zone design and DNS security. Use when editing zone files or named.conf, unbound.conf, knot.conf, kresd config, nsd.conf, pdns.conf, dnsmasq.conf or pihole.toml, designing SOA timers, TTL, delegation and glue, CNAME-at-apex with ALIAS/ANAME, CAA, HTTPS/SVCB, SSHFP, TLSA/DANE, PTR, SPF, DKIM, DMARC, MTA-STS or TLS-RPT records, DNSSEC signing and KSK/ZSK rollover, NSEC3 parameters, RRL, TSIG-protected AXFR/IXFR, split-horizon views, anycast authoritatives, .internal or home.arpa naming, zone-as-code with dnscontrol or octodns, named-checkzone, kdig, dig +trace, DoT/DoH/DoQ resolver transport, dangling subdomain takeover, DNS tunneling exfiltration or registrar/NS hijack.
+description: DNS service architecture, zone design and DNS security. Use when editing zone files or named.conf, unbound.conf, knot.conf, kresd config, nsd.conf, pdns.conf, dnsmasq.conf or pihole.toml, designing SOA timers, TTL, delegation and glue, CNAME-at-apex with ALIAS/ANAME, CAA, HTTPS/SVCB, SSHFP, TLSA/DANE, PTR records, DNSSEC signing and KSK/ZSK rollover, NSEC3 parameters, RRL, TSIG-protected AXFR/IXFR, split-horizon views, anycast authoritatives, .internal or home.arpa naming, zone-as-code with dnscontrol or octodns, named-checkzone, kdig, dig +trace, DoT/DoH/DoQ resolver transport, dangling subdomain takeover, DNS tunneling exfiltration or registrar/NS hijack.
 ---
 
 # Estándares de DNS — servicio crítico y superficie de ataque
@@ -56,7 +56,7 @@ DNS como evidencia y su cadena de custodia durante un compromiso), `data-platfor
 control ante ENS/ISO/NIS2), `bcdr-standards` (RTO/RPO del servicio de nombres),
 `iac-standards`/`cicd-standards` (el repo y el pipeline que despliegan la zona).
 
-**Ola 2, planificadas** — hasta que existan, esta skill es criterio provisional en su solapa:
+Además:
 `vpn-standards` (resolución dentro del túnel, DNS *split* del cliente VPN y fuga de DNS fuera
 del túnel), `network-troubleshooting-standards` (**diagnóstico**: tú fijas cuál es la respuesta
 correcta y quién debe darla; él averigua por qué el paquete o la respuesta no llegan — cuando

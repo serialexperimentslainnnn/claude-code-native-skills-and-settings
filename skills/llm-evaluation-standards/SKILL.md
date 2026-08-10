@@ -52,19 +52,19 @@ iteraciones, contención, tríada letal. Frontera: **allí se acota el agente; a
 la tarea, a qué coste y en cuántos pasos**);
 `mcp-standards` (protocolo MCP: primitivas, transportes, autorización, diseño y seguridad del
 servidor);
-`mlsecops-standards` (**Ola 3, escrita**: seguridad del ciclo de vida del modelo y de la cadena de
+`mlsecops-standards` (seguridad del ciclo de vida del modelo y de la cadena de
 suministro de IA. **Frontera del red teaming, declarada en ambos lados: la metodología de red
 teaming de IA —ataque adversario contra el sistema— es de `mlsecops`; el *aparato de medición* que
 ese ejercicio usa —conjunto de casos, juez, rúbrica, umbral, CI— es de aquí.** Un ataque exitoso es
 un caso nuevo en el eval set; el gobierno del ataque no lo es);
-`mlops-standards` (**Ola 3, escrita**: ciclo de vida operativo de un modelo propio — versionado de
+`mlops-standards` (ciclo de vida operativo de un modelo propio — versionado de
 datasets y ejecuciones, seguimiento de experimentos, registro de modelos y promoción, orquestación
 del entrenamiento, *feature store* y sesgo train/serve, despliegue en sombra y canario, rollback de
 pesos, y **detección de deriva de datos frente a deriva de concepto** con sus métricas proxy y sus
 bucles de realimentación. **Frontera: `mlops` opera, esta skill mide la calidad.** La deriva es suya
 como señal de operación; **convertir esa deriva en casos nuevos del conjunto de evaluación es mío**.
 La equidad y el sesgo como propiedad del sistema son suyos);
-`ai-governance-standards` (**Ola 3, planificada**: AI Act, políticas, inventario de sistemas de IA,
+`ai-governance-standards` (AI Act, políticas, inventario de sistemas de IA,
 gestión de riesgo. La *obligación* de evaluar y documentar es suya; el método técnico, mío);
 `observability-standards` (pipeline de telemetría, OTel, muestreo, retención, coste de la
 plataforma. **Aquí solo qué traza hace falta para evaluar y cómo se convierte en caso**);
@@ -478,7 +478,7 @@ Antes de fijar cualquier cosa en un proyecto real, comprobar por web:
 6. **Modelos y precios** para presupuestar el juez y el eval: **exclusivamente vía `claude-api`** del
    lado Anthropic, y por documentación oficial del proveedor en el resto. Nunca de memoria.
 7. **Requisitos regulatorios de evaluación y documentación** (AI Act y equivalentes) cuando el
-   sistema sea de alto riesgo → coordinar con `ai-governance-standards` (Ola 3, planificada).
+   sistema sea de alto riesgo → coordinar con `ai-governance-standards`.
 
 ### Huecos declarados (no verificados en esta redacción)
 

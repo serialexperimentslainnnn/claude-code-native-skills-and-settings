@@ -35,20 +35,20 @@ imagen LCP lleva `fetchpriority=high`" es de allí.
   (qué framework, qué modelo de render, dónde vive el estado), no la config del compilador ni las reglas
   de lint. Donde ambas hablan de Next.js, **manda su tabla para versiones de lenguaje y tooling** y esta
   para el criterio de elección.
-- `accessibility-standards` (**Ola 6, ya escrita**) — WCAG 2.2, ARIA, teclado, tecnología asistiva y la
+- `accessibility-standards` — WCAG 2.2, ARIA, teclado, tecnología asistiva y la
   auditoría. Aquí solo que las *queries por rol* de Testing Library ya auditan de facto y que los
   estados de carga y error deben ser anunciables; **el foco al cambiar de ruta y el anuncio tras una
   mutación son criterio suyo**, aunque el mecanismo lo provea el enrutador de aquí.
 - `testing-qa-standards` — **la estrategia de prueba agnóstica de lenguaje es suya**: proporción de la
   pirámide, umbrales de cobertura, mutación, contratos, datos de prueba y política de *flaky*. Aquí solo
   qué probar en una UI de framework y con qué herramienta (§4).
-- `web-performance-standards` (**Ola 6, en curso**) — Core Web Vitals, presupuestos y medición. Aquí la
+- `web-performance-standards` — Core Web Vitals, presupuestos y medición. Aquí la
   hidratación como coste arquitectónico, no su métrica.
-- `design-systems-standards` (**ya escrita** — **el contrato público del componente**: composición
+- `design-systems-standards` (**el contrato público del componente**: composición
   frente a configuración, tokens, versionado del paquete y política de cambios rompientes. Aquí
   cómo el framework lo consume y lo renderiza, no cómo se diseña su API),
-  `cms-jamstack-standards` (**ya escrita** — el CMS headless y el contenido son suyos; aquí cómo lo
-  renderiza el framework), `pwa-standards`, `webgl-webgpu-standards` (**Ola 6, en curso**).
+  `cms-jamstack-standards` (el CMS headless y el contenido son suyos; aquí cómo lo
+  renderiza el framework), `pwa-standards`, `webgl-webgpu-standards`.
 - `api-design-standards` (el contrato que se consume), `caching-cdn-standards` (`Cache-Control`, CDN y
   purga; aquí solo *cuándo* la app pide revalidar), `appsec-standards` (metodología y triaje),
   `secrets-management-standards` (**un secreto no vive en el cliente**: las variables expuestas al bundle

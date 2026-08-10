@@ -31,7 +31,7 @@ Skills, IDs de modelo, `effort`, `task_budget`, compactación y context editing 
 caché de prompt, el Claude Agent SDK — **todo eso es suyo**; aquí está el criterio agnóstico:
 cuándo un agente, cómo diseñar la superficie de herramientas, cómo acotar el bucle y cómo
 asegurarlo. Si la tarea nombra Claude/Anthropic o pide código concreto, es la suya);
-`mcp-standards` (**Ola 3, escrita**: el protocolo MCP —primitivas, transportes, autorización,
+`mcp-standards` (el protocolo MCP —primitivas, transportes, autorización,
 diseño y seguridad de un servidor. **MCP es *un* mecanismo para dar herramientas a un agente,
 no el único**: función local, API HTTP, subproceso y SDK del proveedor son igual de válidos, y
 un servidor MCP se consume desde muchos hosts que no son agentes propios. La frontera: si
@@ -40,7 +40,7 @@ elige, itera y para**, es esta);
 `claude-code-skills-standards` (cómo se escribe una skill de Claude Code: es formato de
 **contexto** para un agente. Una skill inyecta instrucciones; una herramienta ejecuta. No
 confundir «darle criterio al agente» con «darle capacidad»);
-`llm-app-engineering-standards` (**existe, Ola 3** — **frontera clave**: la app de LLM de un
+`llm-app-engineering-standards` (**frontera clave**: la app de LLM de un
 turno o de *pipeline determinista*: prompting y plantillas versionadas, salida estructurada y
 su validación, elección y enrutado de modelo, ventana de contexto y caché de prefijo,
 streaming y cancelación, reintentos y límites de gasto, testing de lo no determinista. **El
@@ -49,12 +49,12 @@ cruzas la línea. El vocabulario compartido —`prompt injection`, `context`, `l
 al dominio, no reclamación del mismo trabajo: la inyección de prompt aquí se trata como
 **secuestro del objetivo de un agente con herramientas y permisos** (tríada letal, ASI01),
 allí como **entrada no confiable de una llamada**);
-`rag-standards` (**Ola 3, planificada**: chunking, embeddings, recuperación híbrida, reranking
+`rag-standards` (chunking, embeddings, recuperación híbrida, reranking
 — aquí la recuperación aparece solo como *una herramienta más* del agente),
-`llm-evaluation-standards` (**Ola 3, planificada**: metodología de evaluación, LLM-as-judge,
+`llm-evaluation-standards` (metodología de evaluación, LLM-as-judge,
 datasets — aquí solo qué métricas de agente importan y por qué las demos engañan),
 `mlsecops-standards` / `ai-governance-standards` / `mlops-standards` / `local-inference-standards`
-/ `gpu-computing-standards` (**Ola 3, planificadas**).
+/ `gpu-computing-standards`.
 Además: `appsec-standards` (STRIDE y clases de vulnerabilidad clásicas — la inyección de
 prompt **no** es una de ellas y no se mitiga con las mismas técnicas),
 `identity-access-management-standards` (identidad del agente como principal, tokens de vida
@@ -71,7 +71,7 @@ cuando el agente hace daño), `offensive-security-standards` (**red teaming de a
 ejercicio autorizado con RoE es suyo**), `vulnerability-management-standards`,
 `privacy-engineering-standards`, `grc-compliance-standards` (NIST AI RMF, ISO/IEC 42001, EU AI
 Act), `python-standards`/`typescript-standards`, `cicd-standards`, `api-design-standards`,
-`ai-agent-workflow-standards` (**Ola 6 — el par de colisión más fuerte de esta skill, arbitraje
+`ai-agent-workflow-standards` (**el par de colisión más fuerte de esta skill, arbitraje
 explícito**: **construir un sistema agéntico es de aquí** —bucle, herramientas, memoria, contexto,
 evaluación, despliegue y operación del agente como producto—; **trabajar con agentes de codificación
 en un equipo de ingeniería es suyo** —qué tarea se le da a un agente y cuál no, ficheros de

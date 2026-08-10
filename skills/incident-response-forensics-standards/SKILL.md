@@ -52,26 +52,30 @@ segunda vez el atacante ya sabe cómo respondes.
   MFA — el **cómo** se revoca durante el incidente.
 - `cryptography-pki-standards`: rotación de claves y certificados comprometidos, revocación y
   reemisión.
+- `bcdr-standards` §3.6: **dónde se reconstruye lo comprometido** — el entorno de recuperación
+  aislado (IRE / *clean room*), sus tres aislamientos y quién firma que está limpio. Frontera
+  exacta y en las dos direcciones: **esta skill produce el punto de restauración limpio, el IRE
+  lo consume**; no se reconstruye en el entorno caído ni con sus credenciales.
 - `ctf-lab-standards`: laboratorio aislado donde detonar muestras y practicar; esta skill **no** es
   entorno de entrenamiento.
 - `onprem-standards`, `kubernetes-standards`, `networking-standards`, `cicd-standards`,
   `data-platform-standards`, `aws-standards`/`azure-standards`/`gcp-standards`, `homelab-standards`:
   la operación de cada plataforma.
-- **Planificadas**: `detection-engineering-standards` (**Ola 1**; frontera **bidireccional y
+- `detection-engineering-standards` (frontera **bidireccional y
   declarada**: allí se escribe la detección que **dispara** el incidente, y **cada investigación de
   aquí devuelve reglas nuevas** — la investigación que no deja detección es investigación a medias),
-  `offensive-security-standards` (**existe ya en disco**: purple team, deconfliction con el SOC —
+  `offensive-security-standards` (purple team, deconfliction con el SOC —
   toda actividad ofensiva autorizada se deconflicta antes de tratarla como incidente real, y el
   hallazgo de un **compromiso previo durante un ejercicio** detiene el ejercicio y activa este
-  proceso), `secrets-management-standards` (**Ola 1**: rotación masiva tras el compromiso),
-  `linux-hardening-standards` (**Ola 1**: `auditd` como fuente de evidencia y baseline que reduce
-  superficie), `container-runtime-security-standards` (**Ola 1**: forense de contenedor y de nodo,
-  captura en runtime), `privacy-engineering-standards` (**Ola 1**: brecha de datos personales),
-  `bcdr-standards` (**Ola 1**: cuando la recuperación excede al servicio y activa continuidad),
-  `backup-recovery-standards` (**Ola 2**: restauración verificada y backups inmutables),
-  `assembly-standards` (**Ola 5**: fija cuándo se **escribe** ensamblador propio y cómo se
+  proceso), `secrets-management-standards` (rotación masiva tras el compromiso),
+  `linux-hardening-standards` (`auditd` como fuente de evidencia y baseline que reduce
+  superficie), `container-runtime-security-standards` (forense de contenedor y de nodo,
+  captura en runtime), `privacy-engineering-standards` (brecha de datos personales),
+  `bcdr-standards` (cuando la recuperación excede al servicio y activa continuidad),
+  `backup-recovery-standards` (restauración verificada y backups inmutables),
+  `assembly-standards` (fija cuándo se **escribe** ensamblador propio y cómo se
   mantiene; **el análisis de un binario ajeno para responder a un incidente es de aquí** —cadena de
-  custodia, orden de volatilidad, triaje del artefacto—), `solidity-standards` (**Ola 5**: el
+  custodia, orden de volatilidad, triaje del artefacto—), `solidity-standards` (el
   contrato y su plan de incidente escrito antes del despliegue son suyos; **la gestión del
   incidente real y el trazado de fondos, de aquí**).
 
@@ -241,7 +245,7 @@ Se audita **antes**, con estas preguntas. Un "no" es un hallazgo, no un matiz:
 - **Restaurar desde backup verificando que el backup no está comprometido**: identifica el momento del
   compromiso inicial (no el de la detección) y restaura desde un punto **anterior**; verifica la
   integridad del backup y **escanéalo antes de reconectarlo**. Un backup posterior al día 0 restaura
-  también al atacante. Coordina con `backup-recovery-standards` (Ola 2) y `bcdr-standards` (Ola 1).
+  también al atacante. Coordina con `backup-recovery-standards` y `bcdr-standards`.
 - **Rotación masiva de credenciales** con criterio de alcance, no de conveniencia: contraseñas de
   cuentas afectadas y privilegiadas, `krbtgt` (dos veces, con el intervalo de replicación entre ambas)
   si hubo compromiso de dominio, claves de API y tokens, secretos de aplicación, claves SSH, claves
@@ -273,7 +277,7 @@ Se audita **antes**, con estas preguntas. Un "no" es un hallazgo, no un matiz:
 7. **Verificación de la erradicación** antes de restaurar: vector cerrado (probado), persistencia
    eliminada (buscada específicamente), credenciales rotadas (listadas), detecciones nuevas activas.
 8. **Lecciones al detector**: **todo incidente produce reglas de detección nuevas** y requisitos de
-   telemetría nuevos, con dueño y fecha, entregados a `detection-engineering-standards` (Ola 1) y a
+   telemetría nuevos, con dueño y fecha, entregados a `detection-engineering-standards` y a
    `observability-standards`. Una investigación que no deja detección deja el mismo agujero abierto.
 9. **Ejercicio de la capacidad**: simulacro forense periódico — adquirir memoria y disco de un sistema
    real, con las herramientas reales y las personas reales, cronometrado. Descubre que LiME no compila
@@ -326,7 +330,12 @@ Se audita **antes**, con estas preguntas. Un "no" es un hallazgo, no un matiz:
 **Quien decide si hay obligación de notificar es legal/DPO, no ingeniería.** El papel de esta skill es
 producir a tiempo la información mínima: qué pasó, cuándo se supo, qué datos y categorías, cuántos
 afectados aproximados, qué medidas se han tomado. Plazos vigentes verificados a agosto 2026 —
-**verifícalos igualmente (§8)**:
+**verifícalos igualmente (§8)**.
+
+> **Fuente única de los plazos: `grc-compliance-standards`.** Los mismos regímenes están en tres
+> skills (aquí, `incident-management-standards` y ella). **Si divergen, manda
+> `grc-compliance-standards`**; corregir las tres en el mismo cambio. De aquí es solo la
+> **mecánica**: qué evidencia sostiene la notificación y cómo se preserva sin frenar el reloj.
 
 - **RGPD art. 33**: ≤ **72 h** desde el conocimiento, a la autoridad de control (AEPD); comunicación a
   los afectados si hay riesgo alto (art. 34). Notificación **progresiva** admitida: se notifica con lo

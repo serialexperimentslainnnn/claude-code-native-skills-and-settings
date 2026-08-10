@@ -65,19 +65,19 @@ entrega**), `iac-standards` (Ansible como herramienta y su CI: lo repetible se a
 del sistema**, y esta skill solo aporta que en esta familia el stack PAM se toca **con
 `authselect`**, nunca editando `/etc/pam.d` a mano, porque el contenido SSG/CIS lo asume),
 `grc-compliance-standards`, `homelab-standards` (laboratorio personal: la frontera es el rigor),
-`bcdr-standards`, `incident-response-forensics-standards`, `perl-standards` (**Ola 5**: el intérprete
+`bcdr-standards`, `incident-response-forensics-standards`, `perl-standards` (el intérprete
 de Perl del sistema y sus paquetes RPM son de aquí — **PROHIBIDO tocarlos o instalar módulos sobre
 ellos: rompe herramientas del propio SO**—; el Perl **de aplicación**, con su `perlbrew`/`plenv`,
 `cpanfile` y su criterio de código, es suyo).
 
-Planificadas — hasta que existan, esta skill es criterio provisional en su solapa:
-`podman-systemd-containers-standards` (**Ola 2**: Podman, Quadlet, rootless, `podman auto-update`
+Además:
+`podman-systemd-containers-standards` (Podman, Quadlet, rootless, `podman auto-update`
 — **frontera precisa**: aquí solo que **Podman es el default de la familia y Docker la excepción a
 justificar**, y las *logically bound images* de bootc; el resto es suyo),
-`linux-storage-standards` (**Ola 2**: LVM, Stratis, XFS y su tuning; aquí solo que XFS es el
-filesystem por defecto de RHEL y **no se puede reducir**), `backup-recovery-standards` (**Ola 2**),
-`ha-clustering-standards` (**Ola 2**: RHEL HA Add-on, Pacemaker/Corosync, `pcs`),
-`libvirt-kvm-standards`, `proxmox-ve-standards`, `zfs-standards` (**Ola 2**: y de paso el motivo por
+`linux-storage-standards` (LVM, Stratis, XFS y su tuning; aquí solo que XFS es el
+filesystem por defecto de RHEL y **no se puede reducir**), `backup-recovery-standards`,
+`ha-clustering-standards` (RHEL HA Add-on, Pacemaker/Corosync, `pcs`),
+`libvirt-kvm-standards`, `proxmox-ve-standards`, `zfs-standards` (y de paso el motivo por
 el que ZFS no es una opción de primera en esta familia — DKMS fuera de árbol contra un kernel que
 se actualiza solo), `dns-standards`, `firewall-policy-standards`, `vpn-standards`,
 `network-troubleshooting-standards`.
@@ -397,7 +397,7 @@ operación con mayor probabilidad de dejar un sistema en un estado no soportado.
 - **Métrica de "reboot pendiente"** por host, con antigüedad. Un parque con parches aplicados y sin
   reiniciar es un parque sin parchear (§4.7).
 - **XFS es el filesystem por defecto de RHEL y no se puede reducir**: el dimensionado de un LV con
-  XFS es una decisión de ida. El diseño de almacenamiento es de `linux-storage-standards` (Ola 2).
+  XFS es una decisión de ida. El diseño de almacenamiento es de `linux-storage-standards`.
 - **RHEL 10 eliminó Xorg** (queda Xwayland; el protocolo X11 sigue funcionando para la mayoría de
   clientes) y **Motif**. Si algo de tu stack depende de un servidor X real, es un bloqueante de
   migración que hay que detectar en el `preupgrade`, no en producción.

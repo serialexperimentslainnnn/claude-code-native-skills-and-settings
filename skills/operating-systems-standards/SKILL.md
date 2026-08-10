@@ -62,8 +62,8 @@ de durabilidad y `fsync` se argumenta aquí y se implementa allí**), `sre-pract
 `proxmox-ve-standards`, `vmware-standards`, `hyper-v-standards` y `xen-standards` (**operar el
 hipervisor es suyo**; aquí solo qué implica la virtualización para el programa que corre dentro:
 *steal time*, reloj, NUMA virtual), `kubernetes-standards` (requests/limits como objeto declarativo;
-**aquí qué hace el kernel cuando se alcanza ese límite**), `embedded-iot-standards` (**Ola 7,
-hermana**: el dispositivo físico, el RTOS y el superloop — **la discusión de tiempo real duro es
+**aquí qué hace el kernel cuando se alcanza ese límite**), `embedded-iot-standards` (**hermana**:
+el dispositivo físico, el RTOS y el superloop — **la discusión de tiempo real duro es
 frontera compartida**: el criterio de qué es tiempo real y qué garantiza `PREEMPT_RT` es de aquí, la
 elección de RTOS para un MCU es suya), `bsd-systems-standards` y `aix-solaris-hpux-standards` (otros
 sistemas operativos como plataforma de producción), `c-standards`, `cpp-standards`, `rust-standards`

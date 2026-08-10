@@ -69,7 +69,7 @@ la aplicación; aquí sólo se demuestra que el fallo viene de ahí),
 `appsec-standards` (fallo que resulta ser de la aplicación), `onprem-standards` (paraguas),
 `homelab-standards` (laboratorio propio), `offensive-security-standards` (**escanear una red que no
 es tuya, o el barrido activo sin autorización, no es diagnóstico**), y las tres skills de diseño y
-operación proactiva de la **Ola 7**, a las que **vuelve la causa una vez encontrada**: si la avería
+operación proactiva a las que **vuelve la causa una vez encontrada**: si la avería
 se explica por el diseño de campus o por una política BGP, la corrección estructural es de
 `routing-switching-standards`; si aparece MTU de encapsulación, ECMP asimétrico o EVPN, es de
 `datacenter-fabric-standards`; y **si la respuesta a "¿qué cambió?" es un despliegue de

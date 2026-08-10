@@ -35,12 +35,12 @@ coste), `sre-practice-standards` (SLO, error budget, on-call y postmortems — l
 agnóstica aunque nazca en Google), `grc-compliance-standards` (marco normativo y evidencia de
 auditoría), `networking-standards` (redes físicas, on-prem e híbridas; aquí VPC),
 `data-platform-standards` (modelado, índices y tuning; aquí Cloud SQL/AlloyDB/BigQuery como
-servicios), `finops-standards` (**Ola 6** — **método frente a servicio**: el modelo de precio de
+servicios), `finops-standards` (**método frente a servicio**: el modelo de precio de
 cada servicio de GCP, los descuentos por uso comprometido y palancas propias como **el coste por
 byte escaneado en BigQuery** son de aquí; **la unidad económica, la política de etiquetas y su
 gate, la normalización con FOCUS y el reparto de coste compartido son suyos**. *Si la respuesta
 cambia al cambiar de proveedor, es suya; si depende del catálogo de GCP, es de aquí*),
-`platform-engineering-standards` (**Ola 6**: la abstracción interna ofrecida encima de estos
+`platform-engineering-standards` (la abstracción interna ofrecida encima de estos
 servicios).
 
 ## 2. Decisiones por defecto (servicio de referencia por caso de uso)

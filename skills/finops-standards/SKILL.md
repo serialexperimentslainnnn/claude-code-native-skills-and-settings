@@ -42,15 +42,15 @@ inferencia como categoría de gasto y su unidad), `caching-cdn-standards` (egres
 facturación del CDN), `object-storage-standards` (clases, ciclo de vida y coste por petición),
 `sre-practice-standards` (**fiabilidad frente a coste es un trade-off explícito y el *error budget*
 es suyo**: ninguna optimización de coste se aprueba aquí si consume presupuesto de error sin
-decisión registrada allí), `green-it-standards` (**Ola 6, planificada**: huella de carbono y
+decisión registrada allí), `green-it-standards` (huella de carbono y
 eficiencia energética; coste y emisiones **correlacionan pero no son la misma métrica** —§6.4),
 `grc-compliance-standards` (control interno, auditoría y segregación de funciones sobre el gasto),
 `platform-engineering-standards` (**el coste de la plataforma interna es una unidad económica más y
 se mide con el método de aquí**; los gates de etiquetado se implantan en su camino pavimentado y en
-su capa de admisión), `enterprise-architecture-standards` (**Ola 6**: **el coste por aplicación que produce esta skill es
+su capa de admisión), `enterprise-architecture-standards` (**el coste por aplicación que produce esta skill es
 una de las entradas de su decisión de ciclo de vida** —tolerar, invertir, migrar, eliminar—; el
 inventario, la criticidad y el gobierno del estándar son suyos. Una aplicación cara y sin dueño no
-es un problema de coste, es un problema de cartera), `green-it-standards` (**Ola 6 — frontera recíproca que hay que escribir
+es un problema de coste, es un problema de cartera), `green-it-standards` (**frontera recíproca
 porque las dos comparten palancas y no comparten métrica**: apagar lo ocioso, dimensionar y elegir
 región reducen coste **y** carbono, y por eso se confunden. **La unidad económica es de aquí; la
 unidad de carbono es suya.** Divergen más de lo que parece: **la huella incorporada del hardware
@@ -472,7 +472,15 @@ no es auditable y no sirve para negociar.
   congelación de creación de recursos nuevos en no producción). Un umbral sin acción asociada es
   decoración.
 - **PROHIBIDO** que un presupuesto excedido pare despliegues de producción de forma automática: eso
-  convierte una desviación contable en un incidente de disponibilidad.
+  convierte una desviación contable en un incidente de disponibilidad. Aplica también a la **cuota
+  en admisión** que implanta `platform-engineering-standards`: puede frenar recursos nuevos y
+  entornos efímeros, **no el rollout de un servicio ya en producción**.
+- **Renegociar un SLO a la baja porque no cabe en el presupuesto es una decisión legítima y
+  reglada, no un recorte silencioso.** Procedimiento, acordado con `sre-practice-standards`:
+  esta skill aporta el coste por nueve —cuánto cuesta la redundancia, la multi-zona o la
+  retención que sostienen el objetivo—; **el objetivo solo lo cambia quien responde del SLO**, por
+  ADR firmado, con el impacto en el usuario declarado y comunicado a quien dependa del servicio.
+  Sin ese ADR no hay renegociación: hay un recorte que se descubrirá en la próxima caída.
 
 ### 6.4 Coste y sostenibilidad
 
@@ -480,8 +488,8 @@ no es auditable y no sirve para negociar.
 apagar recursos ociosos mejora las dos; mover una carga a una región más barata **puede empeorar**
 la huella si esa región tiene una mezcla energética peor, y a la inversa. Regla: si una decisión se
 justifica por sostenibilidad, se mide con su propia métrica y se declara el efecto sobre el coste, y
-viceversa. **El criterio de huella, factores de emisión y metodología es de `green-it-standards`
-(Ola 6, planificada)**; aquí solo la advertencia de no usar el coste como aproximación de la huella.
+viceversa. **El criterio de huella, factores de emisión y metodología es de
+`green-it-standards`**; aquí solo la advertencia de no usar el coste como aproximación de la huella.
 El marco FinOps sí tiene `Sustainability` como capacidad del dominio `Optimize Usage & Cost`: úsese
 como punto de encaje, no como fuente de metodología de cálculo.
 

@@ -43,17 +43,20 @@ las pruebas negativas como **generadores** de esos hallazgos), `sre-practice-sta
 (**coordinación obligatoria**: fiabilidad en producción, SLO y *error budget* — las pruebas en
 producción y el despliegue progresivo se diseñan aquí como pruebas y se **operan** allí),
 `observability-standards` (la telemetría que esas pruebas leen), `performance-engineering-standards`
-y `web-performance-standards` (**Ola 6, en curso**: **las pruebas de carga se diseñan aquí**;
-**los umbrales de latencia y la metodología de optimización son suyos**), `accessibility-standards`
-(**Ola 6**: el criterio de conformidad WCAG es suyo; aquí solo automatizarlo como prueba que rompe
+y `web-performance-standards` (**las pruebas de carga se diseñan aquí**;
+**los umbrales de latencia y la metodología de optimización son suyos**),
+`chaos-engineering-standards` (**la inyección deliberada de fallos con hipótesis de estado
+estable es suya**; aquí el test determinista — un *toxic* de Toxiproxy en un test de integración
+se configura con su criterio, y el test y sus gates son de aquí), `accessibility-standards`
+(el criterio de conformidad WCAG es suyo; aquí solo automatizarlo como prueba que rompe
 el build), `privacy-engineering-standards` (**la política de datos personales es suya**; aquí la
 prohibición operativa de meterlos en un entorno de prueba), `incident-management-standards`
 (postmortem sin culpa; aquí el test de regresión que todo bug arreglado deja obligatoriamente),
 `llm-evaluation-standards` (evaluación de salidas no deterministas de un modelo: no es esta skill),
-`ai-agents-standards` y `ai-agent-workflow-standards` (**Ola 6**: trabajo con agentes),
+`ai-agents-standards` y `ai-agent-workflow-standards` (trabajo con agentes),
 `data-governance-quality-standards` (aserciones de calidad **sobre datos en producción**, no sobre
 código), `kubernetes-standards` e `iac-standards` (pruebas de manifiestos y de infraestructura),
-`refactoring-tech-debt-standards` (**Ola 6 — esta skill es su precondición y conviene decirlo en
+`refactoring-tech-debt-standards` (**esta skill es su precondición y conviene decirlo en
 las dos direcciones**: **qué se prueba, en qué proporción y con qué criterio de calidad es de
 aquí**; **la exigencia de cubrir el comportamiento observable ANTES de tocar la estructura, y las
 pruebas de caracterización sobre código heredado sin tests, son suyas**. La regla que ambas
@@ -375,14 +378,14 @@ fija es cuál rompe qué**.
 
 ### 6.4 Accesibilidad y rendimiento como pruebas automatizables
 
-- **Accesibilidad**: la conformidad la define `accessibility-standards` (Ola 6). Aquí: la
+- **Accesibilidad**: la conformidad la define `accessibility-standards`. Aquí: la
   comprobación automatizada se ejecuta en el gate de PR sobre las pantallas críticas y **rompe el
   build** ante violación nueva. Regla de honestidad obligatoria: **el análisis automático cubre
   una fracción de los criterios**; el verde automático **no** es conformidad, y la skill de
   accesibilidad fija qué requiere revisión manual.
 - **Carga**: se diseña aquí (escenarios, perfil de llegada, datos, duración, criterio de parada);
   **los umbrales de latencia y percentiles y la metodología de optimización son de
-  `performance-engineering-standards` / `web-performance-standards`** (Ola 6, en curso).
+  `performance-engineering-standards` / `web-performance-standards`**.
   Reglas propias de esta skill: la prueba de carga **nunca** va en el gate de PR (es lenta y
   ruidosa); se ejecuta contra un entorno de tamaño declarado; sus resultados solo son comparables
   entre ejecuciones con el **mismo** entorno y **mismos** datos; y una prueba de carga sin
@@ -415,6 +418,12 @@ fija es cuál rompe qué**.
 - ❌ **PROHIBIDO** excluir ficheros del cálculo de cobertura para subir el número.
 - ❌ **PROHIBIDO** `--update-snapshots` como reacción a un fallo sin revisar el diff (§3.7).
 - ❌ **PROHIBIDO** datos personales reales en entornos de prueba, sin excepción por urgencia (§5).
+  **Única excepción del catálogo, y no la concede esta skill**: el **ensayo de corte** de una
+  migración se hace con datos reales **enmascarados** sobre infraestructura equivalente, porque su
+  objetivo es medir duración y cuadre, no probar código — el criterio es de
+  `migration-projects-standards` y el enmascarado, de `privacy-engineering-standards`. Enmascarado
+  significa transformado de forma irreversible antes de salir del origen, no "copiado a un entorno
+  con menos gente mirando".
 - ❌ **PROHIBIDO** credenciales, tokens o claves reales en tests o en *fixtures*.
 - ❌ **PROHIBIDO** `sleep`/*polling* como sincronización en un test.
 - ❌ **PROHIBIDO** que un test dependa del orden de ejecución o del estado dejado por otro.

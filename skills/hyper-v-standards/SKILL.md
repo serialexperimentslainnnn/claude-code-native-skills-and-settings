@@ -40,6 +40,12 @@ Disparadores: `New-VM`, `Set-VMProcessor`, `Get-VMSwitch`/`New-VMSwitch`, `Check
   del hipervisor y se decide aquí**; el principio de quórum es común, la implementación no.
 - `linux-storage-standards`, `zfs-standards`, `object-storage-standards` — almacenamiento fuera de
   CSV/S2D/SMB3.
+- `incident-response-forensics-standards` e `incident-management-standards` — **cuando el
+  hipervisor es la víctima**: el proceso y la preservación de evidencia son suyos; **aquí el dato
+  que decide la respuesta**: el host Hyper-V está unido al dominio, así que **un AD comprometido
+  es un hipervisor comprometido** —es Tier 0 por definición— y un host sospechoso **se reconstruye
+  desde medio confiable, no se limpia**. La restauración no empieza hasta que la erradicación
+  está verificada (criterio de `bcdr-standards`).
 - `networking-standards` — red física, VLAN, MTU, jumbo frames y switch de ToR; aquí el conmutador
   virtual y SET.
 - `backup-recovery-standards` — **mecánica del respaldo, retención, inmutabilidad y restore probado**;

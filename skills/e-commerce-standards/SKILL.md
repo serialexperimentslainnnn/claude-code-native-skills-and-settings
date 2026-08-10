@@ -38,7 +38,11 @@ máquina de estados de autorización y captura, idempotencia del cobro, concilia
 liquidación, *chargebacks*, contabilidad en unidades mínimas y libro mayor inmutable.
 **Frontera exacta: el importe a cobrar se decide aquí; desde `POST /payments` en adelante es
 suyo.** Regla que evita duplicar: *cuánto y por qué → esta skill; qué le pasa a ese importe →
-pagos*), `web-performance-standards` (**la medición y el presupuesto de rendimiento son
+pagos*), `gaming-infrastructure-standards` y `game-development-standards` (**la tienda de un juego
+es una tienda y entra aquí**: catálogo, precio, moneda virtual como SKU, impuesto y carrito, con
+el cobro delegado igual que cualquier otro en `fintech-payments-standards`. Lo que no es de aquí:
+la validación del recibo **en el servidor de juego** y la verificación por firma de su *webhook*,
+que son suyas porque el cliente miente), `web-performance-standards` (**la medición y el presupuesto de rendimiento son
 suyos**: Core Web Vitals, datos de campo, percentil 75, presupuestos en CI. Aquí solo **dónde
 duele en una tienda** —ficha de producto y checkout— y qué se prioriza cuando hay que elegir.
 No dupliques métricas ni umbrales: delégalos), `caching-cdn-standards` (política de caché,

@@ -52,12 +52,12 @@ esta skill es una capa dentro de su §1.2 y no contradice sus invariantes de §1
 proporcionalidad; si el servidor de inferencia es tu lab personal sin terceros ni SLA, manda
 esa skill y esta aporta solo el criterio técnico), `python-standards` (código del cliente o de
 scripts de evaluación), `vulnerability-management-standards` (triaje y SLA de los CVE de §5), `webgl-webgpu-standards`
-(**Ola 6**: **si el modelo se ejecuta en el navegador, WebGPU es el sustrato y su criterio es
+(**si el modelo se ejecuta en el navegador, WebGPU es el sustrato y su criterio es
 suyo** —adaptador, límites del dispositivo, pérdida de contexto, memoria de GPU y degradación a
 WebGL2—; **la elección del modelo, su cuantización y el presupuesto de memoria siguen siendo de
 aquí**. Aviso compartido y verificado: **WebGPU no es Baseline** —sin soporte en Firefox Android y
 con restricciones por GPU en escritorio—, así que un despliegue de inferencia en navegador
-necesita plan de degradación), `green-it-standards` (**Ola 6**: el dimensionado, la cuantización y
+necesita plan de degradación), `green-it-standards` (el dimensionado, la cuantización y
 el cálculo de punto de equilibrio frente a una API alojada son de aquí; **la contabilidad
 energética y de carbono de ese entrenamiento o esa inferencia es suya** — y el aviso que comparten:
 **las cifras de huella que publican los proveedores de nube no son comparables entre sí**, así que
@@ -68,7 +68,7 @@ También `rag-standards` (recuperación y embeddings — **servir el modelo de e
 es de aquí; el diseño del índice, el chunking y el reranking son de allí**) y
 `ai-agents-standards` (bucle del agente, superficie de herramientas, contención).
 
-**Ola 3, planificadas** (marcar como tal si se citan): `llm-evaluation-standards` (**medir si
+Además: `llm-evaluation-standards` (**medir si
 el modelo local es suficientemente bueno para la tarea es de allí**: esta skill mide
 *rendimiento*, no *calidad*), `mlsecops-standards` (**procedencia, firma y escaneo del
 artefacto de modelo: frontera compartida** — el criterio de cadena de suministro es suyo, la
@@ -104,7 +104,7 @@ regla operativa de "qué pesos acepta este servidor" es de aquí), `mlops-standa
   tránsito y sin retención controlada de prompts es *peor* que un proveedor con contrato de
   encargado de tratamiento. La privacidad es una propiedad del diseño, no de la ubicación.
 - ❌ **"Es más seguro porque está dentro".** Ver §5: varios motores no autentican por defecto.
-- ❌ **"Nos da el mismo resultado".** Eso se **mide** (`llm-evaluation-standards`, Ola 3), no
+- ❌ **"Nos da el mismo resultado".** Eso se **mide** (`llm-evaluation-standards`), no
   se supone. Un modelo abierto que no resuelve la tarea es coste cero de API y coste total de
   infraestructura.
 
@@ -166,7 +166,7 @@ limitado por ancho de banda de memoria, **aumenta la velocidad de generación**.
 pierde no se reparte uniformemente: la degradación se concentra en razonamiento encadenado,
 código y matemáticas, y es mucho menor en resumen y redacción. Una perplejidad casi idéntica
 puede esconder una caída notable en la tarea que te importa. **Regla: mide la tarea, no la
-perplejidad** (`llm-evaluation-standards`, Ola 3).
+perplejidad** (`llm-evaluation-standards`).
 
 | Formato | Estado | Uso |
 |---|---|---|
@@ -301,7 +301,7 @@ Lecturas obligatorias del cálculo:
 6. **Benchmark de regresión de rendimiento**: throughput y p95 dentro de un umbral respecto a
    la línea base; una caída de X% rompe el build. La versión del motor cambia el rendimiento.
 7. **Evaluación de calidad** de la tarea al cambiar modelo, cuantización o versión de motor
-   (`llm-evaluation-standards`, Ola 3). **Cambiar la cuantización es cambiar el modelo.**
+   (`llm-evaluation-standards`). **Cambiar la cuantización es cambiar el modelo.**
 
 ## 5. Seguridad del stack
 
@@ -336,8 +336,8 @@ Reglas duras:
   publica en un almacén interno. El servidor de producción **no descarga de Internet en el
   arranque** (además de seguridad, es disponibilidad: un fallo del repositorio externo tumba
   el arranque de tu servicio).
-- El escaneo y la firma del artefacto de modelo son frontera compartida con `mlsecops-standards`
-  (Ola 3, planificada): **el criterio de cadena de suministro es suyo**; aquí manda la regla
+- El escaneo y la firma del artefacto de modelo son frontera compartida con `mlsecops-standards`:
+  **el criterio de cadena de suministro es suyo**; aquí manda la regla
   operativa de qué acepta este servidor.
 
 ### 5.2 El endpoint
@@ -474,7 +474,7 @@ autenticar es regalar cómputo (y, con *tool calling*, un punto de apoyo dentro 
     inventarse un dato, y el error es legal.
   - **Los *distills* y los *fine-tunes* heredan la licencia del modelo base.** Comprobarlo.
   - Registrar modelo, revisión, licencia y su evaluación en el inventario
-    (`grc-compliance-standards`; `ai-governance-standards`, Ola 3).
+    (`grc-compliance-standards`; `ai-governance-standards`).
 
 **PROHIBIDO**
 

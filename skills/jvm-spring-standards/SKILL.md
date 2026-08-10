@@ -13,13 +13,13 @@ Datos de versión verificados a **2026-08**: SIEMPRE re-verificar por web antes 
 - Aplica a: servicios backend Java/Kotlin, APIs REST/gRPC, workers/batch, librerías internas JVM.
 - Triggers: ficheros `.java`, `.kt`, `.kts`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `pom.xml`, `application.yml|properties`; menciones a Spring Boot/Security/Data, JPA, Gradle, Maven, JUnit, Testcontainers, GraalVM.
 - **No aplica**: Android y Kotlin de app móvil (ver `mobile-standards`). **El legacy Java tiene
-  dueño propio desde la Ola 7**: `jsp-struts-standards` (JSP con *scriptlets*, Struts 1 y 2,
+  dueño propio**: `jsp-struts-standards` (JSP con *scriptlets*, Struts 1 y 2,
   `struts-config.xml`, *tag libs*, y los servidores de aplicaciones heredados con su barrera
   `javax` → `jakarta`). **Lo que sí es de aquí: el destino de esa migración** — Spring Boot, la
   versión de JDK y la calidad del código resultante se rigen por esta skill. Aviso que ambas
   sostienen: **una aplicación Struts sin parches es un problema de seguridad antes que de
   mantenimiento**, y varias de sus vulnerabilidades figuran en el catálogo de explotadas conocidas
-  de CISA. **Otros lenguajes de la JVM** — ver `scala-standards`, `clojure-standards` y `groovy-standards` (**Ola 5**). Arbitraje
+  de CISA. **Otros lenguajes de la JVM** — ver `scala-standards`, `clojure-standards` y `groovy-standards`. Arbitraje
   espejado: **la elección y operación de la JVM se decide aquí** —distribución y versión del JDK,
   GC y su tuning, flags de arranque, JFR, contenedorización de la JVM— **y todo lo que sea Spring
   es de aquí aunque el código no sea Java**; **cómo se escribe el código en Scala, Clojure o

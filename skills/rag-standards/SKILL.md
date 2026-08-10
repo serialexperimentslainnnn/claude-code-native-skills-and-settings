@@ -43,7 +43,7 @@ adivinando.
   contexto, parámetros, caché de prompt, tool use, MCP, Managed Agents, migración. Si necesitas un
   dato de la API de Claude para el generador o para contexto largo, **sale de ahí**, no de aquí ni
   de memoria. Esta skill es agnóstica de proveedor.
-- `llm-evaluation-standards` (**Ola 3, planificada**): **la evaluación es suya** — construcción de
+- `llm-evaluation-standards`: **la evaluación es suya** — construcción de
   eval sets, LLM-as-judge y su calibración, significancia estadística, regresión en CI. Aquí se
   define **qué se mide en RAG y por qué separado** (§4), y se exige como gate; la maquinaria de
   evaluación vive allí.
@@ -69,7 +69,7 @@ adivinando.
   es de `identity-access-management-standards`.
 - `mcp-standards`: exponer recuperación como servidor MCP y su seguridad.
 - `mlsecops-standards`, `local-inference-standards`, `gpu-computing-standards`, `mlops-standards`,
-  `ai-governance-standards` (**Ola 3, planificadas**): seguridad del ciclo de vida del modelo,
+  `ai-governance-standards`: seguridad del ciclo de vida del modelo,
   servir embeddings/rerankers propios (vLLM, TEI, llama.cpp), hardware, y gobierno del AI Act.
 - `observability-standards`: OTel, backends y cardinalidad. Las **métricas de la cadena RAG**
   (recall, latencia por etapa, coste por consulta) son de esta skill; el transporte y el backend,
@@ -252,7 +252,7 @@ consulta → [denso top-50 ∥ BM25 top-50] → RRF → reranker cross-encoder �
 - **Es la primera mejora que se prueba** cuando la recuperación falla, antes de cambiar embeddings,
   chunking o arquitectura. Suele mover más el `nDCG` que cualquiera de ellas y cuesta un componente.
 - **Coste**: latencia proporcional al número de candidatos rerankeados. Con reranker autoalojado
-  evitas el viaje de red, a cambio de servir un modelo (`local-inference-standards`, Ola 3).
+  evitas el viaje de red, a cambio de servir un modelo (`local-inference-standards`).
 - **Verifica la licencia de los pesos** (§2.2): hay rerankers de calidad con licencia no comercial.
 - **Diagnóstico útil**: si tu top-50 contiene el pasaje correcto pero tu top-5 no, tu problema es de
   ordenación → reranker. Si no está en el top-50, es de recuperación → híbrido, chunking o
@@ -355,7 +355,7 @@ está en el chunking.
 | **Precisión de citación** | ¿Las citas existen entre lo recuperado y sostienen la afirmación? Verificable **por código** |
 | **Tasa de negativa correcta** | ¿Dice "no lo sé" cuando debe, y solo cuando debe? Requiere casos negativos en el conjunto |
 
-Cómo se calculan, con qué juez y con qué calibración: `llm-evaluation-standards` (Ola 3).
+Cómo se calculan, con qué juez y con qué calibración: `llm-evaluation-standards`.
 
 ### 4.3 Conjunto de evaluación propio del dominio
 

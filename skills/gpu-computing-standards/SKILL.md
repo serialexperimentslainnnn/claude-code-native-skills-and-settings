@@ -51,8 +51,11 @@ importa y por qué), `sre-practice-standards` (SLO, capacidad como práctica),
 `iac-standards` y `cicd-standards` (automatizar la instalación y el pin de versiones),
 `vulnerability-management-standards` (triaje y SLA de los CVE de §5),
 `bcdr-standards` y `backup-recovery-standards` (continuidad de un cluster de GPU),
-`networking-standards` (la red del cluster; InfiniBand/RoCE queda **fuera de ambas** hasta que
-tenga dueño: marcar como hueco), `firewall-policy-standards`,
+`networking-standards` (la red de datos del cluster),
+`high-speed-interconnect-standards` (**la red de cómputo es suya, y no se diseña con el criterio
+de la red de datos**: InfiniBand, RoCE v2, iWARP, `opensm` y las particiones P_Key, UCX, NCCL/RCCL
+y su backend de red, GPUDirect RDMA, NVMe over Fabrics, y el criterio de cuándo NVMe/TCP basta.
+**Aquí el acelerador y su consumo de esa red**; allí la red), `firewall-policy-standards`,
 `identity-access-management-standards`, `grc-compliance-standards`,
 `datacenter-facilities-standards` (**la sala**: densidad por rack, distribución eléctrica y
 refrigeración líquida —CDU, circuito, pasillo— **son suyas**; aquí el TDP y el requisito térmico
@@ -63,19 +66,19 @@ escribe en el `.f90` y su corrección son suyos; el kernel, la ocupación y el m
 programación de GPU, de aquí), `cpp-standards` y `c-standards` (**los kernels CUDA/HIP
 son C++ y esa cercanía confunde**: el modelo de programación de la GPU —jerarquía de hilos, memoria
 compartida, ocupación, *streams*, coalescencia— es de aquí; el **C++ del host** —estándar, RAII,
-gestión de dependencias, `clang-tidy`, tests— es suyo), `green-it-standards` (**Ola 6**: la densidad de rack, el TDP, la refrigeración líquida y el consumo
+gestión de dependencias, `clang-tidy`, tests— es suyo), `green-it-standards` (la densidad de rack, el TDP, la refrigeración líquida y el consumo
 como límite físico son de aquí; **su contabilidad de huella —energética e incorporada— y el criterio
-para reportarla, suyos**), `webgl-webgpu-standards` (**Ola 6** — **son dos GPU distintas**: aquí la del **servidor**, que se
+para reportarla, suyos**), `webgl-webgpu-standards` (**son dos GPU distintas**: aquí la del **servidor**, que se
 aprovisiona, se comparte, se monitoriza y se paga —driver, CUDA/ROCm, MIG, DCGM, densidad de rack—;
 allí la del **cliente**, vista a través del navegador, con un modelo de permisos y de pérdida de
-contexto que no existe en el servidor), `assembly-standards` (**Ola 5**: PTX y SASS
+contexto que no existe en el servidor), `assembly-standards` (PTX y SASS
 son ensamblador; el criterio de **cuándo se baja a ese nivel, cómo se justifica con una medida y
 cómo se mantiene** —incluida su caducidad al cambiar de microarquitectura— es suyo), `llm-app-engineering-standards`, `rag-standards`,
 `ai-agents-standards`, `mcp-standards` (capa de aplicación de IA), y `claude-api`
 (**referencia canónica de la API de Anthropic**: la alternativa a comprar GPU es no comprarla —
 ningún dato de modelos Claude, precio o límite se afirma de memoria).
 
-**Ola 3, planificadas** (marcar como tal si se citan): `mlops-standards` (entrenamiento,
+Además: `mlops-standards` (entrenamiento,
 experimentos y ciclo de vida del modelo — **el hardware es de aquí, el pipeline es de allí**),
 `llm-evaluation-standards`, `mlsecops-standards` (cadena de suministro del artefacto de
 modelo), `ai-governance-standards`.
@@ -409,10 +412,13 @@ Criterio derivado:
     cargas por lotes, HPC y entrenamiento: es el estándar del mundo científico y hace bien lo
     que Kubernetes hace regular (colas con prioridad y *backfill*).
   - **Kubernetes** cuando la carga es de servicio (inferencia) o el resto de la plataforma ya
-    está ahí; para lotes, con un planificador de colas encima (Kueue, Volcano o equivalente —
-    **verificar el estado actual de cada uno**, §8) porque el scheduler por defecto **no tiene
-    colas ni gang scheduling**.
-  - **Regla**: no montes ambos por si acaso. Elige según la naturaleza de la carga dominante.
+    está ahí; para lotes, con un planificador de colas encima porque el scheduler por defecto
+    **no tiene colas ni gang scheduling** — la elección concreta (Kueue, Volcano) y su criterio
+    son de `kubernetes-standards` §6, que los tiene verificados.
+  - **Regla**: no montes ambos **para la misma clase de carga**. Que convivan un planificador de
+    lotes y uno de servicios es lo normal en un clúster real —y el criterio de ese reparto es de
+    `hpc-standards` §2.2, que manda aquí—; lo que no se hace es duplicar la ruta de la **misma**
+    carga por si acaso, porque entonces nadie sabe dónde mirar cuando falta una GPU.
 - **Chargeback/showback por equipo** con la métrica correcta: sin él, nadie libera una GPU
   reservada "por si acaso", y la reserva ociosa es el mayor sumidero de coste en toda flota de
   GPU.
@@ -505,15 +511,16 @@ Antes de fijar cualquier versión, número o nombre:
   H100" hasta "90-95% de paridad", según fuente, modelo y esfuerzo de tuning. **Ninguna
   verificada de forma independiente.** No citar un número sin piloto propio.
 - **Madurez del backend Intel XPU**: no evaluada.
-- **Estado actual de Kueue / Volcano** como planificador de colas sobre Kubernetes: nombres
-  citados, versiones y madurez **no verificadas**.
+- ~~**Estado de Kueue / Volcano**~~ — **hueco CERRADO**: verificados en `kubernetes-standards`
+  §6 (versión, API, gobernanza y licencia). Re-verificar allí, no aquí.
 - **Detalle de MIG**: número máximo de instancias, perfiles y arquitecturas soportadas hoy
   citados de fuentes secundarias. **Verificar en la doc de MIG de NVIDIA** antes de planificar
   una partición.
 - **Densidad de rack**: las cifras de §6.3 son de plataformas de escala de rack de referencia,
   no de tu servidor. **El dato que manda es la ficha técnica del modelo que compras.**
-- **InfiniBand / RoCE y la red del cluster de GPU**: **sin dueño en el catálogo**. No cubierto
-  aquí ni en `networking-standards`. Candidato a skill futura.
+- ~~**InfiniBand / RoCE sin dueño**~~ — **hueco CERRADO**: es de
+  `high-speed-interconnect-standards`, que cubre IB, RoCE v2, iWARP, gestor de subred, GPUDirect
+  RDMA y NVMe-oF. No improvises la red de cómputo aquí: cárgala.
 - **Firma de módulo con MOK y su automatización** (kmodsign, procedimiento por distro):
   criterio fijado, comandos concretos **no verificados** en esta pasada.
 

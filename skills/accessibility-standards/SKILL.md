@@ -56,15 +56,15 @@ como API de plataforma y las pautas de cada tienda son suyas; aquí la web y el 
 que un *overlay* de terceros es un tercero con acceso al DOM, §5.2), `api-design-standards`
 (contratos de servicio; los mensajes de error legibles por humanos que devuelve la API son
 suyos, su presentación accesible es de aquí) y `cicd-standards` (la *pipeline*; **aquí qué
-gate ponerle**, §4.2), `technical-hiring-standards` (**Ola 6**: el diseño del proceso de selección es suyo; **la
+gate ponerle**, §4.2), `technical-hiring-standards` (el diseño del proceso de selección es suyo; **la
 conformidad de sus herramientas y los ajustes razonables —formato alternativo, tiempo adicional,
 prueba accesible con lector de pantalla— se rigen por el criterio de aquí**. Aviso compartido: **un
 proceso de selección inaccesible descarta candidaturas antes de evaluarlas**, y eso no es un fallo
 de experiencia de usuario sino de validez del instrumento de medida),
-`webgl-webgpu-standards` (**Ola 6**: **un `<canvas>` es opaco para la tecnología asistiva** — no
+`webgl-webgpu-standards` (**un `<canvas>` es opaco para la tecnología asistiva** — no
 tiene estructura, ni texto, ni foco. El criterio de conformidad y la exigencia de alternativa
 equivalente son de aquí; **cómo se implementa el contenido del canvas y su rendimiento, suyo**),
-`i18n-standards` (**Ola 6** — frontera con solape real y concreto: el
+`i18n-standards` (frontera con solape real y concreto: el
 atributo `lang` correcto y la dirección del texto son **criterio de conformidad de aquí** —sin
 `lang` el lector de pantalla pronuncia mal—, mientras que **la elección de idiomas, el catálogo de
 mensajes, la pluralización, el formato regional y el flujo de traducción son suyos**. Aviso
@@ -355,6 +355,10 @@ usar la etiqueta nativa** (§3.4).
 - **Los subtítulos automáticos sin revisar no cumplen**: 1.2.2 exige subtítulos, y unos
   subtítulos con errores de transcripción no transmiten el contenido. Revisión humana.
 - **Transcripción ≠ subtítulos**: la transcripción no cubre 1.2.2 para vídeo.
+- **La entrega técnica de la pista es de `streaming-multimedia-standards`** (WebVTT/TTML/IMSC,
+  CEA-608/708, declaración en el manifiesto HLS/DASH, *rendition* de audiodescripción). Aquí el
+  criterio de conformidad y quién firma; allí, que llegue al reproductor. **Una pista producida
+  pero no declarada en el manifiesto incumple igual**: el gate es que se vea en el cliente.
 - **PDF**: si se publica un PDF, va **etiquetado** (estructura, orden de lectura, texto
   alternativo, idioma, título del documento) — referencia **PDF/UA**. Criterio preferente:
   **publicar HTML y ofrecer el PDF como descarga secundaria**, no al revés. Un PDF escaneado

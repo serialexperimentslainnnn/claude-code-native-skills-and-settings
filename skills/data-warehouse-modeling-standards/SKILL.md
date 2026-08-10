@@ -34,21 +34,21 @@ marzo".
   analítico**, que es otra cosa y obedece a otras reglas. Su principio rector —**un almacén por
   necesidad, no por moda**— se hereda: esta skill no autoriza un almacén analítico nuevo; asume que
   ya se justificó. **Un `dim_` no se crea dentro de la base de datos transaccional.**
-- `lakehouse-standards` (**Ola 4, planificada**): el **formato de tabla** —Iceberg, Delta, Hudi—,
+- `lakehouse-standards`: el **formato de tabla** —Iceberg, Delta, Hudi—,
   evolución de esquema a nivel de fichero, particionado oculto, *time travel* y snapshots del
   motor. Frontera fina y deliberada: el *time travel* del formato de tabla te devuelve **la tabla
   como estaba**; una SCD tipo 2 te dice **cómo estaba la entidad del negocio**. No son sustitutos:
   el primero es una capacidad de infraestructura para recuperación y auditoría técnica, la segunda
   es una decisión de modelado que el negocio consulta. **Nunca sustituyas una SCD2 por *time
   travel*.**
-- `analytics-bi-standards` (**Ola 4, planificada**): la herramienta de BI, los dashboards, la
+- `analytics-bi-standards`: la herramienta de BI, los dashboards, la
   gobernanza del consumo y el rendimiento de la capa de presentación. **Decisión de frontera
   explícita: la definición canónica de una métrica es de aquí** (§3.7) —vive en el repositorio,
   versionada, junto al modelo—; la BI **la consume**, no la define. Una métrica definida dentro de
   un informe es un defecto de modelado, no una elección de herramienta.
-- `data-governance-quality-standards` (**Ola 4, planificada**): catálogo, propiedad, glosario de
+- `data-governance-quality-standards`: catálogo, propiedad, glosario de
   negocio, contratos y calidad como programa. Aquí las **pruebas estructurales del modelo** (§4).
-- `streaming-cdc-standards` (**Ola 4, planificada**): captura de cambios como mecanismo. Aquí solo
+- `streaming-cdc-standards`: captura de cambios como mecanismo. Aquí solo
   el uso que se le da: alimentar la historización dimensional.
 - `microservices-architecture-standards`: **eventos de dominio, outbox y propiedad del dato por
   servicio son suyos**. Un evento de dominio no es un hecho analítico: modelar el hecho es de aquí.
@@ -66,7 +66,7 @@ marzo".
   encima es de aquí**), `api-design-standards`.
 - Motores no analíticos: `nosql-standards`, `graph-db-standards`, `timeseries-db-standards`,
   `search-engines-standards`, `oracle-dba-standards`, `sqlserver-dba-standards`,
-  `mysql-mariadb-dba-standards` (todas **Ola 4, planificadas**).
+  `mysql-mariadb-dba-standards`.
 - `sql-standards` (**el lenguaje SQL**, incluido el que contiene un modelo dbt/SQLMesh).
   Frontera espejada desde su §1: *"¿qué representa una fila?"* —grano, hechos, dimensiones, SCD,
   capas, definición canónica de métrica— **es de aquí**; *"¿cómo expreso esa SCD2 en SQL sin una

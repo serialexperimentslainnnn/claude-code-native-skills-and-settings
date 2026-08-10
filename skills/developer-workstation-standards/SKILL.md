@@ -30,7 +30,7 @@ FileVault, BitLocker, LUKS, `ed25519-sk`, `ecdsa-sk`, `-O resident`, `-O verify-
 `~/.git-credentials`, `~/.netrc`, `_netrc`, historial del *shell*, tiempo de *build*, agente de
 código en local.
 
-**No aplica**: ver `macos-fleet-standards` (**Ola 7 — frontera crítica sobre el mismo hardware**:
+**No aplica**: ver `macos-fleet-standards` (**frontera crítica sobre el mismo hardware**:
 **la flota corporativa es suya** —inscripción automatizada y supervisión, MDM y gestión declarativa,
 custodia de la clave de FileVault, TCC preconfigurado, política de actualización impuesta, catálogo
 de software y cumplimiento CIS/mSCP—; **aquí el puesto de quien programa**, que se aprovisiona como

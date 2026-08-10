@@ -19,9 +19,12 @@ Cubre **el camino desde el código que hay hasta el diseño que se quiere**: qu�
 - `code-review-standards` (**ya escrita**: mecánica y criterio de la revisión; desde este lado se fija que **un refactor y un cambio funcional no se revisan igual y no van en el mismo commit** — el refactor se revisa contra "¿sigue igual el comportamiento?", el cambio funcional contra "¿es correcto el nuevo comportamiento?").
 - `git-workflow-standards` (tamaño del cambio, ramas, historia, mecánica del commit).
 - `vulnerability-management-standards` (**suyos** los CVE de dependencias, el triaje por riesgo y el EOL; **aquí** la deuda de *no haber actualizado* como decisión con interés creciente).
-- `opensource-licensing-standards` (**Ola 6, en curso**: una dependencia que **relicencia** crea deuda con fecha de vencimiento — su criterio legal es de esa skill; aquí, el registro y el plazo).
+- `opensource-licensing-standards` (una dependencia que **relicencia** crea deuda con fecha de vencimiento — su criterio legal es de esa skill; aquí, el registro y el plazo).
 - `cicd-standards` (el gate de calidad que se ejecuta y cómo se ejecuta).
-- `tech-leadership-standards` (**Ola 6, en curso**: la decisión de inversión y su registro corporativo), `project-management-standards` (**ya escrita**: cómo se financia el trabajo, se planifica y se negocia con las partes interesadas).
+- `tech-leadership-standards` (la decisión de inversión y su registro corporativo), `project-management-standards` (cómo se financia el trabajo, se planifica y se negocia con las partes interesadas).
+- `legacy-modernization-standards` (**recíproca**: **suya la decisión de qué se hace con un sistema entero** —la "R" del modelo, la arqueología de la plataforma, el enrutado a la skill de cada tecnología heredada—; **aquí las técnicas con las que se ejecuta**: *strangler fig*, rama por abstracción, expand/contract, caracterización antes de tocar. Aviso de vocabulario que ambas sostienen: **la "R" de *refactor* de ese modelo no es refactorizar** — allí significa rediseñar, aquí significa cambiar la estructura sin cambiar el comportamiento observable).
+- `migration-projects-standards` (**suyo el corte**: ensayo, ventana, reversión y apagado del sistema viejo; aquí lo que se hace con el código mientras tanto).
+- **Arbitraje de la reescritura**: cuando `legacy-modernization-standards` decide *rebuild*, **las condiciones excepcionales que lo autorizan son las de §6.2 de esta skill** y hay que verificarlas una a una. Si no se cumplen, la respuesta es refactor incremental, no reescritura.
 - `performance-engineering-standards` (**optimizar no es refactorizar**: la optimización cambia características observables y a menudo empeora la legibilidad a propósito. Se mide, se justifica y se revisa aparte).
 
 ## 2. Decisiones por defecto

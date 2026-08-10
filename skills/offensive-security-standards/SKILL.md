@@ -63,17 +63,17 @@ ofensivas que prohíbe en su §7 (evasión de AMSI y del *ScriptBlock Logging*, 
 descargadores en memoria) y se queda el criterio defensivo: firma de scripts, JEA, *Constrained
 Language Mode*, transcripción y registro—, y `c-standards`/`cpp-standards` (explican categorías
 de vulnerabilidad de memoria **para prevenirlas**; la explotación es de aquí), `assembly-standards`
-(**Ola 5**: es una skill **defensiva y de ingeniería** — fija cuándo se justifica escribir
+(es una skill **defensiva y de ingeniería** — fija cuándo se justifica escribir
 ensamblador y cómo se mantiene, y **declara explícitamente que no incluye recetario de explotación**
 —shellcode, gadgets ROP, evasión—: eso es de aquí, con alcance y autorización por escrito),
-`solidity-standards` (**Ola 5**: describe las clases de vulnerabilidad de contratos **para
+`solidity-standards` (describe las clases de vulnerabilidad de contratos **para
 prevenirlas**; probar un protocolo de terceros exige alcance y permiso explícitos y se rige por
-esta skill). Planificadas: `detection-engineering-standards` (**Ola 1**: reglas de
+esta skill). Además: `detection-engineering-standards` (reglas de
 detección, SIEM y contenido analítico — **frontera compartida en purple team**: aquí se genera
 la telemetría de ataque y se documenta la técnica; allí se escribe y valida la detección),
-`incident-response-forensics-standards` (**Ola 1**: gestión del incidente real y forense —
+`incident-response-forensics-standards` (gestión del incidente real y forense —
 si durante el ejercicio detectas un compromiso preexistente, paras y escalas allí),
-`linux-hardening-standards` (**Ola 1**), `container-runtime-security-standards` (**Ola 1**).
+`linux-hardening-standards`, `container-runtime-security-standards`.
 
 ## 2. Decisiones por defecto
 
@@ -215,7 +215,7 @@ tiene accesos, credenciales y datos que nadie más reúne. Se protege en consecu
   es una decisión indefendible.
 - **Compromiso previo detectado**: parada inmediata, notificación al contacto de emergencia,
   preservación de la evidencia sin tocar el sistema, y traspaso a respuesta a incidentes
-  (`incident-response-forensics-standards`, **Ola 1**). No investigues tú el incidente ajeno
+  (`incident-response-forensics-standards`). No investigues tú el incidente ajeno
   salvo que te contraten para eso: contaminas la evidencia.
 - **Cadena de suministro de tu propio toolchain**: 2026 ha demostrado que las herramientas de
   seguridad son el objetivo predilecto — la campaña **TeamPCP** (marzo 2026) comprometió por
@@ -272,7 +272,7 @@ tiene accesos, credenciales y datos que nadie más reúne. Se protege en consecu
   detectar en la práctica.
 - Las brechas de detección se entregan como **requisitos de regla**, no como reglas escritas:
   el contenido de detección lo escribe y valida quien opera el SIEM
-  (`detection-engineering-standards`, **Ola 1**). Escribir tú la regla sin conocer la telemetría
+  (`detection-engineering-standards`). Escribir tú la regla sin conocer la telemetría
   del cliente genera falsos positivos que se desactivan a la semana.
 - Reejecutar la técnica **tras desplegar la detección** para validarla. Un purple team que no
   reejecuta no ha cerrado el bucle.

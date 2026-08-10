@@ -47,7 +47,7 @@ ODM/ORM y su ciclo de vida), `data-engineering-standards` (pipelines que cargan 
 de estos almacenes), `rag-standards` (recuperación para IA), `vector-db-standards`
 (**búsqueda vectorial y operación del índice ANN: suyas**, aunque estos motores hayan
 añadido tipos vector), `data-warehouse-modeling-standards` (modelado analítico).
-**Ola 4, planificadas**: `search-engines-standards` (**Elasticsearch/OpenSearch y la
+`search-engines-standards` (**Elasticsearch/OpenSearch y la
 búsqueda de texto son suyas — frontera muy próxima**: si el requisito es *relevancia*
 —ranking, analizadores, facetas, sugerencias— no es un almacén documental, es un buscador;
 aquí solo el almacén de verdad que lo alimenta y del que se reindexa),

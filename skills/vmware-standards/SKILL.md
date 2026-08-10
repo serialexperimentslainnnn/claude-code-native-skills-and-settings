@@ -47,6 +47,13 @@ seguridad de 2026 ya usan "VMware ESX" (VMSA-2026-0006). Aquí se usan indistint
 - `backup-recovery-standards` — **mecánica del respaldo, retención, inmutabilidad y restore
   probado son suyas**; aquí solo la API de respaldo (VADP) y la consistencia de aplicación.
 - `bcdr-standards` — RTO/RPO, plan y ejercicios de DR; aquí no se fijan objetivos de negocio.
+- `incident-response-forensics-standards` e `incident-management-standards` — **cuando el
+  hipervisor es la víctima y no el soporte**: cifrado del datastore desde el propio host con SSH
+  o ESXi Shell habilitados, vCenter comprometido, credenciales de la plataforma rotadas. El
+  proceso y la preservación de evidencia son suyos; **aquí el dato que decide la respuesta**:
+  vCenter y los hosts son **Tier 0** —los gestiona quien gestiona el dominio—, y un host que se
+  sospecha comprometido **se reconstruye desde medio confiable, no se limpia**. La restauración
+  no empieza hasta que la erradicación está verificada (criterio de `bcdr-standards`).
 - `iac-standards` — Terraform/Ansible como práctica; `powershell-standards` — calidad del script
   PowerCLI. Aquí solo qué se automatiza y qué queda acoplado a vCenter.
 - `kubernetes-standards` — contenedores por encima (incluido lo que corre sobre Supervisor);

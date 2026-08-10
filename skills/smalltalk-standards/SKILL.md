@@ -3,220 +3,222 @@ name: smalltalk-standards
 description: Smalltalk and its live image-based development model. Use when working with .st, .cs (change set), .image, .changes or .sources files, Tonel or FileTree package directories with package.st and .class.st, Pharo (Pharo Launcher, Metacello baselines and ConfigurationOf/BaselineOf, Iceberg, Monticello .mcz packages, Spec/Bloc/Morphic UIs, Seaside or Teapot web apps), Squeak, Cuis Smalltalk, the OpenSmalltalk VM, GemStone/S 64 Bit and GemTalk topaz sessions, Cincom VisualWorks or ObjectStudio, Instantiations VAST Platform and ENVY, Dolphin Smalltalk, SUnit TestCase subclasses, smalltalkCI headless CI runs, doesNotUnderstand: and message-based dispatch, become:, thisContext, the class browser and the live debugger with restart/proceed on a running stack, or deciding whether to keep, extend or migrate an image-based system.
 ---
 
-# Estándares de Smalltalk (desarrollo sobre imagen viva)
+# Smalltalk standards (live image-based development)
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**Smalltalk no está muerto, pero tampoco es una elección defendible para software nuevo de
-terceros.** Los datos, verificados: Pharo tiene desarrollo activo (estable **13.1.0**, jun-2025, con
-Pharo 14 anunciado y **retrasado** en 2026); Squeak sigue publicando imágenes; **GemStone/S 64 Bit**
-publicó **3.7.5 en marzo de 2026**; **VAST Platform 2026 (v15.0.0) salió el 18-feb-2026**. Hay
-proveedores cobrando, hay releases y hay producción. Y aun así:
+**Smalltalk is not dead, but neither is it a defensible choice for new third-party software.**
+The data, verified: Pharo has active development (stable **13.1.0**, Jun 2025, with
+Pharo 14 announced and **delayed** in 2026); Squeak keeps publishing images; **GemStone/S 64 Bit**
+published **3.7.5 in March 2026**; **VAST Platform 2026 (v15.0.0) came out on 18-Feb-2026**. There are
+vendors charging money, there are releases and there is production. And even so:
 
-**Postura honesta, dicha aquí y no escondida en §7:**
-- **Para un producto nuevo que vas a entregar a un cliente y que mantendrá otro equipo: casi nunca
-  es la elección correcta.** No por el lenguaje —que es excelente— sino por lo que cuesta alrededor:
-  contratar es muy difícil, el tooling no encaja con la cadena de entrega estándar (§4) y cada
-  decisión operativa exige explicar el modelo de imagen a gente que no lo ha visto nunca.
-- **Sí es la elección correcta**, y sin complejos, en: **investigación y prototipado de lenguajes y
-  herramientas**, **docencia**, **mantenimiento y evolución de sistemas existentes** (que los hay,
-  grandes y rentables, en seguros, banca, logística y manufactura), y **sistemas con GemStone donde
-  la persistencia transparente de objetos es el valor central**.
-- **El argumento real a favor no es la sintaxis, es el entorno**: navegador de clases y **depurador
-  vivo** —parar en la excepción, inspeccionar y **modificar el método, reiniciar el marco de pila y
-  continuar** sin relanzar el sistema— siguen siendo, en 2026, una experiencia de depuración que
-  casi ningún stack moderno iguala. Si ese es el motivo, defiéndelo con eso.
+**Honest position, stated here and not hidden in §7:**
+- **For a new product you are going to deliver to a client and that another team will maintain: it is
+  almost never the right choice.** Not because of the language —which is excellent— but because of
+  what it costs around it: hiring is very hard, the tooling does not fit the standard delivery chain
+  (§4) and every operational decision requires explaining the image model to people who have never
+  seen it.
+- **It is the right choice**, without complexes, in: **language and tooling research and
+  prototyping**, **teaching**, **maintenance and evolution of existing systems** (and there are
+  such systems, large and profitable, in insurance, banking, logistics and manufacturing), and
+  **systems with GemStone where transparent object persistence is the central value**.
+- **The real argument in favour is not the syntax, it is the environment**: class browser and **live
+  debugger** —stop at the exception, inspect and **modify the method, restart the stack frame and
+  continue** without relaunching the system— are still, in 2026, a debugging experience that
+  almost no modern stack matches. If that is the reason, defend it with that.
 
-Cubre: implementaciones libres y comerciales y su coste; **la imagen como artefacto y por qué rompe
-la cadena de CI moderna**; control de versiones real (Iceberg/Tonel sobre Git, Monticello como
-histórico); convenciones de código y de paquetes; tests con SUnit y CI headless; seguridad de la
-imagen; y la decisión de mantener, encapsular o migrar.
+Covers: free and commercial implementations and their cost; **the image as an artifact and why it
+breaks the modern CI chain**; real version control (Iceberg/Tonel on Git, Monticello as
+history); code and package conventions; tests with SUnit and headless CI; image security;
+and the decision to maintain, encapsulate or migrate.
 
-**No aplica**: ver `ruby-standards` (**el descendiente directo del modelo de objetos y de los
-bloques**; si la pregunta es "cómo escribo esto hoy con estas ideas", suele ser la respuesta —pero
-Ruby no tiene imagen, ni depurador vivo, ni `become:`), `clojure-standards` y `lisp-standards`
-(**el otro linaje con REPL sobre estado vivo**: la frontera es que allí el fichero es la verdad y la
-imagen es un producto del build, aquí la imagen ha sido históricamente **el** artefacto — es la
-diferencia que explica §4), `objective-c-standards` (**hereda de Smalltalk el paso de mensajes y su
-sintaxis de selectores**; la frontera es el runtime y la plataforma Apple), `python-standards`,
-`typescript-standards`, `jvm-spring-standards`, `dotnet-standards`, `go-standards` (**destinos
-reales de una migración y alternativa por defecto para lo nuevo**: la calidad del código destino es
-suya), `refactoring-tech-debt-standards` (**suyos** *strangler fig*, rama por abstracción y
-caracterización de código sin tests), `enterprise-architecture-standards` (inventario, modelo TIME
-y las "R"), `legacy-modernization-standards` (**skill paraguas** de una imagen heredada: qué "R" se
-elige, si se congela, se encapsula o se reescribe, y la arqueología previa) y
-`migration-projects-standards` (**la ejecución del corte** una vez decidido: ensayo, ventana, cuadre
-del dato, rollback y apagado del origen), `tech-leadership-standards` y `technical-hiring-standards` (**el problema de contratar
-es real y su gestión es suya**; aquí solo se declara como criterio de decisión),
-`nosql-standards` y `data-platform-standards` (GemStone como base de datos de objetos se decide con
-criterio de aquí, pero la operación de un motor de datos —backup, HA, tuning— es suya),
-`opensource-licensing-standards` (análisis de licencias; aquí qué licencia tiene cada implementación,
-§2), `cicd-standards` (la pipeline; aquí el problema específico de construir desde una imagen),
-`testing-qa-standards` (reparto entre niveles y política de cobertura; aquí SUnit y el runner),
-`appsec-standards` y `vulnerability-management-standards` (metodología y triaje),
-`mumps-standards`, `ibm-i-rpg-standards`, `vb6-standards` (**no son comparables**: aquellas son
-plataformas sin elección; Smalltalk sigue teniendo comunidad, releases y decisión posible).
+**Not applicable**: see `ruby-standards` (**the direct descendant of the object model and of the
+blocks**; if the question is "how do I write this today with these ideas", it is usually the answer —but
+Ruby has no image, no live debugger, no `become:`), `clojure-standards` and `lisp-standards`
+(**the other lineage with a REPL over live state**: the boundary is that there the file is the truth and
+the image is a product of the build, here the image has historically been **the** artifact — it is the
+difference that explains §4), `objective-c-standards` (**it inherits message passing and its selector
+syntax from Smalltalk**; the boundary is the runtime and the Apple platform), `python-standards`,
+`typescript-standards`, `jvm-spring-standards`, `dotnet-standards`, `go-standards` (**real
+destinations of a migration and the default alternative for anything new**: the quality of the
+destination code is theirs), `refactoring-tech-debt-standards` (**theirs** are *strangler fig*, branch
+by abstraction and characterization of code without tests), `enterprise-architecture-standards`
+(inventory, TIME model and the "R"s), `legacy-modernization-standards` (**umbrella skill** for an
+inherited image: which "R" is chosen, whether it is frozen, encapsulated or rewritten, and the prior
+archaeology) and
+`migration-projects-standards` (**the execution of the cutover** once decided: rehearsal, window, data
+reconciliation, rollback and shutdown of the source), `tech-leadership-standards` and `technical-hiring-standards` (**the hiring problem
+is real and managing it is theirs**; here it is only declared as a decision criterion),
+`nosql-standards` and `data-platform-standards` (GemStone as an object database is decided with
+criteria from here, but operating a data engine —backup, HA, tuning— is theirs),
+`opensource-licensing-standards` (license analysis; here which license each implementation has,
+§2), `cicd-standards` (the pipeline; here the specific problem of building from an image),
+`testing-qa-standards` (split across levels and coverage policy; here SUnit and the runner),
+`appsec-standards` and `vulnerability-management-standards` (methodology and triage),
+`mumps-standards`, `ibm-i-rpg-standards`, `vb6-standards` (**they are not comparable**: those are
+platforms with no choice; Smalltalk still has a community, releases and a possible decision).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Decisión | Elección | Nota verificada (ago-2026) |
+| Decision | Choice | Verified note (Aug 2026) |
 |---|---|---|
-| Implementación libre por defecto | **Pharo** | Estable **13.1.0** (26-jun-2025). **Pharo 14 está retrasado**: el propio proyecto publicó el 29-jun-2026 que *"our usual April–May release did not happen this year"*. **Planifica sobre 13, no sobre 14** |
-| Licencia de Pharo | **MIT con partes bajo Apache** — leída en crudo del `LICENSE` | *"Licensed under the MIT License with parts under the Apache License."* **No es "MIT" a secas**: si vas a redistribuir, revisa las partes Apache (aviso de patentes y `NOTICE`) |
-| Squeak | **Investigación, docencia y compatibilidad histórica** | **Discrepancia declarada**: la página de descargas da como *Current Release* **Squeak 6.0** (build 22156, imágenes regeneradas en jun-2026), pero el sitio publica también notas de release de **6.1**. Confirma cuál es la vigente antes de fijarla (§8) |
-| Cuis Smalltalk | Alternativa minimalista a Squeak, núcleo pequeño y limpio | Elección razonable para docencia y sistemas embebidos pequeños; ecosistema mucho menor |
-| Persistencia de objetos | **GemStone/S 64 Bit** (GemTalk Systems) — **el caso comercial más sólido** | **3.7.5, marzo de 2026**. Base de datos de objetos transaccional y multiusuario con Smalltalk dentro: la persistencia es transparente y ese es el valor. **Licencia**: *Community/Web Edition* gratuita o de bajo coste **que permite uso comercial en producción**, y *Enterprise* perpetua a medida. **Lee el keyfile y los términos: las capacidades dependen de la licencia** |
-| Comercial multiplataforma | **Cincom Smalltalk** (VisualWorks + ObjectStudio) | Plataforma comercial viva; documentación pública en torno a la **release 9.5**. **Hueco: no publica tarifas** (§8) |
-| Comercial empresarial | **VAST Platform** (Instantiations, ex VA Smalltalk) | **2026 = v15.0.0, publicada el 18-feb-2026**; cadencia anual sostenida (2025 = 14.x, 2024 = 13.x). Usa **ENVY** como repositorio histórico y ha ido mejorando su soporte **Tonel** para trabajar contra Git. **Hueco: no publica tarifas** |
-| Dolphin Smalltalk | Solo Windows; **no para proyectos nuevos** | Verificar estado de mantenimiento antes de considerarlo siquiera |
-| VM | **OpenSmalltalk VM** para Pharo/Squeak/Cuis | Es la VM común del mundo libre; su release condiciona qué imagen puedes correr |
-| Control de versiones | **Git, con Iceberg y formato Tonel** (un fichero por clase, un directorio por paquete) | **Obligatorio.** Es lo que hace revisable el diff y compatible el repositorio con el resto del mundo |
-| Monticello (`.mcz`) | **Solo histórico**: leer repositorios antiguos | Es un formato binario por paquete: no da diffs revisables ni integra con Git. **Migrar a Tonel** cualquier repositorio que se siga tocando |
-| Gestión de dependencias | **Metacello con `BaselineOf`** (no `ConfigurationOf`, que es el modelo antiguo) | Las dependencias externas se fijan **por commit o tag**, nunca por rama |
-| Tests | **SUnit** (subclases de `TestCase`) — el origen de xUnit | Ejecutados **headless** desde CLI, ver §4 |
-| CI | **smalltalkCI** | Proyecto **activo** (commits en agosto de 2026; release **v3.0.8**, may-2026). Ejecuta la suite headless en Pharo/Squeak/GemStone desde una pipeline estándar |
+| Default free implementation | **Pharo** | Stable **13.1.0** (26-Jun-2025). **Pharo 14 is delayed**: the project itself published on 29-Jun-2026 that *"our usual April–May release did not happen this year"*. **Plan on 13, not on 14** |
+| Pharo license | **MIT with parts under Apache** — read raw from the `LICENSE` | *"Licensed under the MIT License with parts under the Apache License."* **It is not plain "MIT"**: if you are going to redistribute, review the Apache parts (patent notice and `NOTICE`) |
+| Squeak | **Research, teaching and historical compatibility** | **Declared discrepancy**: the downloads page gives **Squeak 6.0** as the *Current Release* (build 22156, images regenerated in Jun 2026), but the site also publishes release notes for **6.1**. Confirm which one is current before pinning it (§8) |
+| Cuis Smalltalk | Minimalist alternative to Squeak, small and clean core | A reasonable choice for teaching and small embedded systems; a much smaller ecosystem |
+| Object persistence | **GemStone/S 64 Bit** (GemTalk Systems) — **the strongest commercial case** | **3.7.5, March 2026**. Transactional, multi-user object database with Smalltalk inside: persistence is transparent and that is the value. **License**: a free or low-cost *Community/Web Edition* **that allows commercial use in production**, and a bespoke perpetual *Enterprise*. **Read the keyfile and the terms: the capabilities depend on the license** |
+| Cross-platform commercial | **Cincom Smalltalk** (VisualWorks + ObjectStudio) | A live commercial platform; public documentation around release **9.5**. **Gap: it does not publish rates** (§8) |
+| Enterprise commercial | **VAST Platform** (Instantiations, ex VA Smalltalk) | **2026 = v15.0.0, published 18-Feb-2026**; sustained annual cadence (2025 = 14.x, 2024 = 13.x). It uses **ENVY** as the historical repository and has been improving its **Tonel** support for working against Git. **Gap: it does not publish rates** |
+| Dolphin Smalltalk | Windows only; **not for new projects** | Verify its maintenance status before even considering it |
+| VM | **OpenSmalltalk VM** for Pharo/Squeak/Cuis | It is the common VM of the free world; its release constrains which image you can run |
+| Version control | **Git, with Iceberg and the Tonel format** (one file per class, one directory per package) | **Mandatory.** It is what makes the diff reviewable and the repository compatible with the rest of the world |
+| Monticello (`.mcz`) | **Historical only**: reading old repositories | It is a binary per-package format: it gives no reviewable diffs and does not integrate with Git. **Migrate to Tonel** any repository that is still being touched |
+| Dependency management | **Metacello with `BaselineOf`** (not `ConfigurationOf`, which is the old model) | External dependencies are pinned **by commit or tag**, never by branch |
+| Tests | **SUnit** (subclasses of `TestCase`) — the origin of xUnit | Run **headless** from the CLI, see §4 |
+| CI | **smalltalkCI** | **Active** project (commits in August 2026; release **v3.0.8**, May 2026). It runs the suite headless on Pharo/Squeak/GemStone from a standard pipeline |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- **El código fuente vive en Git en formato Tonel, y el repositorio es la verdad. La imagen es un
-  producto del build.** Esta inversión es toda la modernización de la plataforma en una frase, y es
-  el criterio del que dependen §4 y §7. Un proyecto que sigue distribuyendo `.image` como artefacto
-  primario y `.changes` como historia no tiene control de versiones: tiene un backup.
-- **Un paquete = una unidad de carga con `BaselineOf`.** Sin dependencias circulares entre paquetes.
-  Los tests van en un paquete `-Tests` separado, que no se carga en la imagen de producción.
-- **Nombres**: prefijo de proyecto en los nombres de clase (no hay espacios de nombres reales en el
-  Smalltalk clásico: `Foo` colisiona globalmente y el segundo `Foo` que se carga **pisa al primero
-  en silencio**). Selectores que se lean como una frase; métodos cortos; categorías/protocolos
-  mantenidos, porque son la navegación real del sistema.
-- **Extensiones de clases del sistema (*monkey patching*): permitidas por diseño, y peligrosas por
-  la misma razón.** Regla: solo en un protocolo con **tu prefijo de proyecto** (`*MiProyecto`), para
-  que la extensión viaje con tu paquete y no con la clase base; nunca modificando un método
-  existente de la clase base; y cero extensiones que cambien comportamiento heredado. Una extensión
-  que altera `Object` o `Collection` es un fallo global que aparecerá en otro paquete.
-- **`doesNotUnderstand:` para proxies y DSL: con justificación escrita.** Convierte errores de
-  compilación en comportamiento en tiempo de ejecución y destruye la navegación de referencias.
-- **`become:`, `thisContext` y la reflexión sobre la pila son herramientas de constructor de
-  herramientas**, no de código de aplicación. Están vetadas fuera de infraestructura, con motivo.
-- **Nada de "código que solo existe en mi imagen".** Todo cambio se guarda en el paquete y se
-  commitea; el `.changes` es una red de seguridad ante caída, no un historial.
+- **The source code lives in Git in Tonel format, and the repository is the truth. The image is a
+  product of the build.** This inversion is the whole modernization of the platform in one sentence, and it is
+  the criterion that §4 and §7 depend on. A project that keeps distributing `.image` as the primary
+  artifact and `.changes` as history has no version control: it has a backup.
+- **One package = one loading unit with `BaselineOf`.** No circular dependencies between packages.
+  Tests go in a separate `-Tests` package, which is not loaded into the production image.
+- **Names**: project prefix in class names (there are no real namespaces in classic
+  Smalltalk: `Foo` collides globally and the second `Foo` that gets loaded **silently overwrites the
+  first**). Selectors that read like a sentence; short methods; categories/protocols
+  maintained, because they are the real navigation of the system.
+- **Extensions to system classes (*monkey patching*): permitted by design, and dangerous for
+  the same reason.** Rule: only in a protocol with **your project prefix** (`*MyProject`), so
+  that the extension travels with your package and not with the base class; never modifying an
+  existing method of the base class; and zero extensions that change inherited behaviour. An extension
+  that alters `Object` or `Collection` is a global failure that will show up in another package.
+- **`doesNotUnderstand:` for proxies and DSLs: with written justification.** It turns compilation
+  errors into runtime behaviour and destroys reference navigation.
+- **`become:`, `thisContext` and stack reflection are tool-builder's tools**,
+  not application code tools. They are vetoed outside infrastructure, with a reason.
+- **No "code that only exists in my image".** Every change is saved into the package and
+  committed; the `.changes` is a safety net against a crash, not a history.
 
-## 4. Calidad, tests y CI (el problema de la imagen)
+## 4. Quality, tests and CI (the image problem)
 
-**El eje del apartado: la imagen rompe todas las suposiciones de una cadena de entrega moderna**, y
-hay que compensarlas explícitamente.
+**The axis of this section: the image breaks every assumption of a modern delivery chain**, and
+they have to be compensated for explicitly.
 
-- **La imagen es estado mutable acumulado**: contiene todo lo que pasó por esa sesión —definiciones
-  ya borradas de los ficheros, objetos vivos, y **cualquier secreto que se haya leído o tecleado**.
-  No es reproducible por construcción, no es diffeable y no es auditable.
-- **Regla no negociable**: la imagen de producción se genera **desde una imagen base publicada, en
-  un proceso headless, cargando el código desde Git por Metacello, en un paso único y repetible**.
-  Nunca a partir de la imagen de trabajo de nadie.
-- **Gate de CI mínimo**, en orden de coste creciente: (1) la baseline **carga limpia** en una imagen
-  base recién descargada, sin diálogos ni errores; (2) **SUnit headless** con `smalltalkCI` y código
-  de salida no nulo al fallar; (3) el árbol Tonel no tiene cambios sin commitear tras la carga
-  (detecta código que solo existía en la imagen de alguien); (4) la imagen de producción se
-  construye y arranca. Añadir análisis de reglas de calidad del propio entorno donde exista
-  (en Pharo, las críticas del *Quality Assistant*/Renraku) como aviso, no como bloqueo inicial.
-- **Los diálogos modales son el enemigo de CI**: cualquier carga que pregunte algo (conflicto de
-  Iceberg, credencial, actualización) cuelga la pipeline sin mensaje útil. Todo el arranque va con
-  configuración explícita y sin interacción.
-- **Tests**: comportamiento observable, con cobertura de bordes y errores. Ojo con el vicio local de
-  **tests que dependen del estado de la imagen** (variables de clase, singletons, objetos
-  registrados): `setUp`/`tearDown` reales y un orden de ejecución que no importe.
-- **Cero secretos en el entorno del build**: acabarían dentro del binario de la imagen.
+- **The image is accumulated mutable state**: it contains everything that went through that session —definitions
+  already deleted from the files, live objects, and **any secret that was read or typed**.
+  It is not reproducible by construction, it is not diffable and it is not auditable.
+- **Non-negotiable rule**: the production image is generated **from a published base image, in
+  a headless process, loading the code from Git via Metacello, in a single repeatable step**.
+  Never from anyone's working image.
+- **Minimum CI gate**, in increasing order of cost: (1) the baseline **loads clean** in a freshly
+  downloaded base image, with no dialogs and no errors; (2) **headless SUnit** with `smalltalkCI` and a
+  non-zero exit code on failure; (3) the Tonel tree has no uncommitted changes after loading
+  (it detects code that only existed in someone's image); (4) the production image is
+  built and starts. Add the environment's own quality rule analysis where it exists
+  (in Pharo, the *Quality Assistant*/Renraku critiques) as a warning, not as an initial block.
+- **Modal dialogs are the enemy of CI**: any load that asks something (an Iceberg
+  conflict, a credential, an update) hangs the pipeline with no useful message. The whole startup runs with
+  explicit configuration and no interaction.
+- **Tests**: observable behaviour, with coverage of edges and errors. Watch out for the local vice of
+  **tests that depend on the state of the image** (class variables, singletons, registered
+  objects): real `setUp`/`tearDown` and an execution order that does not matter.
+- **Zero secrets in the build environment**: they would end up inside the image binary.
 
-*§6 se omite deliberadamente*: la observabilidad, los límites y la capacidad de un servicio
-Smalltalk se rigen por `observability-standards` y por la skill de la plataforma de despliegue; lo
-único específico de esta —imagen, arranque headless, GemStone— está en §4 y §5.
+*§6 is deliberately omitted*: the observability, the limits and the capacity of a Smalltalk
+service are governed by `observability-standards` and by the deployment platform's skill; the
+only thing specific to this one —image, headless startup, GemStone— is in §4 and §5.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **La imagen es un artefacto sensible y opaco**: guarda credenciales, tokens y datos que hayan
-  pasado por memoria. Trátala como un secreto en reposo (cifrada, con acceso restringido), no como
-  un binario cualquiera, y **regenérala**, no la parchees.
-- **El "servidor" es la imagen entera**: en Smalltalk, exponer un servicio significa que el proceso
-  expuesto contiene el compilador, el navegador y capacidad de reflexión total. Una RCE no es una
-  escalada: es acceso completo al sistema desde el primer paso. Consecuencias:
-  - **La imagen de producción se despliega sin herramientas de desarrollo cargadas** cuando la
-    implementación lo permita, y **sin ninguna consola remota expuesta**.
-  - **Cualquier canal de evaluación remota de código (workspace remoto, endpoint que compile o
-    evalúe expresiones) está prohibido en producción.** Es el equivalente exacto de dejar swank o
-    un `eval` abierto.
-  - Servir siempre detrás de un proxy inverso, escuchando en localhost, con TLS terminado fuera.
-- **Ejecutar como usuario sin privilegios, con sistema de ficheros de solo lectura salvo el
-  directorio de trabajo**: la imagen se reescribe a sí misma si se lo permites (`Smalltalk snapshot`).
-- **Dependencias**: Metacello carga **desde repositorios Git de terceros**, y en Smalltalk cargar
-  código *es ejecutarlo* (se ejecutan métodos de clase en la carga). **Fija por commit, nunca por
-  rama**; revisa lo que cargas; el ecosistema es pequeño y no hay proceso de auditoría ni firmas.
-- **GemStone**: la autorización es del servidor de objetos, no de la aplicación. Cuentas nominativas,
-  mínimas y auditadas; `topaz` y las sesiones administrativas, restringidas. Backup y **restore
-  probado** (ver `backup-recovery-standards`).
+- **The image is a sensitive and opaque artifact**: it holds credentials, tokens and data that have
+  passed through memory. Treat it as a secret at rest (encrypted, with restricted access), not as
+  just another binary, and **regenerate it**, do not patch it.
+- **The "server" is the whole image**: in Smalltalk, exposing a service means the exposed
+  process contains the compiler, the browser and full reflection capability. An RCE is not an
+  escalation: it is complete access to the system from the first step. Consequences:
+  - **The production image is deployed without development tools loaded** when the
+    implementation allows it, and **with no remote console exposed**.
+  - **Any remote code evaluation channel (remote workspace, an endpoint that compiles or
+    evaluates expressions) is forbidden in production.** It is the exact equivalent of leaving swank or
+    an `eval` open.
+  - Always serve behind a reverse proxy, listening on localhost, with TLS terminated outside.
+- **Run as an unprivileged user, with a read-only filesystem except for the working
+  directory**: the image rewrites itself if you let it (`Smalltalk snapshot`).
+- **Dependencies**: Metacello loads **from third-party Git repositories**, and in Smalltalk loading
+  code *is executing it* (class methods run on load). **Pin by commit, never by
+  branch**; review what you load; the ecosystem is small and there is no audit process and no signatures.
+- **GemStone**: authorization belongs to the object server, not to the application. Named accounts,
+  minimal and audited; `topaz` and administrative sessions, restricted. Backup and **tested
+  restore** (see `backup-recovery-standards`).
 
-## 7. Sostenibilidad, migración y prohibiciones
+## 7. Sustainability, migration and prohibitions
 
-**Criterio de decisión** (antes de escribir o de reescribir, por escrito):
-1. **¿Es mantenimiento o es nuevo?** Mantener y extender un sistema Smalltalk sano es correcto y
-   suele ser lo más barato con diferencia. **Reescribirlo "porque es Smalltalk" es la decisión que
-   destruye valor** — el sistema encapsula décadas de reglas de negocio no especificadas en ningún
-   otro sitio.
-2. **¿Puedes cubrir el relevo?** Es la restricción dominante y es honesta de reconocer: el mercado
-   es minúsculo. La respuesta viable casi nunca es contratar Smalltalkers: es **formar** a gente
-   buena (se aprende rápido: el lenguaje es diminuto) y **documentar** el arranque, el build y el
-   despliegue para que no dependan de la memoria de nadie. Presupuéstalo.
-3. **¿Qué justifica quedarse?** El depurador vivo, la persistencia de GemStone o el coste de la
-   alternativa. Si nada de eso aplica y el sistema es pequeño, migrar es defendible.
-4. **Si migras**: **nunca *big bang*, nunca traducción automática**. Encapsula tras una interfaz
-   estable (HTTP/gRPC), construye lo nuevo fuera contra ella (*strangler fig*) y sustituye **por
-   dominio**. El destino lo manda la skill del lenguaje destino.
+**Decision criteria** (before writing or rewriting, in writing):
+1. **Is it maintenance or is it new?** Maintaining and extending a healthy Smalltalk system is correct and
+   is usually by far the cheapest option. **Rewriting it "because it is Smalltalk" is the decision that
+   destroys value** — the system encapsulates decades of business rules not specified anywhere
+   else.
+2. **Can you cover the succession?** It is the dominant constraint and it is honest to acknowledge: the market
+   is tiny. The viable answer is almost never to hire Smalltalkers: it is to **train** good
+   people (it is learned fast: the language is tiny) and to **document** the startup, the build and the
+   deployment so that they do not depend on anyone's memory. Budget for it.
+3. **What justifies staying?** The live debugger, GemStone's persistence or the cost of the
+   alternative. If none of that applies and the system is small, migrating is defensible.
+4. **If you migrate**: **never *big bang*, never automatic translation**. Encapsulate behind a stable
+   interface (HTTP/gRPC), build the new thing outside against it (*strangler fig*) and replace **by
+   domain**. The destination is governed by the destination language's skill.
 
-**Prohibiciones:**
-- ❌ **PROHIBIDO** tratar la `.image` como artefacto primario de código o el `.changes` como
-  historia de versiones. El repositorio Git en Tonel es la verdad (§3).
-- ❌ **PROHIBIDO** desplegar una imagen que no salga de un build headless reproducible desde Git; o
-  construirla desde la imagen de trabajo de un desarrollador.
-- ❌ Secretos en el entorno del build o presentes en la imagen entregada.
-- ❌ Cualquier canal de evaluación de código remota en producción (§5).
-- ❌ Dependencias Metacello fijadas por rama en vez de por commit o tag.
-- ❌ Nuevos repositorios en Monticello (`.mcz`); mantener en Monticello algo que se siga tocando.
-- ❌ Extensiones de clases del sistema fuera de un protocolo con prefijo propio, o que modifiquen
-  comportamiento existente.
-- ❌ `become:`, `thisContext` o `doesNotUnderstand:` en código de aplicación sin justificación escrita.
-- ❌ Clases nuevas sin prefijo de proyecto (colisión global silenciosa).
-- ❌ Cargas de CI que puedan abrir un diálogo modal.
-- ❌ Tests que dependan del estado acumulado de la imagen.
-- ❌ **Elegir Smalltalk para un producto nuevo que mantendrá un tercero, sin un motivo escrito de los
-  de §1 y sin plan de relevo.** Y, simétricamente: **reescribir un sistema Smalltalk sano solo por
-  el lenguaje.** Ambas son el mismo error de criterio en direcciones opuestas.
-- ❌ Comprometerse con Cincom, VAST o GemStone Enterprise sin coste de licencia **y de renovación**
-  por escrito; o asumir que la *Community Edition* de GemStone cubre tu caso sin leer el keyfile.
-- ❌ Asumir que Pharo es "MIT": el `LICENSE` dice **MIT con partes Apache** (§2).
+**Prohibitions:**
+- ❌ **FORBIDDEN** to treat the `.image` as the primary code artifact or the `.changes` as
+  version history. The Git repository in Tonel is the truth (§3).
+- ❌ **FORBIDDEN** to deploy an image that does not come out of a reproducible headless build from Git; or
+  to build it from a developer's working image.
+- ❌ Secrets in the build environment or present in the delivered image.
+- ❌ Any remote code evaluation channel in production (§5).
+- ❌ Metacello dependencies pinned by branch instead of by commit or tag.
+- ❌ New repositories in Monticello (`.mcz`); keeping in Monticello anything that is still being touched.
+- ❌ Extensions to system classes outside a protocol with your own prefix, or that modify
+  existing behaviour.
+- ❌ `become:`, `thisContext` or `doesNotUnderstand:` in application code without written justification.
+- ❌ New classes without a project prefix (silent global collision).
+- ❌ CI loads that can open a modal dialog.
+- ❌ Tests that depend on the accumulated state of the image.
+- ❌ **Choosing Smalltalk for a new product that a third party will maintain, without a written reason from
+  those in §1 and without a succession plan.** And, symmetrically: **rewriting a healthy Smalltalk system just because of
+  the language.** Both are the same error of judgement in opposite directions.
+- ❌ Committing to Cincom, VAST or GemStone Enterprise without the license cost **and the renewal cost**
+  in writing; or assuming that GemStone's *Community Edition* covers your case without reading the keyfile.
+- ❌ Assuming that Pharo is "MIT": the `LICENSE` says **MIT with parts under Apache** (§2).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-1. **Pharo**: versión estable vigente (a ago-2026, **13.1.0** de jun-2025) y **el estado real de
-   Pharo 14**, anunciado como retrasado el 29-jun-2026. No planifiques sobre una release no
-   publicada. Licencia leída en crudo del `LICENSE`.
-2. **Squeak — discrepancia declarada, resuélvela antes de fijar versión**: la página de descargas
-   presenta **6.0** (build 22156) como *Current Release*, mientras el sitio publica notas de release
-   de **6.1**. Comprueba cuál es la recomendada y qué VM (OpenSmalltalk) exige.
-3. **GemStone/S 64 Bit**: versión vigente (a ago-2026, **3.7.5** de marzo de 2026), calendario de
-   soporte de la que uses, y **los términos exactos de la licencia que aplicas** (Community/Web
-   permite uso comercial en producción con límites; Enterprise es a medida). Léelos, no los supongas.
-4. **VAST Platform**: versión vigente (a ago-2026, **15.0.0** del 18-feb-2026) y su cadencia.
-   **Cincom Smalltalk**: release vigente (documentación pública en torno a **9.5**).
-   **Hueco declarado en ambos: no publican tarifas.** Cualquier cifra de coste tiene que venir de
-   una oferta contractual — y el coste de **renovación** es el dato que se olvida.
-5. **OpenSmalltalk VM**: release vigente y qué imágenes soporta; es lo que limita a qué versión
-   puedes subir.
-6. **smalltalkCI**: versión y plataformas soportadas (a ago-2026, **v3.0.8** de may-2026, con
-   commits en agosto de 2026).
-7. **Iceberg y Tonel**: estado del soporte en tu implementación —especialmente en VAST, donde el
-   puente entre ENVY y Tonel es lo que decide si puedes trabajar contra Git de verdad.
-8. CVEs y avisos de la VM, del stack HTTP/TLS que embebas y de las librerías Metacello que cargues.
-9. **Dolphin Smalltalk**: estado de mantenimiento actual, antes de considerarlo para nada.
+1. **Pharo**: current stable version (as of Aug 2026, **13.1.0** of Jun 2025) and **the real status of
+   Pharo 14**, announced as delayed on 29-Jun-2026. Do not plan on an unpublished
+   release. License read raw from the `LICENSE`.
+2. **Squeak — declared discrepancy, resolve it before pinning a version**: the downloads page
+   presents **6.0** (build 22156) as the *Current Release*, while the site publishes release notes
+   for **6.1**. Check which one is recommended and which VM (OpenSmalltalk) it requires.
+3. **GemStone/S 64 Bit**: current version (as of Aug 2026, **3.7.5** of March 2026), support
+   calendar for the one you use, and **the exact terms of the license you are applying** (Community/Web
+   allows commercial use in production with limits; Enterprise is bespoke). Read them, do not assume them.
+4. **VAST Platform**: current version (as of Aug 2026, **15.0.0** of 18-Feb-2026) and its cadence.
+   **Cincom Smalltalk**: current release (public documentation around **9.5**).
+   **Declared gap in both: they do not publish rates.** Any cost figure has to come from
+   a contractual quote — and the **renewal** cost is the data point that gets forgotten.
+5. **OpenSmalltalk VM**: current release and which images it supports; it is what limits which version
+   you can move up to.
+6. **smalltalkCI**: version and supported platforms (as of Aug 2026, **v3.0.8** of May 2026, with
+   commits in August 2026).
+7. **Iceberg and Tonel**: support status in your implementation —especially in VAST, where
+   the bridge between ENVY and Tonel is what decides whether you can really work against Git.
+8. CVEs and advisories for the VM, for the HTTP/TLS stack you embed and for the Metacello libraries you load.
+9. **Dolphin Smalltalk**: current maintenance status, before considering it for anything.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

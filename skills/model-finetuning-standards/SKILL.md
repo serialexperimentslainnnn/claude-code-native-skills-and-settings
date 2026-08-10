@@ -85,7 +85,7 @@ resultado hereda las capacidades **y las restricciones legales** del modelo base
   restricción concreta de unos pesos); `privacy-engineering-standards` (dato personal y
   memorización); `data-engineering-standards`, `data-governance-quality-standards`;
   `finops-standards`, `green-it-standards`; `python-standards`; `computer-vision-standards`,
-  `nlp-standards`, `multimodal-genai-standards` (**Ola 7**).
+  `nlp-standards`, `multimodal-genai-standards`.
 
 ## 2. Decisiones por defecto
 

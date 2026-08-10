@@ -63,11 +63,11 @@ de recuperación **fuera** del sistema respaldado y su papel en el plan de conti
 skills de lenguaje —entre ellas `powershell-standards`, que **delega aquí** la elección del gestor
 y del escáner de secretos y se queda el criterio de código: `SecretManagement`/`SecretStore` como
 front-end, y la prohibición de `ConvertTo-SecureString -AsPlainText -Force` con un secreto escrito
-en el fichero—, `developer-workstation-standards` (**Ola 6**: **la elección del gestor de secretos y del escáner
+en el fichero—, `developer-workstation-standards` (**la elección del gestor de secretos y del escáner
 son de aquí**; **la custodia en la máquina del desarrollador es suya** —clave en hardware, PIN y
 toque obligatorio, `credential.helper` que **no** escriba en claro, token fuera del historial del
 shell y del `~/.netrc`, y el alcance de credenciales al que llega un agente de codificación—),
-y `solidity-standards` (**Ola 5**: el contrato es suyo; **la custodia de la clave de
+y `solidity-standards` (el contrato es suyo; **la custodia de la clave de
 despliegue y de la clave de `owner`/`upgrader` es de aquí** —HSM o multifirma, rotación, umbral—.
 Dato que ordena la prioridad: **el compromiso de clave privada explica más del 25 % de los robos en
 cadena y cuatro de los diez mayores**; un contrato actualizable traslada todo el riesgo a quien

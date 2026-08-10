@@ -42,7 +42,7 @@ histórico", "el origen añadió una columna y se rompió el consumidor".
   Aquí, **qué se publica en esos topics, con qué garantías y qué se hace con el flujo**. Su
   principio —**un almacén por necesidad, no por moda**— se hereda como **"un flujo por necesidad,
   no por moda"** (§2.1).
-- `message-brokers-standards` (**Ola 4, planificada**) — **es la colisión más probable de este par y
+- `message-brokers-standards` — **es la colisión más probable de este par y
   la línea se escribe aquí con precisión**: **el broker como pieza es suyo** (Kafka, Pulsar,
   RabbitMQ, NATS: elección, topología, dimensionado, replicación, retención, operación del clúster,
   colas frente a logs). **El procesamiento del flujo y la captura de lo que entra en él son de
@@ -87,11 +87,17 @@ histórico", "el origen añadió una columna y se rompió el consumidor".
   operación del motor de origen** son suyos; aquí solo lo que el CDC le exige. Regla de arbitraje
   espejada con `mysql-mariadb-dba-standards`: **la captura es de aquí, el impacto en el motor es
   suyo** — el formato de GTID, el `binlog` como mecanismo del motor y su purga son suyos; leerlo
-  como flujo de cambios, es de aquí), `aws-standards`/`azure-standards`/`gcp-standards` (MSK, DMS, Kinesis, Event Hubs,
+  como flujo de cambios, es de aquí), `ibm-i-rpg-standards` (**el equivalente en Db2 for i, con la
+  misma regla espejada**: el **diario y sus receptores** —`CRTJRN`, `STRJRNPF`, `IMAGES(*BOTH)`,
+  la gestión y purga de receptores— son suyos, junto con las trampas del dato de la plataforma
+  (empaquetado, fechas numéricas, ficheros multi-miembro, CCSID 65535); **leer ese diario como
+  flujo de cambios es de aquí**. Se declara explícitamente porque **el catálogo de mecanismos de
+  §2.2 no lo incluía**, y de ahí no debe inferirse que la plataforma no tiene captura por log:
+  la tiene, y es de las más antiguas), `aws-standards`/`azure-standards`/`gcp-standards` (MSK, DMS, Kinesis, Event Hubs,
   Pub/Sub, Datastream como servicios gestionados), `python-standards`, `jvm-spring-standards`
   (**calidad del código Java/Kotlin**: Flink y Kafka Streams son JVM y su *build*, tests y
   empaquetado son suyos; el diseño del flujo es de aquí), `scala-standards` (misma frontera para
-  la API Scala de Flink y de Kafka Streams), `sql-standards` (**Ola 5**: Flink SQL y ksqlDB tienen
+  la API Scala de Flink y de Kafka Streams), `sql-standards` (Flink SQL y ksqlDB tienen
   semántica de streaming propia —ventanas, marcas de agua, tablas dinámicas— **que es de aquí**; el
   SQL relacional que se escriba contra un sumidero es suyo).
 
@@ -134,7 +140,7 @@ micro-lotes.
 
 | Mecanismo | Cómo funciona | Veredicto |
 |---|---|---|
-| **Lectura del log de transacciones** (WAL de PostgreSQL, binlog de MySQL/MariaDB, LogMiner de Oracle, CDC de SQL Server, *change streams* de MongoDB) | Lee el registro de escritura del motor: ve **todas** las operaciones, en orden de *commit*, con antes y después | **La forma correcta.** Sin impacto en el esquema, captura borrados, respeta el orden transaccional. **Default absoluto** |
+| **Lectura del log de transacciones** (WAL de PostgreSQL, binlog de MySQL/MariaDB, LogMiner de Oracle, CDC de SQL Server, *change streams* de MongoDB, **diarios y receptores de Db2 for i** — ver `ibm-i-rpg-standards`) | Lee el registro de escritura del motor: ve **todas** las operaciones, en orden de *commit*, con antes y después | **La forma correcta.** Sin impacto en el esquema, captura borrados, respeta el orden transaccional. **Default absoluto** |
 | **Triggers** que escriben en una tabla de auditoría | El motor ejecuta código en cada escritura | **Vetado salvo imposibilidad del log.** Penaliza **cada** transacción del sistema operacional, se salta operaciones masivas mal escritas, ensucia el esquema y se olvida al crear una tabla nueva |
 | **Consulta por marca de tiempo** (`WHERE updated_at > :x`) | Sondeo periódico | **No es CDC.** **Pierde los borrados físicos** (para siempre y en silencio) y **pierde los cambios múltiples entre sondeos** (solo ves el último estado). Además, `updated_at` casi nunca es fiable: relojes desalineados, actualizaciones masivas que no lo tocan, escrituras que confirman fuera de orden. Legítimo solo como **incremental por lotes**, sabiendo qué se está perdiendo |
 | **Doble escritura** desde la aplicación (BD y luego broker) | La app escribe en los dos sitios | **PROHIBIDO** (§7): no es atómico. Ver outbox en `microservices-architecture-standards` |

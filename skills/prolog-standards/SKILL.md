@@ -3,221 +3,220 @@ name: prolog-standards
 description: Logic programming in Prolog and its constraint solving niche. Use when working with .pl, .pro, .prolog, .plt, .P or .qlf files, SWI-Prolog (swipl, pack_install, library(clpfd), library(http/thread_httpd), plunit, :- begin_tests, saved states via qsave_program), SICStus Prolog (sicstus, spld, library(clpfd) and library(clpb)), GNU Prolog (gprolog, gplc), Scryer Prolog (library(clpz)), Trealla, XSB or Ciao, ISO Prolog conformance, Horn clauses, unification and backtracking, the cut operator, first-argument clause indexing, assert/asserta/assertz/retract of dynamic predicates, tabling and SLG resolution (:- table), DCG rules with --> and phrase/2, constraint programming with #=/#\=/label/labeling, or deciding between Prolog and a dedicated solver such as MiniZinc, OR-Tools CP-SAT or an SMT solver.
 ---
 
-# Estándares de Prolog y programación lógica
+# Prolog and logic programming standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**Prolog está vivo, pero su nicho es mucho más estrecho de lo que sugiere su fama.** Hay
-implementaciones mantenidas (SWI-Prolog publicó la serie estable **10.0** con parches en 2026), hay
-un proveedor comercial vendiendo licencias (SICStus) y hay producción real en planificación,
-verificación, análisis de programas y sistemas expertos. Lo que casi nunca hay es una razón para
-escribir en Prolog una aplicación de propósito general.
+**Prolog is alive, but its niche is much narrower than its fame suggests.** There are maintained
+implementations (SWI-Prolog published the stable **10.0** series with patches in 2026), there is a
+commercial vendor selling licenses (SICStus) and there is real production use in planning,
+verification, program analysis and expert systems. What there almost never is, is a reason to write
+a general-purpose application in Prolog.
 
-**Cuándo lo eliges de verdad** — y son pocos casos, todos con la misma forma: *el problema es una
-relación, no un procedimiento*:
+**When you really do choose it** — and there are few cases, all with the same shape: *the problem is a
+relation, not a procedure*:
 
-1. **Restricciones combinatorias** (CLP(FD)): horarios, asignación de recursos, secuenciación,
-   configuración de producto. **Es el único nicho donde Prolog compite de tú a tú**, y aun así hay
-   que comparar (abajo).
-2. **Parsing y transformación de lenguaje** con **DCG**: gramáticas declarativas, reversibles y
-   probadas por décadas; siguen siendo excelentes para formatos irregulares y NLP simbólico.
-3. **Razonamiento sobre hechos y reglas**: análisis estático, consultas sobre grafos de
-   dependencias, comprobación de políticas, sistemas expertos con encadenamiento hacia atrás.
-4. **Prototipado de semántica**: intérpretes, sistemas de tipos, especificaciones ejecutables.
+1. **Combinatorial constraints** (CLP(FD)): timetabling, resource allocation, sequencing, product
+   configuration. **It is the only niche where Prolog competes head to head**, and even there you
+   have to compare (below).
+2. **Language parsing and transformation** with **DCG**: declarative, reversible grammars, proven over
+   decades; they are still excellent for irregular formats and symbolic NLP.
+3. **Reasoning over facts and rules**: static analysis, queries over dependency graphs, policy
+   checking, expert systems with backward chaining.
+4. **Semantics prototyping**: interpreters, type systems, executable specifications.
 
-**La comparación honesta que hay que hacer antes de elegirlo** (y que casi nadie hace):
+**The honest comparison you have to make before choosing it** (and that almost nobody makes):
 
-- **Si el problema es de restricciones puras, un solver dedicado suele ganar.** **MiniZinc** (2.10.0,
-  jul-2026) te da un lenguaje de modelado declarativo y **te deja cambiar de backend** —CP, MIP,
-  SAT— sin reescribir el modelo. **OR-Tools CP-SAT** (v9.15, 2026) es, en problemas grandes de
-  scheduling y asignación, sencillamente más rápido y más operable, y se invoca desde Python o C++
-  como una librería más. Un **SMT** (Z3, cvc5) es la respuesta cuando hay aritmética y lógica
-  mezcladas o hace falta demostrar insatisfacibilidad. Prolog+CLP(FD) gana cuando el modelo va
-  **entrelazado con lógica simbólica**, cuando necesitas generar el modelo con las mismas reglas que
-  lo resuelven, o cuando la búsqueda a medida (`labeling/2` con tu heurística) es el valor.
-- **Si el problema es "reglas de negocio", un motor de reglas o una tabla de decisión (DMN) es más
-  barato de operar y de auditar**, y lo puede mantener alguien que no sepa Prolog.
-- **Si el problema es consultar relaciones sobre datos, es una base de datos.** Datalog (recursivo,
-  terminante, sin cut) es un punto intermedio muy razonable y muchos motores lo hablan.
+- **If the problem is pure constraints, a dedicated solver usually wins.** **MiniZinc** (2.10.0,
+  Jul 2026) gives you a declarative modeling language and **lets you swap backend** —CP, MIP,
+  SAT— without rewriting the model. **OR-Tools CP-SAT** (v9.15, 2026) is, on large scheduling and
+  allocation problems, plainly faster and more operable, and it is called from Python or C++
+  like any other library. An **SMT** (Z3, cvc5) is the answer when arithmetic and logic are
+  mixed or you need to prove unsatisfiability. Prolog+CLP(FD) wins when the model is
+  **interleaved with symbolic logic**, when you need to generate the model with the same rules that
+  solve it, or when the bespoke search (`labeling/2` with your heuristic) is the value.
+- **If the problem is "business rules", a rules engine or a decision table (DMN) is cheaper to
+  operate and to audit**, and it can be maintained by someone who does not know Prolog.
+- **If the problem is querying relations over data, it is a database.** Datalog (recursive,
+  terminating, no cut) is a very reasonable middle ground and many engines speak it.
 
-**No aplica**: **ningún otro lenguaje del catálogo compite directamente con este** — Prolog no se
-sustituye por un lenguaje, se sustituye por un solver o por una base de datos. Frontera formal:
+**Not applicable**: **no other language in the catalog competes directly with this one** — Prolog is
+not replaced by a language, it is replaced by a solver or by a database. Formal boundary:
 `python-standards`, `go-standards`, `rust-standards`, `typescript-standards`, `jvm-spring-standards`,
-`clojure-standards`, `lisp-standards`, `haskell-fp-standards` (**lenguajes de propósito general: el
-sistema que rodea al motor lógico se escribe en uno de ellos, con su criterio — y en la arquitectura
-por defecto de §3, ellos son el anfitrión y Prolog el componente**); `julia-standards` y
-`classical-ml-standards` (**si el problema es de optimización numérica o estadística, no es de aquí**);
-`sql-standards` y `graph-db-standards` (**consultas sobre datos relacionados: si la recursión es
-sobre un grafo persistente, es suyo**); `nlp-standards` (**PLN estadístico y con modelos**: aquí solo
-las DCG como parser simbólico); `ai-agents-standards` y `llm-app-engineering-standards`
-(**razonamiento con LLM**: aquí lo simbólico, verificable y determinista — son complementarios, no
-alternativas); `data-governance-quality-standards` (reglas de calidad de dato como gobierno);
-`software-architecture-patterns-standards` (dónde encaja un componente de razonamiento);
-`legacy-modernization-standards` (**skill paraguas** de un motor Prolog heredado: qué "R" se elige,
-si se congela, se reescribe o se retira) y `migration-projects-standards` (**la ejecución del
-corte** una vez decidido: ensayo, ventana, cuadre del dato, rollback y apagado del origen);
-`appsec-standards` y `vulnerability-management-standards` (metodología y triaje; aquí los sinks
-concretos, §5); `opensource-licensing-standards` (análisis de licencias; aquí qué licencia tiene cada
-implementación, §2); `cicd-standards` (la pipeline).
+`clojure-standards`, `lisp-standards`, `haskell-fp-standards` (**general-purpose languages: the
+system surrounding the logic engine is written in one of them, with their criteria — and in the
+default architecture of §3, they are the host and Prolog the component**); `julia-standards` and
+`classical-ml-standards` (**if the problem is numerical or statistical optimization, it is not from
+here**); `sql-standards` and `graph-db-standards` (**queries over related data: if the recursion is
+over a persistent graph, it is theirs**); `nlp-standards` (**statistical and model-based NLP**: here
+only DCGs as a symbolic parser); `ai-agents-standards` and `llm-app-engineering-standards`
+(**reasoning with LLMs**: here the symbolic, verifiable and deterministic part — they are
+complementary, not alternatives); `data-governance-quality-standards` (data quality rules as
+governance); `software-architecture-patterns-standards` (where a reasoning component fits);
+`legacy-modernization-standards` (**umbrella skill** for an inherited Prolog engine: which "R" is
+chosen, whether it is frozen, rewritten or retired) and `migration-projects-standards` (**the
+execution of the cutover** once decided: rehearsal, window, data reconciliation, rollback and
+shutdown of the source); `appsec-standards` and `vulnerability-management-standards` (methodology and
+triage; here the concrete sinks, §5); `opensource-licensing-standards` (license analysis; here which
+license each implementation has, §2); `cicd-standards` (the pipeline).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Decisión | Elección | Nota verificada (ago-2026) |
+| Decision | Choice | Verified note (Aug 2026) |
 |---|---|---|
-| Implementación por defecto | **SWI-Prolog** | Serie estable **10.0** (descargas vigentes **10.0.2**); serie de desarrollo 10.1.x. Es la única con ecosistema completo: `pack`, servidor HTTP, `plunit`, tabling, CLP(FD), depurador, build a Wasm |
-| Licencia de SWI-Prolog | **BSD Simplificada (BSD-2-Clause)** — leída en crudo del `LICENSE` | *"SWI-Prolog is covered by the Simplified BSD license"*. **Corrige una creencia extendida: muchas fuentes secundarias siguen diciendo LGPL/GPL.** Aviso propio del fichero: puede enlazar librerías con licencias más restrictivas — **comprueba tu build concreto con `?- license.`**, no la portada del proyecto |
-| Implementación comercial | **SICStus Prolog**, solo con requisito que lo justifique (soporte contractual, rendimiento de su CLP(FD)/CLP(B), certificación, plataformas exóticas) | **4.10.1, publicada el 3-jul-2025**. Propietaria, licenciada por RISE AB; **no publica tarifas**: licencia + mantenimiento anual, con recargo de reinstauración si dejas caducar el mantenimiento. **El coste de licencia y su renovación es el dato caro** |
-| GNU Prolog | **No para proyectos nuevos** | Última estable **1.5.0**, con aviso de copyright hasta **2021** y sin release posterior publicada en su web. Compila a nativo y es ISO-céntrico, pero su ecosistema es mínimo y su cadencia, nula |
-| Scryer Prolog | **Solo para trabajo experimental o de conformidad ISO** | Escrito en Rust, muy centrado en ISO y en `library(clpz)`. **Repositorio activo (commits en jul-2026) pero última release etiquetada v0.10.0 (sep-2025) y numeración pre-1.0**: repo vivo ≠ apto para producción. Úsalo por su rigor, no por su estabilidad |
-| Estándar | **ISO/IEC 13211** como línea base de portabilidad | **El código real no es portable**: módulos, tabling, CLP(FD), E/S y las librerías están fuera o divergen entre implementaciones. **Asume que eliges implementación, no lenguaje**, y dilo en el ADR |
-| Restricciones | **`library(clpfd)`** en SWI/SICStus; `library(clpz)` en Scryer | **Y compáralo con MiniZinc / OR-Tools CP-SAT / SMT antes de decidir** (§1). Si el modelo es de restricciones puras, documenta por qué no usas el solver dedicado |
-| Alternativa de solver | **MiniZinc 2.10.0** (jul-2026) o **OR-Tools v9.15** (2026) | MiniZinc desacopla modelo y backend; CP-SAT suele ganar a escala. Ambos se operan desde un lenguaje mayoritario |
-| Tabling (SLG) | **`:- table` para todo predicado recursivo sobre datos** | Convierte recursión izquierda no terminante en consulta terminante con memoización. **Es lo que hace utilizable el razonamiento sobre grafos** y evita el 90 % de los cortes defensivos |
-| Aritmética | `#=`/`#\=` (CLP(FD), relacional y reversible) frente a `is/2` (direccional) | En código de restricciones, **`is/2` es un error de diseño**: rompe la reversibilidad que justificaba usar Prolog |
-| Tests | **plunit** (`:- begin_tests/end_tests`, ficheros `.plt`) | Ejecutable desde CLI con código de salida; ver §4 |
-| Empaquetado | **Estado guardado** (`qsave_program`) o script con shebang; SWI `pack` para librerías | El estado guardado tiene el mismo problema de reproducibilidad que una imagen Lisp: se genera desde build limpio, nunca desde una sesión interactiva |
+| Default implementation | **SWI-Prolog** | Stable series **10.0** (current downloads **10.0.2**); development series 10.1.x. It is the only one with a complete ecosystem: `pack`, HTTP server, `plunit`, tabling, CLP(FD), debugger, Wasm build |
+| SWI-Prolog license | **Simplified BSD (BSD-2-Clause)** — read raw from the `LICENSE` | *"SWI-Prolog is covered by the Simplified BSD license"*. **This corrects a widespread belief: many secondary sources still say LGPL/GPL.** Warning from the file itself: it may link libraries with more restrictive licenses — **check your specific build with `?- license.`**, not the project's front page |
+| Commercial implementation | **SICStus Prolog**, only with a requirement that justifies it (contractual support, performance of its CLP(FD)/CLP(B), certification, exotic platforms) | **4.10.1, published 3-Jul-2025**. Proprietary, licensed by RISE AB; **it does not publish rates**: license + annual maintenance, with a reinstatement surcharge if you let maintenance lapse. **License cost and its renewal is the expensive data point** |
+| GNU Prolog | **Not for new projects** | Latest stable **1.5.0**, with a copyright notice up to **2021** and no later release published on its site. It compiles to native and is ISO-centric, but its ecosystem is minimal and its cadence, nil |
+| Scryer Prolog | **Only for experimental or ISO conformance work** | Written in Rust, heavily focused on ISO and on `library(clpz)`. **Active repository (commits in Jul 2026) but the latest tagged release is v0.10.0 (Sep 2025) and the numbering is pre-1.0**: a live repo ≠ production-ready. Use it for its rigor, not for its stability |
+| Standard | **ISO/IEC 13211** as the portability baseline | **Real code is not portable**: modules, tabling, CLP(FD), I/O and the libraries are outside it or diverge between implementations. **Assume you are choosing an implementation, not a language**, and say so in the ADR |
+| Constraints | **`library(clpfd)`** in SWI/SICStus; `library(clpz)` in Scryer | **And compare it with MiniZinc / OR-Tools CP-SAT / SMT before deciding** (§1). If the model is pure constraints, document why you are not using the dedicated solver |
+| Solver alternative | **MiniZinc 2.10.0** (Jul 2026) or **OR-Tools v9.15** (2026) | MiniZinc decouples model and backend; CP-SAT usually wins at scale. Both are operated from a mainstream language |
+| Tabling (SLG) | **`:- table` for every recursive predicate over data** | It turns non-terminating left recursion into a terminating query with memoization. **It is what makes graph reasoning usable** and it avoids 90 % of defensive cuts |
+| Arithmetic | `#=`/`#\=` (CLP(FD), relational and reversible) versus `is/2` (directional) | In constraint code, **`is/2` is a design error**: it breaks the reversibility that justified using Prolog |
+| Tests | **plunit** (`:- begin_tests/end_tests`, `.plt` files) | Runnable from the CLI with an exit code; see §4 |
+| Packaging | **Saved state** (`qsave_program`) or a script with a shebang; SWI `pack` for libraries | The saved state has the same reproducibility problem as a Lisp image: it is generated from a clean build, never from an interactive session |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- **Arquitectura por defecto: Prolog es un componente, no la aplicación.** El motor lógico vive
-  detrás de una interfaz explícita (proceso separado, HTTP, o embebido con su API C/Python) y el
-  resto del sistema se escribe en un lenguaje mayoritario. Esto acota el riesgo de relevo, permite
-  probar el modelo aislado y hace posible **sustituir el motor por un solver** si §1 cambia de
-  respuesta. Escribir el servicio HTTP, la persistencia y la operación entera en Prolog es la
-  decisión que convierte un componente valioso en un sistema que nadie quiere tocar.
-- **Módulos siempre** (`:- module(nombre, [pred/Aridad, ...])`), con la lista de exportación como
-  contrato. Sin módulos, todo predicado es global y una redefinición silenciosa es un bug de horas.
-- **Cada predicado documentado con su modo y determinismo** (`+`/`-`/`?`, det/semidet/nondet/multi).
-  En Prolog no hay tipos: **el modo y el determinismo son el único contrato**, y si no está escrito,
-  no existe.
-- **El corte (`!`) es el mayor coste de mantenibilidad del lenguaje.** No es una optimización: cambia
-  la semántica declarativa, y un corte añadido para "arreglar" una duplicación rompe la solución
-  correcta en el caso que aún no has probado. Criterio:
-  - **Prohibido el corte rojo** (el que altera el conjunto de soluciones). Si lo necesitas, la
-    lógica está mal factorizada.
-  - Para elegir entre alternativas, **`( Cond -> Entonces ; Si_no )`**, que es local y legible.
-  - Para determinismo, **primero indexación y guardas al principio del cuerpo**; el corte verde solo
-    cuando esas dos no bastan, con comentario que diga qué elección poda.
-  - Un corte dentro de una disyunción o después de un `->` es casi siempre un error.
-- **Rendimiento = indexación de cláusulas, y la indexación es sobre el primer argumento.** El diseño
-  de la cabecera del predicado *es* el diseño del índice: pon el argumento discriminante primero,
-  con functor o átomo constante. Un predicado con miles de cláusulas y primer argumento variable
-  recorre todas ellas en cada llamada. **Antes de optimizar nada más, mira la indexación** (SWI
-  soporta además indexación multiargumento y JIT: verifica qué hace tu implementación, §8).
-- **DCG (`-->`, `phrase/2,3`) para todo parsing**: no escribas un parser a mano manipulando listas.
-  Y **`phrase/2` con `string_codes`/`atom_codes` explícito**, no con representaciones implícitas.
-- **`assert`/`retract` como estado global: prohibidos salvo para hechos cargados una vez.** Son
-  variables globales con el peor perfil posible: rompen el backtracking, invalidan índices, no son
-  transaccionales y hacen los tests dependientes del orden. El estado se pasa por argumentos.
-- **Sin *failure-driven loops*** (`forall/2` y `foldl/4` existen); **sin recursión izquierda sin
-  `:- table`**; **listas por diferencias solo donde el perfil lo justifique** (destruyen la
-  legibilidad).
+- **Default architecture: Prolog is a component, not the application.** The logic engine lives
+  behind an explicit interface (separate process, HTTP, or embedded with its C/Python API) and the
+  rest of the system is written in a mainstream language. This bounds the succession risk, allows
+  testing the model in isolation and makes it possible to **replace the engine with a solver** if §1
+  changes its answer. Writing the HTTP service, the persistence and the whole operation in Prolog is
+  the decision that turns a valuable component into a system nobody wants to touch.
+- **Modules always** (`:- module(name, [pred/Arity, ...])`), with the export list as the
+  contract. Without modules, every predicate is global and a silent redefinition is an hours-long bug.
+- **Every predicate documented with its mode and determinism** (`+`/`-`/`?`, det/semidet/nondet/multi).
+  In Prolog there are no types: **the mode and the determinism are the only contract**, and if it is
+  not written down, it does not exist.
+- **The cut (`!`) is the language's greatest maintainability cost.** It is not an optimization: it
+  changes the declarative semantics, and a cut added to "fix" a duplication breaks the correct
+  solution in the case you have not tested yet. Criteria:
+  - **Red cut forbidden** (the one that alters the solution set). If you need it, the logic is badly
+    factored.
+  - To choose between alternatives, **`( Cond -> Then ; Else )`**, which is local and readable.
+  - For determinism, **first indexing and guards at the start of the body**; the green cut only when
+    those two are not enough, with a comment saying which choice it prunes.
+  - A cut inside a disjunction or after a `->` is almost always an error.
+- **Performance = clause indexing, and indexing is on the first argument.** The design of the
+  predicate head *is* the design of the index: put the discriminating argument first, with a functor
+  or a constant atom. A predicate with thousands of clauses and a variable first argument walks all
+  of them on every call. **Before optimizing anything else, look at the indexing** (SWI additionally
+  supports multi-argument and JIT indexing: verify what your implementation does, §8).
+- **DCG (`-->`, `phrase/2,3`) for all parsing**: do not write a parser by hand manipulating lists.
+  And **`phrase/2` with explicit `string_codes`/`atom_codes`**, not with implicit representations.
+- **`assert`/`retract` as global state: forbidden except for facts loaded once.** They are global
+  variables with the worst possible profile: they break backtracking, invalidate indexes, are not
+  transactional and make tests order-dependent. State is passed through arguments.
+- **No *failure-driven loops*** (`forall/2` and `foldl/4` exist); **no left recursion without
+  `:- table`**; **difference lists only where the profile justifies it** (they destroy
+  readability).
 
-## 4. Calidad y CI
+## 4. Quality and CI
 
-- **plunit obligatorio, ejecutable desde CLI** (`swipl -g run_tests -t halt`) con código de salida
-  no nulo al fallar. Un test que solo corre en el toplevel no es un gate.
-- **Prueba el determinismo, no solo el resultado**: un predicado que debía ser `semidet` y devuelve
-  dos soluciones es el bug característico de este lenguaje, y `assertion/1` con
-  `forall(Objetivo, ...)` o una comprobación explícita del segundo punto de elección lo detecta.
-  Cubre además **fallo** y **excepción** como resultados esperados, no solo el éxito.
-- **Gate mínimo**: (1) carga sin warnings de *singleton variables* ni de predicados no definidos —en
-  Prolog un typo en un nombre de variable es un warning, no un error, y produce un fallo silencioso;
-  (2) comprobación estática disponible en tu implementación (en SWI, `check/0`, `list_undefined/0`,
-  `xref`); (3) `plunit` verde; (4) para modelos CLP(FD), **un caso con solución conocida y un caso
-  insatisfacible**, ambos con **límite de tiempo**, porque una búsqueda sin cota no falla: cuelga.
-- **Todo objetivo de búsqueda lleva presupuesto**: `call_with_time_limit/2`, `call_with_inference_limit/3`
-  o el equivalente de tu implementación. Sin cota no hay operabilidad.
+- **plunit mandatory, runnable from the CLI** (`swipl -g run_tests -t halt`) with a non-zero exit
+  code on failure. A test that only runs in the toplevel is not a gate.
+- **Test determinism, not just the result**: a predicate that should have been `semidet` and returns
+  two solutions is this language's characteristic bug, and `assertion/1` with
+  `forall(Goal, ...)` or an explicit check of the second choice point detects it.
+  Also cover **failure** and **exception** as expected outcomes, not just success.
+- **Minimum gate**: (1) it loads with no *singleton variable* or undefined predicate warnings —in
+  Prolog a typo in a variable name is a warning, not an error, and it produces a silent failure;
+  (2) static checking available in your implementation (in SWI, `check/0`, `list_undefined/0`,
+  `xref`); (3) `plunit` green; (4) for CLP(FD) models, **a case with a known solution and an
+  unsatisfiable case**, both with a **time limit**, because an unbounded search does not fail: it hangs.
+- **Every search goal carries a budget**: `call_with_time_limit/2`, `call_with_inference_limit/3`
+  or your implementation's equivalent. Without a bound there is no operability.
 
-*§6 se omite deliberadamente*: la observabilidad, el despliegue y la capacidad de un servicio que
-embebe Prolog son de la skill de la plataforma anfitriona (§3) y de `observability-standards`; lo
-único específico —cotas de inferencia y de tiempo— está en §4, y el consumo de memoria de la
-búsqueda, en §5.
+*§6 is deliberately omitted*: the observability, the deployment and the capacity of a service that
+embeds Prolog belong to the host platform's skill (§3) and to `observability-standards`; the only
+specific thing —inference and time bounds— is in §4, and search memory consumption, in §5.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **`read_term/2` y familia sobre entrada no confiable es ejecución de código y agotamiento de
-  recursos.** Leer un término ajeno **crea átomos y functores arbitrarios** (tabla de átomos:
-  superficie de DoS por memoria) y, si luego ese término se pasa a `call/1`, es RCE directa. Criterio:
-  **nunca `call/1`, `=..`  ni `assert/1` sobre términos derivados de entrada externa**; parsear con
-  DCG a una estructura cerrada y validar contra una lista blanca de functores.
-- **`library(sandbox)` de SWI existe y es la respuesta correcta si tienes que evaluar objetivos de
-  usuario** (p. ej. un endpoint de consulta). Verifica su estado y sus limitaciones antes de
-  confiarle nada: un sandbox de lenguaje es una superficie de bypass, no una garantía.
-- **El servidor HTTP de SWI-Prolog es un servidor de aplicaciones completo**: si lo expones, se le
-  aplica todo el criterio de `appsec-standards` (autenticación, cabeceras, TLS terminado donde
-  corresponda). **Por defecto, no lo expongas**: sirve detrás de un proxy y escuchando en localhost.
-- **`shell/1,2` y `process_create/3`**: nunca con argumentos concatenados desde entrada externa.
-- **DoS por búsqueda**: un objetivo sin cota de tiempo ni de inferencias es un vector de denegación
-  trivial contra cualquier interfaz que acepte parámetros del usuario (§4). El límite es obligatorio
-  **en el borde**, no confiado al modelo.
-- **Dependencias**: `pack_install/1` descarga y **compila** código de terceros (paquetes con
-  extensiones en C). Verifica origen, fija versión y revisa lo que compila; el ecosistema es pequeño
-  y no tiene proceso de auditoría.
+- **`read_term/2` and family over untrusted input is code execution and resource exhaustion.**
+  Reading someone else's term **creates arbitrary atoms and functors** (atom table: a memory DoS
+  surface) and, if that term is then passed to `call/1`, it is direct RCE. Criteria:
+  **never `call/1`, `=..` nor `assert/1` over terms derived from external input**; parse with
+  DCG into a closed structure and validate against a whitelist of functors.
+- **SWI's `library(sandbox)` exists and is the right answer if you have to evaluate user
+  goals** (e.g. a query endpoint). Verify its status and its limitations before trusting it with
+  anything: a language sandbox is a bypass surface, not a guarantee.
+- **SWI-Prolog's HTTP server is a full application server**: if you expose it, all of
+  `appsec-standards` applies to it (authentication, headers, TLS terminated where appropriate).
+  **By default, do not expose it**: serve behind a proxy and listening on localhost.
+- **`shell/1,2` and `process_create/3`**: never with arguments concatenated from external input.
+- **DoS by search**: a goal with no time or inference bound is a trivial denial vector against any
+  interface that accepts user parameters (§4). The limit is mandatory **at the boundary**, not
+  entrusted to the model.
+- **Dependencies**: `pack_install/1` downloads and **compiles** third-party code (packages with C
+  extensions). Verify the origin, pin the version and review what it compiles; the ecosystem is small
+  and has no audit process.
 
-## 7. Sostenibilidad, migración y prohibiciones
+## 7. Sustainability, migration and prohibitions
 
-**Criterio de adopción** (decidir antes, y por escrito):
-1. **¿El problema es una relación o un procedimiento?** Si es un procedimiento, no es Prolog.
-2. **¿Un solver dedicado o Datalog lo resuelven?** Si sí, úsalo: se opera y se contrata mejor (§1).
-3. **¿El componente queda acotado detrás de una interfaz?** Si el plan es escribir el sistema entero
-   en Prolog, la respuesta es no.
-4. **¿Hay ≥2 personas capaces de mantenerlo, y una forma de formar a la tercera?** El mercado laboral
-   es minúsculo; el conocimiento es enseñable, pero hay que presupuestarlo.
+**Adoption criteria** (decided beforehand, and in writing):
+1. **Is the problem a relation or a procedure?** If it is a procedure, it is not Prolog.
+2. **Do a dedicated solver or Datalog solve it?** If so, use it: it operates and hires better (§1).
+3. **Is the component bounded behind an interface?** If the plan is to write the whole system in
+   Prolog, the answer is no.
+4. **Are there ≥2 people able to maintain it, and a way to train a third?** The job market is
+   tiny; the knowledge is teachable, but it has to be budgeted.
 
-**Criterio de migración de un Prolog existente**: no se traduce a otro lenguaje —una traducción
-mecánica de backtracking y unificación produce código ilegible y más lento—. Se **reespecifica**:
-extrae las reglas a una forma declarativa (tabla de decisión, modelo MiniZinc, esquema Datalog),
-verifícala contra el sistema vivo con casos reales, y sustituye por dominio. Si el sistema funciona
-y está acotado, **congelarlo es una opción legítima**; documenta el modo y determinismo de cada
-predicado público como parte del congelado.
+**Migration criteria for an existing Prolog**: it is not translated to another language —a mechanical
+translation of backtracking and unification produces unreadable and slower code—. It is
+**respecified**: extract the rules into a declarative form (decision table, MiniZinc model, Datalog
+schema), verify it against the live system with real cases, and replace by domain. If the system works
+and is bounded, **freezing it is a legitimate option**; document the mode and determinism of every
+public predicate as part of the freeze.
 
-**Prohibiciones:**
-- ❌ **PROHIBIDO el corte rojo**; corte dentro de una disyunción o tras `->`; cortes añadidos para
-  "quitar soluciones de más" sin entender de dónde salen (§3).
-- ❌ **PROHIBIDO** `call/1`, `=..` o `assert/1` sobre términos que vengan de entrada externa; `read_term`
-  sobre datos no confiables sin lista blanca de functores (§5).
-- ❌ `assert`/`retract` como estado mutable de la aplicación.
-- ❌ Objetivos de búsqueda sin límite de tiempo o de inferencias expuestos a un usuario.
-- ❌ Recursión sobre grafos o datos sin `:- table` "porque en las pruebas termina".
-- ❌ `is/2` donde el modelo debía ser CLP(FD) y reversible.
-- ❌ Predicados públicos sin modo ni determinismo documentados.
-- ❌ Programar sin módulos.
-- ❌ Elegir Prolog para un problema de restricciones puras **sin haber comparado con MiniZinc, CP-SAT
-  o un SMT** y sin dejarlo escrito.
-- ❌ Escribir el sistema completo (HTTP, persistencia, operación) en Prolog.
-- ❌ Asumir portabilidad ISO entre implementaciones (§2), o asumir la licencia de SWI-Prolog por lo
-  que diga una fuente secundaria: **se lee el `LICENSE` en crudo y se ejecuta `?- license.`**.
-- ❌ Elegir GNU Prolog o Scryer para producción (§2).
-- ❌ Comprometer un proyecto con SICStus sin coste de licencia **y de mantenimiento anual** por
-  escrito, sabiendo que dejarlo caducar tiene recargo de reinstauración.
-- ❌ Exponer el servidor HTTP de SWI-Prolog directamente a Internet.
+**Prohibitions:**
+- ❌ **FORBIDDEN: the red cut**; a cut inside a disjunction or after `->`; cuts added to
+  "remove extra solutions" without understanding where they come from (§3).
+- ❌ **FORBIDDEN** `call/1`, `=..` or `assert/1` over terms coming from external input; `read_term`
+  over untrusted data without a whitelist of functors (§5).
+- ❌ `assert`/`retract` as mutable application state.
+- ❌ Search goals with no time or inference limit exposed to a user.
+- ❌ Recursion over graphs or data without `:- table` "because it terminates in the tests".
+- ❌ `is/2` where the model should have been CLP(FD) and reversible.
+- ❌ Public predicates with no documented mode or determinism.
+- ❌ Programming without modules.
+- ❌ Choosing Prolog for a pure constraints problem **without having compared it with MiniZinc, CP-SAT
+  or an SMT** and without putting it in writing.
+- ❌ Writing the complete system (HTTP, persistence, operation) in Prolog.
+- ❌ Assuming ISO portability between implementations (§2), or assuming SWI-Prolog's license from
+  what a secondary source says: **you read the `LICENSE` raw and you run `?- license.`**.
+- ❌ Choosing GNU Prolog or Scryer for production (§2).
+- ❌ Committing a project to SICStus without the license cost **and the annual maintenance** in
+  writing, knowing that letting it lapse carries a reinstatement surcharge.
+- ❌ Exposing SWI-Prolog's HTTP server directly to the Internet.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-1. **SWI-Prolog**: versión estable vigente (a ago-2026, serie **10.0**, descargas **10.0.2**; las
-   series con minor impar son de desarrollo) y su changelog; y **la licencia leída en crudo**
-   (`LICENSE` = BSD Simplificada) más `?- license.` sobre **tu** build, por las librerías enlazadas.
-2. **SICStus**: release vigente (a ago-2026, **4.10.1 del 3-jul-2025**) y, sobre todo, **el precio —
-   hueco declarado: RISE no publica tarifas**. Cualquier cifra tiene que salir de una oferta.
-   Confirma también el recargo por mantenimiento caducado antes de dejarlo vencer.
-3. **Scryer**: si ha salido release posterior a v0.10.0 y si ha alcanzado 1.0; **GNU Prolog**: si hay
-   algo posterior a 1.5.0. En ambos casos, mira **commits**, no solo releases (§ regla del catálogo:
-   un repo sin releases recientes no implica proyecto muerto, ni al revés).
-4. **MiniZinc y OR-Tools**: versión vigente (a ago-2026, **MiniZinc 2.10.0** de jul-2026 y **OR-Tools
-   v9.15** de 2026) y qué backends soporta cada uno — es la comparación que decide si Prolog entra.
-5. **Tabling e indexación de tu implementación**: qué indexa (primer argumento, multiargumento, JIT),
-   qué modos de tabling ofrece (`incremental`, `subsumptive`, *answer subsumption*) y sus límites de
-   memoria. Es lo que determina si el modelo escala, y varía por implementación y versión.
-6. **`library(sandbox)`**: estado, limitaciones conocidas y avisos, antes de evaluar objetivos de
-   usuario.
-7. CVEs y avisos de seguridad de la implementación y del stack HTTP/TLS que embebas, y del código
-   nativo que traigan los `pack` que instales.
-8. **Conformidad ISO** de la implementación concreta y sus desviaciones documentadas, si la
-   portabilidad es un requisito real (normalmente no lo es: §2).
+1. **SWI-Prolog**: current stable version (as of Aug 2026, series **10.0**, downloads **10.0.2**; the
+   odd-minor series are development) and its changelog; and **the license read raw**
+   (`LICENSE` = Simplified BSD) plus `?- license.` on **your** build, because of the linked libraries.
+2. **SICStus**: current release (as of Aug 2026, **4.10.1 of 3-Jul-2025**) and, above all, **the price —
+   declared gap: RISE does not publish rates**. Any figure has to come from a quote.
+   Also confirm the surcharge for lapsed maintenance before letting it expire.
+3. **Scryer**: whether a release later than v0.10.0 has appeared and whether it has reached 1.0; **GNU Prolog**: whether there is
+   anything later than 1.5.0. In both cases, look at **commits**, not just releases (§ catalog rule:
+   a repo without recent releases does not imply a dead project, nor the other way round).
+4. **MiniZinc and OR-Tools**: current version (as of Aug 2026, **MiniZinc 2.10.0** of Jul 2026 and **OR-Tools
+   v9.15** of 2026) and which backends each one supports — it is the comparison that decides whether Prolog gets in.
+5. **Tabling and indexing of your implementation**: what it indexes (first argument, multi-argument, JIT),
+   which tabling modes it offers (`incremental`, `subsumptive`, *answer subsumption*) and their memory
+   limits. It is what determines whether the model scales, and it varies by implementation and version.
+6. **`library(sandbox)`**: status, known limitations and warnings, before evaluating user
+   goals.
+7. CVEs and security advisories for the implementation and for the HTTP/TLS stack you embed, and for the
+   native code brought in by the `pack`s you install.
+8. **ISO conformance** of the specific implementation and its documented deviations, if
+   portability is a real requirement (usually it is not: §2).
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

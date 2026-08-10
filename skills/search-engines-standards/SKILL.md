@@ -59,10 +59,10 @@ tu diseño está mal.**
   Si el acceso es **por texto libre con ranking por relevancia, facetas y agregaciones sobre una
   proyección derivada**, es un buscador (aquí). **Un buscador no es tu base de datos primaria** (§3.1).
 - `data-engineering-standards` (el pipeline que alimenta el índice), `streaming-cdc-standards`
-  (**Ola 4, planificada**: CDC desde la fuente de verdad hacia el índice),
+  (CDC desde la fuente de verdad hacia el índice),
   `data-governance-quality-standards`, `analytics-bi-standards`, `lakehouse-standards`,
   `graph-db-standards`, `timeseries-db-standards`, `message-brokers-standards`,
-  `caching-cdn-standards` (**Ola 4, planificadas**).
+  `caching-cdn-standards`.
 - `privacy-engineering-standards`: **dato personal dentro del índice, su retención y el derecho de
   supresión** — un índice de búsqueda es una copia más del dato (§5.4).
 - `api-design-standards`: el contrato de tu API de búsqueda hacia fuera. **No expongas la query DSL

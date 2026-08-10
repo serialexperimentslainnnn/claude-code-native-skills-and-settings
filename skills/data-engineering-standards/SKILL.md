@@ -31,18 +31,18 @@ ETL", "duplicados tras el reintento", "la query cuesta 40 € cada vez".
   como motor (particiones, retención, registry), backups y PITR, cifrado en reposo. Su principio
   rector —**un almacén por necesidad, no por moda**— se hereda aquí sin excepción: esta skill no
   autoriza almacenes nuevos, solo el movimiento entre los que ya se justificaron.
-- `lakehouse-standards` (**Ola 4, planificada**): el **formato de tabla** —Iceberg, Delta Lake,
+- `lakehouse-standards`: el **formato de tabla** —Iceberg, Delta Lake,
   Hudi—, catálogo REST, snapshots, *time travel*, compactación y mantenimiento de tabla,
   particionado oculto y evolución de partición. Aquí solo el **formato de fichero** (Parquet), el
   tamaño de fichero y la escritura idempotente. Regla de corte: **si la decisión la toma el
   formato de tabla, es de `lakehouse-standards`; si la toma el proceso que escribe, es de aquí**.
-- `streaming-cdc-standards` (**Ola 4, planificada**): Debezium, conectores de log, *snapshot*
+- `streaming-cdc-standards`: Debezium, conectores de log, *snapshot*
   inicial, tratamiento de `DELETE` y *tombstones*, orden y *exactly-once* en streaming. Aquí solo
   el **criterio de cuándo la captura de cambios es la respuesta** y qué obliga aguas abajo.
-- `data-governance-quality-standards` (**Ola 4, planificada**): contratos de datos como programa,
+- `data-governance-quality-standards`: contratos de datos como programa,
   catálogo, propiedad, *stewardship*, política de calidad. Aquí su **ejecución en el pipeline**:
   las aserciones que rompen la ejecución y el gate de frescura.
-- `analytics-bi-standards` (**Ola 4, planificada**): la herramienta de BI y el consumo. La
+- `analytics-bi-standards`: la herramienta de BI y el consumo. La
   **definición de métrica** cae en `data-warehouse-modeling-standards`, no aquí.
 - `microservices-architecture-standards`: **outbox, eventos de dominio y propiedad del dato por
   servicio son suyos**; aquí solo el consumo analítico de esos eventos.
@@ -65,8 +65,8 @@ ETL", "duplicados tras el reintento", "la query cuesta 40 € cada vez".
   `rag-standards` y `llm-app-engineering-standards`, `ai-governance-standards`.
 - Motores concretos: `nosql-standards`, `timeseries-db-standards`, `search-engines-standards`,
   `message-brokers-standards`, `graph-db-standards`, `vector-db-standards`, `oracle-dba-standards`,
-  `sqlserver-dba-standards`, `mysql-mariadb-dba-standards` (todas **Ola 4, planificadas**).
-- `r-standards` y `julia-standards` (**Ola 5, escritas**): la **plataforma** —ingesta, orquestación,
+  `sqlserver-dba-standards`, `mysql-mariadb-dba-standards`.
+- `r-standards` y `julia-standards`: la **plataforma** —ingesta, orquestación,
   idempotencia, *backfill*, Parquet, frescura— es de aquí; el **código de análisis** que corre en un
   paso del pipeline es suyo. Si un script de R o de Julia se ha convertido de facto en el
   orquestador, el problema es de esta skill.

@@ -52,8 +52,8 @@ snapshot y soporte).
 KVM/QEMU sin plataforma; hosts sueltos, laboratorio, CI), `onprem-standards` (**paraguas**: su §2
 fija la elección de hipervisor y de backup de VM y esta skill la desarrolla sin contradecirla; su
 §1.3 fija los invariantes, en particular *HA sin fencing probado es corrupción diferida* y *un
-backup sin restore probado no existe*), `ha-clustering-standards` (**Ola 2, planificada** —
-**frontera quirúrgica**: allí Pacemaker/Corosync **genérico** para dar HA a **servicios** Linux
+backup sin restore probado no existe*), `ha-clustering-standards`
+(**frontera quirúrgica**: allí Pacemaker/Corosync **genérico** para dar HA a **servicios** Linux
 (recursos, constraints, agentes OCF, STONITH de dispositivo); aquí el cluster de PVE, que trae su
 propio stack —`pve-cluster`/`pmxcfs`, `pve-ha-manager`, watchdog— y **no se opera con `pcs` ni
 `crm`**. Regla: **si el recurso que conmuta es una VM o un contenedor de PVE, es de aquí; si es un
@@ -68,7 +68,7 @@ GFS, restores de prueba automatizados — **PBS como producto y sus jobs son de 
 transversal de retención, inmutabilidad y verificación es suyo y este documento no lo contradice),
 `linux-storage-standards` (LVM y LVM-thin, multipath, iniciador iSCSI, NVMe, filesystems y LUKS
 **por debajo** del storage de PVE: `storage.cfg` es de aquí, `lvs`/`multipath -ll`/`iscsiadm` son
-suyos), `object-storage-standards` (**Ola 2, planificada**: el bucket S3 que respalda un
+suyos), `object-storage-standards` (el bucket S3 que respalda un
 datastore de PBS), `ceph-standards` (**todo lo de Ceph que `pveceph` no expone**: mapa CRUSH y
 dominios de fallo, dimensionado de daemons, PGs, BlueStore, *scrubbing* y actualización entre
 releases con nombre — aquí solo el Ceph hiperconvergido tal y como PVE lo integra),
@@ -90,10 +90,10 @@ cifrado de backup), `windows-server-ad-standards` (VMs Windows: drivers virtio-w
 `incident-response-forensics-standards` (adquisición de memoria de una VM comprometida),
 `homelab-standards` (**la frontera es el rigor exigido, no el tamaño**: allí un nodo PVE de
 laboratorio donde el criterio es coste, ruido y consumo; aquí producción con RTO/RPO comprometido),
-`vmware-standards` (**Ola 7 — frontera de origen, no de destino**: **la decisión de quedarse o
+`vmware-standards` (**frontera de origen, no de destino**: **la decisión de quedarse o
 salir de VMware, su modelo de licencia y lo que se rompe al migrar son suyos**; **aquí la
 plataforma de llegada** y su operación. El asistente de importación de PVE es de aquí; el inventario
-de lo que hay que sacar y su coste, de allí), `xen-standards` y `hyper-v-standards` (**Ola 7**: los
+de lo que hay que sacar y su coste, de allí), `xen-standards` y `hyper-v-standards` (los
 otros dos hipervisores del catálogo, cada uno con su skill — la comparación se escribe desde la
 skill del hipervisor en cuestión, no aquí).
 

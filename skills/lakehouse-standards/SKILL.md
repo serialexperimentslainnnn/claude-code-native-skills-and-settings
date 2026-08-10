@@ -81,11 +81,11 @@ todo", "el borrado de un usuario no se aplica en el histórico".
   componente está en la ruta de una consulta, es de aquí; si está en la ruta de una persona que
   busca o gobierna un dataset, es suyo.** Unity Catalog aparece en ambas listas justamente porque
   intenta ser las dos cosas — su faceta de catálogo Iceberg es de aquí.
-- `analytics-bi-standards` (**Ola 4, planificada**): la herramienta de BI y el consumo.
-- `message-brokers-standards` (**Ola 4, planificada**): el broker como pieza.
-- `nosql-standards`, `graph-db-standards`, `vector-db-standards`, `search-engines-standards`
-  (**ya en disco**), `timeseries-db-standards`, `oracle-dba-standards`, `sqlserver-dba-standards`,
-  `mysql-mariadb-dba-standards` (**Ola 4, planificadas**): otros almacenes, con su propio criterio.
+- `analytics-bi-standards`: la herramienta de BI y el consumo.
+- `message-brokers-standards`: el broker como pieza.
+- `nosql-standards`, `graph-db-standards`, `vector-db-standards`, `search-engines-standards`,
+  `timeseries-db-standards`, `oracle-dba-standards`, `sqlserver-dba-standards`,
+  `mysql-mariadb-dba-standards`: otros almacenes, con su propio criterio.
 - `aws-standards`/`azure-standards`/`gcp-standards`: **Glue, S3 Tables, Databricks, BigQuery,
   Fabric/OneLake como servicios gestionados** —aprovisionamiento, IAM, red, facturación—; aquí el
   criterio de formato y catálogo que aplica igual en los tres.

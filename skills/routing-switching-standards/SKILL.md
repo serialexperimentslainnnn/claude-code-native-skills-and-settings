@@ -31,7 +31,11 @@ aquí el diseño y la operación proactiva, y todo hallazgo estructural suyo vue
 `network-automation-standards` (**decide cómo se genera, se prueba y se aplica** un cambio — aquí, **qué
 debe decir** la configuración); `firewall-policy-standards` (**decide qué flujo se permite entre zonas
 y con qué gobierno**); `iac-standards` (**decide Terraform y Ansible como herramientas**);
-`observability-standards` (**decide qué se mide y con qué umbral se avisa**);
+`ot-ics-security-standards` (**decide la red de planta, y no es un campus**: sus defaults de
+acceso —`storm-control`, `bpduguard`, 802.1X en todo puerto, L3 al acceso— rompen un anillo
+PROFINET/MRP y dejan sin red a un PLC o una HMI sin suplicante. **Aquí el criterio de campus y
+de centro de control; el segmento industrial se diseña con el suyo, y allí *Safety* manda sobre
+disponibilidad**); `observability-standards` (**decide qué se mide y con qué umbral se avisa**);
 `identity-access-management-standards` (**decide la identidad corporativa**; aquí sólo su consumo en AAA
 de dispositivo); `finops-standards` (tránsito y puertos). También frontera: `dns-standards`,
 `vpn-standards`, `onprem-standards` (paraguas), `kubernetes-standards`, `secrets-management-standards`,

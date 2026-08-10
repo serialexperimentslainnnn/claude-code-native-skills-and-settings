@@ -76,7 +76,7 @@ grande. Si el dato es tabular, la carga de la prueba está en la red (ver
   personal y memorización); `finops-standards`, `green-it-standards` (coste y huella);
   `python-standards`, `r-standards`, `julia-standards`; `kubernetes-standards`,
   `object-storage-standards`, `observability-standards`; `computer-vision-standards`,
-  `nlp-standards`, `multimodal-genai-standards` (**Ola 7**: aplicaciones por modalidad).
+  `nlp-standards`, `multimodal-genai-standards` (aplicaciones por modalidad).
 
 ## 2. Decisiones por defecto
 

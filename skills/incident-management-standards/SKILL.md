@@ -48,20 +48,20 @@ una hora sin coordinación cuesta el incidente entero.
 - `onprem-standards`, `kubernetes-standards`, `networking-standards`, `cicd-standards`,
   `data-platform-standards`, `aws-standards`/`azure-standards`/`gcp-standards`, `homelab-standards`:
   la mitigación concreta en cada plataforma.
-- **Planificadas**: `bcdr-standards` (**Ola 1**; la frontera es la **escala** — cuando el incidente
+- `bcdr-standards` (la frontera es la **escala** — cuando el incidente
   deja de ser recuperable dentro del servicio y activa el plan de continuidad, deja de gestionarse
   como incidente y pasa a ser DR: el IC entrega el mando al director de crisis y se declara
-  explícitamente el cambio de régimen), `detection-engineering-standards` (**Ola 1**: la detección
-  que **dispara** la declaración), `privacy-engineering-standards` (**Ola 1**: brecha de datos
+  explícitamente el cambio de régimen), `detection-engineering-standards` (la detección
+  que **dispara** la declaración), `privacy-engineering-standards` (brecha de datos
   personales, evaluación de riesgo para los interesados y comunicación a los afectados),
   `offensive-security-standards` (deconfliction: un ejercicio autorizado no debe consumir el proceso
   de incidente, y un hallazgo real durante el ejercicio sí lo activa),
-  `secrets-management-standards` (**Ola 1**), `backup-recovery-standards` (**Ola 2**),
-  `tech-leadership-standards` (**Ola 6**: **el postmortem sin culpa como proceso —formato, plazos,
+  `secrets-management-standards`, `backup-recovery-standards`,
+  `tech-leadership-standards` (**el postmortem sin culpa como proceso —formato, plazos,
   acciones con dueño— es de aquí**; **defenderlo cuando la dirección pide un responsable es una
   obligación de liderazgo y es suya**. La cultura sin culpa no se sostiene con un documento: se
   sostiene con alguien que absorbe esa presión),
-  `itsm-itil-standards` (**Ola 6 — frontera con solape real que hay que arbitrar**: **el incidente
+  `itsm-itil-standards` (**frontera con solape real que hay que arbitrar**: **el incidente
   técnico en vivo es de aquí** —declaración de severidad, mando, coordinación, comunicación durante
   la caída y postmortem sin culpa—; **el proceso de servicio que lo envuelve es suyo**: registro y
   categorización del ticket, catálogo, SLA contractual y su régimen de créditos, escalado
@@ -286,7 +286,13 @@ Se audita el **proceso**, no a las personas. Gates, en orden de coste creciente:
 
 ### Plazos regulatorios (verifica cada cifra en §8 — no los cites de memoria)
 
-Datos verificados en agosto de 2026; **el criterio legal es de legal/DPO, no de ingeniería**:
+Datos verificados en agosto de 2026; **el criterio legal es de legal/DPO, no de ingeniería**.
+
+> **Fuente única de los plazos: `grc-compliance-standards`.** Los mismos regímenes aparecen en
+> tres skills (aquí, `incident-response-forensics-standards` y ella). **Si divergen, manda
+> `grc-compliance-standards`** y se corrigen las otras dos en el mismo cambio. Lo que es
+> irreductiblemente de aquí no es la cifra, es el criterio operativo: **el reloj corre desde el
+> conocimiento, no desde el diagnóstico**, y quién decide notificar no es quien está mitigando.
 
 - **RGPD art. 33**: notificación a la autoridad de control (AEPD en España) **sin dilación indebida
   y como máximo en 72 h** desde el **conocimiento** de la brecha, salvo que sea improbable que
@@ -334,7 +340,7 @@ proceso de incidente:
   y la mitigación incluye **corregir hacia atrás** lo ya emitido. Coordina con
   `data-platform-standards`.
 - **Crisis que excede al servicio** (pérdida de sitio, indisponibilidad prolongada): traspaso formal
-  al plan de continuidad; ver `bcdr-standards` (planificada, Ola 1).
+  al plan de continuidad; ver `bcdr-standards`.
 
 ## 7. Sostenibilidad y prohibiciones
 

@@ -1,6 +1,6 @@
 ---
 name: edge-computing-standards
-description: Computing on nodes you cannot walk up to — fleet operations for edge sites and devices under an intermittent link. Use when deciding whether a workload actually belongs at the edge (latency budget, upstream bandwidth cost, data residency, offline survival) or is just a distributed monolith, designing an A/B dual-partition image update with automatic rollback and a health check gate (rpm-ostree, bootc, greenboot, Mender, RAUC, SWUpdate, balenaOS, swupdate .swu and RAUC bundles), rolling an update across thousands of nodes in waves with a kill switch, running a lightweight Kubernetes at the edge (k3s, MicroShift, KubeEdge, Akri) or deciding that systemd plus Podman Quadlet units are enough, store-and-forward telemetry, metric downsampling and egress cost per node, eventual reconciliation and conflict resolution after a reconnect, per-device identity with a TPM or secure element instead of one shared fleet credential, UEFI Secure Boot and measured boot on an unattended node, LUKS full-disk encryption where the attacker physically holds the device, zero-touch onboarding and remote attestation, certificate rotation on a node that was offline when the cert expired, or serving inference on an edge box.
+description: Computing on nodes you cannot walk up to — fleet operations for edge sites and devices under an intermittent link. Use when deciding whether a workload actually belongs at the edge (latency budget, upstream bandwidth cost, data residency, offline survival) or is just a distributed monolith, designing an A/B dual-partition image update with automatic rollback and a health check gate (rpm-ostree, bootc, greenboot, balenaOS), rolling an update across thousands of nodes in waves with a kill switch, running a lightweight Kubernetes at the edge (k3s, MicroShift, KubeEdge, Akri) or deciding that systemd plus Podman Quadlet units are enough, store-and-forward telemetry, metric downsampling and egress cost per node, eventual reconciliation and conflict resolution after a reconnect, giving each node its own identity instead of one shared fleet credential, UEFI Secure Boot and measured boot on an unattended node, LUKS full-disk encryption where the attacker physically holds the device, zero-touch onboarding and remote attestation, certificate rotation on a node that was offline when the cert expired, or serving inference on an edge box.
 ---
 
 # Estándares de cómputo en el borde
@@ -43,7 +43,13 @@ atestación remota, "el certificado caducó mientras estaba apagado", inferencia
 
 **No aplica**: ver `embedded-iot-standards` (**el microcontrolador y el
 firmware bare-metal o RTOS** — si no hay un sistema operativo de propósito general con gestor
-de paquetes y contenedores, es suyo; aquí desde el SBC/gateway con Linux hacia arriba),
+de paquetes y contenedores, es suyo; aquí desde el SBC/gateway con Linux hacia arriba.
+**Corte de la imagen A/B, que las dos podrían reclamar**: el mecanismo se elige por lo que hay
+debajo, no por dónde está la caja — **imagen de firmware** (MCUboot, RAUC, SWUpdate, Mender,
+hawkBit, ranuras con contador de rollback) es suya; **imagen de SO completo** (rpm-ostree, bootc,
+greenboot, balenaOS) es de aquí. Lo que **no** cambia de lado: la **campaña** —olas, *kill
+switch*, porcentaje y criterio de parada sobre miles de nodos— es de aquí sea cual sea el
+mecanismo, porque es un problema de flota, no de placa),
 `ot-ics-security-standards` (**la planta industrial**: PLC, SCADA, protocolos de campo,
 modelo Purdue, seguridad funcional — un nodo de borde en una fábrica cae bajo **sus**
 restricciones, y ellas mandan sobre las de aquí),
@@ -65,6 +71,9 @@ intermitente y del coste por byte), `networking-standards`, `vpn-standards` (**e
 vuelta a casa**: WireGuard, mallas), `dns-standards`, `firewall-policy-standards`,
 `load-balancing-standards`, `caching-cdn-standards` (**el borde del CDN y sus funciones**: si
 el problema es servir contenido HTTP más cerca del lector, es suyo, no de aquí),
+`gaming-infrastructure-standards` (**servidores de partida cerca del jugador**: la plataforma
+de borde genérica es de aquí; la orquestación de sesiones, el matchmaking y la flota de juego
+son suyos),
 `identity-access-management-standards` (el IdP humano; aquí la identidad **de máquina**),
 `cryptography-pki-standards` (**PKI, ACME, custodia y rotación de claves**: la mecánica es
 suya, aquí el problema de rotar contra un nodo desconectado),
@@ -299,7 +308,12 @@ puerta, no hay CCTV. Hay que asumir **acceso físico completo, con tiempo y herr
   `mlops-standards`; aquí solo el mecanismo de distribución y reversión.
 - El motor, la cuantización y el dimensionado de memoria son de `local-inference-standards`.
 
-## 4. Sostenibilidad a largo plazo y prohibiciones
+## 7. Sostenibilidad a largo plazo y prohibiciones
+
+> §4 (calidad y testing) y §6 (rendimiento y operabilidad) se omiten deliberadamente: en este
+> dominio el testing es el de la skill del lenguaje y la operabilidad está repartida entre §2 y
+> §3, donde se decide de verdad. Se conserva la numeración canónica del catálogo para que las
+> referencias cruzadas a §7 y §8 apunten a lo que dicen.
 
 **El horizonte es largo y ese es el problema.** Un nodo de borde vive años en sitios a los que
 nadie vuelve. Consecuencias que se deciden **antes** de comprar:
@@ -333,14 +347,14 @@ Prohibiciones:
 - ❌ **Dar de baja un nodo sin revocar su identidad** y sin borrar o destruir su almacenamiento.
 - ❌ **Llamar "edge" a un despliegue que no cumple ninguna de las cuatro restricciones de §1.**
 - ❌ **Afirmar la licencia o el estado de madurez de k3s, MicroShift, KubeEdge, Akri, Mender,
-  RAUC, SWUpdate o balenaOS de memoria.** Varios cambian de modelo comercial (§5).
+  RAUC, SWUpdate o balenaOS de memoria.** Varios cambian de modelo comercial (§8).
 
 *(Se omiten deliberadamente las secciones separadas de "calidad y testing" y de "rendimiento":
 en este dominio la prueba **es** el despliegue por anillos con reversión automática (§3.2) y la
 capacidad se mide como coste de telemetría y autonomía sin enlace (§3.3–3.4). Separarlas
 duplicaría el contenido sin añadir criterio.)*
 
-## 5. Verificación web obligatoria
+## 8. Verificación web obligatoria
 
 Antes de fijar cualquier dato de este documento:
 

@@ -61,7 +61,7 @@ autorización por escrito, RoE, alcance, ventana, deconfliction, condiciones de 
 retest, encuadre legal. **Frontera precisa: si la pregunta es "¿puedo atacar esto y bajo qué
 papel?", es suya; si es "¿qué se prueba en un sistema de IA y con qué método?", es mía.** El red
 teaming de IA de §3.7 se ejecuta **dentro** de sus RoE, nunca fuera);
-`llm-evaluation-standards` (**Ola 3, escrita**: el aparato de medición. **Frontera declarada en
+`llm-evaluation-standards` (el aparato de medición. **Frontera declarada en
 ambos lados: la metodología de ataque adversario es mía; el conjunto de casos, el juez, la rúbrica,
 el umbral y el gate de CI con que se mide son suyos.** Un hallazgo de red team se convierte en un
 caso de su eval set: ese es el handoff);
@@ -89,11 +89,11 @@ cubre — no se duplica aquí**. La inferencia de pertenencia aparece en §3.5 c
 técnico**; su tratamiento como riesgo de privacidad es suyo);
 `grc-compliance-standards` (marco de gestión, SoA, evidencia de auditoría, aceptación formal de
 riesgo);
-`ai-governance-standards` (**Ola 3, planificada**: AI Act como régimen, políticas, inventario de
+`ai-governance-standards` (AI Act como régimen, políticas, inventario de
 sistemas de IA y gestión del riesgo organizativo. **Frontera: el gobierno es suyo, el control
 técnico verificable es mío.** Si se responde con un documento firmado, es suyo; si se responde
 ejecutando un escaneo o una verificación de firma, es mío);
-`mlops-standards` (**Ola 3, escrita**: el ciclo de vida operativo de un modelo propio —versionado de
+`mlops-standards` (el ciclo de vida operativo de un modelo propio —versionado de
 datasets con DVC/lakeFS, experimentos en MLflow/W&B, registro de modelos con *model cards*, estados y
 aprobación, orquestación del entrenamiento, *feature store*, despliegue canario y rollback de pesos,
 deriva y reentrenamiento—. **Esta skill es su cara de seguridad**: `mlops` define el registro y la
@@ -410,7 +410,7 @@ correspondiente).
   de las obligaciones de alto riesgo (2 de agosto de 2026 bajo el texto original) puede haberse
   desplazado por el paquete *Digital Omnibus* — **verificar en fuente primaria antes de comprometer
   una fecha** (§8). **El régimen, el inventario y la clasificación de riesgo son de
-  `ai-governance-standards` (Ola 3, planificada); aquí solo el control técnico que satisface el
+  `ai-governance-standards`; aquí solo el control técnico que satisface el
   art. 15.**
 
 ### 3.9 Detección y respuesta aplicadas a IA

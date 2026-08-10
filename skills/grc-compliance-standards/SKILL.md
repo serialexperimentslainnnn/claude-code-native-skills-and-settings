@@ -1,6 +1,6 @@
 ---
 name: grc-compliance-standards
-description: Governance, risk and compliance standards. Use when working with ISO 27001/27002/27005/27701, NIST CSF 2.0, CIS Controls v8.1, SOC 2, NIS2, DORA, ENS/CCN-STIC, Statement of Applicability, risk registers, control-to-evidence mapping, OSCAL, audit preparation or vendor questionnaires (SIG, CAIQ).
+description: Governance, risk and compliance standards. Use when working with ISO 27001/27002/27005/27701, NIST CSF 2.0, CIS Controls v8.1, SOC 2, NIS2, DORA, ENS/CCN-STIC, Statement of Applicability, risk registers, control-to-evidence mapping, OSCAL, audit preparation, vendor questionnaires (SIG, CAIQ), or the regulatory notification clock after a breach — who must be told, within how many hours, and what evidence the filing needs.
 ---
 
 # Estándares de gobierno, riesgo y cumplimiento (GRC)
@@ -35,14 +35,22 @@ registro, aceptación de riesgo, evidencia de auditoría). Continuidad: el **sis
 orden de recuperación, ejercicios de DR) es de `bcdr-standards`. La gestión del incidente y la
 investigación técnica son de `incident-management-standards` e
 `incident-response-forensics-standards`; el ejercicio ofensivo autorizado, de
-`offensive-security-standards`. `enterprise-architecture-standards` (**Ola 6**: **el marco de control, el registro de riesgo y la
+`offensive-security-standards`. `enterprise-architecture-standards` (**el marco de control, el registro de riesgo y la
 evidencia de auditoría son de aquí**; **el inventario de aplicaciones con su dueño, criticidad y
 ciclo de vida es suyo** — y es la fuente que alimenta el alcance de casi todo control. Un control
-cuyo alcance no se puede enumerar no es auditable), `opensource-licensing-standards` (**Ola 6**: la
+cuyo alcance no se puede enumerar no es auditable), `opensource-licensing-standards` (la
 obligación normativa corporativa y su evidencia son de aquí; **la política de licencias, el gate y
-el proceso de excepción son suyos**), `accessibility-standards` (**Ola 6** — frontera con obligación
-legal real: **el marco normativo, el registro de evidencia, la declaración formal y la gestión del
-riesgo sancionador son de aquí** —European Accessibility Act, EN 301 549, Ley 11/2023 y su
+el proceso de excepción son suyos**), `govtech-eidas-standards` (**recíproca, ya declarada desde su lado**: el **régimen eIDAS** —firma
+avanzada frente a cualificada, prestador cualificado y listas de confianza, sello de tiempo, AdES
+y conservación a largo plazo, expediente electrónico— y las obligaciones del procedimiento
+administrativo español son **suyos**; **el ENS como marco de gestión** —Declaración de
+Aplicabilidad, categorización, auditoría de certificación, registro de riesgo y relación con el
+CCN— es de aquí. Regla: *si la pregunta es qué valor jurídico tiene lo que firmas, es suya; si es
+qué control acredita y con qué evidencia, es de aquí*),
+`accessibility-standards` (frontera con obligación
+legal real: **el marco normativo aplicable, el registro de evidencia y la gestión del
+riesgo sancionador son de aquí**; **la declaración de accesibilidad —su contenido, su prueba y
+quién la firma— es suya** (§6.1), y este documento solo la exige como evidencia —European Accessibility Act, EN 301 549, Ley 11/2023 y su
 desarrollo, ADA Título II—; **el criterio técnico de conformidad** —qué criterio WCAG se cumple,
 cómo se prueba y qué lo automatiza— **es suyo**. Aviso que ambas comparten: **una nueva versión de
 WCAG o de EN 301 549 no cambia por sí sola la obligación legal**, que va anclada a la norma citada

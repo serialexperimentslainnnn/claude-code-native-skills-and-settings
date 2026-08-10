@@ -136,6 +136,13 @@ citarla**. La modernización se justifica con el mecanismo, el inventario y el c
 
 ### 2.3 Criterio por estrategia
 
+> **Misma taxonomía que `enterprise-architecture-standards` §3.5, con dos nombres propios**: su
+> `repurchase` es aquí *replace/repurchase*, y su `refactor/re-architect` es aquí *refactor/
+> rearchitect*; esta skill añade **rebuild** como estrategia separada porque tiene condiciones de
+> entrada propias. **Su orden de evaluación —apagar antes que mover, comprar antes que
+> reescribir— se aplica a la cartera**; aquí se decide el sistema concreto, y **invertir ese orden
+> exige justificación escrita**, no preferencia técnica.
+
 | Estrategia | Cuándo es la correcta | Señal de que es la equivocada |
 |---|---|---|
 | **Retain** (no tocar) | Funciona, tiene soporte vigente, el coste de cambio supera al beneficio, hay dependencias que migran antes | Se elige por no haber mirado; "retain" sin fecha de revisión es §3.3 mal hecho |
@@ -193,6 +200,14 @@ En esos casos el big bang **no se mitiga con optimismo, se mitiga con ensayo**: 
 es de `migration-projects-standards`.
 
 ### 3.3 Congelar con contención: decisión legítima
+
+> **La palabra se usa para tres cosas distintas en el catálogo y no son intercambiables**: aquí,
+> *congelar un sistema* —dejar de evolucionarlo durante años, con contención—; en
+> `migration-projects-standards`, *congelación de cambios* alrededor de una ventana de corte, que
+> dura días y **exige fecha de fin publicada**; en `erp-sap-standards`, la congelación de
+> transportes, que es el caso anterior aplicado a un paisaje SAP. Confundirlas produce el error
+> típico: una congelación de corte que nadie levanta y acaba siendo un sistema congelado de facto,
+> pero sin ninguna de las tres condiciones que esta sección exige.
 
 Congelar es la respuesta correcta cuando el sistema cumple, el conocimiento para cambiarlo no
 existe, y el coste de modernizar supera el riesgo residual **contenido**. Exige las tres cosas, por
@@ -295,6 +310,11 @@ Orden de trabajo, sin saltarse pasos:
   de esa persona **la regla, no la documentación** —qué decide, con qué entradas, con qué
   excepciones— y **cada regla se convierte en un caso de caracterización ejecutable** (§4.1). Una
   entrevista sin test asociado se evapora; su conservación es de `knowledge-management-standards`.
+- **Dónde buscar la regla en el código lo decide la skill de la plataforma**, no esta: en IBM i,
+  `ibm-i-rpg-standards` §3.4 dice en qué ocho sitios se esconde (RPG, CL, *triggers*, DDS, la
+  propia secuencia 5250, puntos de salida, Query/400 y las hojas de cálculo colgadas por ODBC) y
+  con qué herramientas se localiza, **con sus puntos ciegos declarados**. Este gate exige el
+  artefacto; **la arqueología concreta es suya**.
 - **Aviso**: la persona clave suele ser también quien mantiene el sistema en pie. Programar su
   sustitución y la modernización a la vez es la forma más habitual de perder ambas cosas.
 

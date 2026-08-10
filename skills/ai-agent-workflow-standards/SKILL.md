@@ -84,14 +84,14 @@ exista);
 identidad y qué permisos tiene un agente que corre dentro de esa pipeline**, §5.4);
 `secrets-management-standards` (custodia, rotación y bóveda; aquí **a qué secretos alcanza el
 proceso del agente**, que es una pregunta de flujo, no de gestión);
-`developer-workstation-standards` (**Ola 6, en curso**: **el endurecimiento de la máquina donde
+`developer-workstation-standards` (**el endurecimiento de la máquina donde
 corre el agente es suyo** — sandbox del sistema operativo, contenedor de desarrollo, permisos
 del usuario, cifrado del disco. Aquí solo el requisito: *que exista aislamiento*, no cómo se
 implementa);
 `appsec-standards` (STRIDE y clases clásicas de vulnerabilidad; **la inyección de prompt no es
 una de ellas y no se mitiga con las mismas técnicas** — §5.2);
 `grc-compliance-standards` (evidencia de auditoría y segregación de funciones),
-`tech-leadership-standards` (**Ola 6, planificada**: adopción organizativa, presupuesto,
+`tech-leadership-standards` (adopción organizativa, presupuesto,
 build-vs-buy y el efecto en la carrera del equipo; aquí la regla técnica),
 `i18n-standards` (**frontera fina**: la traducción automática con LLM aparece en las dos. **El
 flujo con el modelo es de aquí** — qué se le encarga, qué permisos, cómo se revisa. **El

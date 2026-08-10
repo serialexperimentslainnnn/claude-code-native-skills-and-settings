@@ -12,14 +12,14 @@ Aplica a desarrollo nativo: **iOS** (ficheros `.swift`, `Package.swift`, `.xcode
 `build.gradle.kts`, `settings.gradle.kts`, `gradle/libs.versions.toml`, `AndroidManifest.xml`,
 Jetpack Compose). Cubre código, arquitectura, build, firma, distribución, seguridad y testing.
 Cross-platform (Flutter/RN/KMP-UI) queda fuera salvo la parte nativa que toquen. **Frontera con
-`dart-standards` (Ola 5), espejada desde su §1**: **el diseño de la app es de aquí** —arquitectura,
+`dart-standards`, espejada desde su §1**: **el diseño de la app es de aquí** —arquitectura,
 navegación, ciclo de vida de la plataforma, permisos, publicación en App Store y Play, firma,
 actualizaciones, rendimiento percibido, accesibilidad, almacenamiento seguro en el dispositivo—;
 **el lenguaje Dart y su tooling** —`pubspec.yaml`, `analysis_options.yaml`, `dart format`, los lint
 sets, `build_runner`, isolates, los tests de `package:test`— **son suyos**. Swift y Kotlin nativos
-siguen siendo de aquí; `objective-c-standards` (**Ola 5**) cubre el lado Objective-C de la
-interoperabilidad con Swift en código heredado. **La web instalable es de `pwa-standards`**
-(**Ola 6**): service worker, manifiesto, caché offline y el modelo de actualización. La comparación
+siguen siendo de aquí; `objective-c-standards` cubre el lado Objective-C de la
+interoperabilidad con Swift en código heredado. **La web instalable es de `pwa-standards`**:
+service worker, manifiesto, caché offline y el modelo de actualización. La comparación
 PWA frente a nativa se decide con dos datos que **ninguna de las dos skills debe suavizar**: en iOS
 la Push API **solo funciona en web apps instaladas**, y **una PWA no instalada no tiene
 almacenamiento duradero** —queda sujeta al borrado de ITP—. Si el requisito exige distribución por

@@ -67,7 +67,7 @@ y elevación JIT frente al acceso por IP), `onprem-standards` (paraguas de plata
 —zonas y conductos IEC 62443-3-2, DMZ de nivel 3.5, diodo de datos—; **aquí se escribe, se aprueba
 y se gobierna la regla que lo implementa**).
 
-**Ola 2, planificadas** — hasta que existan, esta skill es criterio provisional en su solapa:
+Además:
 `vpn-standards` (**el túnel es suyo; la política que filtra el tráfico que sale del túnel es
 tuya** — un `wg0` que entra en `forward` sin reglas es una VPN sin firewall),
 `network-troubleshooting-standards` (**diagnóstico**: tú fijas cuál es la política correcta y

@@ -35,7 +35,7 @@ Diseñar un servidor MCP como si fuera un wrapper de REST produce servidores ins
 Messages API, `mcp_servers` + `mcp_toolset`, MCP en Managed Agents con vaults y credenciales
 `mcp_oauth`, los helpers `anthropic.lib.tools.mcp`, IDs de modelo, `effort`, caché — todo eso
 es **suyo**; aquí está el protocolo y el criterio de diseño, agnósticos de proveedor);
-`ai-agents-standards` (**existe, Ola 3**: el bucle autónomo, presupuesto de iteraciones,
+`ai-agents-standards` (el bucle autónomo, presupuesto de iteraciones,
 gestión de contexto, multi-agente, tríada letal — MCP es *un* mecanismo para dar herramientas
 a un agente, no el único, y un servidor MCP se consume desde muchos hosts que no son agentes
 propios; la frontera está en el lado del cliente: **si estás decidiendo qué expone el servidor
@@ -66,9 +66,9 @@ rootless), `firewall-policy-standards` (egress del servidor y del host),
 `python-standards`/`typescript-standards` (idiomática del lenguaje del SDK),
 `cicd-standards` (pipeline que publica y firma el servidor),
 `privacy-engineering-standards` / `grc-compliance-standards` (datos personales y gobierno).
-`llm-app-engineering-standards` (**existe, Ola 3**: la app de LLM de un turno o pipeline
+`llm-app-engineering-standards` (la app de LLM de un turno o pipeline
 determinista — prompting, salida estructurada, ventana de contexto, coste por petición).
-**Ola 3, planificadas**: `rag-standards`, `llm-evaluation-standards`, `mlsecops-standards`,
+Además: `rag-standards`, `llm-evaluation-standards`, `mlsecops-standards`,
 `ai-governance-standards`.
 
 ## 2. Decisiones por defecto

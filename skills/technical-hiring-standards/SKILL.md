@@ -65,7 +65,7 @@ dictamen.
 - `identity-access-management-standards`: **altas y bajas de acceso** en la incorporación y en la
   salida — provisión, mínimo privilegio, revocación con fecha. Aquí solo que el plan de
   incorporación las incluya y que la revocación sea verificable (§6).
-- `knowledge-management-standards` (**Ola 6, planificada**): **la documentación que hace posible una
+- `knowledge-management-standards`: **la documentación que hace posible una
   incorporación rápida** — dónde vive, quién la mantiene, cómo se detecta que está obsoleta. Aquí
   solo que la primera semana de un recién incorporado es el mejor auditor que tendrá esa
   documentación (§6).
@@ -610,7 +610,7 @@ selecciona bien y luego abandona a la persona ha desperdiciado su propio resulta
   (`tech-leadership-standards` §3.9).
 - **El recién incorporado es el mejor auditor de la documentación que tendrá el equipo**, y solo lo
   es una vez: **su lista de "esto no estaba escrito" se convierte en tickets el mismo mes**
-  (`knowledge-management-standards`, Ola 6). Desaprovechar esa ventana es tirar el único punto de
+  (`knowledge-management-standards`). Desaprovechar esa ventana es tirar el único punto de
   vista externo disponible.
 - **Métrica de la incorporación**: **tiempo hasta la primera contribución en producción** y **tiempo
   hasta la primera guardia en autonomía** (si el equipo tiene guardia). Ambas dicen más del sistema

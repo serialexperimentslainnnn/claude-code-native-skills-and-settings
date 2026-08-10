@@ -43,7 +43,7 @@ cubre.**
   comprobar, qué mitigar; **aquí el criterio de que exista, tenga dueño y esté probado** — §5.2).
 - `itsm-itil-standards` (**la base de conocimiento del servicio y los errores conocidos son suyos**,
   con su ciclo de vida y su público de soporte).
-- `technical-hiring-standards` (**Ola 6**: contratación y **la incorporación** de la persona; **aquí
+- `technical-hiring-standards` (contratación y **la incorporación** de la persona; **aquí
   el artefacto de incorporación y su prueba**, §5.5).
 - `api-design-standards` (**la documentación de la API se genera del contrato, que es suyo**: aquí
   solo la obligación de generarla y no reescribirla a mano).

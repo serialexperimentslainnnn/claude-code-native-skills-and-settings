@@ -1,172 +1,201 @@
 ---
 name: project-map
-description: Build and maintain PROJECTMAP.md, the orientation map of the repository you are working in, so you stop paying for the same grep/find/ls twice. Use at the start of work in an unfamiliar repo, when PROJECTMAP.md is missing or stale, when you catch yourself searching for where something lives, after adding or moving a directory, after changing the build/test/lint commands, or when a session hands off work to the next one. Covers what goes in the map, what must never go in it, how to generate it cheaply, how to keep it honest, and where to put it so it does not pollute a repository that is not yours.
+description: Build and maintain PROJECTMAP.md, the orientation index of whatever repository you are working in, so the same grep/find/read is never paid for twice. Use at the very start of work in ANY repository - before the first substantial task - whenever PROJECTMAP.md is missing, whenever it is stale or contradicted by the repo, whenever you catch yourself searching for where something lives, whenever structure changes (new directory, moved module, different build/test command, new convention), and whenever you hand work over to another session or a subagent. Covers what goes in the map, what must never go in it, how to size it for a code repo versus a content repo, how to generate it cheaply with a script instead of by hand, how to keep it honest, and where to put it so it does not pollute a repository that is not yours.
 ---
 
-# Mapa del proyecto — `PROJECTMAP.md`
+# Project map — `PROJECTMAP.md`
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-> **El problema que resuelve.** Sin mapa, cada sesión redescubre el mismo repositorio: los mismos
-> `find`, los mismos `grep`, las mismas lecturas de ficheros que resultan no ser el que era. Se
-> paga entero cada vez, y el contexto se llena de ruido de exploración en vez de trabajo.
+> **The problem it solves.** Without a map, every session rediscovers the same repository: the same
+> `find`, the same `grep`, the same reads of files that turn out not to be the one. It is paid in
+> full every time, and the context fills with exploration noise instead of work.
 >
-> **El riesgo que introduce.** Un mapa desactualizado es **peor que no tener mapa**: no se
-> comprueba, se cree. Todo lo que sigue existe para que el mapa no mienta.
+> **The risk it introduces.** A stale map is **worse than no map**: nobody checks it, everybody
+> believes it. Everything below exists so the map does not lie.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Se activa cuando:
+**This skill fires automatically. It is not opt-in.**
 
-- Empiezas a trabajar en un repositorio y **no existe `PROJECTMAP.md`** → créalo antes de la
-  primera tarea sustancial.
-- Existe pero **está desfasado** (§5 dice cómo detectarlo en un comando).
-- **Te sorprendes buscando dónde vive algo** que ya buscaste antes en esta sesión o en otra. Esa
-  sorpresa es la señal: lo que acabas de descubrir va al mapa.
-- **Cambia la estructura**: directorio nuevo, módulo movido, comando de build/test distinto,
-  convención nueva. Se actualiza **en el mismo turno**, no "luego".
-- Vas a **ceder el trabajo** a otra sesión o a un subagente: el mapa es el traspaso más barato.
+- **Starting work in any repository**: read `PROJECTMAP.md` **before exploring anything**. If it
+  does not exist, **create it before the first substantial task** — not at the end, not "if there
+  is time". Creating it is the cheapest exploration you will ever do, because you were going to pay
+  for it anyway, unindexed.
+- It exists but **contradicts the repo**, or is stale (§5 detects that in one command).
+- **You catch yourself searching for where something lives.** That surprise is the signal: what you
+  just learned goes into the map, in this turn.
+- **Structure changes**: new directory, moved module, different build/test command, new convention.
+  Updated **in the same turn**, never "later".
+- **You hand work over** to another session or a subagent: the map is the cheapest handover there is.
 
-**No aplica**: ver `knowledge-management-standards` (documentación para personas: ADRs, runbooks,
-wiki, quién mantiene qué — el mapa **no** es documentación de producto ni sustituye un README),
-`claude-code-skills-standards` (autoría de skills y `CLAUDE.md`: **el mapa describe el repo, el
-`CLAUDE.md` fija cómo se trabaja en él** — si dudas, la regla va al `CLAUDE.md`, el hecho al mapa),
-`software-architecture-patterns-standards` (decidir la arquitectura; aquí solo se **describe** la
-que hay, sin juzgarla), `code-review-standards` (revisar el cambio), `git-workflow-standards`
-(historia y ramas).
+What counts as "substantial": anything beyond answering a question about a file already open. A
+one-line fix does not require a map; changing behaviour, adding a feature, debugging or reviewing
+does.
 
-## 2. Decisiones por defecto
+**Not applicable**: see `knowledge-management-standards` (documentation for humans: ADRs, runbooks,
+wiki, who maintains what — the map is **not** product documentation and does not replace a README),
+`claude-code-skills-standards` (authoring skills and `CLAUDE.md`: **the map describes the repo, the
+`CLAUDE.md` sets how work is done in it** — if in doubt, the rule goes to `CLAUDE.md`, the fact goes
+to the map), `software-architecture-patterns-standards` (deciding the architecture; here it is only
+**described**, not judged), `code-review-standards` (reviewing the change), `git-workflow-standards`
+(history and branches).
 
-| Decisión | Por defecto | Motivo |
+## 2. Default decisions
+
+| Decision | Default | Why |
 |---|---|---|
-| Nombre y ubicación | `PROJECTMAP.md` en la raíz del repo | Predecible; lo encuentra cualquier sesión sin buscarlo |
-| Tamaño máximo | **~150 líneas** | Por encima, estás duplicando el repositorio en vez de indexarlo |
-| Versionado en repo propio | Commitear, si el equipo lo quiere | Se amortiza entre personas y sesiones |
-| Versionado en **repo ajeno** | **NO** commitear: `.git/info/exclude` | Exclusión **local**; `.gitignore` está versionado y tocarlo ensucia el repo de otro |
-| Monorepo | Un mapa raíz + uno por paquete grande | Un solo mapa de 800 líneas no lo lee nadie, ni tú |
-| Estado de generación | Cabecera con fecha y **SHA corto del HEAD** | Sin eso no se puede saber si está caducado |
-| Idioma | El del repositorio (código, docs, issues) | Coherencia con el resto del proyecto |
+| Name and location | `PROJECTMAP.md` at the repo root | Predictable; any session finds it without searching |
+| Size | **As small as it can be while still answering "where is X?"** — see §2.1 | The cap is usefulness, not a line count |
+| Versioning in your own repo | Commit it, if the team wants it | It pays off across people and sessions |
+| Versioning in **someone else's repo** | **Do NOT commit**: `.git/info/exclude` | That exclusion is **local**; `.gitignore` is versioned and touching it dirties another team's repo |
+| Monorepo | One root map plus one per large package | A single 800-line map gets read by nobody, including you |
+| Generation state | Header with date and **short HEAD SHA** | Without it, staleness cannot be detected |
+| Language | The repository's | Consistency with code, docs and issues |
 
-## 3. Qué contiene (y en qué orden)
+### 2.1 How big, really
 
-El orden importa: lo que más se consulta va arriba.
+The old rule of thumb was ~150 lines. **That is a heuristic for code repositories, not a law**, and
+it breaks on one specific shape: repositories whose *content is the product* — a skill catalogue, a
+docs site, a rules or policy set, a collection of notebooks. There each file is an independent unit,
+and **a per-file index is exactly what stops the greps**.
+
+The real rule:
+
+- **Code repository** → index directories and entry points, never every file. A dumped `tree` is the
+  same problem with more tokens. Stay terse.
+- **Content repository** (each file is a self-contained unit looked up by name) → **the per-file
+  table is the map**: file, what it decides or contains, size. This is a database index, and indexes
+  list rows.
+- Either way the test is the same: **would this line save a search?** If not it is decoration — cut
+  it, whatever the total length.
+
+## 3. What it contains (and in what order)
+
+Order matters: what gets consulted most goes on top.
 
 ```markdown
-# Mapa de <proyecto>
+# Map of <project>
 
-> Generado el <YYYY-MM-DD> sobre `<sha-corto>`. Si algo aquí no cuadra con el repo, **manda el
-> repo**: corrige esta línea y sigue. Mantenido según la skill `project-map`.
+> Generated <YYYY-MM-DD> against `<short-sha>`. If anything here does not match the repo, **the repo
+> wins**: fix the line and move on. Maintained per the `project-map` skill.
 
-## Quiero tocar… → está en…
-| Para… | Ve a | Nota |
+## I want to change… → go to…
+| To… | Go to | Note |
 |---|---|---|
-| Añadir un endpoint | `src/api/routes/` | El registro central está en `src/api/router.ts:40` |
-| Cambiar el esquema de BD | `migrations/` | Nunca a mano en `models/`: se genera |
+| Add an endpoint | `src/api/routes/` | Central registry at `src/api/router.ts:40` |
+| Change the DB schema | `migrations/` | Never by hand in `models/`: it is generated |
 
-## Estructura
-- `src/` — código de producción. `src/core/` no depende de nada de `src/adapters/`.
-- `tests/` — unitarios junto al código; los de integración aquí.
-- `scripts/` — utilidades de desarrollo, no se despliegan.
+## Structure
+- `src/` — production code. `src/core/` depends on nothing in `src/adapters/`.
+- `tests/` — unit next to the code; integration ones here.
 
-## Puntos de entrada
-- CLI: `src/cli/main.py` → `cmd_*` por subcomando.
-- HTTP: `src/api/app.ts`, arranca en `:8080`.
-- Cron/colas: `workers/`, registrados en `workers/registry.yaml`.
+## Entry points
+- CLI: `src/cli/main.py` → `cmd_*` per subcommand.
+- HTTP: `src/api/app.ts`, listens on `:8080`.
 
-## Comandos
-| Qué | Comando | Verificado |
+## Commands
+| What | Command | Verified |
 |---|---|---|
 | Build | `make build` | 2026-08-05 |
 | Tests | `pytest -q` | 2026-08-05 |
-| Lint + tipos | `ruff check . && mypy src` | 2026-08-05 |
 
-## Convenciones e invariantes
-- Los tests van junto al módulo, con sufijo `_test`.
-- Nada de acceso a BD fuera de `repositories/`.
+## Conventions and invariants
+- Tests live next to the module, `_test` suffix.
+- No DB access outside `repositories/`.
 
-## Zonas minadas
-- `src/legacy/billing.py`: sin tests, lo toca facturación real. Leer `docs/adr/0007` antes.
-- `vendor/`: código de terceros parcheado a mano; los cambios se pierden al actualizar.
+## Minefields
+- `src/legacy/billing.py`: no tests, real billing depends on it. Read `docs/adr/0007` first.
 
-## Fuera del mapa
-`node_modules/`, `dist/`, `.venv/`, ficheros generados (`*_pb2.py`).
+## Out of the map
+`node_modules/`, `dist/`, `.venv/`, generated files (`*_pb2.py`).
 ```
 
-**La tabla "quiero tocar… → está en…" es el corazón del fichero.** Es la que ahorra los `grep`.
-Si solo tienes tiempo para una sección, es esa. Un árbol de directorios sin ella es decorativo.
+**The "I want to change… → go to…" table is the heart of the file.** It is the one that saves the
+greps. If you only have time for one section, it is that one. A directory tree without it is
+decorative.
 
-## 4. Cómo generarlo barato
+For a content repository, add the **per-file index** (§2.1) as its own section, generated rather
+than hand-written wherever possible: derive each row from the file's own front matter, title or
+first heading, so it cannot drift into fiction.
 
-No leas el repositorio entero: **indexa, no copies**.
+## 4. How to generate it cheaply
 
-1. **Inventario, no volcado.** `git ls-files` filtrado por directorio da la forma real del proyecto
-   sin listar 10.000 rutas: agrupa por primer y segundo nivel y cuenta. Lo que no está en git
-   (generado, ignorado) no va al mapa salvo que sea una zona minada.
-2. **Lee los ficheros que ya son un mapa**: `README`, `CONTRIBUTING`, `CLAUDE.md`/`AGENTS.md`,
-   `Makefile`/`justfile`, `package.json` (scripts), `pyproject.toml`, `docker-compose.yml`, CI
-   (`.github/workflows/`). Los comandos salen de ahí, no de tu memoria.
-3. **Puntos de entrada por convención del ecosistema**: `main`, `index`, `app`, `cmd/`, `bin/`,
-   `[project.scripts]`, `entrypoint` del Dockerfile, `services:` del compose.
-4. **Zonas minadas por historia**: los ficheros con más cambios (`git log --format= --name-only |
-   sort | uniq -c | sort -rn | head`) señalan dónde duele. Cruzarlo con la ausencia de tests da la
-   lista de zonas minadas casi hecha.
-5. **Delegable**: en un repo grande, un subagente de exploración devuelve el borrador y tú lo
-   contrastas. Ese es exactamente el gasto que el mapa evita repetir después.
+Do not read the whole repository: **index, do not copy**.
 
-**Un comando que no has ejecutado no se escribe como verificado.** O lo corres, o lo marcas
-`sin verificar`.
+1. **Inventory, not dump.** `git ls-files` grouped by first and second path level gives the real
+   shape without listing 10,000 paths. What is not in git (generated, ignored) stays out unless it
+   is a minefield.
+2. **Read the files that are already maps**: `README`, `CONTRIBUTING`, `CLAUDE.md`/`AGENTS.md`,
+   `Makefile`/`justfile`, `package.json` scripts, `pyproject.toml`, `docker-compose.yml`, CI under
+   `.github/workflows/`. Commands come from there, not from memory.
+3. **Entry points by ecosystem convention**: `main`, `index`, `app`, `cmd/`, `bin/`,
+   `[project.scripts]`, the Dockerfile `entrypoint`, compose `services:`.
+4. **Minefields from history**: the most-churned files (`git log --format= --name-only | sort |
+   uniq -c | sort -rn | head`) show where it hurts. Cross that with missing tests and the minefield
+   list writes itself.
+5. **Generate the per-file index with a script, not by hand** (§2.1) — a loop that extracts each
+   file's own summary line is exact, repeatable and free of invention.
+6. **Delegable**: in a large repo an exploration subagent returns the draft and you verify it. That
+   is precisely the cost the map stops you repeating.
 
-## 5. Cómo se mantiene honesto
+**A command you have not run is not written as verified.** Either run it, or mark it `unverified`.
 
-- **Regla de la sorpresa**: cada vez que el mapa te falle —una ruta que ya no existe, un comando
-  que no funciona— **corriges esa línea en el momento**. Es el único mantenimiento que se sostiene.
-- **Regla del mismo turno**: si tu cambio mueve, crea o renombra algo que el mapa nombra,
-  actualizas el mapa **en ese turno**. Un mapa que se actualiza "al final" no se actualiza.
-- **Chequeo mecánico de rutas** (barato, ejecútalo al retomar): extrae las rutas citadas en el mapa
-  y comprueba que existen. Una ruta muerta invalida la línea entera, no solo su final:
+## 5. Keeping it honest
+
+- **Surprise rule**: every time the map fails you — a path that no longer exists, a command that
+  does not work — **you fix that line there and then**. It is the only maintenance that survives.
+- **Same-turn rule**: if your change moves, creates or renames something the map names, you update
+  the map **in that turn**. A map updated "at the end" is not updated.
+- **Mechanical path check** (cheap, run it when picking work back up):
 
   ```bash
   grep -oE '`[a-zA-Z0-9_./-]+/[a-zA-Z0-9_./-]*`' PROJECTMAP.md | tr -d '`' |
-    while read -r p; do [ -e "$p" ] || echo "RUTA MUERTA: $p"; done
+    while read -r p; do [ -e "$p" ] || echo "DEAD PATH: $p"; done
   ```
-- **Desfase respecto al código**: compara el SHA de la cabecera con `git rev-parse --short HEAD`.
-  Muchos commits de diferencia no invalidan el mapa —la estructura cambia despacio—, pero sí
-  obligan a mirar `git diff --stat <sha-del-mapa>..HEAD -- '*/'` en busca de directorios nuevos.
-- **Si el mapa contradice al repositorio, manda el repositorio.** Siempre. El mapa es un índice,
-  no una fuente de verdad.
+- **Drift against the code**: compare the header SHA with `git rev-parse --short HEAD`. Many commits
+  of difference do not invalidate the map — structure moves slowly — but they do mean looking at
+  `git diff --stat <map-sha>..HEAD -- '*/'` for new directories.
+- **Working tree vs. HEAD**: with many uncommitted changes, say so in the header and state which
+  figures come from disk and which from `HEAD`. A map that silently mixes both misleads.
+- **If the map contradicts the repository, the repository wins.** Always. The map is an index, not a
+  source of truth.
 
-## 6. Prohibiciones
+## 6. Prohibitions
 
-- ❌ **Copiar contenido del código al mapa** (firmas, cuerpos de función, esquemas completos).
-  Duplicar es garantizar que divergen. Se cita `fichero:línea`, no se transcribe.
-- ❌ **Listar todos los ficheros.** Un `tree` volcado no es un mapa: es el mismo problema con más
-  tokens. Se nombran directorios y los ficheros que de verdad son puntos de entrada.
-- ❌ **Escribir lo que no has verificado.** Nada de "probablemente los tests se lancen con…".
-  O lo compruebas, o lo marcas `sin verificar`.
-- ❌ **Dejarlo caducar en silencio.** Si detectas que está desfasado y no puedes arreglarlo entero,
-  **marca la sección afectada como no fiable** en vez de dejarla como si valiera.
-- ❌ **Meter en el mapa lo que es doctrina** (cómo se trabaja, qué está prohibido): eso va al
-  `CLAUDE.md`. El mapa dice **dónde está** cada cosa, no **cómo** debe hacerse.
-- ❌ **Secretos, rutas internas identificables, IPs, nombres de host de producción.** El mapa suele
-  acabar versionado; trátalo como código público.
-- ❌ **Crear `PROJECTMAP.md` y no volver a mirarlo.** Un mapa que no se lee al empezar no ahorra
-  nada: el hábito es leerlo **antes** de explorar, no después.
-- ❌ **Commitearlo en un repositorio ajeno sin permiso.** Va a `.git/info/exclude`, que es local.
+- ❌ **Starting substantial work in a repo without a map when creating one was possible.** The
+  exploration you are about to do *is* the map: not writing it down is choosing to pay twice.
+- ❌ **Copying code content into the map** (signatures, function bodies, full schemas). Duplication
+  guarantees divergence. Cite `file:line`, do not transcribe.
+- ❌ **Listing every file in a code repository.** Name directories and the files that genuinely are
+  entry points. (In a content repository the per-file index is the point — §2.1.)
+- ❌ **Writing what you have not verified.** No "the tests are probably run with…". Either check it
+  or mark it `unverified`.
+- ❌ **Letting it expire in silence.** If you detect it is stale and cannot fix it whole, **mark the
+  affected section as unreliable** instead of leaving it looking valid.
+- ❌ **Putting doctrine in the map** (how work is done, what is forbidden): that belongs in
+  `CLAUDE.md`. The map says **where** things are, not **how** they must be done.
+- ❌ **Secrets, identifiable internal paths, IPs, production hostnames.** Maps tend to end up
+  versioned; treat one as public code.
+- ❌ **Creating `PROJECTMAP.md` and never looking at it again.** A map not read at the start saves
+  nothing: the habit is reading it **before** exploring, not after.
+- ❌ **Committing it in someone else's repository without permission.** It goes in
+  `.git/info/exclude`, which is local.
 
-## 7. Sostenibilidad
+## 7. Long-term sustainability
 
-- El mapa es **desechable y regenerable**: si un refactor grande lo invalida, se regenera desde
-  cero (§4). No hay que preservar su historia.
-- Si el mapa crece por encima de ~150 líneas de forma natural, **no lo amplíes: divídelo** (uno por
-  paquete) o recorta lo que no se consulta nunca. El árbol completo es lo primero que sobra.
-- En repos con `AGENTS.md`/`CLAUDE.md` ya ricos, **no dupliques**: el mapa enlaza a ellos.
+- The map is **disposable and regenerable**: if a large refactor invalidates it, regenerate from
+  scratch (§4). Its history is not worth preserving.
+- If it grows past what anyone reads, **do not extend it: split it** (one per package) or cut what
+  is never consulted. The full tree is the first thing to go.
+- In repos with rich `AGENTS.md`/`CLAUDE.md`, **do not duplicate**: link to them.
 
-## 8. Verificación
+## 8. Mandatory web verification
 
-1. **Contra el repositorio, siempre**: las rutas existen (§5), los comandos se ejecutan, los puntos
-   de entrada arrancan. **Si el mapa contradice al repo, manda el repo.**
-2. **Contra la web**, solo para lo externo que el mapa cite: nombres y versiones de herramientas de
-   build, comandos de un gestor de paquetes, ubicación canónica de un fichero de configuración de
-   un framework. Eso caduca y no se fija de memoria.
+1. **Against the repository, always**: paths exist (§5), commands run, entry points start. **If the
+   map contradicts the repo, the repo wins.**
+2. **Against the web**, only for external things the map cites: build tool names and versions,
+   package-manager commands, the canonical location of a framework's config file. Those expire and
+   are not fixed from memory.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

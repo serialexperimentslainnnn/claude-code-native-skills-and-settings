@@ -44,13 +44,13 @@ de que el arreglo llega con test de regresión y revisión de un segundo par de 
 `observability-standards` (qué telemetría debe existir; aquí exigirla en el diff que la necesita),
 `grc-compliance-standards` (segregación de funciones y evidencia de auditoría que la revisión
 produce), `ai-agents-standards` (ingeniería del agente en sí) y `ai-agent-workflow-standards`
-(**Ola 6, en curso**: cómo se trabaja con agentes de código en equipo; **aquí solo la revisión del
+(cómo se trabaja con agentes de código en equipo; **aquí solo la revisión del
 resultado**), `claude-code-skills-standards` (autoría de skills), las skills de lenguaje (qué es
 idiomático en ese lenguaje: el revisor las cita, no las reinventa en el hilo),
-`tech-leadership-standards` (**Ola 6**: el criterio de qué se revisa y cómo se comenta es de aquí;
+`tech-leadership-standards` (el criterio de qué se revisa y cómo se comenta es de aquí;
 **que la revisión no se convierta en instrumento de poder ni en cuello de botella de una persona es
 responsabilidad de liderazgo y es suyo** — igual que la decisión de no usar métricas de revisión
-para evaluar individuos), `refactoring-tech-debt-standards` (**Ola 6**: el criterio de qué se refactoriza y cómo se registra
+para evaluar individuos), `refactoring-tech-debt-standards` (el criterio de qué se refactoriza y cómo se registra
 la deuda es suyo; **aquí la consecuencia para la revisión, que no es menor: un refactor y un cambio
 funcional no se revisan igual y no van en el mismo commit**. Un diff donde la reestructuración
 esconde un cambio de comportamiento es irrevisable, y esa es razón suficiente para devolverlo).

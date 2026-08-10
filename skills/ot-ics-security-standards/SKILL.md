@@ -40,12 +40,26 @@ de detección**; aquí solo qué telemetría OT existe y cómo se obtiene sin to
 sirve para OT**), `incident-response-forensics-standards` (respuesta e investigación; aquí
 solo por qué "apagar y aislar" puede ser el peor movimiento), `vulnerability-management-standards`
 (triaje CVSS/EPSS/KEV y SLA — **aquí por qué ese SLA no aplica y qué compensa el parche que
-no se pondrá**), `endpoint-security-standards` (**Ola 7, hermana**: EDR, control de
+no se pondrá**), `endpoint-security-standards` (**hermana**: EDR, control de
 aplicaciones y cifrado del endpoint IT — **aquí el endpoint industrial que no admite agente
 y por qué**), `grc-compliance-standards` (marco, SoA, aceptación de riesgo),
 `identity-access-management-standards` (IdP, MFA, ciclo de vida de cuentas),
 `windows-server-ad-standards` y `linux-hardening-standards` (el dominio y el baseline del SO
-en el centro de control), `routing-switching-standards` (switching, MLAG, 802.1X),
+en el centro de control), `routing-switching-standards` (switching, MLAG, 802.1X — **aviso
+recíproco: la red de planta no es un campus**, y sus defaults de acceso (`storm-control`,
+`bpduguard`, 802.1X en todo puerto, L3 al acceso) rompen un anillo PROFINET/MRP o dejan sin red
+a un PLC sin suplicante. Se aplican solo con criterio de aquí),
+`embedded-iot-standards` (**el dispositivo como producto**: silicio, firmware y su actualización.
+Frontera de daño: si su fallo hiere a alguien o para la producción, manda esta skill),
+`edge-computing-standards` (**el nodo Linux del borde y su flota**; aquí las restricciones que la
+planta le impone, que no se negocian desde el lado de TI),
+`safety-critical-standards` (**la función de seguridad certificada**: SIL/PL, ciclo IEC 61508,
+evidencia de certificación. Aquí la seguridad **del** SIS como activo de red —aislarlo, no
+alcanzarlo, no parchearlo a ciegas—; **allí qué garantiza y quién lo firma**),
+`physical-security-standards` (control de acceso físico y CCTV del recinto industrial; **aquí lo
+que ocurre cuando alguien ya está delante del armario**),
+`chaos-engineering-standards` (**cede expresamente el proceso físico a esta skill**: no se
+inyectan fallos en planta ni sobre un SIS; el equivalente legítimo es el banco o el gemelo),
 `bcdr-standards` (BIA, RTO/RPO), `backup-recovery-standards` (copia y restore),
 `onprem-standards` (plataforma física), `offensive-security-standards` (ejercicio ofensivo
 autorizado; esta skill no lo ejecuta), `threat-intelligence-standards` (indicador y actor),

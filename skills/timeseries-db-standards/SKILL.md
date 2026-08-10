@@ -48,7 +48,7 @@ cobertura", "hay que rellenar los huecos", "¿cuánto tiempo guardamos el detall
   Aquí, **el patrón temporal sobre ese motor** (particionado por rango con fin de retención, BRIN,
   agregados materializados) y **cuándo deja de bastar**. Su principio —**un almacén por necesidad, no
   por moda**— es la premisa de §2.1.
-- `message-brokers-standards` (**hermana de Ola 4; la línea se declara en ambos lados**): **un
+- `message-brokers-standards` (**la línea se declara en ambos lados**): **un
   broker transporta las medidas, una TSDB las almacena para consultarlas.** El broker —MQTT, Kafka,
   NATS—, su topología, retención, seguridad y operación son suyos. **La escritura en el almacén y
   todo lo que pase después es de aquí.** Se cruzan exactamente en la ingesta IoT: el broker recibe
@@ -79,9 +79,8 @@ cobertura", "hay que rellenar los huecos", "¿cuánto tiempo guardamos el detall
   `aws-standards`/`azure-standards`/`gcp-standards` (Timestream, Managed Prometheus, Monarch y demás
   gestionados), `python-standards`, `mlops-standards` (previsión y detección de anomalías sobre la
   serie: el modelo es suyo, el almacén es de aquí),
-  `oracle-dba-standards` y `mysql-mariadb-dba-standards` (**ya en disco**: el *tuning* y la
-  operación de esos motores son suyos), `sqlserver-dba-standards` y `caching-cdn-standards`
-  (**Ola 4, planificadas**).
+  `oracle-dba-standards` y `mysql-mariadb-dba-standards` (el *tuning* y la
+  operación de esos motores son suyos), `sqlserver-dba-standards` y `caching-cdn-standards`.
 
 **Principio rector**: **la resolución y la retención son decisiones de negocio, no de
 infraestructura.** Todo lo demás —motor, compresión, particionado— se deriva de responder *cuánto
@@ -413,6 +412,10 @@ En orden de coste creciente. **Los marcados como gate rompen el build o el despl
 - **Capacidad**: proyecta con datos —puntos/s × bytes/punto tras compresión × retención por
   nivel— y revisa trimestralmente. **Disco, retención y resolución son la misma decisión**: si el
   disco no llega, la respuesta correcta suele ser bajar resolución del histórico, no comprar disco.
+  **Comprobación previa obligatoria**: si esa serie alimenta el entrenamiento de un modelo, el
+  *rollup* **destruye el dataset** y con él la reproducibilidad que exige `mlops-standards`. La
+  resolución del histórico deja de ser una decisión de almacenamiento en cuanto hay un modelo
+  detrás: se acuerda con quien lo entrena, o se conserva la serie cruda de las señales que usa.
 
 ### 6.1 Casos industriales (OT/IoT) y su frontera
 

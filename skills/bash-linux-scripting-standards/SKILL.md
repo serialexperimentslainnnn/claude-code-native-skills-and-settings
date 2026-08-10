@@ -27,7 +27,7 @@ como control de seguridad — aquí solo la higiene del script: `eval`, quoting,
 `selinux-standards` (si el script falla por una denegación AVC, el diagnóstico es allí), `cicd-standards` (scripts embebidos en
 pipelines, runners, secretos de CI y gates del build), `python-standards` y `go-standards` (el destino
 natural cuando se supera el umbral de §7: Python para automatización con datos, Go para binarios
-distribuibles sin dependencias), `ruby-standards` y `perl-standards` (**Ola 5**: destino alternativo
+distribuibles sin dependencias), `ruby-standards` y `perl-standards` (destino alternativo
 del script que crece **solo si el equipo ya los mantiene** — para código nuevo, el destino por
 defecto sigue siendo Python o Go), `powershell-standards` (**frontera recíproca de elección de
 shell**: en un entorno Windows o mixto con AD, PowerShell manda —objetos en vez de texto, sin el

@@ -62,8 +62,8 @@ dashboards; aquí **qué** vigilar), `cryptography-pki-standards` (algoritmos y 
 aquí solo el uso de cephx y del modo `secure` de msgr2), `secrets-management-standards` (dónde
 vive la keyring de `client.admin`), `linux-hardening-standards` (baseline CIS del host que aloja
 los daemons), `vulnerability-management-standards` (triaje y SLA de los CVE de Ceph),
-`finops-standards` (coste por TB útil frente a alternativas), `air-gapped-standards` (**Ola 7**:
-el registro de contenedores interno del que `cephadm` tira las imágenes en un entorno sin salida
+`finops-standards` (coste por TB útil frente a alternativas), `air-gapped-standards`
+(el registro de contenedores interno del que `cephadm` tira las imágenes en un entorno sin salida
 a Internet, y la firma que se verifica en el lado aislado).
 
 ## 2. Decisiones por defecto

@@ -58,7 +58,7 @@ hardening del binario — **matiz obligatorio**: el kernel **no** se compila con
 `malloc`, tiene su propio estilo y sus propios sanitizers; **cuando una regla de `c-standards`
 choque con el kernel, manda el kernel**), `rust-standards` (**el Rust y su toolchain son suyos**;
 aquí solo el estado y las restricciones del Rust *dentro* del kernel), `assembly-standards` (el
-ensamblador y su justificación), `embedded-iot-standards` (**Ola 7, hermana**: el dispositivo físico,
+ensamblador y su justificación), `embedded-iot-standards` (**hermana**: el dispositivo físico,
 el arranque, el device tree como descripción del hardware del producto y la actualización en campo —
 **aquí el código del driver que ese device tree enlaza**), `gpu-computing-standards` (CUDA/HIP y el
 toolchain de GPU; el driver del kernel de la GPU es de aquí), `performance-engineering-standards`

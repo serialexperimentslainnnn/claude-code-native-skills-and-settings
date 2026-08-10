@@ -64,7 +64,7 @@ genere la herramienta), `incident-response-forensics-standards` (el compromiso y
 la nube y su adquisición), `identity-access-management-standards` (**el diseño de la identidad**:
 IdP, SSO, MFA, ciclo joiner-mover-leaver, motores de autorización, SPIFFE; aquí solo la **medición
 del derecho efectivo** sobre recursos de nube y la sustitución de la clave estática por
-federación), `identity-threat-detection-standards` (**Ola 7, hermana**: el **ataque** contra esa
+federación), `identity-threat-detection-standards` (**hermana**: el **ataque** contra esa
 identidad, su detección y su respuesta — aquí el permiso mal puesto en frío, allí el token robado
 en caliente), `vulnerability-management-standards` (**CVE, CVSS/EPSS/KEV y SLA de remediación**:
 la carga de trabajo vulnerable se triaja allí; aquí por qué el permiso excesivo nunca entra en ese

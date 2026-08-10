@@ -56,7 +56,7 @@ un cgroup y qué **no** aísla ninguno de los dos; **aquí seccomp, el escape y 
 orden de volatilidad, imaging, timeline, Velociraptor/Volatility — **aquí solo qué artefacto de
 contenedor y de nodo existe, cuánto dura y cómo se captura antes de evaporarse**);
 `incident-management-standards` (gobierno del incidente: severidad, IC, comunicación);
-`detection-engineering-standards` (**Ola 1, planificada**. **Frontera decidida y declarada**: *qué
+`detection-engineering-standards` (**frontera decidida y declarada**: *qué
 señal de runtime importa y qué debe disparar* es de esta skill —ejecución inesperada de shell,
 escritura en binarios, cambio de capabilities, montaje del socket—; *el ciclo de vida de la regla*
 —backlog, cobertura ATT&CK, umbrales, tuning, gestión de falsos positivos, framework de test y
@@ -66,16 +66,16 @@ destino en el SIEM— es suyo. La regla Falco **nace aquí y se gobierna allí**
 `cicd-standards` (la pipeline que construye, firma y publica); `iac-standards` (aprovisionamiento
 del nodo); `appsec-standards` (el fallo en el código de la aplicación que da la RCE inicial);
 `cryptography-pki-standards` (custodia de claves de firma); `secrets-management-standards`
-(**Ola 1, planificada**: custodia y rotación de los secretos que el contenedor consume);
-`bcdr-standards` (**Ola 1, planificada**: continuidad y recuperación de la plataforma);
+(custodia y rotación de los secretos que el contenedor consume);
+`bcdr-standards` (continuidad y recuperación de la plataforma);
 `offensive-security-standards` y `ctf-lab-standards` (verificación ofensiva del aislamiento y
 detonación de muestras, **con alcance y autorización por escrito**; esta skill es defensiva);
-`podman-systemd-containers-standards` (**Ola 2, planificada**: Podman y Quadlet como **forma de
+`podman-systemd-containers-standards` (Podman y Quadlet como **forma de
 ejecutar servicios** bajo systemd; **aquí su seguridad**); `linux-administration-standards` y
-`ha-clustering-standards` (**Ola 2, planificadas**); `azure-standards`/`aws-standards`/
+`ha-clustering-standards`; `azure-standards`/`aws-standards`/
 `gcp-standards` (el runtime del nodo gestionado y sus advisories de imagen de nodo);
 `grc-compliance-standards` (el control exigido y su evidencia); `webassembly-standards`
-(**Ola 5**: el sandbox de un módulo Wasm y sus importaciones son suyos; **el aislamiento del nodo
+(el sandbox de un módulo Wasm y sus importaciones son suyos; **el aislamiento del nodo
 que ejecuta el host de Wasm sigue siendo de aquí** — un host de Wasm es un proceso más, con su
 `seccomp`, sus capacidades y su superficie de escape).
 

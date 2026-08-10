@@ -1,6 +1,6 @@
 ---
 name: erp-sap-standards
-description: SAP as a commercial and platform decision - the maintenance clock, the deployment model and the licence audit. Use when facing SAP ECC / Business Suite 7 end of mainstream maintenance, extended maintenance 2028-2030 or customer-specific maintenance, choosing between brownfield conversion, greenfield reimplementation, selective data transition or third-party support (Rimini Street, Spinnaker), RISE with SAP or GROW with SAP contracts, SAP Cloud ERP Private (formerly S/4HANA Cloud private edition) versus SAP Cloud ERP public, SAP ERP private edition transition option, compatibility packs and their expiry, SAP named user licensing (Professional, Limited Professional, Functional, Self-Service, Developer), indirect access and digital access document licensing, the Digital Access Adoption Program, the annual licence declaration with USMM, LAW / SLAW2 and STAR, an SAP audit notice, SAP Diageo or Rimini Street licensing precedent, IDoc / BAPI / RFC / OData / Event Mesh integration choices around an ERP, SAP master data governance and MDG, SAP Activate phases, or SAP Solution Manager / Cloud ALM landscape and programme-level environment strategy.
+description: SAP as a commercial and platform decision - the maintenance clock, the deployment model and the licence audit. Use when facing SAP ECC / Business Suite 7 end of mainstream maintenance, extended maintenance 2028-2030 or customer-specific maintenance, choosing between brownfield conversion, greenfield reimplementation, selective data transition or third-party support (Rimini Street, Spinnaker), RISE with SAP or GROW with SAP contracts, SAP Cloud ERP Private (formerly S/4HANA Cloud private edition) versus SAP Cloud ERP public, SAP ERP private edition transition option, compatibility packs and their expiry, SAP named user licensing (Professional, Limited Professional, Functional, Self-Service, Developer), indirect access and digital access document licensing, the Digital Access Adoption Program, the annual licence declaration with USMM, LAW / SLAW2 and STAR, an SAP audit notice, SAP Diageo or Rimini Street licensing precedent, IDoc / BAPI / RFC / Event Mesh integration choices around an ERP, SAP master data governance and MDG, SAP Activate phases, or SAP Solution Manager / Cloud ALM landscape and programme-level environment strategy. Also use for a first-time SAP implementation arriving from a non-SAP legacy - an AS/400 with RPG, a Dynamics, a niche or in-house ERP - where there is no ECC at all: fit-to-standard workshops and the standard-versus-own-process decision, big bang versus phased rollout and the cost of coexistence, temporary interfaces without a switch-off date, master data cleansing at source before load, the SAP S/4HANA migration cockpit and Migrate Your Data, SAP-delivered local versions versus customer local versions, Full Use Equivalent (FUE) sizing with no SAP measurement history, and the honest criteria for when SAP is the wrong answer.
 ---
 
 # Estándares de ERP SAP (decisión de negocio, plataforma y licencia)
@@ -36,6 +36,11 @@ línea: **si la respuesta se escribe en un objeto del repositorio, es suya; si s
 o se declara en una medición, es de aquí**), `migration-projects-standards` (la ejecución del corte:
 ensayo, ventana, cuadre del dato, convivencia, marcha atrás y apagado del origen),
 `legacy-modernization-standards` (el paraguas de estrategia frente al sistema heredado y las "R"),
+`ibm-i-rpg-standards`, `mainframe-zos-cobol-standards` y las demás skills de plataforma heredada
+(**el sistema del que se viene en una primera implantación**, §3.8: dónde vive su lógica de
+negocio, cómo se extrae su dato y qué se puede apagar. **Aquí el destino y su contrato**; allí el
+origen y su técnica — y el criterio de si merece la pena salir de esa plataforma es de
+`legacy-modernization-standards`, no de la ilusión de que SAP lo resuelve),
 `enterprise-architecture-standards` (el inventario de aplicaciones, el modelo TIME y el encaje del
 ERP en la cartera), `project-management-standards` (la gestión del programa: compromiso, estimación,
 RAID, interesados), `itsm-itil-standards` (el ERP como servicio, SLA y proceso de cambio),
@@ -100,7 +105,7 @@ contra SAP el día que se presenta.**
   como "tenemos hasta 2033" ya perdió la ventana.
 
 **Las cuatro salidas, con el criterio que las separa** (no es una preferencia; es una función del
-estado del ECC):
+estado del ECC — **si no hay ECC de origen, ninguna de las cuatro aplica: eso es §3.8**):
 
 | Salida | Cuándo es la correcta | Lo que cuesta de verdad |
 |---|---|---|
@@ -269,7 +274,12 @@ El dato maestro (material, cliente, proveedor, plan de cuentas, centro de coste)
 proyectos, y su síntoma llega tarde. Reglas:
 - **Cada objeto maestro tiene un dueño de negocio nombrado antes de empezar**, no un "equipo de datos".
 - **La limpieza se hace en el origen y antes del corte**, con reglas de calidad medidas y una fecha:
-  "limpiaremos durante la migración" es cómo se pierde el plazo.
+  "limpiaremos durante la migración" es cómo se pierde el plazo. **Cómo se extrae y se cuadra ese
+  dato lo decide la skill del origen**: si es un IBM i, `ibm-i-rpg-standards` §3.5 fija el
+  mecanismo (diarios y receptores) y las trampas que rompen una carga en silencio —campos
+  empaquetados, fechas numéricas con ventana de siglo implícita, **ficheros multi-miembro de los
+  que SQL lee solo el primero y parece correcto**, CCSID 65535—. Ninguna de esas es visible desde
+  el lado SAP hasta que el dato ya está cargado.
 - **Business partner**: la unificación de cliente/proveedor en S/4HANA es requisito de conversión y es
   un proyecto de datos con su propio dueño, no un paso técnico.
 - **Lo que no se migra se declara**: histórico que se queda en un archivo consultable, con su período
@@ -279,13 +289,193 @@ proyectos, y su síntoma llega tarde. Reglas:
 
 Aquí, **no** la mecánica del transporte (es de `abap-sap-standards`), sino el gobierno:
 - Paisaje mínimo **DEV → QAS → PRD** con una vía única de promoción y **ningún cambio nacido en PRD**.
-- **Congelación de transportes** declarada alrededor del corte y de cada cierre, con dueño que la
-  levanta.
+- **Congelación de transportes** declarada alrededor del corte y de cada cierre, **con dueño que
+  la levanta y con fecha de fin publicada desde el primer día** — el criterio es de
+  `migration-projects-standards` §7 y aplica igual aquí: una congelación sin fecha de fin deja de
+  ser una medida de control y se convierte en una parálisis que nadie se atreve a terminar. No
+  confundir con el **congelado de un sistema heredado** (`legacy-modernization-standards`), que es
+  otra cosa: allí se congela para no tocar nunca más, y exige aislamiento, ventana de parcheo y
+  plan de salida fechado.
 - **Convivencia**: durante una conversión hay dos paisajes vivos. Se define por escrito **dónde se
   hace el mantenimiento correctivo** y cómo se replica al otro. Sin esa regla, se pierde una
   corrección regulatoria en producción.
 - **Datos de producción en entornos no productivos**: por defecto **no**, o anonimizados. Una copia de
   PRD en un sandbox es una brecha, y además **se mide** en la clasificación de usuarios.
+
+### 3.8 Primera implantación: llegar a SAP desde un legacy no-SAP
+
+Toda la §3.1 está indexada por **el estado de un ECC**. El escenario de una organización que llega a
+SAP desde un AS/400 con RPG, un Dynamics, un ERP de nicho o un desarrollo propio **no tiene ECC**: no
+hay nada que convertir, ni datos con estructura SAP, ni nadie dentro que sepa leerlos. Es el caso más
+frecuente de "primera vez" y necesita su propio criterio.
+
+**Por qué no es el *greenfield* de §3.1.** Aquel es reimplantar SAP **desde** SAP: ya existen procesos
+en SAP, tablas con semántica SAP y personas que las entienden. Aquí no existe ninguna de las tres, y
+eso cambia tres cosas:
+
+- **No hay línea base ni diagnóstico automático.** `SAP Readiness Check` recoge su información
+  **dentro** de un sistema ABAP de SAP ERP (ítems de simplificación, código Z, CVI, análisis de
+  integración): sin sistema SAP de origen no hay nada que recolectar. Te quedas sin el punto de
+  partida que el material de SAP da por supuesto — y también sin `USMM`/LAW para dimensionar (§3.4).
+  Verificar §8.
+- **El riesgo se desplaza de *cómo convierto* a *cómo decido qué hago*.** En un *brownfield* el
+  alcance lo fija el sistema existente; aquí lo fija una discusión, y una discusión no tiene final
+  natural. Regla: **el alcance se cierra por fecha y por firma, no por consenso.**
+- **Es la única vez en la vida del sistema en que el *clean core* sale gratis.** No arrastras deuda de
+  SAP porque no la has creado todavía. Esa ventaja se gasta en los primeros meses o no se gasta nunca.
+
+**La decisión que domina: estándar frente a proceso propio.**
+
+- El legacy codifica décadas de proceso particular, y la mayor parte **no es deliberada**: es lo que
+  el programador de RPG pudo hacer en 1998 con las herramientas de 1998. Confundir *"así lo hacemos"*
+  con *"así nos diferenciamos"* es el error central del dominio.
+- El método es el **fit-to-standard** de SAP Activate, en la fase **Explore** (verbatim SAP:
+  *"Conduct fit-to-standard workshops and confirm the solution design"*). Su valor se destruye en el
+  momento en que el taller se usa como recogida de requisitos para desarrollo a medida: entonces no
+  es fit-to-standard, es un análisis funcional con otro nombre.
+- **La carga de la prueba recae sobre la desviación, nunca sobre el estándar.** Quien pide apartarse
+  demuestra el diferencial competitivo con números; nadie tiene que justificar adoptar el estándar.
+- **Quién decide**: un dueño de proceso de negocio con autoridad para decirle que no a su propia área.
+  Si la decisión la toma TI, o un comité sin poder sobre las áreas, el resultado por defecto es
+  siempre la desviación.
+- El aviso que sostiene todo lo demás: **cada desviación del estándar se paga en cada upgrade, para
+  siempre** — y en GROW / Cloud ERP público el upgrade **no lo decides tú** (§3.2), así que el pago
+  es en fecha ajena. La doctrina de extensibilidad que lo evita (*clean core*) es de
+  `abap-sap-standards`; la consecuencia de gobierno —comité, registro con motivo y fecha, revisión en
+  cada upgrade— ya está en §7 y no se repite aquí. El propio SAP lo declara parte de su método:
+  *"SAP Activate builds on SAP's strong foundation of fit-to-standard and clean core principles"*
+  (verbatim, §8).
+- **Prohibido replicar la pantalla del legacy.** "Que se parezca a lo que teníamos" es un requisito de
+  gestión del cambio disfrazado de requisito funcional, y se paga como desarrollo a medida y como
+  hipoteca de upgrade. La respuesta correcta es formación, no código.
+
+**Despliegue: *big bang* frente a por fases.**
+
+| Eje | *Big bang* | Por fases (sociedad, planta, país, línea) |
+|---|---|---|
+| Cuándo es la correcta | Proceso y contabilidad únicos, datos que no se pueden partir sin inventar una frontera | Existe una frontera **que ya hoy** tiene poca interdependencia diaria |
+| Riesgo dominante | Un solo día en que todo puede salir mal, sin ensayo real posible del conjunto | Convivencia larga: dos sistemas, dos equipos, dos veces el correctivo |
+| Coste que se subestima | La marcha atrás: cara, y por eso rara vez se ejecuta aunque toque | Las interfaces temporales y el mantenimiento duplicado |
+| Señal de que elegiste mal | Se recorta alcance de pruebas para llegar a la fecha | La fase 2 se retrasa y la "temporal" cumple dos años |
+
+- **No se hace por fases *por módulo* dentro de la misma sociedad**, salvo caso muy justificado:
+  partir FI de MM/SD en la misma unidad crea la peor interfaz posible, la del asiento contable, y
+  además obliga a cuadrar dos contabilidades vivas.
+- **Incluso el *big bang* convive**: el legacy sigue encendido en modo consulta. La convivencia no es
+  una propiedad del enfoque por fases, es una propiedad de todos ellos, y se gobierna igual:
+  - **Se declara por escrito dónde se hace el mantenimiento correctivo** y cómo se replica al otro
+    sistema (mismo criterio que §3.7). Sin esa regla se pierde una corrección regulatoria.
+  - **Un cambio legal durante la convivencia se implementa dos veces, o se decide explícitamente no
+    implementarlo en el que muere.** Lo que no se puede es no decidirlo.
+  - **Toda interfaz de convivencia nace con fecha de apagado y dueño que la apaga, en el mismo
+    documento que la aprueba.** Sin fecha no se aprueba: **la interfaz temporal sin fecha de apagado
+    siempre acaba siendo permanente**, y termina siendo el motivo por el que el legacy no se apaga.
+  - **Nunca dos sistemas de escritura para el mismo objeto maestro.** Durante la convivencia cada
+    objeto tiene exactamente un sistema que escribe y otro que consume. La doble escritura garantiza
+    divergencia, y la divergencia se descubre en el cuadre, tarde.
+  - La convivencia se dimensiona en **meses con fecha**, no "hasta que estemos listos". Cuanto más
+    larga la fase, más barato cada corte individual y **más cara la suma**.
+- El corte en sí —ensayo, ventana, congelación, cuadre, reconciliación, marcha atrás y apagado del
+  origen— es de `migration-projects-standards`. No lo redefinas aquí.
+
+**Datos maestros: lo que hunde estas implantaciones.**
+
+- **Por qué aquí es peor que en una conversión**: en *brownfield* el dato ya tiene estructura SAP.
+  Aquí el material del AS/400 no tiene tipo de material, ni grupo de artículos, ni unidades alternas,
+  ni vistas por centro y almacén: **los campos obligatorios de SAP simplemente no existen en el
+  origen** y hay que inventarlos con criterio de negocio, por regla o registro a registro. Eso no es
+  un mapeo, es un proyecto de datos con dueño, plazo y presupuesto propios.
+- **Regla dura: se limpia en el origen y antes de cargar.** Cargar sucio y limpiar dentro contamina el
+  sistema nuevo el primer día, y a partir de ahí ya no se distingue el error de carga del error de
+  operación — que es exactamente lo que destruye la confianza del usuario en el sistema nuevo.
+- **El matiz honesto**: el origen suele ser un sistema cuyo dueño ya no quiere invertir en él. Nadie
+  va a pagar desarrollo en el AS/400 que se apaga en catorce meses. Consecuencia práctica: la
+  limpieza se ejecuta **fuera**, en una zona de preparación (extracción → reglas de calidad medidas →
+  corrección con dueño de negocio → carga), **pero la corrección tiene que volver al origen mientras
+  el origen siga siendo el sistema de registro**; si no vuelve, la siguiente extracción reintroduce
+  la suciedad y el trabajo se repite entero. Si volver es imposible, se **congela la extracción con
+  fecha** y todo lo posterior a esa fecha se corrige en los dos sitios, con esa duplicidad declarada
+  como coste, no descubierta.
+- **Lo que no se carga se declara**: histórico en archivo consultable, con retención y base legal
+  (§3.6 y `privacy-engineering-standards`).
+- La vía estándar desde un origen no-SAP es el **SAP S/4HANA migration cockpit** (app *Migrate Your
+  Data*, con tablas de *staging*). SAP la describe como **no destinada a interfaz de carga frecuente
+  ni a modificación masiva**: no la conviertas en tu interfaz de convivencia (verificar §8).
+- **Métrica de gobierno del proyecto**: el porcentaje de registros que pasan las reglas de calidad
+  **sobre el extracto real**, medido semanalmente desde el primer mes. Si esa curva no sube, el
+  proyecto no avanza aunque la configuración sí — y es el único indicador que lo detecta a tiempo.
+
+**Coste real y *sizing* sin histórico de SAP.**
+
+- **No hay línea base**: sin `USMM` ni consolidación LAW (§3.4), todo sale de una estimación de
+  negocio sobre un sistema que nadie ha usado, y esa estimación es optimista por construcción.
+- **Usuarios**: el conteo no se deduce del legacy. Un operario con un menú de cinco opciones en el
+  AS/400 puede acabar en tipo alto por una sola transacción. El mapeo se hace **por tarea, no por
+  cabeza**, y se cierra con el diseño de roles (§3.3, regla del máximo). En suscripción cloud la
+  métrica agregada habitual es el **FUE (*Full Use Equivalent*)**, con ratios por tipo de uso fijados
+  en el *Cloud Supplement*: los ratios concretos, y si tu edición sigue en FUE o en otra métrica,
+  **se leen del contrato, no de un blog** (hueco declarado en §8).
+- **Lo que se sobredimensiona por sistema**: infraestructura y capacidad. Es lo fácil de medir, lo
+  fácil de ajustar y —en nube gestionada— ni siquiera lo decides tú. Se le dedica demasiada atención.
+- **Lo que se descubre tarde, que es lo caro**:
+  1. **La implantación pesa más que la licencia**: servicios, integración y gestión del cambio. Un
+     caso de negocio construido sobre el precio de suscripción está mal construido.
+  2. **Interfaces**: nadie las cuenta al principio. El **inventario de interfaces del legacy** —
+     incluidos los ficheros planos por FTP de los que no hay dueño— se hace **antes** de estimar, no
+     durante Realize.
+  3. **Digital access** (§3.3): cada interfaz que escriba en SAP tiene coste por documento. Aquí no
+     hay volumen histórico de SAP con el que contrastar, pero **sí hay volumen de documentos en el
+     legacy y sí se puede contar**: cuéntalo, es el único dato duro disponible.
+  4. **Localización**: si operas en un país sin *local version* entregada por SAP, la responsabilidad
+     legal pasa a ti. Verbatim SAP: *"The customer or corresponding partner is responsible for the
+     development and maintenance of complete customer local version."* Se comprueba **país por país
+     y antes de firmar** (§8) — el número de países soportados difiere entre fuentes del propio SAP.
+  5. **Formación y caída de productividad** en los meses posteriores al arranque. Se presupuesta o se
+     sufre; no hay tercera opción.
+- La estimación se presenta como **rango con supuestos escritos**, y los tres supuestos que más mueven
+  el número —número de interfaces, número de desviaciones aprobadas y volumen anual de documentos— se
+  revisan en cada Q-gate. El programa y su estimación son de `project-management-standards`.
+
+**Cuándo SAP no es la respuesta.**
+
+Este catálogo dice la verdad cuando una tecnología está muerta; aquí toca decirla sobre la
+inadecuación de una elección. Señales de que el proyecto fracasa antes de empezar — **si se cumplen
+dos, se para y se replantea, y eso se escribe antes de arrancar para que nadie lo discuta después**:
+
+- **No hay dueños de proceso con autoridad**, o el patrocinador es TI en lugar de dirección general o
+  financiera. Sin autoridad para imponer el estándar a un área, toda decisión de esta subsección se
+  resuelve a favor de la desviación.
+- **El mandato es "que haga lo que hace el AS/400".** El resultado es un SAP a medida con el coste de
+  SAP y las capacidades del legacy: el peor de los dos mundos, y el anti-patrón dominante de §7.
+- **Nadie del negocio está liberado a tiempo completo.** El personal clave "a ratos, además de su
+  trabajo" es la causa más común y menos reportada del retraso.
+- **El diferencial de la empresa vive en un proceso que el ERP tendría que absorber** (fabricación
+  singular, tarificación propia, un modelo de servicio que no encaja). Criterio: eso se queda
+  **fuera** del ERP, en un sistema propio integrado. Si no puede quedarse fuera, el ERP estándar no
+  es tu respuesta.
+- **Tamaño y capacidad, que no son facturación**: ¿existe una función de TI capaz de **operar** el
+  sistema tras el arranque, y aguanta el presupuesto **de operación** —no el de proyecto— la
+  suscripción recurrente más el socio? Una organización que solo puede pagar el proyecto está
+  comprando un sistema que no podrá mantener.
+- **Sector**: si el proceso central lo cubre mejor un vertical especializado, el ERP generalista
+  compite en desventaja en su propio terreno. Suele encajar mejor *ERP para finanzas y compras +
+  vertical para el núcleo* que forzar el núcleo dentro del ERP.
+- **El plazo lo fija un evento externo** (fin de soporte del hardware, fin de un contrato) **y el
+  alcance sigue abierto**. Esa combinación produce siempre el mismo recorte, y en este orden:
+  pruebas, luego calidad del dato.
+- **Honestidad sobre las cifras**: no existe una tasa de fracaso de proyectos ERP publicada con
+  metodología que puedas citar en el comité (§3.1, §7). Estas señales son **criterio, no
+  estadística**: preséntalas como criterio y no las disfraces de porcentaje.
+
+**Fronteras de esta subsección** (cítalas, no las dupliques): `migration-projects-standards` (el
+corte: ensayo, ventana, cuadre, reconciliación, marcha atrás y apagado del origen),
+`project-management-standards` (el programa: compromiso, estimación, RAID, interesados, gestión del
+cambio), `legacy-modernization-standards` (la elección de la "R" —aquí *repurchase*— y el destino del
+sistema de origen: congelar, archivar o apagar, con fecha), `ibm-i-rpg-standards` cuando el origen es
+un AS/400 / IBM i (extracción del dato, DB2 for i y estado del sistema de partida),
+`enterprise-architecture-standards` (build-vs-buy y el encaje en la cartera: la decisión "SAP o no"
+empieza allí, no aquí), `data-governance-quality-standards` (propiedad del dato y dimensiones de
+calidad; aquí solo la limpieza **como restricción del corte**).
 
 ## 4. Calidad y verificación
 
@@ -352,6 +542,18 @@ Coste creciente, y el orden es el que sostiene un programa:
 - ❌ **PROHIBIDO** copiar producción a un entorno no productivo sin anonimizar.
 - ❌ **PROHIBIDO** firmar RISE/GROW sin desglose de precio por componente, sin RTO/RPO por escrito y
   sin cláusula de salida.
+- ❌ **PROHIBIDO** aprobar una interfaz de convivencia sin **fecha de apagado y dueño que la apague**
+  escritos en el mismo documento que la aprueba (§3.8). Es cómo el legacy nunca se apaga.
+- ❌ **PROHIBIDO** que dos sistemas escriban el mismo objeto maestro durante la convivencia (§3.8).
+- ❌ **PROHIBIDO** usar los talleres de *fit-to-standard* como recogida de requisitos para desarrollo
+  a medida, y **prohibido** aceptar "que se parezca al sistema anterior" como requisito funcional
+  (§3.8). La carga de la prueba es de la desviación, nunca del estándar.
+- ❌ **PROHIBIDO** cargar dato maestro sin reglas de calidad **medidas sobre el extracto real** y sin
+  haber decidido si la corrección vuelve al sistema de origen (§3.8).
+- ❌ **PROHIBIDO** arrancar una primera implantación sin dueños de proceso con autoridad sobre sus
+  áreas y sin personal de negocio liberado a tiempo completo (§3.8).
+- ❌ **PROHIBIDO** firmar con operaciones en un país sin *local version* entregada por SAP sin haber
+  asignado por escrito quién mantiene el cumplimiento legal de esa localización (§3.8).
 - ❌ **PROHIBIDO** planificar contando con una prórroga del calendario de SAP. Se movió una vez (2025
   → 2027, feb-2020) y eso **no** es un compromiso de que se vuelva a mover.
 - ❌ **PROHIBIDO** tratar el soporte de terceros como decisión puramente económica: exige indemnidad
@@ -391,7 +593,33 @@ Antes de fijar cualquier dato de este documento en una decisión real:
    de fuentes secundarias coincidentes sobre esa sentencia—; y el estado actual de Oracle v. Rimini
    Street tras la devolución del Noveno Circuito de dic-2024, **que sigue vivo**.
 6. **Programas comerciales** (DAAP y equivalentes): existencia, vigencia y condiciones.
-7. **CVEs y notas de seguridad** del release concreto, y estado de soporte de la base de datos y del
+7. **Primera implantación (§3.8) — metodología, localización y métrica de suscripción.** Verificado
+   en ago-2026 contra `sap.com/products/erp/activate-methodology.html` (que **sí** respondió, a
+   diferencia del resto del dominio): las seis fases de SAP Activate —Discover, Prepare, Explore,
+   Realize, Deploy, Run—, con Explore verbatim *"Conduct fit-to-standard workshops and confirm the
+   solution design"*, y verbatim *"SAP Activate builds on SAP's strong foundation of fit-to-standard
+   and clean core principles"*; `learning.sap.com` confirma las cuatro fases núcleo
+   Prepare-Explore-Realize-Deploy. **Huecos declarados, todos ellos**:
+   - **Cobertura de localización**: el número de países e idiomas con *local version* entregada por
+     SAP **difiere entre fuentes del propio SAP**, y `community.sap.com` y
+     `sap.com/products/embedded-localization.html` devolvieron **403** a la recuperación automatizada.
+     **No cites un número**: comprueba **tu país** en el SAP Help Portal antes de firmar. Sí está
+     verificado verbatim en `learning.sap.com` que en una *customer local version* "The customer or
+     corresponding partner is responsible for the development and maintenance of complete customer
+     local version".
+   - **Configuration Localization Tool (CLT)**: `learning.sap.com` lo describía en ago-2026 como
+     *"currently under the early adopter program"* mientras un blog de SAP lo anuncia como
+     disponible de forma general. **Contradicción entre fuentes de SAP: verifica el estado vigente
+     antes de contar con él para un país no cubierto.**
+   - **FUE (*Full Use Equivalent*) y su futuro**: los ratios por tipo de uso, y las indicaciones de un
+     cambio de modelo en la edición pública hacia una métrica por usuario y mes, **solo se
+     encontraron en consultoras y partners, nunca en SAP en abierto**. Coherente con el punto 2 de
+     esta lista: **el único dato válido es el de tu contrato y su *Cloud Supplement*.**
+   - **`SAP Readiness Check` (exige un sistema SAP de origen) y el migration cockpit (vía para origen
+     no-SAP, no destinado a carga frecuente)**: descritos así de forma coincidente en fuentes
+     secundarias que citan documentación y notas de SAP; `help.sap.com` no devolvió el cuerpo del
+     artículo. **Verifícalo contra la nota/KBA vigente antes de basar un plan en ello.**
+8. **CVEs y notas de seguridad** del release concreto, y estado de soporte de la base de datos y del
    sistema operativo subyacentes, que tienen su propio calendario.
 
 Si la web contradice este documento, **manda la web** y señala la discrepancia.

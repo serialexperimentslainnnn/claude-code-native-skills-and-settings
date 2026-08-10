@@ -1,6 +1,6 @@
 ---
 name: onprem-standards
-description: On-premise platform umbrella - the whole datacenter or server room as one system, and the router to the deep infra skill that owns each layer. Use when designing or reviewing a bare-metal fleet end to end, sizing hardware and rack capacity, redundant power feeds, UPS and cooling, the out-of-band management plane (BMC, IPMI, iDRAC, iLO, serial console, KVM over IP), hardware lifecycle and warranty, inventory-as-code with host naming and IPAM conventions, rebuild-from-code guarantees for every server, fleet-wide patch and end-of-life cadence, choosing a virtualization platform, or deciding which infrastructure skill a task belongs to.
+description: On-premise platform umbrella - the whole datacenter or server room as one system, and the router to the deep infra skill that owns each layer. Use when designing or reviewing a bare-metal fleet end to end, inventory-as-code with host naming and IPAM conventions, rebuild-from-code guarantees for every server, fleet-wide patch and end-of-life cadence, choosing a virtualization platform, setting the platform-wide invariants every layer must respect, or deciding which infrastructure skill a task belongs to.
 ---
 
 # Estándares on-premise — skill paraguas de plataforma
@@ -100,7 +100,7 @@ híbrido y la conectividad hacia ellas), `data-platform-standards` (el motor de 
 encima: modelado, tuning, réplicas), `cicd-standards` (la pipeline que ejecuta los cambios),
 `appsec-standards` (código de aplicación), `homelab-standards` (la frontera es el **rigor exigido**,
 no el tamaño: aquí producción con RTO/RPO comprometido y ventanas acordadas; allí laboratorio
-personal donde el criterio es coste, ruido y consumo). `green-it-standards` (**Ola 6**: **el centro
+personal donde el criterio es coste, ruido y consumo). `green-it-standards` (**el centro
 de datos físico —energía redundante, refrigeración, densidad, ciclo de vida del hardware— es de
 aquí**; **su contabilidad de huella y las obligaciones de reporte son suyas**, incluido el criterio
 sobre el PUE, que **la propia norma que lo define desaconseja usar como nota global**. Consecuencia
@@ -214,7 +214,7 @@ corre sin unidad versionada**, y la unidad se despliega desde el repo, no se esc
   para pares) — elige el más simple que cumpla el RPO, no el más potente.
 
 **Backups y DR** — el plan de continuidad, los RTO/RPO derivados del negocio, el orden de
-recuperación y los ejercicios de DR **ya son de `bcdr-standards`**; la mecánica de la copia irá a
+recuperación y los ejercicios de DR **ya son de `bcdr-standards`**; la mecánica de la copia es de
 `backup-recovery-standards` (§1.2). Aquí, el mínimo exigible a la plataforma:
 - Regla **3-2-1** con al menos una copia **inmutable u offline** (PBS remoto con sync cifrado,
   S3 object-lock, o tape) — el ransomware ataca primero los backups accesibles.

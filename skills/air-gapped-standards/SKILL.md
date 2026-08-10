@@ -62,7 +62,7 @@ estado de licencia verificado de las herramientas de §2.3),
 `cicd-standards` (pipeline y sus gates; aquí el pipeline **partido en dos** por el corte),
 `iac-standards` (Terraform/Ansible y sus proveedores y colecciones, que también hay que espejar),
 `kubernetes-standards` (registro, admisión y firma verificada en el clúster),
-`ceph-standards` (**Ola 7, hermana**: `cephadm` documenta explícitamente el despliegue en entorno
+`ceph-standards` (**hermana**: `cephadm` documenta explícitamente el despliegue en entorno
 aislado contra un registro de contenedores local; el registro es de aquí, el cluster es suyo),
 `observability-standards` (stack de telemetría; aquí que **no puede exportar**),
 `grc-compliance-standards` (marco normativo, evidencia y la eventual acreditación del recinto),

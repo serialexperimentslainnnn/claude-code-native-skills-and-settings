@@ -41,7 +41,7 @@ fragmento, `dir`, el idioma como criterio de conformidad WCAG y **cómo lo consu
 asistiva** son criterios *suyos*, no de aquí. Si la pregunta es "¿el lector de pantalla lo
 pronuncia en el idioma correcto?", es suya. Si es "¿existe la traducción y está bien
 formateada?", es de aquí);
-`design-systems-standards` (**Ola 6, en curso**: el componente que debe sobrevivir a RTL y a un
+`design-systems-standards` (el componente que debe sobrevivir a RTL y a un
 texto un 40 % más largo se construye y se audita ahí, una sola vez — no en cada pantalla. Aquí
 el criterio que ese componente debe cumplir, no su API ni su versionado);
 `api-design-standards` (**el contrato es suyo**: ISO 8601/RFC 3339 en el campo de fecha,

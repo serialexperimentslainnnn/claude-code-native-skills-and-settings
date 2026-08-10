@@ -80,8 +80,8 @@ datos viejos y nadie se enteró", "¿qué es un cliente activo?", "¿cuánto tie
   gobierno, si puedes fiarte de ellos.
 - Motores concretos: `nosql-standards`, `graph-db-standards`, `vector-db-standards`,
   `search-engines-standards`, `streaming-cdc-standards` (**los eventos de cambio y su contrato de
-  transporte son suyos**; el contrato de datos del conjunto resultante es de aquí), y **Ola 4,
-  planificadas**: `timeseries-db-standards`, `message-brokers-standards`,
+  transporte son suyos**; el contrato de datos del conjunto resultante es de aquí), y
+  `timeseries-db-standards`, `message-brokers-standards`,
   `oracle-dba-standards`, `sqlserver-dba-standards`, `mysql-mariadb-dba-standards`,
   `caching-cdn-standards`.
 
@@ -396,7 +396,7 @@ Cuatro niveles, no más. Cinco niveles producen debates y ninguna decisión:
 | **Público** | Puede publicarse fuera sin daño | Ninguna restricción |
 | **Interno** | Por defecto de todo lo corporativo | Acceso autenticado; sin restricción por rol |
 | **Confidencial** | Su divulgación causa daño (comercial, contractual, competitivo) | Acceso por rol justificado; cifrado; auditoría de acceso |
-| **Restringido** | Dato personal sensible, secretos, dato regulado | Mínimo privilegio estricto, acceso nominal y auditado, seguridad a nivel de fila/columna, retención acotada |
+| **Restringido** | Dato personal sensible y dato regulado. **Los secretos no son un nivel de esta escala**: una credencial no se clasifica, se custodia — su ciclo de vida es de `secrets-management-standards` y un dato personal no es un secreto | Mínimo privilegio estricto, acceso nominal y auditado, seguridad a nivel de fila/columna, retención acotada |
 
 Reglas:
 - **La clasificación es un atributo del dato, no del sistema.** Copiarlo a otro sitio no lo

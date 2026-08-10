@@ -1,6 +1,6 @@
 ---
 name: game-development-standards
-description: Game development as engineering, governed by the frame budget. Use when working with Unity (.unity scenes, .prefab, .meta files, Assets/ and ProjectSettings/, Packages/manifest.json, MonoBehaviour, FixedUpdate, Burst/Jobs, DOTS/Entities, Addressables, IL2CPP, Unity 6 LTS and Unity Personal/Pro/Enterprise revenue thresholds), Unreal Engine (.uproject, .uasset, .umap, Build.cs and Target.cs, UPROPERTY/UFUNCTION, Blueprints, Nanite, Lumen, Chaos, World Partition, UE royalty and per-seat licensing), Godot (project.godot, .tscn, .tres, GDScript .gd, _process versus _physics_process), a game loop with fixed timestep and interpolation, frame-time percentiles, stutter and hitching, GC spikes and object pooling, asset streaming and level loading, ECS and data-oriented design, deterministic simulation and floating-point desync, netcode with server authority, client-side prediction, rollback and lag compensation, cheating and anti-cheat, matchmaking and lobbies, large binary assets under Git LFS or Perforce P4/Helix Core, console certification and platform TRC/TCR submission, in-game accessibility (remapping, subtitles, motion options), or loot boxes, in-game purchases and PEGI descriptors.
+description: Game development as engineering, governed by the frame budget. Use when working with Unity (.unity scenes, .prefab, .meta files, Assets/ and ProjectSettings/, Packages/manifest.json, MonoBehaviour, FixedUpdate, Burst/Jobs, DOTS/Entities, Addressables, IL2CPP, Unity 6 LTS and Unity Personal/Pro/Enterprise revenue thresholds), Unreal Engine (.uproject, .uasset, .umap, Build.cs and Target.cs, UPROPERTY/UFUNCTION, Blueprints, Nanite, Lumen, Chaos, World Partition, UE royalty and per-seat licensing), Godot (project.godot, .tscn, .tres, GDScript .gd, _process versus _physics_process), a game loop with fixed timestep and interpolation, frame-time percentiles, stutter and hitching, GC spikes and object pooling, asset streaming and level loading, ECS and data-oriented design, deterministic simulation and floating-point desync, netcode with server authority, client-side prediction, rollback and lag compensation, cheating and anti-cheat, lobby and party flow in the client, large binary assets under Git LFS or Perforce P4/Helix Core, console certification and platform TRC/TCR submission, in-game accessibility (remapping, subtitles, motion options), or loot boxes, in-game purchases and PEGI descriptors.
 ---
 
 # Estándares de desarrollo de videojuegos
@@ -54,8 +54,8 @@ convenciones**, y su §1 lo excluye explícitamente — el C# de scripting de Un
 servidor es suyo), `rust-standards` (lenguaje; motores en Rust son ecosistema inmaduro: exige ADR),
 `performance-engineering-standards` (**la metodología de perfilado y optimización es suya**:
 método USE, *flame graphs*, medir antes de optimizar, ley de Amdahl. **Aquí solo la restricción
-específica —el presupuesto por fotograma— y las herramientas del motor**), `gaming-infrastructure`
-(**Ola 7, planificada**: **servidores dedicados, orquestación de sesiones, escalado y coste de flota,
+específica —el presupuesto por fotograma— y las herramientas del motor**), `gaming-infrastructure-standards`
+(**servidores dedicados, orquestación de sesiones, escalado y coste de flota,
 transporte, matchmaking como servicio**. Aquí el **protocolo y el modelo de autoridad** del juego, no
 la infraestructura que lo aloja), `mobile-standards` (tienda, empaquetado, permisos, ciclo de vida de
 app y política de App Store/Play; aquí solo el juego que corre dentro), `accessibility-standards`

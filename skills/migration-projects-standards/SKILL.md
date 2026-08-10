@@ -32,7 +32,13 @@ arbitraje: si la pregunta es *"¿qué hacemos con este sistema?"*, es suya; si e
 sin romper nada y cuándo apagamos el viejo?"*, es de aquí); `project-management-standards` (la
 gestión del proyecto: enfoque de entrega, estimación, RAID, informes, interesados, cierre. **Aquí
 solo los artefactos propios del corte**, que no son gestión genérica: el *runbook*, el ensayo y los
-criterios de abortar); `bcdr-standards` (**RTO/RPO y desastre**: una migración es un cambio
+criterios de abortar); `erp-sap-standards` (**recíproca: la migración a un ERP de paquete tiene
+restricciones que no vienen de la técnica sino del contrato** — el calendario de mantenimiento que
+fija la fecha, la licencia que cambia con la arquitectura, el reparto de responsabilidad del modelo
+de despliegue y el gobierno de transportes. Todo eso es suyo y **condiciona la ventana de corte que
+se diseña aquí**; el corte en sí, su ensayo, su cuadre y su marcha atrás son de esta skill. El error
+típico si no se leen juntas: fijar la ventana sin saber que el paisaje de origen está en congelación
+de transportes con dueño y fecha propios); `bcdr-standards` (**RTO/RPO y desastre**: una migración es un cambio
 planificado, no un desastre, y **su ventana no es un RTO**. Recíproca útil: el ensayo de un corte y
 un ejercicio de DR se parecen tanto que conviene reutilizar el mismo runbook, pero el que declara la
 activación y el que declara el aborto no son la misma figura); `data-engineering-standards` (los

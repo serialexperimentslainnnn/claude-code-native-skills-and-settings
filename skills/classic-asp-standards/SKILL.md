@@ -170,7 +170,7 @@ aplicación se compromete, que no pueda llamar a casa.
 ## 6. Operabilidad
 
 Sección **reducida deliberadamente**: la operación del servidor —*app pools*, reciclado, límites,
-TLS, registro— es de `web-app-servers-standards` (Ola 7) y no se duplica aquí. Lo específico del
+TLS, registro— es de `web-app-servers-standards` y no se duplica aquí. Lo específico del
 código: `Session` es estado en proceso y **cualquier reciclado la pierde**, así que ni balanceo sin
 afinidad ni escalado horizontal sin rediseñar el estado; y las fugas de objetos COM (§3) son la causa
 habitual de reinicios en cadena. La telemetría útil se saca del log de IIS, no de instrumentación en

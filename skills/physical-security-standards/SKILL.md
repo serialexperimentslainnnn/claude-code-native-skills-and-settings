@@ -46,8 +46,7 @@ contiene técnicas de apertura de cerraduras, clonado de credenciales, elusión 
 guiones de suplantación. Cualquier prueba de intrusión física requiere **alcance y autorización por
 escrito, con carta de autorización en mano**, y es territorio de `offensive-security-standards`.
 
-**No aplica**: ver `datacenter-facilities-standards` (**Ola 7, hermana; puede estar escribiéndose
-ahora — citarla, no editarla**: **la planta física es suya, sin excepción** — energía desde la
+**No aplica**: ver `datacenter-facilities-standards` (**la planta física es suya, sin excepción** — energía desde la
 acometida, SAI, grupo electrógeno, PDU, refrigeración, pasillo caliente/frío, densidad por rack,
 suelo técnico, cableado estructurado y **protección contra incendios**, más Tier/EN 50600 como
 clasificación del sitio. **Aquí, la parte de seguridad**: quién entra, cómo se demuestra, qué se
@@ -65,7 +64,7 @@ implementa el borrado o quién es el responsable del tratamiento, es suya),
 `grc-compliance-standards` (**el marco y la evidencia de auditoría**: ISO 27001, SoA, ENS, registro
 de riesgos; aquí el control técnico y su operación), `identity-access-management-standards`
 (identidad lógica, MFA, ciclo de vida de la cuenta — **la convergencia entre la credencial física
-y la lógica se decide con ellos**), `identity-threat-detection-standards` (**Ola 7, hermana**: el
+y la lógica se decide con ellos**), `identity-threat-detection-standards` (el
 ataque a la identidad digital y su detección), `windows-server-ad-standards` y
 `linux-hardening-standards` (baseline del SO y de la consola), `networking-standards` y
 `routing-switching-standards` (**802.1X, port-security y VLAN de invitados son controles de red

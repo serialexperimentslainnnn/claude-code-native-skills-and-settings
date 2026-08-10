@@ -93,7 +93,7 @@ batir **antes** de considerarse), `ai-governance-standards` (gobernanza de recla
 tecnológicas y diligencia debida sobre proveedores), `grc-compliance-standards` (aceptación
 formal de riesgo tecnológico y evidencia), `tech-leadership-standards` (decisión de
 *build-vs-buy* y de invertir en I+D no productiva), `python-standards` (el lenguaje de
-Qiskit, Cirq y PennyLane), `blockchain-web3-standards` (Ola 7: el "riesgo cuántico" sobre
+Qiskit, Cirq y PennyLane), `blockchain-web3-standards` (el "riesgo cuántico" sobre
 firmas de cadena se trata allí como riesgo, y su remedio en `post-quantum-crypto`),
 `llm-app-engineering-standards` y `mlsecops-standards` (**nada que ver**: "quantum" en
 marketing de IA no es esto).
