@@ -3,616 +3,613 @@ name: mlsecops-standards
 description: Security of the model lifecycle and the AI supply chain. Use when verifying provenance and integrity of third-party model weights, preferring safetensors over pickle-backed formats (.pt, .bin, joblib, Keras Lambda layers) and auditing trust_remote_code, scanning weights with picklescan or modelscan and understanding their evasion limits, signing model artifacts and pinning them by digest in a model registry, triaging an AI-stack supply-chain compromise (the LiteLLM PyPI backdoor and its .pth persistence, a poisoned CI scanner, malicious models or agent skills in a public hub), producing an AIBOM or ML-BOM with CycloneDX or the SPDX AI profile, handling data and model poisoning, model backdoors, query-based extraction and unauthorized distillation, model inversion and membership inference as risk classes with indicators and mitigations, rate limiting and anomalous-use detection on a deployed inference endpoint, hardening the training pipeline and its compute isolation, running AI red teaming with garak, PyRIT or promptfoo redteam, or mapping controls to MITRE ATLAS, the OWASP GenAI Top 10 (LLM and ASI), NIST AI RMF and AI 600-1, or EU AI Act Article 15.
 ---
 
-# Estándares de MLSecOps — seguridad del ciclo de vida y la cadena de suministro de IA
+# MLSecOps standards — security of the model lifecycle and the AI supply chain
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **asegurar el ciclo de vida del modelo y su cadena de suministro**: procedencia e
-integridad de los pesos, formatos de serialización y su capacidad de ejecución arbitraria, escaneo
-y firma de artefactos de modelo, inventario (AIBOM), seguridad del pipeline de entrenamiento y del
-registro de modelos, el endpoint desplegado como superficie de ataque, las clases de riesgo propias
-del ciclo de vida (envenenamiento, puertas traseras, extracción, inversión, inferencia de
-pertenencia, ejemplos adversarios), la metodología de red teaming **de IA**, y el mapeo a los marcos
-vigentes (ATLAS, OWASP GenAI, NIST AI RMF, AI Act art. 15).
+Applies to **securing the model lifecycle and its supply chain**: provenance and integrity of the
+weights, serialisation formats and their capacity for arbitrary execution, scanning and signing of
+model artifacts, inventory (AIBOM), security of the training pipeline and of the model registry,
+the deployed endpoint as an attack surface, the risk classes specific to the lifecycle (poisoning,
+backdoors, extraction, inversion, membership inference, adversarial examples), **AI** red teaming
+methodology, and the mapping to the frameworks in force (ATLAS, OWASP GenAI, NIST AI RMF, AI Act
+art. 15).
 
-**Postura**: **defensiva y autorizada, siempre.** Los ataques se describen como **clase de riesgo,
-indicador y mitigación**; nunca como procedimiento reproducible. Ver §7.
+**Posture**: **defensive and authorised, always.** Attacks are described as **risk class,
+indicator and mitigation**; never as a reproducible procedure. See §7.
 
-**Tesis del dominio**: **un modelo de terceros es un binario de terceros.** Un fichero de pesos
-descargado de un hub público tiene el mismo perfil de confianza que un ejecutable bajado de
-internet — y, en varios formatos de uso masivo, **literalmente ejecuta código al cargarse**. Todo lo
-que sigue deriva de tratarlo como tal: procedencia, integridad, firma, escaneo, aislamiento.
+**Domain thesis**: **a third-party model is a third-party binary.** A weights file downloaded from
+a public hub has the same trust profile as an executable pulled off the internet — and, in several
+formats in mass use, **it literally executes code when loaded**. Everything that follows derives
+from treating it as such: provenance, integrity, signature, scanning, isolation.
 
-**Segunda tesis**: **la cadena de suministro de IA es la cadena de suministro de software, más los
-datos y los pesos.** No la sustituye: la extiende. Los incidentes reales de 2026 no fueron ataques
-exóticos contra modelos, sino compromisos clásicos de CI y de repositorios de paquetes que llegaron
-a la IA (§3.3). **El control que más riesgo de IA elimina sigue siendo fijar dependencias por
-digest.**
+**Second thesis**: **the AI supply chain is the software supply chain, plus the data and the
+weights.** It does not replace it: it extends it. The real 2026 incidents were not exotic attacks
+against models, but classic compromises of CI and package repositories that reached AI (§3.3).
+**The control that removes the most AI risk is still pinning dependencies by digest.**
 
 Triggers: `.safetensors`, `.pt`, `.pth`, `.bin`, `.ckpt`, `.pkl`, `.gguf`, `.h5`/`.keras`,
 `torch.load`, `weights_only`, `pickle`, `joblib.load`, `trust_remote_code=True`, `from_pretrained`,
-`picklescan`, `modelscan`, "modelo malicioso", "hub público", "Hugging Face", "registro de modelos",
-`MLflow`, "firmar el modelo", "AIBOM", "ML-BOM", "CycloneDX", "SPDX AI profile", "envenenamiento de
-datos", "data poisoning", "puerta trasera en el modelo", "backdoor", "extracción del modelo",
-"destilación no autorizada", "inversión del modelo", "inferencia de pertenencia", "membership
-inference", "ejemplo adversario", "red team de IA", `garak`, `PyRIT`, `promptfoo redteam`,
+`picklescan`, `modelscan`, "malicious model", "public hub", "Hugging Face", "model registry",
+`MLflow`, "sign the model", "AIBOM", "ML-BOM", "CycloneDX", "SPDX AI profile", "data
+poisoning", "data poisoning", "model backdoor", "backdoor", "model extraction",
+"unauthorised distillation", "model inversion", "membership inference", "membership
+inference", "adversarial example", "AI red team", `garak`, `PyRIT`, `promptfoo redteam`,
 `deepteam`, "MITRE ATLAS", `AML.T`, `AML.CS`, "OWASP Top 10 LLM", `ASI01`, "NIST AI RMF",
-"AI 600-1", "AI Act artículo 15", "LiteLLM", "TeamPCP".
+"AI 600-1", "AI Act article 15", "LiteLLM", "TeamPCP".
 
-**No aplica**: ver
-`llm-app-engineering-standards` (**la inyección de prompt es suya**, junto con tratar la salida del
-modelo como entrada no confiable, la salida estructurada y los límites de gasto. **No la reclamo**:
-aquí solo aparece como una técnica más del catálogo ATLAS cuando se mapea cobertura);
-`ai-agents-standards` (contención del agente, sandbox, egress, aprobación humana de acciones
-irreversibles, tríada letal, riesgos agénticos OWASP ASI01–ASI10 aplicados al diseño del bucle);
-`rag-standards` (control de acceso por documento sobre los fragmentos recuperados y borrado del
-índice — el envenenamiento del corpus de recuperación se **mitiga** allí; aquí es una clase de
-riesgo del ciclo de vida);
-`mcp-standards` (tool poisoning, rug pull, server shadowing y autorización de servidores MCP);
-`claude-api` (**skill instalada, referencia canónica del lado Anthropic**: nada de modelos Claude
-—id, precio, límites, parámetros— se afirma de memoria);
-`appsec-standards` (**clases de vulnerabilidad de aplicación** —IDOR, SSRF, XSS, deserialización
-insegura como categoría, STRIDE, ASVS— y selección de SAST/DAST/SCA. Aquí, la deserialización
-insegura **aplicada al artefacto de modelo** y las clases propias del ciclo de vida de IA);
-`offensive-security-standards` (**el ejercicio autorizado y su gobierno son suyos, sin excepción**:
-autorización por escrito, RoE, alcance, ventana, deconfliction, condiciones de parada, informe,
-retest, encuadre legal. **Frontera precisa: si la pregunta es "¿puedo atacar esto y bajo qué
-papel?", es suya; si es "¿qué se prueba en un sistema de IA y con qué método?", es mía.** El red
-teaming de IA de §3.7 se ejecuta **dentro** de sus RoE, nunca fuera);
-`llm-evaluation-standards` (el aparato de medición. **Frontera declarada en
-ambos lados: la metodología de ataque adversario es mía; el conjunto de casos, el juez, la rúbrica,
-el umbral y el gate de CI con que se mide son suyos.** Un hallazgo de red team se convierte en un
-caso de su eval set: ese es el handoff);
-`vulnerability-management-standards` (**triaje de CVE, CVSS/EPSS/KEV, SLA de remediación y VEX. Los
-CVE del stack de ML —`torch`, `transformers`, servidores de inferencia, arneses— entran por ahí**,
-no por aquí);
-`cicd-standards` (**SBOM, firma con cosign/Sigstore y procedencia SLSA en el pipeline son suyos**,
-igual que el endurecimiento de runners y la identidad efímera por OIDC. **Aquí solo lo específico
-del modelo**: qué se firma cuando el artefacto son pesos, y qué se inventaría cuando además hay
-datos);
-`cryptography-pki-standards` (la primitiva de firma, la elección de algoritmo y la custodia y
-rotación de claves);
-`secrets-management-standards` (gestor, credenciales efímeras, rotación — el incidente de §3.3 es un
-caso de robo de credencial de CI, y la mitigación estructural es suya);
-`container-runtime-security-standards` y `kubernetes-standards` (aislamiento del cómputo donde se
-carga un modelo no confiable: seccomp, capabilities, non-root, admisión);
-`detection-engineering-standards` (**autoría y ciclo de vida de la regla**: Sigma, YARA, tests,
-cobertura ATT&CK. Aquí se dice **qué evento de IA debe emitirse y qué anomalía importa**; la regla se
-escribe y se gobierna allí);
-`incident-response-forensics-standards` (respuesta técnica y forense al compromiso, cadena de
-custodia, erradicación y rotación masiva de credenciales);
-`privacy-engineering-standards` (**dato personal en el entrenamiento, memorización del modelo,
-desidentificación, derechos del interesado y el encaje de sistemas de IA en el RGPD/AI Act: ya lo
-cubre — no se duplica aquí**. La inferencia de pertenencia aparece en §3.5 como **clase de riesgo
-técnico**; su tratamiento como riesgo de privacidad es suyo);
-`grc-compliance-standards` (marco de gestión, SoA, evidencia de auditoría, aceptación formal de
-riesgo);
-`ai-governance-standards` (AI Act como régimen, políticas, inventario de
-sistemas de IA y gestión del riesgo organizativo. **Frontera: el gobierno es suyo, el control
-técnico verificable es mío.** Si se responde con un documento firmado, es suyo; si se responde
-ejecutando un escaneo o una verificación de firma, es mío);
-`mlops-standards` (el ciclo de vida operativo de un modelo propio —versionado de
-datasets con DVC/lakeFS, experimentos en MLflow/W&B, registro de modelos con *model cards*, estados y
-aprobación, orquestación del entrenamiento, *feature store*, despliegue canario y rollback de pesos,
-deriva y reentrenamiento—. **Esta skill es su cara de seguridad**: `mlops` define el registro y la
-promoción entre entornos; yo defino cómo se protege, se firma, se aísla y se audita esa cadena. La
-reproducibilidad es requisito de calidad allí y **control de seguridad aquí** (§3.10));
-`local-inference-standards` (servir pesos abiertos en infraestructura propia: motor, cuantización,
-dimensionado, seguridad del endpoint como puerto);
-`gpu-computing-standards` (la GPU como recurso: driver, MIG/MPS, aislamiento del acelerador);
-`data-platform-standards` (dónde viven los datos de entrenamiento y su cifrado en reposo);
-`iac-standards`, `identity-access-management-standards`, `bcdr-standards` (infraestructura,
-identidad y recuperación del entorno de ML).
+**Not applicable**: see
+`llm-app-engineering-standards` (**prompt injection is theirs**, together with treating model
+output as untrusted input, structured output and spend limits. **I do not claim it**:
+here it appears only as one more technique in the ATLAS catalogue when mapping coverage);
+`ai-agents-standards` (agent containment, sandbox, egress, human approval of
+irreversible actions, lethal trifecta, OWASP ASI01–ASI10 agentic risks applied to loop design);
+`rag-standards` (per-document access control over the retrieved fragments and index
+deletion — poisoning of the retrieval corpus is **mitigated** there; here it is a risk
+class of the lifecycle);
+`mcp-standards` (tool poisoning, rug pull, server shadowing and authorisation of MCP servers);
+`claude-api` (**installed skill, canonical reference on the Anthropic side**: nothing about Claude
+models —id, price, limits, parameters— is asserted from memory);
+`appsec-standards` (**application vulnerability classes** —IDOR, SSRF, XSS, insecure
+deserialisation as a category, STRIDE, ASVS— and SAST/DAST/SCA selection. Here, insecure
+deserialisation **applied to the model artifact** and the classes specific to the AI lifecycle);
+`offensive-security-standards` (**the authorised exercise and its governance are theirs, without
+exception**: written authorisation, RoE, scope, window, deconfliction, stop conditions, report,
+retest, legal framing. **Precise boundary: if the question is "may I attack this and under what
+role?", it is theirs; if it is "what is tested in an AI system and with what method?", it is
+mine.** The AI red teaming of §3.7 runs **inside** their RoE, never outside);
+`llm-evaluation-standards` (the measurement apparatus. **Boundary declared on
+both sides: adversarial attack methodology is mine; the case set, the judge, the rubric,
+the threshold and the CI gate it is measured with are theirs.** A red team finding becomes a
+case in their eval set: that is the handoff);
+`vulnerability-management-standards` (**CVE triage, CVSS/EPSS/KEV, remediation SLA and VEX. The
+CVEs of the ML stack —`torch`, `transformers`, inference servers, harnesses— come in there**,
+not here);
+`cicd-standards` (**SBOM, signing with cosign/Sigstore and SLSA provenance in the pipeline are
+theirs**, as is runner hardening and ephemeral identity via OIDC. **Here only what is specific
+to the model**: what is signed when the artifact is weights, and what is inventoried when there is
+also data);
+`cryptography-pki-standards` (the signing primitive, the algorithm choice and the custody and
+rotation of keys);
+`secrets-management-standards` (manager, ephemeral credentials, rotation — the §3.3 incident is a
+case of CI credential theft, and the structural mitigation is theirs);
+`container-runtime-security-standards` and `kubernetes-standards` (isolation of the compute where
+an untrusted model is loaded: seccomp, capabilities, non-root, admission);
+`detection-engineering-standards` (**rule authorship and lifecycle**: Sigma, YARA, tests,
+ATT&CK coverage. Here we say **which AI event must be emitted and which anomaly matters**; the rule
+is written and governed there);
+`incident-response-forensics-standards` (technical and forensic response to the compromise, chain of
+custody, eradication and mass credential rotation);
+`privacy-engineering-standards` (**personal data in training, model memorisation,
+de-identification, data subject rights and how AI systems fit under GDPR/AI Act: already
+covered — not duplicated here**. Membership inference appears in §3.5 as a **technical risk
+class**; its treatment as a privacy risk is theirs);
+`grc-compliance-standards` (management framework, SoA, audit evidence, formal risk
+acceptance);
+`ai-governance-standards` (AI Act as a regime, policies, inventory of
+AI systems and organisational risk management. **Boundary: governance is theirs, the verifiable
+technical control is mine.** If the answer is a signed document, it is theirs; if the answer is
+running a scan or a signature verification, it is mine);
+`mlops-standards` (the operational lifecycle of an in-house model —dataset versioning
+with DVC/lakeFS, experiments in MLflow/W&B, model registry with *model cards*, states and
+approval, training orchestration, *feature store*, canary deployment and weight rollback,
+drift and retraining—. **This skill is its security face**: `mlops` defines the registry and
+promotion between environments; I define how that chain is protected, signed, isolated and audited.
+Reproducibility is a quality requirement there and a **security control here** (§3.10));
+`local-inference-standards` (serving open weights on your own infrastructure: engine, quantisation,
+sizing, endpoint security as a port);
+`gpu-computing-standards` (the GPU as a resource: driver, MIG/MPS, accelerator isolation);
+`data-platform-standards` (where the training data lives and its encryption at rest);
+`iac-standards`, `identity-access-management-standards`, `bcdr-standards` (infrastructure,
+identity and recovery of the ML environment).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión y el estado de mantenimiento por web antes de fijar nada (§8). Este
-> ecosistema tiene alta mortalidad de herramientas y **repositorios que se archivan y se mueven**.
+> Verify the latest version and the maintenance status on the web before pinning anything (§8). This
+> ecosystem has a high tool mortality rate and **repositories that get archived and moved**.
 
-| Decisión | Por defecto | Motivo |
+| Decision | Default | Reason |
 |---|---|---|
-| Formato de pesos | **`safetensors`, siempre que exista** | Solo almacena tensores: sin código ejecutable ni ganchos de deserialización. Es el único formato de uso masivo diseñado para eliminar esta clase de ataque |
-| Formatos con ejecución arbitraria al cargar | **Vetados sin sandbox**: pickle y todo lo que lo envuelve (`.pkl`, `.pt`/`.bin`/`.ckpt` de PyTorch clásicos, `joblib`), y modelos Keras con capas `Lambda` | La deserialización de pickle **ejecuta código por diseño**. La documentación del propio módulo lo advierte |
-| `torch.load` sobre origen no plenamente confiable | **`weights_only=True`** (y verificar el default de tu versión) | Restringe lo que se puede deserializar. Mitiga, **no elimina** — hay investigación sobre evasión de cargadores restringidos |
-| `trust_remote_code=True` | **PROHIBIDO por defecto** | Equivale a ejecutar un binario arbitrario de internet. Hay CVE reciente de RCE por hardcodearlo (§3.2) |
-| Origen de los pesos | **Réplica interna con digest fijado**, no descarga directa del hub en runtime | Un pull en tiempo de despliegue contra un hub público es una dependencia mutable en el camino crítico |
-| Identificación del artefacto | **Digest criptográfico (SHA-256), nunca un tag ni "latest"** | Mismo principio que las imágenes de contenedor. Un tag es mutable |
-| Firma y verificación | **cosign/Sigstore sobre el artefacto de modelo**, verificación **antes de cargar** | Mecánica y custodia de claves: `cicd-standards` y `cryptography-pki-standards` |
-| Escaneo de modelos | **`picklescan` y/o `modelscan` como gate**, con expectativas calibradas (§3.2) | Son listas de denegación: detectan lo conocido. **Necesarios, insuficientes** |
-| Carga de un modelo no verificado | **Sandbox sin red ni credenciales**, usuario sin privilegios, FS de solo lectura | La carga **es** ejecución. Contención: `container-runtime-security-standards` |
-| Inventario | **AIBOM/ML-BOM en CycloneDX** para el pipeline; perfil AI de SPDX cuando el destinatario es regulatorio | Ver §3.4 sobre madurez real |
-| Marco de amenazas | **MITRE ATLAS** como taxonomía de referencia, **complementando ATT&CK** | §3.8 |
-| Catálogo de riesgo de aplicación | **OWASP Top 10 for LLM Applications 2025** + **Top 10 for Agentic Applications 2026 (ASI01–ASI10)** | §3.8 |
-| Red teaming de IA | **`garak`** (barrido amplio, CI) + **PyRIT** (campañas multi-turno) + **promptfoo redteam** (en PR) | §3.7 |
+| Weights format | **`safetensors`, whenever it exists** | Stores tensors only: no executable code, no deserialisation hooks. It is the only mass-use format designed to eliminate this attack class |
+| Formats with arbitrary execution on load | **Vetoed without a sandbox**: pickle and everything wrapping it (`.pkl`, classic PyTorch `.pt`/`.bin`/`.ckpt`, `joblib`), and Keras models with `Lambda` layers | Pickle deserialisation **executes code by design**. The module's own documentation warns about it |
+| `torch.load` over a not fully trusted source | **`weights_only=True`** (and verify your version's default) | Restricts what can be deserialised. It mitigates, **it does not eliminate** — there is research on evading restricted loaders |
+| `trust_remote_code=True` | **FORBIDDEN by default** | Equivalent to running an arbitrary binary from the internet. There is a recent RCE CVE from hardcoding it (§3.2) |
+| Source of the weights | **Internal replica with pinned digest**, not a direct hub download at runtime | A pull at deployment time against a public hub is a mutable dependency in the critical path |
+| Artifact identification | **Cryptographic digest (SHA-256), never a tag or "latest"** | Same principle as container images. A tag is mutable |
+| Signing and verification | **cosign/Sigstore over the model artifact**, verification **before loading** | Mechanics and key custody: `cicd-standards` and `cryptography-pki-standards` |
+| Model scanning | **`picklescan` and/or `modelscan` as a gate**, with calibrated expectations (§3.2) | They are denylists: they detect what is known. **Necessary, insufficient** |
+| Loading an unverified model | **Sandbox with no network and no credentials**, unprivileged user, read-only FS | Loading **is** execution. Containment: `container-runtime-security-standards` |
+| Inventory | **AIBOM/ML-BOM in CycloneDX** for the pipeline; SPDX AI profile when the recipient is regulatory | See §3.4 on real maturity |
+| Threat framework | **MITRE ATLAS** as the reference taxonomy, **complementing ATT&CK** | §3.8 |
+| Application risk catalogue | **OWASP Top 10 for LLM Applications 2025** + **Top 10 for Agentic Applications 2026 (ASI01–ASI10)** | §3.8 |
+| AI red teaming | **`garak`** (broad sweep, CI) + **PyRIT** (multi-turn campaigns) + **promptfoo redteam** (in PR) | §3.7 |
 
-### Estado verificado de las herramientas (agosto 2026)
+### Verified status of the tools (August 2026)
 
-| Herramienta | Versión | Fecha | Notas |
+| Tool | Version | Date | Notes |
 |---|---|---|---|
-| `garak` (NVIDIA) | 0.15.1 | 2026-06-05 | **Vivo**, repo activo. Escáner de sondas a nivel de modelo |
-| **PyRIT (Microsoft)** | v1.0.1 | 2026-07-30 | ⚠️ **El repositorio se movió**: `Azure/PyRIT` está **archivado** (2026-03-27). El activo es **`microsoft/PyRIT`**. Cualquier tutorial que apunte a `Azure/PyRIT` está obsoleto |
-| `promptfoo` (modo redteam) | 0.121.20 | 2026-07-31 | Vivo, cadencia alta. Gobierno: verificar la adquisición por OpenAI (§8) |
-| `picklescan` | 1.0.5 | 2026-07-01 | Vivo. Integrado en el pipeline de escaneo de Hugging Face |
-| `modelscan` (Protect AI) | 0.8.8 | 2026-02-18 | ⚠️ **~6 meses sin release.** Úsalo, pero pinea versión y no lo tomes como control único |
-| `deepteam` | v1.0.4 | 2025-11-12 | ⚠️ **Sin releases en ~9 meses.** No adoptar para trabajo nuevo sin reevaluar |
-| CycloneDX (spec) | 1.7 (2025-10-21), parches 1.7.1 (2026-06-02) | — | ECMA-424; verificar la edición vigente (§8) |
-| SPDX (spec) | 3.0.1 (2024-12-17), **3.1-RC1** (2026-01-24) | — | El AI Profile vive en la línea 3.x. ISO/IEC 5962:2021 codifica **SPDX 2.2.1**, no la actual |
-| MITRE ATLAS | contenido **v2026.06** (2026-06-30), formato **v6.0.0** | — | §3.8 |
+| `garak` (NVIDIA) | 0.15.1 | 2026-06-05 | **Alive**, active repo. Model-level probe scanner |
+| **PyRIT (Microsoft)** | v1.0.1 | 2026-07-30 | ⚠️ **The repository moved**: `Azure/PyRIT` is **archived** (2026-03-27). The active one is **`microsoft/PyRIT`**. Any tutorial pointing at `Azure/PyRIT` is obsolete |
+| `promptfoo` (redteam mode) | 0.121.20 | 2026-07-31 | Alive, high cadence. Governance: verify the acquisition by OpenAI (§8) |
+| `picklescan` | 1.0.5 | 2026-07-01 | Alive. Integrated into the Hugging Face scanning pipeline |
+| `modelscan` (Protect AI) | 0.8.8 | 2026-02-18 | ⚠️ **~6 months without a release.** Use it, but pin the version and do not take it as the sole control |
+| `deepteam` | v1.0.4 | 2025-11-12 | ⚠️ **No releases in ~9 months.** Do not adopt for new work without re-evaluating |
+| CycloneDX (spec) | 1.7 (2025-10-21), patches 1.7.1 (2026-06-02) | — | ECMA-424; verify the edition in force (§8) |
+| SPDX (spec) | 3.0.1 (2024-12-17), **3.1-RC1** (2026-01-24) | — | The AI Profile lives in the 3.x line. ISO/IEC 5962:2021 codifies **SPDX 2.2.1**, not the current one |
+| MITRE ATLAS | content **v2026.06** (2026-06-30), format **v6.0.0** | — | §3.8 |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 El modelo como artefacto de software
+### 3.1 The model as a software artifact
 
-Los tres controles no negociables, en orden:
+The three non-negotiable controls, in order:
 
-1. **Procedencia**: de dónde salió, quién lo publicó, qué versión exacta, contra qué datos se
-   entrenó (hasta donde sea conocible), y qué licencia lleva. Sin procedencia registrada no hay
-   respuesta posible a "¿estamos afectados?" cuando el hub retira un modelo.
-2. **Integridad**: digest calculado en la ingesta y verificado antes de cada carga. **Se referencia
-   siempre por digest**, nunca por nombre ni por tag.
-3. **Firma**: el artefacto se firma al entrar en el registro interno y **la firma se verifica antes
-   de cargar**, no solo al desplegar. Una verificación que solo ocurre en el pipeline no protege
-   contra la sustitución del fichero en el almacén.
+1. **Provenance**: where it came from, who published it, which exact version, against which data it
+   was trained (as far as that is knowable), and which licence it carries. Without recorded
+   provenance there is no possible answer to "are we affected?" when the hub pulls a model.
+2. **Integrity**: digest computed at ingestion and verified before each load. **It is always
+   referenced by digest**, never by name or by tag.
+3. **Signature**: the artifact is signed on entry into the internal registry and **the signature is
+   verified before loading**, not only at deployment. A verification that only happens in the
+   pipeline does not protect against substitution of the file in the store.
 
-**Corolario operativo**: el registro de modelos es un **activo de nivel producción**, no un cajón de
-`.ckpt` en un bucket compartido. Control de acceso con mínimo privilegio, escritura auditada,
-inmutabilidad de versiones publicadas, y separación de quien entrena, quien promueve y quien
-despliega. Un atacante con escritura en el registro no necesita ningún ataque de IA: sustituye el
-fichero.
+**Operational corollary**: the model registry is a **production-grade asset**, not a drawer of
+`.ckpt` in a shared bucket. Least-privilege access control, audited writes, immutability of
+published versions, and separation of who trains, who promotes and who deploys. An attacker with
+write access to the registry needs no AI attack at all: they replace the file.
 
-### 3.2 Pesos de terceros = binarios de terceros
+### 3.2 Third-party weights = third-party binaries
 
-**Formatos que ejecutan código al cargar** (clase de riesgo: deserialización insegura /
-ejecución arbitraria):
+**Formats that execute code on load** (risk class: insecure deserialisation /
+arbitrary execution):
 
-- **Pickle y todo lo construido encima**: `.pkl`, los `.pt`/`.bin`/`.ckpt` clásicos de PyTorch,
-  `joblib`. El mecanismo es el gancho de reconstrucción del propio protocolo — no un bug, **el
-  diseño**. El intérprete de pickle procesa opcodes según llegan, **sin validar antes que el fichero
-  sea íntegro**, lo que habilita técnicas de evasión basadas en ficheros deliberadamente corruptos.
-- **Keras/TensorFlow con capas `Lambda`**: ejecutan código Python arbitrario embebido en el modelo.
-  El problema no es exclusivo de pickle.
-- **`trust_remote_code=True`**: descarga y ejecuta código del repositorio del modelo. Existe CVE
-  reciente (**CVE-2026-6859**, InstructLab, verificar) por hardcodearlo en un script de
-  entrenamiento: bastaba un modelo malicioso en el hub para lograr RCE en cualquier usuario. **No
-  requiere ninguna evasión de escáner: es la funcionalidad haciendo su trabajo.**
+- **Pickle and everything built on top of it**: `.pkl`, the classic PyTorch `.pt`/`.bin`/`.ckpt`,
+  `joblib`. The mechanism is the protocol's own reconstruction hook — not a bug, **the
+  design**. The pickle interpreter processes opcodes as they arrive, **without first validating that
+  the file is intact**, which enables evasion techniques based on deliberately corrupted files.
+- **Keras/TensorFlow with `Lambda` layers**: they execute arbitrary Python code embedded in the model.
+  The problem is not exclusive to pickle.
+- **`trust_remote_code=True`**: downloads and executes code from the model's repository. There is a
+  recent CVE (**CVE-2026-6859**, InstructLab, verify) from hardcoding it in a training
+  script: a malicious model on the hub was enough to achieve RCE on any user. **It
+  requires no scanner evasion whatsoever: it is the functionality doing its job.**
 
-**Formato seguro recomendado**: **`safetensors`** — almacena únicamente datos tensoriales, sin código
-ni ganchos de deserialización. Es la elección por defecto y, cuando un modelo solo se publica en
-formato pickle, eso es en sí mismo una señal de riesgo a evaluar (y, si se acepta, la conversión a
-safetensors se hace **dentro del sandbox**, no en la estación del ingeniero).
+**Recommended safe format**: **`safetensors`** — it stores tensor data only, with no code
+or deserialisation hooks. It is the default choice and, when a model is published only in
+pickle format, that is in itself a risk signal to evaluate (and, if accepted, the conversion to
+safetensors happens **inside the sandbox**, not on the engineer's workstation).
 
-**Escaneo de modelos — necesario, insuficiente, y hay que decirlo:**
+**Model scanning — necessary, insufficient, and it must be said:**
 
-- `picklescan` y `modelscan` funcionan por **lista de denegación** de funciones peligrosas. Detectan
-  lo conocido.
-- Historial verificado de evasión: JFrog reportó **tres 0-days en `picklescan`** (corregidos en
-  0.0.31, sept-2025), cada uno permitiendo evadir la detección; la técnica **nullifAI**
-  (ReversingLabs) evadió el escaneo del hub con un pickle deliberadamente roto; y trabajo académico
-  reciente (**ShadowPickle**) reporta evasión de **diez escáneres y cuatro hubs de modelos**.
-- **Un hub público que marca un modelo como "unsafe" normalmente no lo bloquea**: te deja
-  descargarlo y ejecutarlo bajo tu responsabilidad. La etiqueta no es un control.
-- Consecuencia: **el escáner es un gate de higiene, no una garantía.** El control que realmente
-  acota el daño es **el aislamiento en la carga** más **preferir safetensors**.
+- `picklescan` and `modelscan` work by **denylist** of dangerous functions. They detect
+  what is known.
+- Verified history of evasion: JFrog reported **three 0-days in `picklescan`** (fixed in
+  0.0.31, Sept 2025), each one allowing detection to be bypassed; the **nullifAI** technique
+  (ReversingLabs) evaded the hub's scanning with a deliberately broken pickle; and recent academic
+  work (**ShadowPickle**) reports evasion of **ten scanners and four model hubs**.
+- **A public hub that flags a model as "unsafe" normally does not block it**: it lets you
+  download and run it at your own risk. The label is not a control.
+- Consequence: **the scanner is a hygiene gate, not a guarantee.** The control that really
+  bounds the damage is **isolation at load time** plus **preferring safetensors**.
 
-**Incidentes reales verificados** (usar como argumento, no como anécdota): se han encontrado modelos
-maliciosos en hubs públicos que abren una shell inversa hacia una IP externa al cargarse; se reporta
-un incremento interanual del orden de **5×** en la tasa de subida de modelos maliciosos; y en
-febrero de 2026 se detectaron **341 *skills* maliciosas** en un registro público de skills de
-agentes distribuyendo un infostealer. **El repositorio público de artefactos de IA es hoy un vector
-de distribución de malware activo.**
+**Verified real incidents** (use as an argument, not as an anecdote): malicious models have been
+found on public hubs that open a reverse shell to an external IP when loaded; a year-on-year
+increase on the order of **5×** in the upload rate of malicious models is reported; and in
+February 2026, **341 malicious *skills*** were detected in a public registry of agent skills
+distributing an infostealer. **The public repository of AI artifacts is today an active malware
+distribution vector.**
 
-### 3.3 La cadena de suministro de IA — el caso didáctico de 2026
+### 3.3 The AI supply chain — the didactic case of 2026
 
-El compromiso de **LiteLLM en PyPI (marzo de 2026)** es el ejemplo canónico de que **la cadena de
-suministro de IA se rompe por donde se rompe cualquier cadena de suministro de software**. Cadena
-verificada:
+The compromise of **LiteLLM on PyPI (March 2026)** is the canonical example that **the AI supply
+chain breaks where any software supply chain breaks**. Verified chain:
 
-1. **19 de marzo**: el actor (**TeamPCP**) compromete las GitHub Actions de **Trivy** — un escáner de
-   seguridad de código abierto. Como la mayoría de pipelines referencian Actions por **tag mutable
-   en lugar de commit SHA fijado**, las organizaciones que ejecutaban Trivy en CI empezaron a
-   ejecutar el código malicioso de inmediato.
-2. Entre las credenciales cosechadas estaba el **token de publicación en PyPI de LiteLLM**, cuyo
-   pipeline invocaba Trivy en un script de escaneo de secretos y CVE.
-3. **24 de marzo**: se publican `litellm` **1.82.7** y **1.82.8** con payload malicioso. La 1.82.8,
-   ~13 minutos después, añade **persistencia mediante un fichero `.pth`** (`litellm_init.pth`).
-4. **El mecanismo `.pth` es lo que hay que entender**: el módulo `site` de Python **ejecuta** el
-   contenido de cualquier `.pth` en `site-packages` durante la inicialización del intérprete —
-   **antes de cualquier `import` y antes de cualquier código de aplicación**. No hace falta importar
-   la librería: `python --version` basta para dispararlo. El payload iba doblemente codificado en
-   base64 para reducir la visibilidad ante análisis estático básico.
-5. **Payload**: cosecha de credenciales (más de 50 categorías: claves SSH, AWS con IMDSv2 y Secrets
-   Manager, GCP, Azure, Kubernetes, `.env`, historial de shell, credenciales de git, registros
-   Docker, estado de Terraform), **movimiento lateral en Kubernetes** (lectura de secretos en todos
-   los namespaces, creación de pods privilegiados montando el filesystem del host) y backdoor
-   persistente vía servicio systemd de usuario. Exfiltración cifrada (AES-256-CBC con clave de sesión
-   envuelta en RSA-4096) hacia un dominio no afiliado al proyecto.
-6. **Ventana**: ~40 minutos hasta la cuarentena en PyPI. Se reportan decenas de miles de
-   instalaciones en ese intervalo. La campaña continuó con `telnyx` (27 de marzo) y otros registros.
-7. **Quién no se vio afectado**: los despliegues que **fijaban dependencias** en un `requirements.txt`
-   dentro de la imagen oficial.
+1. **19 March**: the actor (**TeamPCP**) compromises the GitHub Actions of **Trivy** — an open-source
+   security scanner. Since most pipelines reference Actions by **mutable tag
+   instead of pinned commit SHA**, the organisations running Trivy in CI started
+   executing the malicious code immediately.
+2. Among the harvested credentials was the **LiteLLM PyPI publishing token**, whose
+   pipeline invoked Trivy in a secret- and CVE-scanning script.
+3. **24 March**: `litellm` **1.82.7** and **1.82.8** are published with a malicious payload. 1.82.8,
+   ~13 minutes later, adds **persistence via a `.pth` file** (`litellm_init.pth`).
+4. **The `.pth` mechanism is what must be understood**: Python's `site` module **executes** the
+   contents of any `.pth` in `site-packages` during interpreter initialisation —
+   **before any `import` and before any application code**. There is no need to import
+   the library: `python --version` is enough to trigger it. The payload was doubly base64-encoded
+   to reduce visibility to basic static analysis.
+5. **Payload**: credential harvesting (more than 50 categories: SSH keys, AWS with IMDSv2 and Secrets
+   Manager, GCP, Azure, Kubernetes, `.env`, shell history, git credentials, Docker
+   registries, Terraform state), **lateral movement in Kubernetes** (reading secrets in all
+   namespaces, creating privileged pods mounting the host filesystem) and a persistent
+   backdoor via a user systemd service. Encrypted exfiltration (AES-256-CBC with a session key
+   wrapped in RSA-4096) to a domain not affiliated with the project.
+6. **Window**: ~40 minutes until quarantine on PyPI. Tens of thousands of installations are reported
+   in that interval. The campaign continued with `telnyx` (27 March) and other registries.
+7. **Who was not affected**: the deployments that **pinned dependencies** in a `requirements.txt`
+   inside the official image.
 
-**Lecciones que se convierten en control, no en anécdota:**
+**Lessons that become controls, not anecdotes:**
 
-- **Fijar por digest/SHA, no por tag**, tanto las GitHub Actions como las dependencias y las imágenes
-  base. Es el control que separó a los afectados de los no afectados.
-- **Instalar un paquete es ejecutar código.** No hay "instalar y luego revisar".
-- **Un escáner de seguridad en tu CI es una dependencia con credenciales.** El eslabón comprometido
-  fue una herramienta *defensiva*. Aplícale el mismo criterio que a cualquier otra dependencia.
-- **Credenciales de publicación efímeras** (OIDC / *trusted publishing*) en lugar de tokens estáticos
-  de larga vida → `cicd-standards`, `secrets-management-standards`.
-- **Un host o job de CI que instaló el artefacto comprometido se trata como exposición completa de
-  credenciales**, no como "revisar si el paquete está presente": rotación masiva, búsqueda de
-  persistencia y revisión de actividad en Kubernetes → `incident-response-forensics-standards`.
-- El **precedente del catálogo** es coherente: los CVE y el estado de mantenimiento del stack de ML
-  (`torch`, `transformers`, servidores de inferencia, arneses) se gobiernan por
-  `vulnerability-management-standards`; lo específico de IA es que **los pesos y los datos son dos
-  eslabones más**, y no los cubre ningún SCA clásico.
+- **Pin by digest/SHA, not by tag**, for GitHub Actions as well as dependencies and base
+  images. It is the control that separated the affected from the unaffected.
+- **Installing a package is executing code.** There is no "install and then review".
+- **A security scanner in your CI is a dependency with credentials.** The compromised link
+  was a *defensive* tool. Apply the same criteria to it as to any other dependency.
+- **Ephemeral publishing credentials** (OIDC / *trusted publishing*) instead of long-lived static
+  tokens → `cicd-standards`, `secrets-management-standards`.
+- **A host or CI job that installed the compromised artifact is treated as full credential
+  exposure**, not as "check whether the package is present": mass rotation, hunting for
+  persistence and review of activity in Kubernetes → `incident-response-forensics-standards`.
+- The **catalogue precedent** is consistent: the CVEs and maintenance status of the ML stack
+  (`torch`, `transformers`, inference servers, harnesses) are governed by
+  `vulnerability-management-standards`; what is AI-specific is that **the weights and the data are two
+  more links**, and no classic SCA covers them.
 
-### 3.4 AIBOM / ML-BOM — estado real, sin optimismo
+### 3.4 AIBOM / ML-BOM — real status, without optimism
 
-Un SBOM clásico no inventaría ni pesos, ni datos de entrenamiento, ni la procedencia del modelo. De
-ahí el AIBOM. **Estado honesto a agosto de 2026: es un estándar emergente, no maduro.**
+A classic SBOM inventories neither weights, nor training data, nor the provenance of the model.
+Hence the AIBOM. **Honest status as of August 2026: it is an emerging standard, not a mature one.**
 
-- **CycloneDX** soporta ML-BOM/AI-BOM y es la opción práctica para CI. Spec **1.7** publicada
-  2025-10-21 (con parches 1.7.x en 2026), adoptada como **ECMA-424**. Es la línea con más tracción en
-  herramientas.
-- **SPDX 3.x** define un **AI Profile** y un **Dataset Profile** (tipo de modelo, método de
-  entrenamiento, tratamiento de datos, explicabilidad, limitaciones, consumo energético). Estado:
-  **3.0.1** (dic-2024) con **3.1-RC1** (ene-2026). **Aviso**: la norma ISO/IEC 5962:2021 codifica
-  **SPDX 2.2.1**, no la versión con perfil de IA — citar "SPDX es ISO" como prueba de madurez del
-  AIBOM es incorrecto.
-- **Realidad de campo**: la herramienta genera lo que el modelo upstream declaró. Si el publicador no
-  documentó datos ni licencia, **el AIBOM sale con huecos** — algunos generadores puntúan
-  explícitamente esa incompletitud, y esa puntuación es el dato útil.
+- **CycloneDX** supports ML-BOM/AI-BOM and is the practical option for CI. Spec **1.7** published
+  2025-10-21 (with 1.7.x patches in 2026), adopted as **ECMA-424**. It is the line with the most
+  traction in tooling.
+- **SPDX 3.x** defines an **AI Profile** and a **Dataset Profile** (model type, training
+  method, data handling, explainability, limitations, energy consumption). Status:
+  **3.0.1** (Dec 2024) with **3.1-RC1** (Jan 2026). **Warning**: the ISO/IEC 5962:2021 standard codifies
+  **SPDX 2.2.1**, not the version with the AI profile — citing "SPDX is ISO" as proof of AIBOM
+  maturity is incorrect.
+- **Field reality**: the tool generates what the upstream model declared. If the publisher did not
+  document data or licence, **the AIBOM comes out with gaps** — some generators explicitly score
+  that incompleteness, and that score is the useful datum.
 
-**Criterio**: genera AIBOM porque el inventario es prerrequisito de todo lo demás (y porque la
-contratación empieza a exigirlo), pero **no lo trates como control de seguridad**. Es un inventario,
-y un inventario con huecos declarados. El control sigue siendo digest + firma + escaneo + sandbox.
+**Criteria**: generate an AIBOM because inventory is a prerequisite for everything else (and because
+procurement is starting to demand it), but **do not treat it as a security control**. It is an
+inventory, and an inventory with declared gaps. The control is still digest + signature + scan + sandbox.
 
-### 3.5 Ataques del ciclo de vida — clase de riesgo, indicador, mitigación
+### 3.5 Lifecycle attacks — risk class, indicator, mitigation
 
-**Descritos como riesgo. Nunca como receta.**
+**Described as risk. Never as a recipe.**
 
-| Clase | Riesgo | Indicadores | Mitigación |
+| Class | Risk | Indicators | Mitigation |
 |---|---|---|---|
-| **Envenenamiento de datos** | Manipular el corpus de entrenamiento o de ajuste para degradar o sesgar el modelo | Contribuciones anómalas al dataset; deriva de calidad tras reentrenar; muestras duplicadas o casi duplicadas de un único origen | Procedencia y control de acceso del dataset; curación y revisión de fuentes externas; detección de anomalías/duplicados; **reproducibilidad para poder bisecar qué lote lo causó** |
-| **Envenenamiento del modelo / puerta trasera** | Comportamiento malicioso latente que se activa con un disparador concreto | Discrepancia entre métricas agregadas (buenas) y comportamiento en casos específicos; artefacto sin procedencia | Solo modelos con procedencia y firma; evaluación con casos adversarios (§3.7 → `llm-evaluation-standards`); reentrenamiento controlado sobre datos verificados |
-| **Envenenamiento del corpus de recuperación** | Insertar contenido en la base que el sistema recupera | Documentos nuevos con instrucciones embebidas; picos de recuperación de una fuente concreta | Control de acceso de escritura al corpus; tratar el contenido recuperado como no confiable → `rag-standards`, `llm-app-engineering-standards` |
-| **Extracción / destilación no autorizada** | Reconstruir capacidad del modelo consultando su API masivamente | Volumen anómalo de consultas por cuenta; consultas sistemáticas o de alta entropía; **muchas cuentas nuevas con patrón común**; picos de consumo desalineados con uso de producto | Límites de tasa y cuotas por usuario/organización; detección de uso anómalo; verificación de identidad en el alta; §3.6 |
-| **Inversión del modelo** | Reconstruir características del dato de entrenamiento a partir de las salidas | Consultas dirigidas a extraer memorizaciones; salidas que reproducen literalmente fragmentos de entrenamiento | Minimización del dato de entrenamiento y desidentificación → `privacy-engineering-standards`; límite de detalle en las salidas; filtrado de salida |
-| **Inferencia de pertenencia** | Determinar si un registro concreto estuvo en el entrenamiento | Consultas repetidas sobre registros específicos | **Ver nota de realismo abajo.** Minimización, evitar sobreajuste, privacidad diferencial cuando el riesgo lo justifique → `privacy-engineering-standards` |
-| **Ejemplos adversarios** | Entradas perturbadas que inducen una clasificación o comportamiento erróneo | Tasa de error concentrada en entradas cercanas entre sí; entradas con perturbaciones imperceptibles | Robustez como requisito (AI Act art. 15); validación en el borde; detección de entradas fuera de distribución; redundancia de decisión en usos críticos |
+| **Data poisoning** | Manipulating the training or fine-tuning corpus to degrade or bias the model | Anomalous contributions to the dataset; quality drift after retraining; duplicate or near-duplicate samples from a single source | Dataset provenance and access control; curation and review of external sources; anomaly/duplicate detection; **reproducibility so you can bisect which batch caused it** |
+| **Model poisoning / backdoor** | Latent malicious behaviour triggered by a specific trigger | Discrepancy between aggregate metrics (good) and behaviour in specific cases; artifact without provenance | Only models with provenance and signature; evaluation with adversarial cases (§3.7 → `llm-evaluation-standards`); controlled retraining on verified data |
+| **Retrieval corpus poisoning** | Inserting content into the base the system retrieves from | New documents with embedded instructions; retrieval spikes from a specific source | Write access control over the corpus; treat retrieved content as untrusted → `rag-standards`, `llm-app-engineering-standards` |
+| **Unauthorised extraction / distillation** | Reconstructing model capability by querying its API en masse | Anomalous query volume per account; systematic or high-entropy queries; **many new accounts with a common pattern**; consumption spikes misaligned with product usage | Rate limits and quotas per user/organisation; anomalous-use detection; identity verification at sign-up; §3.6 |
+| **Model inversion** | Reconstructing features of the training data from the outputs | Queries aimed at extracting memorisations; outputs that literally reproduce training fragments | Minimisation of training data and de-identification → `privacy-engineering-standards`; limit on output detail; output filtering |
+| **Membership inference** | Determining whether a specific record was in the training set | Repeated queries about specific records | **See the realism note below.** Minimisation, avoiding overfitting, differential privacy when the risk justifies it → `privacy-engineering-standards` |
+| **Adversarial examples** | Perturbed inputs that induce a wrong classification or behaviour | Error rate concentrated on inputs close to each other; inputs with imperceptible perturbations | Robustness as a requirement (AI Act art. 15); validation at the edge; out-of-distribution input detection; decision redundancy in critical uses |
 
-**Nota de realismo — laboratorio frente a producción.** Es obligatorio distinguirlos:
+**Realism note — laboratory versus production.** Distinguishing them is mandatory:
 
-- **La extracción por consulta es una amenaza demostrada a escala industrial.** En febrero de 2026,
-  proveedores frontera divulgaron campañas de extracción contra sus modelos (del orden de **10⁵
-  prompts** en una campaña, y decenas de miles de cuentas fraudulentas generando millones de
-  intercambios en otra). **Esto ya no es teórico: dimensiona los límites de tasa en consecuencia.**
-- **La inferencia de pertenencia rinde mucho peor de lo que sugieren los titulares.** Trabajo
-  sistemático sobre modelos preentrenados encuentra que la mayoría de ataques **apenas superan el
-  azar** cuando el preentrenamiento es de ~1 época (poco sobreajuste). Es **materialmente más
-  relevante sobre modelos ajustados finamente o con datos muy repetidos**. Trátalo como riesgo real
-  pero **condicionado al régimen de entrenamiento**, no como amenaza universal.
-- **El envenenamiento y las puertas traseras están sobradamente demostrados en laboratorio**; su
-  explotación en producción exige acceso al pipeline o al artefacto — que es exactamente lo que
-  protegen §3.1–§3.3. **La mitigación real es de cadena de suministro, no de ML.**
+- **Query-based extraction is a threat demonstrated at industrial scale.** In February 2026,
+  frontier providers disclosed extraction campaigns against their models (on the order of **10⁵
+  prompts** in one campaign, and tens of thousands of fraudulent accounts generating millions of
+  exchanges in another). **This is no longer theoretical: size your rate limits accordingly.**
+- **Membership inference performs far worse than the headlines suggest.** Systematic
+  work on pretrained models finds that most attacks **barely beat
+  chance** when pretraining is ~1 epoch (little overfitting). It is **materially more
+  relevant on finely tuned models or with heavily repeated data**. Treat it as a real risk
+  but **conditioned on the training regime**, not as a universal threat.
+- **Poisoning and backdoors are amply demonstrated in the laboratory**; their
+  exploitation in production requires access to the pipeline or the artifact — which is exactly what
+  §3.1–§3.3 protect. **The real mitigation is supply-chain, not ML.**
 
-### 3.6 El modelo desplegado como superficie
+### 3.6 The deployed model as a surface
 
-- **Límites de tasa y cuotas por usuario y por organización**, no solo globales. El global no frena
-  una campaña de extracción distribuida entre cuentas.
-- **Detección de uso anómalo** como control de primera clase: volumen, entropía y sistematicidad de
-  las consultas, altas masivas de cuentas correlacionadas, patrones de barrido. Qué se registra y qué
-  alerta: §3.9; la autoría de la regla es de `detection-engineering-standards`.
-- **Verificación de identidad y fricción en el alta** cuando el endpoint expone capacidad valiosa.
-- **Marca de agua (watermarking): valor preventivo bajo.** Es un instrumento **forense y post hoc**:
-  cuando detectas la marca, el modelo sustituto ya está entrenado. La literatura vigente la clasifica
-  como herramienta de **atribución y litigio**, no de defensa, y su robustez frente a destilación
-  y paráfrasis sigue siendo el problema abierto. **No la vendas internamente como protección.**
-- **Protección contra destilación no autorizada**: los controles que funcionan son los aburridos —
-  límites, cuotas, detección de anomalías, términos de servicio ejecutables y correlación entre
-  cuentas. Las defensas técnicas (perturbación de salida, resistencia a destilación) son área activa
-  de investigación, **no producto**. Con el modelo accesible públicamente, **no existe barrera
-  infalible**: el objetivo realista es **encarecer y detectar**, no impedir.
+- **Rate limits and quotas per user and per organisation**, not just global. The global one does not
+  stop an extraction campaign distributed across accounts.
+- **Anomalous-use detection** as a first-class control: volume, entropy and systematicity of
+  the queries, mass correlated account sign-ups, sweep patterns. What is logged and what
+  alerts: §3.9; rule authorship belongs to `detection-engineering-standards`.
+- **Identity verification and friction at sign-up** when the endpoint exposes valuable capability.
+- **Watermarking: low preventive value.** It is a **forensic and post hoc** instrument:
+  by the time you detect the mark, the substitute model is already trained. The current literature
+  classifies it as an **attribution and litigation** tool, not a defence, and its robustness against
+  distillation and paraphrasing remains the open problem. **Do not sell it internally as protection.**
+- **Protection against unauthorised distillation**: the controls that work are the boring ones —
+  limits, quotas, anomaly detection, enforceable terms of service and correlation between
+  accounts. Technical defences (output perturbation, distillation resistance) are an active area
+  of research, **not a product**. With the model publicly accessible, **there is no infallible
+  barrier**: the realistic goal is to **raise the cost and detect**, not to prevent.
 
-### 3.7 Red teaming de IA — metodología
+### 3.7 AI red teaming — methodology
 
-**Precondición dura**: se ejecuta dentro de un ejercicio autorizado. **La autorización por escrito,
-las RoE, el alcance, la ventana, la deconfliction, las condiciones de parada y el informe son de
-`offensive-security-standards` y no se improvisan aquí.** Lo que aporta esta skill es la metodología
-específica de IA.
+**Hard precondition**: it runs inside an authorised exercise. **Written authorisation,
+the RoE, the scope, the window, deconfliction, stop conditions and the report belong to
+`offensive-security-standards` and are not improvised here.** What this skill contributes is the
+AI-specific methodology.
 
-**Qué lo distingue del pentest clásico:**
+**What distinguishes it from classic pentesting:**
 
-- El objetivo no es solo la ejecución de código: es **el comportamiento del sistema**. Un fallo puede
-  ser una salida, no un shell.
-- **No es determinista**: un ataque que funciona una vez puede no repetirse. Un hallazgo sin tasa de
-  éxito medida sobre N intentos no es un hallazgo, es una anécdota → el aparato de medición es de
+- The target is not only code execution: it is **the behaviour of the system**. A failure can
+  be an output, not a shell.
+- **It is not deterministic**: an attack that works once may not repeat. A finding without a measured
+  success rate over N attempts is not a finding, it is an anecdote → the measurement apparatus belongs to
   `llm-evaluation-standards`.
-- La superficie incluye **datos, pesos, prompt, herramientas y memoria**, no solo red y aplicación.
-- **Dos objetivos que se solapan pero no son el mismo**: *safety* (contenido dañino, violación de
-  política) y *security* (exfiltración, compromiso del sistema, uso no autorizado de herramientas).
-  Declara cuál persigues; los equipos, los criterios y los destinatarios del informe difieren.
+- The surface includes **data, weights, prompt, tools and memory**, not only network and application.
+- **Two objectives that overlap but are not the same**: *safety* (harmful content, policy
+  violation) and *security* (exfiltration, system compromise, unauthorised use of tools).
+  Declare which one you are pursuing; the teams, the criteria and the report recipients differ.
 
-**Organización recomendada** (alineada con la práctica de la industria y con el ciclo de NIST AI RMF
+**Recommended organisation** (aligned with industry practice and with the NIST AI RMF cycle
 — *Govern, Map, Measure, Manage*):
 
-1. **Map**: modelar el sistema y sus riesgos a partir de ATLAS y del Top 10 aplicable (LLM o ASI).
-2. **Measure**: automatizar la amplitud — barrido de sondas en CI en cada despliegue de modelo.
-3. **Manage**: profundidad manual y multi-turno sobre lo crítico, con periodicidad definida;
-   mitigación y monitorización en producción con plan de respuesta.
-4. **Handoff**: **cada hallazgo se convierte en un caso permanente del conjunto de evaluación**
-   (`llm-evaluation-standards`) y, si procede, en una regla de detección
-   (`detection-engineering-standards`). **Un red team cuyo resultado es solo un PDF es dinero
-   quemado**: la mitad del valor está en la regresión que deja instalada.
+1. **Map**: model the system and its risks based on ATLAS and the applicable Top 10 (LLM or ASI).
+2. **Measure**: automate breadth — probe sweep in CI on every model deployment.
+3. **Manage**: manual, multi-turn depth on what is critical, with a defined periodicity;
+   mitigation and monitoring in production with a response plan.
+4. **Handoff**: **every finding becomes a permanent case in the evaluation set**
+   (`llm-evaluation-standards`) and, where appropriate, a detection rule
+   (`detection-engineering-standards`). **A red team whose only result is a PDF is money
+   burned**: half the value is in the regression it leaves installed.
 
-**Herramientas vigentes** (versiones en §2):
+**Tools in force** (versions in §2):
 
-- **`garak`** — escáner de sondas a nivel de modelo. Amplitud y regresión, barato, encaja en CI.
-  Cobertura agéntica y de RAG limitada.
-- **PyRIT** (`microsoft/PyRIT`, **ojo al cambio de repositorio**) — orquestación programable de
-  campañas multi-turno. Profundidad sobre aplicaciones críticas.
-- **`promptfoo` en modo redteam** — regresión adversaria en el PR, con presets mapeados al Top 10 de
-  OWASP.
-- **Nunca sustituyen a la medición sistemática.** Red teaming es exploración dirigida; la cobertura y
-  el umbral son evaluación.
+- **`garak`** — model-level probe scanner. Breadth and regression, cheap, fits in CI.
+  Limited agentic and RAG coverage.
+- **PyRIT** (`microsoft/PyRIT`, **watch out for the repository change**) — programmable orchestration of
+  multi-turn campaigns. Depth on critical applications.
+- **`promptfoo` in redteam mode** — adversarial regression in the PR, with presets mapped to the OWASP
+  Top 10.
+- **They never replace systematic measurement.** Red teaming is directed exploration; coverage and
+  the threshold are evaluation.
 
-**Prohibido**: incluir en documentación interna payloads listos para usar, jailbreaks concretos de
-producto de terceros o bypasses de guardrail específicos. Se documenta **la clase de técnica, el
-indicador y la mitigación**, con referencia al identificador del marco (p. ej. la técnica ATLAS
-correspondiente).
+**Forbidden**: including in internal documentation ready-to-use payloads, specific jailbreaks for
+third-party products or specific guardrail bypasses. What is documented is **the class of technique, the
+indicator and the mitigation**, with a reference to the framework identifier (e.g. the corresponding
+ATLAS technique).
 
-### 3.8 Marcos
+### 3.8 Frameworks
 
-- **MITRE ATLAS** — el ATT&CK de la IA. Base de conocimiento de tácticas, técnicas, mitigaciones y
-  casos reales contra sistemas de IA (`AML.T*`, `AML.M*`, `AML.CS*`).
-  - **Relación con ATT&CK: complementa, no sustituye.** Reutiliza el modelo y buena parte de las
-    tácticas de ATT&CK y añade las propias del dominio de IA. **Se usan los dos juntos**: ATT&CK para
-    la parte empresarial de la intrusión, ATLAS para la superficie de IA.
-  - **Estado verificado**: desde mayo de 2026 el proyecto **separó el versionado del contenido y del
-    formato**. El **contenido** sigue un esquema `YYYY.MM.N` — última release verificada
-    **v2026.06** (2026-06-30). El **formato de datos** sigue SemVer, **v6.0.0**, que introdujo un
-    campo `platforms` en todas las técnicas (`Predictive AI`, `Generative AI`, **`Agentic AI`**,
-    `Enterprise`), esquemas Pydantic de validación y API REST. Las releases anteriores usaban SemVer
-    conflacionado (v5.6.0, mayo-2026).
-  - **Implicación práctica**: si tu herramienta o tu capa de Navigator consume `ATLAS.yaml` del
-    formato antiguo, **el cambio a v6.0.0 te afecta**. Filtra la cobertura por `platforms` para no
-    reclamar cobertura agéntica que no tienes.
-  - El contenido reciente incorpora casos reales de la ola agéntica (exfiltración por inyección
-    indirecta en asistentes de productividad, extracción de modelo, servicios de IA como relé de C2,
-    RCE en plugins de frameworks de agentes).
-- **OWASP GenAI Security Project** — **dos listas, y hay que usar la correcta**:
-  - **Top 10 for LLM Applications 2025** (`LLM01:2025`–`LLM10:2025`). **Verificado: sigue siendo la
-    edición vigente; no hay edición 2026.** Aplica a chatbots, copilotos y RAG.
+- **MITRE ATLAS** — the ATT&CK of AI. Knowledge base of tactics, techniques, mitigations and
+  real cases against AI systems (`AML.T*`, `AML.M*`, `AML.CS*`).
+  - **Relationship with ATT&CK: it complements, it does not replace.** It reuses the model and much of the
+    tactics of ATT&CK and adds those specific to the AI domain. **Both are used together**: ATT&CK for
+    the enterprise part of the intrusion, ATLAS for the AI surface.
+  - **Verified status**: since May 2026 the project **separated the versioning of content and
+    format**. The **content** follows a `YYYY.MM.N` scheme — latest verified release
+    **v2026.06** (2026-06-30). The **data format** follows SemVer, **v6.0.0**, which introduced a
+    `platforms` field on all techniques (`Predictive AI`, `Generative AI`, **`Agentic AI`**,
+    `Enterprise`), Pydantic validation schemas and a REST API. Previous releases used conflated
+    SemVer (v5.6.0, May 2026).
+  - **Practical implication**: if your tool or your Navigator layer consumes the old format's
+    `ATLAS.yaml`, **the move to v6.0.0 affects you**. Filter coverage by `platforms` so you do not
+    claim agentic coverage you do not have.
+  - Recent content incorporates real cases from the agentic wave (exfiltration via indirect
+    injection in productivity assistants, model extraction, AI services as a C2 relay,
+    RCE in agent framework plugins).
+- **OWASP GenAI Security Project** — **two lists, and the right one must be used**:
+  - **Top 10 for LLM Applications 2025** (`LLM01:2025`–`LLM10:2025`). **Verified: it remains the
+    edition in force; there is no 2026 edition.** Applies to chatbots, copilots and RAG.
   - **Top 10 for Agentic Applications 2026** (`ASI01`–`ASI10`): Agent Goal Hijack, Tool Misuse &
     Exploitation, Agent Identity & Privilege Abuse, **Agentic Supply Chain Compromise**, Unexpected
     Code Execution, Memory & Context Poisoning, Insecure Inter-Agent Communication, Cascading Agent
-    Failures, Human-Agent Trust Exploitation, Rogue Agents. **Extiende** a la de LLM, no la
-    reemplaza: ASI04 cubre la composición dinámica en runtime donde LLM03 cubría la cadena estática
-    previa al despliegue. El diseño del agente frente a estos riesgos es de `ai-agents-standards`;
-    aquí, la parte de cadena de suministro (ASI04) y de ejecución (ASI05).
-- **NIST AI RMF** — **AI RMF 1.0** (`NIST AI 100-1`, enero 2023) sigue siendo el documento base;
-  **no hay una 2.0 publicada**. El perfil de IA generativa **`NIST AI 600-1` sigue siendo el de
-  julio de 2024, sin revisar**. La actividad de 2026 es **aditiva**: perfil de infraestructura
-  crítica (nota de concepto, abril 2026), overlays de ciberseguridad para sistemas de IA (COSAiS,
-  mono y multiagente), e iniciativa de estándares para agentes vía CAISI (febrero 2026). **Su
-  utilidad práctica es el ciclo Govern/Map/Measure/Manage como esqueleto del programa**, no como
-  catálogo técnico: su modelo de amenaza precede a lo agéntico.
-- **AI Act (UE) — parte de seguridad, art. 15**: los sistemas de alto riesgo deben alcanzar un nivel
-  apropiado de **exactitud, robustez y ciberseguridad**, con las métricas de exactitud **declaradas
-  en las instrucciones de uso**, y resiliencia frente a intentos de alterar su uso, salidas o
-  rendimiento — **citando explícitamente envenenamiento de datos y de modelo, ejemplos adversarios y
-  brechas de confidencialidad**. El nivel exigido es **contextual** (propósito, estado del arte,
-  riesgo), no un porcentaje universal. ⚠️ **El calendario está en disputa**: la fecha de aplicación
-  de las obligaciones de alto riesgo (2 de agosto de 2026 bajo el texto original) puede haberse
-  desplazado por el paquete *Digital Omnibus* — **verificar en fuente primaria antes de comprometer
-  una fecha** (§8). **El régimen, el inventario y la clasificación de riesgo son de
-  `ai-governance-standards`; aquí solo el control técnico que satisface el
+    Failures, Human-Agent Trust Exploitation, Rogue Agents. It **extends** the LLM one, it does not
+    replace it: ASI04 covers dynamic composition at runtime where LLM03 covered the static chain
+    prior to deployment. Agent design against these risks belongs to `ai-agents-standards`;
+    here, the supply-chain part (ASI04) and the execution part (ASI05).
+- **NIST AI RMF** — **AI RMF 1.0** (`NIST AI 100-1`, January 2023) remains the base document;
+  **there is no published 2.0**. The generative AI profile **`NIST AI 600-1` is still the one from
+  July 2024, unrevised**. The 2026 activity is **additive**: critical infrastructure profile
+  (concept paper, April 2026), cybersecurity overlays for AI systems (COSAiS,
+  single- and multi-agent), and a standards initiative for agents via CAISI (February 2026). **Its
+  practical usefulness is the Govern/Map/Measure/Manage cycle as the skeleton of the programme**, not as a
+  technical catalogue: its threat model predates the agentic era.
+- **AI Act (EU) — security part, art. 15**: high-risk systems must reach an
+  appropriate level of **accuracy, robustness and cybersecurity**, with the accuracy metrics **declared
+  in the instructions for use**, and resilience against attempts to alter their use, outputs or
+  performance — **explicitly citing data and model poisoning, adversarial examples and
+  confidentiality breaches**. The required level is **contextual** (purpose, state of the art,
+  risk), not a universal percentage. ⚠️ **The timetable is in dispute**: the application date
+  of the high-risk obligations (2 August 2026 under the original text) may have
+  shifted because of the *Digital Omnibus* package — **verify in the primary source before committing to
+  a date** (§8). **The regime, the inventory and risk classification belong to
+  `ai-governance-standards`; here only the technical control that satisfies
   art. 15.**
 
-### 3.9 Detección y respuesta aplicadas a IA
+### 3.9 Detection and response applied to AI
 
-**Qué se registra** (mínimo, correlacionable y con retención definida):
+**What is logged** (minimum, correlatable and with a defined retention):
 
-- **Ciclo de vida del artefacto**: descarga o ingesta de un modelo (origen, digest), verificación de
-  firma (éxito **y fallo**), carga de un modelo en un proceso, y **toda escritura en el registro de
-  modelos**.
-- **Pipeline**: quién lanzó un entrenamiento, sobre qué versión del dataset, con qué imagen, y qué
-  artefacto produjo.
-- **Endpoint de inferencia**: identidad del llamante, volumen, tokens, latencia, herramientas
-  invocadas, rechazos de guardrail, y errores de autorización.
-- **Agente**: llamadas a herramienta, destinos de red, acciones irreversibles y aprobaciones.
+- **Artifact lifecycle**: download or ingestion of a model (source, digest), signature
+  verification (success **and failure**), loading of a model into a process, and **every write to the
+  model registry**.
+- **Pipeline**: who launched a training run, on which dataset version, with which image, and which
+  artifact it produced.
+- **Inference endpoint**: caller identity, volume, tokens, latency, tools
+  invoked, guardrail rejections, and authorisation errors.
+- **Agent**: tool calls, network destinations, irreversible actions and approvals.
 
-**Qué alerta** (síntomas, no ruido):
+**What alerts** (symptoms, not noise):
 
-- Fallo de verificación de firma o **carga de un artefacto con digest desconocido**.
-- Escritura en el registro de modelos fuera del pipeline autorizado.
-- Patrón de consulta compatible con extracción (§3.6) o alta correlacionada de cuentas.
-- Salto en la tasa de rechazos del guardrail (señal de campaña de jailbreak) **o caída súbita a cero**
-  (señal de guardrail roto o evadido).
-- Egress desde el proceso de inferencia o del sandbox de carga hacia un destino no permitido.
-- Instalación en CI de una versión de dependencia fuera de la lista fijada.
+- Signature verification failure or **loading of an artifact with an unknown digest**.
+- Write to the model registry outside the authorised pipeline.
+- Query pattern consistent with extraction (§3.6) or correlated account sign-ups.
+- Jump in the guardrail rejection rate (sign of a jailbreak campaign) **or a sudden drop to zero**
+  (sign of a broken or evaded guardrail).
+- Egress from the inference process or from the load sandbox towards a disallowed destination.
+- Installation in CI of a dependency version outside the pinned list.
 
-La **autoría, prueba y ciclo de vida** de estas reglas es de `detection-engineering-standards`; la
-**respuesta y el forense** al compromiso, de `incident-response-forensics-standards`.
+The **authorship, testing and lifecycle** of these rules belong to `detection-engineering-standards`; the
+**response and forensics** to the compromise, to `incident-response-forensics-standards`.
 
-### 3.10 Seguridad del pipeline de entrenamiento
+### 3.10 Training pipeline security
 
-- **Quién puede tocar los datos**: acceso mínimo y auditado al dataset; separación entre quien
-  aporta datos, quien entrena y quien promueve el modelo.
-- **Reproducibilidad como control de seguridad**, no solo de calidad: sin poder reproducir un
-  entrenamiento no puedes bisecar qué lote de datos introdujo el comportamiento anómalo. Versiona
-  dataset, código, configuración e imagen, y registra la terna en el artefacto resultante.
-- **Aislamiento del cómputo**: el entrenamiento y, sobre todo, **la carga de modelos no verificados**
-  corren en entornos sin credenciales de producción, sin acceso al plano de gestión y con egress
-  restringido. El nodo de entrenamiento suele tener credenciales de almacenamiento muy amplias:
-  es un objetivo de alto valor.
-- **Cadena de custodia del artefacto** de extremo a extremo: entrenamiento → registro (firmado) →
-  despliegue (verificado). Cada salto, auditado.
-- **Datos personales en el entrenamiento**: base legal, minimización, retención y derechos son de
-  `privacy-engineering-standards`. Aquí solo la protección del almacén y del acceso.
+- **Who can touch the data**: minimal and audited access to the dataset; separation between who
+  contributes data, who trains and who promotes the model.
+- **Reproducibility as a security control**, not only a quality one: without being able to reproduce a
+  training run you cannot bisect which data batch introduced the anomalous behaviour. Version
+  dataset, code, configuration and image, and record the triple in the resulting artifact.
+- **Compute isolation**: training and, above all, **the loading of unverified models**
+  run in environments without production credentials, without access to the management plane and with
+  restricted egress. The training node usually has very broad storage credentials:
+  it is a high-value target.
+- **Chain of custody of the artifact** end to end: training → registry (signed) →
+  deployment (verified). Every hop, audited.
+- **Personal data in training**: legal basis, minimisation, retention and rights belong to
+  `privacy-engineering-standards`. Here only the protection of the store and of access.
 
-## 4. Calidad y gates de CI
+## 4. Quality and CI gates
 
-Orden de coste creciente. Los primeros rompen el build.
+Increasing order of cost. The first ones break the build.
 
-1. **Fijado de dependencias verificado** (segundos, **rompe el build**): ninguna GitHub Action, imagen
-   base o dependencia referenciada por tag mutable. Es el control que separó a los afectados de los
-   no afectados en §3.3.
-2. **Escaneo de secretos** (segundos, **rompe el build**) → `cicd-standards`,
+1. **Verified dependency pinning** (seconds, **breaks the build**): no GitHub Action, base
+   image or dependency referenced by mutable tag. It is the control that separated the affected from the
+   unaffected in §3.3.
+2. **Secret scanning** (seconds, **breaks the build**) → `cicd-standards`,
    `secrets-management-standards`.
-3. **SCA del stack de ML** (minutos, **rompe el build** en severidad crítica): dependencias de
-   entrenamiento e inferencia. Triaje y SLA: `vulnerability-management-standards`.
-4. **Política de formato de pesos** (segundos, **rompe el build**): ningún artefacto en formato con
-   ejecución arbitraria entra en el registro sin excepción aprobada y registrada. Ningún
-   `trust_remote_code=True` en el código.
-5. **Escaneo del modelo** (`picklescan`/`modelscan`) sobre todo artefacto ingerido (minutos,
-   **rompe el build**). Con la expectativa correcta: detecta lo conocido (§3.2).
-6. **Verificación de firma y digest antes de promover y antes de cargar** (segundos, **rompe el
-   despliegue**).
-7. **Generación y publicación del AIBOM** como artefacto de la release (minutos): inventario, con sus
-   huecos declarados.
-8. **Barrido de red teaming** con `garak` en cada despliegue de modelo (minutos, **rompe la
-   promoción** por umbral acordado) — el umbral y la gestión de la varianza son de
+3. **SCA of the ML stack** (minutes, **breaks the build** at critical severity): training and
+   inference dependencies. Triage and SLA: `vulnerability-management-standards`.
+4. **Weights format policy** (seconds, **breaks the build**): no artifact in a format with
+   arbitrary execution enters the registry without an approved and recorded exception. No
+   `trust_remote_code=True` in the code.
+5. **Model scanning** (`picklescan`/`modelscan`) over every ingested artifact (minutes,
+   **breaks the build**). With the right expectation: it detects what is known (§3.2).
+6. **Signature and digest verification before promoting and before loading** (seconds, **breaks the
+   deployment**).
+7. **Generation and publication of the AIBOM** as a release artifact (minutes): inventory, with its
+   declared gaps.
+8. **Red teaming sweep** with `garak` on every model deployment (minutes, **breaks the
+   promotion** by an agreed threshold) — the threshold and variance management belong to
    `llm-evaluation-standards`.
-9. **Campaña profunda multi-turno** (PyRIT) con periodicidad definida, dentro de las RoE
-   (`offensive-security-standards`), **pre-release** para sistemas de alto riesgo.
-10. **Verificación de cobertura frente a ATLAS y al Top 10 aplicable** (revisión periódica, no gate):
-    filtrada por `platforms` para no reclamar cobertura agéntica inexistente.
+9. **Deep multi-turn campaign** (PyRIT) with a defined periodicity, within the RoE
+   (`offensive-security-standards`), **pre-release** for high-risk systems.
+10. **Coverage verification against ATLAS and the applicable Top 10** (periodic review, not a gate):
+    filtered by `platforms` so as not to claim non-existent agentic coverage.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-Además de todo lo anterior, que ya es §5 de facto:
+In addition to everything above, which is already §5 de facto:
 
-- **Runtime de inferencia con mínimo privilegio**: non-root, FS de solo lectura, capabilities
-  eliminadas, seccomp, sin credenciales de producción en el proceso que carga el modelo →
+- **Least-privilege inference runtime**: non-root, read-only FS, capabilities
+  dropped, seccomp, no production credentials in the process that loads the model →
   `container-runtime-security-standards`, `kubernetes-standards`.
-- **Egress filtrado** desde el nodo de entrenamiento y desde el runtime de inferencia. Es el control
-  que convierte una carga maliciosa en un intento fallido, y el que corta la exfiltración.
-- **Segregación por confianza**: un modelo de terceros no verificado no comparte namespace, nodo ni
-  credenciales con cargas de producción.
-- **Zero-trust entre servicios** (mTLS, identidad de carga de trabajo) en el plano de ML como en
-  cualquier otro → `identity-access-management-standards`, `networking-standards`.
-- **Guardrails de entrada y salida** en el endpoint: son mitigación en profundidad, **no un
-  perímetro**. Se prueban con red teaming y se vigila su tasa de activación (§3.9).
-- **Backups del registro de modelos y del dataset**, cifrados e inmutables, con restauración probada
-  → `bcdr-standards`, `backup-recovery-standards`. Reentrenar desde cero puede costar más que
-  cualquier otro plan de recuperación del estado.
+- **Filtered egress** from the training node and from the inference runtime. It is the control
+  that turns a malicious load into a failed attempt, and the one that cuts exfiltration.
+- **Segregation by trust**: an unverified third-party model does not share a namespace, node or
+  credentials with production workloads.
+- **Zero-trust between services** (mTLS, workload identity) in the ML plane as in
+  any other → `identity-access-management-standards`, `networking-standards`.
+- **Input and output guardrails** at the endpoint: they are defence-in-depth mitigation, **not a
+  perimeter**. They are tested with red teaming and their activation rate is watched (§3.9).
+- **Backups of the model registry and the dataset**, encrypted and immutable, with tested restore
+  → `bcdr-standards`, `backup-recovery-standards`. Retraining from scratch can cost more than
+  any other state recovery plan.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Coste del escaneo**: un artefacto de decenas o cientos de GB no se escanea en el camino crítico
-  del despliegue. Escanea **en la ingesta** al registro interno, una sola vez, y **verifica digest**
-  en cada uso.
-- **Caché interno de artefactos verificados** con digest como clave. Elimina la descarga desde el hub
-  público en runtime, que es a la vez riesgo de seguridad y de disponibilidad.
-- **Presupuesto de red teaming**: el barrido en CI se dimensiona (número de sondas × coste por
-  llamada) o se recortará solo. Las campañas profundas se planifican por trimestre, no por sprint.
-- **Falsos positivos del escáner de modelos**: si el gate produce ruido, se documenta la excepción con
-  dueño y caducidad. Una excepción permanente sin dueño es el gate desactivado con más pasos.
-- **Métricas del programa**: % de artefactos con procedencia y firma, % ingeridos en formato seguro,
-  tiempo desde publicación de un modelo hasta su verificación, cobertura ATLAS filtrada por
-  plataforma, hallazgos de red team convertidos en casos de evaluación.
+- **Cost of scanning**: an artifact of tens or hundreds of GB is not scanned in the critical path
+  of the deployment. Scan **at ingestion** into the internal registry, once only, and **verify the digest**
+  on every use.
+- **Internal cache of verified artifacts** keyed by digest. It eliminates the download from the public
+  hub at runtime, which is both a security and an availability risk.
+- **Red teaming budget**: the CI sweep is sized (number of probes × cost per
+  call) or it will be cut on its own. Deep campaigns are planned by quarter, not by sprint.
+- **False positives from the model scanner**: if the gate produces noise, the exception is documented with
+  an owner and an expiry. A permanent exception without an owner is the gate disabled with more steps.
+- **Programme metrics**: % of artifacts with provenance and signature, % ingested in a safe format,
+  time from a model's publication to its verification, ATLAS coverage filtered by
+  platform, red team findings converted into evaluation cases.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- **Cadencia**: revisar el mapeo a ATLAS y al Top 10 aplicable cada trimestre (ATLAS publica
-  contenido **mensualmente**); revisar el estado de mantenimiento de las herramientas de escaneo y
-  red teaming cada semestre; reevaluar el inventario de modelos en cada release.
-- **Deprecación**: un modelo que ya no se sirve se retira del registro con su AIBOM archivado, no se
-  deja "por si acaso" — cada artefacto vivo es superficie.
-- **Deuda consciente**: toda excepción a la política de formatos o de firma se registra con motivo,
-  dueño, compensación y **fecha de caducidad**.
+- **Cadence**: review the mapping to ATLAS and the applicable Top 10 every quarter (ATLAS publishes
+  content **monthly**); review the maintenance status of the scanning and red teaming tools
+  every half-year; re-evaluate the model inventory at every release.
+- **Deprecation**: a model no longer served is retired from the registry with its AIBOM archived, it is not
+  left "just in case" — every live artifact is surface.
+- **Conscious debt**: every exception to the format or signing policy is recorded with a reason,
+  an owner, a compensating control and an **expiry date**.
 
-### PROHIBICIONES
+### PROHIBITIONS
 
-- ❌ **PROHIBIDO cargar pesos de terceros sin verificar procedencia, digest y firma.**
-- ❌ **PROHIBIDO `trust_remote_code=True`** sin excepción aprobada, sandbox y registro. Es ejecución
-  de código arbitrario de terceros.
-- ❌ **PROHIBIDO referenciar modelos, imágenes, Actions o dependencias por tag mutable o `latest`.**
-  Digest o SHA. Es la lección directa del incidente de §3.3.
-- ❌ **PROHIBIDO cargar un modelo no verificado fuera de un sandbox** sin red ni credenciales. La
-  carga es ejecución.
-- ❌ **PROHIBIDO tratar un escáner de modelos como garantía.** Es una lista de denegación con
-  historial documentado de evasión.
-- ❌ **PROHIBIDO tratar la etiqueta "unsafe" de un hub público como un bloqueo.** No lo es.
-- ❌ **PROHIBIDO descargar pesos desde un hub público en tiempo de despliegue.** Réplica interna.
-- ❌ **PROHIBIDO dar credenciales de producción, del plano de gestión o del registro de modelos al
-  proceso que carga o entrena.**
-- ❌ **PROHIBIDO usar tokens estáticos de larga vida para publicar artefactos.** OIDC / publicación
-  confiable.
-- ❌ **PROHIBIDO presentar la marca de agua como protección contra la destilación.** Es forense y
-  post hoc; venderla como defensa es desinformar a quien acepta el riesgo.
-- ❌ **PROHIBIDO ejecutar red teaming de IA sin autorización escrita y RoE** →
-  `offensive-security-standards`. Sin excepción técnica ni de urgencia.
-- ❌ **PROHIBIDO documentar payloads listos para usar, jailbreaks concretos de producto de terceros o
-  bypasses específicos de guardrail.** Clase, indicador y mitigación.
-- ❌ **PROHIBIDO reportar un hallazgo de red team sin tasa de éxito sobre N intentos.** El sistema no
-  es determinista; un éxito aislado no es un hallazgo.
-- ❌ **PROHIBIDO cerrar un ejercicio de red team sin convertir los hallazgos en casos permanentes de
-  evaluación** (`llm-evaluation-standards`) y, cuando aplique, en reglas de detección.
-- ❌ **PROHIBIDO tratar el AIBOM como control de seguridad.** Es inventario, con huecos.
-- ❌ **PROHIBIDO confiar solo en límites de tasa globales** frente a extracción: la campaña se
-  distribuye entre cuentas.
-- ❌ **PROHIBIDO asumir que un escáner de seguridad en tu CI es confiable por ser defensivo.** El
-  eslabón comprometido de 2026 fue exactamente eso.
+- ❌ **FORBIDDEN to load third-party weights without verifying provenance, digest and signature.**
+- ❌ **FORBIDDEN `trust_remote_code=True`** without an approved exception, a sandbox and a record. It is
+  execution of arbitrary third-party code.
+- ❌ **FORBIDDEN to reference models, images, Actions or dependencies by mutable tag or `latest`.**
+  Digest or SHA. It is the direct lesson of the §3.3 incident.
+- ❌ **FORBIDDEN to load an unverified model outside a sandbox** with no network and no credentials. The
+  load is execution.
+- ❌ **FORBIDDEN to treat a model scanner as a guarantee.** It is a denylist with a
+  documented history of evasion.
+- ❌ **FORBIDDEN to treat a public hub's "unsafe" label as a block.** It is not one.
+- ❌ **FORBIDDEN to download weights from a public hub at deployment time.** Internal replica.
+- ❌ **FORBIDDEN to give production, management plane or model registry credentials to the
+  process that loads or trains.**
+- ❌ **FORBIDDEN to use long-lived static tokens to publish artifacts.** OIDC / trusted
+  publishing.
+- ❌ **FORBIDDEN to present watermarking as protection against distillation.** It is forensic and
+  post hoc; selling it as a defence is misinforming whoever accepts the risk.
+- ❌ **FORBIDDEN to run AI red teaming without written authorisation and RoE** →
+  `offensive-security-standards`. No technical or urgency exception.
+- ❌ **FORBIDDEN to document ready-to-use payloads, specific jailbreaks for third-party products or
+  specific guardrail bypasses.** Class, indicator and mitigation.
+- ❌ **FORBIDDEN to report a red team finding without a success rate over N attempts.** The system is
+  not deterministic; an isolated success is not a finding.
+- ❌ **FORBIDDEN to close a red team exercise without converting the findings into permanent
+  evaluation cases** (`llm-evaluation-standards`) and, where applicable, into detection rules.
+- ❌ **FORBIDDEN to treat the AIBOM as a security control.** It is inventory, with gaps.
+- ❌ **FORBIDDEN to rely only on global rate limits** against extraction: the campaign is
+  distributed across accounts.
+- ❌ **FORBIDDEN to assume that a security scanner in your CI is trustworthy because it is defensive.** The
+  compromised link of 2026 was exactly that.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar por web —y, para versiones y fechas, **por
-`api.github.com`, PyPI/npm o feeds Atom, nunca por un resumidor de HTML**:
+Before pinning anything in a real project, check on the web —and, for versions and dates, **via
+`api.github.com`, PyPI/npm or Atom feeds, never via an HTML summariser**:
 
-1. **MITRE ATLAS**: release de contenido vigente (verificado: **v2026.06**, 2026-06-30) y versión del
-   **formato** (verificado: **v6.0.0**, con campo `platforms`). Comprobar si tu tooling consume el
-   formato antiguo. **Verificar además el recuento exacto de tácticas, técnicas, mitigaciones y casos
-   directamente en `atlas.mitre.org`** — ver hueco declarado abajo.
-2. **OWASP GenAI**: confirmar que la lista de LLM vigente sigue siendo la **2025** (verificado: sin
-   edición 2026) y el estado de la de **Agentic Applications 2026 (ASI01–ASI10)**, más cualquier
-   lista nueva del proyecto (hay trabajo activo en *skills* agénticas y memoria de agentes).
-3. **NIST**: si `AI 100-1` sigue en 1.0 y `AI 600-1` sigue siendo el de julio de 2024 (verificado a
-   agosto de 2026); estado de los overlays **COSAiS**, del perfil de infraestructura crítica y de la
-   iniciativa de estándares de agentes de CAISI.
-4. **AI Act**: **fecha de aplicación vigente** de las obligaciones de alto riesgo y del artículo 15,
-   en fuente primaria (EUR-Lex o el AI Act Service Desk de la Comisión). **El *Digital Omnibus* puede
-   haber desplazado el calendario; no comprometas una fecha sin comprobarla.**
-5. **Formatos de pesos**: si `safetensors` sigue siendo el seguro recomendado, el comportamiento por
-   defecto de `weights_only` en tu versión de PyTorch, y si han aparecido nuevas clases de evasión de
-   cargadores restringidos.
-6. **Herramientas de escaneo y red teaming**: versión y actividad de `picklescan`, `modelscan`,
-   `garak`, **`microsoft/PyRIT`** (⚠️ `Azure/PyRIT` está archivado desde 2026-03-27) y `promptfoo`.
-   **Regla: más de 6 meses sin release en este ecosistema es señal de abandono, no de estabilidad.**
-7. **AIBOM**: edición vigente de **CycloneDX** (verificado: 1.7 de 2025-10-21, parches 1.7.x en 2026;
-   ECMA-424) y de **SPDX** (verificado: 3.0.1, con 3.1-RC1 de 2026-01-24), y qué herramienta genera
-   qué versión realmente.
-8. **Incidentes**: verificar en fuente primaria antes de citarlos —el aviso del propio proyecto
-   LiteLLM, el de Trivy y los boletines de PyPI— y comprobar si hay incidentes posteriores de la
-   misma campaña o de otros hubs de artefactos de IA.
-9. **CVE del stack de ML**: no se listan aquí. Entran por `vulnerability-management-standards`.
+1. **MITRE ATLAS**: content release in force (verified: **v2026.06**, 2026-06-30) and the version of the
+   **format** (verified: **v6.0.0**, with a `platforms` field). Check whether your tooling consumes the
+   old format. **Also verify the exact count of tactics, techniques, mitigations and cases
+   directly at `atlas.mitre.org`** — see the declared gap below.
+2. **OWASP GenAI**: confirm that the LLM list in force is still the **2025** one (verified: no
+   2026 edition) and the status of the **Agentic Applications 2026 (ASI01–ASI10)** one, plus any
+   new list from the project (there is active work on agentic *skills* and agent memory).
+3. **NIST**: whether `AI 100-1` is still at 1.0 and `AI 600-1` is still the July 2024 one (verified as of
+   August 2026); status of the **COSAiS** overlays, of the critical infrastructure profile and of the
+   CAISI agent standards initiative.
+4. **AI Act**: **application date in force** of the high-risk obligations and of article 15,
+   in the primary source (EUR-Lex or the Commission's AI Act Service Desk). **The *Digital Omnibus* may
+   have shifted the timetable; do not commit to a date without checking it.**
+5. **Weights formats**: whether `safetensors` is still the recommended safe one, the default
+   behaviour of `weights_only` in your PyTorch version, and whether new evasion classes for restricted
+   loaders have appeared.
+6. **Scanning and red teaming tools**: version and activity of `picklescan`, `modelscan`,
+   `garak`, **`microsoft/PyRIT`** (⚠️ `Azure/PyRIT` has been archived since 2026-03-27) and `promptfoo`.
+   **Rule: more than 6 months without a release in this ecosystem is a sign of abandonment, not of stability.**
+7. **AIBOM**: edition in force of **CycloneDX** (verified: 1.7 of 2025-10-21, 1.7.x patches in 2026;
+   ECMA-424) and of **SPDX** (verified: 3.0.1, with 3.1-RC1 of 2026-01-24), and which tool generates
+   which version in practice.
+8. **Incidents**: verify in the primary source before citing them —the LiteLLM project's own
+   advisory, Trivy's and the PyPI bulletins— and check whether there are later incidents from the
+   same campaign or from other AI artifact hubs.
+9. **ML stack CVEs**: not listed here. They come in through `vulnerability-management-standards`.
 
-### Huecos declarados (no verificados en esta redacción)
+### Declared gaps (not verified in this drafting)
 
-- **Recuento exacto de ATLAS** (tácticas, técnicas, mitigaciones, casos): la cifra que circula
-  (~16 tácticas / ~170 técnicas / ~35 mitigaciones / ~57 casos) procede de **fuentes secundarias de
-  blog** y **no está verificada en fuente primaria**. Las releases sí están verificadas por API. **No
-  uses el recuento en un informe sin comprobarlo en `atlas.mitre.org`.**
-- **CVE-2026-6859 (InstructLab, `trust_remote_code`)**: citado desde fuente secundaria; **no
-  verificado en NVD**. Verificar antes de usarlo como referencia formal.
-- **Cifras exactas del incidente LiteLLM** (número de instalaciones en la ventana, credenciales
-  potencialmente expuestas): varían entre analistas. La **cadena de eventos y el mecanismo `.pth`**
-  están corroborados por múltiples fuentes independientes, incluido el aviso del proyecto; **las
-  cifras, no**. Usa el mecanismo como argumento; las cifras, con reserva.
-- **Adquisición de `promptfoo` por OpenAI (marzo 2026)**: fuente secundaria, **no confirmada en
-  fuente primaria**. Relevante como riesgo de gobierno si evalúas modelos rivales.
-- **Estado de `gitleaks` como *feature complete*** y otros precedentes de mantenimiento del catálogo:
-  **no verificados en esta redacción**. Consultar la skill correspondiente
-  (`secrets-management-standards`) antes de afirmarlo.
-- **Fecha de aplicación efectiva del artículo 15 del AI Act**: **en disputa** entre el calendario
-  original (2026-08-02) y el posible desplazamiento por el *Digital Omnibus*. No verificado en fuente
-  primaria. No fijes fechas de cumplimiento a partir de este documento.
-- **Madurez de las defensas anti-destilación** más allá de límites y detección: área de investigación
-  activa sin producto establecido. No se recomienda ninguna concreta a propósito.
+- **Exact ATLAS count** (tactics, techniques, mitigations, cases): the figure in circulation
+  (~16 tactics / ~170 techniques / ~35 mitigations / ~57 cases) comes from **secondary blog
+  sources** and **is not verified in the primary source**. The releases are verified via API. **Do
+  not use the count in a report without checking it at `atlas.mitre.org`.**
+- **CVE-2026-6859 (InstructLab, `trust_remote_code`)**: cited from a secondary source; **not
+  verified in NVD**. Verify before using it as a formal reference.
+- **Exact figures of the LiteLLM incident** (number of installations in the window, credentials
+  potentially exposed): they vary between analysts. The **chain of events and the `.pth` mechanism**
+  are corroborated by multiple independent sources, including the project's advisory; **the
+  figures are not**. Use the mechanism as an argument; the figures, with reservations.
+- **Acquisition of `promptfoo` by OpenAI (March 2026)**: secondary source, **not confirmed in a
+  primary source**. Relevant as a governance risk if you evaluate rival models.
+- **Status of `gitleaks` as *feature complete*** and other maintenance precedents in the catalogue:
+  **not verified in this drafting**. Consult the corresponding skill
+  (`secrets-management-standards`) before asserting it.
+- **Effective application date of AI Act article 15**: **in dispute** between the original
+  timetable (2026-08-02) and the possible shift from the *Digital Omnibus*. Not verified in a primary
+  source. Do not set compliance dates based on this document.
+- **Maturity of anti-distillation defences** beyond limits and detection: an active research
+  area with no established product. None is recommended specifically, on purpose.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

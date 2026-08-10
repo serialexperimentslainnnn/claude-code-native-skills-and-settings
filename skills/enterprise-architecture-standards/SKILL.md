@@ -3,442 +3,441 @@ name: enterprise-architecture-standards
 description: The application landscape of an organization, not the design of one system. Use when building or repairing an application inventory (owner, criticality, cost, lifecycle, dependencies), running application portfolio rationalization with the Gartner TIME model (tolerate, invest, migrate, eliminate), choosing a modernization strategy from the R taxonomy (rehost, relocate, replatform, repurchase, refactor/re-architect, retire, retain), adopting or refusing TOGAF (Standard 10th Edition, ADM) and ArchiMate 3.2 and checking whether its licence lets you publish the notation, evaluating Archi, Structurizr, SAP LeanIX, Ardoq or Bizzdesign as an EA repository, building a business capability map as a stable mapping axis, setting a technology standard and the exception process with a mandatory expiry date, publishing a technology radar (Build Your Own Radar, adopt/trial/assess/caution rings), deciding build versus buy versus SaaS with exit cost and vendor lock-in, governing the integration landscape (point-to-point versus bus versus event-driven), designing an architecture review body that does not become a change advisory board, reconciling the application inventory with the ITSM CMDB and the service catalogue, or defining metrics for the EA function that are not a document count.
 ---
 
-# Estándares de arquitectura empresarial
+# Enterprise architecture standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**La arquitectura empresarial existe para que las decisiones de sistemas se tomen con el paisaje
-completo delante.** Su producto no es un diagrama: es que quien decide comprar, construir, migrar o
-apagar sepa qué hay ya, quién lo paga, de qué depende y qué se rompe. **Su fallo típico —y el modo
-de fallo por defecto de la función— es producir documentación que nadie usa**: modelos correctos,
-completos, actualizados una vez y consultados nunca.
+**Enterprise architecture exists so that systems decisions are taken with the complete landscape
+in front of you.** Its product is not a diagram: it is that whoever decides to buy, build, migrate or
+switch off knows what already exists, who pays for it, what it depends on and what breaks. **Its typical failure —and the
+function's default failure mode— is producing documentation nobody uses**: models that are correct,
+complete, updated once and consulted never.
 
-Regla de existencia, aplicable el lunes: **un artefacto de EA que no ha cambiado ninguna decisión
-en los últimos 90 días se retira o se le asigna la decisión que debía informar.** Sin excepción
-para "es documentación de referencia".
+Rule of existence, applicable on Monday: **an EA artifact that has not changed any decision
+in the last 90 days is retired or is assigned the decision it was supposed to inform.** No exception
+for "it is reference documentation".
 
-Cubre: el inventario de aplicaciones y su degradación, la decisión de ciclo de vida por aplicación
-(TIME), las "R" de modernización, marcos (TOGAF, ArchiMate y alternativas ligeras), mapa de
-capacidades de negocio, estándares tecnológicos y su proceso de excepción, radar tecnológico,
-build/buy/SaaS, el paisaje de integraciones como deuda invisible, gobierno de arquitectura y sus
-cuellos de botella, la bajada a decisiones de equipo y las métricas de la función.
+Covers: the application inventory and its degradation, the lifecycle decision per application
+(TIME), the modernisation "R"s, frameworks (TOGAF, ArchiMate and lightweight alternatives), the business
+capability map, technology standards and their exception process, the technology radar,
+build/buy/SaaS, the integration landscape as invisible debt, architecture governance and its
+bottlenecks, the descent to team decisions and the function's metrics.
 
-**No aplica**:
-- `software-architecture-patterns-standards` (**frontera crítica**): **suyo** el diseño interno de
-  **un** sistema —estilo, límites de módulo, regla de dependencia, CQRS, ADR, C4—; **aquí** el
-  paisaje de la organización, el inventario, los estándares transversales y su gobierno. Arbitraje:
-  **si la pregunta es cómo se estructura este sistema, es suya; si es qué sistemas tenemos, cuáles
-  sobran y cuál es el estándar, es de aquí.**
-- `itsm-itil-standards` (**frontera fina, escrita con precisión**): **suyos** la CMDB, los elementos
-  de configuración y el catálogo de servicios. **La CMDB inventaría elementos de configuración para
-  operar** (qué se ve afectado por este cambio, qué CI falló); **el inventario de aplicaciones
-  inventaría capacidades para decidir** (qué aporta esto al negocio, qué cuesta, se mantiene o se
-  apaga). Distinta granularidad, distinta cadencia y distinto dueño. **Regla: una aplicación del
-  inventario referencia sus CI, no los duplica** (§3.2); si acaban divergiendo, la CMDB manda sobre
-  el estado operativo y el inventario sobre la decisión de cartera.
-- `platform-engineering-standards` (la plataforma interna como producto y su camino pavimentado;
-  **aquí el estándar que la plataforma implementa, no su implementación**).
-- `lowcode-governance-standards` (**suyos el catálogo de herramientas personales y su gobierno** —
-  entornos, DLP de conectores, identidad del flujo, flujos huérfanos—; **la app low-code que pasa a
-  ser crítica entra en el inventario de aplicaciones de aquí**, con dueño, coste y ciclo de vida).
-- `tech-leadership-standards` (la decisión de invertir, la negociación y el registro organizativo;
-  aquí el criterio técnico de cartera que la alimenta).
-- `project-management-standards` (cómo se entrega el programa de migración; aquí qué se migra y por
-  qué).
-- `finops-standards` (**recíproca dura**: el coste por aplicación se calcula con su método —
-  etiquetado, asignación de compartidos, unidad económica— y **entra aquí como entrada obligatoria
-  de la decisión de ciclo de vida**; §3.1).
-- `grc-compliance-standards` (marco de control, auditoría y evidencia; aquí el atributo de
-  cumplimiento como campo del inventario, no el programa).
-- `microservices-architecture-standards` (topología distribuida de un sistema y su comunicación).
-- `data-governance-quality-standards` (**suyos** la propiedad del dato, el catálogo de datos, el
-  glosario y los contratos de datos; **aquí la aplicación como sistema origen, no el dato**).
-- `iac-standards` (cómo se declara y despliega la infraestructura).
-- `bcdr-standards` (**recíproca**: la criticidad y el RTO/RPO por aplicación se derivan de su BIA y
-  **se guardan como campo del inventario**; aquí no se recalculan).
-- `knowledge-management-standards` (dónde vive y cómo se mantiene lo que aquí se escribe) y
-  `product-discovery-standards` (qué se construye y para quién). **El paisaje decide qué sistemas
-  existen; el descubrimiento, qué se construye; la documentación es lo que queda escrito de ambas
-  decisiones.**
-- **Skills de plataforma heredada**: `mainframe-zos-cobol-standards`,
+**Not applicable**:
+- `software-architecture-patterns-standards` (**critical boundary**): **theirs** the internal design of
+  **one** system —style, module boundaries, dependency rule, CQRS, ADR, C4—; **here** the
+  organisation's landscape, the inventory, the cross-cutting standards and their governance. Arbitration:
+  **if the question is how this system is structured, it is theirs; if it is which systems we have, which
+  are redundant and what the standard is, it belongs here.**
+- `itsm-itil-standards` (**fine boundary, written precisely**): **theirs** the CMDB, the configuration
+  items and the service catalogue. **The CMDB inventories configuration items in order to
+  operate** (what is affected by this change, which CI failed); **the application inventory
+  inventories capabilities in order to decide** (what does this contribute to the business, what does it cost, is it kept or
+  switched off). Different granularity, different cadence and different owner. **Rule: an application in the
+  inventory references its CIs, it does not duplicate them** (§3.2); if they end up diverging, the CMDB wins on
+  operational state and the inventory on the portfolio decision.
+- `platform-engineering-standards` (the internal platform as a product and its paved road;
+  **here the standard the platform implements, not its implementation**).
+- `lowcode-governance-standards` (**theirs the catalogue of personal tools and its governance** —
+  environments, connector DLP, flow identity, orphaned flows—; **the low-code app that becomes
+  critical enters the application inventory here**, with owner, cost and lifecycle).
+- `tech-leadership-standards` (the decision to invest, the negotiation and the organisational record;
+  here the technical portfolio criteria that feed it).
+- `project-management-standards` (how the migration programme is delivered; here what is migrated and
+  why).
+- `finops-standards` (**hard reciprocal**: cost per application is computed with their method —
+  tagging, allocation of shared costs, economic unit— and **enters here as a mandatory input
+  to the lifecycle decision**; §3.1).
+- `grc-compliance-standards` (control framework, audit and evidence; here the compliance
+  attribute as an inventory field, not the programme).
+- `microservices-architecture-standards` (the distributed topology of a system and its communication).
+- `data-governance-quality-standards` (**theirs** data ownership, the data catalogue, the
+  glossary and data contracts; **here the application as a source system, not the data**).
+- `iac-standards` (how infrastructure is declared and deployed).
+- `bcdr-standards` (**reciprocal**: criticality and RTO/RPO per application are derived from its BIA and
+  **are stored as an inventory field**; they are not recalculated here).
+- `knowledge-management-standards` (where what is written here lives and how it is maintained) and
+  `product-discovery-standards` (what is built and for whom). **The landscape decides which systems
+  exist; discovery, what is built; documentation is what remains written of both
+  decisions.**
+- **Legacy platform skills**: `mainframe-zos-cobol-standards`,
   `ibm-i-rpg-standards`, `mumps-standards`, `dotnet-framework-legacy-standards`,
-  `aix-solaris-hpux-standards` y las demás del bloque legacy. **Aquí se decide qué se hace con una
-  aplicación** —el modelo TIME, la "R" de modernización elegida, el coste y el dueño—; **allí, qué
-  implica técnicamente esa decisión en esa plataforma concreta** y si es siquiera viable. La regla
-  que evita el error caro: **una "R" se elige con el criterio técnico de la plataforma delante, no
-  sobre una hoja de cálculo** — hay plataformas donde la reescritura automática produce código que
-  nadie puede mantener y otras donde congelar y encapsular es la respuesta correcta.
-  `legacy-modernization-standards` es el paraguas que enruta entre ellas.
+  `aix-solaris-hpux-standards` and the rest of the legacy block. **Here it is decided what is done with an
+  application** —the TIME model, the chosen modernisation "R", the cost and the owner—; **there, what
+  that decision technically implies on that specific platform** and whether it is even viable. The rule
+  that avoids the expensive error: **an "R" is chosen with the platform's technical criteria in front of you, not
+  on a spreadsheet** — there are platforms where automated rewriting produces code
+  nobody can maintain and others where freezing and encapsulating is the right answer.
+  `legacy-modernization-standards` is the umbrella that routes between them.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión/estado/licencia por web antes de fijarlo en un proyecto real (§8).
+> Verify the latest version/status/licence on the web before pinning it in a real project (§8).
 
-| Ámbito | Default | Alternativa justificable |
+| Area | Default | Justifiable alternative |
 |---|---|---|
-| Artefacto raíz | **Inventario de aplicaciones** con los 8 campos obligatorios de §3.1 | Ninguna: sin inventario no hay función de EA |
-| Marco | **Ninguno completo.** Tomar de TOGAF solo el ADM como guion de fases y las vistas que se usen | TOGAF Standard 10th Edition completo solo con obligación contractual/regulatoria o certificación exigida |
-| Notación | **C4** para sistemas (→ `software-architecture-patterns-standards`) y **cajas nombradas con leyenda** para el paisaje | **ArchiMate 3.2** si ya hay repositorio y modeladores formados — **revisar licencia antes de publicar** (§2.2) |
-| Herramienta de modelado | **Archi** (MIT) sobre repositorio git | Estructura en la herramienta de EA si ya se paga una |
-| Repositorio de cartera | **Hoja/tabla versionada o base ligera con dueño y CI** hasta ~150 aplicaciones | SAP LeanIX / Ardoq / Bizzdesign por encima, con precio por número de aplicaciones (§2.3) |
-| Decisión de ciclo de vida | **TIME** (tolerar, invertir, migrar, eliminar), revisada con cadencia fija | Cualquier taxonomía de 4 cuadrantes propia, **si está escrita y sus ejes definidos** |
-| Modernización | **Retire y retain primero**; las demás R solo tras descartar apagar | — |
-| Eje de mapeo | **Mapa de capacidades de negocio** (estable) | Nunca el organigrama como eje primario (§3.3) |
-| Estándares | **Radar tecnológico** publicado, con 4 anillos y fecha | Lista de "tecnologías aprobadas" solo si tiene proceso de excepción (§4.2) |
-| Excepciones | **Con fecha de caducidad obligatoria** (§4.2) | Ninguna |
-| Gobierno | **Consejo asesor con revisión por umbral** (§6.1) | Comité que aprueba todo: **PROHIBIDO** (§7) |
+| Root artifact | **Application inventory** with the 8 mandatory fields of §3.1 | None: without an inventory there is no EA function |
+| Framework | **None in full.** Take from TOGAF only the ADM as a phase script and whichever views get used | The full TOGAF Standard 10th Edition only with a contractual/regulatory obligation or a required certification |
+| Notation | **C4** for systems (→ `software-architecture-patterns-standards`) and **named boxes with a legend** for the landscape | **ArchiMate 3.2** if there is already a repository and trained modellers — **check the licence before publishing** (§2.2) |
+| Modelling tool | **Archi** (MIT) over a git repository | Structure inside the EA tool if one is already paid for |
+| Portfolio repository | **A versioned sheet/table or a lightweight database with owner and CI** up to ~150 applications | SAP LeanIX / Ardoq / Bizzdesign above that, priced by number of applications (§2.3) |
+| Lifecycle decision | **TIME** (tolerate, invest, migrate, eliminate), reviewed on a fixed cadence | Any bespoke 4-quadrant taxonomy, **if it is written down and its axes defined** |
+| Modernisation | **Retire and retain first**; the other Rs only after ruling out switching off | — |
+| Mapping axis | **Business capability map** (stable) | Never the org chart as the primary axis (§3.3) |
+| Standards | **Published technology radar**, with 4 rings and a date | A list of "approved technologies" only if it has an exception process (§4.2) |
+| Exceptions | **With a mandatory expiry date** (§4.2) | None |
+| Governance | **Advisory board with threshold-based review** (§6.1) | A committee that approves everything: **FORBIDDEN** (§7) |
 
-### 2.1 TOGAF: qué se toma y qué se tira
+### 2.1 TOGAF: what to take and what to throw away
 
-- **Versión vigente: TOGAF Standard, 10th Edition** (The Open Group, anuncio de lanzamiento de abril
-  de 2022; el bundle documental C220 incorpora una corrección técnica de 2025). No hay 11.ª edición
-  a ago-2026 — **verificar en `opengroup.org/togaf`** (§8). TOGAF® es marca registrada de The Open
-  Group: su uso en materiales y la certificación tienen condiciones propias.
-- **Sé honesto: la mayoría de organizaciones no necesita TOGAF completo.** Lo aprovechable sin
-  adoptarlo entero: el **ADM** como guion de fases (visión → negocio → sistemas de información →
-  tecnología → oportunidades → migración → gobierno → gestión del cambio), el concepto de
-  **arquitectura objetivo vs. de partida con análisis de brecha**, y el **repositorio de
-  arquitectura**. Lo que se tira por defecto: el metamodelo completo, el catálogo exhaustivo de
-  entregables y la cadena de contratos de arquitectura.
-- **Criterio de adopción completa**: solo si (a) un contrato, un regulador o un cliente lo exige por
-  nombre, o (b) hay ≥3 arquitectos a dedicación completa. Por debajo, adoptar TOGAF entero produce
-  exactamente el fallo de §1.
+- **Current version: TOGAF Standard, 10th Edition** (The Open Group, launch announcement of April
+  2022; the C220 document bundle incorporates a 2025 technical corrigendum). There is no 11th edition
+  as of Aug 2026 — **verify at `opengroup.org/togaf`** (§8). TOGAF® is a registered trademark of The Open
+  Group: its use in materials and the certification have their own conditions.
+- **Be honest: most organisations do not need the whole of TOGAF.** What is usable without
+  adopting it entirely: the **ADM** as a phase script (vision → business → information systems →
+  technology → opportunities → migration → governance → change management), the concept of
+  **target vs. baseline architecture with gap analysis**, and the **architecture
+  repository**. What is thrown away by default: the full metamodel, the exhaustive catalogue of
+  deliverables and the chain of architecture contracts.
+- **Criteria for full adoption**: only if (a) a contract, a regulator or a client requires it by
+  name, or (b) there are ≥3 full-time architects. Below that, adopting the whole of TOGAF produces
+  exactly the failure of §1.
 
-### 2.2 ArchiMate y su licencia — decide si puedes publicar la notación
+### 2.2 ArchiMate and its licence — it decides whether you can publish the notation
 
-- **ArchiMate 3.2 Specification**, The Open Group, documento **C226**, publicada en octubre de 2022.
-  ArchiMate® es marca registrada de The Open Group.
-- **Licencia — el punto que decide**: la especificación **no es de libre redistribución**. The Open
-  Group la publica bajo un modelo escalonado: **licencia de evaluación gratuita de 90 días** (uso
-  interno, conservando avisos de copyright y marca) y, al expirar, hay que **solicitar licencia no
-  comercial o comercial** o retirar el documento. **Todo uso comercial está sujeto a la licencia
-  comercial anual.** **Regla operativa: modelar en ArchiMate para consumo interno es una vía
-  practicable; incrustar la especificación, sus tarjetas de referencia o material derivado en
-  documentación pública, formación de pago o entregables de consultoría exige comprobar la licencia
-  comercial antes.** Verificar en `opengroup.org/legal/licensing` (§8) —**es una decisión legal, no
-  técnica**.
-- La especificación separa **conceptos del lenguaje** de la **notación**: la notación gráfica que
-  publica es *una* notación por defecto, no la única válida. Corolario práctico: **si el problema es
-  que nadie entiende los diagramas, cambiar la notación es legítimo y no rompe el modelo.**
-- **Archi** (`archimatetool.com`) es el editor por defecto: **licencia MIT** verificada en crudo —
+- **ArchiMate 3.2 Specification**, The Open Group, document **C226**, published in October 2022.
+  ArchiMate® is a registered trademark of The Open Group.
+- **Licence — the deciding point**: the specification **is not freely redistributable**. The Open
+  Group publishes it under a tiered model: a **free 90-day evaluation licence** (internal
+  use, keeping copyright and trademark notices) and, on expiry, you must **request a non-commercial
+  or commercial licence** or withdraw the document. **All commercial use is subject to the annual
+  commercial licence.** **Operational rule: modelling in ArchiMate for internal consumption is a
+  workable route; embedding the specification, its reference cards or derived material in
+  public documentation, paid training or consultancy deliverables requires checking the commercial
+  licence first.** Verify at `opengroup.org/legal/licensing` (§8) —**it is a legal decision, not a
+  technical one**.
+- The specification separates **language concepts** from **notation**: the graphical notation it
+  publishes is *one* default notation, not the only valid one. Practical corollary: **if the problem is
+  that nobody understands the diagrams, changing the notation is legitimate and does not break the model.**
+- **Archi** (`archimatetool.com`) is the default editor: **MIT licence** verified in raw —
   `The MIT License (MIT) / Copyright (c) 2013-2026 Phillip Beauvoir, Jean-Baptiste Sarrodie, The
-  Open Group`. **La herramienta MIT no licencia la especificación**: son dos cosas distintas y la
-  segunda no se hereda de la primera.
+  Open Group`. **The MIT tool does not license the specification**: they are two different things and the
+  second is not inherited from the first.
 
-### 2.3 Herramientas de cartera
+### 2.3 Portfolio tools
 
-- **SAP LeanIX**, **Ardoq** y **Bizzdesign**: **ninguna publica precio de lista**; LeanIX y Ardoq
-  licencian **por número de aplicaciones** (usuarios ilimitados en el modelo de LeanIX). Consecuencia
-  de compra: **conocer el número real de aplicaciones antes de pedir oferta**, porque es la variable
-  que fija el precio y la única que hace comparables las ofertas. Precio → **hueco en §8**.
-- **No se compra herramienta de EA para crear el inventario.** Se compra cuando el inventario ya
-  existe, se mantiene y el cuello de botella es el volumen o la integración con CMDB/facturación.
-  Comprarla antes reproduce el fallo de §1 con licencia anual.
+- **SAP LeanIX**, **Ardoq** and **Bizzdesign**: **none publishes list pricing**; LeanIX and Ardoq
+  license **by number of applications** (unlimited users in LeanIX's model). Purchasing consequence:
+  **know the real number of applications before requesting a quote**, because it is the variable
+  that sets the price and the only one that makes quotes comparable. Pricing → **gap in §8**.
+- **You do not buy an EA tool to create the inventory.** You buy it when the inventory already
+  exists, is maintained and the bottleneck is volume or integration with CMDB/billing.
+  Buying it earlier reproduces the failure of §1 with an annual licence.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 El inventario de aplicaciones — el único artefacto que justifica la función
+### 3.1 The application inventory — the only artifact that justifies the function
 
-Campos **obligatorios**; una fila sin ellos no está en el inventario, está en una lista:
+**Mandatory** fields; a row without them is not in the inventory, it is in a list:
 
-| Campo | Regla |
+| Field | Rule |
 |---|---|
-| Nombre y alias | Un nombre canónico; los alias se registran, no se discuten |
-| **Dueño de negocio** (persona, no equipo) | Si nadie acepta ser dueño, la aplicación es candidata a `eliminate` por definición |
-| Responsable técnico | Equipo con guardia o proveedor con contrato |
-| **Criticidad y RTO/RPO** | Derivados del BIA → `bcdr-standards`; aquí solo se referencian |
-| **Coste anual total** | Licencia + infraestructura + soporte + esfuerzo interno estimado → método de `finops-standards` |
-| **Estado de ciclo de vida** | `invest` / `tolerate` / `migrate` / `eliminate` + fecha de la última revisión |
-| Fecha de fin de soporte | Del proveedor o de la versión; vacío ≠ "no caduca" |
-| Capacidades de negocio que soporta | Enlace al mapa (§3.3), 1..n |
-| **Dependencias** | Aplicaciones e integraciones de las que depende y que dependen de ella (§5.1) |
-| Datos que trata | Clasificación y si hay datos personales → `privacy-engineering-standards`, `data-governance-quality-standards` |
-| Referencia al CI | Identificador en la CMDB; **referencia, no copia** |
+| Name and aliases | One canonical name; aliases are recorded, not argued about |
+| **Business owner** (a person, not a team) | If nobody accepts being the owner, the application is a candidate for `eliminate` by definition |
+| Technical lead | Team with on-call or vendor with a contract |
+| **Criticality and RTO/RPO** | Derived from the BIA → `bcdr-standards`; only referenced here |
+| **Total annual cost** | Licence + infrastructure + support + estimated internal effort → method from `finops-standards` |
+| **Lifecycle state** | `invest` / `tolerate` / `migrate` / `eliminate` + date of the last review |
+| End-of-support date | From the vendor or the version; empty ≠ "does not expire" |
+| Business capabilities it supports | Link to the map (§3.3), 1..n |
+| **Dependencies** | Applications and integrations it depends on and that depend on it (§5.1) |
+| Data it processes | Classification and whether there is personal data → `privacy-engineering-standards`, `data-governance-quality-standards` |
+| CI reference | Identifier in the CMDB; **a reference, not a copy** |
 
-**Por qué se degrada, y qué se hace contra cada causa** —esto es el trabajo real de la función:
+**Why it degrades, and what is done against each cause** —this is the function's real work:
 
-1. **Se crea como proyecto y no como proceso.** Contra: el inventario tiene dueño con nombre y una
-   revisión con fecha en el calendario, no un hito de proyecto.
-2. **No está en el camino de nadie.** Un dato que solo sirve para el informe anual se pudre. Contra:
-   **atarlo a un evento que ya ocurre** — alta de aplicación en el alta de proyecto, coste desde la
-   facturación real, dependencias desde el descubrimiento de red/CMDB, fin de soporte desde el
-   inventario de vulnerabilidades.
-3. **Campos opinables sin definición.** "Criticidad alta" sin criterio produce el 60 % de las
-   aplicaciones en alta. Contra: cada campo con valores cerrados y regla de asignación escrita.
-4. **Captura manual de lo que ya está en otro sistema.** Contra: **generar desde la fuente y
-   reconciliar**, nunca teclear dos veces (mismo principio que §4 de `knowledge-management-standards`).
-5. **Nadie ve la consecuencia de mentir.** Contra: **si el coste sale del inventario, el presupuesto
-   sale del inventario**; el dato que decide dinero se corrige solo.
+1. **It is created as a project and not as a process.** Counter: the inventory has a named owner and a
+   dated review in the calendar, not a project milestone.
+2. **It is not in anybody's path.** Data that only serves the annual report rots. Counter:
+   **tie it to an event that already happens** — application registration at project registration, cost from
+   actual billing, dependencies from network/CMDB discovery, end of support from the
+   vulnerability inventory.
+3. **Opinion-based fields with no definition.** "High criticality" with no criteria produces 60 % of the
+   applications at high. Counter: every field with closed values and a written assignment rule.
+4. **Manual capture of what is already in another system.** Counter: **generate from the source and
+   reconcile**, never type it twice (same principle as §4 of `knowledge-management-standards`).
+5. **Nobody sees the consequence of lying.** Counter: **if cost comes out of the inventory, the budget
+   comes out of the inventory**; data that decides money corrects itself.
 
-**Métrica de salud del inventario (falsable)**: porcentaje de aplicaciones con dueño vivo y revisión
-en los últimos 12 meses, y **desviación entre el coste del inventario y la factura real**. Si la
-desviación supera el 10 %, el inventario no es utilizable para decidir cartera.
+**Inventory health metric (falsifiable)**: percentage of applications with a live owner and a review
+in the last 12 months, and **the deviation between the inventory's cost and the actual invoice**. If the
+deviation exceeds 10 %, the inventory is not usable for portfolio decisions.
 
-### 3.2 Frontera con la CMDB, sin ambigüedad
+### 3.2 Boundary with the CMDB, without ambiguity
 
-| | Inventario de aplicaciones | CMDB (`itsm-itil-standards`) |
+| | Application inventory | CMDB (`itsm-itil-standards`) |
 |---|---|---|
-| Pregunta que responde | ¿Esto merece existir el año que viene? | ¿Qué se ve afectado por este cambio o incidente? |
-| Unidad | Aplicación / capacidad | Elemento de configuración |
-| Cadencia | Revisión trimestral/anual | Continua, ligada al cambio |
-| Dueño | Arquitectura + dueño de negocio | Gestión de servicio |
-| Fuente de verdad en conflicto | Decisión de cartera, coste, dueño de negocio | Estado operativo, relaciones de despliegue |
+| Question it answers | Does this deserve to exist next year? | What is affected by this change or incident? |
+| Unit | Application / capability | Configuration item |
+| Cadence | Quarterly/annual review | Continuous, tied to change |
+| Owner | Architecture + business owner | Service management |
+| Source of truth in a conflict | Portfolio decision, cost, business owner | Operational state, deployment relationships |
 
-**PROHIBIDO** mantener dos grafos de dependencia independientes: uno referencia al otro.
+**FORBIDDEN** to maintain two independent dependency graphs: one references the other.
 
-### 3.3 Capacidades de negocio como eje estable
+### 3.3 Business capabilities as a stable axis
 
-- Se mapea contra **lo que la organización hace** (capacidades: "facturar", "originar préstamo",
-  "gestionar devoluciones"), **no contra quién lo hace**. El organigrama cambia cada reorganización;
-  la capacidad no. Un inventario indexado por departamento queda inservible en la siguiente
-  reorganización — y eso ocurre antes que la próxima revisión de cartera.
-- **Dos niveles bastan** para decidir cartera; tres solo si un nivel entero se va a externalizar o
-  comprar. Un mapa con cuatro niveles y 300 hojas es un proyecto de modelado, no una herramienta.
-- Uso real: colorear el mapa por **coste**, por **criticidad** y por **duplicidad** (nº de
-  aplicaciones que soportan la misma capacidad). **La duplicidad en una capacidad no diferenciadora
-  es el hallazgo que paga la función.**
+- It is mapped against **what the organisation does** (capabilities: "invoice", "originate a loan",
+  "manage returns"), **not against who does it**. The org chart changes with every reorganisation;
+  the capability does not. An inventory indexed by department becomes useless at the next
+  reorganisation — and that happens sooner than the next portfolio review.
+- **Two levels are enough** to decide portfolio; three only if an entire level is going to be outsourced or
+  bought. A map with four levels and 300 leaves is a modelling project, not a tool.
+- Real use: colour the map by **cost**, by **criticality** and by **duplication** (number of
+  applications supporting the same capability). **Duplication in a non-differentiating capability
+  is the finding that pays for the function.**
 
-### 3.4 Decisión de ciclo de vida: TIME
+### 3.4 Lifecycle decision: TIME
 
-- **TIME (Tolerate, Invest, Migrate, Eliminate)** se atribuye consistentemente a **Gartner** como
-  marco de racionalización de cartera de aplicaciones. **Discrepancia declarada**: no he podido
-  localizar la nota de investigación primaria (identificador y año) en fuentes abiertas —las
-  disponibles son secundarias, en su mayoría de fabricantes de herramientas EA—, **y sus ejes no
-  coinciden entre fuentes**: unas cruzan *ajuste técnico × ajuste funcional* y otras *valor de
-  negocio × ajuste técnico*. **Consecuencia operativa: si se usa TIME, se escribe en el documento
-  propio qué dos ejes se usan y cómo se puntúan**; citarlo sin fijar ejes garantiza que dos personas
-  clasifiquen distinto la misma aplicación. Verificar la fuente primaria antes de atribuirla en un
-  documento formal (§8).
-- Reglas duras que hacen la clasificación falsable:
-  - `tolerate` **lleva fecha de re-revisión obligatoria**; sin ella es abandono con nombre bonito.
-  - `invest` exige una capacidad diferenciadora identificada (§5.2) y presupuesto asignado.
-  - `eliminate` exige **fecha de apagado, plan de datos y consumidores notificados**; una aplicación
-    "eliminada" que sigue encendida sigue costando.
-  - **Ninguna aplicación se queda sin clasificar**: sin clasificación explícita, el estado por
-    defecto es `tolerate` con revisión a 12 meses, y así se declara.
+- **TIME (Tolerate, Invest, Migrate, Eliminate)** is consistently attributed to **Gartner** as an
+  application portfolio rationalisation framework. **Declared discrepancy**: I could not locate the
+  primary research note (identifier and year) in open sources —the available ones are secondary,
+  mostly from EA tool vendors—, **and its axes do not agree between sources**: some cross
+  *technical fit × functional fit* and others *business value × technical fit*. **Operational
+  consequence: if TIME is used, write in your own document which two axes are used and how they are scored**;
+  citing it without pinning the axes guarantees that two people
+  will classify the same application differently. Verify the primary source before attributing it in a
+  formal document (§8).
+- Hard rules that make the classification falsifiable:
+  - `tolerate` **carries a mandatory re-review date**; without it, it is abandonment with a nice name.
+  - `invest` requires an identified differentiating capability (§5.2) and allocated budget.
+  - `eliminate` requires a **shutdown date, a data plan and notified consumers**; an application
+    "eliminated" that is still running still costs money.
+  - **No application is left unclassified**: with no explicit classification, the default
+    state is `tolerate` with a 12-month review, and it is declared as such.
 
-### 3.5 Las "R" de modernización
+### 3.5 The modernisation "R"s
 
-Taxonomía de trabajo (nombres de AWS, de uso mayoritario): **rehost, relocate, replatform,
+Working taxonomy (AWS names, in majority use): **rehost, relocate, replatform,
 repurchase, refactor/re-architect, retire, retain**.
 
-- **Origen, con la cadena de atribución declarada**: las fuentes secundarias sitúan el origen en
-  **Gartner (2011, Richard Watson)** con **cinco** estrategias —*rehost, refactor, revise, rebuild,
-  replace*—, ampliadas y renombradas después por AWS a 6 y luego a 7 R. **Divergencia detectada en
-  las fuentes**: varias páginas atribuyen a Gartner la nomenclatura de AWS (*replatform*,
-  *repurchase*, *retire*), que no es la lista original. **Regla: al citar la taxonomía, decir de qué
-  lista se habla (Gartner 5 o AWS 7) o no citarla.** No he podido confirmar la lista de AWS
-  verbatim contra su documentación oficial en esta pasada (dos intentos de recuperación fallidos);
-  **verificar en la guía prescriptiva de AWS antes de usarla en un documento formal** (§8).
-- **Orden de evaluación obligatorio, y esto sí es criterio**: `retire` → `retain` → `repurchase` →
-  `rehost`/`relocate` → `replatform` → `refactor` → `rebuild`. **Se evalúa apagar antes que mover,
-  y comprar antes que reescribir.** Reescribir es la opción más cara y la que más a menudo se
-  elige primero.
-- **`rebuild` (reescribir desde cero) existe y cierra la lista**: `legacy-modernization-standards`
-  §2.3 lo trata como estrategia propia y lo condiciona a las excepciones de
-  `refactoring-tech-debt-standards` §6.2. **Las dos listas son la misma**, con esta equivalencia:
-  el *replace* de aquella es el `repurchase` de aquí, y su `refactor/rearchitect` es este
-  `refactor`. Al citar, decir de qué lista se habla.
-- **El orden es de cartera, no de sistema**: fija por dónde se empieza a mirar cuando hay cien
-  aplicaciones. **La skill de la plataforma concreta puede invertirlo con justificación escrita**,
-  y a veces debe — en IBM i, por ejemplo, modernizar dentro (ILE, SQL, APIs) suele ser
-  dramáticamente más barato que comprar, y casi nadie agota esa vía antes de plantear la
-  migración. Invertir el orden sin escribir por qué es saltarse el criterio, no adaptarlo.
-- `rehost` a la nube **sin plan de replatform posterior con fecha** traslada la deuda y añade
-  factura: se acepta solo con motivo de plazo (cierre de CPD, fin de soporte de hardware) escrito.
-- **Ninguna R se aplica a la cartera entera**: se decide por aplicación, con el coste de §3.1
-  delante.
+- **Origin, with the attribution chain declared**: secondary sources place the origin in
+  **Gartner (2011, Richard Watson)** with **five** strategies —*rehost, refactor, revise, rebuild,
+  replace*—, later extended and renamed by AWS to 6 and then to 7 Rs. **Divergence detected in
+  the sources**: several pages attribute AWS's nomenclature to Gartner (*replatform*,
+  *repurchase*, *retire*), which is not the original list. **Rule: when citing the taxonomy, say which
+  list you are talking about (Gartner 5 or AWS 7) or do not cite it.** I could not confirm AWS's list
+  verbatim against their official documentation in this pass (two failed fetch attempts);
+  **verify in the AWS prescriptive guidance before using it in a formal document** (§8).
+- **Mandatory order of evaluation, and this really is a criterion**: `retire` → `retain` → `repurchase` →
+  `rehost`/`relocate` → `replatform` → `refactor` → `rebuild`. **Switching off is evaluated before moving,
+  and buying before rewriting.** Rewriting is the most expensive option and the one most often
+  chosen first.
+- **`rebuild` (rewriting from scratch) exists and closes the list**: `legacy-modernization-standards`
+  §2.3 treats it as a strategy in its own right and conditions it on the exceptions of
+  `refactoring-tech-debt-standards` §6.2. **The two lists are the same**, with this equivalence:
+  their *replace* is this `repurchase`, and their `refactor/rearchitect` is this
+  `refactor`. When citing, say which list you are talking about.
+- **The order is portfolio-level, not system-level**: it sets where you start looking when there are a hundred
+  applications. **The specific platform's skill may invert it with written justification**,
+  and sometimes must — on IBM i, for instance, modernising in place (ILE, SQL, APIs) is usually
+  dramatically cheaper than buying, and almost nobody exhausts that route before proposing
+  migration. Inverting the order without writing down why is skipping the criteria, not adapting them.
+- `rehost` to the cloud **without a subsequent dated replatform plan** moves the debt and adds an
+  invoice: it is accepted only with a written timing reason (data centre closure, hardware end of support).
+- **No single R applies to the whole portfolio**: it is decided per application, with the cost of §3.1
+  in front of you.
 
-## 4. Estándares, excepciones y radar
+## 4. Standards, exceptions and radar
 
-*(Sección 4 de la plantilla —calidad y testing— sustituida: en una función de criterio, el control
-de calidad equivalente es el gobierno del estándar y su verificación.)*
+*(Section 4 of the template —quality and testing— replaced: in a judgement function, the equivalent
+quality control is standard governance and its verification.)*
 
-### 4.1 Cómo se fija un estándar tecnológico
+### 4.1 How a technology standard is set
 
-Un estándar sin estas cinco piezas no es un estándar, es una preferencia:
+A standard without these five pieces is not a standard, it is a preference:
 
-1. **Ámbito**: a qué se aplica y a qué explícitamente no.
-2. **Motivo**: qué problema evita (soporte, seguridad, contratación, coste), en una frase falsable.
-3. **Dueño**: persona que lo mantiene y a quien se le pide la excepción.
-4. **Fecha y revisión**: fecha de entrada en vigor y de próxima revisión. Un estándar sin revisión
-   se convierte en el motivo por el que la gente lo esquiva.
-5. **Aplicación a lo existente**: si solo aplica a lo nuevo, se dice. Migración retroactiva sin
-   presupuesto es una excepción masiva no declarada.
+1. **Scope**: what it applies to and what it explicitly does not.
+2. **Reason**: which problem it avoids (support, security, hiring, cost), in one falsifiable sentence.
+3. **Owner**: the person who maintains it and to whom the exception is requested.
+4. **Date and review**: date of entry into force and of the next review. A standard with no review
+   becomes the reason people work around it.
+5. **Application to what exists**: if it only applies to new things, say so. Retroactive migration without
+   a budget is an undeclared mass exception.
 
-### 4.2 El proceso de excepción — **una excepción sin fecha es un estándar nuevo**
+### 4.2 The exception process — **an exception without a date is a new standard**
 
-- **Toda excepción lleva: motivo, alcance, dueño, condición de salida y fecha de caducidad.**
-  **PROHIBIDA la excepción indefinida.**
-- **Caducidad máxima recomendada: 12 meses.** Al vencer solo hay dos salidas: se cumple el estándar
-  o **se cambia el estándar** (porque tres excepciones sobre la misma regla significan que la regla
-  está mal, no que la gente sea indisciplinada).
-- El registro de excepciones es público internamente y se revisa en la misma sesión que el radar.
-  **Métrica**: nº de excepciones vencidas sin resolver. Si crece dos trimestres seguidos, el
-  problema es el estándar.
+- **Every exception carries: reason, scope, owner, exit condition and expiry date.**
+  **INDEFINITE EXCEPTIONS ARE FORBIDDEN.**
+- **Maximum recommended expiry: 12 months.** On expiry there are only two ways out: the standard is met
+  or **the standard is changed** (because three exceptions against the same rule mean the rule
+  is wrong, not that people are undisciplined).
+- The exceptions register is internally public and is reviewed in the same session as the radar.
+  **Metric**: number of expired unresolved exceptions. If it grows two quarters in a row, the
+  problem is the standard.
 
-### 4.3 Radar tecnológico como artefacto
+### 4.3 The technology radar as an artifact
 
-- Formato de referencia: el **Technology Radar de Thoughtworks**, publicado **dos veces al año**,
-  con cuatro cuadrantes (**Techniques, Platforms, Tools, Languages and Frameworks**) y cuatro
-  anillos. **Corrección verificada: el anillo externo ya no se llama "Hold", sino "Caution"**
-  (adopt / trial / assess / **caution**) — si tu plantilla o tus datos dicen `Hold`, están
-  desactualizados.
-- Herramienta: **Build Your Own Radar** de Thoughtworks, **AGPL-3.0** (copyright 2015 Bruno
-  Trecenti; 2016 Thoughtworks). **Consecuencia de la AGPL: si se despliega modificado y se sirve por
-  red, las obligaciones de la licencia aplican** → contrastar con `opensource-licensing-standards`
-  antes de forkearlo.
-- Reglas propias del radar interno: cada blip lleva **fecha y una frase de por qué**; un blip en
-  `caution` **nombra el sustituto**; y el radar se publica **con las mismas fechas que la revisión
-  de excepciones**, porque son la misma conversación.
+- Reference format: Thoughtworks's **Technology Radar**, published **twice a year**,
+  with four quadrants (**Techniques, Platforms, Tools, Languages and Frameworks**) and four
+  rings. **Verified correction: the outer ring is no longer called "Hold" but "Caution"**
+  (adopt / trial / assess / **caution**) — if your template or your data says `Hold`, it is
+  out of date.
+- Tool: Thoughtworks's **Build Your Own Radar**, **AGPL-3.0** (copyright 2015 Bruno
+  Trecenti; 2016 Thoughtworks). **Consequence of the AGPL: if it is deployed modified and served over
+  the network, the licence's obligations apply** → cross-check with `opensource-licensing-standards`
+  before forking it.
+- Rules specific to the internal radar: every blip carries **a date and one sentence on why**; a blip in
+  `caution` **names the replacement**; and the radar is published **on the same dates as the exceptions
+  review**, because they are the same conversation.
 
-## 5. Integración, y build/buy/SaaS
+## 5. Integration, and build/buy/SaaS
 
-### 5.1 El paisaje de integraciones es la deuda invisible
+### 5.1 The integration landscape is the invisible debt
 
-- **Lo que impide apagar una aplicación casi nunca es la aplicación: son sus integraciones.** Por
-  eso la columna de dependencias de §3.1 es obligatoria y no opcional.
-- **Cada integración tiene dueño, contrato y consumidores conocidos.** Una integración sin
-  consumidores identificables es la primera candidata a retirar, y su retirada es la forma más
-  barata de reducir el paisaje.
-- Elección de topología (**la implementación se delega**):
-  - **Punto a punto**: por defecto por debajo de ~10 integraciones. Coste real = n·(n−1)/2 en el
-    peor caso; se abandona cuando ese número deja de caber en una pizarra.
-  - **Bus / integración centralizada**: cuando el problema es la mediación y el enrutado, no el
-    volumen. **Riesgo declarado: lógica de negocio dentro del bus** — se prohíbe por escrito o el
-    bus se convierte en el sistema más crítico y menos testeable de la casa.
-  - **Eventos**: cuando el productor no debe conocer a los consumidores y la consistencia eventual
-    es aceptable para el negocio. Implementación → `message-brokers-standards`,
+- **What prevents switching off an application is almost never the application: it is its integrations.** That
+  is why the dependencies column of §3.1 is mandatory and not optional.
+- **Every integration has an owner, a contract and known consumers.** An integration with no
+  identifiable consumers is the first candidate for retirement, and its retirement is the cheapest
+  way to shrink the landscape.
+- Choice of topology (**implementation is delegated**):
+  - **Point to point**: the default below ~10 integrations. Real cost = n·(n−1)/2 in the
+    worst case; it is abandoned when that number stops fitting on a whiteboard.
+  - **Bus / centralised integration**: when the problem is mediation and routing, not
+    volume. **Declared risk: business logic inside the bus** — it is forbidden in writing or the
+    bus becomes the most critical and least testable system in the house.
+  - **Events**: when the producer must not know the consumers and eventual consistency
+    is acceptable to the business. Implementation → `message-brokers-standards`,
     `microservices-architecture-standards`, `streaming-cdc-standards`.
-- **Contrato antes que tecnología**: quién publica, qué esquema, qué compatibilidad y qué SLA →
+- **Contract before technology**: who publishes, which schema, what compatibility and what SLA →
   `api-design-standards`, `data-governance-quality-standards`.
 
 ### 5.2 Build vs. buy vs. SaaS
 
-Se decide con cuatro preguntas, en este orden. La primera es eliminatoria:
+It is decided with four questions, in this order. The first is eliminating:
 
-1. **¿Es una capacidad diferenciadora?** ¿Un cliente elegiría a la organización por cómo hace esto?
-   Si no, **no se construye**. Construir un ERP, un CRM o un sistema de nóminas propios es la forma
-   más cara conocida de no diferenciarse.
-2. **Coste total a 5 años**, no precio de licencia: licencia + integración + operación + soporte +
-   personas + **coste de la versión que habrá que migrar**. El coste de construir incluye
-   mantenerlo los 5 años; casi ningún caso de negocio de "build" lo incluye, y por eso casi todos
-   ganan en la hoja de cálculo y pierden en la realidad.
-3. **Dependencia del proveedor**: ¿el dato es exportable en formato utilizable?, ¿hay API?, ¿el
-   contrato permite auditar?, ¿qué pasa si sube el precio un 40 %? → due diligence de proveedor en
-   `grc-compliance-standards` y `bcdr-standards`.
-4. **Salida**: **antes de firmar se escribe el plan de salida** (formato de exportación, propiedad
-   del dato, plazo de devolución, coste estimado de migrar). Sin plan de salida escrito, el SaaS es
-   una decisión *one-way* disfrazada de suscripción mensual.
+1. **Is it a differentiating capability?** Would a customer choose the organisation because of how it does this?
+   If not, **it is not built**. Building your own ERP, CRM or payroll system is the most
+   expensive known way of not differentiating.
+2. **Total 5-year cost**, not licence price: licence + integration + operation + support +
+   people + **the cost of the version that will have to be migrated**. The cost of building includes
+   maintaining it for those 5 years; almost no "build" business case includes it, and that is why almost all of them
+   win on the spreadsheet and lose in reality.
+3. **Vendor dependency**: is the data exportable in a usable format? is there an API? does the
+   contract allow auditing? what happens if the price goes up 40 %? → vendor due diligence in
+   `grc-compliance-standards` and `bcdr-standards`.
+4. **Exit**: **the exit plan is written before signing** (export format, data
+   ownership, return deadline, estimated migration cost). Without a written exit plan, SaaS is
+   a *one-way* decision disguised as a monthly subscription.
 
-**Regla adicional**: personalizar un producto comprado por encima de su punto de configuración
-soportado convierte una compra en una construcción, con el peor perfil de coste de ambas. Si hace
-falta, la respuesta correcta suele ser cambiar el proceso de negocio o cambiar de producto.
+**Additional rule**: customising a bought product beyond its supported configuration point
+turns a purchase into a build, with the worst cost profile of both. If it is
+needed, the right answer is usually to change the business process or change product.
 
-## 6. Gobierno, bajada a la entrega y métricas
+## 6. Governance, descent to delivery and metrics
 
-### 6.1 Quién decide qué
+### 6.1 Who decides what
 
-| Tipo de decisión | Decide | Arquitectura aporta |
+| Type of decision | Decided by | Architecture contributes |
 |---|---|---|
-| Diseño interno de un sistema | El equipo | Estándar aplicable y revisión a petición |
-| Adopción de tecnología fuera del radar | Equipo + dueño del estándar | Excepción con caducidad (§4.2) |
-| Nueva aplicación en la cartera / compra | Dueño de negocio + arquitectura | Duplicidad, coste total, encaje en capacidades |
-| Apagado de una aplicación | Dueño de negocio | Dependencias y consumidores afectados |
-| Cambio de un estándar transversal | Consejo de arquitectura | Propuesta y consecuencias |
+| Internal design of a system | The team | The applicable standard and a review on request |
+| Adoption of technology outside the radar | Team + standard owner | Exception with an expiry (§4.2) |
+| New application in the portfolio / purchase | Business owner + architecture | Duplication, total cost, fit with capabilities |
+| Switching off an application | Business owner | Dependencies and affected consumers |
+| Change to a cross-cutting standard | Architecture board | Proposal and consequences |
 
-- **Umbral, no revisión universal**: se revisa lo *one-way* (gasto irreversible, dato personal,
-  dependencia de proveedor a largo plazo, cambio que afecta a más de un equipo). **Todo lo demás se
-  decide en el equipo y se comunica.**
-- **Por qué un comité que revisa todo se convierte en cuello de botella —con la evidencia
-  disponible—**: el hallazgo de DORA/*Accelerate* sobre aprobación por un cuerpo externo (CAB o
-  directivo) es que **las aprobaciones externas correlacionan negativamente con lead time,
-  frecuencia de despliegue y tiempo de restauración, y no correlacionan con la tasa de fallo del
-  cambio**; DORA declara no haber encontrado evidencia de que el proceso formal externo reduzca los
-  fallos. **La cifra "2,6× más probable ser low performer" circula atribuida al informe de 2019: no
-  la uso, porque no he podido verificarla contra la fuente primaria a la que se le atribuye.** El
-  argumento cualitativo se sostiene sin ella. Alternativa recomendada por DORA: **revisión por pares
-  durante el desarrollo + automatización de controles** → `code-review-standards`, `cicd-standards`.
-- Corolario: **un consejo de arquitectura que aprueba diseños es un CAB con otro nombre.** Su
-  trabajo es fijar estándares, resolver excepciones y arbitrar conflictos entre equipos; **no
-  aprobar el trabajo de nadie**.
+- **Threshold, not universal review**: what is *one-way* is reviewed (irreversible spend, personal data,
+  long-term vendor dependency, a change affecting more than one team). **Everything else is
+  decided in the team and communicated.**
+- **Why a committee that reviews everything becomes a bottleneck —with the available
+  evidence—**: DORA/*Accelerate*'s finding on approval by an external body (CAB or
+  management) is that **external approvals correlate negatively with lead time,
+  deployment frequency and time to restore, and do not correlate with change failure
+  rate**; DORA states it found no evidence that a formal external process reduces
+  failures. **The "2.6× more likely to be a low performer" figure circulates attributed to the 2019 report: I do not
+  use it, because I could not verify it against the primary source it is attributed to.** The
+  qualitative argument stands without it. Alternative recommended by DORA: **peer review
+  during development + automation of controls** → `code-review-standards`, `cicd-standards`.
+- Corollary: **an architecture board that approves designs is a CAB under another name.** Its
+  job is to set standards, resolve exceptions and arbitrate conflicts between teams; **not
+  to approve anybody's work**.
 
-### 6.2 La bajada a la entrega — **la arquitectura que no baja a decisiones concretas no existe**
+### 6.2 The descent to delivery — **architecture that does not descend to concrete decisions does not exist**
 
-- Todo estándar se materializa en algo ejecutable o no cuenta: una plantilla en el camino pavimentado
-  (`platform-engineering-standards`), un módulo de IaC, una política de admisión, un gate de CI, un
-  *fitness function* (`software-architecture-patterns-standards`). **El PDF no es un mecanismo de
-  cumplimiento.**
-- **El arquitecto acompaña al primer equipo que aplica un estándar nuevo.** Si nadie de arquitectura
-  ha usado el estándar que escribió, el estándar no está probado.
-- Enlace obligatorio con el ADR: la decisión de un equipo que se aparta de un estándar **se escribe
-  como ADR y como excepción con caducidad** (mismo hecho, dos registros con dueños distintos).
+- Every standard materialises in something executable or it does not count: a template in the paved road
+  (`platform-engineering-standards`), an IaC module, an admission policy, a CI gate, a
+  *fitness function* (`software-architecture-patterns-standards`). **The PDF is not a compliance
+  mechanism.**
+- **The architect accompanies the first team that applies a new standard.** If nobody from architecture
+  has used the standard they wrote, the standard is untested.
+- Mandatory link with the ADR: a team's decision that departs from a standard **is written
+  as an ADR and as an exception with an expiry** (same fact, two records with different owners).
 
-### 6.3 Métricas de la función (ninguna cuenta documentos)
+### 6.3 Metrics for the function (none counts documents)
 
-| Métrica | Qué diagnostica | Señal de alarma |
+| Metric | What it diagnoses | Alarm signal |
 |---|---|---|
-| % de aplicaciones con dueño vivo y revisión < 12 meses | Salud del inventario | < 80 % |
-| Desviación coste inventario vs. factura | Utilidad del inventario para decidir | > 10 % |
-| Nº de aplicaciones apagadas por período | Que la función también resta | 0 en un año |
-| Duplicidad por capacidad no diferenciadora | Solape de cartera | Crece |
-| Excepciones vencidas sin resolver | Estándar desalineado con la realidad | Crece 2 trimestres |
-| Antigüedad mediana del artefacto consultado | Documentación viva vs. muerta | Nadie consulta nada |
-| Tiempo de respuesta a una consulta de arquitectura | Si la función es un servicio o una aduana | Días |
+| % of applications with a live owner and a review < 12 months | Inventory health | < 80 % |
+| Deviation of inventory cost vs. invoice | Usefulness of the inventory for deciding | > 10 % |
+| Number of applications switched off per period | That the function also subtracts | 0 in a year |
+| Duplication per non-differentiating capability | Portfolio overlap | Growing |
+| Expired unresolved exceptions | Standard misaligned with reality | Grows for 2 quarters |
+| Median age of the artifact consulted | Living vs. dead documentation | Nobody consults anything |
+| Response time to an architecture query | Whether the function is a service or a customs post | Days |
 
-## 7. Sostenibilidad a largo plazo y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-- Cadencia mínima: **revisión de cartera trimestral** (estado TIME, altas y bajas), **radar y
-  excepciones semestrales**, **mapa de capacidades anual o al cambiar el modelo de negocio** (no al
-  reorganizarse).
-- **Deprecación de estándares**: un estándar retirado se marca como retirado con fecha; no se borra,
-  porque hay sistemas construidos contra él.
-- Prohibiciones:
-  - ❌ **Diagrama sin dueño ni fecha.** Un diagrama sin ambas cosas es folclore; se borra o se adopta.
-  - ❌ **Estándar sin proceso de excepción.** Produce incumplimiento silencioso, que es peor que la
-    excepción registrada porque no se mide.
-  - ❌ **Excepción sin fecha de caducidad** (§4.2).
-  - ❌ **Inventario que nadie actualiza**: si no está atado a un evento que ya ocurre (§3.1), no se
-    empieza.
-  - ❌ **Elegir marco antes que problema.** "Vamos a implantar TOGAF" no es un objetivo; "sabemos qué
-    aplicaciones duplican la capacidad de facturación y cuánto cuestan" sí.
-  - ❌ **Torre de marfil**: arquitecto que produce el objetivo y no acompaña ninguna implantación.
-  - ❌ **Consejo de arquitectura que aprueba todos los diseños** (§6.1).
-  - ❌ **Dos fuentes de verdad** para dependencias o para el coste (§3.2).
-  - ❌ **Reescribir sin haber evaluado retire y repurchase**, y **rehost sin fecha del replatform**.
-  - ❌ **Firmar SaaS sin plan de salida escrito**.
-  - ❌ **Citar cifras de marco o de tasa de fracaso sin fuente primaria** en un documento de
-    arquitectura: es la forma más rápida de perder credibilidad ante quien decide el dinero.
-  - ❌ **Publicar notación o material derivado de ArchiMate fuera de la organización sin comprobar la
-    licencia aplicable** (§2.2).
+- Minimum cadence: **quarterly portfolio review** (TIME state, additions and removals), **radar and
+  exceptions half-yearly**, **capability map annually or when the business model changes** (not when
+  reorganising).
+- **Deprecating standards**: a withdrawn standard is marked as withdrawn with a date; it is not deleted,
+  because there are systems built against it.
+- Prohibitions:
+  - ❌ **A diagram with no owner and no date.** A diagram without both is folklore; it is deleted or adopted.
+  - ❌ **A standard with no exception process.** It produces silent non-compliance, which is worse than the
+    recorded exception because it is not measured.
+  - ❌ **An exception with no expiry date** (§4.2).
+  - ❌ **An inventory nobody updates**: if it is not tied to an event that already happens (§3.1), do not
+    start it.
+  - ❌ **Choosing a framework before a problem.** "We are going to implement TOGAF" is not an objective; "we know which
+    applications duplicate the invoicing capability and what they cost" is.
+  - ❌ **Ivory tower**: an architect who produces the target and accompanies no implementation.
+  - ❌ **An architecture board that approves every design** (§6.1).
+  - ❌ **Two sources of truth** for dependencies or for cost (§3.2).
+  - ❌ **Rewriting without having evaluated retire and repurchase**, and **rehost without a date for the replatform**.
+  - ❌ **Signing SaaS without a written exit plan**.
+  - ❌ **Citing framework figures or failure rates without a primary source** in an architecture
+    document: it is the fastest way to lose credibility with whoever decides the money.
+  - ❌ **Publishing ArchiMate notation or derived material outside the organisation without checking the
+    applicable licence** (§2.2).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Comprobar antes de fijar nada:
+Check before pinning anything:
 
-1. **TOGAF**: edición vigente y correcciones en `opengroup.org/togaf`; propiedad y condiciones de
-   marca. Aquí: 10th Edition (2022), corrigendum 2025 en el bundle C220.
-2. **ArchiMate**: versión vigente (3.2, C226, oct-2022) y **licencia aplicable a tu uso concreto**
-   en `opengroup.org/legal/licensing` — evaluación 90 días / no comercial / comercial anual.
-   **Decisión legal: consultar antes de publicar.**
-3. **TIME**: **hueco declarado** — no localizada la nota primaria de Gartner (identificador y año) ni
-   una definición de ejes consistente entre fuentes. Si se necesita atribución formal, se consulta
-   la biblioteca de Gartner bajo suscripción. **No inventar la cita.**
-4. **Las "R"**: confirmar la lista vigente de AWS *verbatim* en su guía prescriptiva y, si se
-   atribuye a Gartner, usar la lista original de 2011 (rehost, refactor, revise, rebuild, replace).
-   **No confirmado verbatim en esta pasada.**
-5. **Herramientas**: estado, licencia y **precio** de LeanIX / Ardoq / Bizzdesign — **hueco: ninguna
-   publica precio**; modelo por número de aplicaciones en LeanIX y Ardoq, a confirmar en oferta.
-   Licencia de Archi verificada en crudo (MIT, `License.txt` del repositorio).
-6. **Build Your Own Radar**: licencia **AGPL-3.0** y anillos vigentes (`caution`, no `hold`),
-   confirmados a ago-2026; re-verificar antes de forkear.
-7. **Evidencia sobre aprobación externa**: leer el informe DORA/*Accelerate* citado en su fuente
-   primaria antes de reproducir cualquier cifra. **La cifra 2,6× queda descartada por no verificable
-   contra la fuente a la que se atribuye.**
-8. Cifras de "porcentaje de organizaciones que adopta X marco" y "tasa de fracaso de programas de
-   transformación": **descartadas por defecto**; solo se usan con estudio primario y metodología
-   accesible.
+1. **TOGAF**: current edition and corrigenda at `opengroup.org/togaf`; ownership and trademark
+   conditions. Here: 10th Edition (2022), 2025 corrigendum in the C220 bundle.
+2. **ArchiMate**: current version (3.2, C226, Oct 2022) and **the licence applicable to your specific use**
+   at `opengroup.org/legal/licensing` — 90-day evaluation / non-commercial / annual commercial.
+   **Legal decision: consult before publishing.**
+3. **TIME**: **declared gap** — the primary Gartner note (identifier and year) was not located, nor
+   a definition of axes consistent between sources. If formal attribution is needed, consult
+   Gartner's library under subscription. **Do not invent the citation.**
+4. **The "R"s**: confirm AWS's current list *verbatim* in their prescriptive guidance and, if
+   attributed to Gartner, use the original 2011 list (rehost, refactor, revise, rebuild, replace).
+   **Not confirmed verbatim in this pass.**
+5. **Tools**: status, licence and **pricing** of LeanIX / Ardoq / Bizzdesign — **gap: none
+   publishes pricing**; a per-application model in LeanIX and Ardoq, to be confirmed in a quote.
+   Archi's licence verified in raw (MIT, `License.txt` in the repository).
+6. **Build Your Own Radar**: **AGPL-3.0** licence and current rings (`caution`, not `hold`),
+   confirmed as of Aug 2026; re-verify before forking.
+7. **Evidence on external approval**: read the cited DORA/*Accelerate* report in its primary
+   source before reproducing any figure. **The 2.6× figure is discarded as unverifiable
+   against the source it is attributed to.**
+8. Figures for "percentage of organisations adopting framework X" and "failure rate of transformation
+   programmes": **discarded by default**; used only with a primary study and accessible methodology.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

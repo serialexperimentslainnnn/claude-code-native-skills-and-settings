@@ -3,150 +3,150 @@ name: code-review-standards
 description: Code review as an explicit quality control, not an opinion about someone else's style. Use when reviewing or authoring a pull/merge request diff, writing a PR description or review checklist, deciding what blocks a merge versus what is a suggestion, labelling review comments (Conventional Comments, nit:, blocking:), setting review SLA and stale-PR policy, assigning reviewers or debugging a CODEOWNERS bottleneck, requiring a second or specialist reviewer for high-risk changes (data migrations, authn/authz, cryptography, concurrency, infrastructure), reviewing AI-generated or agent-authored diffs, arguing about formatting in a review, escalating a review disagreement to an ADR, choosing review metrics, or replacing async review with pair or mob programming.
 ---
 
-# Estándares de revisión de código
+# Code review standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **qué se mira dentro de un diff, en qué orden, qué bloquea, cómo se escribe el comentario
-y quién tiene que firmar según el riesgo del cambio**: orden de búsqueda por valor, criterio de
-bloqueo, convención de etiquetas de comentario, contenido exigible de la descripción del PR,
-asignación de revisores y cuello de botella de `CODEOWNERS`, revisión de cambios de alto riesgo,
-revisión de código generado por IA, resolución de desacuerdos, automatización previa a la revisión
-y métricas del proceso.
+Applies to **what is looked at inside a diff, in what order, what blocks, how the comment is written
+and who has to sign off according to the risk of the change**: search order by value, blocking
+criteria, comment label convention, required content of the PR description,
+reviewer assignment and the `CODEOWNERS` bottleneck, review of high-risk changes,
+review of AI-generated code, resolution of disagreements, automation before review
+and process metrics.
 
-Principio rector: **la revisión es un control de calidad con criterios explícitos, no una opinión
-sobre el estilo ajeno.** Un control de calidad tiene entradas definidas (un diff pequeño, verde en
-CI y con contexto escrito), criterios falsables (esto bloquea, esto no) y una salida binaria
-(aprobado / cambios requeridos con razón). Todo lo que no encaje en eso — preferencia estética,
-demostración de conocimiento, negociación de poder — **no es revisión**.
+Guiding principle: **review is a quality control with explicit criteria, not an opinion
+about someone else's style.** A quality control has defined inputs (a small diff, green in
+CI and with written context), falsifiable criteria (this blocks, this does not) and a binary output
+(approved / changes requested with a reason). Anything that does not fit that — aesthetic preference,
+demonstration of knowledge, power negotiation — **is not review**.
 
-**Frontera fina con `git-workflow-standards`** (leída de su §1 y su §3.4, que ya reclama tamaño de
-PR, descripción, SLA, `CODEOWNERS` y protección de rama). Reparto, sin ambigüedad:
+**Fine boundary with `git-workflow-standards`** (read from its §1 and its §3.4, which already claims PR
+size, description, SLA, `CODEOWNERS` and branch protection). The split, with no ambiguity:
 
-| Pregunta | Dueño |
+| Question | Owner |
 |---|---|
-| ¿Cómo se rama, se commitea, se hace *squash* y se etiqueta? ¿Cuál es el **límite numérico** de tamaño de diff del repo? ¿Qué rutas exigen *owner* y qué reglas protegen `main`? ¿Cuál es el SLA de primera respuesta como regla del repositorio? | **`git-workflow-standards`** |
-| ¿Qué busca el revisor dentro de ese diff y en qué orden? ¿Qué constituye motivo de bloqueo? ¿Cómo se redacta el comentario? ¿Qué exige un cambio de alto riesgo? ¿Cómo se revisa un diff que escribió un agente? ¿Qué se hace ante desacuerdo? | **Esta skill** |
-| Ambas fijan un número sobre lo mismo (tamaño de PR, SLA) | **Manda `git-workflow-standards`**: es la regla mecánica del repositorio. Aquí se aporta la **evidencia** de por qué ese número existe y qué le pasa a la eficacia de la revisión al superarlo (§3.4). Si los dos números divergen, se corrige el de esta skill. |
+| How do you branch, commit, *squash* and tag? What is the repo's **numeric limit** on diff size? Which paths require an *owner* and which rules protect `main`? What is the first-response SLA as a repository rule? | **`git-workflow-standards`** |
+| What does the reviewer look for inside that diff and in what order? What constitutes grounds for blocking? How is the comment written? What does a high-risk change require? How do you review a diff an agent wrote? What do you do when there is disagreement? | **This skill** |
+| Both fix a number on the same thing (PR size, SLA) | **`git-workflow-standards` wins**: it is the repository's mechanical rule. Here we provide the **evidence** of why that number exists and what happens to the effectiveness of review when it is exceeded (§3.4). If the two numbers diverge, the one in this skill is corrected. |
 
-**No aplica**: ver `git-workflow-standards` (arriba), `cicd-standards` (**la pipeline y sus gates
-son suyos**: jobs, orden, runners, *required checks*; aquí **qué debe estar verde antes de que una
-persona mire el diff** y con qué umbral), `testing-qa-standards` (qué se prueba, en qué proporción
-y qué rompe el build; aquí solo **el test como objeto de revisión** y la exigencia de test de
-regresión), `appsec-standards` (**modelado de amenazas y triaje de hallazgos son suyos**; aquí la
-revisión humana como control y el *checklist* de riesgo del diff — §5), `secrets-management-standards`
-(gestión y rotación de secretos; aquí solo detectar el secreto que entra por el diff),
-`sre-practice-standards` (fiabilidad, SLO y *error budget*; **el despliegue progresivo del cambio
-revisado se coordina allí**), `incident-management-standards` (postmortem sin culpa; aquí la regla
-de que el arreglo llega con test de regresión y revisión de un segundo par de ojos),
-`observability-standards` (qué telemetría debe existir; aquí exigirla en el diff que la necesita),
-`grc-compliance-standards` (segregación de funciones y evidencia de auditoría que la revisión
-produce), `ai-agents-standards` (ingeniería del agente en sí) y `ai-agent-workflow-standards`
-(cómo se trabaja con agentes de código en equipo; **aquí solo la revisión del
-resultado**), `claude-code-skills-standards` (autoría de skills), las skills de lenguaje (qué es
-idiomático en ese lenguaje: el revisor las cita, no las reinventa en el hilo),
-`tech-leadership-standards` (el criterio de qué se revisa y cómo se comenta es de aquí;
-**que la revisión no se convierta en instrumento de poder ni en cuello de botella de una persona es
-responsabilidad de liderazgo y es suyo** — igual que la decisión de no usar métricas de revisión
-para evaluar individuos), `refactoring-tech-debt-standards` (el criterio de qué se refactoriza y cómo se registra
-la deuda es suyo; **aquí la consecuencia para la revisión, que no es menor: un refactor y un cambio
-funcional no se revisan igual y no van en el mismo commit**. Un diff donde la reestructuración
-esconde un cambio de comportamiento es irrevisable, y esa es razón suficiente para devolverlo).
+**Not applicable**: see `git-workflow-standards` (above), `cicd-standards` (**the pipeline and its gates
+are theirs**: jobs, order, runners, *required checks*; here **what must be green before a
+person looks at the diff** and with what threshold), `testing-qa-standards` (what is tested, in what proportion
+and what breaks the build; here only **the test as an object of review** and the requirement for a regression
+test), `appsec-standards` (**threat modelling and finding triage are theirs**; here human
+review as a control and the diff's risk *checklist* — §5), `secrets-management-standards`
+(secret management and rotation; here only detecting the secret that comes in through the diff),
+`sre-practice-standards` (reliability, SLOs and *error budget*; **the progressive rollout of the reviewed
+change is coordinated there**), `incident-management-standards` (blameless postmortem; here the rule
+that the fix arrives with a regression test and review by a second pair of eyes),
+`observability-standards` (what telemetry must exist; here requiring it in the diff that needs it),
+`grc-compliance-standards` (segregation of duties and the audit evidence review
+produces), `ai-agents-standards` (engineering the agent itself) and `ai-agent-workflow-standards`
+(how a team works with coding agents; **here only the review of the
+result**), `claude-code-skills-standards` (skill authoring), the language skills (what is
+idiomatic in that language: the reviewer cites them, they do not reinvent them in the thread),
+`tech-leadership-standards` (the criteria for what is reviewed and how it is commented belong here;
+**that review does not become an instrument of power nor a single person's bottleneck is a
+leadership responsibility and is theirs** — as is the decision not to use review metrics
+to evaluate individuals), `refactoring-tech-debt-standards` (the criteria for what is refactored and how
+debt is recorded are theirs; **here the consequence for review, which is not minor: a refactor and a functional
+change are not reviewed the same way and do not go in the same commit**. A diff where the restructuring
+hides a behaviour change is unreviewable, and that is reason enough to send it back).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión y el estado de las fuentes citadas por web antes de fijar nada (§8).
+> Verify the latest version and the status of the cited sources on the web before pinning anything (§8).
 
-| Ámbito | Default | Alternativa justificable |
+| Area | Default | Justifiable alternative |
 |---|---|---|
-| Qué decide la revisión | Corrección, riesgo y mantenibilidad | — |
-| Quién decide el formato | **El formateador automático en CI**, nunca el revisor | — |
-| Aprobaciones | **1** en cambio ordinario; **2, uno de ellos especialista**, en alto riesgo (§5) | 1 en repos de un solo dueño con revisión asíncrona posterior documentada |
-| Etiquetado de comentarios | **Conventional Comments** (`issue:`, `suggestion:`, `nitpick:`, `question:`, `praise:`, `note:`) con `(blocking)` / `(non-blocking)` explícito | Convención propia mínima: prefijo `blocking:` / `nit:` — pero **escrita y aplicada por todos** |
-| Por defecto de un comentario | **No bloqueante** salvo etiqueta explícita de bloqueo | — |
-| Descripción del PR | Obligatoria, con las cuatro respuestas del §3.3 | — |
-| Umbral de idas y vueltas | **3**; a la cuarta, conversación síncrona y resumen escrito en el PR | — |
-| Desacuerdo no resuelto | Escalado a un tercero técnico; si es una decisión de diseño, **ADR** y se desbloquea el PR | — |
-| Revisión de alto riesgo | **Revisor específico obligatorio** por dominio (§5) | — |
-| Código generado por IA | **Mismo listón, más escepticismo**; responde quien lo envía (§6) | — |
-| Revisor automático (LLM) | **Asesor, nunca aprobador**: sus comentarios son hipótesis a verificar | — |
-| Alternativa a la revisión asíncrona | **Pair/mob** en cambios exploratorios, de alto riesgo o de transferencia de conocimiento; sustituye a la revisión si el segundo par de ojos estuvo presente **durante** la escritura y queda constancia | — |
-| Métricas | Solo agregadas y de **proceso** (§4.3) | — |
+| What review decides | Correctness, risk and maintainability | — |
+| Who decides formatting | **The automatic formatter in CI**, never the reviewer | — |
+| Approvals | **1** on an ordinary change; **2, one of them a specialist**, on high risk (§5) | 1 in single-owner repos with documented later asynchronous review |
+| Comment labelling | **Conventional Comments** (`issue:`, `suggestion:`, `nitpick:`, `question:`, `praise:`, `note:`) with explicit `(blocking)` / `(non-blocking)` | A minimal in-house convention: `blocking:` / `nit:` prefix — but **written down and applied by everyone** |
+| A comment's default | **Non-blocking** unless there is an explicit blocking label | — |
+| PR description | Mandatory, with the four answers of §3.3 | — |
+| Round-trip threshold | **3**; on the fourth, a synchronous conversation and a written summary in the PR | — |
+| Unresolved disagreement | Escalated to a technical third party; if it is a design decision, an **ADR** and the PR is unblocked | — |
+| High-risk review | **Mandatory specific reviewer** by domain (§5) | — |
+| AI-generated code | **Same bar, more scepticism**; whoever submits it answers for it (§6) | — |
+| Automatic reviewer (LLM) | **An adviser, never an approver**: its comments are hypotheses to be verified | — |
+| Alternative to asynchronous review | **Pair/mob** on exploratory, high-risk or knowledge-transfer changes; it replaces review if the second pair of eyes was present **during** the writing and it is recorded | — |
+| Metrics | Only aggregated and about the **process** (§4.3) | — |
 
-## 3. Qué decide una revisión y qué no
+## 3. What a review decides and what it does not
 
-### 3.1 El estilo no se discute en una revisión
+### 3.1 Style is not discussed in a review
 
-- **El formato lo decide el formateador automático.** No hay negociación, no hay preferencia y no
-  hay comentario: se ejecuta en CI y rompe el build. La herramienta concreta la fija la skill del
-  lenguaje.
-- **Si se discute formato en una revisión, falta un formateador en CI.** Dicho así: cada hilo
-  sobre comillas, sangrado, orden de imports o longitud de línea es un **defecto de configuración
-  del repositorio**, no un desacuerdo entre personas. La acción correcta no es responder al hilo:
-  es abrir el PR que añade el formateador y cerrar el hilo con el enlace.
-- Lo mismo aplica a lo que un linter o un *type checker* puede decidir: si una regla es
-  automatizable y el equipo la quiere, se automatiza; si no se automatiza, **deja de ser
-  exigible en revisión**.
+- **Formatting is decided by the automatic formatter.** There is no negotiation, no preference and no
+  comment: it runs in CI and it breaks the build. The specific tool is fixed by the
+  language's skill.
+- **If formatting is discussed in a review, a formatter is missing from CI.** Put plainly: every thread
+  about quotes, indentation, import order or line length is a **repository configuration
+  defect**, not a disagreement between people. The correct action is not to reply to the thread:
+  it is to open the PR that adds the formatter and close the thread with the link.
+- The same applies to anything a linter or a *type checker* can decide: if a rule is
+  automatable and the team wants it, it is automated; if it is not automated, **it stops being
+  enforceable in review**.
 
-### 3.2 Orden de búsqueda, de mayor a menor valor
+### 3.2 Search order, from highest to lowest value
 
-Se revisa en este orden y se para cuando el diff ya no da más. Un revisor que empieza por el final
-de esta lista está gastando su atención en lo barato.
+You review in this order and you stop when the diff yields no more. A reviewer who starts at the end
+of this list is spending their attention on the cheap stuff.
 
-1. **Corrección y casos límite**: ¿hace lo que dice la descripción? Valores nulos/vacíos,
-   colecciones de cero y de uno, límites, desbordamiento, unidades y zonas horarias, precisión
-   decimal en dinero, idempotencia ante reintento.
-2. **Seguridad**: entrada no validada llegando a un *sink*, autorización ausente o evaluada en el
-   cliente, secreto en el diff, dependencia nueva, deserialización, construcción dinámica de
-   consultas o comandos. Clases y triaje: `appsec-standards`.
-3. **Contrato roto**: cambio incompatible en API, esquema, evento o formato persistido; y su
-   consecuencia sobre consumidores ya desplegados.
-4. **Concurrencia y estado compartido**: sección crítica sin protección, orden de bloqueo,
-   *check-then-act*, reentrada, suposición de ejecución en un único proceso.
-5. **Manejo de errores y recursos**: error tragado, error sin contexto, estado a medias tras
-   fallo, recurso no liberado, ausencia de *timeout* o de límite.
-6. **Observabilidad**: ¿se puede diagnosticar esto en producción a las 3 de la mañana? Log
-   estructurado con correlación, métrica del camino nuevo, y **ningún dato personal ni secreto en
-   el log**.
-7. **Tests**: ¿prueban comportamiento o implementación? ¿Cubren el borde que el diff introduce?
-   ¿Hay test de regresión si esto es un *bugfix*? Criterio: `testing-qa-standards`.
-8. **Mantenibilidad**: nombres que revelan intención, tamaño y responsabilidad de la unidad,
-   duplicación **esencial** (no accidental), acoplamiento nuevo, deuda declarada con TODO + motivo.
+1. **Correctness and edge cases**: does it do what the description says? Null/empty values,
+   collections of zero and of one, limits, overflow, units and time zones, decimal
+   precision in money, idempotency on retry.
+2. **Security**: unvalidated input reaching a *sink*, missing authorisation or authorisation evaluated on the
+   client, a secret in the diff, a new dependency, deserialisation, dynamic construction of
+   queries or commands. Classes and triage: `appsec-standards`.
+3. **Broken contract**: an incompatible change in an API, schema, event or persisted format; and its
+   consequence for already-deployed consumers.
+4. **Concurrency and shared state**: an unprotected critical section, lock ordering,
+   *check-then-act*, reentrancy, an assumption of running in a single process.
+5. **Error and resource handling**: swallowed error, error without context, half-finished state after a
+   failure, resource not released, missing *timeout* or limit.
+6. **Observability**: can this be diagnosed in production at 3 a.m.? Structured
+   log with correlation, a metric on the new path, and **no personal data and no secret in
+   the log**.
+7. **Tests**: do they test behaviour or implementation? Do they cover the edge the diff introduces?
+   Is there a regression test if this is a *bugfix*? Criteria: `testing-qa-standards`.
+8. **Maintainability**: names that reveal intent, size and responsibility of the unit,
+   **essential** duplication (not accidental), new coupling, debt declared with a TODO + reason.
 
-### 3.3 Lo que NO hay que buscar
+### 3.3 What NOT to look for
 
-- ❌ Formato, orden de miembros, estilo de comillas o de llaves (§3.1).
-- ❌ Reescrituras equivalentes por gusto ("yo lo habría hecho con `map`").
-- ❌ Refactors fuera del alcance del PR. Se anotan como `note:` o ticket; **no bloquean**.
-- ❌ Arquitectura que ya se decidió: si el diseño se discutió antes, el momento de objetar era
-  antes. Si el revisor cree que la decisión fue mala, el vehículo es un ADR, no bloquear el PR.
-- ❌ Defectos que una herramienta debería encontrar: si el revisor los encuentra a mano de forma
-  recurrente, el arreglo es añadir la herramienta (§4.1).
-- ❌ Reescribir el código del autor en el hilo salvo que se pida: la sugerencia se propone, la
-  autoría se respeta.
+- ❌ Formatting, member ordering, quote or brace style (§3.1).
+- ❌ Equivalent rewrites out of taste ("I'd have done it with `map`").
+- ❌ Refactors outside the PR's scope. They are noted as `note:` or a ticket; **they do not block**.
+- ❌ Architecture that was already decided: if the design was discussed beforehand, the time to object was
+  beforehand. If the reviewer thinks the decision was bad, the vehicle is an ADR, not blocking the PR.
+- ❌ Defects a tool ought to find: if the reviewer keeps finding them by hand
+  repeatedly, the fix is to add the tool (§4.1).
+- ❌ Rewriting the author's code in the thread unless asked: a suggestion is proposed,
+  authorship is respected.
 
-### 3.4 Descripción del PR: requisito de entrada, no cortesía
+### 3.4 PR description: an entry requirement, not a courtesy
 
-Un PR sin las cuatro respuestas **no está listo para revisión** y se devuelve sin leer el diff:
+A PR without the four answers **is not ready for review** and is sent back without reading the diff:
 
-1. **Qué cambia** (en comportamiento observable, no en ficheros tocados).
-2. **Por qué** (el problema, el ticket, la alternativa descartada).
-3. **Cómo se ha probado** (qué test nuevo, qué se verificó a mano y en qué entorno).
-4. **Qué riesgo tiene y cómo se revierte** (migración, *feature flag*, plan de *rollback*).
+1. **What changes** (in observable behaviour, not in files touched).
+2. **Why** (the problem, the ticket, the discarded alternative).
+3. **How it was tested** (what new test, what was verified by hand and in which environment).
+4. **What risk it carries and how it is reverted** (migration, *feature flag*, *rollback* plan).
 
-Regla de honestidad: si la respuesta a "cómo se ha probado" es *"el asistente dijo que estaba
-bien"*, el PR no está listo (§6). El formato del título y la mecánica del PR son de
+Honesty rule: if the answer to "how was it tested" is *"the assistant said it was
+fine"*, the PR is not ready (§6). The title format and the PR mechanics belong to
 `git-workflow-standards`.
 
-### 3.5 Tamaño del cambio: el factor con más impacto, con la evidencia disponible
+### 3.5 Change size: the factor with the greatest impact, with the available evidence
 
-Es la única variable con evidencia publicada consistente. Se cita con fuente, y con sus reservas.
+It is the only variable with consistent published evidence. It is cited with the source, and with its caveats.
 
-- **Estudio de Cisco / SmartBear** (*Code Review at Cisco Systems*, capítulo de *Best Kept Secrets
-  of Peer Code Review*; 10 meses, jul-2005 a may-2006, grupo MeetingPlace de Cisco Systems,
-  **2500 revisiones de 3,2 millones de líneas escritas por 50 desarrolladores**). Verbatim:
+- **Cisco / SmartBear study** (*Code Review at Cisco Systems*, a chapter of *Best Kept Secrets
+  of Peer Code Review*; 10 months, Jul-2005 to May-2006, Cisco Systems' MeetingPlace group,
+  **2,500 reviews of 3.2 million lines written by 50 developers**). Verbatim:
   - *"Reviewers are most effective at reviewing small amounts of code. Anything below 200 lines
     produces a relatively high rate of defects, often several times the average. After that the
     results trail off considerably; no review larger than 250 lines produced more than 37 defects
@@ -158,21 +158,21 @@ Es la única variable con evidencia publicada consistente. Se cita con fuente, y
     plummet after that time."*
   - *"the single best piece of advice we can give is to review between 100 and 300 lines of code at
     a time and spend 30-60 minutes to review it."*
-  - **Reservas que el propio estudio declara y que hay que citar con él**: asume densidad de
-    defectos constante — *"we're tacitly assuming that true defect density is constant over both
-    large and small code changes"* —, de modo que "menos defectos por kLOC en revisiones grandes"
-    se interpreta como *menos eficacia*, no como *mejor código*. Añádase que **lo condujo el
-    fabricante de la herramienta revisada**: la dirección del efecto es creíble y coherente con la
-    práctica, los valores exactos no son un universal.
-- **Práctica publicada de Google** (*Google Engineering Practices*, guía "Small CLs"), verbatim:
+  - **Caveats the study itself declares and that have to be cited with it**: it assumes a constant defect
+    density — *"we're tacitly assuming that true defect density is constant over both
+    large and small code changes"* —, so that "fewer defects per kLOC in large reviews"
+    is interpreted as *less effectiveness*, not as *better code*. Add that **it was conducted by the
+    vendor of the tool under review**: the direction of the effect is credible and consistent with
+    practice, the exact values are not a universal.
+- **Google's published practice** (*Google Engineering Practices*, the "Small CLs" guide), verbatim:
   *"100 lines is usually a reasonable size for a CL, and 1000 lines is usually too large"*;
   *"The number of files that a change is spread across also affects its 'size.' A 200-line change
-  in one file might be okay, but spread across 50 files it would usually be too large"*; y la regla
-  que hay que copiar tal cual: *"Reviewers have discretion to reject your change outright for the
+  in one file might be okay, but spread across 50 files it would usually be too large"*; and the rule
+  to copy as is: *"Reviewers have discretion to reject your change outright for the
   sole reason of it being too large"*.
-- **Datos observacionales** (Sadowski, Söderberg, Church, Sipko, Bacchelli, *Modern Code Review:
-  A Case Study at Google*, **ICSE-SEIP 2018**, pp. 181-190, DOI 10.1145/3183519.3183525; análisis
-  de registros de **9 millones de revisiones**), verbatim: *"Over 10% of changes modify only a
+- **Observational data** (Sadowski, Söderberg, Church, Sipko, Bacchelli, *Modern Code Review:
+  A Case Study at Google*, **ICSE-SEIP 2018**, pp. 181-190, DOI 10.1145/3183519.3183525; log
+  analysis of **9 million reviews**), verbatim: *"Over 10% of changes modify only a
   single line of code, and the median number of lines modified is 24"*; *"over 35% of the changes
   under consideration modify only a single file and about 90% modify fewer than 10 files"*;
   *"fewer than 25% of changes have more than one reviewer, and over 99% have at most five reviewers
@@ -180,50 +180,50 @@ Es la única variable con evidencia publicada consistente. Se cita con fuente, y
   number of lines changed, reaching a peak of 12.5 comments per change for changes of about 1250
   lines"*.
 
-**Criterio operativo que se deriva**: el revisor **rechaza por tamaño sin leer** cuando el diff
-supera el límite del repositorio (que fija `git-workflow-standards`) sin justificación declarada;
-una sesión de revisión no pasa de ~60 minutos; y un diff que no cabe en una sesión se trocea, no se
-"revisa por encima". **Excepción declarada**: cambios mecánicos (generados, renombrado masivo,
-*lockfiles*) se separan **en su propio PR** y se revisan por el comando que los produjo, no línea a
-línea.
+**The operational criterion that follows**: the reviewer **rejects on size without reading** when the diff
+exceeds the repository's limit (fixed by `git-workflow-standards`) with no declared justification;
+a review session does not go beyond ~60 minutes; and a diff that does not fit in a session is split, it is not
+"skimmed". **Declared exception**: mechanical changes (generated code, mass renaming,
+*lockfiles*) are separated **into their own PR** and reviewed by the command that produced them, not line by
+line.
 
-### 3.6 Tiempo de respuesta y el coste de un PR parado
+### 3.6 Response time and the cost of a stalled PR
 
-- **Un PR parado es inventario que se deprecia**: envejece contra `main`, bloquea al autor,
-  provoca cambio de contexto y crece cuando el autor "aprovecha" para meter otra cosa.
-- Regla publicada de referencia (*Google Engineering Practices*, "Speed of Code Reviews"),
+- **A stalled PR is depreciating inventory**: it ages against `main`, blocks the author,
+  causes context switching and grows when the author "takes the opportunity" to add something else.
+- Published reference rule (*Google Engineering Practices*, "Speed of Code Reviews"),
   verbatim: *"One business day is the maximum time it should take to respond to a code review
-  request (i.e., first thing the next morning)"*, y sobre el coste: *"The velocity of the team as a
+  request (i.e., first thing the next morning)"*, and on the cost: *"The velocity of the team as a
   whole is decreased. Yes, the individual who doesn't respond quickly to the review gets other work
   done. However, new features and bug fixes for the rest of the team are delayed by days, weeks, or
-  months as each CL waits for review and re-review."* El SLA concreto del repositorio lo fija
+  months as each CL waits for review and re-review."* The repository's specific SLA is fixed by
   `git-workflow-standards`.
-- **Responder rápido ≠ aprobar rápido.** La métrica es el tiempo hasta la **primera respuesta**;
-  una respuesta válida puede ser "no puedo hoy, pásalo a X".
-- **Revisión parcial explícita**: si solo has revisado una parte, dilo y aprueba solo esa parte.
-  Silencio + LGTM tardío es peor que un "revisado solo el módulo de pagos".
-- PR abierto y sin actividad más allá del plazo del repo: se cierra o se rescata; no se acumula.
+- **Responding fast ≠ approving fast.** The metric is the time to the **first response**;
+  a valid response can be "I can't today, pass it to X".
+- **Explicit partial review**: if you have only reviewed a part, say so and approve only that part.
+  Silence + a late LGTM is worse than "only reviewed the payments module".
+- A PR open with no activity beyond the repo's deadline: it is closed or rescued; it is not left to pile up.
 
-### 3.7 Asignación de revisores y el cuello de botella de `CODEOWNERS`
+### 3.7 Reviewer assignment and the `CODEOWNERS` bottleneck
 
-- `CODEOWNERS` protege las rutas donde un error cuesta caro (autenticación, migraciones, IaC,
-  workflows de CI, contratos de API). El fichero y la protección de rama son de
-  `git-workflow-standards`; **aquí el efecto humano**.
-- **El cuello de botella es real y hay que gestionarlo, no negarlo**: si una persona o un equipo
-  aparece en la mayoría de los PR, el proceso está diseñado para pararse cuando esa persona esté
-  ocupada, de vacaciones o se marche. Señales: PRs esperando *owner* más allá del SLA de forma
-  sistemática; un solo nombre aprobando la mayoría de los cambios de un área.
-- Mitigaciones, en orden: **mínimo dos *owners* por ruta** y nunca una persona sola; rotación
-  explícita de revisión; ampliar el grupo mediante revisión emparejada (el *owner* revisa junto a
-  quien se está formando) hasta poder añadirlo; y **reducir el ámbito** de `CODEOWNERS` a lo que
-  realmente es crítico — cuanto más cubre, más se aprueba sin leer.
-- **PROHIBIDO usar `CODEOWNERS` como control de territorio**: la propiedad es de la calidad del
-  código, no del permiso para tocarlo.
+- `CODEOWNERS` protects the paths where a mistake is expensive (authentication, migrations, IaC,
+  CI workflows, API contracts). The file and branch protection belong to
+  `git-workflow-standards`; **here the human effect**.
+- **The bottleneck is real and has to be managed, not denied**: if one person or one team
+  appears on most PRs, the process is designed to stall whenever that person is
+  busy, on holiday or leaves. Signals: PRs waiting for an *owner* beyond the SLA
+  systematically; a single name approving most of an area's changes.
+- Mitigations, in order: **at least two *owners* per path** and never a single person; explicit
+  review rotation; widening the group through paired review (the *owner* reviews alongside
+  whoever is being trained) until they can be added; and **narrowing the scope** of `CODEOWNERS` to what is
+  really critical — the more it covers, the more gets approved without reading.
+- **FORBIDDEN to use `CODEOWNERS` as territorial control**: ownership is of the quality of the
+  code, not of the permission to touch it.
 
-### 3.8 Cómo se escribe un comentario
+### 3.8 How a comment is written
 
-- **Etiqueta obligatoria**, y el bloqueo es explícito. Con Conventional Comments, formato
-  `<label> [decorations]: <subject>` y las definiciones canónicas: `issue:` — *"Issues highlight
+- **A label is mandatory**, and blocking is explicit. With Conventional Comments, the format is
+  `<label> [decorations]: <subject>` and the canonical definitions: `issue:` — *"Issues highlight
   specific problems with the subject under review"*; `suggestion:` — *"Suggestions propose
   improvements to the current subject. It's important to be explicit and clear on what is being
   suggested and why it is an improvement"*; `nitpick:` — *"Nitpicks are trivial preference-based
@@ -231,257 +231,257 @@ línea.
   you have a potential concern but are not quite sure if it's relevant or not"*; `note:` —
   *"Notes are always non-blocking and simply highlight something the reader should take note of"*;
   `praise:` — *"Praises highlight something positive. Try to leave at least one of these comments
-  per review"*. **Un comentario sin etiqueta se lee como bloqueante y hace perder el tiempo a todo
-  el mundo.**
-- **Se pide el cambio con la razón, no con la preferencia.** Formato exigible: *qué* está mal,
-  *por qué* importa (defecto, riesgo, coste futuro concreto) y *qué* lo resolvería. "Esto no me
-  gusta" y "yo lo haría distinto" **no son razones** y no bloquean nada.
-- **Se ataca el código, no a la persona.** Se escribe sobre el código en tercera persona ("esta
-  función deja la conexión abierta si lanza"), no sobre el autor ("dejas la conexión abierta").
-  Sin sarcasmo, sin "obviamente", sin "otra vez". El "por qué" se explica siempre: un comentario
-  sin razón es una orden, y una orden en una revisión es una relación de poder, no un control de
-  calidad.
-- **Una preferencia personal nunca bloquea.** Si de verdad importa, se convierte en regla del
-  equipo (linter o documento) y entonces sí bloquea — a todos, siempre, y sin discutirlo en el hilo.
-- **El autor responde a todos los hilos**: acepta, rebate con razón o abre ticket. Cerrar un hilo
-  sin responder es equivalente a ignorar un hallazgo.
-- **Desacuerdo**: se argumenta con datos (comportamiento, coste, riesgo). Si sigue vivo tras un
-  intercambio, **escalado inmediato** a un tercero técnico acordado. Si es de diseño, se registra
-  como **ADR** y el PR **se desbloquea** — un PR no es el sitio donde se decide una arquitectura.
-  El bloqueo indefinido por desacuerdo no resuelto está prohibido (§7).
+  per review"*. **A comment with no label reads as blocking and wastes everybody's
+  time.**
+- **You ask for the change with the reason, not with the preference.** Required format: *what* is wrong,
+  *why* it matters (a defect, a risk, a concrete future cost) and *what* would resolve it. "I don't
+  like this" and "I'd do it differently" **are not reasons** and block nothing.
+- **You attack the code, not the person.** You write about the code in the third person ("this
+  function leaves the connection open if it throws"), not about the author ("you leave the connection open").
+  No sarcasm, no "obviously", no "again". The "why" is always explained: a comment
+  with no reason is an order, and an order in a review is a power relationship, not a quality
+  control.
+- **A personal preference never blocks.** If it really matters, it becomes a team rule
+  (a linter or a document) and then it does block — everyone, always, and without arguing in the thread.
+- **The author replies to every thread**: accepts, rebuts with a reason or opens a ticket. Closing a thread
+  without replying is equivalent to ignoring a finding.
+- **Disagreement**: it is argued with data (behaviour, cost, risk). If it is still alive after one
+  exchange, **immediate escalation** to an agreed technical third party. If it is about design, it is recorded
+  as an **ADR** and the PR **is unblocked** — a PR is not where an architecture is decided.
+  Indefinite blocking over an unresolved disagreement is forbidden (§7).
 
-## 4. Automatización previa y métricas del proceso
+## 4. Prior automation and process metrics
 
-### 4.1 La persona revisa lo que solo una persona puede revisar
+### 4.1 The person reviews what only a person can review
 
-Antes de que un ser humano abra el diff, ya debe estar verde (la ejecución es de `cicd-standards`;
-lo que sigue es lo que esta skill **exige** que se compruebe):
+Before a human opens the diff, it must already be green (the execution belongs to `cicd-standards`;
+what follows is what this skill **requires** to be checked):
 
-1. **Formateador** — comprobación, no sugerencia. Su ausencia genera hilos de estilo (§3.1).
-2. **Linter** y reglas del ecosistema.
-3. **Tipos / análisis estático**.
-4. **Tests** unitarios y de integración, con test de regresión si es *bugfix*
+1. **Formatter** — a check, not a suggestion. Its absence generates style threads (§3.1).
+2. **Linter** and the ecosystem's rules.
+3. **Types / static analysis**.
+4. **Tests**, unit and integration, with a regression test if it is a *bugfix*
    (`testing-qa-standards`).
-5. **Escáneres**: secretos en el diff, SCA de dependencias nuevas, SAST, IaC.
-6. **Comprobaciones de contrato** cuando el diff toca una interfaz publicada.
+5. **Scanners**: secrets in the diff, SCA of new dependencies, SAST, IaC.
+6. **Contract checks** when the diff touches a published interface.
 
-Regla dura: **ningún hallazgo automatizable se deja para la revisión humana**. Y su recíproca:
-**una persona no aprueba un PR con CI en rojo** "porque el fallo no tiene que ver". Si el gate no
-es fiable, se arregla el gate — no se aprende a ignorarlo.
+Hard rule: **no automatable finding is left to human review**. And its converse:
+**a person does not approve a PR with CI red** "because the failure is unrelated". If the gate is not
+reliable, the gate gets fixed — you do not learn to ignore it.
 
-Lo que **solo** puede hacer una persona, y por tanto es donde debe ir su atención: si el cambio
-resuelve el problema real, si el diseño soportará el siguiente requisito, si el caso límite del
-dominio está contemplado, si el riesgo declarado es el riesgo real, y si el código será
-comprensible dentro de dos años.
+What **only** a person can do, and therefore where their attention must go: whether the change
+solves the real problem, whether the design will withstand the next requirement, whether the domain's
+edge case is covered, whether the declared risk is the real risk, and whether the code will be
+understandable two years from now.
 
-### 4.2 El revisor automático basado en LLM
+### 4.2 The LLM-based automatic reviewer
 
-- **Asesor, nunca aprobador.** Sus comentarios son hipótesis: el revisor humano las verifica o las
-  descarta, y responde de la decisión. Un LLM no puede rendir cuentas.
-- Su aportación real está en lo mecánico y repetitivo (patrones conocidos, olvidos, incoherencias
-  con la descripción). Su fallo típico es el **falso positivo seguro de sí mismo**, que consume
-  exactamente la atención que la revisión necesitaba.
-- **Ruido medido = herramienta apagada**: si una regla del revisor automático genera comentarios
-  descartados de forma sistemática, se desactiva esa regla.
-- **PROHIBIDO** que una aprobación automática cuente como la aprobación requerida por la
-  protección de rama.
+- **An adviser, never an approver.** Its comments are hypotheses: the human reviewer verifies or
+  discards them, and answers for the decision. An LLM cannot be held accountable.
+- Its real contribution is in the mechanical and repetitive (known patterns, omissions, inconsistencies
+  with the description). Its typical failure is the **self-confident false positive**, which consumes
+  exactly the attention the review needed.
+- **Measured noise = tool switched off**: if a rule of the automatic reviewer generates comments that are
+  systematically discarded, that rule is disabled.
+- **FORBIDDEN** for an automatic approval to count as the approval required by
+  branch protection.
 
-### 4.3 Métricas: para mejorar el proceso, nunca para evaluar personas
+### 4.3 Metrics: to improve the process, never to evaluate people
 
-- Se miden, **solo agregadas por equipo y como serie temporal**: tiempo hasta la primera
-  respuesta, tiempo total hasta el *merge*, tamaño del diff, número de idas y vueltas, proporción
-  de PR aprobados sin comentarios, PRs abiertos por encima del plazo, y **defectos escapados a
-  producción** (la señal que de verdad importa).
-- **PROHIBIDO usar cualquier métrica de revisión para evaluar a un individuo** (comentarios
-  emitidos, PRs aprobados, velocidad de aprobación, líneas revisadas). El motivo es mecánico, no
-  moral: toda métrica de revisión se optimiza trivialmente aprobando más rápido y comentando
-  menos, es decir, **destruyendo justo el control que se pretendía medir**. La misma
-  mecánica aplica a cualquier proxy de actividad convertido en objetivo; **no se cita aquí ninguna
-  cifra** porque no se ha localizado fuente primaria verificable para las que suelen acompañar a
-  esta afirmación (§8).
-- Una métrica que sube sin que bajen los defectos escapados no es una mejora: es una revisión más
-  superficial.
-- Las métricas DORA de entrega y la telemetría del pipeline son de `observability-standards` y
+- These are measured, **only aggregated by team and as a time series**: time to first
+  response, total time to *merge*, diff size, number of round trips, proportion
+  of PRs approved with no comments, PRs open beyond the deadline, and **defects escaped to
+  production** (the signal that really matters).
+- **FORBIDDEN to use any review metric to evaluate an individual** (comments
+  issued, PRs approved, approval speed, lines reviewed). The reason is mechanical, not
+  moral: every review metric is trivially optimised by approving faster and commenting
+  less, that is, **by destroying exactly the control it was meant to measure**. The same
+  mechanics apply to any activity proxy turned into a target; **no figure is cited here**
+  because no verifiable primary source has been located for the ones that usually accompany
+  this claim (§8).
+- A metric that goes up without escaped defects going down is not an improvement: it is a more
+  superficial review.
+- The DORA delivery metrics and pipeline telemetry belong to `observability-standards` and
   `cicd-standards`.
 
-### 4.4 Pair y mob programming como alternativa
+### 4.4 Pair and mob programming as an alternative
 
-- **Sustituyen a la revisión asíncrona** cuando el segundo par de ojos estuvo presente *durante* la
-  escritura: revisión continua, latencia cero, transferencia de conocimiento incorporada.
-  Condición para que cuente como control: **queda constancia en el PR de quién co-escribió**
-  (`Co-authored-by:`) y de que el cambio se hizo emparejado.
-- Encaja mejor en: cambios exploratorios o de diseño abierto, alto riesgo (§5), incorporación de
-  personas nuevas y áreas con un único *owner* (§3.7).
-- **No sustituye a la revisión** cuando se necesita un revisor **independiente** por requisito de
-  segregación de funciones (`grc-compliance-standards`) o cuando el cambio toca un dominio del que
-  ninguno de los dos es especialista.
-- No es gratis: consume dos personas a la vez. Se elige por riesgo del cambio, no por moda.
+- **They replace asynchronous review** when the second pair of eyes was present *during* the
+  writing: continuous review, zero latency, knowledge transfer built in.
+  Condition for it to count as a control: **it is recorded in the PR who co-wrote it**
+  (`Co-authored-by:`) and that the change was made in a pair.
+- It fits best in: exploratory or open-design changes, high risk (§5), onboarding of
+  new people and areas with a single *owner* (§3.7).
+- **It does not replace review** when an **independent** reviewer is needed for a segregation
+  of duties requirement (`grc-compliance-standards`) or when the change touches a domain
+  neither of the two specialises in.
+- It is not free: it consumes two people at once. It is chosen by the risk of the change, not by fashion.
 
-## 5. Revisión de cambios de alto riesgo
+## 5. Review of high-risk changes
 
-Clases que **exigen revisor específico del dominio además del revisor ordinario**, porque el error
-no se detecta con lectura general y su coste no es proporcional al tamaño del diff:
+Classes that **require a domain-specific reviewer in addition to the ordinary reviewer**, because the error
+is not caught by general reading and its cost is not proportional to the size of the diff:
 
-| Clase | Por qué exige especialista | Qué se comprueba, como mínimo |
+| Class | Why it requires a specialist | What is checked, at a minimum |
 |---|---|---|
-| **Migración de datos** | Es el cambio con menos *rollback* real y más impacto irreversible | Compatibilidad hacia atrás (*expand/contract*), comportamiento con el volumen real, bloqueos y duración sobre tabla caliente, plan de reversión **ejecutado** en ensayo, idempotencia ante reejecución |
-| **Autenticación y autorización** | Un fallo aquí no produce error: produce acceso | Dónde se evalúa la decisión (servidor, siempre), objeto **e** identidad comprobados juntos (IDOR/BOLA), expiración y revocación, ruta que se salta el *middleware*, cambio de rol que amplía privilegio en silencio |
-| **Criptografía** | El error es indistinguible del acierto en pruebas funcionales | Algoritmo, modo y tamaño de clave; origen del IV/nonce y su unicidad; comparación en tiempo constante; procedencia y ciclo de vida de la clave; **cero criptografía casera**. Criterio: `cryptography-pki-standards` |
-| **Concurrencia y estado compartido** | El fallo es no determinista y no reproducible en revisión | Invariante protegida, orden de bloqueo, *check-then-act*, suposición de proceso único, comportamiento ante reintento |
-| **Infraestructura y despliegue** | El *blast radius* es el sistema entero | Diff del plan aplicado (no solo el código), destrucción/recreación de recursos, exposición de red, permisos IAM ampliados, secretos. Criterio: `iac-standards` y las skills de nube |
-| **Dependencia nueva o cambio de versión mayor** | Superficie de cadena de suministro | Mantenimiento y licencia, *changelog* de rotura, tamaño de la superficie añadida frente a lo que resuelve |
-| **Cambio de contrato público** | Rompe a terceros que no están en el PR | Compatibilidad, versionado y plan de deprecación (`api-design-standards`) |
-| **Feature flag y configuración** | Cambia el comportamiento sin pasar por la pipeline | Valor por defecto seguro, alcance, dueño y **fecha de retirada** |
+| **Data migration** | It is the change with the least real *rollback* and the most irreversible impact | Backwards compatibility (*expand/contract*), behaviour at real volume, locks and duration on a hot table, reversal plan **executed** in a rehearsal, idempotency on re-execution |
+| **Authentication and authorisation** | A failure here does not produce an error: it produces access | Where the decision is evaluated (the server, always), object **and** identity checked together (IDOR/BOLA), expiry and revocation, a path that skips the *middleware*, a role change that silently widens privilege |
+| **Cryptography** | The error is indistinguishable from the correct thing in functional tests | Algorithm, mode and key size; the IV/nonce's origin and its uniqueness; constant-time comparison; the key's provenance and life cycle; **zero home-made cryptography**. Criteria: `cryptography-pki-standards` |
+| **Concurrency and shared state** | The failure is non-deterministic and not reproducible in review | Protected invariant, lock ordering, *check-then-act*, single-process assumption, behaviour on retry |
+| **Infrastructure and deployment** | The *blast radius* is the whole system | The diff of the applied plan (not just the code), destruction/recreation of resources, network exposure, widened IAM permissions, secrets. Criteria: `iac-standards` and the cloud skills |
+| **New dependency or major version bump** | Supply chain surface | Maintenance and licence, breaking *changelog*, size of the added surface against what it solves |
+| **Public contract change** | It breaks third parties who are not in the PR | Compatibility, versioning and deprecation plan (`api-design-standards`) |
+| **Feature flag and configuration** | It changes behaviour without going through the pipeline | Safe default value, scope, owner and **retirement date** |
 
-Reglas transversales de esta sección:
+Cross-cutting rules for this section:
 
-- **Secreto detectado en un diff**: el hilo no es "quítalo". El secreto **está comprometido desde
-  el push**: se rota, y el borrado del historial se coordina como en `git-workflow-standards`.
-  `secrets-management-standards` fija la rotación.
-- **PROHIBIDA la autoaprobación** en cualquiera de estas clases, incluida la persona que sea el
-  único *owner*: se busca revisor fuera del equipo antes que aprobarse a uno mismo.
-- Un cambio de alto riesgo **mezclado con refactor o con cambios de formato** se devuelve para que
-  se separe: la señal se pierde en el ruido y el revisor especialista no puede hacer su trabajo.
-- El *checklist* de riesgo se aplica al **diff**, no al ticket: lo que cuenta es lo que toca el
-  cambio, no lo que dice que hace.
+- **A secret detected in a diff**: the thread is not "remove it". The secret **is compromised as of
+  the push**: it is rotated, and the history rewrite is coordinated as in `git-workflow-standards`.
+  `secrets-management-standards` fixes the rotation.
+- **SELF-APPROVAL FORBIDDEN** in any of these classes, including for a person who is the
+  only *owner*: you find a reviewer outside the team rather than approving yourself.
+- A high-risk change **mixed with a refactor or with formatting changes** is sent back to be
+  separated: the signal is lost in the noise and the specialist reviewer cannot do their job.
+- The risk *checklist* applies to the **diff**, not to the ticket: what counts is what the
+  change touches, not what it says it does.
 
-## 6. Revisión de código generado por IA
+## 6. Review of AI-generated code
 
-> La §6 canónica de la plantilla (rendimiento y operabilidad) no aplica a este dominio y **se
-> sustituye** por lo que hoy es el mayor cambio operativo de la revisión.
+> The template's canonical §6 (performance and operability) does not apply to this domain and **is
+> replaced** by what is today the biggest operational change in review.
 
-### 6.1 Qué cambia cuando el autor no es humano
+### 6.1 What changes when the author is not human
 
-- **El listón no baja y el escepticismo sube.** El código generado es *plausible por
-  construcción*: sigue las convenciones, tiene buen aspecto y nombres correctos. Esas señales, que
-  en un autor humano correlacionaban con cuidado, **dejan de ser evidencia de nada**. Revisar por
-  "se lee bien" es, con IA, revisar por lo único que la herramienta garantiza de serie.
-- **La asimetría de esfuerzo es el problema estructural**: generar es barato y revisar sigue
-  costando lo mismo. Sin una regla de tamaño aplicada con dureza (§3.5), el proceso se rompe por
-  el lado de la revisión, no por el de la producción.
-- **La trampa concreta a nombrar**: un diff grande, coherente y plausible produce revisión
-  superficial con **más** confianza que un diff pequeño y raro. Contramedida operativa: ante un
-  diff generado y grande, **se rechaza por tamaño antes de leerlo** y se exige troceado. No se
-  hace "una pasada rápida".
-- Zonas donde la generación falla con más frecuencia y donde debe ir la atención del revisor:
-  casos límite y ramas de error, autorización, uso correcto de la API que dice usar (métodos y
-  parámetros pueden no existir), suposiciones sobre concurrencia, y **tests que reproducen el
-  mismo malentendido que el código** — un test generado a partir del código generado no verifica
-  nada, solo lo congela.
+- **The bar does not drop and the scepticism goes up.** Generated code is *plausible by
+  construction*: it follows the conventions, it looks good and the names are right. Those signals, which
+  in a human author correlated with care, **stop being evidence of anything**. Reviewing by
+  "it reads well" is, with AI, reviewing by the one thing the tool guarantees out of the box.
+- **The effort asymmetry is the structural problem**: generating is cheap and reviewing still
+  costs the same. Without a size rule enforced harshly (§3.5), the process breaks on
+  the review side, not on the production side.
+- **The specific trap to name**: a large, coherent and plausible diff produces superficial
+  review with **more** confidence than a small, odd diff. Operational countermeasure: faced with a
+  generated and large diff, **it is rejected on size before being read** and splitting is demanded. You do not
+  do "a quick pass".
+- Areas where generation fails most often and where the reviewer's attention must go:
+  edge cases and error branches, authorisation, correct use of the API it claims to use (methods and
+  parameters may not exist), assumptions about concurrency, and **tests that reproduce the
+  same misunderstanding as the code** — a test generated from generated code verifies
+  nothing, it only freezes it.
 
-### 6.2 Regla de responsabilidad
+### 6.2 Responsibility rule
 
-**El que envía el cambio responde de él aunque no lo haya escrito.** Sin matices: la autoría
-material es irrelevante para la responsabilidad. De ahí, requisitos exigibles y comprobables:
+**Whoever submits the change answers for it even if they did not write it.** With no nuance: material
+authorship is irrelevant to responsibility. Hence, enforceable and checkable requirements:
 
-- El autor **puede explicar cada línea** del diff que envía. Si no puede, no lo envía.
-- La descripción declara **cómo se verificó** (§3.4). *"El asistente dijo que estaba bien"* no es
-  una verificación y devuelve el PR sin revisar.
-- El uso de asistente **se declara** en el PR (y la coautoría en el commit, según
-  `git-workflow-standards`). No es una marca de vergüenza: es información que el revisor necesita
-  para calibrar dónde mirar.
-- **PROHIBIDO exigir revisión de un diff que el propio autor no ha leído entero.** Enviar a
-  revisión lo que uno no ha leído traslada el trabajo al revisor y convierte la revisión en el
-  primer control real, que es exactamente lo que no debe ser.
-- Un cambio autoría de un agente pasa por **la misma** pipeline, los mismos gates y la misma
-  revisión humana que cualquier otro. **Nada de vía rápida para código generado.**
+- The author **can explain every line** of the diff they submit. If they cannot, they do not submit it.
+- The description declares **how it was verified** (§3.4). *"The assistant said it was fine"* is not
+  a verification and it sends the PR back unreviewed.
+- The use of an assistant **is declared** in the PR (and the co-authorship in the commit, per
+  `git-workflow-standards`). It is not a badge of shame: it is information the reviewer needs
+  to calibrate where to look.
+- **FORBIDDEN to request review of a diff the author has not read in full.** Sending for
+  review what you have not read shifts the work to the reviewer and turns review into the
+  first real control, which is exactly what it must not be.
+- A change authored by an agent goes through **the same** pipeline, the same gates and the same
+  human review as any other. **No fast lane for generated code.**
 
-### 6.3 Evidencia disponible, y lo que se ha descartado
+### 6.3 Available evidence, and what has been discarded
 
-- **DORA, *State of AI-assisted Software Development* (2025, presentado por Google Cloud;
-  publicado en septiembre de 2025 — a ago-2026 no hay edición 2026 de ese informe)**: su tesis
-  central, verbatim de dora.dev, es que *"AI's primary role is that of an amplifier, magnifying the
+- **DORA, *State of AI-assisted Software Development* (2025, presented by Google Cloud;
+  published in September 2025 — as of Aug 2026 there is no 2026 edition of that report)**: its
+  central thesis, verbatim from dora.dev, is that *"AI's primary role is that of an amplifier, magnifying the
   strengths of high-performing organizations and the dysfunctions of struggling ones."*
-  Consecuencia directa para esta skill: **la IA no arregla una revisión mala, la satura.** Un
-  equipo sin gates automáticos, sin límite de tamaño y sin criterio de bloqueo empeora al adoptarla.
-- **METR, ensayo controlado aleatorizado (jul-2025)**, verbatim: *"we recruited 16 experienced
+  Direct consequence for this skill: **AI does not fix a bad review, it saturates it.** A
+  team with no automatic gates, no size limit and no blocking criteria gets worse when it adopts it.
+- **METR, randomised controlled trial (Jul-2025)**, verbatim: *"we recruited 16 experienced
   developers from large open-source repositories (averaging 22k+ stars and 1M+ lines of code)"*,
-  sobre *"real issues (246 total)"*; *"When developers are allowed to use AI tools, they take 19%
-  longer to complete issues—a significant slowdown"*; y el dato que importa aquí:
+  on *"real issues (246 total)"*; *"When developers are allowed to use AI tools, they take 19%
+  longer to complete issues—a significant slowdown"*; and the datum that matters here:
   *"developers expected AI to speed them up by 24%, and even after experiencing the slowdown, they
-  still believed AI had sped them up by 20%"*. Regla que se deriva: **la percepción de velocidad
-  del autor no es evidencia** y no se acepta como argumento para relajar la revisión. (Reservas
-  del propio diseño: muestra pequeña, proyectos OSS grandes que los participantes ya conocían;
-  no se extrapola a todo contexto.)
-- **Descartado por falta de fuente primaria** (no se escribe como criterio): las cifras de
-  proveedores de herramientas sobre "N× más bugs lógicos en código generado" y las telemetrías de
-  vendedores sobre aumento del tiempo de revisión o del tamaño de PR — son datos de producto, sin
-  metodología publicada ni revisión independiente. Si necesitas un número, **mide el tuyo**:
-  defectos escapados y tamaño de PR antes y después de adoptar el asistente.
-- **Hueco declarado (§8)**: no se ha localizado una guía normativa de una organización de
-  estándares específica para la revisión de código generado por IA. Lo publicado a ago-2026 son
-  artículos académicos sobre redistribución de la responsabilidad y guías de proveedor.
+  still believed AI had sped them up by 20%"*. The rule that follows: **the author's perception of
+  speed is not evidence** and is not accepted as an argument for relaxing review. (Caveats
+  of the design itself: small sample, large OSS projects the participants already knew;
+  it does not extrapolate to every context.)
+- **Discarded for lack of a primary source** (not written as criteria): tool vendors'
+  figures about "N× more logic bugs in generated code" and vendor telemetry about
+  increased review time or PR size — they are product data, with no published methodology
+  and no independent review. If you need a number, **measure your own**:
+  escaped defects and PR size before and after adopting the assistant.
+- **Declared gap (§8)**: no normative guidance from a standards organisation specific to the
+  review of AI-generated code has been located. What is published as of Aug 2026 are
+  academic papers on the redistribution of responsibility and vendor guides.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- Las reglas de revisión viven en el repositorio (`CONTRIBUTING.md` o equivalente), se citan por
-  enlace en los comentarios y **se cambian por PR**, como el código. Una regla que solo existe en
-  la cabeza del revisor senior no es una regla: es una costumbre.
-- Revisión periódica del propio proceso: PRs por encima del plazo, hilos de estilo que aparecieron
-  (indican formateador ausente, §3.1), rutas de `CODEOWNERS` con un solo *owner* efectivo, reglas
-  del revisor automático con alta tasa de descarte, y defectos escapados que la revisión debería
-  haber visto — con **postmortem sin culpa** y cambio de regla, nunca aviso a una persona
+- The review rules live in the repository (`CONTRIBUTING.md` or equivalent), they are cited by
+  link in comments and **they are changed by PR**, like code. A rule that only exists in
+  the senior reviewer's head is not a rule: it is a habit.
+- Periodic review of the process itself: PRs beyond the deadline, style threads that appeared
+  (they indicate a missing formatter, §3.1), `CODEOWNERS` paths with a single effective *owner*, automatic
+  reviewer rules with a high discard rate, and escaped defects that the review should
+  have caught — with a **blameless postmortem** and a rule change, never a warning to a person
   (`incident-management-standards`).
-- La revisión es también el vehículo de formación del equipo: cada `note:` bien escrita es
-  documentación. Pero **formar no justifica bloquear**.
+- Review is also the team's training vehicle: every well-written `note:` is
+  documentation. But **training does not justify blocking**.
 
-### Prohibiciones explícitas
+### Explicit prohibitions
 
-- ❌ **PROHIBIDO aprobar sin leer.** Un LGTM es una firma: si no has leído el diff, no firmas.
-- ❌ **PROHIBIDO** aceptar a revisión un PR de cientos de ficheros sin trocear ni declarar la parte
-  mecánica; el revisor lo rechaza por tamaño **sin leerlo** (§3.5).
-- ❌ **PROHIBIDO discutir formato o estilo automatizable** en un hilo de revisión (§3.1).
-- ❌ **PROHIBIDO bloquear por preferencia personal**, por gusto arquitectónico ya decidido o por
-  refactor fuera de alcance.
-- ❌ **PROHIBIDO usar la revisión como control de poder**: retener aprobaciones para negociar,
-  bloquear el trabajo de alguien de forma sistemática, exigir cambios sin razón escrita o imponer
-  el propio estilo mediante la firma. Es un fallo de proceso y se escala como tal.
-- ❌ **PROHIBIDO** el comentario dirigido a la persona en lugar de al código, el sarcasmo y la
-  condescendencia. Sin excepción por antigüedad ni por urgencia.
-- ❌ **PROHIBIDO** dejar un PR bloqueado indefinidamente por un desacuerdo: se escala o se
-  registra como ADR y se desbloquea (§3.8).
-- ❌ **PROHIBIDA la autoaprobación** en rutas con *owner* y en toda clase de alto riesgo (§5).
-- ❌ **PROHIBIDO** aprobar con CI en rojo, o desactivar un *required check* para poder mergear.
-- ❌ **PROHIBIDO** que la aprobación de un revisor automático (LLM) cuente como la aprobación
-  humana requerida (§4.2).
-- ❌ **PROHIBIDO** enviar a revisión un diff generado que el autor no ha leído entero (§6.2).
-- ❌ **PROHIBIDO** cualquier vía rápida o exención de revisión para código generado por IA.
-- ❌ **PROHIBIDO** usar métricas de revisión para evaluar a individuos (§4.3).
-- ❌ **PROHIBIDO** mezclar refactor, formato y cambio de comportamiento en el mismo PR de alto
-  riesgo.
+- ❌ **FORBIDDEN to approve without reading.** An LGTM is a signature: if you have not read the diff, you do not sign.
+- ❌ **FORBIDDEN** to accept for review a PR of hundreds of files without splitting it or declaring the
+  mechanical part; the reviewer rejects it on size **without reading it** (§3.5).
+- ❌ **FORBIDDEN to discuss automatable formatting or style** in a review thread (§3.1).
+- ❌ **FORBIDDEN to block on personal preference**, on architectural taste already decided or on a
+  refactor outside the scope.
+- ❌ **FORBIDDEN to use review as power control**: withholding approvals to negotiate,
+  systematically blocking someone's work, demanding changes with no written reason or imposing
+  your own style through the signature. It is a process failure and it is escalated as such.
+- ❌ **FORBIDDEN** the comment aimed at the person instead of at the code, sarcasm and
+  condescension. No exception for seniority and none for urgency.
+- ❌ **FORBIDDEN** to leave a PR blocked indefinitely by a disagreement: it is escalated or
+  recorded as an ADR and unblocked (§3.8).
+- ❌ **SELF-APPROVAL FORBIDDEN** on paths with an *owner* and in every high-risk class (§5).
+- ❌ **FORBIDDEN** to approve with CI red, or to disable a *required check* in order to merge.
+- ❌ **FORBIDDEN** for an automatic reviewer's (LLM) approval to count as the required human
+  approval (§4.2).
+- ❌ **FORBIDDEN** to send for review a generated diff the author has not read in full (§6.2).
+- ❌ **FORBIDDEN** any fast lane or review exemption for AI-generated code.
+- ❌ **FORBIDDEN** to use review metrics to evaluate individuals (§4.3).
+- ❌ **FORBIDDEN** to mix refactor, formatting and behaviour change in the same high-risk
+  PR.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquiera de estos puntos en un equipo real, comprobar online:
+Before fixing any of these points in a real team, check online:
 
-1. **Conventional Comments**: que la especificación y la lista de etiquetas siguen como se citan
-   (`conventionalcomments.org`), y si el proyecto sigue mantenido. Las definiciones de §3.8 están
-   tomadas verbatim a ago-2026.
-2. **Google Engineering Practices** (`google.github.io/eng-practices`): que las guías "Small CLs" y
-   "Speed of Code Reviews" siguen publicadas con esa redacción; son de las pocas fuentes
-   normativas públicas y citables de este dominio.
-3. **Evidencia sobre tamaño de PR**: el estudio de Cisco/SmartBear es de **2005-2006** y lo condujo
-   el fabricante de la herramienta. **Hueco declarado**: no se ha localizado en esta pasada un
-   estudio independiente y reciente que replique la relación tamaño ↔ densidad de defectos
-   encontrados. Buscarlo antes de presentar esas cifras como universales; si aparece, manda el
-   nuevo.
-4. **Sadowski et al., ICSE-SEIP 2018**: sus cifras describen **Google en 2018**, no un óptimo
-   universal ni un objetivo a imitar. Comprobar si hay réplica posterior en otro contexto.
-5. **Revisión de código generado por IA**: buscar si ha aparecido guía normativa (ISO/IEC, NIST,
-   OpenSSF, Linux Foundation) o estudio independiente. **Hueco declarado a ago-2026: no
-   localizado.** Ignorar las cifras de proveedores sin metodología publicada (§6.3).
-6. **DORA**: si existe ya una edición **2026** del *State of AI-assisted Software Development*
-   (a ago-2026 solo consta la de sep-2025, más el *ROI of AI-assisted Software Development*
-   actualizado en abr-2026). Contrastar cualquier cifra contra el informe original, **no** contra
-   resúmenes de terceros.
-7. **METR**: si hay réplicas o ampliaciones del ensayo de jul-2025 con muestra mayor; el propio
-   estudio declara limitaciones que impiden generalizar.
-8. Herramientas de revisión automática y de análisis del diff: cambio de licencia, modo
-   mantenimiento o adquisición (precedentes del catálogo: Trivy cambió de licencia; gitleaks se
-   declaró *feature complete*; Brakeman resultó ser de pago pese a la creencia general). Fuente:
-   el `LICENSE` en crudo y la web oficial, **no** el feed de GitHub por sí solo — un proyecto que
-   se muda de organización aparenta abandono en el feed. Y no dar por buena ninguna noticia de
-   adquisición sin fuente primaria (precedente: la "compra de Cypress.io por John Deere" es una
-   broma del 1-abr-2025).
+1. **Conventional Comments**: that the specification and the list of labels are still as cited
+   (`conventionalcomments.org`), and whether the project is still maintained. The definitions in §3.8 were
+   taken verbatim as of Aug 2026.
+2. **Google Engineering Practices** (`google.github.io/eng-practices`): that the "Small CLs" and
+   "Speed of Code Reviews" guides are still published with that wording; they are among the few
+   public and citable normative sources in this domain.
+3. **Evidence on PR size**: the Cisco/SmartBear study is from **2005-2006** and was conducted by
+   the vendor of the tool. **Declared gap**: no independent and recent study has been located in
+   this pass that replicates the relationship size ↔ density of defects found.
+   Look for it before presenting those figures as universal; if one appears, the
+   new one wins.
+4. **Sadowski et al., ICSE-SEIP 2018**: their figures describe **Google in 2018**, not a universal
+   optimum nor a target to imitate. Check whether there is a later replication in another context.
+5. **Review of AI-generated code**: look for whether normative guidance has appeared (ISO/IEC, NIST,
+   OpenSSF, Linux Foundation) or an independent study. **Declared gap as of Aug 2026: not
+   located.** Ignore vendor figures with no published methodology (§6.3).
+6. **DORA**: whether a **2026** edition of the *State of AI-assisted Software Development* now exists
+   (as of Aug 2026 only the Sep-2025 one is on record, plus the *ROI of AI-assisted Software Development*
+   updated in Apr-2026). Check any figure against the original report, **not** against
+   third-party summaries.
+7. **METR**: whether there are replications or extensions of the Jul-2025 trial with a larger sample; the
+   study itself declares limitations that prevent generalising.
+8. Automatic review and diff analysis tools: licence change, maintenance
+   mode or acquisition (precedents in the catalogue: Trivy changed its licence; gitleaks
+   declared itself *feature complete*; Brakeman turned out to be paid despite the general belief). Source:
+   the raw `LICENSE` and the official website, **not** the GitHub feed on its own — a project that
+   moves organisation looks abandoned in the feed. And do not take any acquisition news
+   as true without a primary source (precedent: the "purchase of Cypress.io by John Deere" is an
+   April Fools' joke from 1-Apr-2025).
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

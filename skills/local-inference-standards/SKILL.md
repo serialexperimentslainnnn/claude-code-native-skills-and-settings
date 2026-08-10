@@ -3,549 +3,549 @@ name: local-inference-standards
 description: Use when serving open-weight LLMs on your own infrastructure — vllm serve, llama-server and llama.cpp, ollama serve with OLLAMA_HOST/OLLAMA_NUM_PARALLEL, SGLang, TGI or TensorRT-LLM, a self-hosted OpenAI-compatible /v1/chat/completions endpoint, .gguf and .safetensors weight files and their provenance, choosing AWQ/GPTQ/FP8/NVFP4/MXFP4/Q4_K_M quantization, sizing KV cache VRAM with --max-model-len, --gpu-memory-utilization and --tensor-parallel-size, prefill versus decode and TTFT/TPOT benchmarking under sustained load, open-weight model licences, or the break-even calculation of self-hosting versus a hosted inference API.
 ---
 
-# Estándares de inferencia local
+# Local inference standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica cuando **sirves un modelo abierto en infraestructura propia** (tuya, del cliente o
-alquilada como máquina desnuda) y la decisión es de plataforma de inferencia:
+Applies when **you serve an open model on your own infrastructure** (yours, the client's or
+rented as bare metal) and the decision is an inference platform one:
 
-- Decidir **local frente a API gestionada**, y calcular el punto de equilibrio (§2.1).
-- Elegir **motor** (`vllm serve`, `llama-server`, `ollama serve`, SGLang, TGI, TensorRT-LLM)
-  y justificar la elección contra el patrón de carga real.
-- **Cuantización**: formato, nivel y qué se pierde (`.gguf`, AWQ, GPTQ, FP8, NVFP4, MXFP4).
-- **Dimensionado de memoria**: pesos + caché KV + activaciones; `--max-model-len`,
+- Deciding **local versus managed API**, and calculating the break-even point (§2.1).
+- Choosing an **engine** (`vllm serve`, `llama-server`, `ollama serve`, SGLang, TGI, TensorRT-LLM)
+  and justifying the choice against the real load pattern.
+- **Quantisation**: format, level and what is lost (`.gguf`, AWQ, GPTQ, FP8, NVFP4, MXFP4).
+- **Memory sizing**: weights + KV cache + activations; `--max-model-len`,
   `--gpu-memory-utilization`, `--tensor-parallel-size`, `--kv-cache-dtype`.
-- **Medición**: TTFT, TPOT, tokens/s de prefill vs. decode, throughput bajo carga sostenida.
-- **Compatibilidad de API**: el contrato OpenAI (`/v1/chat/completions`, `/v1/completions`,
-  `/v1/embeddings`) como capa de intercambiabilidad del backend.
-- **Operación**: procedencia y verificación de pesos, licencia del modelo, actualización,
-  métricas del motor, consumo eléctrico por millón de tokens.
-- **Seguridad del endpoint**: autenticación, exposición, aislamiento de red del plano
-  distribuido.
+- **Measurement**: TTFT, TPOT, prefill vs. decode tokens/s, throughput under sustained load.
+- **API compatibility**: the OpenAI contract (`/v1/chat/completions`, `/v1/completions`,
+  `/v1/embeddings`) as the backend interchangeability layer.
+- **Operations**: weight provenance and verification, model licence, updating, engine metrics,
+  power consumption per million tokens.
+- **Endpoint security**: authentication, exposure, network isolation of the distributed
+  plane.
 
-**No aplica**: ver `gpu-computing-standards` (la GPU como recurso de infraestructura: driver,
-CUDA, MIG/MPS, DCGM, XID, consumo y refrigeración — **un servidor de inferencia sin GPU, en CPU
-o en Apple Silicon, sigue siendo de esta skill**), `llm-app-engineering-standards` (la
-aplicación que **consume** el endpoint: prompts, salida estructurada, reintentos, inyección de
-prompt — **servir es de aquí, consumir es de allí**; la frontera es el puerto HTTP),
-`claude-api` (**referencia canónica de la API de Anthropic**: la alternativa gestionada a la
-inferencia local vive ahí, y **ningún dato de modelos Claude —id, precio, límites— se afirma
-de memoria**; consúltala antes de comparar coste contra un proveedor), `mcp-standards`
-(servidores MCP y sus herramientas), `kubernetes-standards` (manifiestos, Helm, GitOps del
-despliegue), `podman-systemd-containers-standards` (el motor como unidad Quadlet en un host),
-`observability-standards` (OTel, PromQL, alertas — aquí solo se dice **qué** métrica del motor
-importa), `firewall-policy-standards` (la regla que expone o no el puerto),
-`identity-access-management-standards` (el IdP y el token que autentica al llamante),
-`secrets-management-standards` (dónde vive la API key del endpoint),
-`linux-storage-standards` y `zfs-standards` (**dónde viven los pesos**: ficheros de decenas o
-cientos de GB, con su patrón de lectura secuencial y su presupuesto de espacio),
-`backup-recovery-standards` (§6.4: casi nunca se respaldan pesos públicos),
-`privacy-engineering-standards` (**la razón más común para servir en local es dato personal**:
-la minimización, la base legal y la retención se deciden allí, no aquí),
-`grc-compliance-standards` (evidencia de auditoría), `networking-standards`,
-`onprem-standards` (paraguas de plataforma: hardware, rack, alimentación, plano de gestión —
-esta skill es una capa dentro de su §1.2 y no contradice sus invariantes de §1.3),
-`homelab-standards` (**inferencia en casa**: allí mandan el coste, el ruido, el consumo y la
-proporcionalidad; si el servidor de inferencia es tu lab personal sin terceros ni SLA, manda
-esa skill y esta aporta solo el criterio técnico), `python-standards` (código del cliente o de
-scripts de evaluación), `vulnerability-management-standards` (triaje y SLA de los CVE de §5), `webgl-webgpu-standards`
-(**si el modelo se ejecuta en el navegador, WebGPU es el sustrato y su criterio es
-suyo** —adaptador, límites del dispositivo, pérdida de contexto, memoria de GPU y degradación a
-WebGL2—; **la elección del modelo, su cuantización y el presupuesto de memoria siguen siendo de
-aquí**. Aviso compartido y verificado: **WebGPU no es Baseline** —sin soporte en Firefox Android y
-con restricciones por GPU en escritorio—, así que un despliegue de inferencia en navegador
-necesita plan de degradación), `green-it-standards` (el dimensionado, la cuantización y
-el cálculo de punto de equilibrio frente a una API alojada son de aquí; **la contabilidad
-energética y de carbono de ese entrenamiento o esa inferencia es suya** — y el aviso que comparten:
-**las cifras de huella que publican los proveedores de nube no son comparables entre sí**, así que
-un cálculo de "self-host frente a API" en carbono no se resuelve restando dos números de fuentes
-distintas).
+**Not applicable**: see `gpu-computing-standards` (the GPU as an infrastructure resource: driver,
+CUDA, MIG/MPS, DCGM, XID, power and cooling — **an inference server without a GPU, on CPU
+or on Apple Silicon, still belongs to this skill**), `llm-app-engineering-standards` (the
+application that **consumes** the endpoint: prompts, structured output, retries, prompt
+injection — **serving belongs here, consuming belongs there**; the boundary is the HTTP port),
+`claude-api` (**canonical reference for the Anthropic API**: the managed alternative to local
+inference lives there, and **no datum about Claude models —id, price, limits— is asserted
+from memory**; consult it before comparing cost against a provider), `mcp-standards`
+(MCP servers and their tools), `kubernetes-standards` (manifests, Helm, GitOps of the
+deployment), `podman-systemd-containers-standards` (the engine as a Quadlet unit on a host),
+`observability-standards` (OTel, PromQL, alerts — here we only say **which** engine metric
+matters), `firewall-policy-standards` (the rule that does or does not expose the port),
+`identity-access-management-standards` (the IdP and the token that authenticates the caller),
+`secrets-management-standards` (where the endpoint's API key lives),
+`linux-storage-standards` and `zfs-standards` (**where the weights live**: files of tens or
+hundreds of GB, with their sequential read pattern and their space budget),
+`backup-recovery-standards` (§6.4: public weights are almost never backed up),
+`privacy-engineering-standards` (**the most common reason to serve locally is personal data**:
+minimisation, legal basis and retention are decided there, not here),
+`grc-compliance-standards` (audit evidence), `networking-standards`,
+`onprem-standards` (platform umbrella: hardware, rack, power, management plane —
+this skill is a layer inside its §1.2 and does not contradict its §1.3 invariants),
+`homelab-standards` (**inference at home**: there cost, noise, power consumption and
+proportionality rule; if the inference server is your personal lab with no third parties and no
+SLA, that skill wins and this one contributes only the technical criteria), `python-standards` (client code or
+evaluation script code), `vulnerability-management-standards` (triage and SLA for the §5 CVEs), `webgl-webgpu-standards`
+(**if the model runs in the browser, WebGPU is the substrate and its criteria are
+theirs** —adapter, device limits, context loss, GPU memory and degradation to
+WebGL2—; **the choice of model, its quantisation and the memory budget still belong
+here**. Shared and verified warning: **WebGPU is not Baseline** —no support on Firefox Android and
+with per-GPU restrictions on desktop—, so a browser inference deployment
+needs a degradation plan), `green-it-standards` (sizing, quantisation and
+the break-even calculation against a hosted API belong here; **the energy
+and carbon accounting of that training or that inference is theirs** — and the warning they share:
+**the footprint figures cloud providers publish are not comparable with each other**, so
+a "self-host versus API" calculation in carbon terms is not settled by subtracting two numbers from
+different sources).
 
-También `rag-standards` (recuperación y embeddings — **servir el modelo de embeddings en local
-es de aquí; el diseño del índice, el chunking y el reranking son de allí**) y
-`ai-agents-standards` (bucle del agente, superficie de herramientas, contención).
+Also `rag-standards` (retrieval and embeddings — **serving the embedding model locally
+belongs here; index design, chunking and reranking belong there**) and
+`ai-agents-standards` (agent loop, tool surface, containment).
 
-Además: `llm-evaluation-standards` (**medir si
-el modelo local es suficientemente bueno para la tarea es de allí**: esta skill mide
-*rendimiento*, no *calidad*), `mlsecops-standards` (**procedencia, firma y escaneo del
-artefacto de modelo: frontera compartida** — el criterio de cadena de suministro es suyo, la
-regla operativa de "qué pesos acepta este servidor" es de aquí), `mlops-standards`
-(entrenamiento, fine-tuning y ciclo de vida del modelo, frente a servirlo),
-`ai-governance-standards` (AI Act, inventario de sistemas de IA, evaluación de impacto).
+Additionally: `llm-evaluation-standards` (**measuring whether
+the local model is good enough for the task belongs there**: this skill measures
+*performance*, not *quality*), `mlsecops-standards` (**provenance, signing and scanning of the
+model artefact: shared boundary** — the supply chain criteria are theirs, the
+operational rule of "which weights does this server accept" belongs here), `mlops-standards`
+(training, fine-tuning and model lifecycle, as opposed to serving it),
+`ai-governance-standards` (AI Act, AI system inventory, impact assessment).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-### 2.1 La decisión de partida: local frente a API
+### 2.1 The starting decision: local versus API
 
-**Razones legítimas para servir en local**
+**Legitimate reasons to serve locally**
 
-| Razón | Cuándo es real |
+| Reason | When it is real |
 |---|---|
-| **El dato no puede salir** | Prohibición contractual, regulatoria o de clasificación. Es la razón más sólida y la más común. Va acompañada de `privacy-engineering-standards`, no la sustituye |
-| **Coste a volumen alto y sostenido** | Solo si la utilización es **alta y continua** (§2.2). Una GPU al 15% es más cara que la API |
-| **Latencia** | Cuando el RTT a la nube o la variabilidad de cola del proveedor rompen el SLO. Medir antes de asumirlo |
-| **Independencia de proveedor** | Un modelo con pesos en tu disco no se deprecia ni cambia de comportamiento sin que tú lo decidas. Es la ventaja más infravalorada |
-| **Determinismo de versión** | El modelo congelado es reproducible; un endpoint gestionado puede cambiar bajo tus pies |
-| **Experimentación y aprendizaje** | Legítima, pero **decláralo como tal** y no la disfraces de decisión de coste |
-| **Sin conectividad** | Entorno aislado, borde, buque, planta industrial |
+| **The data cannot leave** | Contractual, regulatory or classification prohibition. It is the strongest reason and the most common. It comes alongside `privacy-engineering-standards`, it does not replace it |
+| **Cost at high, sustained volume** | Only if utilisation is **high and continuous** (§2.2). A GPU at 15% is more expensive than the API |
+| **Latency** | When the RTT to the cloud or the provider's queue variability breaks the SLO. Measure before assuming it |
+| **Provider independence** | A model with weights on your disk is not deprecated and does not change behaviour without you deciding it. It is the most underrated advantage |
+| **Version determinism** | The frozen model is reproducible; a managed endpoint can change under your feet |
+| **Experimentation and learning** | Legitimate, but **declare it as such** and do not dress it up as a cost decision |
+| **No connectivity** | Isolated environment, edge, ship, industrial plant |
 
-**Razones malas**
+**Bad reasons**
 
-- ❌ **"Es gratis".** No lo es. El coste es hardware (amortización), electricidad (24×7, no
-  solo en carga), refrigeración, espacio, red, **operación** (parcheo, guardias,
-  observabilidad) y sobre todo **tiempo de ingeniería**, que es la partida mayor y la que
-  nunca se presupuesta.
-- ❌ **"Es más privado por definición".** Servir en local sin autenticación, sin cifrado en
-  tránsito y sin retención controlada de prompts es *peor* que un proveedor con contrato de
-  encargado de tratamiento. La privacidad es una propiedad del diseño, no de la ubicación.
-- ❌ **"Es más seguro porque está dentro".** Ver §5: varios motores no autentican por defecto.
-- ❌ **"Nos da el mismo resultado".** Eso se **mide** (`llm-evaluation-standards`), no
-  se supone. Un modelo abierto que no resuelve la tarea es coste cero de API y coste total de
-  infraestructura.
+- ❌ **"It's free".** It is not. The cost is hardware (amortisation), electricity (24×7, not
+  just under load), cooling, space, network, **operations** (patching, on-call,
+  observability) and above all **engineering time**, which is the largest item and the one that
+  never gets budgeted.
+- ❌ **"It's more private by definition".** Serving locally without authentication, without
+  encryption in transit and without controlled prompt retention is *worse* than a provider with a
+  data processor contract. Privacy is a property of the design, not of the location.
+- ❌ **"It's more secure because it's inside".** See §5: several engines do not authenticate by default.
+- ❌ **"It gives us the same result".** That is **measured** (`llm-evaluation-standards`), not
+  assumed. An open model that does not solve the task is zero API cost and full infrastructure
+  cost.
 
-**Cálculo del punto de equilibrio** — hazlo explícito y por escrito antes de comprar nada:
+**Break-even calculation** — make it explicit and in writing before buying anything:
 
 ```
 Coste_local_por_1M_tokens =
-    ( amortización_hardware_hora        # precio / (vida_útil_h × factor_utilización)
-    + kWh_hora × precio_kWh × PUE       # GPU + host + refrigeración, no solo la TDP de la GPU
-    + coste_operación_hora )            # % de FTE de plataforma / horas del mes
-    ÷ tokens_por_hora_sostenidos        # medidos bajo carga real (§4), NO el pico de una demo
+    ( amortización_hardware_hora        # price / (lifetime_h × utilisation_factor)
+    + kWh_hora × precio_kWh × PUE       # GPU + host + cooling, not just the GPU's TDP
+    + coste_operación_hora )            # % of a platform FTE / hours in the month
+    ÷ tokens_por_hora_sostenidos        # measured under real load (§4), NOT a demo's peak
 
 Coste_API_por_1M_tokens = precio_entrada × ratio_entrada + precio_salida × ratio_salida
 ```
 
-Reglas del cálculo, no negociables:
+Rules of the calculation, non-negotiable:
 
-1. `tokens_por_hora_sostenidos` sale del **benchmark de §4 con la concurrencia real**, no del
-   número que sale en un tuit ni de una petición aislada.
-2. **El divisor es la utilización, no la capacidad.** Si la carga es de oficina (8×5, con
-   picos), divide por las horas *útiles*: el hardware sigue consumiendo y amortizando de noche.
-3. Incluye la **redundancia**: un servidor de inferencia único es un SPOF. Si el servicio
-   importa, el cálculo es con N+1, y eso duplica el numerador.
-4. Precios de la API: **consúltalos por web, nunca de memoria** (para Anthropic, `claude-api`).
-5. Si el resultado está dentro de ±30%, **manda la API**: el margen no cubre el riesgo
-   operativo ni el coste de oportunidad del equipo.
+1. `tokens_por_hora_sostenidos` comes from the **§4 benchmark at the real concurrency**, not from
+   a number in a tweet nor from an isolated request.
+2. **The divisor is utilisation, not capacity.** If the load is office-hours (8×5, with
+   peaks), divide by the *useful* hours: the hardware keeps consuming and amortising overnight.
+3. Include **redundancy**: a single inference server is a SPOF. If the service
+   matters, the calculation is with N+1, and that doubles the numerator.
+4. API prices: **look them up on the web, never from memory** (for Anthropic, `claude-api`).
+5. If the result is within ±30%, **the API wins**: the margin does not cover the operational
+   risk nor the team's opportunity cost.
 
-### 2.2 Elección de motor
+### 2.2 Engine choice
 
-| Motor | Estado verificado (ago-2026) | Cuándo es la elección correcta |
+| Engine | Verified status (Aug 2026) | When it is the right choice |
 |---|---|---|
-| **vLLM** — `vllm serve` | **v0.26.0** (27-jul-2026), cadencia de release muy alta | **Por defecto para servir en producción con concurrencia.** PagedAttention (caché KV paginada, sin fragmentación) + *continuous batching* (encaja peticiones nuevas en cada iteración en vez de esperar al lote). Es el que convierte concurrencia en throughput |
-| **llama.cpp** — `llama-server` | Build **b10241** (3-ago-2026), releases por build casi diarias | **Hardware modesto, CPU, Apple Silicon (Metal), cuantización agresiva, borde.** GGUF, un binario sin dependencias, *offloading* parcial a GPU con `-ngl`. Sirve un endpoint OpenAI-compatible |
-| **Ollama** — `ollama serve` | **v0.32.5** (27-jul-2026), activo | **Desarrollo y laboratorio.** Excelente ergonomía (`ollama run`, gestión de modelos, descarga). Envoltorio sobre llama.cpp/motor propio. Ver límites abajo |
-| **SGLang** | **v0.5.16** (25-jul-2026), activo | Alternativa seria a vLLM cuando la carga tiene **mucho prefijo compartido** (RadixAttention) o *grammar*/salida estructurada intensiva. Evaluar con benchmark propio, no por fe |
-| **TensorRT-LLM** | **v1.3.0rc23** (31-jul-2026) — cadencia de *release candidates* | Solo cuando exprimir el último 20-30% de una GPU NVIDIA justifica el coste: compilación de motor por modelo **y por configuración de hardware**, y reconstrucción en cada cambio. **NVIDIA-only, sin ROCm** |
-| **TGI** (`text-generation-inference`) | ⚠️ **v3.3.7 de dic-2025; último commit en `main`, mar-2026.** Sin releases en ~8 meses | ❌ **No elegir para proyecto nuevo.** Trátalo como en mantenimiento hasta que se demuestre lo contrario. Si ya está en producción, planifica salida a vLLM o SGLang |
-| **Triton Inference Server** | **2.71.0** (jul-2026, contenedor NGC 26.07) | Cuando hay que servir **modelos que no son LLM** (visión, audio, clásicos) junto a LLM en una sola superficie de servicio, con backends heterogéneos |
+| **vLLM** — `vllm serve` | **v0.26.0** (27 Jul 2026), very high release cadence | **Default for serving in production with concurrency.** PagedAttention (paged KV cache, no fragmentation) + *continuous batching* (fits new requests in on each iteration instead of waiting for the batch). It is the one that turns concurrency into throughput |
+| **llama.cpp** — `llama-server` | Build **b10241** (3 Aug 2026), almost daily per-build releases | **Modest hardware, CPU, Apple Silicon (Metal), aggressive quantisation, edge.** GGUF, a single binary with no dependencies, partial GPU *offloading* with `-ngl`. Serves an OpenAI-compatible endpoint |
+| **Ollama** — `ollama serve` | **v0.32.5** (27 Jul 2026), active | **Development and lab.** Excellent ergonomics (`ollama run`, model management, download). Wrapper over llama.cpp/its own engine. See limits below |
+| **SGLang** | **v0.5.16** (25 Jul 2026), active | A serious alternative to vLLM when the load has **a lot of shared prefix** (RadixAttention) or heavy *grammar*/structured output. Evaluate with your own benchmark, not on faith |
+| **TensorRT-LLM** | **v1.3.0rc23** (31 Jul 2026) — *release candidate* cadence | Only when squeezing the last 20-30% out of an NVIDIA GPU justifies the cost: engine compilation per model **and per hardware configuration**, and a rebuild on every change. **NVIDIA-only, no ROCm** |
+| **TGI** (`text-generation-inference`) | ⚠️ **v3.3.7 from Dec 2025; last commit on `main`, Mar 2026.** No releases in ~8 months | ❌ **Do not choose for a new project.** Treat it as being in maintenance until proven otherwise. If it is already in production, plan an exit to vLLM or SGLang |
+| **Triton Inference Server** | **2.71.0** (Jul 2026, NGC container 26.07) | When you have to serve **non-LLM models** (vision, audio, classical) alongside LLMs on a single serving surface, with heterogeneous backends |
 
-**Límites de Ollama cuando se intenta usar en producción** — declararlos antes de que
-alguien lo descubra en un incidente:
+**Ollama's limits when it is attempted in production** — declare them before
+somebody discovers them during an incident:
 
-- **Su modelo de concurrencia no es *continuous batching* comparable al de vLLM.**
-  `OLLAMA_NUM_PARALLEL` sube el paralelismo pero no cambia la arquitectura: el throughput y la
-  latencia de cola se degradan mucho antes que en vLLM. Los órdenes de magnitud publicados
-  (decenas de tokens/s frente a cientos, p99 de cientos de ms frente a segundos) **verifícalos
-  con tu propio benchmark**: dependen del modelo, la GPU y la versión.
-- **No autentica** (§5) y su superficie de API ha acumulado CVE de parseo GGUF y de
-  actualización (§5.3).
-- **Formato distinto**: Ollama trabaja con GGUF; vLLM sirve `safetensors` de forma nativa. La
-  migración implica **volver a descargar los pesos**, no convertirlos. Cuéntalo en el plan.
-- **Criterio**: si hay más de ~5-10 usuarios concurrentes reales, o hay un SLO, Ollama es la
-  herramienta equivocada. En `homelab-standards` y en desarrollo, es la correcta.
+- **Its concurrency model is not *continuous batching* comparable to vLLM's.**
+  `OLLAMA_NUM_PARALLEL` raises parallelism but does not change the architecture: throughput and
+  tail latency degrade much earlier than in vLLM. The published orders of magnitude
+  (tens of tokens/s versus hundreds, p99 of hundreds of ms versus seconds) **verify them
+  with your own benchmark**: they depend on the model, the GPU and the version.
+- **It does not authenticate** (§5) and its API surface has accumulated CVEs for GGUF parsing and
+  for updates (§5.3).
+- **Different format**: Ollama works with GGUF; vLLM serves `safetensors` natively. The
+  migration means **downloading the weights again**, not converting them. Account for it in the plan.
+- **Criteria**: if there are more than ~5-10 real concurrent users, or there is an SLO, Ollama is the
+  wrong tool. In `homelab-standards` and in development, it is the right one.
 
-### 2.3 Cuantización
+### 2.3 Quantisation
 
-**Qué se pierde de verdad.** Reducir bits por peso reduce memoria y, como el *decode* está
-limitado por ancho de banda de memoria, **aumenta la velocidad de generación**. Lo que se
-pierde no se reparte uniformemente: la degradación se concentra en razonamiento encadenado,
-código y matemáticas, y es mucho menor en resumen y redacción. Una perplejidad casi idéntica
-puede esconder una caída notable en la tarea que te importa. **Regla: mide la tarea, no la
-perplejidad** (`llm-evaluation-standards`).
+**What is actually lost.** Reducing bits per weight reduces memory and, since *decode* is
+limited by memory bandwidth, **it increases generation speed**. What is lost is not
+distributed uniformly: the degradation concentrates in chained reasoning,
+code and mathematics, and is far smaller in summarisation and drafting. An almost identical
+perplexity can hide a noticeable drop in the task you care about. **Rule: measure the task, not
+perplexity** (`llm-evaluation-standards`).
 
-| Formato | Estado | Uso |
+| Format | Status | Use |
 |---|---|---|
-| **GGUF** (`Q4_K_M`, `Q5_K_M`, `Q6_K`, `Q8_0`) | Vigente, formato nativo de llama.cpp/Ollama | CPU, Apple Silicon, GPU modesta, offloading mixto. `Q4_K_M` es el punto dulce reconocido (cuantización mixta: no es 4 bits uniformes) |
-| **AWQ** (W4A16) | Vigente y muy soportado | Peso 4 bits / activación 16 bits en vLLM y SGLang. Estándar de facto para servir 4 bits en GPU |
-| **GPTQ** | Vigente | Alternativa a AWQ; en ROCm el soporte ha sido más irregular que el de AWQ — verificar |
-| **FP8** (W8A8) | Vigente, hardware Hopper+ y equivalentes | Buen compromiso calidad/velocidad cuando hay hardware que lo acelera. También como **`--kv-cache-dtype fp8`**, que es donde más rinde (§2.4) |
-| **NVFP4** | Vigente, **Blackwell (SM100)** | 4 bits con escalado en dos niveles y bloque de 16. Máximo throughput donde el hardware lo soporta. Verificar limitaciones vigentes (p. ej. adaptadores LoRA) |
-| **MXFP4** | Vigente, multiplataforma | 4 bits microscale, menos atado a un vendedor que NVFP4 |
-| **INT8 / W8A8** | Vigente | Camino conservador cuando 4 bits degrada la tarea |
-| **bitsandbytes NF4** | Vigente pero **para carga rápida y experimentación**, no para servir con throughput | ❌ No es la elección de un servidor de producción |
-| Cuantizaciones **< 4 bits** (`Q2_K` y similares) | Vigentes técnicamente | ❌ **Vetadas en producción.** Hay un acantilado de calidad documentado por debajo de 4 bits, con degradación de un orden distinto y, en modelos pequeños, colapso |
+| **GGUF** (`Q4_K_M`, `Q5_K_M`, `Q6_K`, `Q8_0`) | Current, native format of llama.cpp/Ollama | CPU, Apple Silicon, modest GPU, mixed offloading. `Q4_K_M` is the recognised sweet spot (mixed quantisation: it is not uniform 4 bits) |
+| **AWQ** (W4A16) | Current and very well supported | 4-bit weight / 16-bit activation in vLLM and SGLang. De facto standard for serving 4 bits on GPU |
+| **GPTQ** | Current | Alternative to AWQ; on ROCm support has been more erratic than AWQ's — verify |
+| **FP8** (W8A8) | Current, Hopper+ hardware and equivalents | Good quality/speed compromise when there is hardware that accelerates it. Also as **`--kv-cache-dtype fp8`**, which is where it pays off most (§2.4) |
+| **NVFP4** | Current, **Blackwell (SM100)** | 4 bits with two-level scaling and a block of 16. Maximum throughput where the hardware supports it. Verify current limitations (e.g. LoRA adapters) |
+| **MXFP4** | Current, multi-platform | 4-bit microscale, less tied to one vendor than NVFP4 |
+| **INT8 / W8A8** | Current | The conservative path when 4 bits degrades the task |
+| **bitsandbytes NF4** | Current but **for fast loading and experimentation**, not for serving with throughput | ❌ Not the choice for a production server |
+| Quantisations **< 4 bits** (`Q2_K` and similar) | Technically current | ❌ **Banned in production.** There is a documented quality cliff below 4 bits, with degradation of a different order and, in small models, collapse |
 
-**Regla práctica "modelo grande cuantizado > modelo pequeño en precisión completa"** — es
-**cierta en el rango habitual y con límites concretos**, no un axioma:
+**The rule of thumb "large quantised model > small model at full precision"** — it is
+**true in the usual range and with concrete limits**, not an axiom:
 
-- Se sostiene **hasta ~4 bits**. A partir de ahí se invierte: por debajo de 4 bits, el modelo
-  pequeño con más precisión gana.
-- La evidencia controlada disponible es limitada en dominio y tamaño (hay estudios revisados
-  en generación de código con modelos pequeños que la confirman en ese rango); el resto del
-  soporte es consenso de la comunidad y perplejidad en WikiText-2, que **no es tu tarea**.
-- **Cómo usarla**: como *hipótesis de partida* para elegir qué dos candidatos comparar, nunca
-  como conclusión. La decisión final sale de tu evaluación sobre tu tarea.
-- Cuidado con confundir niveles: `Q4_0` y `Q4_K_M` son ambos "4 bits" y no son equivalentes.
-  Donde exista GGUF con `imatrix`, es preferible al mismo ancho de bits sin ella.
+- It holds **down to ~4 bits**. Beyond that it inverts: below 4 bits, the small model
+  with more precision wins.
+- The available controlled evidence is limited in domain and size (there are peer-reviewed
+  studies on code generation with small models that confirm it in that range); the rest of the
+  support is community consensus and perplexity on WikiText-2, which **is not your task**.
+- **How to use it**: as a *starting hypothesis* to choose which two candidates to compare, never
+  as a conclusion. The final decision comes out of your evaluation on your task.
+- Beware of confusing levels: `Q4_0` and `Q4_K_M` are both "4 bits" and are not equivalent.
+  Where GGUF with `imatrix` exists, it is preferable to the same bit width without it.
 
-### 2.4 Dimensionado de memoria
+### 2.4 Memory sizing
 
 ```
-VRAM_total ≈ pesos + caché_KV + activaciones + fragmentación/overhead del runtime
+VRAM_total ≈ pesos + caché_KV + activaciones + runtime fragmentation/overhead
 
 pesos_bytes            = n_parámetros × bytes_por_parámetro
-                         (FP16/BF16 = 2 · FP8/INT8 = 1 · 4 bits ≈ 0,5 + escalas)
+                         (FP16/BF16 = 2 · FP8/INT8 = 1 · 4 bits ≈ 0.5 + scales)
 
 caché_KV_bytes         = 2 × n_capas × n_kv_heads × head_dim
                          × longitud_secuencia × n_secuencias_concurrentes
                          × bytes_por_elemento
 ```
 
-Lecturas obligatorias del cálculo:
+Mandatory readings of the calculation:
 
-1. **El `2` son K y V.** El `n_kv_heads` es el de *key/value*, **no el de query**: en modelos
-   con GQA es varias veces menor, y esa es la razón de que existan ventanas de contexto largas.
-   Sacarlo del `config.json` del modelo, no de memoria.
-2. **La caché KV es lo que te mata.** Crece **lineal** en longitud de contexto **y** lineal en
-   concurrencia. Con contexto corto es ruido; con contexto largo y varias peticiones
-   simultáneas **supera al propio modelo** y es lo que dispara el OOM. Un modelo que cabe al
-   arrancar puede no caber al servir.
-3. **Corolario operativo**: `--max-model-len` **no se deja al máximo que anuncia el modelo**.
-   Se fija al contexto que tu caso realmente necesita. Cada token de ventana que no usas es
-   VRAM reservada que no atiende usuarios.
-4. `--gpu-memory-utilization` en vLLM controla la fracción de VRAM que el motor reserva
-   (**valor por defecto 0,90 — verificar en la versión que uses**). Subirlo aumenta la caché
-   KV y por tanto la concurrencia; subirlo demasiado hace fallar la asignación.
-5. **`--kv-cache-dtype fp8`** es la palanca de mayor retorno con contexto largo: reduce la
-   caché a la mitad. Verificar su impacto en calidad con tu evaluación antes de fijarlo.
-6. **Deja margen.** Reservar el 100% de la VRAM no deja sitio para activaciones ni para picos.
-7. En llama.cpp, `-ngl` decide cuántas capas van a GPU. **Offloading parcial degrada
-   catastróficamente**: si la mitad del modelo vive en RAM del host, el ancho de banda PCIe se
-   convierte en el cuello de botella. Cuantiza más antes que hacer offloading a medias.
+1. **The `2` is K and V.** The `n_kv_heads` is the *key/value* one, **not the query one**: in models
+   with GQA it is several times smaller, and that is the reason long context windows exist.
+   Take it from the model's `config.json`, not from memory.
+2. **The KV cache is what kills you.** It grows **linearly** in context length **and** linearly in
+   concurrency. With short context it is noise; with long context and several simultaneous
+   requests **it exceeds the model itself** and it is what triggers the OOM. A model that fits at
+   start-up may not fit when serving.
+3. **Operational corollary**: `--max-model-len` **is not left at the maximum the model advertises**.
+   It is set to the context your case actually needs. Every window token you do not use is
+   reserved VRAM that is not serving users.
+4. `--gpu-memory-utilization` in vLLM controls the fraction of VRAM the engine reserves
+   (**default value 0.90 — verify in the version you use**). Raising it increases the KV
+   cache and therefore concurrency; raising it too far makes the allocation fail.
+5. **`--kv-cache-dtype fp8`** is the highest-return lever with long context: it halves the
+   cache. Verify its impact on quality with your evaluation before pinning it.
+6. **Leave margin.** Reserving 100% of VRAM leaves no room for activations or for peaks.
+7. In llama.cpp, `-ngl` decides how many layers go to the GPU. **Partial offloading degrades
+   catastrophically**: if half the model lives in host RAM, PCIe bandwidth becomes
+   the bottleneck. Quantise harder rather than half-offloading.
 
-### 2.5 Compatibilidad de API
+### 2.5 API compatibility
 
-- **El estándar de facto es la API de OpenAI.** vLLM, llama.cpp (`llama-server`), Ollama,
-  SGLang, TGI y TensorRT-LLM exponen `/v1/chat/completions`, `/v1/completions` y, según el
-  motor, `/v1/embeddings`. **Eso es lo que hace el backend intercambiable.**
-- **Regla de diseño**: la aplicación habla el contrato OpenAI y el `base_url` es
-  configuración. Nunca se acopla a un SDK exclusivo del motor. Así el mismo cliente sirve para
-  el modelo local, para otro motor y para un proveedor gestionado — que es la única forma
-  barata de tener plan B.
-- **La compatibilidad no es total.** *Tool calling*, salida estructurada / *grammar*, `logprobs`
-  y opciones de muestreo divergen entre motores y versiones. **Se verifica con un test de
-  contrato** (§4), no se asume.
+- **The de facto standard is the OpenAI API.** vLLM, llama.cpp (`llama-server`), Ollama,
+  SGLang, TGI and TensorRT-LLM expose `/v1/chat/completions`, `/v1/completions` and, depending on the
+  engine, `/v1/embeddings`. **That is what makes the backend interchangeable.**
+- **Design rule**: the application speaks the OpenAI contract and the `base_url` is
+  configuration. It is never coupled to an engine-exclusive SDK. That way the same client works for
+  the local model, for another engine and for a managed provider — which is the only cheap way
+  to have a plan B.
+- **Compatibility is not total.** *Tool calling*, structured output / *grammar*, `logprobs`
+  and sampling options diverge across engines and versions. **It is verified with a contract
+  test** (§4), not assumed.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- **Un motor, un modelo, un proceso, un puerto.** Multiplexar modelos en un proceso complica
-  el dimensionado de la caché KV y convierte cualquier OOM en un incidente compartido. Si hay
-  que enrutar entre varios modelos, se pone un *router* delante (o una pasarela), no dentro.
-- **Todo declarativo**: los flags del motor viven en una unidad systemd/Quadlet, un manifiesto
-  o un módulo de IaC versionado (`iac-standards`, `podman-systemd-containers-standards`,
-  `kubernetes-standards`). ❌ Un `vllm serve` lanzado a mano en un `tmux` no es un despliegue.
-- **Pesos fuera de la imagen del contenedor.** Volumen o almacenamiento montado
-  (`linux-storage-standards`, `zfs-standards`, `object-storage-standards`): son decenas o
-  cientos de GB, y meterlos en la imagen destruye la caché de capas y el registro.
-- **Modelo referenciado por revisión inmutable**, no por nombre ni por `main`. El nombre puede
-  apuntar a otros bytes mañana; el hash de revisión, no.
-- **Naming**: el nombre del servicio incluye modelo y cuantización (`vllm-qwen3-32b-awq`), no
-  solo "llm": en seis meses habrá tres y nadie sabrá cuál es cuál.
-- Separar **red de servicio** (el endpoint) de **red de coordinación** (NCCL/`torch.distributed`,
-  transferencia de caché KV): son planos con confianza distinta (§5.2).
+- **One engine, one model, one process, one port.** Multiplexing models in one process complicates
+  KV cache sizing and turns any OOM into a shared incident. If you have
+  to route between several models, you put a *router* in front (or a gateway), not inside.
+- **Everything declarative**: engine flags live in a systemd/Quadlet unit, a manifest
+  or a versioned IaC module (`iac-standards`, `podman-systemd-containers-standards`,
+  `kubernetes-standards`). ❌ A `vllm serve` launched by hand in a `tmux` is not a deployment.
+- **Weights outside the container image.** Mounted volume or storage
+  (`linux-storage-standards`, `zfs-standards`, `object-storage-standards`): they are tens or
+  hundreds of GB, and putting them in the image destroys the layer cache and the registry.
+- **Model referenced by immutable revision**, not by name nor by `main`. The name can
+  point at different bytes tomorrow; the revision hash cannot.
+- **Naming**: the service name includes model and quantisation (`vllm-qwen3-32b-awq`), not
+  just "llm": in six months there will be three and nobody will know which is which.
+- Separate the **service network** (the endpoint) from the **coordination network** (NCCL/`torch.distributed`,
+  KV cache transfer): they are planes with different trust (§5.2).
 
-## 4. Calidad y gates
+## 4. Quality and gates
 
-**Cómo medir de verdad** — una petición aislada no mide nada:
+**How to measure properly** — an isolated request measures nothing:
 
-| Métrica | Qué es | Trampa |
+| Metric | What it is | Trap |
 |---|---|---|
-| **TTFT** (time to first token) | Latencia hasta el primer token. Domina la percepción en interfaces conversacionales | Es coste de **prefill**: crece con el prompt y con la cola |
-| **TPOT / ITL** | Tiempo entre tokens durante el *decode* | Determina la velocidad "de lectura" percibida |
-| **Throughput de salida** | Tokens/s agregados del servidor | **Es la métrica del coste**, no de la experiencia |
-| **Tokens/s de prefill** | Procesado del prompt; **paralelo, limitado por cómputo** | Escala bien con lotes grandes |
-| **Tokens/s de decode** | Generación; **secuencial, limitado por ancho de banda de memoria** | Por eso cuantizar acelera el decode y casi nada el prefill |
+| **TTFT** (time to first token) | Latency to the first token. It dominates perception in conversational interfaces | It is **prefill** cost: it grows with the prompt and with the queue |
+| **TPOT / ITL** | Time between tokens during *decode* | Determines the perceived "reading" speed |
+| **Output throughput** | Aggregate tokens/s from the server | **It is the cost metric**, not the experience one |
+| **Prefill tokens/s** | Prompt processing; **parallel, compute-bound** | Scales well with large batches |
+| **Decode tokens/s** | Generation; **sequential, memory-bandwidth-bound** | That is why quantising accelerates decode and barely touches prefill |
 
-- **Prefill y decode son regímenes distintos.** Un sistema con prompts largos y respuestas
-  cortas (RAG, clasificación) está limitado por prefill; uno de generación larga, por decode.
-  **Dimensionar con el mixto equivocado es el error de capacidad más caro.**
-- **El batching mejora el throughput y empeora el TTFT y el TPOT individuales.** No hay
-  configuración que optimice ambos: se elige, con un SLO escrito (`sre-practice-standards`).
-- **Gate de medición**: benchmark con **carga sostenida** (varios minutos), **concurrencia
-  escalonada** (1, 2, 4, 8, 16, 32…) y **distribución de longitudes representativa de la
-  producción**. Se reportan **percentiles (p50/p95/p99), no medias**, y la curva
-  throughput-vs-latencia. El punto de operación es donde el p95 aún cumple el SLO.
-- Herramientas: el propio `vllm bench serve` / los scripts de benchmark del motor, o un
-  generador de carga con trazas reales. **Verificar el nombre exacto del subcomando en la
-  versión instalada** (§8).
+- **Prefill and decode are different regimes.** A system with long prompts and short
+  responses (RAG, classification) is prefill-bound; one with long generation, decode-bound.
+  **Sizing with the wrong mix is the most expensive capacity error.**
+- **Batching improves throughput and worsens individual TTFT and TPOT.** There is no
+  configuration that optimises both: you choose, with a written SLO (`sre-practice-standards`).
+- **Measurement gate**: benchmark with **sustained load** (several minutes), **stepped
+  concurrency** (1, 2, 4, 8, 16, 32…) and **a length distribution representative of
+  production**. Report **percentiles (p50/p95/p99), not means**, and the
+  throughput-vs-latency curve. The operating point is where p95 still meets the SLO.
+- Tools: `vllm bench serve` itself / the engine's benchmark scripts, or a
+  load generator with real traces. **Verify the exact subcommand name in the
+  installed version** (§8).
 
-**Gates de CI que rompen el build** (orden de coste creciente):
+**CI gates that break the build** (in increasing order of cost):
 
-1. **Configuración declarativa válida**: unidad/manifiesto lintado; ningún flag suelto fuera
-   del artefacto versionado.
-2. **Procedencia de pesos verificada**: revisión inmutable pinneada + hash de los ficheros
-   comprobado contra el manifiesto del repositorio de origen (§5.1). Sin esto no se despliega.
-3. **Test de contrato de API**: el endpoint responde el subconjunto OpenAI que la aplicación
-   usa (chat, streaming, y —si se usan— *tool calling* y salida estructurada), con las mismas
-   aserciones contra el motor actual y contra el candidato de upgrade.
-4. **Test de arranque y de dimensionado**: el servicio arranca con `--max-model-len` de
-   producción y **sobrevive a una prueba de saturación de caché KV** (concurrencia objetivo ×
-   contexto máximo) sin OOM. Este es el fallo que más veces llega a producción.
-5. **Gate de autenticación**: una petición **sin credencial** a **cualquier** ruta de
-   inferencia debe devolver 401/403. Se prueban explícitamente las rutas fuera de `/v1` (§5.2).
-6. **Benchmark de regresión de rendimiento**: throughput y p95 dentro de un umbral respecto a
-   la línea base; una caída de X% rompe el build. La versión del motor cambia el rendimiento.
-7. **Evaluación de calidad** de la tarea al cambiar modelo, cuantización o versión de motor
-   (`llm-evaluation-standards`). **Cambiar la cuantización es cambiar el modelo.**
+1. **Valid declarative configuration**: unit/manifest linted; no loose flag outside
+   the versioned artefact.
+2. **Weight provenance verified**: immutable revision pinned + file hash
+   checked against the source repository's manifest (§5.1). Without this it is not deployed.
+3. **API contract test**: the endpoint answers the OpenAI subset the application
+   uses (chat, streaming, and —if used— *tool calling* and structured output), with the same
+   assertions against the current engine and against the upgrade candidate.
+4. **Start-up and sizing test**: the service starts with the production `--max-model-len` and
+   **survives a KV cache saturation test** (target concurrency ×
+   maximum context) without OOM. This is the failure that most often reaches production.
+5. **Authentication gate**: a request **without a credential** to **any** inference
+   route must return 401/403. The routes outside `/v1` are tested explicitly (§5.2).
+6. **Performance regression benchmark**: throughput and p95 within a threshold relative to
+   the baseline; a drop of X% breaks the build. The engine version changes performance.
+7. **Quality evaluation** of the task when changing model, quantisation or engine version
+   (`llm-evaluation-standards`). **Changing the quantisation is changing the model.**
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-### 5.1 Procedencia de los pesos
+### 5.1 Weight provenance
 
-**Un `.gguf` o un `.safetensors` de un desconocido es un binario de un desconocido.** El
-formato importa, pero no cierra el problema:
+**A `.gguf` or a `.safetensors` from a stranger is a binary from a stranger.** The
+format matters, but it does not close the problem:
 
-| Formato | Riesgo de ejecución al cargar |
+| Format | Execution risk on load |
 |---|---|
-| **Pickle** (`.bin`, `.pt`, `.ckpt`, `torch.load` sin `weights_only`) | ❌ **Ejecución arbitraria por diseño**: la deserialización ejecuta código. **PROHIBIDO** cargar pesos en pickle de origen no controlado. El escaneo del repositorio es por firmas y **se ha demostrado eludible** con contenedores no estándar |
-| **safetensors** | ✅ **Formato seguro recomendado hoy.** Cabecera JSON + bytes crudos: no serializa objetos Python, no ejecuta código. **No protege** contra pesos manipulados (puerta trasera en los propios valores) ni contra `trust_remote_code` |
-| **GGUF** | ⚠️ No es pickle, pero su **parser binario es una fuente recurrente de RCE**. Verificado en NVD: **CVE-2025-49847** (CVSS 8.8, desbordamiento en carga de vocabulario, corregido en b5662), **CVE-2026-27940** (7.8, desbordamiento de entero en `gguf_init_from_file_impl()`, corregido en b8146, *bypass* del arreglo de CVE-2025-53630), **CVE-2026-33298** (7.8, desbordamiento de entero en `ggml_nbytes`, corregido en b7824). Además, **plantillas de chat maliciosas embebidas en los metadatos GGUF** (inyección de plantilla) y **CVE-2026-7482 / CVE-2026-65315** en el cargador GGUF de Ollama |
+| **Pickle** (`.bin`, `.pt`, `.ckpt`, `torch.load` without `weights_only`) | ❌ **Arbitrary execution by design**: deserialisation executes code. **FORBIDDEN** to load pickle weights from an uncontrolled source. Repository scanning is signature-based and **has been shown to be evadable** with non-standard containers |
+| **safetensors** | ✅ **The safe format recommended today.** JSON header + raw bytes: it does not serialise Python objects, it does not execute code. **It does not protect** against tampered weights (a backdoor in the values themselves) nor against `trust_remote_code` |
+| **GGUF** | ⚠️ Not pickle, but its **binary parser is a recurring source of RCE**. Verified in NVD: **CVE-2025-49847** (CVSS 8.8, overflow in vocabulary loading, fixed in b5662), **CVE-2026-27940** (7.8, integer overflow in `gguf_init_from_file_impl()`, fixed in b8146, *bypass* of the CVE-2025-53630 fix), **CVE-2026-33298** (7.8, integer overflow in `ggml_nbytes`, fixed in b7824). In addition, **malicious chat templates embedded in the GGUF metadata** (template injection) and **CVE-2026-7482 / CVE-2026-65315** in Ollama's GGUF loader |
 
-Reglas duras:
+Hard rules:
 
-- **`trust_remote_code=True` está PROHIBIDO** salvo excepción documentada y revisada: es
-  ejecución de código Python arbitrario del autor del modelo. Hay CVE verificados de motores
-  que lo activaban **incondicionalmente** (`CVE-2026-4944`, 8.8, código hardcodeado en vLLM;
-  `CVE-2026-5817`, 8.8, backend `vllm-metal` en Docker Model Runner).
-- **Pinnear por revisión inmutable** y verificar el hash. Referenciar un modelo solo por
-  nombre permite que te sirvan otros bytes mañana. Existe CVE por controles de *pinning*
-  aplicados de forma inconsistente (`CVE-2026-47155`, 6.5, vLLM < 0.22.0) — verifica que tu
-  versión lo aplica de verdad, no que lo tiene documentado.
-- **Un modelo se carga en un proceso confinado**: usuario sin privilegios, sin acceso de
-  escritura a nada que no sea su directorio de trabajo, capacidades reducidas, filesystem raíz
-  de solo lectura, sin acceso saliente a Internet salvo el necesario para la descarga
+- **`trust_remote_code=True` is FORBIDDEN** except by documented and reviewed exception: it is
+  execution of arbitrary Python code written by the model's author. There are verified CVEs for engines
+  that enabled it **unconditionally** (`CVE-2026-4944`, 8.8, hardcoded in vLLM;
+  `CVE-2026-5817`, 8.8, `vllm-metal` backend in Docker Model Runner).
+- **Pin by immutable revision** and verify the hash. Referencing a model only by
+  name allows different bytes to be served to you tomorrow. There is a CVE for *pinning* controls
+  applied inconsistently (`CVE-2026-47155`, 6.5, vLLM < 0.22.0) — verify that your
+  version really applies it, not that it has it documented.
+- **A model is loaded in a confined process**: unprivileged user, without write
+  access to anything other than its working directory, reduced capabilities, read-only root
+  filesystem, no outbound Internet access beyond what is needed for the download
   (`container-runtime-security-standards`, `linux-hardening-standards`,
-  `firewall-policy-standards`). **La primera descarga y el primer `load` son la ventana de
-  ataque.**
-- **La descarga es un paso separado del arranque**: se descarga, se verifica, se escanea y se
-  publica en un almacén interno. El servidor de producción **no descarga de Internet en el
-  arranque** (además de seguridad, es disponibilidad: un fallo del repositorio externo tumba
-  el arranque de tu servicio).
-- El escaneo y la firma del artefacto de modelo son frontera compartida con `mlsecops-standards`:
-  **el criterio de cadena de suministro es suyo**; aquí manda la regla
-  operativa de qué acepta este servidor.
+  `firewall-policy-standards`). **The first download and the first `load` are the attack
+  window.**
+- **The download is a step separate from start-up**: it is downloaded, verified, scanned and
+  published in an internal store. The production server **does not download from the Internet at
+  start-up** (besides security, it is availability: a failure of the external repository takes
+  down your service's start-up).
+- Scanning and signing of the model artefact is a shared boundary with `mlsecops-standards`:
+  **the supply chain criteria are theirs**; here the operational rule of what this server
+  accepts wins.
 
-### 5.2 El endpoint
+### 5.2 The endpoint
 
-**Varios motores no autentican nada por defecto.** Exponer un endpoint de inferencia sin
-autenticar es regalar cómputo (y, con *tool calling*, un punto de apoyo dentro de tu red).
+**Several engines authenticate nothing by default.** Exposing an inference endpoint without
+authentication is giving away compute (and, with *tool calling*, a foothold inside your network).
 
-- **vLLM**: la documentación oficial es explícita — `--api-key` *"provides authentication for
+- **vLLM**: the official documentation is explicit — `--api-key` *"provides authentication for
   vLLM's HTTP server, but **only for OpenAI-compatible API endpoints under the `/v1` path
-  prefix**, and other similar `/v2`, `/inference` path prefix"*, y *"Many other sensitive
+  prefix**, and other similar `/v2`, `/inference` path prefix"*, and *"Many other sensitive
   endpoints are exposed on the same HTTP server without any authentication enforcement"*,
-  citando `/invocations` (*"particularly concerning as it provides unauthenticated access to
-  the same inference capabilities"*), `/pooling`, `/classify`, `/generative_scoring` y
-  endpoints de control como `/pause` y `/abort_requests`. La propia doc avisa: **"Do not rely
+  citing `/invocations` (*"particularly concerning as it provides unauthenticated access to
+  the same inference capabilities"*), `/pooling`, `/classify`, `/generative_scoring` and
+  control endpoints such as `/pause` and `/abort_requests`. The doc itself warns: **"Do not rely
   exclusively on `--api-key` for securing access to vLLM."**
-  → **Criterio: `--api-key` NO es el control de acceso.** El control es un **proxy inverso
-  delante que hace *allowlist* explícita de las rutas expuestas y bloquea todas las demás**,
-  con authn, rate limiting y log — que es exactamente lo que recomienda la doc oficial.
-- **Ollama**: **no tiene autenticación**. Escucha en `127.0.0.1:11434` por defecto, y el
-  problema empieza cuando alguien pone `OLLAMA_HOST=0.0.0.0` para compartirlo. Se han
-  reportado del orden de **cientos de miles de instancias expuestas en Internet** y campañas
-  activas de secuestro de cómputo — **verificar la cifra y la campaña por web antes de citar
-  números concretos** (§8). ❌ `OLLAMA_HOST=0.0.0.0` sin firewall y sin proxy delante.
-- **llama-server**: verificar en la versión instalada qué ofrece (`--api-key` y equivalentes)
-  y **asumir por defecto que no basta**: mismo patrón, proxy delante.
-- **El plano distribuido es inseguro por diseño.** vLLM: *"All communications between nodes in
+  → **Criteria: `--api-key` is NOT the access control.** The control is a **reverse proxy
+  in front that explicitly *allowlists* the exposed routes and blocks all the others**,
+  with authn, rate limiting and logging — which is exactly what the official doc recommends.
+- **Ollama**: **it has no authentication**. It listens on `127.0.0.1:11434` by default, and the
+  problem starts when somebody sets `OLLAMA_HOST=0.0.0.0` to share it. Something on the order of
+  **hundreds of thousands of instances exposed on the Internet** and active compute-hijacking
+  campaigns have been reported — **verify the figure and the campaign on the web before citing
+  concrete numbers** (§8). ❌ `OLLAMA_HOST=0.0.0.0` without a firewall and without a proxy in front.
+- **llama-server**: verify in the installed version what it offers (`--api-key` and equivalents)
+  and **assume by default that it is not enough**: same pattern, proxy in front.
+- **The distributed plane is insecure by design.** vLLM: *"All communications between nodes in
   a multi-node vLLM deployment are **insecure by default** and must be protected by placing the
-  nodes on an isolated network"*, y *"From a PyTorch perspective, any use of `torch.distributed`
-  should be considered insecure by default."* → **Red aislada, obligatorio.** Nada de NCCL o
-  transferencia de caché KV en la misma red que el resto.
-- **Nunca `--host 0.0.0.0` sin control delante.** Enlazar a loopback o a la interfaz interna;
-  exponer solo a través del proxy.
-- **Endpoints de depuración prohibidos en producción** (`VLLM_SERVER_DEV_MODE=1`,
-  `--enable-tokenizer-info-endpoint` y equivalentes): filtran plantillas de chat y
-  configuración del tokenizador.
-- **Autenticación real**: token por consumidor emitido por el IdP y verificado en el proxy
-  (`identity-access-management-standards`), secreto gestionado
-  (`secrets-management-standards`), TLS de extremo a extremo (`cryptography-pki-standards`).
-  Un token compartido por toda la empresa no es autenticación: es una contraseña.
-- **Rate limiting y cuotas por consumidor** son control de disponibilidad, no de cortesía: sin
-  ellos, un cliente en bucle satura la única GPU y tumba a todos los demás. Hay CVE de DoS por
-  consumo no acotado verificados (`CVE-2026-5497`, 7.5, OOM en vLLM ≥ 0.8.0).
-- **Prompts y respuestas son datos.** Log estructurado **sin contenido** por defecto; si hay
-  que retener, base legal, minimización y retención se deciden en
-  `privacy-engineering-standards`. Servir en local no borra el RGPD, solo cambia quién es
-  responsable de todo.
-- **La salida del modelo es entrada no confiable** para lo que venga después: eso lo gobierna
-  `llm-app-engineering-standards`, y esta skill no lo duplica. Pero el operador del endpoint
-  debe saber que **con *tool calling* habilitado, un endpoint abierto es ejecución remota
-  mediada**.
+  nodes on an isolated network"*, and *"From a PyTorch perspective, any use of `torch.distributed`
+  should be considered insecure by default."* → **Isolated network, mandatory.** No NCCL or
+  KV cache transfer on the same network as everything else.
+- **Never `--host 0.0.0.0` without control in front.** Bind to loopback or to the internal interface;
+  expose only through the proxy.
+- **Debug endpoints forbidden in production** (`VLLM_SERVER_DEV_MODE=1`,
+  `--enable-tokenizer-info-endpoint` and equivalents): they leak chat templates and
+  tokenizer configuration.
+- **Real authentication**: per-consumer token issued by the IdP and verified at the proxy
+  (`identity-access-management-standards`), managed secret
+  (`secrets-management-standards`), end-to-end TLS (`cryptography-pki-standards`).
+  A token shared by the whole company is not authentication: it is a password.
+- **Rate limiting and per-consumer quotas** are availability control, not courtesy: without
+  them, one client in a loop saturates the only GPU and takes down everyone else. There are verified
+  DoS CVEs from unbounded consumption (`CVE-2026-5497`, 7.5, OOM in vLLM ≥ 0.8.0).
+- **Prompts and responses are data.** Structured logging **without content** by default; if you
+  have to retain, legal basis, minimisation and retention are decided in
+  `privacy-engineering-standards`. Serving locally does not erase the GDPR, it only changes who is
+  responsible for everything.
+- **The model's output is untrusted input** for whatever comes next: that is governed by
+  `llm-app-engineering-standards`, and this skill does not duplicate it. But the endpoint operator
+  must know that **with *tool calling* enabled, an open endpoint is mediated remote
+  execution**.
 
-### 5.3 Dependencias y CVE
+### 5.3 Dependencies and CVEs
 
-- Los motores de inferencia son **software joven, en C++/CUDA y Python, con parseo de ficheros
-  no confiables**: superficie de vulnerabilidad alta y cadencia de parche rápida. Trátalos con
-  el SLA de un componente expuesto (`vulnerability-management-standards`).
-- Verificado en NVD (2026): vLLM acumula CVE de inyección de tokens (`CVE-2026-44222`),
-  validación ausente de tensores dispersos (`CVE-2026-56340`, 8.7), ReDoS (`CVE-2025-71379`) y
-  comprobaciones de seguridad basadas en `assert` (`CVE-2026-41523`, 7.5 — recuerda que
-  `python -O` elimina los `assert`). Ollama, CVE de lectura fuera de rango en el cargador GGUF
-  y de actualización sin verificar integridad en Windows.
-- **Pinnear versión del motor por digest** y actualizar con cadencia, no con reflejo. Cada
-  versión de vLLM/SGLang cambia rendimiento y a veces comportamiento: el gate 6 de §4 existe
-  para eso.
+- Inference engines are **young software, in C++/CUDA and Python, parsing untrusted
+  files**: high vulnerability surface and fast patch cadence. Treat them with
+  the SLA of an exposed component (`vulnerability-management-standards`).
+- Verified in NVD (2026): vLLM accumulates CVEs for token injection (`CVE-2026-44222`),
+  missing validation of sparse tensors (`CVE-2026-56340`, 8.7), ReDoS (`CVE-2025-71379`) and
+  security checks based on `assert` (`CVE-2026-41523`, 7.5 — remember that
+  `python -O` strips out `assert`s). Ollama, CVEs for out-of-range reads in the GGUF loader
+  and for updates without integrity verification on Windows.
+- **Pin the engine version by digest** and update on a cadence, not by reflex. Every
+  version of vLLM/SGLang changes performance and sometimes behaviour: gate 6 in §4 exists
+  for that.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Métricas del motor a Prometheus** (`observability-standards`): vLLM expone `/metrics` con,
-  entre otras, peticiones en ejecución y en espera, uso de la caché KV, tasa de aciertos del
-  *prefix cache*, TTFT y TPOT, y contadores de tokens de prompt y de generación. **Verificar
-  los nombres exactos de métrica en la versión instalada** (§8: han cambiado entre versiones).
-- **Las cuatro señales que importan**:
-  1. **Uso de la caché KV** — es tu indicador de saturación real. Cerca del 100% significa que
-     el motor está a punto de encolar o de rechazar.
-  2. **Cola de peticiones en espera** — si crece de forma monótona, no tienes un problema de
-     latencia, tienes un problema de capacidad.
-  3. **TTFT p95 y TPOT p95** — contra el SLO escrito.
-  4. **Tasa de aciertos del *prefix cache*** — un prompt de sistema estable y colocado al
-     principio convierte prefill en cacheable, y eso es throughput gratis.
-- **Métricas de GPU** (utilización real, memoria, temperatura, throttling, ECC) y su lectura:
+- **Engine metrics to Prometheus** (`observability-standards`): vLLM exposes `/metrics` with,
+  among others, running and waiting requests, KV cache usage, *prefix cache* hit
+  rate, TTFT and TPOT, and prompt and generation token counters. **Verify
+  the exact metric names in the installed version** (§8: they have changed between versions).
+- **The four signals that matter**:
+  1. **KV cache usage** — it is your real saturation indicator. Close to 100% means the
+     engine is about to queue or to reject.
+  2. **Waiting request queue** — if it grows monotonically, you do not have a latency
+     problem, you have a capacity problem.
+  3. **TTFT p95 and TPOT p95** — against the written SLO.
+  4. ***Prefix cache* hit rate** — a stable system prompt placed at the
+     beginning turns prefill into something cacheable, and that is free throughput.
+- **GPU metrics** (real utilisation, memory, temperature, throttling, ECC) and how to read them:
   `gpu-computing-standards`.
-- **Consumo eléctrico como métrica de primera clase**: kWh y **coste por millón de tokens**
-  servidos. Es la mitad del cálculo de §2.1 y lo que convierte una discusión de opinión en una
-  de números. Fijar un límite de potencia por GPU es a menudo una pérdida pequeña de
-  rendimiento por una ganancia grande de eficiencia — se mide, no se supone
+- **Power consumption as a first-class metric**: kWh and **cost per million tokens**
+  served. It is half of the §2.1 calculation and what turns a discussion of opinion into one
+  of numbers. Setting a power limit per GPU is often a small loss of
+  performance for a large gain in efficiency — it is measured, not assumed
   (`gpu-computing-standards`).
-- **Arranque en frío**: cargar decenas de GB desde disco y compilar/*warmup* de kernels tarda
-  minutos. Impacta al *readiness probe*, al despliegue y al plan de recuperación. **Mídelo y
-  documéntalo**; no descubras en un incidente que tu RTO era optimista.
-- **Multi-GPU y multi-nodo, solo cuando hace falta**:
-  - **Paralelismo de tensor** (`--tensor-parallel-size`): parte cada capa entre GPUs. Baja la
-    latencia y permite modelos que no caben en una GPU, pero exige **interconexión rápida
-    entre GPUs del mismo nodo** (NVLink o equivalente). Sobre PCIe la comunicación se come la
-    ganancia.
-  - **Paralelismo de pipeline** (`--pipeline-parallel-size`): parte por capas entre nodos.
-    Tolera enlaces más lentos, pero introduce burbujas y **no baja la latencia**.
-  - **Regla**: tensor dentro del nodo, pipeline entre nodos, y **solo si el modelo no cabe** o
-    el SLO de latencia lo exige. Multi-nodo multiplica los modos de fallo; casi siempre es
-    mejor un modelo más pequeño o más cuantizado que un despliegue distribuido.
-  - **Replicar antes que paralelizar**: si el modelo cabe en una GPU, N réplicas
-    independientes detrás de un balanceador dan más throughput y mejor aislamiento de fallo
-    que una instancia con TP=N.
-- **Respaldo de pesos**: normalmente **no se respaldan pesos públicos** — se re-descargan
-  desde el almacén interno, que sí está respaldado junto con su manifiesto de hashes. **Sí se
-  respaldan**: modelos ajustados propios, artefactos que ya no estén disponibles públicamente
-  y el manifiesto de procedencia. Criterio y RTO/RPO en `backup-recovery-standards` y
-  `bcdr-standards`; el dato de entrada es "cuánto tarda re-descargar 200 GB", que hay que
-  medir.
-- **Capacidad**: la GPU no se sobresuscribe como la CPU. Cuando la caché KV se llena, no hay
-  degradación elegante: hay cola o hay error. Planifica con margen y con una política explícita
-  de rechazo (429) antes que dejar crecer la cola sin fin.
+- **Cold start**: loading tens of GB from disk and compiling/*warming up* kernels takes
+  minutes. It affects the *readiness probe*, the deployment and the recovery plan. **Measure it and
+  document it**; do not discover during an incident that your RTO was optimistic.
+- **Multi-GPU and multi-node, only when needed**:
+  - **Tensor parallelism** (`--tensor-parallel-size`): splits each layer across GPUs. It lowers
+    latency and allows models that do not fit on one GPU, but it demands **fast interconnect
+    between GPUs in the same node** (NVLink or equivalent). Over PCIe the communication eats
+    the gain.
+  - **Pipeline parallelism** (`--pipeline-parallel-size`): splits by layers across nodes.
+    It tolerates slower links, but it introduces bubbles and **does not lower latency**.
+  - **Rule**: tensor within the node, pipeline between nodes, and **only if the model does not fit** or
+    the latency SLO demands it. Multi-node multiplies the failure modes; it is almost always
+    better to use a smaller or more quantised model than a distributed deployment.
+  - **Replicate before parallelising**: if the model fits on one GPU, N independent
+    replicas behind a load balancer give more throughput and better failure isolation
+    than one instance with TP=N.
+- **Weight backups**: normally **public weights are not backed up** — they are re-downloaded
+  from the internal store, which is backed up along with its hash manifest. **What is backed
+  up**: your own fine-tuned models, artefacts no longer publicly available
+  and the provenance manifest. Criteria and RTO/RPO in `backup-recovery-standards` and
+  `bcdr-standards`; the input datum is "how long does it take to re-download 200 GB", which has to
+  be measured.
+- **Capacity**: the GPU is not oversubscribed like the CPU. When the KV cache fills up, there is no
+  graceful degradation: there is a queue or there is an error. Plan with margin and with an explicit
+  rejection policy (429) rather than letting the queue grow without end.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisar versión de motor y CVE **mensualmente** (ecosistema con releases
-  semanales); revisar la decisión local-vs-API **cada 6-12 meses** — el precio de las APIs baja
-  y la capacidad de los modelos abiertos sube, y una decisión de 2024 puede ser hoy dinero
-  quemado. Re-verificar toda esta skill cada 3 meses (§7 de `claude-code-skills-standards`).
-- **Licencias de los modelos: es una decisión legal, no técnica.**
-  - **"Abierto" no es "open source".** El OSI publicó la *Open Source AI Definition* v1.0, que
-    exige **Data Information** (*"Sufficiently detailed information about the data used to
+- **Cadence**: review engine version and CVEs **monthly** (an ecosystem with weekly
+  releases); review the local-vs-API decision **every 6-12 months** — API prices go down
+  and open model capability goes up, and a 2024 decision may be burned money today.
+  Re-verify this whole skill every 3 months (§7 of `claude-code-skills-standards`).
+- **Model licences: it is a legal decision, not a technical one.**
+  - **"Open" is not "open source".** The OSI published the *Open Source AI Definition* v1.0, which
+    requires **Data Information** (*"Sufficiently detailed information about the data used to
     train the system so that a skilled person can build a substantially equivalent system"*),
-    **Code** (*"The complete source code used to train and run the system"*) y **Parameters**
-    (*"The model parameters, such as weights or other configuration settings"*). **La mayoría
-    de los modelos llamados "abiertos" no cumplen**: son *open weight*, con proceso de
-    entrenamiento propietario.
-  - Las licencias van desde permisivas reales (Apache-2.0, MIT) hasta licencias de comunidad
-    con **restricciones de uso, umbrales de usuarios o de ingresos, políticas de uso prohibido,
-    obligaciones de naming de derivados y cláusulas sobre el uso de las salidas para entrenar
-    otros modelos**. Varias familias son **heterogéneas dentro de sí mismas**: el mismo
-    "modelo" puede tener licencia distinta por tamaño o por generación.
-  - **PROHIBIDO fijar en un documento o en un despliegue la licencia de un modelo concreto sin
-    leer su *model card* y su fichero de licencia en ese momento.** Es donde más fácil es
-    inventarse un dato, y el error es legal.
-  - **Los *distills* y los *fine-tunes* heredan la licencia del modelo base.** Comprobarlo.
-  - Registrar modelo, revisión, licencia y su evaluación en el inventario
+    **Code** (*"The complete source code used to train and run the system"*) and **Parameters**
+    (*"The model parameters, such as weights or other configuration settings"*). **Most
+    of the models called "open" do not comply**: they are *open weight*, with a proprietary
+    training process.
+  - Licences range from genuinely permissive (Apache-2.0, MIT) to community licences
+    with **usage restrictions, user or revenue thresholds, prohibited use policies,
+    naming obligations for derivatives and clauses about using the outputs to train
+    other models**. Several families are **heterogeneous within themselves**: the same
+    "model" can have a different licence by size or by generation.
+  - **FORBIDDEN to fix in a document or in a deployment the licence of a specific model without
+    reading its *model card* and its licence file at that moment.** It is where it is easiest to
+    invent a datum, and the error is legal.
+  - ***Distills* and *fine-tunes* inherit the base model's licence.** Check it.
+  - Record the model, revision, licence and its evaluation in the inventory
     (`grc-compliance-standards`; `ai-governance-standards`).
 
-**PROHIBIDO**
+**FORBIDDEN**
 
-- ❌ Justificar la inferencia local con "es gratis" o "es más privado" sin el cálculo de §2.1
-  y sin los controles de §5.
-- ❌ Un endpoint de inferencia accesible sin autenticación, o "protegido" solo con
-  `--api-key` sin *allowlist* de rutas en un proxy delante.
-- ❌ `--host 0.0.0.0` / `OLLAMA_HOST=0.0.0.0` sin firewall y sin proxy.
-- ❌ Tráfico NCCL / `torch.distributed` / transferencia de caché KV fuera de una red aislada.
-- ❌ Cargar pesos en formato pickle de origen no controlado. `trust_remote_code=True` sin
-  excepción documentada y revisada.
-- ❌ Referenciar un modelo por nombre o por rama en lugar de por revisión inmutable + hash.
-- ❌ Descargar pesos de Internet en el arranque del servicio de producción.
-- ❌ Ollama como servidor de producción con concurrencia o con SLO.
-- ❌ TGI en un proyecto nuevo (sin release desde dic-2025; verificar antes de sentenciarlo).
-- ❌ Cuantización por debajo de 4 bits en producción.
-- ❌ Cambiar modelo, cuantización o versión de motor sin re-evaluar la calidad de la tarea.
-- ❌ `--max-model-len` al máximo del modelo "por si acaso": es VRAM quemada y OOM diferido.
-- ❌ Offloading parcial a CPU como estrategia de producción (cuantiza más, o compra memoria).
-- ❌ Dimensionar o presupuestar con el resultado de **una** petición en lugar de con carga
-  sostenida y percentiles.
-- ❌ Acoplar la aplicación a un SDK propio del motor en vez de al contrato OpenAI.
-- ❌ Loguear prompts y respuestas por defecto.
-- ❌ Multi-nodo antes de agotar "modelo más pequeño", "más cuantizado" y "N réplicas".
-- ❌ Afirmar la licencia de un modelo, su tamaño, su ventana de contexto o su rendimiento de
-  memoria — o el precio de una API — sin verificarlo en ese momento.
+- ❌ Justifying local inference with "it's free" or "it's more private" without the §2.1 calculation
+  and without the §5 controls.
+- ❌ An inference endpoint accessible without authentication, or "protected" only with
+  `--api-key` without a route *allowlist* in a proxy in front.
+- ❌ `--host 0.0.0.0` / `OLLAMA_HOST=0.0.0.0` without a firewall and without a proxy.
+- ❌ NCCL / `torch.distributed` / KV cache transfer traffic outside an isolated network.
+- ❌ Loading pickle-format weights from an uncontrolled source. `trust_remote_code=True` without a
+  documented and reviewed exception.
+- ❌ Referencing a model by name or by branch instead of by immutable revision + hash.
+- ❌ Downloading weights from the Internet at production service start-up.
+- ❌ Ollama as a production server with concurrency or with an SLO.
+- ❌ TGI in a new project (no release since Dec 2025; verify before condemning it).
+- ❌ Quantisation below 4 bits in production.
+- ❌ Changing model, quantisation or engine version without re-evaluating task quality.
+- ❌ `--max-model-len` at the model's maximum "just in case": it is burned VRAM and a deferred OOM.
+- ❌ Partial CPU offloading as a production strategy (quantise harder, or buy memory).
+- ❌ Sizing or budgeting with the result of **one** request instead of with sustained
+  load and percentiles.
+- ❌ Coupling the application to an engine-specific SDK instead of to the OpenAI contract.
+- ❌ Logging prompts and responses by default.
+- ❌ Multi-node before exhausting "smaller model", "more quantised" and "N replicas".
+- ❌ Asserting a model's licence, its size, its context window or its memory performance
+  — or an API's price — without verifying it at that moment.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión, número o nombre:
+Before pinning any version, number or name:
 
-1. **Versión y vitalidad de cada motor**: `api.github.com/repos/<org>/<repo>/releases/latest` o
-   el feed `releases.atom` (**no el HTML de la página de releases: el resumidor se inventa el
-   año**). Comprobado así en ago-2026: vLLM **0.26.0** (27-jul-2026), llama.cpp build
-   **b10241** (3-ago-2026), Ollama **0.32.5** (27-jul-2026), SGLang **0.5.16** (25-jul-2026),
-   TensorRT-LLM **1.3.0rc23** (31-jul-2026), Triton Server **2.71.0** (jul-2026), TGI
-   **3.3.7 de dic-2025** con último commit en `main` de mar-2026.
-2. **Estado de TGI**: confirmar si ha vuelto a publicar releases antes de recomendarlo o de
-   darlo por muerto.
-3. **Flags y valores por defecto** del motor instalado: `--gpu-memory-utilization`,
-   `--max-model-len`, `--kv-cache-dtype`, `--api-key`, el subcomando de benchmark y los
-   **nombres exactos de las métricas de `/metrics`**. Cambian entre versiones menores.
-4. **Formatos de cuantización vigentes** y su matriz de soporte por hardware en la doc del
-   motor (NVFP4/MXFP4 y sus limitaciones evolucionan rápido).
-5. **Seguridad de formatos de pesos**: CVE nuevos de parseo GGUF en el aviso de seguridad de
-   `ggml-org/llama.cpp` y en NVD; estado del escaneo del repositorio de origen; incidentes
-   recientes de modelos maliciosos.
-6. **CVE de los motores** en NVD (`services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=…`)
-   y en los avisos GHSA del repo. Los citados en §5 se verificaron contra NVD en ago-2026.
-7. **Licencia del modelo concreto**: *model card* + fichero de licencia, en el momento de
-   decidir. Y el estado de la *Open Source AI Definition* del OSI.
-8. **Precio de las APIs** con las que se compara. Para Anthropic, la skill `claude-api` es la
-   referencia canónica: **ningún id de modelo, precio ni límite de Claude se afirma de memoria**.
-9. **Datos de dimensionado del modelo** (`n_capas`, `n_kv_heads`, `head_dim`, ventana): del
-   `config.json` del modelo, nunca de memoria.
+1. **Version and vitality of each engine**: `api.github.com/repos/<org>/<repo>/releases/latest` or
+   the `releases.atom` feed (**not the HTML of the releases page: the summariser invents the
+   year**). Checked that way in Aug 2026: vLLM **0.26.0** (27 Jul 2026), llama.cpp build
+   **b10241** (3 Aug 2026), Ollama **0.32.5** (27 Jul 2026), SGLang **0.5.16** (25 Jul 2026),
+   TensorRT-LLM **1.3.0rc23** (31 Jul 2026), Triton Server **2.71.0** (Jul 2026), TGI
+   **3.3.7 from Dec 2025** with the last commit on `main` from Mar 2026.
+2. **TGI status**: confirm whether it has resumed publishing releases before recommending it or
+   pronouncing it dead.
+3. **Flags and default values** of the installed engine: `--gpu-memory-utilization`,
+   `--max-model-len`, `--kv-cache-dtype`, `--api-key`, the benchmark subcommand and the
+   **exact names of the `/metrics` metrics**. They change between minor versions.
+4. **Current quantisation formats** and their hardware support matrix in the engine's
+   documentation (NVFP4/MXFP4 and their limitations evolve fast).
+5. **Weight format security**: new GGUF parsing CVEs in the security advisories of
+   `ggml-org/llama.cpp` and in NVD; scanning status of the source repository; recent
+   incidents of malicious models.
+6. **Engine CVEs** in NVD (`services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=…`)
+   and in the repo's GHSA advisories. Those cited in §5 were verified against NVD in Aug 2026.
+7. **The specific model's licence**: *model card* + licence file, at the moment of
+   deciding. And the status of the OSI's *Open Source AI Definition*.
+8. **Prices of the APIs** being compared against. For Anthropic, the `claude-api` skill is the
+   canonical reference: **no Claude model id, price or limit is asserted from memory**.
+9. **Model sizing data** (`n_capas`, `n_kv_heads`, `head_dim`, window): from the
+   model's `config.json`, never from memory.
 
-**Huecos declarados (no verificados en esta pasada, no rellenar de memoria)**
+**Declared gaps (not verified in this pass, do not fill in from memory)**
 
-- **Cifras de rendimiento comparado Ollama vs. vLLM** (tokens/s, p99, usuarios concurrentes
-  antes de OOM): citadas en la web con órdenes de magnitud coherentes entre fuentes, pero **no
-  verificadas de forma independiente**. Medir en el hardware propio antes de usarlas.
-- **Número de instancias de Ollama expuestas en Internet** y la campaña de secuestro asociada:
-  reportado por varias fuentes con cifras dispares (rango amplio). **Verificar antes de citar
-  una cifra concreta.**
-- **Rendimiento y soporte de SGLang frente a vLLM** en cargas concretas: no benchmarkeado aquí.
-- **Nombres exactos de las métricas Prometheus de vLLM 0.26**: no verificados uno a uno.
-- **Estado exacto de la autenticación en `llama-server`** en la build actual: no verificado.
-- **Nombres, tamaños, ventanas de contexto y licencias de modelos abiertos concretos**:
-  **deliberadamente omitidos**. Es el dato que más rápido caduca y donde más fácil es
-  inventar. Se verifica en la *model card* en el momento de decidir.
-- **Impacto medido de `--kv-cache-dtype fp8` en calidad**: depende del modelo y de la tarea; no
-  hay número general.
+- **Comparative performance figures for Ollama vs. vLLM** (tokens/s, p99, concurrent users
+  before OOM): cited on the web with orders of magnitude consistent across sources, but **not
+  independently verified**. Measure on your own hardware before using them.
+- **Number of Ollama instances exposed on the Internet** and the associated hijacking campaign:
+  reported by several sources with divergent figures (wide range). **Verify before citing
+  a specific figure.**
+- **SGLang's performance and support versus vLLM** on specific loads: not benchmarked here.
+- **Exact names of vLLM 0.26's Prometheus metrics**: not verified one by one.
+- **Exact state of authentication in `llama-server`** in the current build: not verified.
+- **Names, sizes, context windows and licences of specific open models**:
+  **deliberately omitted**. It is the datum that expires fastest and where it is easiest to
+  invent. It is verified in the *model card* at the moment of deciding.
+- **Measured impact of `--kv-cache-dtype fp8` on quality**: depends on the model and the task; there
+  is no general number.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

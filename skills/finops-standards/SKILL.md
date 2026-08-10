@@ -3,618 +3,616 @@ name: finops-standards
 description: Cost as an engineering metric, not a monthly invoice report. Use when defining a unit-economics metric (cost per request, per active user, per GB processed, per token), building a tag or label policy and the IaC/admission gate that enforces it, designing account/subscription/project layout as an allocation boundary, splitting shared and platform cost, deciding commitment coverage for reserved instances, savings plans or committed-use discounts, normalizing billing data with FOCUS (focus.finops.org, BilledCost, EffectiveCost, ContractedCost, ListCost, ChargeCategory, CommitmentDiscountId, AllocatedResourceId, ConsumedUnit, SkuId), reading a cost and usage export in a warehouse, wiring cost anomaly alerts and budget thresholds, choosing showback versus chargeback, running OpenCost or IBM Kubecost for Kubernetes cost allocation, adding infracost breakdown or infracost diff to a pull request, hunting idle resources, orphaned volumes, unattached public IPs, load balancers, non-production environments and data-egress or observability bills, tracking AI inference and token spend, or applying the FinOps Framework phases, domains, capabilities and Scopes.
 ---
 
-# Estándares de FinOps
+# FinOps standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**FinOps es la disciplina de decidir con el coste como métrica de ingeniería, no un informe
-mensual de la factura.** Un informe describe el pasado y no cambia nada; una métrica de ingeniería
-entra en la revisión de diseño, en el PR y en la alerta, y **bloquea o desbloquea decisiones**. Si
-el coste solo aparece en una diapositiva a fin de mes, aquí no hay práctica de FinOps: hay
-contabilidad.
+**FinOps is the discipline of deciding with cost as an engineering metric, not a monthly report on
+the invoice.** A report describes the past and changes nothing; an engineering metric enters the
+design review, the PR and the alert, and **blocks or unblocks decisions**. If cost only shows up on
+a slide at the end of the month, there is no FinOps practice here: there is accounting.
 
-**Restricción dura de esta skill: se queda el MÉTODO y cede el SERVICIO concreto.** El criterio de
-coste de un servicio determinado —qué clase de instancia, qué nivel de almacenamiento, qué modelo
-de facturación tiene esa base de datos gestionada, qué flag lo abarata— **ya vive en
-`aws-standards`, `azure-standards` y `gcp-standards`**, y allí se decide. Aquí se decide **cómo se
-mide, cómo se asigna, quién responde y qué gate lo impone**, con independencia del proveedor.
-Si esta skill y una de nube dan una cifra sobre el mismo servicio, **manda la skill de nube**.
+**Hard constraint of this skill: it keeps the METHOD and cedes the specific SERVICE.** The cost
+criteria for a given service —which instance class, which storage tier, which billing model that
+managed database has, which flag makes it cheaper— **already live in `aws-standards`,
+`azure-standards` and `gcp-standards`**, and that is where they are decided. Here we decide **how it
+is measured, how it is allocated, who is accountable and which gate enforces it**, independently of
+the provider. If this skill and a cloud skill give a figure about the same service, **the cloud
+skill wins**.
 
-Cubre: marco FinOps y su vocabulario (fases, dominios, capacidades, Scopes), **unidad económica**,
-asignación (etiquetado y su gobierno, jerarquía de cuentas, coste compartido), compromisos y
-descuentos, orden de impacto de las palancas, catálogo de costes ocultos, previsión y presupuesto,
-anomalías, *showback*/*chargeback*, normalización de datos de facturación con **FOCUS**, coste en
-Kubernetes, coste de inferencia de IA y herramientas (`OpenCost`, `Kubecost`, `Infracost`).
+Covers: the FinOps framework and its vocabulary (phases, domains, capabilities, Scopes), **unit
+economics**, allocation (tagging and its governance, account hierarchy, shared cost), commitments and
+discounts, the impact order of the levers, the hidden-cost catalogue, forecasting and budgeting,
+anomalies, *showback*/*chargeback*, normalising billing data with **FOCUS**, cost in
+Kubernetes, AI inference cost and tooling (`OpenCost`, `Kubecost`, `Infracost`).
 
-**No aplica**: ver `aws-standards`, `azure-standards`, `gcp-standards` (**el servicio concreto, su
-modelo de precio y su configuración son suyos**; aquí el método, la unidad económica, la asignación
-y el gobierno), `kubernetes-standards` (*requests*, límites, *autoscaling* y programación; **aquí
-solo el coste que producen y su reparto entre inquilinos**), `iac-standards` (**el etiquetado se
-impone en el código: la herramienta, el módulo y el estado son suyos; la política de etiquetas —qué
-claves, qué valores, qué es obligatorio— es de aquí**), `data-platform-standards`,
-`lakehouse-standards` y `data-engineering-standards` (**el coste de escaneo y el particionado como
-decisión de coste ya viven allí**: esta skill no vuelve a decidir un layout de Parquet ni una
-clave de partición, solo exige que ese coste tenga dueño y unidad), `gpu-computing-standards`
-(**la GPU como recurso caro que se comparte, se mide y se planifica ya es suya**; aquí el coste de
-inferencia como categoría de gasto y su unidad), `caching-cdn-standards` (egreso, *hit ratio* y
-facturación del CDN), `object-storage-standards` (clases, ciclo de vida y coste por petición),
-`sre-practice-standards` (**fiabilidad frente a coste es un trade-off explícito y el *error budget*
-es suyo**: ninguna optimización de coste se aprueba aquí si consume presupuesto de error sin
-decisión registrada allí), `green-it-standards` (huella de carbono y
-eficiencia energética; coste y emisiones **correlacionan pero no son la misma métrica** —§6.4),
-`grc-compliance-standards` (control interno, auditoría y segregación de funciones sobre el gasto),
-`platform-engineering-standards` (**el coste de la plataforma interna es una unidad económica más y
-se mide con el método de aquí**; los gates de etiquetado se implantan en su camino pavimentado y en
-su capa de admisión), `enterprise-architecture-standards` (**el coste por aplicación que produce esta skill es
-una de las entradas de su decisión de ciclo de vida** —tolerar, invertir, migrar, eliminar—; el
-inventario, la criticidad y el gobierno del estándar son suyos. Una aplicación cara y sin dueño no
-es un problema de coste, es un problema de cartera), `green-it-standards` (**frontera recíproca
-porque las dos comparten palancas y no comparten métrica**: apagar lo ocioso, dimensionar y elegir
-región reducen coste **y** carbono, y por eso se confunden. **La unidad económica es de aquí; la
-unidad de carbono es suya.** Divergen más de lo que parece: **la huella incorporada del hardware
-hace que alargar la vida útil de un equipo pese más que optimizar su consumo**, lo que puede
-contradecir una decisión de renovación tomada solo por coste; y una región barata no es
-necesariamente una región de baja intensidad de carbono. **Cuando las dos métricas apuntan en
-sentidos opuestos, se declaran las dos y decide el negocio** — ninguna de las dos skills recorta a
-la otra en silencio).
+**Not applicable**: see `aws-standards`, `azure-standards`, `gcp-standards` (**the specific service,
+its pricing model and its configuration are theirs**; here the method, unit economics, allocation
+and governance), `kubernetes-standards` (*requests*, limits, *autoscaling* and scheduling; **here
+only the cost they produce and its split across tenants**), `iac-standards` (**tagging is enforced
+in the code: the tool, the module and the state are theirs; the tag policy —which keys, which
+values, what is mandatory— is from here**), `data-platform-standards`,
+`lakehouse-standards` and `data-engineering-standards` (**scan cost and partitioning as a cost
+decision already live there**: this skill does not re-decide a Parquet layout or a partition
+key, it only demands that that cost has an owner and a unit), `gpu-computing-standards`
+(**the GPU as an expensive resource that is shared, measured and planned is already theirs**; here
+inference cost as a spend category and its unit), `caching-cdn-standards` (egress, *hit ratio* and
+CDN billing), `object-storage-standards` (classes, lifecycle and per-request cost),
+`sre-practice-standards` (**reliability versus cost is an explicit trade-off and the *error budget*
+is theirs**: no cost optimisation is approved here if it consumes error budget without a decision
+recorded there), `green-it-standards` (carbon footprint and
+energy efficiency; cost and emissions **correlate but are not the same metric** —§6.4),
+`grc-compliance-standards` (internal control, audit and segregation of duties over spend),
+`platform-engineering-standards` (**the cost of the internal platform is one more unit economic and
+is measured with the method from here**; tagging gates are implemented in their paved road and in
+their admission layer), `enterprise-architecture-standards` (**the cost per application produced by this skill is
+one of the inputs to their lifecycle decision** —tolerate, invest, migrate, eliminate—; the
+inventory, the criticality and the governance of the standard are theirs. An expensive application
+with no owner is not a cost problem, it is a portfolio problem), `green-it-standards` (**reciprocal
+boundary because the two share levers and do not share a metric**: switching off what is idle, right-
+sizing and choosing a region reduce cost **and** carbon, which is why they get confused. **Unit
+economics belong here; the carbon unit is theirs.** They diverge more than it looks: **the embodied
+footprint of hardware makes extending the useful life of a machine weigh more than optimising its
+consumption**, which can contradict a replacement decision taken on cost alone; and a cheap region is
+not necessarily a low-carbon-intensity region. **When the two metrics point in opposite directions,
+both are declared and the business decides** — neither skill trims the other in silence).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión y el estado de las fuentes citadas por web antes de fijar nada (§8).
+> Verify the latest version and the state of the cited sources on the web before committing to anything (§8).
 
-| Ámbito | Default | Alternativa justificable |
+| Area | Default | Justifiable alternative |
 |---|---|---|
-| Marco de referencia | **FinOps Framework** de la FinOps Foundation (programa de la Linux Foundation), edición **2026** | Ninguna: no hay otro marco con vocabulario compartido con los proveedores |
-| Formato de datos de facturación | **FOCUS**, versión **1.4** (ratificada el **4-jun-2026**) como esquema de destino | 1.3 / 1.2 si el proveedor aún no emite 1.4; **nunca** el esquema propietario como capa de consumo |
-| Métrica de éxito | **Coste por unidad de negocio** (unidad económica) | Coste absoluto **solo** para tesorería y compromiso, nunca para evaluar ingeniería |
-| Asignación | **Cuenta/suscripción/proyecto** como frontera primaria + etiquetas como dimensión secundaria | Solo etiquetas si la jerarquía no se puede tocar — asumiendo la fuga que implica |
-| Gobierno de etiquetas | **Gate en IaC (obligatorio) + gate en admisión (Kubernetes)**; política declarada como código | Barrido correctivo posterior **solo** como transición con fecha de fin |
-| Modelo de reparto | **Showback** por defecto | **Chargeback** solo con presupuesto real por equipo y capacidad de actuar (§6.5) |
-| Coste de Kubernetes | **OpenCost** (Apache-2.0, CNCF *Incubating*) | **IBM Kubecost** si se necesita retención larga o soporte comercial (§2.1) |
-| Coste antes del despliegue | **Infracost** en el PR (`infracost breakdown` / `infracost diff`) | Cálculo propio sobre la API de precios del proveedor si Infracost no cubre el recurso |
-| Anomalías | Detección nativa del proveedor + **una alerta accionable con dueño**, no un correo a una lista | Detección propia sobre el export FOCUS en el almacén, si se necesita dimensión de negocio |
+| Reference framework | **FinOps Framework** from the FinOps Foundation (a Linux Foundation programme), **2026** edition | None: there is no other framework with a vocabulary shared with the providers |
+| Billing data format | **FOCUS**, version **1.4** (ratified on **4 Jun 2026**) as the target schema | 1.3 / 1.2 if the provider does not yet emit 1.4; **never** the proprietary schema as the consumption layer |
+| Success metric | **Cost per business unit** (unit economics) | Absolute cost **only** for treasury and commitment, never to evaluate engineering |
+| Allocation | **Account/subscription/project** as the primary boundary + tags as a secondary dimension | Tags only if the hierarchy cannot be touched — accepting the leakage that implies |
+| Tag governance | **Gate in IaC (mandatory) + admission gate (Kubernetes)**; policy declared as code | Corrective sweep afterwards **only** as a transition with an end date |
+| Split model | **Showback** by default | **Chargeback** only with a real per-team budget and the ability to act (§6.5) |
+| Kubernetes cost | **OpenCost** (Apache-2.0, CNCF *Incubating*) | **IBM Kubecost** if long retention or commercial support is needed (§2.1) |
+| Cost before deployment | **Infracost** in the PR (`infracost breakdown` / `infracost diff`) | Your own calculation over the provider's pricing API if Infracost does not cover the resource |
+| Anomalies | Provider-native detection + **one actionable alert with an owner**, not an email to a list | Your own detection over the FOCUS export in the warehouse, if a business dimension is needed |
 
-### 2.1 Estado y licencia de las herramientas (verificado en crudo)
+### 2.1 Tool status and licence (verified raw)
 
-| Herramienta | Licencia (leída del `LICENSE`) | Estado / propiedad | Modelo de precio |
+| Tool | Licence (read from the `LICENSE`) | Status / ownership | Pricing model |
 |---|---|---|---|
-| **OpenCost** | **Apache-2.0** (`opencost/opencost`) | **CNCF**: aceptado el 17-jun-2022, **Incubating desde el 25-oct-2024**. Mantenido por IBM Kubecost, Randoli y comunidad | Gratis; se paga la infraestructura que lo sostiene (Prometheus/almacenamiento) |
-| **Kubecost** | Producto propietario (el núcleo abierto es OpenCost) | **Adquirido por IBM** (anuncio del **17-sep-2024**), integrado en la suite FinOps de IBM junto a Cloudability y Turbonomic; su web redirige a `apptio.com` | Nivel **Foundations "Always free"**: *"Unlimited clusters up to 250 cores"*, *"15-day metric retention"*. **Enterprise Self-hosted y Enterprise Cloud: precio no publicado** — hay que pedirlo |
-| **Infracost** | **Apache-2.0** (`infracost/infracost` y el nuevo `infracost/cli`) | Vivo; código refactorizado en repos separados (`infracost/cli` es ahora el núcleo) | **Free: 1000 runs/mes** · **Starter: $250/mo, 10.000 runs** · **Cloud: $1.000/mo** · **Enterprise: a consultar**. La API de precios alojada es servicio **separado del código**: se puede autohospedar (`INFRACOST_PRICING_API_ENDPOINT`) para saltarse el límite |
+| **OpenCost** | **Apache-2.0** (`opencost/opencost`) | **CNCF**: accepted on 17 Jun 2022, **Incubating since 25 Oct 2024**. Maintained by IBM Kubecost, Randoli and the community | Free; you pay for the infrastructure that sustains it (Prometheus/storage) |
+| **Kubecost** | Proprietary product (the open core is OpenCost) | **Acquired by IBM** (announcement of **17 Sep 2024**), integrated into IBM's FinOps suite alongside Cloudability and Turbonomic; its website redirects to `apptio.com` | **Foundations "Always free"** tier: *"Unlimited clusters up to 250 cores"*, *"15-day metric retention"*. **Enterprise Self-hosted and Enterprise Cloud: price not published** — you have to ask |
+| **Infracost** | **Apache-2.0** (`infracost/infracost` and the new `infracost/cli`) | Alive; code refactored into separate repos (`infracost/cli` is now the core) | **Free: 1,000 runs/month** · **Starter: $250/mo, 10,000 runs** · **Cloud: $1,000/mo** · **Enterprise: on request**. The hosted pricing API is a service **separate from the code**: it can be self-hosted (`INFRACOST_PRICING_API_ENDPOINT`) to bypass the limit |
 
-**Trampa de licencia, la que más se falla**: que el CLI sea Apache-2.0 **no** hace gratis el
-servicio. Infracost es el caso canónico: código permisivo, **API de precios alojada con cuota**.
-La decisión de compra se toma sobre el servicio, no sobre el `LICENSE`. Antes de fijar cualquiera
-de estas tres como default de un proyecto: **leer su `LICENSE` en crudo y su página de precios el
-mismo día** (§8).
+**The licence trap, the one most often missed**: the CLI being Apache-2.0 does **not** make the
+service free. Infracost is the canonical case: permissive code, **hosted pricing API with a quota**.
+The purchasing decision is taken on the service, not on the `LICENSE`. Before pinning any of these
+three as a project default: **read its raw `LICENSE` and its pricing page on the same day** (§8).
 
-### 2.2 El marco FinOps, edición 2026 (verificado)
+### 2.2 The FinOps framework, 2026 edition (verified)
 
-Definición vigente, **verbatim** de `finops.org`: *"FinOps is an operational framework and cultural
+Current definition, **verbatim** from `finops.org`: *"FinOps is an operational framework and cultural
 practice which maximizes the business value of technology, enables timely data-driven decision
 making, and creates financial accountability through collaboration between engineering, finance,
-and business teams."* (publicada el **19-mar-2026**).
+and business teams."* (published on **19 Mar 2026**).
 
-- **Fases** (verbatim): `Inform` · `Optimize` · `Operate`. Madurez, verbatim: *"A FinOps approach of
+- **Phases** (verbatim): `Inform` · `Optimize` · `Operate`. Maturity, verbatim: *"A FinOps approach of
   'Crawl, Walk, Run' enables organizations to start small, and grow in scale, scope, and
   complexity."*
-- **4 dominios y 22 capacidades** (verbatim de la página del marco):
+- **4 domains and 22 capabilities** (verbatim from the framework page):
   - **Understand Usage & Cost**: Data Ingestion · Allocation · Reporting & Analytics · Anomaly Management
   - **Quantify Business Value**: Planning & Estimating · Forecasting · Budgeting · KPIs & Benchmarking · **Unit Economics**
   - **Optimize Usage & Cost**: Architecting & Workload Placement · Usage Optimization · Rate Optimization · Licensing & SaaS · Sustainability
   - **Manage the FinOps Practice**: **Executive Strategy Alignment** · FinOps Practice Operations · Governance, Policy & Risk · FinOps Education & Enablement · Invoicing & Chargeback · FinOps Assessment · Automation, Tools & Services · Intersecting Disciplines
-- **Cambios de la edición 2026** (esto sí se ha revisado y ampliado, no asumir la edición anterior):
-  **`Executive Strategy Alignment` es capacidad nueva** en `Manage the FinOps Practice`; se
-  profundiza el constructo de **Scopes** con más *Technology Category pages*; se añade la
-  convergencia con disciplinas adyacentes; y se actualiza la definición. El renombrado de
-  *"Optimize Cloud Usage and Cost"* a **"Optimize Usage & Cost"** viene de la edición **2025**,
-  que fue la que introdujo **Scopes** como elemento del marco.
+- **Changes in the 2026 edition** (this one has genuinely been reviewed and extended, do not assume the previous edition):
+  **`Executive Strategy Alignment` is a new capability** in `Manage the FinOps Practice`; the
+  **Scopes** construct is deepened with more *Technology Category pages*; convergence with adjacent
+  disciplines is added; and the definition is updated. The rename from
+  *"Optimize Cloud Usage and Cost"* to **"Optimize Usage & Cost"** comes from the **2025** edition,
+  which was the one that introduced **Scopes** as an element of the framework.
 - **Scope**, verbatim: *"A FinOps Scope is a defined segment of technology-related spending –
-  aligned to business constructs such as products, cost centers, or environments."* La consecuencia
-  operativa: **el marco ya no es solo de nube pública** — SaaS, licencias, centro de datos y **IA**
-  son categorías tecnológicas de pleno derecho.
-- **La FinOps Foundation es un programa de la Linux Foundation** y actualizó su misión, verbatim:
+  aligned to business constructs such as products, cost centers, or environments."* The operational
+  consequence: **the framework is no longer only about public cloud** — SaaS, licences, data centre and **AI**
+  are technology categories in their own right.
+- **The FinOps Foundation is a Linux Foundation programme** and updated its mission, verbatim:
   *"from 'Advancing the People who manage the value of Cloud' to 'Advancing the People who manage
   the Value of Technology.'"*
 
-**No usar el marco como plantilla organizativa.** Es un vocabulario común para que ingeniería,
-finanzas y negocio digan lo mismo con las mismas palabras, y un mapa de capacidades para detectar
-huecos. Montar un comité por cada capacidad es la forma habitual de fracasar con él.
+**Do not use the framework as an org chart template.** It is a common vocabulary so that engineering,
+finance and business say the same thing with the same words, and a capability map for spotting
+gaps. Setting up a committee per capability is the usual way to fail with it.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 La unidad económica es el único indicador que importa
+### 3.1 Unit economics is the only indicator that matters
 
-Regla dura: **todo sistema con coste relevante declara una unidad económica antes de que se le
-apruebe una acción de optimización.** Sin denominador no hay optimización, hay recorte.
+Hard rule: **every system with material cost declares a unit economic before any optimisation action
+is approved for it.** With no denominator there is no optimisation, there is cutting.
 
 ```
 unidad_económica = coste_asignado_del_sistema / unidad_de_valor_del_sistema
 ```
 
-La unidad de valor la fija el dueño del producto, no ingeniería, y es **una** por sistema:
-coste por **transacción**, por **usuario activo (DAU/MAU)**, por **petición servida**, por **GB
-procesado**, por **pedido**, por **documento indexado**, por **token** o **por caso de uso
-resuelto** en IA.
+The unit of value is set by the product owner, not by engineering, and there is **one** per system:
+cost per **transaction**, per **active user (DAU/MAU)**, per **request served**, per **GB
+processed**, per **order**, per **document indexed**, per **token** or **per use case
+resolved** in AI.
 
-**Por qué el gasto total absoluto es una métrica engañosa en un sistema que crece**: un servicio que
-pasa de 100.000 € a 130.000 € al mes mientras triplica el tráfico ha **mejorado un 57 %** su
-eficiencia, y en el informe aparece como un +30 % de desviación. La consecuencia práctica es peor
-que la estadística: penalizar el absoluto **premia no crecer** y castiga al equipo que absorbió
-demanda. Y a la inversa: un total plano con tráfico cayendo es un empeoramiento silencioso.
-Corolario: **una alerta de presupuesto sobre valor absoluto no es una alerta de eficiencia**; sirve
-para tesorería y para el techo de gasto, no para evaluar ingeniería.
+**Why absolute total spend is a misleading metric in a growing system**: a service that goes
+from €100,000 to €130,000 a month while tripling its traffic has **improved its efficiency by 57 %**,
+and in the report it shows up as a +30 % deviation. The practical consequence is worse than the
+statistics: penalising the absolute **rewards not growing** and punishes the team that absorbed
+demand. And conversely: a flat total with falling traffic is a silent deterioration.
+Corollary: **a budget alert on an absolute value is not an efficiency alert**; it serves treasury
+and the spend ceiling, not the evaluation of engineering.
 
-Reglas de la métrica:
-- Se publica **junto a la métrica de negocio que la denomina**, en el mismo panel. Una cifra de
-  coste sin su denominador visible no se publica.
-- Se compara **contra sí misma en el tiempo**, no contra otro equipo ni contra un *benchmark* de
-  proveedor. Un objetivo válido se escribe como *"coste por pedido ≤ X € a fecha Y"*, no como
-  *"reducir un 20 % el gasto"*.
-- Se recalcula cuando cambia el denominador (cambio de definición de "usuario activo") y el cambio
-  se anota en la serie: una serie temporal con la definición cambiada a mitad **es una mentira**.
-- Un sistema sin unidad de valor identificable (herramienta interna, plataforma) usa **coste por
-  equipo servido** o **coste por servicio desplegado** — pero declara una.
+Rules for the metric:
+- It is published **next to the business metric that denominates it**, on the same dashboard. A cost
+  figure without its denominator visible is not published.
+- It is compared **against itself over time**, not against another team nor against a provider
+  *benchmark*. A valid target is written as *"cost per order ≤ €X by date Y"*, not as
+  *"cut spend by 20 %"*.
+- It is recalculated when the denominator changes (a change in the definition of "active user") and the
+  change is annotated on the series: a time series with the definition changed halfway through **is a lie**.
+- A system with no identifiable unit of value (internal tool, platform) uses **cost per team
+  served** or **cost per service deployed** — but it declares one.
 
-### 3.2 Asignación: etiquetas, jerarquía y coste compartido
+### 3.2 Allocation: tags, hierarchy and shared cost
 
-**Una política de etiquetas sin gate que la imponga no existe.** Es la regla central de esta
-sección: el documento de nomenclatura que nadie puede incumplir mecánicamente produce, a los seis
-meses, una fracción de gasto no asignable que crece sola. Por tanto:
+**A tag policy with no gate enforcing it does not exist.** It is the central rule of this
+section: the naming document that nobody can mechanically breach produces, six
+months later, a fraction of non-allocatable spend that grows on its own. Therefore:
 
-1. **Política declarada como código**, no en una wiki. Conjunto mínimo obligatorio, con valores de
-   dominio cerrado donde sea posible:
+1. **Policy declared as code**, not in a wiki. Minimum mandatory set, with closed-domain values
+   wherever possible:
 
-   | Clave | Obligatoria | Valores | Para qué decide |
+   | Key | Mandatory | Values | What it decides |
    |---|---|---|---|
-   | `owner` | Sí | Identificador de equipo del directorio, **no** un correo personal | A quién se le pregunta y quién apaga |
-   | `cost-center` | Sí | Lista cerrada de finanzas | Reparto contable |
-   | `service` | Sí | Nombre del catálogo de servicios | Unir coste con la unidad económica |
-   | `environment` | Sí | `prod` / `staging` / `dev` / `sandbox` | Barrido de no producción (§3.5) |
-   | `data-classification` | Sí si hay datos | Clases de `grc-compliance-standards` | Cruce coste/retención |
-   | `expires` | Sí en `sandbox` y efímeros | Fecha ISO-8601 | Apagado automático |
+   | `owner` | Yes | Team identifier from the directory, **not** a personal email | Who gets asked and who switches it off |
+   | `cost-center` | Yes | Closed list from finance | Accounting split |
+   | `service` | Yes | Name from the service catalogue | Joining cost with unit economics |
+   | `environment` | Yes | `prod` / `staging` / `dev` / `sandbox` | Non-production sweep (§3.5) |
+   | `data-classification` | Yes if there is data | Classes from `grc-compliance-standards` | Cost/retention cross-check |
+   | `expires` | Yes in `sandbox` and ephemeral | ISO-8601 date | Automatic shutdown |
 
-2. **Gate 1 — IaC**: el recurso no se crea sin las claves obligatorias. La *herramienta* (política
-   como código en el plan, módulos con etiquetas por defecto, *default tags* del proveedor) la
-   decide `iac-standards`; **la lista de claves y sus valores válidos la decide esta skill.**
-3. **Gate 2 — admisión**: en Kubernetes, el objeto sin las etiquetas obligatorias se rechaza en el
-   *admission controller* (implantación: `platform-engineering-standards`).
-4. **Gate 3 — detección**: informe semanal de gasto no etiquetable, con **umbral duro**: si el gasto
-   no asignable supera el **5 % del total**, la asignación no es fiable y **no se toman decisiones
-   de reparto** hasta corregirlo. Ese 5 % es un umbral de gobierno propuesto aquí, **no un dato
-   empírico de la industria**: ajústalo al tamaño de la cuenta, pero fija uno y escríbelo.
+2. **Gate 1 — IaC**: the resource is not created without the mandatory keys. The *tool* (policy
+   as code in the plan, modules with default tags, provider *default tags*) is
+   decided by `iac-standards`; **the list of keys and their valid values is decided by this skill.**
+3. **Gate 2 — admission**: in Kubernetes, an object without the mandatory labels is rejected in the
+   *admission controller* (implementation: `platform-engineering-standards`).
+4. **Gate 3 — detection**: weekly report of non-taggable spend, with a **hard threshold**: if
+   non-allocatable spend exceeds **5 % of the total**, allocation is not reliable and **no split
+   decisions are taken** until it is fixed. That 5 % is a governance threshold proposed here, **not an
+   empirical industry figure**: adjust it to the size of the account, but set one and write it down.
 
-**Límite conocido del etiquetado, no negociable**: hay costes que **no llevan etiqueta** por
-construcción (soporte, cuotas de plataforma, tráfico entre zonas, servicios sin dimensión de
-recurso, descuentos de compromiso a nivel de organización). Por eso:
+**Known limit of tagging, non-negotiable**: there are costs that **carry no tag** by
+construction (support, platform fees, inter-zone traffic, services with no resource dimension,
+organisation-level commitment discounts). That is why:
 
-**La jerarquía de cuentas/suscripciones/proyectos es la frontera primaria de asignación, y las
-etiquetas la dimensión secundaria.** Motivo: la frontera de cuenta se impone sola, no depende de
-que alguien la escriba bien y sobrevive a los recursos que no aceptan etiquetas. Regla de diseño:
-**una cuenta/proyecto por (equipo × entorno)** como grano por defecto; agrupar más solo con
-justificación escrita, porque cada agrupación convierte coste directo en coste compartido.
+**The hierarchy of accounts/subscriptions/projects is the primary allocation boundary, and tags the
+secondary dimension.** Reason: the account boundary enforces itself, does not depend on
+someone writing it correctly and survives resources that do not accept tags. Design rule:
+**one account/project per (team × environment)** as the default grain; group further only with written
+justification, because every grouping turns direct cost into shared cost.
 
-**Coste compartido y su reparto.** Categorías: plataforma (clúster, malla, CI), observabilidad,
-red y salida a Internet, seguridad, licencias, soporte y descuentos de compromiso. Método por
-defecto, en este orden:
-1. **Métrica de consumo real** si existe y es barata de obtener (CPU·hora y GiB·hora reservados en
-   Kubernetes; GB ingeridos en logs; peticiones en la API interna).
-2. **Proporcional al coste directo** del consumidor, si no hay métrica.
-3. **Reparto fijo por cabeza/equipo** solo para lo irreducible (soporte, licencias corporativas).
+**Shared cost and how it is split.** Categories: platform (cluster, mesh, CI), observability,
+network and Internet egress, security, licences, support and commitment discounts. Default method,
+in this order:
+1. **Real consumption metric** if it exists and is cheap to obtain (CPU·hour and GiB·hour reserved in
+   Kubernetes; GB ingested in logs; requests on the internal API).
+2. **Proportional to the consumer's direct cost**, if there is no metric.
+3. **Fixed split per head/team** only for the irreducible (support, corporate licences).
 
-**Por qué el reparto perfecto no compensa**: el reparto tiene un coste de ingeniería y un coste
-político que crecen mucho más rápido que su precisión. Criterio operativo: **se refina el modelo de
-reparto solo mientras un cambio de reparto pueda cambiar una decisión.** Si afinar del 90 % al 97 %
-de precisión no hace que ningún equipo actúe distinto, el trabajo es puro teatro contable —
-declárese `no asignado`, repártase de forma simple y documentada, y dedíquese ese esfuerzo a la
-unidad económica. Un modelo de reparto **estable y comprensible** vale más que uno exacto que nadie
-entiende ni puede impugnar.
+**Why a perfect split is not worth it**: the split has an engineering cost and a
+political cost that grow much faster than its precision. Operational criterion: **the split model
+is refined only while a change in the split could change a decision.** If going from 90 % to 97 %
+precision makes no team act differently, the work is pure accounting theatre —
+declare it `unallocated`, split it simply and in a documented way, and put that effort into
+unit economics. A **stable and understandable** split model is worth more than an exact one that nobody
+understands nor can challenge.
 
-### 3.3 FOCUS: normalizar antes de analizar
+### 3.3 FOCUS: normalise before analysing
 
-FOCUS (*FinOps Open Cost and Usage Specification*) es **la pieza más accionable del dominio** y el
-único punto donde un estándar abierto sustituye a N esquemas propietarios. Estado verificado:
-**versión 1.4, ratificada por el FOCUS Steering Committee el 4-jun-2026**; versiones anteriores
-1.3, 1.2 (29-may-2025), 1.1 (7-nov-2024), 1.0.
+FOCUS (*FinOps Open Cost and Usage Specification*) is **the most actionable piece of the domain** and
+the only point where an open standard replaces N proprietary schemas. Verified status:
+**version 1.4, ratified by the FOCUS Steering Committee on 4 Jun 2026**; earlier versions
+1.3, 1.2 (29 May 2025), 1.1 (7 Nov 2024), 1.0.
 
-Criterio: **la capa de consumo (paneles, alertas, unidad económica, reparto) se construye contra
-columnas FOCUS, no contra el esquema propietario del proveedor.** El export nativo se ingiere tal
-cual y se transforma a FOCUS en la capa de modelado; nadie escribe una consulta de negocio contra
-un nombre de columna que solo existe en un proveedor. Beneficio real y comprobable: la misma
-consulta responde en las tres nubes y una migración no reescribe los cuadros de mando.
+Criteria: **the consumption layer (dashboards, alerts, unit economics, splits) is built against
+FOCUS columns, not against the provider's proprietary schema.** The native export is ingested as is
+and transformed into FOCUS in the modelling layer; nobody writes a business query against
+a column name that only exists in one provider. The real and verifiable benefit: the same
+query answers across all three clouds and a migration does not rewrite the dashboards.
 
-Columnas que hay que saber distinguir (nombres exactos de la especificación):
+Columns you have to be able to tell apart (exact names from the specification):
 
-| Columna | Qué es | Cuándo se usa |
+| Column | What it is | When it is used |
 |---|---|---|
-| `ListCost` | Precio de tarifa antes de descuentos | Medir el descuento conseguido; **nunca** para reparto |
-| `ContractedCost` | Precio tras descuentos **negociados** | Negociación con el proveedor |
-| `BilledCost` | Vista **de caja**: lo facturado por el emisor | Conciliación con finanzas y tesorería |
-| `EffectiveCost` | Coste **reconocido al consumir** (amortiza compromisos) | **La única válida para unidad económica y reparto** |
+| `ListCost` | List price before discounts | Measuring the discount achieved; **never** for allocation |
+| `ContractedCost` | Price after **negotiated** discounts | Negotiation with the provider |
+| `BilledCost` | **Cash** view: what the issuer billed | Reconciliation with finance and treasury |
+| `EffectiveCost` | Cost **recognised on consumption** (amortises commitments) | **The only valid one for unit economics and allocation** |
 
-Regla derivada, la que más se incumple: **usar `BilledCost` para la unidad económica produce
-escalones falsos** — el mes en que se compra una reserva la eficiencia se hunde y el siguiente
-parece milagrosa. Unidad económica y *showback* van siempre con `EffectiveCost`; la conciliación
-contable, con `BilledCost`.
+Derived rule, the one most often broken: **using `BilledCost` for unit economics produces
+false steps** — the month a reservation is bought efficiency collapses and the next one
+looks miraculous. Unit economics and *showback* always go with `EffectiveCost`; accounting
+reconciliation, with `BilledCost`.
 
-Otras columnas de decisión: `ChargeCategory` (`Usage`/`Purchase`/`Tax`/`Credits`/`Adjustments`) para
-separar consumo de compra; `ChargeClass` para aislar correcciones; `CommitmentDiscountId`,
-`CommitmentDiscountType` y `CommitmentDiscountStatus` para medir cobertura y utilización (§3.4);
+Other decision columns: `ChargeCategory` (`Usage`/`Purchase`/`Tax`/`Credits`/`Adjustments`) to
+separate consumption from purchase; `ChargeClass` to isolate corrections; `CommitmentDiscountId`,
+`CommitmentDiscountType` and `CommitmentDiscountStatus` to measure coverage and utilisation (§3.4);
 `SkuId`, `ConsumedQuantity`, `ConsumedUnit`, `PricingQuantity`, `PricingUnit`; `ServiceCategory`;
 `Tags`; `InvoiceId`.
 
-Novedades de 1.3 y 1.4 que cambian criterio:
-- **1.3** (ratificada el **4-dic-2025**) añadió las columnas de **reparto explícito de coste
-  compartido** — `AllocatedResourceId`, `AllocatedResourceName`, `AllocatedMethodId`,
-  `AllocatedMethodDetails` — y el *dataset* **Contract Commitment**, además de marcas de recencia y
-  completitud del dato. Consecuencia directa: **el método de reparto deja de ser un secreto de una
-  hoja de cálculo y pasa a viajar con el dato**; exígelo a tus generadores.
-- **1.4** añade los *datasets* **Invoice Detail** y **Billing Period** y ~17 columnas de compromiso,
-  de forma que la conciliación con cuentas por pagar se hace **contra los mismos datos** que usa
-  ingeniería. Los cuatro *datasets* de 1.4: `Cost and Usage` (obligatorio), `Billing Period`,
-  `Contract Commitment` e `Invoice Detail`.
-- **Discrepancia declarada**: sobre la fecha de ratificación de 1.3, la página de la especificación
-  da **4-dic-2025** y hay fuentes secundarias que dicen 5-dic-2025, con el anuncio público el
-  11-dic-2025. Se usa la fecha de la especificación; si importa contractualmente, verifícalo en el
-  changelog del repositorio.
-- **Cobertura desigual**: la adopción por proveedor va por detrás de la especificación (hay
-  anuncios de disponibilidad general de **1.2** conviviendo con la publicación de 1.3/1.4).
-  **Nunca asumir que tu proveedor emite la última versión**: compruébalo antes de diseñar el modelo.
-  Existe además un programa de **certificación de conformidad** para generadores de datos anunciado
-  para 2026: verificar su estado antes de exigirlo por contrato (§8).
+Changes in 1.3 and 1.4 that shift criteria:
+- **1.3** (ratified on **4 Dec 2025**) added the columns for **explicit shared-cost
+  allocation** — `AllocatedResourceId`, `AllocatedResourceName`, `AllocatedMethodId`,
+  `AllocatedMethodDetails` — and the **Contract Commitment** *dataset*, plus data recency and
+  completeness markers. Direct consequence: **the split method stops being a secret in a
+  spreadsheet and starts travelling with the data**; demand it from your generators.
+- **1.4** adds the **Invoice Detail** and **Billing Period** *datasets* and ~17 commitment columns,
+  so that reconciliation with accounts payable is done **against the same data** that
+  engineering uses. The four *datasets* of 1.4: `Cost and Usage` (mandatory), `Billing Period`,
+  `Contract Commitment` and `Invoice Detail`.
+- **Declared discrepancy**: on the ratification date of 1.3, the specification page
+  gives **4 Dec 2025** and there are secondary sources saying 5 Dec 2025, with the public announcement on
+  11 Dec 2025. The specification's date is used; if it matters contractually, verify it in the
+  repository changelog.
+- **Uneven coverage**: per-provider adoption lags the specification (there are
+  general-availability announcements for **1.2** coexisting with the publication of 1.3/1.4).
+  **Never assume your provider emits the latest version**: check it before designing the model.
+  There is also a **conformance certification** programme for data generators announced
+  for 2026: verify its status before demanding it by contract (§8).
 
-### 3.4 Compromisos y descuentos
+### 3.4 Commitments and discounts
 
-Instancias reservadas, planes de ahorro, descuentos por uso comprometido y sus equivalentes en
-otros proveedores. **Comprometerse es apostar sobre la arquitectura futura**, no es una
-optimización: se cambia flexibilidad por descuento, y quien firma acepta el riesgo de que el
-sistema al que se compromete deje de existir antes que el compromiso.
+Reserved instances, savings plans, committed-use discounts and their equivalents in
+other providers. **Committing is a bet on the future architecture**, it is not an
+optimisation: flexibility is traded for a discount, and whoever signs accepts the risk that the
+system being committed to stops existing before the commitment does.
 
-Criterio de decisión, en orden:
-1. **Primero se dimensiona, luego se compromete.** Comprometerse sobre una flota sobredimensionada
-   compra el error a tres años. Prohibido invertir el orden.
-2. **Cobertura objetivo sobre el suelo estable de consumo**, nunca sobre el pico ni sobre la media.
-   El suelo se calcula con el percentil bajo del consumo diario de los últimos meses, y **el objetivo
-   de cobertura se escribe como decisión propia del equipo, con su ventana y su percentil**. Aquí no
-   se fija un porcentaje universal: quien te dé un "80 % de cobertura" como verdad de la industria
-   no está mirando tu perfil de carga. Lo que sí es regla: **la cobertura se decide sobre una serie
-   histórica documentada, no sobre una intuición**.
-3. **Dos métricas obligatorias, y son distintas**: **cobertura** (qué fracción del consumo elegible
-   está bajo compromiso) y **utilización** (qué fracción del compromiso comprado se está usando).
-   Cobertura alta con utilización baja es dinero quemado; utilización 100 % con cobertura baja es
-   descuento sin explotar. Ambas se sacan de `CommitmentDiscountId`/`Status` en FOCUS.
-4. **El plazo se elige por la vida esperada de la arquitectura, no por el descuento.** Regla
-   falsable: **si el equipo no puede escribir por qué ese servicio seguirá existiendo con esa forma
-   al final del plazo, el plazo es demasiado largo.**
-5. **Preferir el compromiso más fungible** (el que cubre familias/regiones/servicios amplios) sobre
-   el más específico, salvo que la diferencia de descuento esté cuantificada y el consumo sea
-   rígido y demostrado.
-6. **Dueño y fecha de revisión**: cada compromiso tiene un responsable nominal y una revisión antes
-   del vencimiento. Un compromiso que se renueva solo por inercia es un error que se duplica.
-7. **Mercado secundario y cancelación**: antes de firmar, verificar si el compromiso concreto se
-   puede vender, intercambiar o cancelar y con qué penalización — **eso lo decide la skill de la
-   nube correspondiente**, pero **no firmes sin haberlo mirado**.
+Decision criteria, in order:
+1. **First right-size, then commit.** Committing over an oversized fleet
+   buys the mistake for three years. Reversing the order is forbidden.
+2. **Target coverage over the stable floor of consumption**, never over the peak nor over the average.
+   The floor is computed with the low percentile of daily consumption over the last few months, and **the
+   coverage target is written as the team's own decision, with its window and its percentile**. No
+   universal percentage is set here: whoever gives you an "80 % coverage" as an industry truth
+   is not looking at your load profile. What is a rule: **coverage is decided on a documented
+   historical series, not on intuition**.
+3. **Two mandatory metrics, and they are different**: **coverage** (what fraction of eligible consumption
+   is under commitment) and **utilisation** (what fraction of the purchased commitment is being used).
+   High coverage with low utilisation is burned money; 100 % utilisation with low coverage is
+   an unexploited discount. Both come out of `CommitmentDiscountId`/`Status` in FOCUS.
+4. **The term is chosen by the expected life of the architecture, not by the discount.** Falsifiable
+   rule: **if the team cannot write down why that service will still exist in that shape
+   at the end of the term, the term is too long.**
+5. **Prefer the most fungible commitment** (the one covering broad families/regions/services) over
+   the most specific one, unless the discount difference is quantified and consumption is
+   rigid and demonstrated.
+6. **Owner and review date**: every commitment has a named accountable person and a review before
+   expiry. A commitment renewed out of pure inertia is a mistake that doubles.
+7. **Secondary market and cancellation**: before signing, verify whether the specific commitment can
+   be sold, exchanged or cancelled and with what penalty — **that is decided by the corresponding
+   cloud skill**, but **do not sign without having looked**.
 
-### 3.5 Las palancas, por orden de impacto real
+### 3.5 The levers, in order of real impact
 
-El orden importa porque el esfuerzo se gasta casi siempre en el sitio equivocado. De mayor a menor
-retorno por hora de ingeniería:
+The order matters because the effort is almost always spent in the wrong place. From highest to lowest
+return per engineering hour:
 
-1. **Apagar lo que no se usa.** Es el único que da ahorro del 100 % del recurso y no tiene riesgo
-   arquitectónico. Objetivos: entornos de no producción fuera de horario, recursos huérfanos
-   (volúmenes sin adjuntar, instantáneas antiguas, IP públicas reservadas sin uso, balanceadores sin
-   destinos, direcciones y NAT sin tráfico), *sandboxes* caducados (`expires`), clústeres de prueba,
-   datos en clases calientes que nadie lee, y **servicios enteros que ya nadie llama** — cruzar
-   coste con tráfico observado, no con la opinión del equipo.
-2. **Dimensionar.** Ajustar a demanda observada (no a la solicitada), autoescalado, escalado a cero
-   donde el modelo lo permita. Riesgo controlado: se cambia margen por coste, y ese margen **es
-   fiabilidad** → coordinado con `sre-practice-standards`.
-3. **Elegir el modelo de precio correcto.** Bajo demanda / capacidad puntual (*spot*) / comprometido,
-   clases de almacenamiento y ciclo de vida, licencia incluida frente a propia. Es la palanca de
-   mejor relación esfuerzo/ahorro **una vez que 1 y 2 están hechos**, y la que peor sale si se hace
-   antes (§3.4, regla 1).
-4. **Arquitectura.** Cambiar el patrón: eliminar el trasiego de datos entre zonas, cambiar sondeo
-   por eventos, mover cómputo junto al dato, sustituir un servicio gestionado caro por otro más
-   barato con el mismo SLO, cambiar el formato o la compresión.
+1. **Switch off what is not used.** It is the only one that gives 100 % savings on the resource and has no
+   architectural risk. Targets: non-production environments outside working hours, orphaned resources
+   (unattached volumes, old snapshots, reserved public IPs with no use, load balancers with no
+   targets, addresses and NAT with no traffic), expired *sandboxes* (`expires`), test clusters,
+   data in hot classes that nobody reads, and **whole services that nobody calls any more** — cross
+   cost with observed traffic, not with the team's opinion.
+2. **Right-size.** Adjust to observed demand (not to requested demand), autoscaling, scale to zero
+   where the model allows it. Controlled risk: margin is traded for cost, and that margin **is
+   reliability** → coordinated with `sre-practice-standards`.
+3. **Choose the right pricing model.** On demand / spot capacity (*spot*) / committed,
+   storage classes and lifecycle, included licence versus your own. It is the lever with the
+   best effort/savings ratio **once 1 and 2 are done**, and the one that goes worst if done
+   earlier (§3.4, rule 1).
+4. **Architecture.** Change the pattern: eliminate data shuffling between zones, replace polling
+   with events, move compute next to the data, replace an expensive managed service with a cheaper
+   one at the same SLO, change the format or the compression.
 
-**Por qué la optimización de arquitectura llega tarde si no se pensó al diseñar**: cuando el sistema
-está en producción con clientes, cambiar el patrón implica migración de datos, coexistencia,
-reescritura de clientes y ventana de riesgo — un trabajo de meses cuyo ahorro se compara contra el
-de apagar recursos ociosos en una tarde. El coste de una arquitectura **queda fijado en la revisión
-de diseño**, y ahí es donde hay que meter la estimación. De ahí el gate de §4.2: **la estimación de
-coste es un entregable del diseño, no del post-mortem de la factura.**
+**Why architectural optimisation arrives late if it was not thought about at design time**: when the system
+is in production with customers, changing the pattern means data migration, coexistence,
+client rewrites and a risk window — months of work whose savings are compared against
+switching off idle resources in an afternoon. The cost of an architecture **is fixed at the design
+review**, and that is where the estimate has to go. Hence the gate in §4.2: **the cost
+estimate is a design deliverable, not one from the invoice post-mortem.**
 
-### 3.6 El catálogo de coste oculto
+### 3.6 The hidden-cost catalogue
 
-Lo que aparece en la factura y nadie previó. Se revisa **entero** en cada revisión de diseño:
+What shows up on the invoice and nobody planned for. It is reviewed **in full** at every design review:
 
-| Categoría | Por qué sorprende | Qué hacer |
+| Category | Why it surprises | What to do |
 |---|---|---|
-| **Transferencia de datos y egreso** | No se ve en el diseño: es la consecuencia de dónde pusiste las cosas. Incluye salida a Internet, **entre zonas de disponibilidad** e inter-región | Dibujar el flujo de datos con volúmenes **antes** de construir; contarlo como línea propia del presupuesto |
-| **Peticiones a almacenamiento de objetos** | Se presupuesta el GB almacenado y factura el número de operaciones. Un patrón de muchos ficheros pequeños puede costar más en peticiones que en almacenamiento | Medir operaciones/mes, no solo GB; ver `object-storage-standards` |
-| **IP públicas, balanceadores y NAT** | Cuestan por existir, no por usarse; se quedan tras eliminar lo que servían | Inventario periódico de recursos sin destino ni tráfico |
-| **Logs, métricas, trazas y APM** | **La telemetría puede costar más que lo observado.** El coste crece con la cardinalidad y con la retención, y ambas crecen solas si nadie las gobierna | Presupuesto explícito de observabilidad como porcentaje del sistema observado; retención por clase de dato; muestreo de trazas; control de cardinalidad de etiquetas. Ver `observability-standards` |
-| **No producción olvidada** | Ningún cliente se queja de un `staging` caro; nadie lo mira | Apagado programado por defecto, `expires` obligatorio en `sandbox`, y **coste de no producción como métrica reportada aparte** |
-| **Datos que solo crecen** | Sin política de retención, el almacenamiento es un pasivo perpetuo | Ciclo de vida y retención decididos con `grc-compliance-standards` (obligación legal) y `data-platform-standards` |
-| **Inferencia de IA** | Categoría nueva (§3.7) | Ver abajo |
-| **SaaS y licencias** | Fuera del radar del equipo de nube; el marco 2026 las trae dentro | Inventario, asientos activos frente a comprados, fecha de renovación con dueño |
-| **Soporte y cuotas de plataforma** | Porcentaje sobre el gasto: crecen automáticamente con todo lo demás | Contabilizar como compartido y repartir (§3.2) |
-| **Egreso de salida del proveedor** | Impedimento económico a migrar | **Marco legal en la UE**: EU Data Act, Art. 29(1), verbatim: *"From 12 January 2027, providers of data processing services shall not impose any switching charges on the customer for the switching process."* Art. 29(2): en el periodo *"From 11 January 2024 to 12 January 2027"* pueden imponerse cargos reducidos, que según 29(3) *"shall not exceed the costs incurred by the provider ... that are directly linked to the switching process"*. Los cargos de egreso están dentro de la definición de *switching charges*. **Consecuencia**: no renovar automáticamente contratos con cláusulas de migración anteriores a esa fecha; revisar antes del vencimiento |
+| **Data transfer and egress** | It is not visible in the design: it is the consequence of where you put things. Includes Internet egress, **between availability zones** and inter-region | Draw the data flow with volumes **before** building; count it as its own budget line |
+| **Object storage requests** | The GB stored is budgeted and the number of operations is billed. A pattern of many small files can cost more in requests than in storage | Measure operations/month, not just GB; see `object-storage-standards` |
+| **Public IPs, load balancers and NAT** | They cost by existing, not by being used; they are left behind after deleting what they served | Periodic inventory of resources with no target and no traffic |
+| **Logs, metrics, traces and APM** | **Telemetry can cost more than what it observes.** Cost grows with cardinality and with retention, and both grow on their own if nobody governs them | Explicit observability budget as a percentage of the observed system; retention per data class; trace sampling; label cardinality control. See `observability-standards` |
+| **Forgotten non-production** | No customer complains about an expensive `staging`; nobody looks at it | Scheduled shutdown by default, mandatory `expires` in `sandbox`, and **non-production cost as a separately reported metric** |
+| **Data that only grows** | With no retention policy, storage is a perpetual liability | Lifecycle and retention decided with `grc-compliance-standards` (legal obligation) and `data-platform-standards` |
+| **AI inference** | New category (§3.7) | See below |
+| **SaaS and licences** | Off the cloud team's radar; the 2026 framework brings them in | Inventory, active seats versus purchased ones, renewal date with an owner |
+| **Support and platform fees** | A percentage of spend: they grow automatically with everything else | Account for them as shared and split them (§3.2) |
+| **Provider exit egress** | An economic impediment to migrating | **Legal framework in the EU**: EU Data Act, Art. 29(1), verbatim: *"From 12 January 2027, providers of data processing services shall not impose any switching charges on the customer for the switching process."* Art. 29(2): in the period *"From 11 January 2024 to 12 January 2027"* reduced charges may be imposed, which per 29(3) *"shall not exceed the costs incurred by the provider ... that are directly linked to the switching process"*. Egress charges fall within the definition of *switching charges*. **Consequence**: do not automatically renew contracts with migration clauses predating that date; review before expiry |
 
-### 3.7 El coste de la inferencia de IA
+### 3.7 The cost of AI inference
 
-Categoría nueva y ya de primer orden: el marco la trata como **Technology Category propia (*FinOps
-for AI*)** dentro de Scopes, y la encuesta anual la sitúa como la prioridad de futuro declarada por
-los practicantes (§6.6, con su advertencia de metodología).
+A new category and already a first-order one: the framework treats it as its own **Technology Category
+(*FinOps for AI*)** within Scopes, and the annual survey places it as the future priority declared by
+practitioners (§6.6, with its methodology caveat).
 
-Criterio:
-- **Unidad económica obligatoria y de negocio, no técnica.** El **coste por token** sirve como
-  métrica normalizadora entre modelos —la guía del marco lo define como
-  `Cost Per Token = Total Cost / Number of Tokens Used`— pero **no es la métrica de decisión**: la
-  métrica de decisión es **coste por caso de uso resuelto** (consulta atendida, documento resumido,
-  ticket cerrado). El coste por token puede bajar mientras el coste por caso resuelto sube, porque
-  el sistema reintenta más o razona más largo. Si solo mides tokens, no ves eso.
-- **Desglosar el token**: entrada frente a salida, **en caché frente a sin caché**, y por modelo.
-  Son precios distintos y palancas distintas; agregarlos oculta la única optimización barata que
-  existe (caché de prompt y elección de modelo por tarea).
-- **Medir reintentos y errores**: un fallo que se reintenta se paga dos veces y no produce valor.
-  Coste de reintento como línea propia.
-- **Separar entrenamiento/ajuste (lote, planificable, apto para capacidad puntual) de inferencia
-  (interactiva, con SLO)**. Son perfiles de compra opuestos.
-- **GPU dedicada frente a API por token**: el punto de equilibrio depende de la utilización real de
-  la GPU, y la GPU se paga esté o no ocupada. **El dimensionamiento, la compartición y la medida de
-  utilización de GPU son de `gpu-computing-standards`**; aquí solo la regla: **no se compra ni se
-  reserva GPU sin una serie de utilización medida**.
-- **FOCUS ya lo cubre sin columnas especiales**: los generadores expresan el consumo de IA con
-  `SkuId` de cargo por token y `ConsumedUnit`/`ConsumedQuantity` en tokens. No inventes un esquema
-  paralelo.
-- Ver `llm-app-engineering-standards`, `rag-standards` y `local-inference-standards` para las
-  palancas técnicas (caché, enrutado de modelo, cuantización); aquí solo su contabilidad.
+Criteria:
+- **Mandatory unit economics, and a business one, not a technical one.** **Cost per token** works as a
+  normalising metric between models —the framework's guidance defines it as
+  `Cost Per Token = Total Cost / Number of Tokens Used`— but **it is not the decision metric**: the
+  decision metric is **cost per use case resolved** (query answered, document summarised,
+  ticket closed). Cost per token can fall while cost per resolved case rises, because
+  the system retries more or reasons for longer. If you only measure tokens, you do not see that.
+- **Break the token down**: input versus output, **cached versus uncached**, and per model.
+  They are different prices and different levers; aggregating them hides the only cheap optimisation
+  that exists (prompt caching and choosing the model per task).
+- **Measure retries and errors**: a failure that is retried is paid for twice and produces no value.
+  Retry cost as its own line.
+- **Separate training/fine-tuning (batch, schedulable, suitable for spot capacity) from inference
+  (interactive, with an SLO)**. They are opposite purchasing profiles.
+- **Dedicated GPU versus per-token API**: the break-even point depends on the real utilisation of
+  the GPU, and the GPU is paid for whether it is busy or not. **Sizing, sharing and measuring
+  GPU utilisation belong to `gpu-computing-standards`**; here only the rule: **no GPU is bought or
+  reserved without a measured utilisation series**.
+- **FOCUS already covers it with no special columns**: generators express AI consumption with
+  a per-token charge `SkuId` and `ConsumedUnit`/`ConsumedQuantity` in tokens. Do not invent a parallel
+  schema.
+- See `llm-app-engineering-standards`, `rag-standards` and `local-inference-standards` for the
+  technical levers (cache, model routing, quantisation); here only their accounting.
 
-## 4. Calidad y gates
+## 4. Quality and gates
 
-### 4.1 Los gates, en orden de coste creciente
+### 4.1 The gates, in increasing order of cost
 
-| # | Gate | Momento | Rompe |
+| # | Gate | When | Breaks |
 |---|---|---|---|
-| 1 | **Etiquetas obligatorias presentes y con valor de dominio válido** | Validación de IaC en el PR | Sí |
-| 2 | **Etiquetas obligatorias en admisión** (Kubernetes) | *Admission controller* | Sí |
-| 3 | **Estimación de coste del cambio en el PR** (`infracost diff` o equivalente) | PR | **Comentario informativo por defecto**; rompe si supera el umbral del repo (§4.2) |
-| 4 | **Presupuesto/umbral por cuenta o proyecto** con alerta a dueño nominal | Continuo | Notifica; **no** rompe despliegues |
-| 5 | **Detección de anomalías** con dueño y runbook | Diario | Abre incidencia |
-| 6 | **Barrido de recursos huérfanos y `expires` vencidos** | Semanal | Apaga en no producción; abre ticket en producción |
-| 7 | **Revisión de cobertura/utilización de compromisos** | Mensual | Decisión documentada |
-| 8 | **Revisión de la unidad económica por sistema** | Mensual, con el dueño del producto | Acción o justificación escrita |
+| 1 | **Mandatory tags present and with a valid domain value** | IaC validation in the PR | Yes |
+| 2 | **Mandatory labels on admission** (Kubernetes) | *Admission controller* | Yes |
+| 3 | **Cost estimate of the change in the PR** (`infracost diff` or equivalent) | PR | **Informational comment by default**; breaks if it exceeds the repo threshold (§4.2) |
+| 4 | **Budget/threshold per account or project** with an alert to a named owner | Continuous | Notifies; does **not** break deployments |
+| 5 | **Anomaly detection** with an owner and a runbook | Daily | Opens an incident |
+| 6 | **Sweep of orphaned resources and expired `expires`** | Weekly | Switches off in non-production; opens a ticket in production |
+| 7 | **Review of commitment coverage/utilisation** | Monthly | Documented decision |
+| 8 | **Review of unit economics per system** | Monthly, with the product owner | Action or written justification |
 
-### 4.2 El gate de coste en el PR: cómo se hace bien
+### 4.2 The cost gate in the PR: how to do it right
 
-- **Empieza informando, no bloqueando.** Un gate que bloquea desde el día uno con estimaciones que
-  el equipo no entiende se desactiva en dos semanas. Secuencia: comentario → umbral alto que rompe →
-  umbral ajustado.
-- **El umbral es sobre el delta mensual estimado, no sobre el total**, y lo fija el repositorio.
-  Escribirlo en el repo; no heredarlo de un default de la herramienta.
-- **Estimación ≠ factura.** La estimación no conoce el uso (peticiones, egreso, escalado). Se
-  compara con la realidad al menos una vez por trimestre en los sistemas grandes; si la desviación
-  es sistemática, se corrige el modelo o se deja de usar el número para decidir.
-- **Un cambio de arquitectura con impacto de coste no se aprueba sin cifra estimada en la
-  descripción del PR o en el ADR.** Es el gate que más ahorra y el único que actúa a tiempo (§3.5).
+- **Start by informing, not blocking.** A gate that blocks from day one with estimates that
+  the team does not understand gets switched off in two weeks. Sequence: comment → high threshold that breaks →
+  adjusted threshold.
+- **The threshold is on the estimated monthly delta, not on the total**, and the repository sets it.
+  Write it in the repo; do not inherit it from a tool default.
+- **Estimate ≠ invoice.** The estimate does not know the usage (requests, egress, scaling). It is
+  compared with reality at least once a quarter on the large systems; if the deviation
+  is systematic, the model is fixed or the number stops being used to decide.
+- **An architectural change with cost impact is not approved without an estimated figure in the
+  PR description or in the ADR.** It is the gate that saves the most and the only one that acts in time (§3.5).
 
-### 4.3 Cómo se prueba que el dato de coste es correcto
+### 4.3 How to prove the cost data is correct
 
-Cubriendo camino feliz **y bordes**, porque un modelo de coste roto es peor que no tenerlo: da
-confianza falsa.
-- **Conciliación**: la suma de `BilledCost` del periodo cuadra con la factura del proveedor, con
-  tolerancia declarada. Sin esto, todo lo demás es decorativo.
-- **Cierre de asignación**: `Σ (coste asignado) + no asignado = total`, y `no asignado ≤` umbral
-  (§3.2). Prueba automática, no revisión visual.
-- **Bordes que hay que probar explícitamente**: créditos y descuentos promocionales (`ChargeCategory
-  = Credits`) que enmascaran el coste real; correcciones retroactivas (`ChargeClass`) que reescriben
-  meses cerrados; cambio de moneda; meses de 28/31 días comparados sin normalizar; compras
-  puntuales (`ChargeCategory = Purchase`) contaminando la serie de consumo; recursos creados y
-  destruidos dentro del mismo periodo; impuestos.
-- **Prueba de la propia serie**: un panel que cambia de forma cuando cambia la definición de la
-  unidad económica y no lo anota **está roto**. Anotación obligatoria de cambios de definición.
+Covering the happy path **and the edges**, because a broken cost model is worse than not having one: it gives
+false confidence.
+- **Reconciliation**: the sum of `BilledCost` for the period matches the provider's invoice, with
+  a declared tolerance. Without this, everything else is decorative.
+- **Allocation closure**: `Σ (allocated cost) + unallocated = total`, and `unallocated ≤` threshold
+  (§3.2). Automated test, not visual review.
+- **Edges that must be tested explicitly**: credits and promotional discounts (`ChargeCategory
+  = Credits`) that mask the real cost; retroactive corrections (`ChargeClass`) that rewrite
+  closed months; currency change; 28/31-day months compared without normalising; one-off
+  purchases (`ChargeCategory = Purchase`) contaminating the consumption series; resources created and
+  destroyed within the same period; taxes.
+- **Test of the series itself**: a dashboard that changes shape when the definition of the
+  unit economic changes and does not annotate it **is broken**. Annotating definition changes is mandatory.
 
-## 5. Seguridad y gobierno del dato de coste
+## 5. Security and governance of cost data
 
-- **El dato de facturación es información de negocio sensible**: revela volumen, clientes,
-  crecimiento y arquitectura. Se clasifica al menos como interno, con control de acceso por rol y
-  auditoría de consultas. Un panel de coste abierto a toda la organización es una decisión, no un
-  descuido.
-- **Credenciales de las herramientas de coste: solo lectura, siempre.** OpenCost/Kubecost/agentes de
-  terceros no necesitan permisos de escritura. Un agente FinOps con permiso de apagado es un
-  interruptor de denegación de servicio con acceso a toda la cuenta.
-- **La automatización que apaga recursos es una acción destructiva**: entorno no productivo
-  únicamente, lista de exclusión explícita, aviso previo al dueño, y **nunca borrado** — apagado o
-  cambio de clase reversible. El borrado lo autoriza una persona.
-- **SaaS de FinOps de terceros**: recibe el export de facturación completo, que es un mapa de tu
-  infraestructura. Due diligence de proveedor, mínimo privilegio, cifrado y salida del contrato
-  documentada antes de firmar (`grc-compliance-standards`).
-- **La optimización de coste no puede degradar controles de seguridad ni de cumplimiento sin
-  decisión registrada**: retención de logs de auditoría, copias de seguridad, cifrado, alta
-  disponibilidad y multi-región **no son grasa**. Si una acción de coste toca una de estas, va a
-  ADR y la firma quien responde del riesgo, no quien responde del presupuesto.
-- **Fraude y abuso**: un pico de coste puede ser un incidente de seguridad (minería tras un
-  compromiso de credenciales, exfiltración masiva que dispara el egreso). **La alerta de anomalía de
-  coste se enruta también a seguridad**, no solo a finanzas — es uno de los detectores más rápidos y
-  baratos que existen (`incident-response-forensics-standards`).
+- **Billing data is sensitive business information**: it reveals volume, customers,
+  growth and architecture. It is classified at least as internal, with role-based access control and
+  query auditing. A cost dashboard open to the whole organisation is a decision, not an
+  oversight.
+- **Credentials for cost tools: read-only, always.** OpenCost/Kubecost/third-party agents
+  do not need write permissions. A FinOps agent with shutdown permission is a
+  denial-of-service switch with access to the whole account.
+- **Automation that switches resources off is a destructive action**: non-production environments
+  only, an explicit exclusion list, prior notice to the owner, and **never deletion** — switch-off or
+  a reversible class change. Deletion is authorised by a person.
+- **Third-party FinOps SaaS**: it receives the full billing export, which is a map of your
+  infrastructure. Vendor due diligence, least privilege, encryption and a documented contract exit
+  before signing (`grc-compliance-standards`).
+- **Cost optimisation cannot degrade security or compliance controls without a
+  recorded decision**: audit log retention, backups, encryption, high
+  availability and multi-region **are not fat**. If a cost action touches one of these, it goes to an
+  ADR and is signed by whoever is accountable for the risk, not by whoever is accountable for the budget.
+- **Fraud and abuse**: a cost spike can be a security incident (mining after a
+  credential compromise, mass exfiltration that drives up egress). **The cost anomaly
+  alert is also routed to security**, not only to finance — it is one of the fastest and
+  cheapest detectors that exist (`incident-response-forensics-standards`).
 
-## 6. Operación: previsión, presupuesto y reparto
+## 6. Operation: forecasting, budgeting and splits
 
-### 6.1 Anomalías
+### 6.1 Anomalies
 
-- Una alerta de anomalía **sin dueño nominal y sin runbook no se crea**. El correo a una lista de
-  distribución es ruido con coste de atención.
-- La detección se hace sobre **la serie con la granularidad en la que alguien puede actuar** (por
-  servicio y cuenta), no sobre el total de la organización: en el total, todo se compensa y no se ve
-  nada.
-- **Umbral doble obligatorio**: relativo (desviación sobre lo esperado) **y** absoluto mínimo. Sin
-  el absoluto, un recurso de 3 € que se dobla genera la misma alerta que uno de 30.000 €.
-- Toda anomalía se cierra con **causa** (cambio de código, cambio de tráfico, cambio de precio del
-  proveedor, error, incidente de seguridad), no con "resuelto".
+- An anomaly alert **with no named owner and no runbook is not created**. An email to a distribution
+  list is noise with an attention cost.
+- Detection is done on **the series at the granularity at which someone can act** (per
+  service and account), not on the organisation total: in the total, everything cancels out and nothing
+  is visible.
+- **Double threshold mandatory**: relative (deviation from expected) **and** absolute minimum. Without
+  the absolute, a €3 resource that doubles generates the same alert as a €30,000 one.
+- Every anomaly is closed with a **cause** (code change, traffic change, provider price
+  change, error, security incident), not with "resolved".
 
-### 6.2 Previsión frente a compromiso
+### 6.2 Forecast versus commitment
 
-Son dos cosas distintas y confundirlas es el error caro: la **previsión** es una estimación con
-incertidumbre que sirve para planificar; el **compromiso** es una obligación contractual firmada
-(§3.4). **No se firma un compromiso con el escenario central de una previsión, se firma con su suelo
-conservador.** La previsión se publica con su intervalo y con sus supuestos escritos (crecimiento de
-tráfico, lanzamientos previstos, cambios de precio conocidos); una previsión sin supuestos escritos
-no es auditable y no sirve para negociar.
+They are two different things and confusing them is the expensive mistake: the **forecast** is an estimate with
+uncertainty that serves for planning; the **commitment** is a signed contractual obligation
+(§3.4). **You do not sign a commitment with the central scenario of a forecast, you sign with its conservative
+floor.** The forecast is published with its interval and with its assumptions written down (traffic
+growth, planned launches, known price changes); a forecast with no written assumptions
+is not auditable and is useless for negotiating.
 
-### 6.3 Presupuesto
+### 6.3 Budget
 
-- El presupuesto se fija sobre la **unidad de asignación que tiene dueño** (cuenta/proyecto/equipo),
-  no sobre etiquetas frágiles.
-- Umbrales escalonados con **acción distinta en cada uno** (aviso al dueño → revisión con finanzas →
-  congelación de creación de recursos nuevos en no producción). Un umbral sin acción asociada es
-  decoración.
-- **PROHIBIDO** que un presupuesto excedido pare despliegues de producción de forma automática: eso
-  convierte una desviación contable en un incidente de disponibilidad. Aplica también a la **cuota
-  en admisión** que implanta `platform-engineering-standards`: puede frenar recursos nuevos y
-  entornos efímeros, **no el rollout de un servicio ya en producción**.
-- **Renegociar un SLO a la baja porque no cabe en el presupuesto es una decisión legítima y
-  reglada, no un recorte silencioso.** Procedimiento, acordado con `sre-practice-standards`:
-  esta skill aporta el coste por nueve —cuánto cuesta la redundancia, la multi-zona o la
-  retención que sostienen el objetivo—; **el objetivo solo lo cambia quien responde del SLO**, por
-  ADR firmado, con el impacto en el usuario declarado y comunicado a quien dependa del servicio.
-  Sin ese ADR no hay renegociación: hay un recorte que se descubrirá en la próxima caída.
+- The budget is set on the **allocation unit that has an owner** (account/project/team),
+  not on fragile tags.
+- Tiered thresholds with **a different action at each one** (notice to the owner → review with finance →
+  freeze on creating new resources in non-production). A threshold with no associated action is
+  decoration.
+- It is **FORBIDDEN** for an exceeded budget to stop production deployments automatically: that
+  turns an accounting deviation into an availability incident. It also applies to the **admission
+  quota** implemented by `platform-engineering-standards`: it can hold back new resources and
+  ephemeral environments, **not the rollout of a service already in production**.
+- **Renegotiating an SLO downwards because it does not fit the budget is a legitimate and
+  ruled decision, not a silent cut.** Procedure, agreed with `sre-practice-standards`:
+  this skill supplies the cost per nine —what the redundancy, the multi-zone or the
+  retention that sustain the target cost—; **only whoever is accountable for the SLO changes the target**, by
+  signed ADR, with the user impact declared and communicated to whoever depends on the service.
+  Without that ADR there is no renegotiation: there is a cut that will be discovered in the next outage.
 
-### 6.4 Coste y sostenibilidad
+### 6.4 Cost and sustainability
 
-**Correlacionan pero no son la misma métrica** y tratarlas como una sola lleva a decisiones falsas:
-apagar recursos ociosos mejora las dos; mover una carga a una región más barata **puede empeorar**
-la huella si esa región tiene una mezcla energética peor, y a la inversa. Regla: si una decisión se
-justifica por sostenibilidad, se mide con su propia métrica y se declara el efecto sobre el coste, y
-viceversa. **El criterio de huella, factores de emisión y metodología es de
-`green-it-standards`**; aquí solo la advertencia de no usar el coste como aproximación de la huella.
-El marco FinOps sí tiene `Sustainability` como capacidad del dominio `Optimize Usage & Cost`: úsese
-como punto de encaje, no como fuente de metodología de cálculo.
+**They correlate but are not the same metric** and treating them as one leads to false decisions:
+switching off idle resources improves both; moving a workload to a cheaper region **can worsen**
+the footprint if that region has a worse energy mix, and vice versa. Rule: if a decision is
+justified by sustainability, it is measured with its own metric and the effect on cost is declared, and
+vice versa. **The criteria for footprint, emission factors and methodology belong to
+`green-it-standards`**; here only the warning not to use cost as a proxy for the footprint.
+The FinOps framework does have `Sustainability` as a capability of the `Optimize Usage & Cost` domain: use it
+as a point of contact, not as a source of calculation methodology.
 
-### 6.5 Showback frente a chargeback
+### 6.5 Showback versus chargeback
 
 | | Showback | Chargeback |
 |---|---|---|
-| Qué es | Se muestra al equipo su coste; **no se mueve dinero** | El coste se imputa al presupuesto del equipo |
-| **Default** | **Sí** | No |
-| Cuándo | Siempre, desde el primer día | Solo si se cumplen **las tres**: (a) asignación fiable (§3.2, umbral de no asignado cumplido), (b) el equipo tiene presupuesto propio y capacidad real de decidir, (c) el equipo **puede actuar** sobre lo que se le imputa |
-| Riesgo | Que nadie mire | Que se optimice contra la métrica y no contra el negocio: rechazar trabajo útil, evitar redundancia, discutir el reparto en vez de reducir el consumo |
+| What it is | The team is shown its cost; **no money moves** | The cost is charged to the team's budget |
+| **Default** | **Yes** | No |
+| When | Always, from day one | Only if **all three** hold: (a) reliable allocation (§3.2, unallocated threshold met), (b) the team has its own budget and real decision-making power, (c) the team **can act** on what is charged to it |
+| Risk | That nobody looks | That it gets optimised against the metric and not against the business: refusing useful work, avoiding redundancy, arguing about the split instead of reducing consumption |
 
-**Regla dura**: imputar a un equipo un coste sobre el que no tiene control (una decisión de
-plataforma, un servicio compartido que no eligió) **no es chargeback, es un impuesto** — genera
-disputa contable y cero ahorro. Si no se cumplen las tres condiciones, se queda en *showback*.
+**Hard rule**: charging a team a cost it has no control over (a platform
+decision, a shared service it did not choose) **is not chargeback, it is a tax** — it generates
+accounting disputes and zero savings. If the three conditions are not met, it stays at *showback*.
 
-### 6.6 Métricas de la práctica
+### 6.6 Practice metrics
 
-Se mide la práctica por lo que cambia decisiones:
-- **Cobertura de asignación** (% de gasto con dueño identificable) — el habilitador de todo lo demás.
-- **Unidades económicas declaradas** sobre sistemas con gasto relevante (%).
-- **Tendencia de cada unidad económica**, por sistema.
-- **Tiempo desde la anomalía hasta su causa identificada.**
-- **Cobertura y utilización de compromisos** (§3.4).
-- **Coste de no producción** como fracción del total.
-- **Desviación de la previsión** frente a lo real, y si esa desviación se está reduciendo.
+The practice is measured by what changes decisions:
+- **Allocation coverage** (% of spend with an identifiable owner) — the enabler of everything else.
+- **Declared unit economics** over systems with material spend (%).
+- **Trend of each unit economic**, per system.
+- **Time from the anomaly to its identified cause.**
+- **Commitment coverage and utilisation** (§3.4).
+- **Non-production cost** as a fraction of the total.
+- **Forecast deviation** versus actuals, and whether that deviation is shrinking.
 
-**Prohibido** medir la práctica por el **ahorro absoluto acumulado**: es la métrica que se puede
-inventar (basta con inflar el precio de referencia contra el que se compara), no distingue ahorro
-real de crecimiento evitado, y premia el recorte de una vez sobre la eficiencia sostenida. Si hay
-que reportar ahorro, se reporta **con la línea base, la fecha y el método de cálculo escritos**, y
-se marca su caducidad.
+**Forbidden** to measure the practice by **cumulative absolute savings**: it is the metric that can be
+invented (it is enough to inflate the reference price it is compared against), it does not distinguish real
+savings from avoided growth, and it rewards one-off cutting over sustained efficiency. If savings
+must be reported, they are reported **with the baseline, the date and the calculation method written down**, and
+their expiry is marked.
 
-**Sobre cifras de la industria — advertencia de método.** El *State of FinOps* de la FinOps
-Foundation (edición **2026**, publicada el **19-feb-2026**) es la fuente pública más citada:
-**1.192 respondentes**, y titulares como *"98% are managing AI spend"* (frente al 31 % dos años
-antes), *"Nine of 10 practitioners are now being asked to manage SaaS"*, *"64% manage licensing"* y
-*"48% manage data centers"*, sobre organizaciones que representan más de 83.000 M$ de gasto anual en
-nube. **Es una encuesta de autoselección entre practicantes ya afiliados a la comunidad**, y el sitio
-público **no documenta el rango de fechas del campo, el marco muestral ni el criterio de limpieza o
-deduplicación**; además circula una cifra alternativa de 966 respuestas "deduplicadas" en análisis
-de terceros — **discrepancia declarada**. Úsese como **señal de hacia dónde va la práctica, jamás
-como base de un caso de negocio ni como *benchmark* comparativo.** Toda cifra de ahorro publicada
-por un proveedor de herramientas (del tipo "30-50 % de ahorro") **se descarta**: sin línea base,
-muestra ni método, no es un dato.
+**On industry figures — methodological warning.** The *State of FinOps* from the FinOps
+Foundation (**2026** edition, published on **19 Feb 2026**) is the most cited public source:
+**1,192 respondents**, and headlines such as *"98% are managing AI spend"* (versus 31 % two years
+earlier), *"Nine of 10 practitioners are now being asked to manage SaaS"*, *"64% manage licensing"* and
+*"48% manage data centers"*, over organisations representing more than $83bn of annual cloud
+spend. **It is a self-selected survey among practitioners already affiliated with the community**, and the
+public site **does not document the field date range, the sampling frame nor the cleaning or
+deduplication criteria**; furthermore an alternative figure of 966 "deduplicated" responses circulates in
+third-party analyses — **declared discrepancy**. Use it as **a signal of where the practice is heading, never
+as the basis of a business case nor as a comparative *benchmark*.** Any savings figure published
+by a tool vendor (of the "30-50 % savings" kind) **is discarded**: with no baseline,
+sample or method, it is not data.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisar la edición del **FinOps Framework** y la versión de **FOCUS** al menos
-  **anualmente** (ambas se han movido en los últimos doce meses); revisar el estado, la licencia y
-  el precio de las herramientas de §2.1 **antes de cada renovación** y ante cualquier cambio de
-  propiedad.
-- **Deprecación**: un panel de coste que nadie ha abierto en un trimestre se retira. Un informe que
-  no ha cambiado ninguna decisión en dos trimestres se retira. La práctica de FinOps acumula
-  artefactos muertos más rápido que cualquier otra.
+- **Cadence**: review the edition of the **FinOps Framework** and the version of **FOCUS** at least
+  **annually** (both have moved in the last twelve months); review the status, the licence and
+  the price of the tools in §2.1 **before every renewal** and on any change of
+  ownership.
+- **Deprecation**: a cost dashboard nobody has opened in a quarter is retired. A report that
+  has not changed any decision in two quarters is retired. The FinOps practice accumulates
+  dead artifacts faster than any other.
 
-Prohibiciones:
+Prohibitions:
 
-- ❌ **Recortar coste rompiendo fiabilidad sin decisión explícita.** Reducir redundancia, retención
-  de copias, multi-zona, capacidad de reserva o cobertura de observabilidad **exige ADR firmado por
-  quien responde del SLO** y consumo declarado de *error budget* (`sre-practice-standards`). El
-  ahorro que se paga con una caída no fue ahorro.
-- ❌ **Optimizar sin unidad económica.** Sin denominador no se puede saber si el sistema mejoró; se
-  está recortando a ciegas.
-- ❌ **Comprometerse a 3 años sobre una arquitectura de 6 meses.** Y en general: firmar un plazo que
-  el equipo no puede justificar por escrito (§3.4, regla 4).
-- ❌ **Medir el éxito en ahorro absoluto** (§6.6), o comparar el gasto total mes contra mes sin
-  normalizar por la unidad de negocio ni por los días del periodo.
-- ❌ **Política de etiquetas sin gate.** Publicar la convención y confiar en la disciplina. Si no hay
-  gate en IaC y en admisión, la política no existe.
-- ❌ **Usar `BilledCost` para unidad económica o reparto** (§3.3): produce escalones falsos.
-- ❌ **Construir la capa de análisis contra el esquema propietario** del proveedor pudiendo usar FOCUS.
-- ❌ **Chargeback sin las tres condiciones de §6.5.** Imputar coste no controlable es un impuesto.
-- ❌ **Automatización que borra recursos** por criterio de coste. Apagar y degradar sí; borrar lo
-  autoriza una persona.
-- ❌ **Dar permisos de escritura a herramientas de coste**, propias o de terceros.
-- ❌ **Perseguir el reparto perfecto del coste compartido** cuando ningún reparto alternativo cambia
-  una decisión (§3.2).
-- ❌ **Parar despliegues de producción automáticamente** por presupuesto excedido (§6.3).
-- ❌ **Presentar una cifra de ahorro sin línea base, fecha y método**, o citar el porcentaje de
-  ahorro de un proveedor como dato (§6.6).
-- ❌ **Duplicar aquí el criterio de coste de un servicio concreto** que ya vive en `aws-standards`,
-  `azure-standards` o `gcp-standards`: dos fuentes de verdad sobre el mismo precio garantizan que
-  una esté caducada.
-- ❌ **Usar el coste como aproximación de la huella de carbono** (§6.4).
+- ❌ **Cutting cost by breaking reliability with no explicit decision.** Reducing redundancy, backup
+  retention, multi-zone, reserve capacity or observability coverage **requires an ADR signed by
+  whoever is accountable for the SLO** and declared consumption of the *error budget* (`sre-practice-standards`).
+  Savings paid for with an outage were not savings.
+- ❌ **Optimising with no unit economics.** With no denominator you cannot know whether the system improved; you
+  are cutting blind.
+- ❌ **Committing to 3 years over a 6-month architecture.** And in general: signing a term that
+  the team cannot justify in writing (§3.4, rule 4).
+- ❌ **Measuring success in absolute savings** (§6.6), or comparing total spend month over month without
+  normalising by the business unit or by the days in the period.
+- ❌ **A tag policy with no gate.** Publishing the convention and trusting discipline. If there is no
+  gate in IaC and in admission, the policy does not exist.
+- ❌ **Using `BilledCost` for unit economics or allocation** (§3.3): it produces false steps.
+- ❌ **Building the analysis layer against the provider's proprietary schema** when FOCUS is available.
+- ❌ **Chargeback without the three conditions in §6.5.** Charging uncontrollable cost is a tax.
+- ❌ **Automation that deletes resources** on cost grounds. Switching off and downgrading yes; deleting is
+  authorised by a person.
+- ❌ **Granting write permissions to cost tools**, your own or third-party.
+- ❌ **Chasing the perfect split of shared cost** when no alternative split changes
+  a decision (§3.2).
+- ❌ **Stopping production deployments automatically** on an exceeded budget (§6.3).
+- ❌ **Presenting a savings figure with no baseline, date and method**, or citing a vendor's savings
+  percentage as data (§6.6).
+- ❌ **Duplicating here the cost criteria of a specific service** that already live in `aws-standards`,
+  `azure-standards` or `gcp-standards`: two sources of truth about the same price guarantee that
+  one is stale.
+- ❌ **Using cost as a proxy for the carbon footprint** (§6.4).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier cosa de este documento en un proyecto real:
+Before committing anything from this document in a real project:
 
-1. **FinOps Framework**: edición vigente en `finops.org/framework`, la definición de FinOps, el
-   número de capacidades y los cambios respecto a la edición 2026 (marzo de 2026). Se ha movido en
-   2025 y 2026 en años consecutivos: **asumir que ha vuelto a moverse**.
-2. **FOCUS**: versión ratificada actual y su fecha en `focus.finops.org/focus-specification/`
-   (a ago-2026: **1.4, ratificada el 4-jun-2026**), el changelog del repositorio, y **qué versión
-   emite realmente cada proveedor que uses** — van por detrás. Estado del **programa de
-   certificación de conformidad** anunciado para 2026.
-3. **Herramientas de §2.1**: `LICENSE` **en crudo** (`raw.githubusercontent.com`, no la etiqueta de
-   la interfaz de GitHub ni la documentación de terceros) de OpenCost, Infracost (`infracost/cli`
-   **y** `infracost/infracost`), y la **página de precios el mismo día**. Comprobar si alguna ha
-   cambiado de licencia, de propietario o ha entrado en mantenimiento. Recordatorio: **el feed de
-   releases de GitHub no es la fuente de verdad**; contrastar con la web oficial del proyecto.
-4. **Kubecost**: su web redirige a `apptio.com` tras la compra por IBM; **los precios de los niveles
-   de pago no están publicados** — hay que pedirlos. Verificar los límites vigentes del nivel
-   gratuito (a ago-2026: *"Unlimited clusters up to 250 cores"*, *"15-day metric retention"*).
-5. **Coste de IA**: la página de la categoría tecnológica `FinOps for AI` del marco y su guía de
-   métricas; los precios por token cambian con cada versión de modelo, y **ningún precio de modelo
-   se escribe de memoria**. Para lo relativo a Claude/Anthropic, la fuente canónica es la skill
-   `claude-api`, no esta.
-6. **EU Data Act**: confirmar el texto y las fechas de los artículos 29 y 34 en EUR-Lex (fuente
-   primaria) antes de apoyarse en ellos contractualmente, y si la Comisión ha adoptado actos
-   delegados sobre el mecanismo de seguimiento previsto en el 29(7).
-7. **State of FinOps**: edición vigente y **su metodología publicada** antes de citar cualquier
-   porcentaje. Sin metodología, la cifra no se escribe.
-8. **Huecos declarados de este documento** (no se rellenaron por falta de fuente con metodología, no
-   por olvido):
-   - **No hay aquí un objetivo numérico de cobertura de compromisos**: depende del perfil de carga y
-     ninguna fuente con metodología publicada justifica un número universal (§3.4).
-   - **No hay aquí un porcentaje de referencia del coste de observabilidad sobre el total** ni de
-     coste de no producción: no se localizó una fuente con muestra y método. Fija el tuyo con tu
-     propia serie histórica y anótalo (§3.6).
-   - **El umbral del 5 % de gasto no asignable de §3.2 es un criterio de gobierno propuesto en este
-     documento**, no un dato de la industria: está marcado como tal en el texto.
-   - **Precios de Kubecost de pago: no publicados** (punto 4).
-   - **No hay cifras de ahorro típico de ninguna palanca**: todas las que circulan son de proveedor
-     y sin metodología (§6.6).
+1. **FinOps Framework**: current edition at `finops.org/framework`, the definition of FinOps, the
+   number of capabilities and the changes relative to the 2026 edition (March 2026). It has moved in
+   2025 and 2026 in consecutive years: **assume it has moved again**.
+2. **FOCUS**: current ratified version and its date at `focus.finops.org/focus-specification/`
+   (as of Aug 2026: **1.4, ratified on 4 Jun 2026**), the repository changelog, and **which version
+   each provider you use actually emits** — they lag. Status of the **conformance
+   certification programme** announced for 2026.
+3. **Tools in §2.1**: the **raw** `LICENSE` (`raw.githubusercontent.com`, not the label in
+   the GitHub interface nor third-party documentation) for OpenCost, Infracost (`infracost/cli`
+   **and** `infracost/infracost`), and the **pricing page on the same day**. Check whether any has
+   changed licence, changed owner or gone into maintenance. Reminder: **the GitHub releases
+   feed is not the source of truth**; cross-check against the project's official website.
+4. **Kubecost**: its website redirects to `apptio.com` after the IBM acquisition; **the prices of the paid
+   tiers are not published** — you have to ask for them. Verify the current limits of the free
+   tier (as of Aug 2026: *"Unlimited clusters up to 250 cores"*, *"15-day metric retention"*).
+5. **AI cost**: the framework's `FinOps for AI` technology category page and its metrics
+   guidance; per-token prices change with every model version, and **no model price
+   is written from memory**. For anything relating to Claude/Anthropic, the canonical source is the skill
+   `claude-api`, not this one.
+6. **EU Data Act**: confirm the text and the dates of articles 29 and 34 in EUR-Lex (primary
+   source) before relying on them contractually, and whether the Commission has adopted delegated
+   acts on the monitoring mechanism foreseen in 29(7).
+7. **State of FinOps**: current edition and **its published methodology** before citing any
+   percentage. With no methodology, the figure is not written down.
+8. **Declared gaps in this document** (they were not filled for lack of a source with methodology, not
+   from oversight):
+   - **There is no numeric commitment coverage target here**: it depends on the load profile and
+     no source with a published methodology justifies a universal number (§3.4).
+   - **There is no reference percentage here for observability cost as a share of the total** nor for
+     non-production cost: no source with a sample and a method was found. Set your own with your
+     own historical series and annotate it (§3.6).
+   - **The 5 % non-allocatable spend threshold in §3.2 is a governance criterion proposed in this
+     document**, not an industry figure: it is marked as such in the text.
+   - **Paid Kubecost prices: not published** (point 4).
+   - **There are no typical savings figures for any lever**: all the ones in circulation are from vendors
+     and without methodology (§6.6).
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

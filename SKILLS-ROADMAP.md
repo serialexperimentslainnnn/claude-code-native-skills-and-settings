@@ -281,7 +281,140 @@ falta**, y **cambiarle la prioridad a "guarda primero, investiga después"**. Co
 reanudado dos veces acabó entregando las dos skills. **Relanzarlo de cero habría tirado toda la
 investigación web ya pagada.**
 
-## PUNTO DE CONTINUACIÓN — actualizado 2026-08-10 (leer esto primero)
+## CONTINUATION POINT — 2026-08-10, later session (READ THIS FIRST)
+
+> From here on new entries are written in **English**: the whole repository is being migrated.
+> Everything below this block is the previous history, still in Spanish.
+
+**Decisions taken by the user in this session, all four explicit:**
+1. **Everything goes to English** — the 218 skill bodies *and* the root docs. The `description`
+   fields were already English. **The conversation stays in Spanish**: that line of `CLAUDE.md` is
+   part of the untouchable core and was confirmed, not changed.
+2. **`PROJECTMAP.md` is mandatory and automatic in every repository**, created before the first
+   substantial task, and it must index **file by file** what each one contains — "like an index for
+   a database table, so you don't repeat greps/reads".
+3. **The skills must be invoked as an explicit step**, driven by the context of the project or the
+   task, so behaviour is always at maximum technical level. *"That is what the skills are for."*
+4. **The directives must not dilute as context grows**, and **whatever is configured must be
+   installable from this repo via `install.sh`**. Cost is explicitly a non-issue (Max x20).
+
+### Done in this session
+
+- **`skills/project-map/SKILL.md` rewritten (English, 201 lines)**. It now **fires automatically**,
+  and §2.1 resolves the tension the old version had: the ~150-line cap is a heuristic **for code
+  repositories**; in a repository whose *content is the product* (a skill catalogue, a docs site, a
+  policy set) **the per-file index IS the map** — indexes list rows. §4.5 requires generating that
+  index **with a script, not by hand**, so it cannot drift into fiction.
+- **`CLAUDE.md` rewritten (English, ~315 lines)** with the untouchable core intact. New: a
+  **two-step start-of-work routine** — ① read/create `PROJECTMAP.md`, ② **arm the skills and name
+  them out loud** — with the rule that *touching a domain without loading its skill is a defect, not
+  a style choice*, plus re-arming when the task turns. Also corrected: **`Grep` and `Glob` no longer
+  exist as tools**; searching is the shell (`grep -rn`, `rg`, `find`, `git ls-files`), reading is
+  `Read`, editing is `Edit`/`Write`.
+- **The anti-dilution problem solved properly.** A document loaded once at the start loses against
+  the pattern of the last twenty turns — that is structural, not a discipline failure. So:
+  **`core-directives.md`** (new, in the repo) + a **`UserPromptSubmit` hook** that re-injects it
+  **every turn** (~3,000 chars). The harness executes it; it does not depend on memory.
+- **`install.sh` extended**: it now flattens `core-directives.md` too and **merges the hook into
+  `~/.claude/settings.json` with `jq`**, without touching the user's `env`, `permissions` or
+  `model`, backing up first and staying idempotent. `--uninstall` removes it just as cleanly.
+  Requires `jq` (checked in `sanity_check`). Validated with `--dry-run`.
+- **`PROJECTMAP.md` created for this repo** (95 lines) — and it immediately earned its keep: it
+  caught that **`README.md` was lying** (it claimed 164 skills / 61,000 lines; real figures 218 /
+  ~81,500). README rewritten in English with the true numbers and documenting the hook.
+- **`SKILL-TEMPLATE.md` rewritten in English**, including a new **"Enforced strings"** section: the
+  gate greps for literals, so paraphrasing them silently disables it.
+- **`check.sh` made bilingual during the migration**: gates 2 and 3 accept `Not applicable`/`No
+  aplica` and `the web wins`/`manda la web`. **Retire the Spanish alternative once no Spanish body
+  remains** — otherwise a regression passes unnoticed.
+
+### ⚠️ SESSION ENDED ON QUOTA — EXACT STATE AT THAT MOMENT
+
+**134 of 218 translated. 84 pending.** The authoritative way to get the list is always:
+
+```bash
+cd skills && grep -l 'No aplica' */SKILL.md | sed 's|/SKILL.md||'
+```
+
+**Do not trust any list written by hand, including this one — regenerate it.** The snapshot when
+the session ended (84 files) was, alphabetically: `abap-sap`, `accessibility`, `air-gapped`,
+`analytics-bi`, `appsec`, `backup-recovery`, `c`, `caching-cdn`, `ceph`, `chaos-engineering`,
+`claude-code-skills`, `cms-jamstack`, `coldfusion`, `compilers-dsl`, `cross-platform-desktop`,
+`cryptography-pki`, `datacenter-fabric`, `design-systems`, `developer-workstation`,
+`e-commerce`, `edge-computing`, `embedded-iot`, `file-servers`, `finops`, `fintech-payments`,
+`gaming-infrastructure`, `gpu-computing`, `graph-db`, `green-it`, `high-speed-interconnect`,
+`iac`, `identity-threat-detection`, `incident-management`, `itsm-itil`, `jvm-spring`,
+`kernel-drivers`, `knowledge-management`, `lakehouse`, `legacy-modernization`,
+`libvirt-kvm`, `linux-hardening`, `lisp`, `load-balancing`, `lua`, `macos-fleet`, `mcp`,
+`message-brokers`, `microservices-architecture`, `mlops`, `mlsecops`, `model-finetuning`,
+`multimodal-genai`, `mysql-mariadb-dba`, `network-automation`, `nosql`, `object-storage`,
+`objective-c`, `observability`, `onprem`, `pascal-delphi`, `perl`, `powershell`,
+`privacy-engineering`, `project-management`, `proxmox-ve`, `pwa`, `r`, `rag`, `scala`,
+`solidity`, `sre-practice`, `streaming-cdc`, `streaming-multimedia`, `telco-5g`, `testing-qa`,
+`timeseries-db`, `vb6`, `web-app-servers`, `web-performance`, `webassembly`, `windows-server-ad`,
+`wireless`, `xen`, `xr` (all with the `-standards` suffix).
+
+**Several of those were in flight in batches 13-16 when the quota ran out** — re-check before
+assigning work, some may have landed.
+
+**Batches 17 and 18 were never launched**: the run hit the **20 concurrent subagent limit**
+(`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`). Nothing was lost, they simply never started.
+
+**How to resume**: split the regenerated pending list into batches of ~12 skills, launch **no more
+than 5-6 agents at a time**, and reuse the prompt template of the earlier batches — the full
+canonical glossary is in the section below and in `SKILL-TEMPLATE.md`. Every agent must write each
+file the moment it is done, never batch to the end.
+
+### Translation state and how it is being done
+
+**Pilot batch first** (6 small skills) to settle the glossary before touching 212 files — the right
+call, because it produced ~40 vocabulary decisions that are now reused verbatim. Canonical strings:
+`**Not applicable**:`, `If the web contradicts this document, **the web wins** — flag the
+discrepancy.`, `Criteria verified as of **<date>**…`, section titles, `FORBIDDEN`.
+**Spelling: British English**, with **one deliberate exception: `artifact`, never `artefact`**
+(established software term; it wins 76-18 in the corpus).
+
+Batches of ~12 skills per agent (~4,500 lines), 6-7 agents in parallel, **each writing every file
+the moment it is done** — the lesson from Wave 6 that is now doctrine.
+
+**PENDING WHEN PICKING THIS BACK UP:**
+1. **Finish the translation.** Check progress with
+   `cd skills && grep -L 'No aplica' */SKILL.md | wc -l` (target: 218). Batch lists live in
+   `/tmp/lote*.txt` — **regenerate them if /tmp was cleared**: split by line count so batches are
+   balanced.
+2. **Two normalisations, deliberately deferred to the end** so as not to collide with agents
+   editing in parallel: (a) `artefact` → `artifact` everywhere; (b) rename
+   **`gis-geoespacial-standards` → `gis-geospatial-standards`** — the last Spanish name in the
+   catalogue, only 2 references plus the directory, and the `name:` field must change with it or
+   gate 1 breaks.
+3. **Then retire the Spanish patterns from `check.sh`** (see above).
+4. **Regenerate `PROJECTMAP.md` with the full 218-skill index** — deliberately left for last so the
+   generated one-line summaries come out already in English instead of being written twice.
+5. **Decide on `SKILLS-ROADMAP.md` itself**: 1,365 lines of historical log. Asked the user whether
+   to translate it wholesale or leave the history in Spanish and write only new entries in English.
+   **No answer yet** — new entries are in English meanwhile.
+6. **Run `./install.sh`** — still never executed. Until it is, `~/.claude` holds the old, divergent
+   copy and none of this is actually live.
+7. **Commit** when asked (not asked yet).
+
+### Factual problems reported by translating agents — NOT fixed, by instruction
+
+They were told to translate and report, never to silently fix. Worth triaging later:
+- **`crystal-standards` §7: the sponsorship arithmetic does not add up.** €22,000/month since Apr
+  2018 would be ≈€2.1M, not the stated ~€941,000; $5,000/month since 2009 ≈$1.02M, not ~$1,430,000.
+  One of the figures in each pair is wrong.
+- **`zig-standards` §7 cites `zig build --fork`**, a flag that looks invented or misremembered —
+  and it contradicts the file's own declared gap about local-override flags.
+- **`ruby-standards` §2 lists Minitest 6**; the real series is 5.x. It also cites a CVE that appears
+  nowhere else in the file.
+- **`linux-administration-standards` contradicts itself**: §2 says `systemd-networkd` on Debian
+  servers, its own §8 declared gap says `ifupdown`.
+- **`firewall-policy-standards` §4** calls five items "CI gates" when two of them are operational
+  procedures, not gates.
+- `home-automation`, `offensive-security`, `gcp`, `server-hardware`, `prolog` and `network-vendors`
+  carry version/date/advisory claims their own §8 already flags as unverified.
+
+## PUNTO DE CONTINUACIÓN — actualizado 2026-08-10 (histórico de esta misma fecha, sesión anterior)
 
 **Estado: 218 skills, 80.388 líneas — EL CATÁLOGO ESTÁ COMPLETO (218/218).** Los tres gates
 mecánicos en verde (`./check.sh`, EXIT=0). Coste de índice: 25.383 palabras/turno. Nada quedó

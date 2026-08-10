@@ -3,551 +3,551 @@ name: ha-clustering-standards
 description: High availability for services running inside an OS, with Pacemaker/Corosync as reference. Use when running pcs, crm/crmsh, crm_mon, crm_resource, crm_simulate, cibadmin, pcs stonith, pcs constraint or the ha_cluster system role, editing cib.xml, votequorum settings (two_node, wait_for_all, last_man_standing, auto_tie_breaker), corosync-qnetd/qdevice arbitration, STONITH agents (fence_ipmilan, fence_idrac, fence_ilo, fence_apc, fence_sbd, fence_vmware, fence_aws/fence_gce), sbd.conf and hardware watchdog fencing, stonith-enabled and no-quorum-policy, OCF resource agents, IPaddr2 virtual IPs, colocation and ordering constraints, resource-stickiness, clone and promotable resources, cluster maintenance-mode and standby, DRBD with drbdadm and drbd.conf, dlm with GFS2 or OCFS2 shared filesystems, Patroni patroni.yml versus a Pacemaker-managed PostgreSQL, keepalived.conf VRRP as a lighter alternative, split-brain and fence racing incidents, or answering whether a service needs a cluster at all.
 ---
 
-# Estándares de alta disponibilidad de servicios (Pacemaker/Corosync)
+# Service high availability standards (Pacemaker/Corosync)
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-> **Tesis del documento**: **HA sin fencing probado no es HA, es corrupción de datos diferida.**
-> Un cluster que no puede matar a un nodo sospechoso con certeza no está protegiendo el
-> servicio: está esperando el día en que dos nodos escriban el mismo dato a la vez.
+> **Thesis of this document**: **HA without tested fencing is not HA, it is deferred data
+> corruption.** A cluster that cannot kill a suspect node with certainty is not protecting the
+> service: it is waiting for the day two nodes write the same data at the same time.
 >
-> **Corolario que se olvida más**: **un cluster mal operado tiene peor disponibilidad que un
-> servicio simple bien monitorizado.** Cada nodo, cada agente, cada restricción y cada
-> dispositivo de fencing es una pieza nueva que puede fallar — y falla. La complejidad es el
-> enemigo del *uptime*. Aplica KISS antes de aplicar Pacemaker.
+> **The corollary most often forgotten**: **a badly operated cluster has worse availability than a
+> simple, well-monitored service.** Every node, every agent, every constraint and every
+> fencing device is a new part that can fail — and it does fail. Complexity is the
+> enemy of *uptime*. Apply KISS before applying Pacemaker.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a dar alta disponibilidad a **servicios que corren dentro de un sistema operativo**:
-la decisión de si hace falta un cluster, quórum y arbitraje, fencing/STONITH, gestión de
-recursos con Pacemaker, almacenamiento compartido o replicado, patrones por tipo de servicio,
-operación del cluster y ejercicios de conmutación.
+Applies to providing high availability to **services running inside an operating system**:
+the decision of whether a cluster is needed at all, quorum and arbitration, fencing/STONITH, resource
+management with Pacemaker, shared or replicated storage, patterns by service type,
+cluster operation and failover exercises.
 
-Disparadores: `pacemaker`, `pacemakerd`, `corosync`, `corosync-qnetd`, `corosync-qdevice`,
+Triggers: `pacemaker`, `pacemakerd`, `corosync`, `corosync-qnetd`, `corosync-qdevice`,
 `votequorum`, `two_node`, `wait_for_all`, `last_man_standing`, `auto_tie_breaker`, `pcs`,
 `pcsd`, `crm`, `crmsh`, `crm_mon`, `crm_resource`, `crm_simulate`, `crm_verify`, `cibadmin`,
 `cib.xml`, `stonith-enabled`, `no-quorum-policy`, `resource-stickiness`, `migration-threshold`,
-`failure-timeout`, `ocf:heartbeat:*`, `IPaddr2`, `Filesystem`, `systemd:` como clase de recurso,
+`failure-timeout`, `ocf:heartbeat:*`, `IPaddr2`, `Filesystem`, `systemd:` as a resource class,
 `pcs constraint colocation|order`, `clone`, `promotable`/`master`, `fence_ipmilan`,
 `fence_idrac`, `fence_ilo4`, `fence_apc_snmp`, `fence_sbd`, `fence_vmware_rest`,
 `fence_aws`/`fence_gce`, `sbd`, `/etc/sysconfig/sbd`, `SBD_WATCHDOG_DEV`, `softdog`,
 `drbdadm`, `drbd.conf`, `drbdsetup`, `dlm_controld`, `gfs2`, `mkfs.gfs2`, `ocfs2`,
-`patroni.yml`, `patronictl`, `keepalived.conf`, `vrrp_instance`, `ha_cluster` (rol de sistema),
-`cockpit-ha-cluster`, "split-brain", "el cluster ha hecho failover solo", "los dos nodos creen
-que son primarios", "no arranca el recurso y no sé por qué".
+`patroni.yml`, `patronictl`, `keepalived.conf`, `vrrp_instance`, `ha_cluster` (system role),
+`cockpit-ha-cluster`, "split-brain", "the cluster failed over on its own", "both nodes think
+they are primary", "the resource does not start and I do not know why".
 
-**Regla de arbitraje interna**: si la respuesta se escribe con `pcs`/`crm`/`cibadmin` sobre un
-CIB de Pacemaker, o en `sbd.conf`/`drbd.conf`, es de esta skill.
+**Internal arbitration rule**: if the answer is written with `pcs`/`crm`/`cibadmin` over a
+Pacemaker CIB, or in `sbd.conf`/`drbd.conf`, it belongs to this skill.
 
-### 1.1 Frontera con `proxmox-ve-standards` (espejo de la regla ya escrita allí)
+### 1.1 Boundary with `proxmox-ve-standards` (mirror of the rule already written there)
 
-`proxmox-ve-standards` ya fijó la regla de arbitraje de este par, y **este documento la espeja
-literalmente**:
+`proxmox-ve-standards` already set the arbitration rule for this pair, and **this document mirrors it
+verbatim**:
 
-> **Si el recurso que conmuta es una VM o un contenedor de PVE, es de `proxmox-ve-standards`;
-> si es un servicio dentro de un SO, es de aquí.**
+> **If the resource that fails over is a PVE VM or container, it belongs to `proxmox-ve-standards`;
+> if it is a service inside an OS, it belongs here.**
 
-Con dos precisiones que hay que tener claras:
+With two clarifications that must be clear:
 
-- **PVE trae su propio stack de HA** —`pve-cluster`/`pmxcfs`, `pve-ha-manager`, sus grupos HA y
-  su watchdog— y **no se opera con `pcs` ni con `crm`**. Ejecutar `pcs` en un nodo PVE es un
-  error de categoría: no hay CIB que tocar.
-- **Corosync es común a ambas.** Los principios de quórum, latencia del anillo, redundancia de
-  enlace y la aritmética de nodos valen igual en los dos lados; lo que cambia es el gestor de
-  recursos que hay encima.
+- **PVE ships its own HA stack** —`pve-cluster`/`pmxcfs`, `pve-ha-manager`, its HA groups and
+  its watchdog— and **it is not operated with `pcs` or with `crm`**. Running `pcs` on a PVE node is a
+  category error: there is no CIB to touch.
+- **Corosync is common to both.** The principles of quorum, ring latency, link redundancy
+  and node arithmetic hold equally on both sides; what changes is the resource
+  manager on top.
 
-### 1.2 HA no es DR (la confusión más común del dominio)
+### 1.2 HA is not DR (the domain's most common confusion)
 
-| | HA (esta skill) | DR (`bcdr-standards`) |
+| | HA (this skill) | DR (`bcdr-standards`) |
 |---|---|---|
-| Responde a | Fallo de **un componente** dentro de un dominio de fallo | Pérdida del **dominio de fallo entero**: sala, CPD, región, proveedor |
-| Horizonte | Segundos a minutos, **automático** | Minutos a días, **con decisión humana** de declarar el desastre |
-| Mecanismo | Redundancia activa y conmutación | Recuperación desde copia o sitio alterno |
-| Contra qué **no** protege | Borrado lógico, corrupción, ransomware, error humano — **los replica al instante** | (es justo para lo que existe) |
-| Métrica | Disponibilidad, MTTR | **RTO/RPO** derivados del impacto de negocio |
+| Responds to | Failure of **one component** inside a failure domain | Loss of the **entire failure domain**: room, data centre, region, provider |
+| Horizon | Seconds to minutes, **automatic** | Minutes to days, **with a human decision** to declare the disaster |
+| Mechanism | Active redundancy and failover | Recovery from a copy or an alternate site |
+| What it does **not** protect against | Logical deletion, corruption, ransomware, human error — **it replicates them instantly** | (that is exactly what it exists for) |
+| Metric | Availability, MTTR | **RTO/RPO** derived from business impact |
 
-**Un cluster de HA no es un backup y no sustituye a un plan de continuidad.** Replicación
-síncrona es un `DELETE` propagado en milisegundos. Y a la inversa: un plan de DR impecable no
-evita el minuto de caída del martes. **Hacen falta los dos, y son proyectos distintos.**
-`bcdr-standards` fija RTO/RPO y el orden de recuperación; esta skill fija el mecanismo que
-sostiene el objetivo de disponibilidad que fija `sre-practice-standards`.
+**An HA cluster is not a backup and does not replace a continuity plan.** Synchronous
+replication is a `DELETE` propagated in milliseconds. And conversely: an impeccable DR plan does not
+avoid Tuesday's minute of downtime. **You need both, and they are different projects.**
+`bcdr-standards` sets RTO/RPO and the recovery order; this skill sets the mechanism that
+supports the availability objective set by `sre-practice-standards`.
 
-**No aplica**: ver `proxmox-ve-standards` (**frontera hermana, §1.1**: HA de VMs y contenedores
-de PVE con `ha-manager`, grupos HA, reglas de afinidad y su watchdog),
-`kubernetes-standards` (**el orquestador es la respuesta correcta a "que este servicio sobreviva
-a la caída de su host"**: reprogramación, réplicas, probes y PDB. Pacemaker no compite con eso),
-`podman-systemd-containers-standards` (**mención cruzada, sin solape**: contenedores como
-servicios de systemd en un host. Si la pregunta es cómo sobreviven a la caída del host, la
-respuesta honesta es **casi nunca con Pacemaker**: un orquestador, un balanceador delante de dos
-instancias con el estado fuera, o el downtime aceptado por escrito. Pacemaker gestionando
-contenedores de un host es complejidad de cluster sin ninguna de sus garantías),
-`bcdr-standards` (**§1.2**: RTO/RPO, BIA, ejercicios de DR, sitio alterno, declaración del
-desastre), `backup-recovery-standards` (la copia y su restore probado — **replicación no es
-copia**), `sre-practice-standards` (**la disponibilidad como objetivo es suya**: SLI/SLO, error
-budget, on-call, capacidad; **el mecanismo para alcanzarla es de aquí**. Si el SLO se cumple sin
-cluster, no se monta cluster), `incident-management-standards` (declaración, roles y comunicación
-del incidente; aquí el diagnóstico técnico del cluster), `data-platform-standards` (**el motor de
-datos y su replicación son suyos**: PostgreSQL, su streaming replication, tuning, PITR, Redis,
-Kafka; **aquí el mecanismo de cluster que promueve o conmuta** — ver §5.2, donde el criterio es
-que para PostgreSQL la respuesta por defecto **no** es Pacemaker), `linux-storage-standards`
-(LVM, multipath, iSCSI, filesystems locales y LUKS **por debajo** del recurso de cluster),
-`zfs-standards` (el pool; ZFS **no es** un filesystem de cluster y no se monta en dos nodos),
-`ceph-standards` (**confusión frecuente: el quórum de monitores de Ceph no es el quórum de
-Corosync, y Ceph no usa STONITH** — su alta disponibilidad la da RADOS por réplica y mapa CRUSH,
-no un gestor de recursos; el dimensionado de MON/OSD y sus dominios de fallo son suyos),
-`linux-administration-standards` (**systemd**: un recurso gestionado por el cluster **no se
-toca con `systemctl`** — ya está prohibido allí y aquí se confirma), `networking-standards`
-(diseño de la red, VLAN, VRRP a nivel de red, MTU; aquí el uso de la red por el cluster y sus
-requisitos de latencia), `firewall-policy-standards` (la política de filtrado que debe permitir
-el tráfico de Corosync y de los dispositivos de fencing),
-`observability-standards` (diseño del stack de métricas y alertas; aquí **qué** vigilar del
-cluster y **desde dónde**), `identity-access-management-standards` (credenciales del BMC y su
-custodia; aquí que el fencing necesita esas credenciales y que son de alto privilegio),
-`secrets-management-standards` (dónde viven esas credenciales), `onprem-standards` (**paraguas**:
-su §1.3 fija el invariante *HA sin fencing probado es corrupción diferida*, que es la tesis de
-este documento, y su §6 cedía a esta skill el detalle del bloque de HA),
-`microservices-architecture-standards` (**resiliencia distribuida en la aplicación** —circuit
-breakers, reintentos con backoff, bulkheads, sagas— frente a HA de infraestructura: **una
-aplicación bien diseñada necesita menos cluster**, y ese es el orden correcto de inversión),
-`windows-server-ad-standards` (WSFC y clustering de Windows).
+**Not applicable**: see `proxmox-ve-standards` (**sister boundary, §1.1**: HA of PVE VMs and containers
+with `ha-manager`, HA groups, affinity rules and its watchdog),
+`kubernetes-standards` (**the orchestrator is the right answer to "make this service survive
+its host going down"**: rescheduling, replicas, probes and PDBs. Pacemaker does not compete with that),
+`podman-systemd-containers-standards` (**cross-reference, no overlap**: containers as systemd
+services on a host. If the question is how they survive the host going down, the
+honest answer is **almost never with Pacemaker**: an orchestrator, a load balancer in front of two
+instances with the state outside, or downtime accepted in writing. Pacemaker managing
+a host's containers is cluster complexity with none of its guarantees),
+`bcdr-standards` (**§1.2**: RTO/RPO, BIA, DR exercises, alternate site, disaster
+declaration), `backup-recovery-standards` (the copy and its tested restore — **replication is not
+a copy**), `sre-practice-standards` (**availability as an objective is theirs**: SLI/SLO, error
+budget, on-call, capacity; **the mechanism to reach it belongs here**. If the SLO is met without a
+cluster, no cluster is built), `incident-management-standards` (declaration, roles and communication
+of the incident; here the technical diagnosis of the cluster), `data-platform-standards` (**the data
+engine and its replication are theirs**: PostgreSQL, its streaming replication, tuning, PITR, Redis,
+Kafka; **here the cluster mechanism that promotes or fails over** — see §5.2, where the criterion is
+that for PostgreSQL the default answer is **not** Pacemaker), `linux-storage-standards`
+(LVM, multipath, iSCSI, local filesystems and LUKS **underneath** the cluster resource),
+`zfs-standards` (the pool; ZFS **is not** a cluster filesystem and is not mounted on two nodes),
+`ceph-standards` (**frequent confusion: Ceph's monitor quorum is not Corosync's quorum,
+and Ceph does not use STONITH** — its high availability comes from RADOS through replication and the CRUSH map,
+not from a resource manager; MON/OSD sizing and their failure domains are theirs),
+`linux-administration-standards` (**systemd**: a cluster-managed resource **is not
+touched with `systemctl`** — it is already forbidden there and confirmed here), `networking-standards`
+(network design, VLANs, VRRP at the network level, MTU; here the cluster's use of the network and its
+latency requirements), `firewall-policy-standards` (the filtering policy that must allow
+Corosync traffic and the fencing devices),
+`observability-standards` (design of the metrics and alerting stack; here **what** to watch on the
+cluster and **from where**), `identity-access-management-standards` (BMC credentials and their
+custody; here the fact that fencing needs those credentials and that they are highly privileged),
+`secrets-management-standards` (where those credentials live), `onprem-standards` (**umbrella**:
+its §1.3 sets the invariant *HA without tested fencing is deferred corruption*, which is this
+document's thesis, and its §6 ceded the detail of the HA block to this skill),
+`microservices-architecture-standards` (**distributed resilience in the application** —circuit
+breakers, retries with backoff, bulkheads, sagas— versus infrastructure HA: **a
+well-designed application needs less cluster**, and that is the right order of investment),
+`windows-server-ad-standards` (WSFC and Windows clustering).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8). En clusters,
-> **la versión que manda es la que empaqueta y soporta tu distribución**, no la de upstream:
-> aquí no se compila a mano.
+> Verify the latest version on the web before pinning it in a real project (§8). In clusters,
+> **the version that rules is the one your distribution packages and supports**, not upstream's:
+> nothing is compiled by hand here.
 
-| Pieza | Estado (ago-2026) | Criterio |
+| Component | Status (Aug 2026) | Criteria |
 |---|---|---|
-| Pacemaker | **3.0.3** (2026-07-28) y **2.1.11** (2026-06-29): **ambas líneas vivas** | 3.0 (GA 2025-01-08) existe para **eliminar sintaxis legacy deprecada**. Greenfield → 3.0.x si la distro lo trae; si no, 2.1.x sin drama |
-| Corosync | **3.1.10** (2025-11-15) | Cadencia anual (releases en noviembre). Estable y aburrido, que es lo que se quiere en la capa de membresía |
-| `pcs` | **0.12.3** (2026-07-10) / **0.11.12.1** (2026-07-14) — dos líneas mantenidas | **Herramienta en RHEL/Fedora/Ubuntu.** En RHEL 10, la **UI web autónoma de `pcsd` ya no existe**: pasa a `cockpit-ha-cluster` |
-| `crmsh` | **5.0.0** (2025-08-15); **5.1.0-rc2** (2026-06-29) | **Herramienta en SUSE/SLES.** SLE HA 16 se construye alrededor de `crm cluster init`. **Ni `pcs` ni `crmsh` están obsoletos**: se elige por el soporte del proveedor, no por gusto |
-| `resource-agents` | **4.18.0** (2026-04-08) | Activo |
-| `fence-agents` | **4.17.0** (2026-01-05) | Activo |
-| `sbd` | **1.5.2** (2023-01-09) — último *release*; repositorio con actividad (commits en ene-2026) | **Cadencia lenta**: úsalo con la versión que empaqueta tu distro y no asumas correcciones upstream recientes. Sigue siendo el mecanismo de referencia sin PDU/BMC |
-| DRBD (módulo) | **9.3.3** (2026-07-01) out-of-tree de LINBIT; **10.0.0 en alfa** — no tocar | **El DRBD del kernel mainline es 8.4.11, de hace ~8 años.** LINBIT está subiendo 9.3 a upstream (podría llegar en Linux 7.2, sep/oct-2026). Hoy: **módulo out-of-tree por DKMS**, con lo que implica en parcheo de kernel |
-| `drbd-utils` | **9.34.0** | **No mezclar `drbd-utils` 9.x con el módulo in-tree 8.4**: la sintaxis de config no cuadra y produce fallos confusos |
-| Patroni | **4.1.4** (2026-07-07); líneas 4.0.10 y 3.3.11 parcheadas el mismo día | **Respuesta por defecto para HA de PostgreSQL** (§5.2) |
-| keepalived | **2.4.3** | VRRP: alternativa **ligera** para IP virtual sin cluster completo (§5.5) |
-| Automatización | Rol de sistema **`ha_cluster`** (RHEL) o `crm cluster init` (SUSE) | Cluster declarativo y versionado > sesión interactiva de `pcs` irreproducible |
+| Pacemaker | **3.0.3** (2026-07-28) and **2.1.11** (2026-06-29): **both lines alive** | 3.0 (GA 2025-01-08) exists to **remove deprecated legacy syntax**. Greenfield → 3.0.x if the distro ships it; otherwise 2.1.x, no drama |
+| Corosync | **3.1.10** (2025-11-15) | Annual cadence (releases in November). Stable and boring, which is what you want in the membership layer |
+| `pcs` | **0.12.3** (2026-07-10) / **0.11.12.1** (2026-07-14) — two maintained lines | **The tool on RHEL/Fedora/Ubuntu.** On RHEL 10, the **standalone `pcsd` web UI no longer exists**: it moves to `cockpit-ha-cluster` |
+| `crmsh` | **5.0.0** (2025-08-15); **5.1.0-rc2** (2026-06-29) | **The tool on SUSE/SLES.** SLE HA 16 is built around `crm cluster init`. **Neither `pcs` nor `crmsh` is obsolete**: you choose by vendor support, not by taste |
+| `resource-agents` | **4.18.0** (2026-04-08) | Active |
+| `fence-agents` | **4.17.0** (2026-01-05) | Active |
+| `sbd` | **1.5.2** (2023-01-09) — last *release*; repository with activity (commits in Jan 2026) | **Slow cadence**: use it with the version your distro packages and do not assume recent upstream fixes. It is still the reference mechanism when there is no PDU/BMC |
+| DRBD (module) | **9.3.3** (2026-07-01) out-of-tree from LINBIT; **10.0.0 in alpha** — do not touch | **The DRBD in the mainline kernel is 8.4.11, from ~8 years ago.** LINBIT is upstreaming 9.3 (it could land in Linux 7.2, Sep/Oct 2026). Today: **out-of-tree module via DKMS**, with everything that implies for kernel patching |
+| `drbd-utils` | **9.34.0** | **Do not mix `drbd-utils` 9.x with the in-tree 8.4 module**: the config syntax does not match and it produces confusing failures |
+| Patroni | **4.1.4** (2026-07-07); lines 4.0.10 and 3.3.11 patched the same day | **Default answer for PostgreSQL HA** (§5.2) |
+| keepalived | **2.4.3** | VRRP: a **lightweight** alternative for a virtual IP without a full cluster (§5.5) |
+| Automation | The **`ha_cluster`** system role (RHEL) or `crm cluster init` (SUSE) | A declarative, versioned cluster > an irreproducible interactive `pcs` session |
 
-**Estado de los filesystems de cluster — cambio importante, verificado**:
+**Status of cluster filesystems — an important, verified change**:
 
-- **GFS2 sale de Red Hat.** El *Resilient Storage Add-On* **queda descontinuado a partir de RHEL
-  10**: los paquetes `gfs2-utils`, `dlm` y `ctdb` se discontinúan y **los módulos `gfs2` y `dlm`
-  se han eliminado del kernel de RHEL 10**. Sigue soportado en RHEL 7/8/9 hasta el fin de su
-  ciclo de mantenimiento — ese es tu plazo de migración, no una prórroga indefinida.
-- **OCFS2 sale de SUSE.** Deprecado en SLE HA 15 SP7 y **no estará en SLE HA 16**; SUSE
-  documenta la migración **a GFS2** (aviso: GFS2 **no soporta reflink**, a diferencia de OCFS2).
-- **Las dos distribuciones han intercambiado su filesystem de cluster preferido.** Cualquier
-  diseño multi-proveedor tiene que asumirlo.
-- **Consecuencia de criterio**: en RHEL 10+ **no hay filesystem de bloque compartido soportado
-  en el kernel**. El diseño activo/activo sobre disco compartido deja de ser una opción por
-  defecto; lo que queda es activo/pasivo con XFS sobre almacenamiento compartido, un
-  almacenamiento distribuido (CephFS y similares) o exportar por NFS/SMB desde un par en
-  activo/pasivo. **Elegir GFS2 hoy para algo nuevo exige justificar el ciclo de vida.**
+- **GFS2 is leaving Red Hat.** The *Resilient Storage Add-On* **is discontinued from RHEL
+  10 onwards**: the `gfs2-utils`, `dlm` and `ctdb` packages are discontinued and **the `gfs2` and `dlm`
+  modules have been removed from the RHEL 10 kernel**. It remains supported on RHEL 7/8/9 until the end of their
+  maintenance cycle — that is your migration window, not an open-ended extension.
+- **OCFS2 is leaving SUSE.** Deprecated in SLE HA 15 SP7 and **it will not be in SLE HA 16**; SUSE
+  documents migration **to GFS2** (warning: GFS2 **does not support reflink**, unlike OCFS2).
+- **The two distributions have swapped their preferred cluster filesystem.** Any
+  multi-vendor design has to take that on board.
+- **Consequence for criteria**: on RHEL 10+ **there is no supported shared-block filesystem
+  in the kernel**. Active/active design over shared disk stops being a default
+  option; what remains is active/passive with XFS over shared storage, distributed
+  storage (CephFS and similar) or exporting over NFS/SMB from an active/passive pair. **Choosing GFS2
+  today for something new requires justifying the lifecycle.**
 
-## 3. La pregunta previa: ¿de verdad necesitas HA?
+## 3. The prior question: do you really need HA?
 
-**Es la sección más importante del documento.** Antes de instalar nada, se responde por escrito:
+**It is the most important section in the document.** Before installing anything, answer in writing:
 
-1. **¿Qué SPOF elimina el cluster, y cuáles deja?** Un cluster de dos nodos en el mismo rack,
-   con la misma PDU, el mismo switch y la misma cabina no elimina casi nada: mueve el punto
-   único de fallo del servidor al switch. **Dibuja los dominios de fallo antes de comprar
-   licencias.**
-2. **¿Cuál es el objetivo de disponibilidad, y de dónde sale?** Si viene de un SLO con impacto
-   de negocio detrás (`sre-practice-standards`), adelante. Si viene de "queremos que no se
-   caiga", no hay requisito, hay ansiedad.
-3. **¿Cuánto downtime cuesta de verdad un minuto?** Compáralo con el coste de operar un cluster:
-   segundo nodo, dispositivos de fencing, red dedicada, formación, ventanas de parcheo dobles y
-   un modo de fallo nuevo que nadie del equipo ha visto antes.
-4. **¿Quién opera esto a las 3 de la mañana?** Un cluster que solo entiende una persona **reduce**
-   la disponibilidad real. Si el equipo de guardia no sabe leer un `crm_mon` ni cuándo poner el
-   cluster en mantenimiento, el cluster es un riesgo, no un control.
-5. **¿El estado del servicio es compatible con la conmutación?** Un servicio que tarda 8 minutos
-   en recuperar su base de datos tras un corte sucio no gana nada con un failover de 20 segundos.
+1. **Which SPOF does the cluster remove, and which ones does it leave?** A two-node cluster in the same rack,
+   with the same PDU, the same switch and the same storage array removes almost nothing: it moves the single
+   point of failure from the server to the switch. **Draw the failure domains before buying
+   licences.**
+2. **What is the availability objective, and where does it come from?** If it comes from an SLO with business
+   impact behind it (`sre-practice-standards`), go ahead. If it comes from "we want it not to
+   go down", there is no requirement, there is anxiety.
+3. **How much does a minute of downtime really cost?** Compare it with the cost of operating a cluster:
+   a second node, fencing devices, a dedicated network, training, double patching windows and
+   a new failure mode nobody on the team has seen before.
+4. **Who operates this at 3 in the morning?** A cluster only one person understands **reduces**
+   real availability. If the on-call team cannot read a `crm_mon` or know when to put the
+   cluster into maintenance, the cluster is a risk, not a control.
+5. **Is the service's state compatible with failover?** A service that takes 8 minutes
+   to recover its database after a dirty shutdown gains nothing from a 20-second failover.
 
-### 3.1 Alternativas más simples que casi siempre bastan
+### 3.1 Simpler alternatives that almost always suffice
 
-Se descartan **por escrito** antes de montar Pacemaker:
+They are ruled out **in writing** before building Pacemaker:
 
-| Alternativa | Cuándo basta |
+| Alternative | When it suffices |
 |---|---|
-| **Servicio con `Restart=on-failure` y monitorización** | Cuando el fallo típico es que el proceso se muere, no que el hardware arde. Cubre la mayoría de incidentes reales |
-| **Balanceador delante de N backends sin estado** | El patrón más robusto que existe: sin quórum, sin fencing, sin split-brain. **Si puedes sacar el estado del servicio, hazlo y ahórrate el cluster entero** |
-| **Réplica con promoción manual documentada** | RTO de minutos aceptable. Un runbook probado + una réplica al día vale más que un cluster que nadie ha ejercitado |
-| **VRRP (`keepalived`) para la IP** | Solo hace falta que una IP se mueva entre dos nodos. Sin CIB, sin fencing, sin agentes |
-| **Orquestador** | El servicio ya está en contenedores y lo que quieres es reprogramación automática |
-| **Servicio gestionado / cluster del proveedor** | En nube: el HA lo opera otro y sale más barato que el tuyo |
+| **A service with `Restart=on-failure` and monitoring** | When the typical failure is the process dying, not the hardware burning. It covers most real incidents |
+| **A load balancer in front of N stateless backends** | The most robust pattern there is: no quorum, no fencing, no split-brain. **If you can move the state out of the service, do it and save yourself the whole cluster** |
+| **A replica with a documented manual promotion** | An RTO of minutes is acceptable. A tested runbook + a daily replica is worth more than a cluster nobody has exercised |
+| **VRRP (`keepalived`) for the IP** | All you need is an IP moving between two nodes. No CIB, no fencing, no agents |
+| **An orchestrator** | The service is already in containers and what you want is automatic rescheduling |
+| **A managed service / the provider's cluster** | In the cloud: somebody else operates the HA and it comes out cheaper than yours |
 
-**Regla de decisión**: monta Pacemaker cuando necesites **conmutación automática de un recurso
-con estado, con exclusión mutua garantizada** — y estés dispuesto a mantener fencing probado.
-En cualquier otro caso, hay una respuesta más simple, y la respuesta más simple es la correcta.
+**Decision rule**: build Pacemaker when you need **automatic failover of a stateful
+resource with guaranteed mutual exclusion** — and you are willing to maintain tested fencing.
+In any other case, there is a simpler answer, and the simpler answer is the correct one.
 
-## 4. Quórum, split-brain y fencing
+## 4. Quorum, split-brain and fencing
 
-### 4.1 Quórum
+### 4.1 Quorum
 
-- **Tres nodos como número mínimo sano.** El quórum es aritmética, no opinión: con 3 nodos
-  sobrevives a la pérdida de 1 con mayoría real.
-- **Dos nodos sin árbitro es una máquina de corromper datos.** Ante una partición, ambos nodos
-  ven "el otro no está" y ambos concluyen lo mismo. Lo único que evita que los dos monten el
-  dato es el fencing — y si el fencing también depende de la red partida, no evita nada.
-- Parámetros de `votequorum` (texto verbatim del manual, para que no se citen de memoria):
-  - **`two_node`**: *"Enables two node cluster operations (default: 0)"*; fija artificialmente el
-    quórum a 1 en clusters de dos nodos. Nota del manual: *"enabling `two_node: 1` automatically
+- **Three nodes as the minimum sane number.** Quorum is arithmetic, not opinion: with 3 nodes
+  you survive the loss of 1 with a real majority.
+- **Two nodes with no arbiter is a data-corruption machine.** Faced with a partition, both nodes
+  see "the other is not there" and both conclude the same thing. The only thing that stops both mounting
+  the data is fencing — and if fencing also depends on the partitioned network, it stops nothing.
+- `votequorum` parameters (verbatim text from the manual, so they are not quoted from memory):
+  - **`two_node`**: *"Enables two node cluster operations (default: 0)"*; it artificially sets
+    quorum to 1 in two-node clusters. Note from the manual: *"enabling `two_node: 1` automatically
     enables `wait_for_all`"*.
-  - **`wait_for_all`**: *"Enables Wait For All (WFA) feature (default: 0)"* — el cluster
+  - **`wait_for_all`**: *"Enables Wait For All (WFA) feature (default: 0)"* — the cluster
     *"will be quorate for the first time only after all nodes have been visible at least once at
-    the same time"*. Traducción operativa: **evita que un solo nodo arranque solo tras un corte
-    general y se declare dueño de todo**. Es una protección real y barata.
-  - **`last_man_standing`**: recalcula dinámicamente `expected_votes` y el quórum bajo ciertas
-    condiciones, con una ventana configurable (por defecto 10 s). **Peligroso sin fencing
-    impecable**: reduce el listón del quórum justo cuando el cluster está degradado.
-  - **`auto_tie_breaker`**: permite sobrevivir a la caída simultánea del 50 % de los nodos de
-    forma determinista; por defecto gana el `nodeid` más bajo, ajustable con
+    the same time"*. Operational translation: **it prevents a single node booting alone after a general
+    outage and declaring itself owner of everything**. It is a real and cheap protection.
+  - **`last_man_standing`**: dynamically recalculates `expected_votes` and quorum under certain
+    conditions, with a configurable window (10 s by default). **Dangerous without impeccable
+    fencing**: it lowers the quorum bar precisely when the cluster is degraded.
+  - **`auto_tie_breaker`**: allows surviving the simultaneous loss of 50 % of the nodes
+    deterministically; by default the lowest `nodeid` wins, adjustable with
     `auto_tie_breaker_node`.
-- **`corosync-qnetd` + `corosync-qdevice` es la respuesta correcta para dos nodos.** Un tercer
-  árbitro que **no tiene por qué ser un nodo del cluster** (un host pequeño en otro dominio de
-  fallo). Coste ridículo comparado con lo que evita. **Un cluster de dos nodos sin qdevice y sin
-  fencing fiable no se pone en producción.**
-- **El árbitro tiene que estar en otro dominio de fallo.** Un qnetd en el mismo rack, el mismo
-  switch o la misma VM que un nodo no arbitra nada.
-- **Red de Corosync**: dedicada o al menos aislada, con **redundancia de enlace** (varios
-  `ring`), latencia baja y estable. Corosync es sensible a la latencia y al jitter: **una red
-  compartida con backups o replicación produce fencings espurios a las 3 de la mañana**. El
-  diseño de esa red es de `networking-standards`; el requisito es de aquí.
-- **`no-quorum-policy`**: el default sensato es `stop` (parar recursos al perder quórum).
-  `ignore` es la vía rápida al split-brain y solo tiene sentido en configuraciones muy concretas
-  con fencing perfecto. **`no-quorum-policy=ignore` copiado de un blog es una causa habitual de
-  pérdida de datos.**
+- **`corosync-qnetd` + `corosync-qdevice` is the right answer for two nodes.** A third
+  arbiter that **does not have to be a cluster node** (a small host in another failure
+  domain). A ridiculous cost compared with what it avoids. **A two-node cluster with no qdevice and no
+  reliable fencing does not go into production.**
+- **The arbiter has to be in another failure domain.** A qnetd in the same rack, the same
+  switch or the same VM as a node arbitrates nothing.
+- **Corosync network**: dedicated or at least isolated, with **link redundancy** (several
+  `ring`s), low and stable latency. Corosync is sensitive to latency and jitter: **a network
+  shared with backups or replication produces spurious fencings at 3 in the morning**. The
+  design of that network belongs to `networking-standards`; the requirement comes from here.
+- **`no-quorum-policy`**: the sensible default is `stop` (stop resources on losing quorum).
+  `ignore` is the express route to split-brain and only makes sense in very specific configurations
+  with perfect fencing. **`no-quorum-policy=ignore` copied from a blog is a common cause of
+  data loss.**
 
-### 4.2 Fencing / STONITH: la tesis
+### 4.2 Fencing / STONITH: the thesis
 
-**Sin fencing probado no hay HA.** El cluster no puede distinguir "el nodo está muerto" de "el
-nodo no me contesta pero sigue escribiendo en el disco". La única forma de convertir la
-incertidumbre en certeza es **matar el nodo** y confirmar que ha muerto.
+**Without tested fencing there is no HA.** The cluster cannot distinguish "the node is dead" from "the
+node is not answering me but is still writing to disk". The only way to turn that
+uncertainty into certainty is **to kill the node** and confirm it has died.
 
-- **`stonith-enabled=false` es el pecado capital de este dominio.** Es la línea que aparece en
-  todos los tutoriales de "monta tu primer cluster" y en todos los postmortems de corrupción.
-  Está **prohibida** fuera de un laboratorio desechable, y en un laboratorio se documenta que lo
-  es. Un cluster con STONITH deshabilitado no es un cluster degradado: es dos servidores con un
-  sistema que les da permiso para pisarse.
-- **Agentes por plataforma** (elige por lo que hay debajo, no por lo que es fácil):
+- **`stonith-enabled=false` is this domain's cardinal sin.** It is the line that appears in
+  every "build your first cluster" tutorial and in every corruption postmortem.
+  It is **forbidden** outside a disposable lab, and in a lab it is documented as such.
+  A cluster with STONITH disabled is not a degraded cluster: it is two servers with a
+  system giving them permission to trample each other.
+- **Agents by platform** (choose by what is underneath, not by what is easy):
 
-| Sustrato | Agente | Aviso |
+| Substrate | Agent | Warning |
 |---|---|---|
-| Servidor físico con BMC | `fence_ipmilan`, `fence_idrac`, `fence_ilo4`/`fence_ilo5` | **El BMC tiene que estar en una red que sobreviva a la partición**, y sus credenciales son de altísimo privilegio (`identity-access-management-standards`). Un BMC alimentado por la misma PSU que el nodo no siempre sirve |
-| PDU gestionada | `fence_apc_snmp` y equivalentes | Fiable y brutal. Cuidado con servidores de doble alimentación: **hay que cortar ambas tomas** o no se apaga nada |
-| Sin BMC ni PDU | **SBD** (`fence_sbd`) | Modo con disco (1–3 dispositivos; 2–3 recomendados para cargas críticas) o **diskless** solo con watchdog |
-| Hipervisor | `fence_vmware_rest`, agentes de libvirt | El hipervisor pasa a ser SPOF del fencing: tenlo en cuenta |
-| Nube | `fence_aws`, `fence_gce`, `fence_azure_arm` | Dependen de la API del proveedor y de credenciales: una caída de la API del proveedor es una caída del fencing |
+| Physical server with a BMC | `fence_ipmilan`, `fence_idrac`, `fence_ilo4`/`fence_ilo5` | **The BMC has to be on a network that survives the partition**, and its credentials are extremely privileged (`identity-access-management-standards`). A BMC powered by the same PSU as the node is not always any use |
+| Managed PDU | `fence_apc_snmp` and equivalents | Reliable and brutal. Careful with dual-power servers: **you have to cut both feeds** or nothing switches off |
+| No BMC and no PDU | **SBD** (`fence_sbd`) | Disk mode (1–3 devices; 2–3 recommended for critical workloads) or **diskless** with a watchdog only |
+| Hypervisor | `fence_vmware_rest`, libvirt agents | The hypervisor becomes the fencing SPOF: bear it in mind |
+| Cloud | `fence_aws`, `fence_gce`, `fence_azure_arm` | They depend on the provider's API and on credentials: an outage of the provider's API is a fencing outage |
 
-- **SBD**, precisiones verificadas y no negociables:
-  - **Watchdog por hardware, siempre.** ClusterLabs es explícito: un watchdog **software**
-    depende de que el SO funcione correctamente, y por tanto **no es fiable para fencing**.
-    `softdog` vale para un laboratorio y **para nada más**.
-  - El demonio `sbd` **debe estar arrancado antes que los servicios del cluster**, y **el cluster
-    no puede gestionarlo como recurso**. Es infraestructura, no recurso.
-  - Modo con disco: el dispositivo compartido es un SPOF; con 2–3 dispositivos en cabinas
-    distintas deja de serlo.
-- **`fencing loop`**: el nodo A mata a B, B arranca, no se pone de acuerdo, mata a A, y así hasta
-  que alguien lo para. Se mitiga con retardo de arranque de los servicios del cluster tras el
-  boot y con `wait_for_all`.
-- **`fence racing`**: los dos nodos de un par se disparan simultáneamente y el cluster queda sin
-  nadie. Se mitiga con **retardo asimétrico** en los dispositivos de fencing (`pcmk_delay_base` /
-  `pcmk_delay_max`, distinto por nodo) para que uno gane siempre.
-- **Topología de fencing**: cuando hay varios mecanismos (BMC + PDU), se define el **orden y el
-  respaldo** (`pcs stonith level`), no se dejan dos agentes sueltos compitiendo.
+- **SBD**, verified and non-negotiable clarifications:
+  - **Hardware watchdog, always.** ClusterLabs is explicit: a **software** watchdog
+    depends on the OS working correctly, and is therefore **not reliable for fencing**.
+    `softdog` is fine for a lab and **for nothing else**.
+  - The `sbd` daemon **must be started before the cluster services**, and **the cluster
+    cannot manage it as a resource**. It is infrastructure, not a resource.
+  - Disk mode: the shared device is a SPOF; with 2–3 devices in different arrays
+    it stops being one.
+- **`fencing loop`**: node A kills B, B boots, they do not agree, it kills A, and so on until
+  somebody stops it. It is mitigated with a delay on starting the cluster services after
+  boot and with `wait_for_all`.
+- **`fence racing`**: both nodes of a pair fire simultaneously and the cluster is left with
+  nobody. It is mitigated with an **asymmetric delay** on the fencing devices (`pcmk_delay_base` /
+  `pcmk_delay_max`, different per node) so one always wins.
+- **Fencing topology**: when there are several mechanisms (BMC + PDU), the **order and the
+  fallback** are defined (`pcs stonith level`), not two loose agents left competing.
 
-### 4.3 LA PRUEBA OBLIGATORIA
+### 4.3 THE MANDATORY TEST
 
-**Antes de que un cluster reciba tráfico de producción, se apaga un nodo en sucio.** No
-`pcs cluster stop`, no `reboot`: **corte de alimentación, `echo c > /proc/sysrq-trigger`, o
-desconectar la red del nodo activo.** Y se comprueba:
+**Before a cluster takes production traffic, a node is powered off dirty.** Not
+`pcs cluster stop`, not `reboot`: **cut the power, `echo c > /proc/sysrq-trigger`, or
+unplug the active node's network.** And you check:
 
-1. El nodo superviviente **fencea** al otro y lo confirma (no "cree" que lo ha apagado).
-2. Los recursos arrancan en el superviviente dentro del tiempo esperado, y se **cronometra**.
-3. El dato está **íntegro**: filesystem consistente, base de datos sin corrupción, sin escrituras
-   dobles.
-4. El nodo fenceado, al volver, **no se lleva por delante** al que está sirviendo.
-5. Y se repite **provocando la partición de red** en vez del apagado: es un fallo distinto y
-   revela si el fencing depende de la red que acaba de partirse.
+1. The surviving node **fences** the other and confirms it (it does not "believe" it has switched it off).
+2. The resources start on the survivor within the expected time, and it is **timed**.
+3. The data is **intact**: consistent filesystem, database with no corruption, no double
+   writes.
+4. The fenced node, on returning, **does not take out** the one that is serving.
+5. And it is repeated **causing a network partition** instead of the power-off: it is a different failure and
+   reveals whether fencing depends on the network that has just partitioned.
 
-**Un cluster que no ha pasado esta prueba no está en producción, está en pruebas** — se
-comporte como se comporte el resto del tiempo.
+**A cluster that has not passed this test is not in production, it is in testing** — however
+it behaves the rest of the time.
 
-## 5. Pacemaker en la práctica y patrones por servicio
+## 5. Pacemaker in practice and patterns by service
 
-### 5.1 Recursos, agentes y restricciones
+### 5.1 Resources, agents and constraints
 
-- **Clase de agente**: `ocf:` cuando existe agente OCF (tiene `monitor` de verdad y semántica de
-  estado), `systemd:` cuando lo que gestionas es una unidad ya existente y bien hecha. **`lsb:`
-  solo en legacy**: los scripts init mienten sobre el estado.
-- **Todo recurso lleva operación `monitor` con `interval` explícito.** Un recurso sin monitor es
-  un recurso que el cluster cree vivo para siempre. Y con `timeout` **realista**: un timeout
-  corto en un servicio lento produce conmutaciones fantasma; uno largo alarga el corte real.
-- **`resource-stickiness` > 0 por defecto.** Sin *stickiness*, el recurso vuelve al nodo
-  "preferido" en cuanto reaparece, provocando **un segundo corte gratis** justo después del
-  primero. El failback es una decisión, no un reflejo.
-- **`migration-threshold` + `failure-timeout`**: limita cuántos fallos aguanta un recurso en un
-  nodo antes de moverse, y cuándo se olvida el fallo. Sin ellos, un recurso rebota entre nodos.
-- **Las restricciones mal puestas son la causa nº1 de conmutaciones sorpresa.** Criterio:
-  - **Colocación** (`colocation`) y **orden** (`order`) son cosas distintas y se confunden a
-    diario: "juntos" no implica "en este orden". Se declaran **las dos** cuando aplica.
-  - Los `score` intermedios (ni `INFINITY` ni 0) producen comportamientos que nadie predice.
-    **Usa `INFINITY` o no pongas la restricción.**
-  - Un **grupo** (`group`) es azúcar sintáctico de colocación + orden implícitos. Cómodo y
-    legible; pero implica que **el fallo de un miembro arrastra a los siguientes**. Si eso no es
-    lo que quieres, no uses grupo.
-  - **`clone`** para servicios activo/activo sin estado; **`promotable`** para el patrón
-    primario/réplica.
-  - **`crm_simulate` antes de aplicar** cualquier cambio de restricciones en producción: te dice
-    qué va a mover el cluster **antes** de que lo mueva. Es la herramienta más infrautilizada del
+- **Agent class**: `ocf:` when an OCF agent exists (it has a real `monitor` and state
+  semantics), `systemd:` when what you manage is an existing, well-built unit. **`lsb:`
+  only in legacy**: init scripts lie about state.
+- **Every resource carries a `monitor` operation with an explicit `interval`.** A resource with no monitor is
+  a resource the cluster believes alive forever. And with a **realistic** `timeout`: a short
+  timeout on a slow service produces phantom failovers; a long one lengthens the real outage.
+- **`resource-stickiness` > 0 by default.** Without *stickiness*, the resource goes back to the
+  "preferred" node as soon as it reappears, causing **a second free outage** right after the
+  first. Failback is a decision, not a reflex.
+- **`migration-threshold` + `failure-timeout`**: they limit how many failures a resource tolerates on a
+  node before moving, and when the failure is forgotten. Without them, a resource bounces between nodes.
+- **Badly placed constraints are the number 1 cause of surprise failovers.** Criteria:
+  - **Colocation** (`colocation`) and **ordering** (`order`) are different things and are confused
+    daily: "together" does not imply "in this order". **Both** are declared when applicable.
+  - Intermediate `score`s (neither `INFINITY` nor 0) produce behaviours nobody predicts.
+    **Use `INFINITY` or do not add the constraint.**
+  - A **group** (`group`) is syntactic sugar for implicit colocation + ordering. Convenient and
+    readable; but it implies that **a member's failure drags the following ones with it**. If that is not
+    what you want, do not use a group.
+  - **`clone`** for stateless active/active services; **`promotable`** for the
+    primary/replica pattern.
+  - **`crm_simulate` before applying** any constraint change in production: it tells you
+    what the cluster is going to move **before** it moves it. It is the most underused tool in the
     stack.
-- **El CIB es configuración, y va versionado.** Se exporta (`pcs cluster cib` / `cibadmin -Q`) al
-  repositorio, y se despliega con el rol `ha_cluster` o equivalente (`iac-standards`). **Editar
-  `cib.xml` a mano en disco está prohibido** — se usa `pcs`/`crm`/`cibadmin`.
+- **The CIB is configuration, and it is versioned.** It is exported (`pcs cluster cib` / `cibadmin -Q`) to the
+  repository, and deployed with the `ha_cluster` role or equivalent (`iac-standards`). **Editing
+  `cib.xml` by hand on disk is forbidden** — use `pcs`/`crm`/`cibadmin`.
 
-### 5.2 PostgreSQL: **Patroni, no Pacemaker** (criterio claro)
+### 5.2 PostgreSQL: **Patroni, not Pacemaker** (a clear criterion)
 
-**Para PostgreSQL, la respuesta por defecto hoy es Patroni + un DCS distribuido (etcd o Consul)
-+ HAProxy delante. Pacemaker es la excepción.**
+**For PostgreSQL, the default answer today is Patroni + a distributed DCS (etcd or Consul)
++ HAProxy in front. Pacemaker is the exception.**
 
-Motivos, no gustos:
-- Patroni **entiende PostgreSQL**: roles de replicación, promoción, *rewind*, lag. Pacemaker es
-  un gestor de recursos genérico y todo lo que sabe de Postgres se lo cuenta un agente.
-- Patroni cubre explícitamente el caso feo: **degrada el primario cuando queda aislado de la
-  mayoría**, y `maximum_lag_on_failover` impide promover una réplica demasiado atrasada — que es
-  exactamente la decisión que arruina un failover mal hecho.
+Reasons, not tastes:
+- Patroni **understands PostgreSQL**: replication roles, promotion, *rewind*, lag. Pacemaker is
+  a generic resource manager and everything it knows about Postgres comes from an agent.
+- Patroni explicitly covers the ugly case: **it demotes the primary when it is isolated from the
+  majority**, and `maximum_lag_on_failover` prevents promoting a replica that lags too far behind — which is
+  exactly the decision that ruins a badly executed failover.
 
-**Pacemaker sigue siendo la respuesta cuando**:
-- el HA de la base de datos es **por almacenamiento compartido**, no por replicación;
-- PostgreSQL es **un recurso más** dentro de un cluster que ya gestiona otros servicios y
-  dependencias del SO;
-- hay un stack soportado por el proveedor construido alrededor de Pacemaker (típico en SAP), y
-  salirse de él te deja sin soporte.
+**Pacemaker is still the answer when**:
+- the database's HA is **through shared storage**, not through replication;
+- PostgreSQL is **one more resource** inside a cluster that already manages other services and
+  OS dependencies;
+- there is a vendor-supported stack built around Pacemaker (typical with SAP), and
+  stepping outside it leaves you without support.
 
-**Trampas de Patroni que hay que anotar en el diseño**:
-- **El DCS es el nuevo quórum.** Un etcd de un solo nodo, o —clásico— corriendo en las mismas
-  máquinas que la base de datos, convierte una caída del primario en una caída total. **etcd
-  distribuido, quorado y en dominios de fallo distintos**, o no hay HA.
-- Con **solo dos nodos de PostgreSQL** el quórum vuelve a ser incómodo; considérese un tercer
-  nodo (aunque sea testigo) antes de aceptar el diseño.
-- El enrutado de clientes (HAProxy contra la API REST de Patroni) es **parte del diseño**, no un
-  detalle: sin él, el failover ocurre y nadie se entera.
+**Patroni traps to note in the design**:
+- **The DCS is the new quorum.** A single-node etcd, or —the classic— running on the same
+  machines as the database, turns a primary failure into a total outage. **A distributed, quorate
+  etcd in different failure domains**, or there is no HA.
+- With **only two PostgreSQL nodes** quorum becomes awkward again; consider a third
+  node (even a witness) before accepting the design.
+- Client routing (HAProxy against Patroni's REST API) is **part of the design**, not a
+  detail: without it, the failover happens and nobody notices.
 
-**El motor, su replicación, su tuning y su PITR son de `data-platform-standards`.** Aquí solo se
-fija **qué mecanismo de cluster se usa y por qué**.
+**The engine, its replication, its tuning and its PITR belong to `data-platform-standards`.** Here only
+**which cluster mechanism is used and why** is set.
 
-### 5.3 IP virtual
+### 5.3 Virtual IP
 
-- `ocf:heartbeat:IPaddr2` es el recurso más común y el más fácil de romper: **la IP virtual va
-  colocada y ordenada con el servicio que la usa** (grupo o colocation+order), o acabarás con la
-  IP en un nodo y el servicio en otro.
-- Se comprueba que el ARP gratuito llega y que los switches actualizan su tabla: un failover
-  técnicamente correcto con la red sin enterarse es un corte igual.
-- Si lo **único** que necesitas es mover una IP, **no montes Pacemaker**: `keepalived` (§5.5).
+- `ocf:heartbeat:IPaddr2` is the most common resource and the easiest to break: **the virtual IP is
+  colocated and ordered with the service that uses it** (group or colocation+order), or you will end up with the
+  IP on one node and the service on another.
+- Check that the gratuitous ARP arrives and that the switches update their table: a failover
+  that is technically correct with the network unaware of it is still an outage.
+- If **all** you need is to move an IP, **do not build Pacemaker**: `keepalived` (§5.5).
 
-### 5.4 NFS / Samba en activo-pasivo
+### 5.4 NFS / Samba in active-passive
 
-- Patrón: almacenamiento compartido + `Filesystem` + IP virtual + el servicio, todo en un
-  **grupo**, con orden estricto. Solo un nodo monta.
-- **Lo que rompe a la gente**: el **estado de bloqueos**. Un failover de NFS sin migrar el estado
-  de locks deja clientes colgados o, peor, escribiendo sobre bloqueos que ya no valen. El
-  directorio de estado va en el almacenamiento compartido, y **se prueba con clientes reales
-  escribiendo durante la conmutación**, no con un `showmount`.
-- Con Samba y CTDB en juego: comprobar el ciclo de vida del paquete en tu distro antes de
-  diseñar (en RHEL 10, `ctdb` va en el lote discontinuado del Resilient Storage Add-On).
+- Pattern: shared storage + `Filesystem` + virtual IP + the service, all in a
+  **group**, with strict ordering. Only one node mounts.
+- **What breaks people**: the **lock state**. An NFS failover without migrating the lock
+  state leaves clients hanging or, worse, writing over locks that are no longer valid. The
+  state directory goes on the shared storage, and **it is tested with real clients
+  writing during the failover**, not with a `showmount`.
+- With Samba and CTDB in play: check the package's lifecycle in your distro before
+  designing (on RHEL 10, `ctdb` is in the discontinued batch of the Resilient Storage Add-On).
 
-### 5.5 VRRP con `keepalived` (la opción ligera, y muchas veces la correcta)
+### 5.5 VRRP with `keepalived` (the lightweight option, and often the right one)
 
-- Para **HAProxy/nginx u otro frontal sin estado** con una IP flotante, `keepalived` (2.4.x) hace
-  el trabajo sin CIB, sin agentes y sin fencing.
-- **Sus límites, dichos claramente**: VRRP **no tiene quórum ni fencing**. Ante una partición,
-  ambos nodos pueden reclamar la IP (dos MAC anunciando la misma dirección). Es aceptable
-  precisamente porque **delante de servicios sin estado un split-brain no corrompe nada**:
-  duplica tráfico, no datos.
-- **Regla dura**: `keepalived` **nunca** delante de un recurso con estado que no tolere doble
-  escritura. Ahí hace falta quórum y fencing, es decir, Pacemaker (o el mecanismo propio del
-  motor, §5.2).
+- For **HAProxy/nginx or another stateless frontend** with a floating IP, `keepalived` (2.4.x) does
+  the job with no CIB, no agents and no fencing.
+- **Its limits, stated plainly**: VRRP **has no quorum and no fencing**. Faced with a partition,
+  both nodes can claim the IP (two MACs announcing the same address). It is acceptable
+  precisely because **in front of stateless services a split-brain corrupts nothing**:
+  it duplicates traffic, not data.
+- **Hard rule**: `keepalived` **never** in front of a stateful resource that cannot tolerate double
+  writing. There you need quorum and fencing, that is, Pacemaker (or the engine's own
+  mechanism, §5.2).
 
-## 6. Almacenamiento compartido y replicado
+## 6. Shared and replicated storage
 
-**La regla que gobierna toda esta sección**: **un filesystem que no es de cluster, montado en dos
-nodos a la vez, destruye el dato.** No "puede dar problemas": lo destruye, y a menudo en
-silencio, porque cada nodo tiene su propia caché y su propio journal. XFS, ext4, btrfs y ZFS
-**no son filesystems de cluster**. El único mecanismo que impide ese doble montaje en el mundo
-real es el fencing (§4.2), y de ahí que la tesis de este documento sea la que es.
+**The rule that governs this whole section**: **a non-cluster filesystem, mounted on two
+nodes at once, destroys the data.** Not "may cause problems": it destroys it, and often in
+silence, because each node has its own cache and its own journal. XFS, ext4, btrfs and ZFS
+**are not cluster filesystems**. The only mechanism that prevents that double mount in the real
+world is fencing (§4.2), and hence this document's thesis is what it is.
 
-- **Activo/pasivo con XFS sobre almacenamiento compartido** es el patrón por defecto y el que
-  hay que preferir: un solo montaje, recurso `Filesystem` gestionado por el cluster, fencing
-  probado. Simple y suficiente en la mayoría de casos.
-- **Activo/activo con GFS2 u OCFS2** exige un gestor de bloqueos distribuido (`dlm`) y **fencing
-  impecable**: sin él, el `dlm` no puede recuperar y el cluster se bloquea o corrompe. Además,
-  **su futuro está comprometido en las dos grandes familias** (§2): GFS2 fuera de RHEL 10,
-  OCFS2 fuera de SLE HA 16. **Diseño nuevo sobre filesystem de cluster: justificar el ciclo de
-  vida por escrito, y contemplar la salida.**
-- **DRBD** cuando no hay cabina compartida y se quiere replicación de bloque entre nodos:
-  - Modos de replicación: **A** (asíncrono, RPO > 0), **B** (semi-síncrono) y **C** (síncrono,
-    RPO 0 y el que se usa en HA de verdad). **Elegir C salvo que la latencia del enlace lo
-    impida** — y si lo impide, admite que tu RPO no es cero y anótalo en `bcdr-standards`.
-  - **Dual-primary es la trampa clásica.** Solo tiene sentido para el caso corto y controlado
-    (migración en vivo de VMs) y **exige un filesystem de cluster encima**. Guía histórica de
-    LINBIT: en DRBD 9 hay "two-primary", no "multi-primary"; parecer que funciona no es
-    funcionar. **Dual-primary permanente para un filesystem normal = corrupción garantizada.**
-  - **Deuda operativa real**: el módulo es **out-of-tree** (DKMS) y va detrás del kernel. Cada
-    actualización de kernel es un riesgo de arranque sin `/dev/drbdX`. Planifica el parcheo
-    contando con eso. El esfuerzo de subir DRBD 9.3 a mainline está en curso pero **aún no ha
-    aterrizado**; hasta entonces, DKMS.
-  - **No mezclar `drbd-utils` 9.x con el módulo 8.4 del kernel mainline**: la sintaxis de
-    configuración no cuadra.
-- **DRBD no es un backup.** Replica el borrado y la corrupción a la velocidad del enlace.
+- **Active/passive with XFS over shared storage** is the default pattern and the one to
+  prefer: a single mount, a `Filesystem` resource managed by the cluster, tested fencing.
+  Simple and sufficient in most cases.
+- **Active/active with GFS2 or OCFS2** requires a distributed lock manager (`dlm`) and **impeccable
+  fencing**: without it, `dlm` cannot recover and the cluster hangs or corrupts. Besides,
+  **their future is compromised in both big families** (§2): GFS2 out of RHEL 10,
+  OCFS2 out of SLE HA 16. **A new design on a cluster filesystem: justify the
+  lifecycle in writing, and plan the exit.**
+- **DRBD** when there is no shared array and you want block replication between nodes:
+  - Replication modes: **A** (asynchronous, RPO > 0), **B** (semi-synchronous) and **C** (synchronous,
+    RPO 0 and the one used in real HA). **Choose C unless the link's latency makes it
+    impossible** — and if it does, admit your RPO is not zero and note it in `bcdr-standards`.
+  - **Dual-primary is the classic trap.** It only makes sense for the short, controlled case
+    (live VM migration) and **requires a cluster filesystem on top**. Historical LINBIT
+    guidance: in DRBD 9 there is "two-primary", not "multi-primary"; appearing to work is not
+    working. **Permanent dual-primary for a normal filesystem = guaranteed corruption.**
+  - **Real operational debt**: the module is **out-of-tree** (DKMS) and lags behind the kernel. Every
+    kernel update is a risk of booting with no `/dev/drbdX`. Plan the patching
+    accounting for that. The effort to upstream DRBD 9.3 into mainline is under way but **has not
+    landed yet**; until then, DKMS.
+  - **Do not mix `drbd-utils` 9.x with the mainline kernel's 8.4 module**: the configuration
+    syntax does not match.
+- **DRBD is not a backup.** It replicates deletion and corruption at link speed.
 
-## 7. Operación, gates y prohibiciones
+## 7. Operation, gates and prohibitions
 
-### 7.1 Operación
+### 7.1 Operation
 
-- **Modo mantenimiento ANTES de tocar nada.** `pcs property set maintenance-mode=true` (o
-  `pcs node standby` / `crm node standby` para un nodo) antes de parchear, reiniciar un servicio,
-  probar algo o mirar con demasiada curiosidad. **La causa más común de un incidente de cluster
-  es un administrador operando el servicio a mano mientras el cluster mira.**
-- **Un recurso gestionado por el cluster no se toca con `systemctl`.** Ya está prohibido en
-  `linux-administration-standards`; aquí se confirma: `systemctl restart` sobre un recurso
-  gestionado provoca que el cluster lo vea como fallo y, según la configuración, un fencing.
-- **Salir del mantenimiento es parte del procedimiento**, y se verifica que el cluster ve el
-  estado real (`crm_mon -1`, sin fallos pendientes, `pcs status` limpio). Un cluster que lleva
-  semanas en `maintenance-mode` **no está dando HA** y nadie se ha dado cuenta.
-- **Actualizaciones rodando** (`rolling upgrade`), nodo a nodo, con el cluster en marcha:
-  - Pacemaker soporta rolling upgrade **desde 2.0.0 en adelante**; desde versiones anteriores a
-    2.0.0 **no está soportado** — hay que pasar primero por una release 2.x.
-  - Un nodo con Pacemaker 3.0+ **no conecta con nodos Pacemaker Remote de 1.1.14 o anteriores**,
-    y Pacemaker 1 no habla con Remote/bundles de 3.0+. Inventaria antes de empezar.
-  - Pacemaker 3.0 **valida el CIB de forma estricta**: `validate-with` es obligatorio, sensible a
-    mayúsculas, y no admite esquemas antiguos (`pacemaker-1.1`, `pacemaker-next`, etc.). **Un CIB
-    que venía funcionando puede no cargar tras la actualización.** Se prueba con `crm_verify`
-    contra el esquema nuevo antes de tocar el primer nodo.
-- **Monitorización del cluster DESDE FUERA del cluster.** Un cluster que se vigila a sí mismo
-  informa perfectamente hasta el momento en que deja de poder informar. La alerta de "cluster sin
-  quórum" o "nodo fenceado" tiene que salir de un sistema que no está en el cluster
-  (`observability-standards`). Qué vigilar como mínimo:
-  - quórum presente y número de nodos esperados;
-  - **`stonith-enabled` es `true`** (alerta si alguien lo desactiva — pasa);
-  - recursos parados, fallidos o en un nodo inesperado;
-  - **fallos de fencing** (un fencing que falla es un incidente de severidad alta, aunque el
-    servicio siga arriba);
-  - `maintenance-mode` activo más de X horas;
-  - retransmisiones y pérdida de tokens de Corosync (síntoma temprano de la red que causará el
-    próximo fencing espurio);
-  - estado de los dispositivos de fencing: **el BMC/PDU se prueba periódicamente, no cuando hace
-    falta**;
-  - salud de SBD y del watchdog.
-- **Los logs que importan**: `pacemaker.log` / journal de `pacemaker` y `corosync`, y sobre todo
-  **`crm_mon --show-detail` y el historial de fallos del recurso**. En un incidente, la pregunta
-  no es "qué pasó" sino **"por qué el cluster decidió esto"**, y esa respuesta está en la
-  transición del PE (`crm_simulate` sobre el fichero de la transición). Retención de esos logs
-  suficiente para un postmortem (`incident-management-standards`).
-- **Credenciales de fencing**: son credenciales de "apaga este servidor". Van en el gestor de
-  secretos (`secrets-management-standards`), con rotación, y su red de gestión segmentada.
+- **Maintenance mode BEFORE touching anything.** `pcs property set maintenance-mode=true` (or
+  `pcs node standby` / `crm node standby` for one node) before patching, restarting a service,
+  testing something or looking with too much curiosity. **The most common cause of a cluster incident
+  is an administrator operating the service by hand while the cluster watches.**
+- **A cluster-managed resource is not touched with `systemctl`.** It is already forbidden in
+  `linux-administration-standards`; it is confirmed here: `systemctl restart` on a managed
+  resource makes the cluster see it as a failure and, depending on the configuration, a fencing.
+- **Leaving maintenance is part of the procedure**, and you verify that the cluster sees the
+  real state (`crm_mon -1`, no pending failures, a clean `pcs status`). A cluster that has spent
+  weeks in `maintenance-mode` **is not providing HA** and nobody has noticed.
+- **Rolling upgrades**, node by node, with the cluster running:
+  - Pacemaker supports rolling upgrade **from 2.0.0 onwards**; from versions earlier than
+    2.0.0 it is **not supported** — you have to go through a 2.x release first.
+  - A node with Pacemaker 3.0+ **does not connect to Pacemaker Remote nodes of 1.1.14 or earlier**,
+    and Pacemaker 1 does not talk to Remote/bundles of 3.0+. Take inventory before starting.
+  - Pacemaker 3.0 **validates the CIB strictly**: `validate-with` is mandatory, case-sensitive, and
+    does not accept old schemas (`pacemaker-1.1`, `pacemaker-next`, etc.). **A CIB
+    that was working may fail to load after the upgrade.** Test it with `crm_verify`
+    against the new schema before touching the first node.
+- **Monitoring of the cluster FROM OUTSIDE the cluster.** A cluster that watches itself
+  reports perfectly right up until the moment it can no longer report. The "cluster without
+  quorum" or "node fenced" alert has to come out of a system that is not in the cluster
+  (`observability-standards`). What to watch as a minimum:
+  - quorum present and the expected number of nodes;
+  - **`stonith-enabled` is `true`** (alert if somebody disables it — it happens);
+  - resources stopped, failed or on an unexpected node;
+  - **fencing failures** (a fencing that fails is a high-severity incident, even if the
+    service stays up);
+  - `maintenance-mode` active for more than X hours;
+  - Corosync retransmissions and token loss (an early symptom of the network that will cause the
+    next spurious fencing);
+  - the state of the fencing devices: **the BMC/PDU is tested periodically, not when it is
+    needed**;
+  - the health of SBD and the watchdog.
+- **The logs that matter**: `pacemaker.log` / the `pacemaker` and `corosync` journals, and above all
+  **`crm_mon --show-detail` and the resource's failure history**. In an incident, the question
+  is not "what happened" but **"why did the cluster decide this"**, and that answer is in the
+  PE transition (`crm_simulate` over the transition file). Retention of those logs
+  sufficient for a postmortem (`incident-management-standards`).
+- **Fencing credentials**: they are "switch this server off" credentials. They go in the secrets
+  manager (`secrets-management-standards`), with rotation, and their management network segmented.
 
-### 7.2 Ejercicios (gates recurrentes)
+### 7.2 Exercises (recurring gates)
 
-1. **Antes de producción**: la prueba de §4.3 — apagado sucio **y** partición de red — con
-   informe: qué se apagó, cuánto tardó la conmutación, integridad del dato, qué falló.
-2. **Failover programado como mínimo semestral**, en ventana acordada, sobre el cluster de
-   producción. Un failover que solo se probó el día de la instalación no está probado: han
-   cambiado el kernel, los agentes, el firmware del BMC y las reglas de red desde entonces.
-3. **Failback probado.** La vuelta es una conmutación más y suele estar menos ensayada que la
-   ida. Se ejercita explícitamente, y se decide si es automática (con `stickiness` bajo) o
-   manual (recomendado por defecto).
-4. **Informe por ejercicio**: fecha, escenario, tiempo de conmutación medido, desviación frente
-   al objetivo, hallazgos y acciones con dueño. Sin informe, el ejercicio no cuenta.
-5. **Prueba de los dispositivos de fencing por separado** (`pcs stonith fence <nodo>` en ventana):
-   confirma que el BMC responde, que las credenciales siguen siendo válidas y que la red de
-   gestión llega. Es el componente que más se degrada en silencio.
-6. **`crm_simulate` en CI** sobre el CIB versionado ante cualquier cambio de restricciones.
+1. **Before production**: the test of §4.3 — dirty power-off **and** network partition — with a
+   report: what was switched off, how long the failover took, data integrity, what failed.
+2. **A scheduled failover at least every six months**, in an agreed window, on the production
+   cluster. A failover only tested on installation day is not tested: the kernel, the agents,
+   the BMC firmware and the network rules have changed since then.
+3. **Tested failback.** The way back is one more failover and is usually less rehearsed than the
+   way out. It is exercised explicitly, and it is decided whether it is automatic (with low
+   `stickiness`) or manual (recommended by default).
+4. **A report per exercise**: date, scenario, measured failover time, deviation from
+   the objective, findings and actions with an owner. Without a report, the exercise does not count.
+5. **Testing the fencing devices separately** (`pcs stonith fence <node>` in a window):
+   it confirms that the BMC answers, that the credentials are still valid and that the management
+   network reaches it. It is the component that degrades most silently.
+6. **`crm_simulate` in CI** over the versioned CIB on any constraint change.
 
-### 7.3 PROHIBIDO
+### 7.3 FORBIDDEN
 
-- ❌ **`stonith-enabled=false`** en cualquier cosa que no sea un laboratorio desechable
-  documentado como tal. Es la prohibición número uno de este documento.
-- ❌ Cluster en producción **sin la prueba de apagado sucio** de §4.3.
-- ❌ **Cluster de dos nodos sin qdevice/qnetd** (o sin un fencing que demostradamente resuelva la
-  partición).
-- ❌ Árbitro (qnetd) en el mismo dominio de fallo que un nodo del cluster.
-- ❌ **`no-quorum-policy=ignore`** copiado sin entender qué habilita.
-- ❌ **Watchdog software (`softdog`) como fencing en producción**: no es fiable por diseño.
-- ❌ Montar un filesystem **no de cluster** (XFS, ext4, btrfs, ZFS) en dos nodos a la vez.
-- ❌ **DRBD dual-primary permanente** bajo un filesystem que no sea de cluster.
-- ❌ Confundir **replicación con backup**, o **HA con DR** (§1.2).
-- ❌ Operar un recurso gestionado con `systemctl`, o tocar el servicio sin `maintenance-mode`.
-- ❌ Editar `cib.xml` a mano en disco; configurar el cluster solo por sesión interactiva sin
-  dejar el CIB versionado en el repositorio.
-- ❌ Restricciones con `score` intermedios "a ver qué pasa"; restricciones sin `crm_simulate`.
-- ❌ Recurso sin operación `monitor`, o con `timeout` copiado del ejemplo.
-- ❌ `resource-stickiness=0` (failback automático inmediato = segundo corte gratis).
-- ❌ **Exponer el demonio `pcsd` / su interfaz web a una red no confiable.** El grueso de los CVE
-  recientes de `pcs` viene de sus **dependencias empaquetadas en `pcsd`** (tornado, rack, lodash:
-  RHSA-2026:2452 / 2462 / 2469 / 2818 / 2819, feb-2026), no de la lógica del cluster. Red de
-  gestión, y parcheo al ritmo de las erratas de la distro.
-- ❌ Corosync sobre una red compartida con backup o replicación masiva.
-- ❌ **Pacemaker gestionando contenedores de un host** para "darles HA": ver
-  `podman-systemd-containers-standards`. La respuesta es un orquestador, un balanceador con el
-  estado fuera, o downtime aceptado por escrito.
-- ❌ `keepalived`/VRRP delante de un recurso con estado que no tolere doble escritura.
-- ❌ Montar un cluster porque "queremos que no se caiga", sin SLO, sin dominios de fallo
-  dibujados y sin nadie de guardia que sepa operarlo.
-- ❌ Compilar Pacemaker/Corosync a mano en un sistema con soporte del proveedor.
-- ❌ Diseño nuevo sobre GFS2/OCFS2 sin justificar por escrito su ciclo de vida (§2).
+- ❌ **`stonith-enabled=false`** in anything other than a disposable lab
+  documented as such. It is this document's number one prohibition.
+- ❌ A cluster in production **without the dirty power-off test** of §4.3.
+- ❌ **A two-node cluster with no qdevice/qnetd** (or without fencing that demonstrably resolves the
+  partition).
+- ❌ An arbiter (qnetd) in the same failure domain as a cluster node.
+- ❌ **`no-quorum-policy=ignore`** copied without understanding what it enables.
+- ❌ **A software watchdog (`softdog`) as fencing in production**: it is unreliable by design.
+- ❌ Mounting a **non-cluster** filesystem (XFS, ext4, btrfs, ZFS) on two nodes at once.
+- ❌ **Permanent DRBD dual-primary** under a filesystem that is not a cluster one.
+- ❌ Confusing **replication with backup**, or **HA with DR** (§1.2).
+- ❌ Operating a managed resource with `systemctl`, or touching the service without `maintenance-mode`.
+- ❌ Editing `cib.xml` by hand on disk; configuring the cluster only through an interactive session without
+  leaving the CIB versioned in the repository.
+- ❌ Constraints with intermediate `score`s "to see what happens"; constraints without `crm_simulate`.
+- ❌ A resource with no `monitor` operation, or with a `timeout` copied from the example.
+- ❌ `resource-stickiness=0` (immediate automatic failback = a second free outage).
+- ❌ **Exposing the `pcsd` daemon / its web interface to an untrusted network.** The bulk of the recent
+  `pcs` CVEs comes from its **dependencies packaged in `pcsd`** (tornado, rack, lodash:
+  RHSA-2026:2452 / 2462 / 2469 / 2818 / 2819, Feb 2026), not from the cluster logic. Management
+  network, and patching at the pace of the distro's errata.
+- ❌ Corosync over a network shared with backup or massive replication.
+- ❌ **Pacemaker managing a host's containers** to "give them HA": see
+  `podman-systemd-containers-standards`. The answer is an orchestrator, a load balancer with the
+  state outside, or downtime accepted in writing.
+- ❌ `keepalived`/VRRP in front of a stateful resource that cannot tolerate double writing.
+- ❌ Building a cluster because "we want it not to go down", with no SLO, no failure domains
+  drawn and nobody on call who knows how to operate it.
+- ❌ Compiling Pacemaker/Corosync by hand on a system with vendor support.
+- ❌ A new design on GFS2/OCFS2 without justifying its lifecycle in writing (§2).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real:
+Before pinning anything in a real project:
 
-1. **Versiones empaquetadas por tu distribución** de `pacemaker`, `corosync`, `pcs`/`crmsh`,
-   `resource-agents`, `fence-agents` y `sbd` — **no las de upstream**. En clusters manda el
-   soporte del proveedor.
-2. **Ciclo de vida del filesystem de cluster** en tu distro: GFS2 **descontinuado a partir de
-   RHEL 10** (Resilient Storage Add-On; módulos `gfs2` y `dlm` fuera del kernel), OCFS2
-   deprecado en SLE HA 15 SP7 y **fuera de SLE HA 16**. Confirmar fechas exactas de fin de
-   soporte de RHEL 9 antes de comprometer una migración.
-3. **Notas de migración de Pacemaker 3.0**: validación estricta del CIB, `validate-with`,
-   esquemas retirados, compatibilidad de Pacemaker Remote. Leer la página de cambios de 3.0 de
-   ClusterLabs **antes** de la primera actualización rodante.
-4. **Estado del agente de fencing concreto de tu hardware/hipervisor/nube** y sus parámetros
-   (`pcmk_delay_base`, `pcmk_host_map`, `pcmk_reboot_action`): cambian entre versiones de
+1. **The versions packaged by your distribution** of `pacemaker`, `corosync`, `pcs`/`crmsh`,
+   `resource-agents`, `fence-agents` and `sbd` — **not upstream's**. In clusters, vendor
+   support rules.
+2. **The cluster filesystem's lifecycle** in your distro: GFS2 **discontinued from
+   RHEL 10 onwards** (Resilient Storage Add-On; the `gfs2` and `dlm` modules out of the kernel), OCFS2
+   deprecated in SLE HA 15 SP7 and **out of SLE HA 16**. Confirm the exact end-of-support dates
+   for RHEL 9 before committing to a migration.
+3. **Pacemaker 3.0 migration notes**: strict CIB validation, `validate-with`,
+   withdrawn schemas, Pacemaker Remote compatibility. Read ClusterLabs's 3.0 changes page
+   **before** the first rolling upgrade.
+4. **The status of the specific fencing agent for your hardware/hypervisor/cloud** and its parameters
+   (`pcmk_delay_base`, `pcmk_host_map`, `pcmk_reboot_action`): they change between versions of
    `fence-agents`.
-5. **Erratas de seguridad de `pcs`/`pcsd`** en tu stream (las recientes vienen de dependencias
-   empaquetadas) y CVE de `corosync`, `pacemaker` y `sbd`.
-6. **Patroni**: última versión y su matriz de compatibilidad con la versión de PostgreSQL y con
-   el DCS elegido; y si sigue siendo la recomendación por defecto frente a Pacemaker.
-7. **DRBD**: si el módulo 9.3 ya ha aterrizado en el kernel mainline (estimación de LINBIT:
-   posiblemente Linux 7.2, sep/oct-2026) — cambia por completo la ecuación de mantenimiento
-   frente a DKMS.
-8. **Requisitos de latencia y tuning de Corosync** (`token`, `consensus`) para tu topología, en
-   particular si hay enlaces entre salas.
+5. **Security errata for `pcs`/`pcsd`** in your stream (the recent ones come from packaged
+   dependencies) and CVEs for `corosync`, `pacemaker` and `sbd`.
+6. **Patroni**: latest version and its compatibility matrix with the PostgreSQL version and with
+   the chosen DCS; and whether it is still the default recommendation over Pacemaker.
+7. **DRBD**: whether the 9.3 module has landed in the mainline kernel yet (LINBIT's estimate:
+   possibly Linux 7.2, Sep/Oct 2026) — it completely changes the maintenance equation
+   compared with DKMS.
+8. **Corosync latency requirements and tuning** (`token`, `consensus`) for your topology, in
+   particular if there are links between rooms.
 
-**Huecos declarados — NO rellenar de memoria, verificar antes de usar:**
-- **Fecha y contenido del último release de `sbd`**: el último tag verificado es **1.5.2
-  (2023-01-09)** con actividad de repositorio en enero de 2026, pero **no se ha confirmado si
-  existe una release posterior ni qué versión empaquetan RHEL 10 y SLE HA 16**. Comprobarlo antes
-  de depender de una corrección concreta.
-- **Fecha exacta del release de `keepalived` 2.4.3** (tag verificado, fecha no obtenida por
-  límite de tasa de la API) y su estado de mantenimiento.
-- **Fecha de `drbd-utils` 9.34.0** (tag verificado, fecha no obtenida). Y **la relación exacta
-  entre DRBD 9.3.3 y la rama 10.0.0 alfa**: no se ha verificado el plan de soporte de LINBIT.
-- **Motivo del lote de parches de Patroni del 2026-07-07** (4.1.4, 4.0.10 y 3.3.11 el mismo día,
-  patrón típico de corrección de seguridad): **no verificado**. Consultar el advisory antes de
-  fijar versión mínima.
-- **Estado y soporte de `pg_auto_failover`** como alternativa a Patroni en escenarios de dos
-  nodos: mencionado en las fuentes pero **no verificado en cuanto a mantenimiento actual**.
-- **Alternativas soportadas a GFS2 en RHEL 10** para activo/activo sobre bloque compartido:
-  **no verificado** más allá de la constatación de que el add-on desaparece. Confirmar con Red
-  Hat antes de diseñar.
-- **Parámetros de tuning de Corosync recomendados hoy** (`token`, `token_retransmits_before_loss_const`,
-  `consensus`): **no verificados en esta revisión**. No copiar valores de blogs.
-- **Compatibilidad exacta de `crmsh` 5.1 con Pacemaker 3.0.x** (5.1.0 estaba en rc2 a jun-2026):
-  no verificada.
+**Declared gaps — do NOT fill from memory, verify before using:**
+- **Date and content of the last `sbd` release**: the last verified tag is **1.5.2
+  (2023-01-09)** with repository activity in January 2026, but **it has not been confirmed whether
+  a later release exists nor which version RHEL 10 and SLE HA 16 package**. Check it before
+  depending on a specific fix.
+- **The exact release date of `keepalived` 2.4.3** (tag verified, date not obtained because of an
+  API rate limit) and its maintenance status.
+- **The date of `drbd-utils` 9.34.0** (tag verified, date not obtained). And **the exact relationship
+  between DRBD 9.3.3 and the 10.0.0 alpha branch**: LINBIT's support plan has not been verified.
+- **The reason for the Patroni patch batch of 2026-07-07** (4.1.4, 4.0.10 and 3.3.11 on the same day,
+  the typical pattern of a security fix): **not verified**. Consult the advisory before
+  pinning a minimum version.
+- **The status and support of `pg_auto_failover`** as an alternative to Patroni in two-node
+  scenarios: mentioned in the sources but **not verified as to current maintenance**.
+- **Supported alternatives to GFS2 on RHEL 10** for active/active over shared block:
+  **not verified** beyond the observation that the add-on disappears. Confirm with Red
+  Hat before designing.
+- **The Corosync tuning parameters recommended today** (`token`, `token_retransmits_before_loss_const`,
+  `consensus`): **not verified in this revision**. Do not copy values from blogs.
+- **The exact compatibility of `crmsh` 5.1 with Pacemaker 3.0.x** (5.1.0 was at rc2 as of Jun 2026):
+  not verified.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

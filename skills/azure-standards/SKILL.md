@@ -3,187 +3,187 @@ name: azure-standards
 description: Azure architecture, security and FinOps standards. Use when working with Azure services (AKS, Container Apps, App Service, Functions, Entra ID, Key Vault, VNet, Private Link, Azure Policy, Defender for Cloud, Azure Monitor, Storage, SQL Database, Cosmos DB, Service Bus, Event Grid), the az CLI, azd, or IaC files targeting Azure (Bicep *.bicep, ARM templates azuredeploy.json, Terraform *.tf with provider azurerm/azapi).
 ---
 
-# Estándares Azure
+# Azure standards
 
-Este skill fija CRITERIO para diseñar, revisar y operar en Azure: qué usar por defecto, qué está
-prohibido y qué verificar antes de decidir. Marco de referencia: Cloud Adoption Framework (CAF) +
-Well-Architected Framework (WAF) + zero-trust + FinOps. Ante conflicto, gana la seguridad; ante
-empate técnico, lo más simple y gestionado.
+This skill sets CRITERIA for designing, reviewing and operating on Azure: what to use by default, what is
+forbidden and what to verify before deciding. Frame of reference: Cloud Adoption Framework (CAF) +
+Well-Architected Framework (WAF) + zero-trust + FinOps. On conflict, security wins; on a
+technical tie, the simplest and the managed option.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a cualquier tarea que toque Azure: Bicep/ARM/Terraform, comandos `az`/`azd`, diseño de
-landing zones, RBAC, revisión de seguridad, costes, pipelines que despliegan en Azure. En tareas
-multi-cloud, combinar con `aws-standards` y `gcp-standards` y decidir por workload.
+Applies to any task touching Azure: Bicep/ARM/Terraform, `az`/`azd` commands, landing zone
+design, RBAC, security review, costs, pipelines that deploy to Azure. On multi-cloud
+tasks, combine with `aws-standards` and `gcp-standards` and decide per workload.
 
-**No aplica**: ver `iac-standards` (el **cómo** del código Terraform/OpenTofu y Ansible: módulos,
-state, backend, drift — aquí se decide el **qué**: qué servicio y con qué configuración; Bicep/ARM
-sí son de esta skill), `kubernetes-standards` (manifiestos, charts y workloads que corren **dentro**
-de AKS; aquí solo el control plane y su integración con Entra ID/VNet), `cicd-standards` (la
-pipeline y la federación OIDC desde el runner), `identity-access-management-standards` (IdP de
-aplicación: OAuth 2.1/OIDC, SAML, passkeys, SCIM, motores de autorización — aquí Entra ID como
-control de acceso a la **plataforma** y sus RBAC roles), `cryptography-pki-standards` (elección de
-algoritmos y ciclo de vida de claves; aquí solo Key Vault/Managed HSM como servicio),
-`vulnerability-management-standards` (workflow de triaje y SLA; aquí solo Defender for Cloud como
-fuente de hallazgos), `cloud-security-posture-standards` (**lo transversal a las tres nubes**:
-línea base multi-suscripción, permiso efectivo, caminos de ataque y la elección de CSPM/CNAPP;
-**aquí el servicio de Azure concreto y su configuración**),
-`appsec-standards` (seguridad del código de la aplicación),
-`observability-standards` (OTel y Prometheus vendor-neutral; aquí solo Azure Monitor y su coste),
-`sre-practice-standards` (SLO, on-call, postmortems), `grc-compliance-standards` (marco normativo y
-evidencia de auditoría), `networking-standards` (redes físicas, on-prem e híbridas; aquí VNet),
-`dotnet-standards` (el código C# de la aplicación que se despliega encima), `finops-standards` (**método frente a servicio**: el modelo de precio de cada servicio de Azure, sus reservas y planes de ahorro y sus palancas concretas son de aquí; **la unidad económica, la política de etiquetas y su gate, la normalización con FOCUS, el reparto de coste compartido y el criterio de cobertura de compromisos son suyos**. *Si la respuesta cambia al cambiar de proveedor, es suya; si depende del catálogo de Azure, es de aquí*), `platform-engineering-standards` (la abstracción interna ofrecida encima de estos servicios).
+**Not applicable**: see `iac-standards` (the **how** of Terraform/OpenTofu and Ansible code: modules,
+state, backend, drift — here the **what** is decided: which service and with what configuration; Bicep/ARM
+do belong to this skill), `kubernetes-standards` (manifests, charts and workloads running **inside**
+AKS; here only the control plane and its integration with Entra ID/VNet), `cicd-standards` (the
+pipeline and OIDC federation from the runner), `identity-access-management-standards` (application
+IdP: OAuth 2.1/OIDC, SAML, passkeys, SCIM, authorisation engines — here Entra ID as
+access control to the **platform** and its RBAC roles), `cryptography-pki-standards` (choice of
+algorithms and key lifecycle; here only Key Vault/Managed HSM as a service),
+`vulnerability-management-standards` (triage workflow and SLA; here only Defender for Cloud as a
+source of findings), `cloud-security-posture-standards` (**what is cross-cutting to the three clouds**:
+multi-subscription baseline, effective permission, attack paths and the choice of CSPM/CNAPP;
+**here the specific Azure service and its configuration**),
+`appsec-standards` (security of the application code),
+`observability-standards` (vendor-neutral OTel and Prometheus; here only Azure Monitor and its cost),
+`sre-practice-standards` (SLO, on-call, postmortems), `grc-compliance-standards` (regulatory framework and
+audit evidence), `networking-standards` (physical, on-prem and hybrid networks; here VNet),
+`dotnet-standards` (the application's C# code deployed on top), `finops-standards` (**method versus service**: the pricing model of each Azure service, its reservations and savings plans and its concrete levers are ours; **the economic unit, the tagging policy and its gate, normalisation with FOCUS, shared cost allocation and commitment coverage criteria are theirs**. *If the answer changes when the provider changes, it is theirs; if it depends on the Azure catalogue, it is ours*), `platform-engineering-standards` (the internal abstraction offered on top of these services).
 
-## 2. Decisiones por defecto (servicio de referencia por caso de uso)
+## 2. Default decisions (reference service per use case)
 
-> **Verificar disponibilidad/estado por web antes de fijar cualquier servicio**: región, SKU, que
-> no esté en retirement (Azure Updates / Microsoft Lifecycle / Azure Advisor "Service Upgrade and
-> Retirement") y precios vigentes.
+> **Verify availability/status on the web before pinning any service**: region, SKU, that
+> it is not in retirement (Azure Updates / Microsoft Lifecycle / Azure Advisor "Service Upgrade and
+> Retirement") and current prices.
 
-| Caso de uso | Default | Alternativa (cuándo) |
+| Use case | Default | Alternative (when) |
 |---|---|---|
-| Contenedores sin requisito K8s | Azure Container Apps (scale-to-zero, Dapr, KEDA) | App Service para web apps clásicas ya en esa plataforma |
-| Kubernetes estratégico | AKS **Automatic** (GA sept-2025; Azure Linux, best practices por defecto) | AKS Standard solo si necesitas control de nodos/kernel/CIS a nivel nodo |
-| Funciones event-driven | Azure Functions (plan Flex Consumption — verificar estado por web) | Container Apps jobs para tareas containerizadas |
-| Relacional | Azure Database for PostgreSQL Flexible Server / Azure SQL Database | — (Single Server está retirado) |
-| NoSQL global | Cosmos DB (API según modelo de datos) | — |
-| Objetos/blobs | Storage Account (Blob, GPv2, LRS/ZRS según RTO/RPO) | — |
-| Cola simple | Storage Queues | Service Bus si sesiones, orden, DLQ, transacciones |
-| Mensajería empresarial | Service Bus (colas/topics + DLQ) | — |
-| Eventos | Event Grid (reactivo) / Event Hubs (streaming) | — |
-| Cache | Azure Managed Redis (verificar por web: sustituye a Azure Cache for Redis, en retirement) | — |
-| Secretos/claves | Key Vault (RBAC-mode, soft delete + purge protection) | Managed HSM si FIPS 140-3 L3 |
-| Registro de contenedores | Azure Container Registry (Premium en prod: private link, geo-replicación) | — |
-| IaC nativa | **Bicep + Azure Verified Modules (AVM)** | Terraform/OpenTofu + AVM si la organización ya lo usa; ARM JSON solo generado, nunca a mano |
-| Landing zone | Azure Landing Zones (CAF) vía acelerador IaC con AVM (Bicep o Terraform) | Portal accelerator solo para arranque exploratorio |
-| CI/CD | El del repo (GitHub Actions/Azure DevOps) con OIDC/workload identity federation | — |
+| Containers with no K8s requirement | Azure Container Apps (scale-to-zero, Dapr, KEDA) | App Service for classic web apps already on that platform |
+| Strategic Kubernetes | AKS **Automatic** (GA Sept 2025; Azure Linux, best practices by default) | AKS Standard only if you need node/kernel/node-level CIS control |
+| Event-driven functions | Azure Functions (Flex Consumption plan — verify status on the web) | Container Apps jobs for containerised tasks |
+| Relational | Azure Database for PostgreSQL Flexible Server / Azure SQL Database | — (Single Server is retired) |
+| Global NoSQL | Cosmos DB (API according to the data model) | — |
+| Objects/blobs | Storage Account (Blob, GPv2, LRS/ZRS according to RTO/RPO) | — |
+| Simple queue | Storage Queues | Service Bus if sessions, ordering, DLQ, transactions |
+| Enterprise messaging | Service Bus (queues/topics + DLQ) | — |
+| Events | Event Grid (reactive) / Event Hubs (streaming) | — |
+| Cache | Azure Managed Redis (verify on the web: it replaces Azure Cache for Redis, in retirement) | — |
+| Secrets/keys | Key Vault (RBAC-mode, soft delete + purge protection) | Managed HSM if FIPS 140-3 L3 |
+| Container registry | Azure Container Registry (Premium in prod: private link, geo-replication) | — |
+| Native IaC | **Bicep + Azure Verified Modules (AVM)** | Terraform/OpenTofu + AVM if the organisation already uses it; ARM JSON only generated, never by hand |
+| Landing zone | Azure Landing Zones (CAF) via an IaC accelerator with AVM (Bicep or Terraform) | Portal accelerator only for exploratory bootstrapping |
+| CI/CD | The repo's own (GitHub Actions/Azure DevOps) with OIDC/workload identity federation | — |
 
-**Retirados/deprecados — PROHIBIDO proponerlos** (fuente: Microsoft Lifecycle / Azure Updates):
-todo lo classic/ASM (Cloud Services classic, ASE v1/v2 — retirados ago-2024), Log Analytics agent
-MMA/OMS (retirado ago-2024; la ingesta puede cortarse desde mar-2026 → **Azure Monitor Agent**),
+**Retired/deprecated — FORBIDDEN to propose them** (source: Microsoft Lifecycle / Azure Updates):
+everything classic/ASM (Cloud Services classic, ASE v1/v2 — retired Aug 2024), the Log Analytics agent
+MMA/OMS (retired Aug 2024; ingestion may be cut off from Mar 2026 → **Azure Monitor Agent**),
 PostgreSQL/MySQL Single Server (→ Flexible Server), Application Insights classic (→
-workspace-based), el Landing Zone Accelerator de Container Apps en CAF (retirado may-2026 → guía
-del Architecture Center). Comprobar en Azure Advisor los retirements que afecten a recursos vivos.
+workspace-based), the Container Apps Landing Zone Accelerator in CAF (retired May 2026 → Architecture
+Center guidance). Check in Azure Advisor the retirements affecting live resources.
 
-## 3. Identidad y accesos — credenciales efímeras SIEMPRE
+## 3. Identity and access — ephemeral credentials ALWAYS
 
-- **Prohibidos secretos estáticos**: nada de connection strings con claves de cuenta, SAS de larga
-  vida, client secrets de app registrations en workloads, ni claves en App Settings en claro.
-  Workloads en Azure: **Managed Identity** (user-assigned preferida: ciclo de vida controlado) para
-  TODO acceso a Storage/Key Vault/SQL/Service Bus (auth Entra ID, no access keys). CI/CD externo:
-  **workload identity federation** (OIDC) contra Entra ID — prohibido el service principal con
-  secreto/certificado de larga vida. Humanos: Entra ID + MFA obligatorio (Conditional Access), sin
-  cuentas locales.
-- Storage/SQL/Cosmos: deshabilitar auth por clave/local (`allowSharedKeyAccess: false`,
-  `disableLocalAuth: true`) donde el servicio lo soporte; solo Entra ID.
-- RBAC mínimo privilegio: roles built-in concretos al scope mínimo (resource group, no
-  suscripción); Owner/Contributor a suscripción solo para pipelines de plataforma muy acotados.
-  Roles privilegiados vía **PIM** (just-in-time, aprobación, tiempo limitado), nunca permanentes.
-  Access reviews periódicas.
-- Jerarquía: management groups según ALZ (Platform: identity/management/connectivity; Landing
-  Zones: corp/online; Sandbox; Decommissioned); suscripción como unidad de aislamiento por
-  workload+entorno. Azure Policy asignada a management groups: deny de regiones no aprobadas,
-  deny de recursos con IP pública no permitida, require tags, require cifrado — governance as
-  code, no wiki.
+- **Static secrets forbidden**: no connection strings with account keys, no long-lived
+  SAS, no app registration client secrets in workloads, no plaintext keys in App Settings.
+  Workloads on Azure: **Managed Identity** (user-assigned preferred: controlled lifecycle) for
+  ALL access to Storage/Key Vault/SQL/Service Bus (Entra ID auth, not access keys). External CI/CD:
+  **workload identity federation** (OIDC) against Entra ID — a service principal with a long-lived
+  secret/certificate is forbidden. Humans: Entra ID + mandatory MFA (Conditional Access), with no
+  local accounts.
+- Storage/SQL/Cosmos: disable key/local auth (`allowSharedKeyAccess: false`,
+  `disableLocalAuth: true`) where the service supports it; Entra ID only.
+- Least-privilege RBAC: concrete built-in roles at the minimum scope (resource group, not
+  subscription); Owner/Contributor at subscription level only for very tightly scoped platform pipelines.
+  Privileged roles via **PIM** (just-in-time, approval, time-limited), never permanent.
+  Periodic access reviews.
+- Hierarchy: management groups per ALZ (Platform: identity/management/connectivity; Landing
+  Zones: corp/online; Sandbox; Decommissioned); subscription as the isolation unit per
+  workload+environment. Azure Policy assigned to management groups: deny non-approved regions,
+  deny resources with a non-permitted public IP, require tags, require encryption — governance as
+  code, not a wiki.
 
-## 4. Redes — default-deny, exposición mínima
+## 4. Networks — default-deny, minimal exposure
 
-- Topología hub-spoke (o Virtual WAN a escala): hub con firewall (Azure Firewall o NVA) y
-  conectividad (ExpressRoute/VPN); spokes por workload, peered, **sin tránsito directo
-  spoke-a-spoke** salvo vía hub. UDR forzando egress por el firewall en cargas sensibles
-  (inspección y filtrado de salida, no solo entrada).
-- NSGs default-deny en toda subnet (las reglas default permiten demasiado intra-VNet: añadir
-  deny explícito); reglas por Application Security Groups, no CIDRs sueltos. **Prohibido
-  `0.0.0.0/0`/`Any` en inbound sin justificar** — y entonces detrás de Front Door/Application
-  Gateway con WAF.
-- PaaS SIEMPRE por **Private Link/Private Endpoints** (Storage, Key Vault, SQL, ACR, Cosmos…):
-  `publicNetworkAccess: Disabled`. Private DNS zones centralizadas en el hub. Los service
-  endpoints son legacy: solo si Private Link no existe para ese servicio (verificar por web).
-- TLS 1.2+ mínimo en todo (`minimumTlsVersion`), HSTS en frontales; mTLS entre servicios cuando
-  el dato lo pida. Acceso administrativo por Azure Bastion — **nunca RDP/SSH públicos**, ni
-  JIT-VM-access como excusa para IP pública permanente.
-- DDoS Network Protection en VNets con endpoints públicos de prod.
+- Hub-spoke topology (or Virtual WAN at scale): hub with a firewall (Azure Firewall or NVA) and
+  connectivity (ExpressRoute/VPN); spokes per workload, peered, **with no direct spoke-to-spoke
+  transit** except via the hub. UDR forcing egress through the firewall on sensitive workloads
+  (egress inspection and filtering, not just ingress).
+- Default-deny NSGs on every subnet (the default rules allow too much intra-VNet: add an
+  explicit deny); rules by Application Security Groups, not loose CIDRs. **`0.0.0.0/0`/`Any`
+  inbound is forbidden without justification** — and then behind Front Door/Application
+  Gateway with WAF.
+- PaaS ALWAYS through **Private Link/Private Endpoints** (Storage, Key Vault, SQL, ACR, Cosmos…):
+  `publicNetworkAccess: Disabled`. Private DNS zones centralised in the hub. Service
+  endpoints are legacy: only if Private Link does not exist for that service (verify on the web).
+- TLS 1.2+ minimum everywhere (`minimumTlsVersion`), HSTS on front ends; mTLS between services when
+  the data demands it. Administrative access via Azure Bastion — **never public RDP/SSH**, nor
+  JIT-VM-access as an excuse for a permanent public IP.
+- DDoS Network Protection on VNets with prod public endpoints.
 
-## 5. Datos — cifrado, backups probados, RTO/RPO
+## 5. Data — encryption, proven backups, RTO/RPO
 
-- Cifrado en reposo por defecto en toda la plataforma; **customer-managed keys (CMK) en Key
-  Vault** para datos sensibles/regulados (Storage, SQL TDE, Cosmos, discos con encryption at
-  host). Key Vault: RBAC-mode, soft delete + purge protection innegociables, rotación de claves
-  programada, un vault por workload/entorno (blast radius).
-- RTO/RPO definidos antes de elegir SKU y redundancia: zone-redundant (ZRS/zonal) por defecto en
-  prod; geo-redundancia (GRS/failover groups/Cosmos multi-region) solo si el RPO/RTO lo exige.
-- Azure Backup centralizado (Recovery Services/Backup vault) con política por tags, **soft delete
-  + inmutabilidad activadas** (ransomware) y copia cross-region si el DR lo pide. **Un backup sin
-  restore probado no existe**: ensayo de restauración periódico y documentado. Azure Site Recovery
-  para DR de VMs con failover test anual mínimo.
-- Lifecycle management en Blob (hot→cool→archive según acceso real); retención/borrado conforme a
-  GDPR (minimización, derecho al olvido). Migraciones expand/contract.
+- Encryption at rest by default across the whole platform; **customer-managed keys (CMK) in Key
+  Vault** for sensitive/regulated data (Storage, SQL TDE, Cosmos, disks with encryption at
+  host). Key Vault: RBAC-mode, soft delete + purge protection non-negotiable, scheduled key
+  rotation, one vault per workload/environment (blast radius).
+- RTO/RPO defined before choosing SKU and redundancy: zone-redundant (ZRS/zonal) by default in
+  prod; geo-redundancy (GRS/failover groups/Cosmos multi-region) only if the RPO/RTO demands it.
+- Centralised Azure Backup (Recovery Services/Backup vault) with a tag-based policy, **soft delete
+  + immutability enabled** (ransomware) and a cross-region copy if DR demands it. **A backup with no
+  proven restore does not exist**: periodic, documented restore rehearsal. Azure Site Recovery
+  for VM DR with an annual failover test as a minimum.
+- Lifecycle management on Blob (hot→cool→archive according to real access); retention/deletion compliant with
+  GDPR (minimisation, right to erasure). Expand/contract migrations.
 
-## 6. Observabilidad y operación
+## 6. Observability and operation
 
-- Azure Monitor + Log Analytics workspace centralizado (por región/entorno según ALZ); **Azure
-  Monitor Agent** (AMA) con Data Collection Rules — MMA está muerto. Diagnostic settings en TODO
-  recurso de prod (vía Azure Policy deployIfNotExists, no a mano). Retención explícita por tabla
-  (coste); archive/basic logs para lo de bajo acceso.
-- Application Insights workspace-based con OpenTelemetry (preferir OTel SDK/distro sobre SDKs
-  clásicos — verificar estado por web); trazas correlacionadas, golden signals, SLOs con error
-  budget; alertas accionables → on-call (action groups), no ruido.
-- **Microsoft Defender for Cloud**: planes activados por tipo de recurso en prod (Servers,
-  Storage, Containers, Databases, Key Vault…), Secure Score como métrica seguida, integración con
-  el SIEM (Microsoft Sentinel) para detección y respuesta; export continuo de findings.
-- **Azure Policy como gate**: initiatives (CIS/MCSB) asignadas en management groups, con deny
-  para lo crítico y deployIfNotExists para lo operativo; compliance dashboard revisado, cero
-  excepciones sin expiración.
-- Todo cambio por pipeline con what-if/plan revisado; blue-green/canary con slots o revisiones
-  (Container Apps) y rollback probado; runbooks y postmortems sin culpa.
+- Azure Monitor + a centralised Log Analytics workspace (per region/environment per ALZ); **Azure
+  Monitor Agent** (AMA) with Data Collection Rules — MMA is dead. Diagnostic settings on EVERY
+  prod resource (via Azure Policy deployIfNotExists, not by hand). Explicit per-table retention
+  (cost); archive/basic logs for low-access data.
+- Workspace-based Application Insights with OpenTelemetry (prefer the OTel SDK/distro over classic
+  SDKs — verify status on the web); correlated traces, golden signals, SLOs with error
+  budget; actionable alerts → on-call (action groups), not noise.
+- **Microsoft Defender for Cloud**: plans enabled per resource type in prod (Servers,
+  Storage, Containers, Databases, Key Vault…), Secure Score as a tracked metric, integration with
+  the SIEM (Microsoft Sentinel) for detection and response; continuous export of findings.
+- **Azure Policy as a gate**: initiatives (CIS/MCSB) assigned at management groups, with deny
+  for the critical items and deployIfNotExists for the operational ones; compliance dashboard reviewed, zero
+  exceptions without an expiry.
+- Every change through a pipeline with a reviewed what-if/plan; blue-green/canary with slots or revisions
+  (Container Apps) and proven rollback; runbooks and blameless postmortems.
 
-## 7. FinOps — coste como atributo de calidad
+## 7. FinOps — cost as a quality attribute
 
-- **Tagging obligatorio**: mínimo `owner`, `env`, `project`/`cost-center`, `managed-by`,
-  enforzado con Azure Policy (require + inherit desde resource group). Sin tags = huérfano.
-- Cost Management exports en formato **FOCUS** (verificar por web versión soportada — 1.3
-  ratificada dic-2025) a Storage/warehouse; budgets con alertas por suscripción/RG y anomaly
-  detection activos desde el día 1.
-- Palancas por defecto: Reservations/Savings Plans para base estable (con ≥30 días de datos),
-  Spot para tolerante a fallo, scale-to-zero (Container Apps/Functions) y auto-shutdown en
-  no-prod, right-sizing con Azure Advisor. AKS: Flex CUDs/reservas según patrón — verificar
-  ofertas vigentes por web.
-- Coste del diseño en la decisión: Private Endpoints (por-hora+datos), Azure Firewall, egress
-  inter-region, Log Analytics ingest, DDoS Protection — estimados antes de desplegar, no
-  descubiertos en factura.
+- **Mandatory tagging**: at minimum `owner`, `env`, `project`/`cost-center`, `managed-by`,
+  enforced with Azure Policy (require + inherit from the resource group). No tags = orphan.
+- Cost Management exports in **FOCUS** format (verify the supported version on the web — 1.3
+  ratified Dec 2025) to Storage/warehouse; budgets with alerts per subscription/RG and anomaly
+  detection active from day 1.
+- Default levers: Reservations/Savings Plans for the stable baseline (with ≥30 days of data),
+  Spot for fault-tolerant workloads, scale-to-zero (Container Apps/Functions) and auto-shutdown in
+  non-prod, right-sizing with Azure Advisor. AKS: Flex CUDs/reservations according to the pattern — verify
+  current offers on the web.
+- Design cost inside the decision: Private Endpoints (per-hour+data), Azure Firewall, inter-region
+  egress, Log Analytics ingest, DDoS Protection — estimated before deploying, not
+  discovered on the bill.
 
-## 8. Sostenibilidad, lock-in y PROHIBICIONES
+## 8. Sustainability, lock-in and PROHIBITIONS
 
-- **Lock-in consciente, no accidental**: servicios propietarios (Cosmos, Service Bus, Functions)
-  solo con beneficio claro; contratos tras interfaces propias; portabilidad barata donde se pueda
-  (PostgreSQL flexible, contenedores OCI, OpenTelemetry, Dapr en Container Apps).
-- Política de upgrades: versiones en soporte SIEMPRE (AKS N-2 máximo con auto-upgrade channel,
-  runtimes de Functions/App Service vigentes, API versions de ARM/Bicep actuales); revisar Azure
-  Advisor retirements trimestralmente; el upgrade es trabajo planificado, no emergencia.
-- **LISTA DE PROHIBICIONES** (bloquean una review):
-  - Client secrets/keys estáticos donde exista Managed Identity o workload identity federation;
-    access keys de Storage habilitadas sin justificación; SAS de larga vida.
-  - RDP/SSH públicos; `Any`/`0.0.0.0/0` inbound sin justificar; PaaS con endpoint público
-    teniendo Private Link disponible; NSG ausente en subnet de workload.
-  - Recursos creados por portal en prod (**clickops**) — todo por IaC (Bicep/Terraform);
-    drift sin reconciliar; ARM JSON escrito a mano.
-  - Recursos sin tags obligatorios; roles Owner/Contributor permanentes a humanos; asignaciones
-    RBAC a usuarios individuales en vez de grupos; roles privilegiados sin PIM.
-  - Key Vault sin purge protection; secretos en app settings/código/logs; datos sin CMK cuando
-    la clasificación lo exige.
-  - Servicios retirados (lista sección 2); agente MMA; `latest` en imágenes de prod; recursos
-    classic/ASM.
-  - Logs sin retención definida; prod single-zone teniendo zonas disponibles; backup sin restore
-    probado; suscripción fuera de la jerarquía de management groups.
+- **Conscious lock-in, not accidental**: proprietary services (Cosmos, Service Bus, Functions)
+  only with a clear benefit; contracts behind own interfaces; cheap portability where possible
+  (PostgreSQL flexible, OCI containers, OpenTelemetry, Dapr in Container Apps).
+- Upgrade policy: supported versions ALWAYS (AKS N-2 at most with an auto-upgrade channel,
+  current Functions/App Service runtimes, current ARM/Bicep API versions); review Azure
+  Advisor retirements quarterly; the upgrade is planned work, not an emergency.
+- **LIST OF PROHIBITIONS** (they block a review):
+  - Static client secrets/keys where Managed Identity or workload identity federation exists;
+    Storage access keys enabled without justification; long-lived SAS.
+  - Public RDP/SSH; `Any`/`0.0.0.0/0` inbound without justification; PaaS with a public endpoint
+    while Private Link is available; NSG missing on a workload subnet.
+  - Resources created through the portal in prod (**clickops**) — everything through IaC (Bicep/Terraform);
+    unreconciled drift; hand-written ARM JSON.
+  - Resources without mandatory tags; permanent Owner/Contributor roles for humans; RBAC
+    assignments to individual users instead of groups; privileged roles without PIM.
+  - Key Vault without purge protection; secrets in app settings/code/logs; data without CMK when
+    the classification demands it.
+  - Retired services (list in section 2); the MMA agent; `latest` on prod images; classic/ASM
+    resources.
+  - Logs with no defined retention; single-zone prod while zones are available; a backup with no proven
+    restore; a subscription outside the management group hierarchy.
 
-## 9. Verificación web obligatoria
+## 9. Mandatory web verification
 
-Antes de fijar en código o respuesta cualquier dato concreto de Azure, **buscar en la web** (Learn
-/ Azure Updates / Lifecycle primero): estado del servicio y retirements, disponibilidad regional y
-de SKU, versión de API de ARM/Bicep, nombres exactos de planes/SKUs (cambian a menudo: Flex
-Consumption, AKS Automatic, Azure Managed Redis…), precios y novedades Build/Ignite del último
-año. La memoria del modelo NO es fuente válida para precios, fechas de retirement, nombres de
-features recientes ni disponibilidad regional. Si no se puede verificar, decirlo y marcar la
-decisión como provisional.
+Before pinning any concrete Azure fact in code or in an answer, **search the web** (Learn
+/ Azure Updates / Lifecycle first): service status and retirements, regional and SKU
+availability, ARM/Bicep API version, exact plan/SKU names (they change often: Flex
+Consumption, AKS Automatic, Azure Managed Redis…), prices and Build/Ignite news from the last
+year. The model's memory is NOT a valid source for prices, retirement dates, recent feature
+names or regional availability. If it cannot be verified, say so and mark the
+decision as provisional.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

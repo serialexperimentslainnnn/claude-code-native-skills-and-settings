@@ -3,189 +3,189 @@ name: api-design-standards
 description: REST, GraphQL and gRPC API design standards. Use when writing or reviewing openapi.yaml/swagger.json, .graphql/.proto schemas, .spectral.yaml or redocly.yaml, HTTP status codes, pagination, ETags, RFC 9457 problem details, idempotency keys, rate-limit headers or webhook signatures.
 ---
 
-# Estándares de diseño de APIs
+# API design standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al diseñar, revisar o evolucionar el **contrato** de una API y su gobierno: `openapi.yaml`/`openapi.json`/`swagger.json`, ficheros `.graphql`/`.graphqls`, `.proto`, `.spectral.yaml`/`.spectral.js`, `redocly.yaml`, `buf.yaml`/`buf.gen.yaml`, colecciones de ejemplos y portales de desarrollador. Triggers: verbos y códigos HTTP, ETags y peticiones condicionales, paginación, filtrado, formato de error, `Idempotency-Key`, cabeceras de cuota, versionado y `Deprecation`/`Sunset`, esquema GraphQL, evolución de protobuf, webhooks y firma de payload, operaciones asíncronas, endpoints bulk, API gateway.
+Applies when designing, reviewing or evolving the **contract** of an API and its governance: `openapi.yaml`/`openapi.json`/`swagger.json`, `.graphql`/`.graphqls` files, `.proto`, `.spectral.yaml`/`.spectral.js`, `redocly.yaml`, `buf.yaml`/`buf.gen.yaml`, example collections and developer portals. Triggers: HTTP verbs and status codes, ETags and conditional requests, pagination, filtering, error format, `Idempotency-Key`, quota headers, versioning and `Deprecation`/`Sunset`, GraphQL schema, protobuf evolution, webhooks and payload signing, asynchronous operations, bulk endpoints, API gateway.
 
-Principio rector: **el contrato es el producto y es irrevocable en la práctica**. Un endpoint publicado tiene consumidores que no controlas; toda decisión de diseño se toma sabiendo que retirarla costará meses de convivencia y comunicación (§7). Diseña primero el contrato, genera después el código — nunca al revés.
+Guiding principle: **the contract is the product and it is irrevocable in practice**. A published endpoint has consumers you do not control; every design decision is taken knowing that withdrawing it will cost months of coexistence and communication (§7). Design the contract first, generate the code afterwards — never the other way round.
 
-**No aplica**: ver `microservices-architecture-standards` (topología, corte de límites entre servicios, contratos AsyncAPI y diseño de eventos, sagas, resiliencia distribuida), las skills de lenguaje —`python-standards`, `typescript-standards`, `go-standards`, `rust-standards`, `jvm-spring-standards`, `dotnet-standards`, `php-standards`— (implementación concreta del framework HTTP: routing, serialización, DI), `appsec-standards` (modelado de amenazas y triaje de hallazgos), `identity-access-management-standards` (flujos OAuth 2.1/OIDC, PKCE, emisión y validación de tokens, motores de autorización), `cicd-standards` (la pipeline que ejecuta los gates de §4), `i18n-standards` (**el contrato fija el formato de intercambio** —ISO 8601 con zona, importes en unidades mínimas con su código ISO 4217, etiquetas BCP 47 y negociación por `Accept-Language`—; **cómo se presenta eso al usuario en su idioma y región es suyo**. La regla que evita el bug clásico: **una API no devuelve texto ya formateado ni fechas sin zona**), `solidity-standards` (frontera que conviene nombrar: **el ABI de un contrato también es un contrato público**, pero con una diferencia que invierte el criterio de esta skill: **es inmutable y no se versiona**. No hay `/v2`, no hay deprecación ordenada ni ventana de migración; lo que se despliega se queda. El diseño de esa interfaz y su evolución vía proxy son suyos).
+**Not applicable**: see `microservices-architecture-standards` (topology, cutting boundaries between services, AsyncAPI contracts and event design, sagas, distributed resilience), the language skills —`python-standards`, `typescript-standards`, `go-standards`, `rust-standards`, `jvm-spring-standards`, `dotnet-standards`, `php-standards`— (concrete framework implementation: routing, serialisation, DI), `appsec-standards` (threat modelling and finding triage), `identity-access-management-standards` (OAuth 2.1/OIDC flows, PKCE, token issuance and validation, authorisation engines), `cicd-standards` (the pipeline that runs the §4 gates), `i18n-standards` (**the contract fixes the interchange format** —ISO 8601 with zone, amounts in minor units with their ISO 4217 code, BCP 47 tags and negotiation via `Accept-Language`—; **how that is presented to the user in their language and region is theirs**. The rule that avoids the classic bug: **an API does not return pre-formatted text nor dates without a zone**), `solidity-standards` (a boundary worth naming: **a contract's ABI is also a public contract**, but with a difference that inverts this skill's criteria: **it is immutable and it is not versioned**. There is no `/v2`, no orderly deprecation and no migration window; what is deployed stays. The design of that interface and its evolution via proxy are theirs).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Ámbito | Default | Alternativa justificable |
+| Area | Default | Justifiable alternative |
 |---|---|---|
-| Estilo | **REST sobre HTTP/JSON**, diseño *contract-first* | GraphQL si el problema es agregación multi-fuente para clientes heterogéneos; gRPC para RPC interno de alto rendimiento |
-| Formato de contrato | **OpenAPI 3.2.0** (estable desde sept-2025; migración desde 3.1 sin ruptura) | 3.1 si el tooling crítico aún no soporta 3.2 |
-| OpenAPI 4.0 "Moonwalk" | **No usar**: sin release ni fecha; la propia OAI recomienda 3.x | — |
-| Linter de contrato | **vacuum** (Go, compatible 100% con rulesets Spectral, soporta OAS 3.0/3.1/3.2) o **Redocly CLI** (`@redocly/cli` 2.x, ESM-only, Node ≥ 22.12) | Spectral solo en repos ya montados sobre él (§7: mantenimiento degradado, sin soporte 3.2) |
-| Formato de error | **RFC 9457** *problem details* (`application/problem+json`), obsoleta RFC 7807 | — |
-| Paginación de colecciones | **Cursor/keyset** | Offset solo en catálogos pequeños, acotados y con orden estable |
-| Idempotencia de `POST` | Cabecera **`Idempotency-Key`** (aún I-D, no RFC) | — |
-| Cuotas | Cabeceras `RateLimit` / `RateLimit-Policy` del I-D `httpapi-ratelimit-headers` | `X-RateLimit-*` solo por compatibilidad con clientes existentes |
-| Deprecación | **RFC 9745** (`Deprecation`) + **RFC 8594** (`Sunset`) | — |
-| Versionado | **Mayor en la ruta** (`/v1`), aditivo dentro de la mayor | Versión por cabecera/media type solo con gobierno y tooling que la soporten |
-| Firma de webhooks | **HMAC-SHA256** sobre `id.timestamp.payload` (esquema Standard Webhooks) | RFC 9421 (HTTP Message Signatures) si necesitas asimétrico o rotación sin secreto compartido |
-| Esquema gRPC | **proto3** | Editions (`edition = "2024"`) solo con migración deliberada (§3.9) |
-| Breaking changes protobuf | **`buf breaking`** en CI contra la rama base | — |
+| Style | **REST over HTTP/JSON**, *contract-first* design | GraphQL if the problem is multi-source aggregation for heterogeneous clients; gRPC for high-performance internal RPC |
+| Contract format | **OpenAPI 3.2.0** (stable since Sept 2025; migration from 3.1 without breakage) | 3.1 if critical tooling does not support 3.2 yet |
+| OpenAPI 4.0 "Moonwalk" | **Do not use**: no release and no date; the OAI itself recommends 3.x | — |
+| Contract linter | **vacuum** (Go, 100% compatible with Spectral rulesets, supports OAS 3.0/3.1/3.2) or **Redocly CLI** (`@redocly/cli` 2.x, ESM-only, Node ≥ 22.12) | Spectral only in repos already built on it (§7: degraded maintenance, no 3.2 support) |
+| Error format | **RFC 9457** *problem details* (`application/problem+json`), obsoletes RFC 7807 | — |
+| Collection pagination | **Cursor/keyset** | Offset only in small, bounded catalogues with a stable order |
+| `POST` idempotency | **`Idempotency-Key`** header (still an I-D, not an RFC) | — |
+| Quotas | `RateLimit` / `RateLimit-Policy` headers from the `httpapi-ratelimit-headers` I-D | `X-RateLimit-*` only for compatibility with existing clients |
+| Deprecation | **RFC 9745** (`Deprecation`) + **RFC 8594** (`Sunset`) | — |
+| Versioning | **Major in the path** (`/v1`), additive within the major | Header/media-type versioning only with governance and tooling that support it |
+| Webhook signing | **HMAC-SHA256** over `id.timestamp.payload` (Standard Webhooks scheme) | RFC 9421 (HTTP Message Signatures) if you need asymmetric signing or rotation without a shared secret |
+| gRPC schema | **proto3** | Editions (`edition = "2024"`) only with a deliberate migration (§3.9) |
+| Protobuf breaking changes | **`buf breaking`** in CI against the base branch | — |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Modelado de recursos y semántica HTTP
+### 3.1 Resource modelling and HTTP semantics
 
-- Recursos = **sustantivos en plural**, minúsculas, `kebab-case` en la ruta (`/payment-methods/{id}`), campos JSON con una única convención por API (`snake_case` o `camelCase`, elegida y linteada). Nunca verbos en la ruta salvo acciones que no son recursos (`/orders/{id}/cancel`) — y esas, mínimas y documentadas.
-- Anidamiento máximo **dos niveles** (`/orders/{id}/items`); más profundo, expón el subrecurso como raíz con filtro.
-- Semántica no negociable: `GET`/`HEAD` **seguros** (jamás mutan estado, ni "solo un contador"); `PUT`, `DELETE` idempotentes; `PATCH` no idempotente salvo diseño explícito; `POST` no seguro ni idempotente → §3.5.
-- `PATCH` con **media type declarado**: `application/merge-patch+json` (semántica de fusión, `null` borra) o `application/json-patch+json` (operaciones). Prohibido un "PATCH artesanal" sin media type ni semántica documentada del `null`.
-- Códigos de estado con significado, no decorativos: `201` + `Location` al crear; `202` para aceptación asíncrona (§3.7); `204` sin cuerpo; `400` sintaxis/validación, `401` sin credencial válida, `403` credencial válida sin permiso, `404` para ocultar existencia cuando revelarla filtra información, `409` conflicto de estado, `412` precondición fallida, `422` semántica inválida, `429` cuota, `503` + `Retry-After` en indisponibilidad. **Prohibido** `200` con `{"error": ...}` dentro.
-- Errores con **RFC 9457**: `type` (URI estable y resoluble a documentación), `title`, `status`, `detail`, `instance` + extensiones propias (p. ej. `errors[]` por campo). Registra los `type` en un catálogo versionado del contrato; el `detail` es para humanos, el `type` para máquinas. Nunca stack traces, rutas internas ni SQL en el cuerpo del error.
-- Fechas en **RFC 3339/ISO 8601 con offset** (UTC por defecto), dinero en unidades menores enteras + ISO 4217, enumeraciones cerradas documentadas y extensibles (los clientes deben tolerar valores nuevos).
+- Resources = **plural nouns**, lowercase, `kebab-case` in the path (`/payment-methods/{id}`), JSON fields with a single convention per API (`snake_case` or `camelCase`, chosen and linted). Never verbs in the path except for actions that are not resources (`/orders/{id}/cancel`) — and those, minimal and documented.
+- Maximum nesting **two levels** (`/orders/{id}/items`); deeper than that, expose the subresource as a root with a filter.
+- Non-negotiable semantics: `GET`/`HEAD` **safe** (they never mutate state, not even "just a counter"); `PUT`, `DELETE` idempotent; `PATCH` not idempotent unless explicitly designed to be; `POST` neither safe nor idempotent → §3.5.
+- `PATCH` with a **declared media type**: `application/merge-patch+json` (merge semantics, `null` deletes) or `application/json-patch+json` (operations). A "hand-rolled PATCH" with no media type and no documented `null` semantics is forbidden.
+- Status codes with meaning, not decorative: `201` + `Location` on creation; `202` for asynchronous acceptance (§3.7); `204` with no body; `400` syntax/validation, `401` no valid credential, `403` valid credential without permission, `404` to hide existence when revealing it leaks information, `409` state conflict, `412` precondition failed, `422` invalid semantics, `429` quota, `503` + `Retry-After` on unavailability. **Forbidden**: `200` with `{"error": ...}` inside.
+- Errors with **RFC 9457**: `type` (stable URI that resolves to documentation), `title`, `status`, `detail`, `instance` + your own extensions (e.g. `errors[]` per field). Register the `type` values in a versioned catalogue of the contract; `detail` is for humans, `type` for machines. Never stack traces, internal paths or SQL in the error body.
+- Dates in **RFC 3339/ISO 8601 with offset** (UTC by default), money in integer minor units + ISO 4217, closed enumerations documented and extensible (clients must tolerate new values).
 
-### 3.2 Peticiones condicionales y caché
+### 3.2 Conditional requests and caching
 
-- Toda respuesta de recurso individual lleva **`ETag`**; los `PUT`/`PATCH`/`DELETE` sobre él exigen `If-Match` para evitar *lost update*: sin `If-Match` → `428 Precondition Required` (política) o aceptación explícita documentada; con `If-Match` obsoleto → `412`.
-- `GET` con `If-None-Match` → `304` sin cuerpo. ETag débil (`W/"…"`) si la representación varía en detalles irrelevantes.
-- `Cache-Control` explícito en **todas** las respuestas (incluidas las privadas: `no-store` para datos sensibles) y `Vary` correcto cuando la respuesta depende de `Accept`, `Accept-Language` o autenticación. Un endpoint sin política de caché declarada acabará cacheado por alguien.
+- Every individual-resource response carries an **`ETag`**; `PUT`/`PATCH`/`DELETE` on it require `If-Match` to avoid *lost update*: without `If-Match` → `428 Precondition Required` (policy) or documented explicit acceptance; with a stale `If-Match` → `412`.
+- `GET` with `If-None-Match` → `304` with no body. Weak ETag (`W/"…"`) if the representation varies in irrelevant details.
+- Explicit `Cache-Control` in **every** response (including private ones: `no-store` for sensitive data) and correct `Vary` when the response depends on `Accept`, `Accept-Language` or authentication. An endpoint with no declared caching policy will end up cached by someone.
 
-### 3.3 Paginación, filtrado, ordenación y sparse fieldsets
+### 3.3 Pagination, filtering, sorting and sparse fieldsets
 
-- **Cursor opaco** (`?limit=&cursor=`) con respuesta `{ data: [...], next_cursor|links.next }`. El cursor es opaco por contrato: los clientes no lo parsean y tú puedes cambiar su codificación. Incluye siempre un `limit` **con máximo forzado por el servidor** (p. ej. 100) y valor por defecto documentado.
-- Offset (`?page=&per_page=`) solo con conjunto pequeño, acotado y orden estable: es O(n) en BD y produce duplicados/saltos ante escrituras concurrentes. Keyset (`?after_id=&after_created_at=`) cuando necesitas orden natural estable sin opacidad.
-- `total_count` **opcional y bajo demanda** (`?include_total=true`): calcularlo siempre es el coste oculto que mata la colección grande.
-- Filtrado y ordenación con **allowlist declarada en el contrato** (`?status=active&sort=-created_at`): nada de traducir parámetros arbitrarios a la query (inyección y DoS por índice inexistente). Máximo de campos de orden y de filtros combinables, documentado.
-- *Sparse fieldsets* (`?fields=id,name`) para reducir payload; si la API es un árbol de agregación con muchas formas por cliente, eso es la señal de que el caso es de GraphQL (§3.8), no de parámetros infinitos.
+- **Opaque cursor** (`?limit=&cursor=`) with response `{ data: [...], next_cursor|links.next }`. The cursor is opaque by contract: clients do not parse it and you can change its encoding. Always include a `limit` **with a server-enforced maximum** (e.g. 100) and a documented default.
+- Offset (`?page=&per_page=`) only with a small, bounded set and a stable order: it is O(n) in the database and produces duplicates/skips under concurrent writes. Keyset (`?after_id=&after_created_at=`) when you need a stable natural order without opacity.
+- `total_count` **optional and on demand** (`?include_total=true`): always computing it is the hidden cost that kills a large collection.
+- Filtering and sorting with an **allowlist declared in the contract** (`?status=active&sort=-created_at`): no translating arbitrary parameters into the query (injection and DoS via a non-existent index). Maximum number of sort fields and of combinable filters, documented.
+- *Sparse fieldsets* (`?fields=id,name`) to reduce payload; if the API is an aggregation tree with many shapes per client, that is the signal that the case belongs to GraphQL (§3.8), not to infinite parameters.
 
-### 3.4 Versionado y deprecación
+### 3.4 Versioning and deprecation
 
-- Versión **mayor en la ruta** (`/v1/…`). Dentro de una mayor, solo cambios **aditivos**: campos opcionales nuevos, endpoints nuevos, valores nuevos en enums extensibles. Renombrar, eliminar, cambiar tipo, endurecer validación o cambiar semántica **es breaking** aunque el esquema "compile".
-- Los clientes son *tolerant readers*: ignoran campos desconocidos. Documéntalo como requisito del consumidor; es lo que hace viable la evolución aditiva.
-- Ciclo de retirada: publicar `vN+1` → anunciar → **`Deprecation`** (RFC 9745) en las respuestas de `vN` → **`Sunset`** (RFC 8594) con fecha ≥ la de `Deprecation` → `Link` con `rel="deprecation"`/`rel="sunset"` a la guía de migración → medir uso por consumidor → retirar. Ventana mínima publicada por escrito (típico: 6-12 meses en APIs públicas).
-- La retirada se decide con **telemetría por consumidor**, no con fe. Sin métrica de uso por versión y por cliente, no hay deprecación posible.
+- **Major version in the path** (`/v1/…`). Within a major, only **additive** changes: new optional fields, new endpoints, new values in extensible enums. Renaming, removing, changing a type, tightening validation or changing semantics **is breaking** even if the schema "compiles".
+- Clients are *tolerant readers*: they ignore unknown fields. Document it as a consumer requirement; it is what makes additive evolution viable.
+- Retirement cycle: publish `vN+1` → announce → **`Deprecation`** (RFC 9745) in the `vN` responses → **`Sunset`** (RFC 8594) with a date ≥ the `Deprecation` one → `Link` with `rel="deprecation"`/`rel="sunset"` to the migration guide → measure usage per consumer → retire. Minimum window published in writing (typical: 6-12 months in public APIs).
+- Retirement is decided with **per-consumer telemetry**, not with faith. Without usage metrics per version and per client, deprecation is impossible.
 
-### 3.5 Idempotencia y operaciones no seguras
+### 3.5 Idempotency and unsafe operations
 
-- `POST` con efectos de negocio (pagos, pedidos, envíos) acepta **`Idempotency-Key`** (UUID generado por el cliente). Contrato: misma clave + mismo payload → misma respuesta almacenada; misma clave + payload distinto → `422`/`409` (no ejecutes); clave nueva → ejecuta. TTL de retención declarado (24h típico) y purga posterior.
-- La deduplicación se implementa con **restricción de unicidad en BD**, no con un `SELECT` previo: la concurrencia real es el caso de prueba (§4).
-- Estado de la clave: guarda `in_progress` para que dos peticiones simultáneas con la misma clave no ejecuten dos veces (`409` a la segunda, o espera).
+- `POST` with business effects (payments, orders, shipments) accepts **`Idempotency-Key`** (UUID generated by the client). Contract: same key + same payload → same stored response; same key + different payload → `422`/`409` (do not execute); new key → execute. Declared retention TTL (24h typical) and later purge.
+- Deduplication is implemented with a **uniqueness constraint in the database**, not with a preceding `SELECT`: real concurrency is the test case (§4).
+- Key state: store `in_progress` so that two simultaneous requests with the same key do not execute twice (`409` to the second one, or wait).
 
-### 3.6 Endpoints bulk y batch
+### 3.6 Bulk and batch endpoints
 
-- Solo cuando hay evidencia de N+1 en el cliente; no por defecto. Semántica **explícita**: o todo-o-nada (transaccional, `400` global) o parcial con `207`-equivalente detallando el resultado por elemento con su propio problem detail. Ambigüedad aquí = incidencia garantizada.
-- Límite duro de elementos por lote, documentado y validado. Bulk grande ⇒ conviértelo en operación asíncrona (§3.7).
+- Only when there is evidence of N+1 in the client; not by default. **Explicit** semantics: either all-or-nothing (transactional, global `400`) or partial with a `207`-equivalent detailing the per-element result with its own problem detail. Ambiguity here = guaranteed incident.
+- Hard limit on elements per batch, documented and validated. A large bulk ⇒ turn it into an asynchronous operation (§3.7).
 
-### 3.7 Operaciones asíncronas y de larga duración
+### 3.7 Asynchronous and long-running operations
 
-- `POST` → **`202 Accepted`** + `Location` al recurso de operación + `Retry-After`. `GET /operations/{id}` devuelve `{status: pending|running|succeeded|failed, result|error}` con el error en formato RFC 9457.
-- La operación es un **recurso de primera clase** con id estable, timestamps y retención declarada; se puede consultar después de terminar. Cancelación explícita (`POST /operations/{id}/cancel`) si el negocio la necesita.
-- Notificación de fin por **webhook** (§3.10) además del polling; el polling es el fallback siempre disponible, nunca el único mecanismo en operaciones largas.
+- `POST` → **`202 Accepted`** + `Location` to the operation resource + `Retry-After`. `GET /operations/{id}` returns `{status: pending|running|succeeded|failed, result|error}` with the error in RFC 9457 format.
+- The operation is a **first-class resource** with a stable id, timestamps and declared retention; it can be queried after it finishes. Explicit cancellation (`POST /operations/{id}/cancel`) if the business needs it.
+- Completion notification by **webhook** (§3.10) in addition to polling; polling is the always-available fallback, never the only mechanism in long operations.
 
 ### 3.8 GraphQL
 
-- Aplica cuando el cliente necesita **elegir la forma del dato** sobre muchas fuentes. No es una alternativa "moderna" a REST: cambia el problema de sobre-fetching por el de coste de consulta arbitraria.
-- Esquema: nomenclatura estable (`PascalCase` tipos, `camelCase` campos), nullability deliberada (no todo nullable "por si acaso"), paginación **Relay connections** (`edges`/`node`/`pageInfo`), mutaciones con input type único y payload con errores de dominio tipados (los errores de negocio son datos del esquema, no entradas en `errors[]`).
-- **N+1 obligatoriamente resuelto con dataloader** (batch + cache por request). Un resolver que consulta por elemento en una lista es un bug de rendimiento, no una optimización pendiente.
-- Límites duros en producción: **profundidad máxima**, **complejidad/coste por consulta** con presupuesto por cliente, límite de aliases y de batching (el batching por array es un multiplicador de ataque), timeout de ejecución.
-- **Persisted operations / trusted documents** como allowlist en clientes propios: el cliente envía un id, el servidor solo ejecuta documentos conocidos. Distíngueles de **APQ** (Automatic Persisted Queries), que es ahorro de ancho de banda y **no** es un control de seguridad. Para APIs públicas el allowlist no es viable → límites de profundidad/coste + rate limiting son obligatorios.
-- Introspección desactivada en producción (defensa en profundidad, no barrera: asume que el esquema se puede inferir). `GET` solo para consultas de lectura y con protección CSRF; `application/graphql-response+json` como media type de respuesta.
-- Evolución: GraphQL no versiona; se **deprecan campos** (`@deprecated(reason:)`) y se retiran con telemetría de uso por campo. `@defer`/`@stream` siguen **fuera de la spec ratificada**: no los pongas en el contrato público (§8).
+- Applies when the client needs to **choose the shape of the data** across many sources. It is not a "modern" alternative to REST: it trades the over-fetching problem for the cost of arbitrary queries.
+- Schema: stable naming (`PascalCase` types, `camelCase` fields), deliberate nullability (not everything nullable "just in case"), **Relay connections** pagination (`edges`/`node`/`pageInfo`), mutations with a single input type and a payload with typed domain errors (business errors are schema data, not entries in `errors[]`).
+- **N+1 must be solved with a dataloader** (batch + per-request cache). A resolver that queries per element in a list is a performance bug, not a pending optimisation.
+- Hard limits in production: **maximum depth**, **complexity/cost per query** with a per-client budget, alias and batching limits (array batching is an attack multiplier), execution timeout.
+- **Persisted operations / trusted documents** as an allowlist in first-party clients: the client sends an id, the server only executes known documents. Distinguish them from **APQ** (Automatic Persisted Queries), which is bandwidth saving and is **not** a security control. For public APIs the allowlist is not viable → depth/cost limits + rate limiting are mandatory.
+- Introspection disabled in production (defence in depth, not a barrier: assume the schema can be inferred). `GET` only for read queries and with CSRF protection; `application/graphql-response+json` as the response media type.
+- Evolution: GraphQL does not version; fields are **deprecated** (`@deprecated(reason:)`) and retired with per-field usage telemetry. `@defer`/`@stream` are still **outside the ratified spec**: do not put them in the public contract (§8).
 
-### 3.9 gRPC y protobuf
+### 3.9 gRPC and protobuf
 
-- Compatibilidad de wire es responsabilidad del esquema: **nunca reutilices números de campo ni cambies su tipo**; usa `reserved` para números y nombres retirados. Campos nuevos siempre opcionales con default sensato.
-- Enums: reserva el valor `0` como `UNSPECIFIED`; añadir valores es aditivo, quitarlos no.
-- `buf breaking` contra la rama base como gate de CI (§4) y `buf lint` con ruleset estándar. Registro de esquemas (BSR o equivalente) si hay consumidores externos.
-- **proto3 por defecto**: Editions (`edition = "2023"/"2024"`) no aporta funcionalidad nueva y cambia defaults sensibles (`features.field_presence` pasa a `EXPLICIT`), lo que convierte una migración descuidada en breaking change. Migra solo con plan y verificación (§8).
-- Errores: `google.rpc.Status` con códigos canónicos; el mapeo a HTTP se documenta si hay pasarela gRPC↔REST.
+- Wire compatibility is the schema's responsibility: **never reuse field numbers or change their type**; use `reserved` for retired numbers and names. New fields always optional with a sensible default.
+- Enums: reserve value `0` as `UNSPECIFIED`; adding values is additive, removing them is not.
+- `buf breaking` against the base branch as a CI gate (§4) and `buf lint` with the standard ruleset. Schema registry (BSR or equivalent) if there are external consumers.
+- **proto3 by default**: Editions (`edition = "2023"/"2024"`) brings no new functionality and changes sensitive defaults (`features.field_presence` becomes `EXPLICIT`), which turns a careless migration into a breaking change. Migrate only with a plan and verification (§8).
+- Errors: `google.rpc.Status` with canonical codes; the mapping to HTTP is documented if there is a gRPC↔REST gateway.
 
 ### 3.10 Webhooks
 
-- Payload firmado con **HMAC-SHA256 sobre `id.timestamp.payload`** (concatenación con `.`), cabeceras `webhook-id`, `webhook-timestamp`, `webhook-signature`. El receptor verifica **sobre los bytes crudos** del cuerpo, antes de deserializar.
-- **Anti-replay**: rechazar timestamps fuera de una ventana de tolerancia (300 s es el valor recomendado por Standard Webhooks y el default de Stripe) **y** deduplicar por `webhook-id` como clave de idempotencia. Ambas cosas, no una.
-- Comparación de firmas en **tiempo constante**. Soporte de **múltiples secretos activos** para rotación sin corte (firma con el nuevo, acepta ambos durante la ventana).
-- Entrega at-least-once con reintentos y backoff exponencial + jitter, límite de intentos, endpoint de reentrega manual y visibilidad del historial de intentos. El consumidor responde `2xx` **rápido** y procesa en background; timeout corto del emisor documentado.
-- Egress controlado: lista de IPs de salida publicada o mTLS; el receptor valida que el destino sea suyo. Del lado del que registra URLs de webhook, valida contra **SSRF** (sin IPs privadas/loopback/metadata, sin redirecciones a rangos internos).
+- Payload signed with **HMAC-SHA256 over `id.timestamp.payload`** (concatenated with `.`), headers `webhook-id`, `webhook-timestamp`, `webhook-signature`. The receiver verifies **over the raw bytes** of the body, before deserialising.
+- **Anti-replay**: reject timestamps outside a tolerance window (300 s is the value recommended by Standard Webhooks and Stripe's default) **and** deduplicate by `webhook-id` as an idempotency key. Both, not one.
+- Signature comparison in **constant time**. Support for **multiple active secrets** for rotation without downtime (sign with the new one, accept both during the window).
+- At-least-once delivery with retries and exponential backoff + jitter, attempt limit, manual redelivery endpoint and visibility of the attempt history. The consumer replies `2xx` **fast** and processes in the background; the sender's short timeout is documented.
+- Controlled egress: published list of outbound IPs or mTLS; the receiver validates that the destination is theirs. On the side that registers webhook URLs, validate against **SSRF** (no private/loopback/metadata IPs, no redirects to internal ranges).
 
-### 3.11 HATEOAS, con criterio
+### 3.11 HATEOAS, with judgement
 
-- Hipermedia completa (HAL, JSON:API, Siren) solo aporta cuando hay clientes genéricos o flujos con transiciones dependientes del estado. En APIs consumidas por clientes propios genera coste sin retorno.
-- Regla práctica: incluye `links` para **paginación**, para **recursos relacionados** y para **acciones disponibles según estado** (`cancelable`), y nada más. No inventes un motor de hipermedia que nadie va a usar.
+- Full hypermedia (HAL, JSON:API, Siren) only pays off when there are generic clients or flows with state-dependent transitions. In APIs consumed by first-party clients it generates cost with no return.
+- Practical rule: include `links` for **pagination**, for **related resources** and for **actions available depending on state** (`cancelable`), and nothing else. Do not invent a hypermedia engine nobody is going to use.
 
-## 4. Calidad y gates de CI
+## 4. Quality and CI gates
 
-En orden de coste creciente; todos bloquean el merge (main siempre verde):
+In increasing order of cost; all of them block the merge (main always green):
 
-1. **Validación estructural** del contrato (`redocly lint` / `vacuum lint` / `buf lint`): rompe si el documento no es válido para la versión declarada.
-2. **Ruleset de estilo propio** versionado en el repo (naming, plural, `operationId` único, `description` obligatoria, ejemplos, `4xx`/`5xx` declarados con `application/problem+json`, `security` presente en cada operación). El ruleset es el que convierte "buenas prácticas" en gate.
-3. **Diff de compatibilidad** contra la versión publicada: `redocly` / `oasdiff` para OpenAPI, `buf breaking` para protobuf, comprobación de esquema GraphQL (`graphql-inspector` o equivalente). Un breaking change sin bump de mayor rompe el build.
-4. **Contract tests**: el servidor se valida contra su propio contrato (request/response validation en tests de integración) y los consumidores clave contra dobles verificados. Generar cliente y servidor del mismo contrato no demuestra nada: valida respuestas reales.
-5. **Tests de bordes obligatorios**, no solo camino feliz: paginación en el último elemento y con cursor inválido/caducado; `If-Match` obsoleto → `412`; `Idempotency-Key` repetida **concurrentemente** (dos peticiones simultáneas, no secuenciales); payload en el límite y por encima del límite; enum desconocido; `429` con cabeceras de cuota correctas; webhook con firma inválida, timestamp caducado e id duplicado.
-6. **Ejemplos del contrato validados contra sus esquemas** (un ejemplo que no valida es documentación falsa) y documentación generada en CI.
+1. **Structural validation** of the contract (`redocly lint` / `vacuum lint` / `buf lint`): breaks if the document is not valid for the declared version.
+2. **Your own style ruleset** versioned in the repo (naming, plural, unique `operationId`, mandatory `description`, examples, `4xx`/`5xx` declared with `application/problem+json`, `security` present in every operation). The ruleset is what turns "good practices" into a gate.
+3. **Compatibility diff** against the published version: `redocly` / `oasdiff` for OpenAPI, `buf breaking` for protobuf, GraphQL schema check (`graphql-inspector` or equivalent). A breaking change without a major bump breaks the build.
+4. **Contract tests**: the server is validated against its own contract (request/response validation in integration tests) and the key consumers against verified doubles. Generating client and server from the same contract proves nothing: validate real responses.
+5. **Mandatory edge tests**, not just the happy path: pagination on the last element and with an invalid/expired cursor; stale `If-Match` → `412`; **concurrently** repeated `Idempotency-Key` (two simultaneous requests, not sequential); payload at the limit and above the limit; unknown enum; `429` with correct quota headers; webhook with an invalid signature, an expired timestamp and a duplicated id.
+6. **Contract examples validated against their schemas** (an example that does not validate is false documentation) and documentation generated in CI.
 
-## 5. Seguridad
+## 5. Security
 
-- Referencia: **OWASP API Security Top 10 — edición 2023** (sigue siendo la vigente en ago-2026; no existe edición 2026 pese a lo que anuncian blogs de terceros). Prioridad real: BOLA/BOPLA (autorización a nivel de objeto y de propiedad) e inventario de APIs.
-- **Autorización por objeto en cada endpoint**: que el id exista no significa que sea del que pregunta. Prohibido confiar en ids no adivinables como control de acceso. Autorización **a nivel de propiedad** también: no serialices el modelo entero (`role`, `internal_notes`) ni aceptes binding masivo — allowlist de campos de entrada y de salida.
-- Autenticación: **OAuth 2.1 / OIDC con tokens de vida corta** para acceso de usuario y `client_credentials` para máquina-a-máquina; verifica `iss`, `aud`, `exp` y firma en **cada** servicio. API keys solo para identificación de aplicación y cuota, nunca como única autenticación de operaciones sensibles; si existen, con prefijo identificable, hash en reposo, scoping y rotación. **Prohibido**: tokens de larga vida sin rotación, secretos en query string, `Basic` fuera de canal interno con mTLS.
-- Declara `security` **por operación** en el contrato, no solo global: un endpoint que se olvidó de heredarlo es un endpoint abierto.
-- **Validación estricta en el borde** contra el esquema del contrato: tipos, formatos, longitudes, rangos, `additionalProperties: false` donde aplique, tamaño máximo de cuerpo y de profundidad de JSON. Rechaza lo que no encaje; no "sanees" adivinando.
-- Rate limiting **por identidad y por operación** (no solo por IP), con coste diferenciado para endpoints caros; `429` + `Retry-After` + cabeceras de cuota. Límite global de concurrencia y de tamaño de página como protección contra DoS de aplicación.
-- Nunca filtres en el error existencia, estructura interna, versiones ni trazas: el `detail` de RFC 9457 lo escribes tú, no el framework. Correlaciona con un `trace_id` en la respuesta para soporte.
-- CORS restrictivo: origen explícito, jamás reflejo del `Origin` con `Access-Control-Allow-Credentials: true`.
-- **Inventario**: toda API desplegada está en el catálogo con dueño, versión y estado. Las APIs *shadow* y las versiones "que ya nadie usa" pero siguen respondiendo son el hallazgo recurrente en auditoría.
+- Reference: **OWASP API Security Top 10 — 2023 edition** (still the current one as of Aug 2026; there is no 2026 edition despite what third-party blogs announce). Real priority: BOLA/BOPLA (object-level and property-level authorisation) and API inventory.
+- **Object-level authorisation on every endpoint**: the id existing does not mean it belongs to the caller. Forbidden to rely on unguessable ids as an access control. **Property-level** authorisation too: do not serialise the whole model (`role`, `internal_notes`) nor accept mass binding — allowlist of input and output fields.
+- Authentication: **OAuth 2.1 / OIDC with short-lived tokens** for user access and `client_credentials` for machine-to-machine; verify `iss`, `aud`, `exp` and the signature in **every** service. API keys only for application identification and quota, never as the sole authentication for sensitive operations; if they exist, with an identifiable prefix, hashed at rest, scoped and rotated. **Forbidden**: long-lived tokens without rotation, secrets in the query string, `Basic` outside an internal channel with mTLS.
+- Declare `security` **per operation** in the contract, not only globally: an endpoint that forgot to inherit it is an open endpoint.
+- **Strict validation at the boundary** against the contract schema: types, formats, lengths, ranges, `additionalProperties: false` where applicable, maximum body size and JSON depth. Reject what does not fit; do not "sanitise" by guessing.
+- Rate limiting **per identity and per operation** (not just per IP), with differentiated cost for expensive endpoints; `429` + `Retry-After` + quota headers. Global concurrency limit and page-size limit as protection against application-level DoS.
+- Never leak existence, internal structure, versions or traces in the error: the RFC 9457 `detail` is written by you, not by the framework. Correlate with a `trace_id` in the response for support.
+- Restrictive CORS: explicit origin, never reflecting the `Origin` with `Access-Control-Allow-Credentials: true`.
+- **Inventory**: every deployed API is in the catalogue with an owner, version and status. *Shadow* APIs and the versions "nobody uses any more" but that still respond are the recurring audit finding.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Presupuesto de latencia por endpoint** y SLO publicado en el portal (p95/p99 + disponibilidad). Sin SLO, la API no tiene contrato operativo.
-- Métricas por operación (`operationId`, no por URL con ids): latencia, tasa de error por código, uso de cuota, y **uso por versión y por consumidor** (imprescindible para §3.4).
-- Compresión negociada, `Content-Length` conocido, streaming (SSE o chunked) para respuestas grandes — OpenAPI 3.2 ya describe streaming de forma nativa.
-- **API gateway** para lo transversal: TLS 1.2+/1.3, authn, rate limiting, validación contra el contrato, observabilidad. Prohibido meter lógica de negocio o transformaciones de payload específicas de dominio en el gateway.
-- Portal de desarrollador generado **desde el contrato** (nunca escrito a mano en paralelo): referencia, guía de autenticación, changelog por versión, catálogo de `type` de errores, entorno de pruebas y política de deprecación. Documentación divergente del contrato = documentación falsa.
-- Sandbox/mock server generado del contrato para que los consumidores integren antes de que exista la implementación.
+- **Latency budget per endpoint** and SLO published in the portal (p95/p99 + availability). Without an SLO, the API has no operational contract.
+- Metrics per operation (`operationId`, not per URL with ids): latency, error rate by code, quota usage, and **usage per version and per consumer** (indispensable for §3.4).
+- Negotiated compression, known `Content-Length`, streaming (SSE or chunked) for large responses — OpenAPI 3.2 already describes streaming natively.
+- **API gateway** for cross-cutting concerns: TLS 1.2+/1.3, authn, rate limiting, validation against the contract, observability. Forbidden to put business logic or domain-specific payload transformations in the gateway.
+- Developer portal generated **from the contract** (never written by hand in parallel): reference, authentication guide, changelog per version, catalogue of error `type`s, test environment and deprecation policy. Documentation that diverges from the contract = false documentation.
+- Sandbox/mock server generated from the contract so consumers can integrate before the implementation exists.
 
-## 7. Sostenibilidad y gobierno
+## 7. Sustainability and governance
 
-- **Design-first**: el contrato se revisa en PR antes de implementar, con revisor de API distinto del autor en APIs públicas. El review de contrato es un gate humano, no un trámite.
-- Ruleset de estilo **compartido entre APIs** de la organización, versionado y con proceso para cambiarlo. La consistencia entre APIs es un atributo de producto.
-- ADR para decisiones one-way: estilo (REST/GraphQL/gRPC), esquema de versionado, formato de error, modelo de autenticación, política de deprecación.
-- Política de breaking changes **escrita y publicada**: qué se considera breaking, ventana mínima de convivencia, canal de aviso, compromiso de soporte por versión mayor. En APIs públicas es un compromiso contractual, no una intención.
-- Cadencia: revisión trimestral del inventario (versiones vivas, uso por consumidor, candidatas a retirada) y de las versiones del tooling (§8).
+- **Design-first**: the contract is reviewed in a PR before implementing, with an API reviewer other than the author in public APIs. Contract review is a human gate, not a formality.
+- Style ruleset **shared across the organisation's APIs**, versioned and with a process for changing it. Consistency between APIs is a product attribute.
+- ADR for one-way decisions: style (REST/GraphQL/gRPC), versioning scheme, error format, authentication model, deprecation policy.
+- **Written and published** breaking-change policy: what counts as breaking, minimum coexistence window, notification channel, support commitment per major version. In public APIs it is a contractual commitment, not an intention.
+- Cadence: quarterly review of the inventory (live versions, usage per consumer, retirement candidates) and of the tooling versions (§8).
 
-### PROHIBIDO
-- ❌ Breaking change dentro de una versión mayor (renombrar/eliminar campos, cambiar tipo o semántica, endurecer validación de entrada).
-- ❌ `200 OK` con error en el cuerpo; errores sin RFC 9457; `detail` con stack trace, SQL o rutas internas.
-- ❌ `GET` que muta estado; `POST` con efectos sin soporte de `Idempotency-Key`.
-- ❌ Paginación por offset en colecciones que crecen; colección sin `limit` máximo forzado por el servidor.
-- ❌ Filtros u ordenación construidos desde parámetros arbitrarios sin allowlist.
-- ❌ Autorización basada en ids no adivinables; serializar el modelo interno completo; binding masivo de la entrada.
-- ❌ Endpoint sin `security` declarado en el contrato, o sin autorización a nivel de objeto.
-- ❌ Deprecar sin `Deprecation`/`Sunset`, sin plazo publicado y sin telemetría de uso por consumidor.
-- ❌ Retirar una versión antes del plazo comunicado — o dejarla viva indefinidamente "por si acaso".
-- ❌ Documentación escrita a mano en paralelo al contrato; ejemplos que no validan contra su esquema.
-- ❌ GraphQL en producción sin límite de profundidad/complejidad, sin dataloader o con introspección abierta.
-- ❌ Confundir APQ con allowlist de operaciones y llamarlo control de seguridad.
-- ❌ Reutilizar números de campo protobuf o cambiar su tipo; publicar `.proto` sin `buf breaking` en CI.
-- ❌ Webhooks sin firma, sin ventana de tolerancia de timestamp o sin deduplicación por id.
-- ❌ Aceptar URLs de webhook sin validación anti-SSRF.
-- ❌ Adoptar OpenAPI 4.0 "Moonwalk" en un proyecto real (no existe release).
-- ❌ Lógica de negocio en el API gateway.
+### FORBIDDEN
+- ❌ Breaking change within a major version (renaming/removing fields, changing type or semantics, tightening input validation).
+- ❌ `200 OK` with an error in the body; errors without RFC 9457; `detail` with a stack trace, SQL or internal paths.
+- ❌ `GET` that mutates state; `POST` with effects and no `Idempotency-Key` support.
+- ❌ Offset pagination in collections that grow; a collection with no server-enforced maximum `limit`.
+- ❌ Filters or sorting built from arbitrary parameters without an allowlist.
+- ❌ Authorisation based on unguessable ids; serialising the full internal model; mass binding of the input.
+- ❌ An endpoint with no `security` declared in the contract, or with no object-level authorisation.
+- ❌ Deprecating without `Deprecation`/`Sunset`, without a published deadline and without per-consumer usage telemetry.
+- ❌ Retiring a version before the communicated deadline — or leaving it alive indefinitely "just in case".
+- ❌ Documentation written by hand in parallel to the contract; examples that do not validate against their schema.
+- ❌ GraphQL in production without depth/complexity limits, without a dataloader or with introspection open.
+- ❌ Confusing APQ with an operation allowlist and calling it a security control.
+- ❌ Reusing protobuf field numbers or changing their type; publishing `.proto` without `buf breaking` in CI.
+- ❌ Webhooks without a signature, without a timestamp tolerance window or without deduplication by id.
+- ❌ Accepting webhook URLs without anti-SSRF validation.
+- ❌ Adopting OpenAPI 4.0 "Moonwalk" in a real project (there is no release).
+- ❌ Business logic in the API gateway.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier dato de este documento en un entregable, **búscalo — no lo recuerdes**:
+Before committing any fact from this document to a deliverable, **look it up — do not recall it**:
 
-1. **OpenAPI**: versión estable vigente (3.2.0 desde sept-2025) y estado real de 4.0/Moonwalk en `github.com/OAI/sig-moonwalk` y `openapis.org` — a ago-2026 sigue sin fecha y la propia OAI recomienda 3.x.
-2. **RFCs y drafts** en `datatracker.ietf.org` antes de citarlos: RFC 9457 (problem details, jul-2023, obsoleta 7807) ✔; RFC 9745 (`Deprecation`) ✔; RFC 8594 (`Sunset`, informational) ✔; RFC 9110 (HTTP Semantics) ✔; RFC 9651 (Structured Fields) ✔. **Ojo**: RFC 9331 **no** es rate limiting, es ECN/L4S — las cabeceras de cuota siguen en `draft-ietf-httpapi-ratelimit-headers` (rev. -11, may-2026, expira nov-2026) y su **sintaxis ha cambiado varias veces** (hoy `RateLimit-Policy: "sliding";q=12;w=1` / `RateLimit: "sliding";q=12;r=1;t=1`): verifica la revisión vigente antes de implementarla. `Idempotency-Key` sigue siendo I-D, no RFC.
-3. **Linters**: última versión de Redocly CLI (`@redocly/cli`, 2.x, ESM-only, Node ≥ 22.12) y vacuum, y su soporte de OAS 3.2. Estado de mantenimiento de Spectral (actividad muy degradada en 2025-2026, sin soporte 3.2; existe fork comunitario) antes de elegirlo para un proyecto nuevo.
-4. **GraphQL**: edición ratificada vigente (September2025 en `spec.graphql.org`) y estado de `@defer`/`@stream` e incremental delivery — a ago-2026 seguían pendientes de spec pese a estar en graphql-js v17+. Estado de la estandarización de *persisted documents* en GraphQL-over-HTTP.
-5. **Protobuf/gRPC**: versión del Buf CLI y su guía vigente sobre Editions vs proto3 (`buf.build/docs`, `protobuf.dev/editions`) — la recomendación conservadora que se cita aquí es de 2024.
-6. **Webhooks**: revisión vigente de la spec de Standard Webhooks (`standardwebhooks.com`) y de RFC 9421 antes de fijar cabeceras o algoritmo.
-7. **OWASP API Security Top 10**: edición oficial vigente en `owasp.org/API-Security` — a ago-2026 es la **2023**; los artículos titulados "2026" reempaquetan esa lista.
-8. CVEs y EOL de cualquier gateway, servidor GraphQL o librería que recomiendes (`endoflife.date`, avisos del proyecto).
+1. **OpenAPI**: current stable version (3.2.0 since Sept 2025) and the real status of 4.0/Moonwalk in `github.com/OAI/sig-moonwalk` and `openapis.org` — as of Aug 2026 it still has no date and the OAI itself recommends 3.x.
+2. **RFCs and drafts** in `datatracker.ietf.org` before citing them: RFC 9457 (problem details, Jul 2023, obsoletes 7807) ✔; RFC 9745 (`Deprecation`) ✔; RFC 8594 (`Sunset`, informational) ✔; RFC 9110 (HTTP Semantics) ✔; RFC 9651 (Structured Fields) ✔. **Careful**: RFC 9331 is **not** rate limiting, it is ECN/L4S — the quota headers are still in `draft-ietf-httpapi-ratelimit-headers` (rev. -11, May 2026, expires Nov 2026) and their **syntax has changed several times** (today `RateLimit-Policy: "sliding";q=12;w=1` / `RateLimit: "sliding";q=12;r=1;t=1`): verify the current revision before implementing it. `Idempotency-Key` is still an I-D, not an RFC.
+3. **Linters**: latest version of Redocly CLI (`@redocly/cli`, 2.x, ESM-only, Node ≥ 22.12) and vacuum, and their OAS 3.2 support. Maintenance status of Spectral (heavily degraded activity in 2025-2026, no 3.2 support; a community fork exists) before choosing it for a new project.
+4. **GraphQL**: current ratified edition (September2025 at `spec.graphql.org`) and the status of `@defer`/`@stream` and incremental delivery — as of Aug 2026 they were still pending in the spec despite being in graphql-js v17+. Status of the standardisation of *persisted documents* in GraphQL-over-HTTP.
+5. **Protobuf/gRPC**: Buf CLI version and its current guidance on Editions vs proto3 (`buf.build/docs`, `protobuf.dev/editions`) — the conservative recommendation cited here is from 2024.
+6. **Webhooks**: current revision of the Standard Webhooks spec (`standardwebhooks.com`) and of RFC 9421 before pinning headers or algorithm.
+7. **OWASP API Security Top 10**: current official edition at `owasp.org/API-Security` — as of Aug 2026 it is the **2023** one; articles titled "2026" repackage that list.
+8. CVEs and EOL of any gateway, GraphQL server or library you recommend (`endoflife.date`, project advisories).
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

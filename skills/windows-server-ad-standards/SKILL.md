@@ -3,612 +3,612 @@ name: windows-server-ad-standards
 description: Windows Server and Active Directory Domain Services security standards. Use when working with AD DS forests, domains, OUs, sites and replication, Group Policy (GPO, gpresult, SYSVOL), Tier 0/Enterprise Access Model and Privileged Access Workstations, Domain Admins and AdminSDHolder, gMSA/dMSA service accounts, krbtgt rotation, Kerberos vs NTLM and Negotiate, SMB signing and LDAP channel binding, AD CS certificate templates, Protected Users, Windows LAPS, PingCastle, Purple Knight or BloodHound/SharpHound assessments, Microsoft Security Compliance Toolkit baselines, ntdsutil, dcdiag, repadmin, dsquery, Server Core, WSUS or Azure Update Manager patching, or AD forest recovery from system state backup.
 ---
 
-# Estándares de Windows Server y Active Directory
+# Windows Server and Active Directory standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al diseñar, endurecer, operar y recuperar **el directorio y la plataforma Windows Server**:
-decisión AD DS on-prem vs Entra ID vs híbrido, diseño de bosque/dominio/OU/sitios, modelo de
-administración por niveles y PAW, grupos y delegación privilegiada, cuentas de servicio, AD CS como
-vector de compromiso del directorio, autenticación Kerberos/NTLM y su endurecimiento, higiene y
-auditoría del directorio, baselines de configuración por GPO o Intune, operación y parcheo del SO,
-PowerShell seguro, y **continuidad y recuperación del bosque**.
+Applies when designing, hardening, operating and recovering **the directory and the Windows Server
+platform**: the on-prem AD DS vs Entra ID vs hybrid decision, forest/domain/OU/site design, tiered
+administration model and PAW, privileged groups and delegation, service accounts, AD CS as a vector
+for compromising the directory, Kerberos/NTLM authentication and its hardening, directory hygiene and
+auditing, configuration baselines via GPO or Intune, OS operation and patching, secure PowerShell,
+and **forest continuity and recovery**.
 
 Triggers: `Active Directory`, `AD DS`, `ntds.dit`, `ntdsutil`, `dcdiag`, `repadmin`, `dsquery`,
-`Get-ADUser`/`Get-ADDomain`/módulo `ActiveDirectory`, `gpresult`, `SYSVOL`, `NETLOGON`, `GPO`,
+`Get-ADUser`/`Get-ADDomain`/the `ActiveDirectory` module, `gpresult`, `SYSVOL`, `NETLOGON`, `GPO`,
 `Domain Admins`, `Enterprise Admins`, `AdminSDHolder`, `adminCount`, `Protected Users`,
 `krbtgt`, `SPN`, `gMSA`, `dMSA`, `msDS-ManagedAccountPrecededByLink`, `Kerberos`, `NTLM`,
 `Negotiate`, `LmCompatibilityLevel`, `SMB signing`, `LDAP channel binding`, `ldapsigning`,
-`AD CS`, `certsrv`, plantillas de certificado, `Windows LAPS`, `LAPSAD`, `PingCastle`,
+`AD CS`, `certsrv`, certificate templates, `Windows LAPS`, `LAPSAD`, `PingCastle`,
 `Purple Knight`, `BloodHound`, `SharpHound`, `Security Compliance Toolkit`, `LGPO.exe`,
 `Server Core`, `WSUS`, `Azure Update Manager`, `pwsh` vs `powershell.exe`, `JEA`, `WinRM`,
-"recuperación del bosque", "el DC no replica".
+"forest recovery", "the DC is not replicating".
 
-**Principio rector**: **el bosque es el límite de seguridad, no el dominio**, y **el compromiso de
-AD es el compromiso de todo**. Un atacante con Domain Admin (o con cualquiera de las docenas de
-caminos equivalentes que un directorio real acumula) no ha comprometido un servidor: ha comprometido
-la identidad de la organización entera, incluida la de los sistemas que "no son Windows" pero
-autentican contra él. Todo lo que sigue se ordena por esa asimetría.
+**Guiding principle**: **the forest is the security boundary, not the domain**, and **compromising
+AD is compromising everything**. An attacker holding Domain Admin (or any of the dozens of
+equivalent paths a real directory accumulates) has not compromised a server: they have compromised
+the identity of the entire organisation, including that of the systems that "are not Windows" but
+authenticate against it. Everything that follows is ordered by that asymmetry.
 
-**Postura**: esta skill es **defensiva**. Las técnicas de ataque se describen como **clase de
-riesgo, indicador y mitigación**, nunca como procedimiento de explotación. El uso de herramientas de
-análisis de rutas de ataque (BloodHound) aquí es **de defensor**: ver lo que ve el atacante para
-cortarlo. Lo ofensivo autorizado vive en `offensive-security-standards`.
+**Posture**: this skill is **defensive**. Attack techniques are described as a **risk class,
+indicator and mitigation**, never as an exploitation procedure. The use of attack-path analysis
+tooling (BloodHound) here is **the defender's**: seeing what the attacker sees in order to cut it
+off. Authorised offensive work lives in `offensive-security-standards`.
 
-**No aplica**: ver `identity-access-management-standards` (**la federación moderna es suya**:
-OAuth 2.1/OIDC, SAML, passkeys/WebAuthn y política de MFA, SCIM, motores de autorización
-RBAC/ABAC/ReBAC, SPIFFE, PAM/JIT genérico y break-glass como patrón, ciclo joiner-mover-leaver.
-**Aquí**: el **directorio** —objetos, OU, GPO, delegación, replicación— y **Kerberos/NTLM** como
-protocolos del dominio, más la aplicación concreta de tiering y PAW sobre AD); `azure-standards`
-(**Entra ID como IdP de plataforma**, Conditional Access, PIM, gobernanza del tenant y AKS — la
-decisión "AD DS o Entra" se toma aquí, la operación del tenant es allí); `cryptography-pki-standards`
-(**la PKI como diseño es suya**: jerarquía de CA, algoritmos, HSM, ciclo de vida y rotación de claves,
-ACME, mTLS. **Aquí solo el abuso del directorio a través de AD CS**: plantillas, permisos de
-enrolamiento, ACL de la CA y el mapeo certificado↔cuenta. Si la pregunta es "qué CA y con qué
-claves", es de allí; si es "quién puede pedir un certificado que suplante a un admin", es de aquí);
-`linux-hardening-standards` (**paralelo Linux del que esta skill es el equivalente Windows**:
-baselines CIS/STIG, medición con OpenSCAP/Lynis, auditd — mismo criterio, otro SO);
-`onprem-standards` (paraguas de plataforma: hardware, hipervisor, plano OOB, topología de flota —
-sus invariantes aplican, y **la virtualización que hospeda un DC es Tier 0 por definición**);
-`networking-standards` (segmentación, firewall entre zonas, DNS como servicio de red — aquí el DNS
-integrado en AD y los puertos que exige el dominio); `detection-engineering-standards`
-(**frontera decidida**: *qué evento de AD importa y por qué* es de esta skill; *el
-ciclo de vida de la regla* —cobertura ATT&CK, tuning, umbrales, test, SIEM— es suyo);
-`observability-standards` (recogida, retención e integridad de esos eventos);
-`incident-response-forensics-standards` (**el proceso forense y la respuesta al compromiso**:
-contención, imaging, timeline, erradicación y rotación masiva de credenciales — **aquí solo qué
-artefacto del directorio existe y qué exige su recuperación**); `incident-management-standards`
-(gobierno del incidente); `bcdr-standards` (RTO/RPO, plan de continuidad y
-ejercicios de DR **de la organización** — **la recuperación del bosque en concreto es de aquí**, por
-ser un procedimiento propio del directorio y no una restauración de servidor);
-`vulnerability-management-standards` (triaje, SLA y seguimiento de EOL);
-`secrets-management-standards` (custodia y rotación de secretos de
-aplicación); `grc-compliance-standards` (el control exigido por ISO/ENS/NIST y su evidencia);
-`dotnet-standards` (el código C# que corre encima); `powershell-standards` (**frontera recíproca y
-constante**: aquí se decide **qué** se administra —bosque, OU, GPO, Kerberos, gMSA, Tier 0— y **qué
-módulo y cmdlet** lo hace; **cómo se escribe el script** —verbos aprobados, `SupportsShouldProcess`
-con `-WhatIf`, `Set-StrictMode`, manejo de errores, `PSScriptAnalyzer`, Pester, JEA y firma— es
-suyo. **Prohibido duplicar aquí criterio de lenguaje.**); `iac-standards` (Ansible/Terraform como
-herramienta); `cicd-standards`; `offensive-security-standards` y `ctf-lab-standards`
-(ejercicio ofensivo con alcance y autorización por escrito, y laboratorio aislado — esta
-skill es defensiva); `homelab-standards` (dominio de laboratorio con criterio proporcional);
-`container-runtime-security-standards` y `kubernetes-standards` (la otra plataforma cuyo compromiso
-es total — mismo criterio de contención por capas, dominio distinto).
+**Not applicable**: see `identity-access-management-standards` (**modern federation is theirs**:
+OAuth 2.1/OIDC, SAML, passkeys/WebAuthn and MFA policy, SCIM, RBAC/ABAC/ReBAC authorisation
+engines, SPIFFE, generic PAM/JIT and break-glass as a pattern, the joiner-mover-leaver cycle.
+**Here**: the **directory** —objects, OUs, GPOs, delegation, replication— and **Kerberos/NTLM** as
+domain protocols, plus the concrete application of tiering and PAW on top of AD); `azure-standards`
+(**Entra ID as the platform IdP**, Conditional Access, PIM, tenant governance and AKS — the
+"AD DS or Entra" decision is taken here, tenant operation is there); `cryptography-pki-standards`
+(**PKI as a design is theirs**: CA hierarchy, algorithms, HSM, key lifecycle and rotation,
+ACME, mTLS. **Here, only the abuse of the directory through AD CS**: templates, enrolment
+permissions, CA ACLs and the certificate↔account mapping. If the question is "which CA and with which
+keys", it is theirs; if it is "who can request a certificate that impersonates an admin", it belongs here);
+`linux-hardening-standards` (**the Linux parallel to which this skill is the Windows equivalent**:
+CIS/STIG baselines, measurement with OpenSCAP/Lynis, auditd — same criteria, different OS);
+`onprem-standards` (platform umbrella: hardware, hypervisor, OOB plane, fleet topology —
+its invariants apply, and **the virtualisation hosting a DC is Tier 0 by definition**);
+`networking-standards` (segmentation, firewalling between zones, DNS as a network service — here, the DNS
+integrated into AD and the ports the domain requires); `detection-engineering-standards`
+(**settled boundary**: *which AD event matters and why* belongs to this skill; *the
+rule lifecycle* —ATT&CK coverage, tuning, thresholds, testing, SIEM— is theirs);
+`observability-standards` (collection, retention and integrity of those events);
+`incident-response-forensics-standards` (**the forensic process and the response to compromise**:
+containment, imaging, timeline, eradication and mass credential rotation — **here, only which
+directory artifact exists and what its recovery demands**); `incident-management-standards`
+(incident governance); `bcdr-standards` (RTO/RPO, continuity plan and DR
+exercises **for the organisation** — **forest recovery specifically belongs here**, as
+a procedure intrinsic to the directory and not a server restore);
+`vulnerability-management-standards` (triage, SLAs and EOL tracking);
+`secrets-management-standards` (custody and rotation of application
+secrets); `grc-compliance-standards` (the control demanded by ISO/ENS/NIST and its evidence);
+`dotnet-standards` (the C# code running on top); `powershell-standards` (**a reciprocal and
+constant boundary**: here we decide **what** is administered —forest, OUs, GPOs, Kerberos, gMSA, Tier 0— and **which
+module and cmdlet** does it; **how the script is written** —approved verbs, `SupportsShouldProcess`
+with `-WhatIf`, `Set-StrictMode`, error handling, `PSScriptAnalyzer`, Pester, JEA and signing— is
+theirs. **Duplicating language criteria here is forbidden.**); `iac-standards` (Ansible/Terraform as
+tooling); `cicd-standards`; `offensive-security-standards` and `ctf-lab-standards`
+(offensive exercises with written scope and authorisation, and isolated labs — this
+skill is defensive); `homelab-standards` (lab domain with proportionate criteria);
+`container-runtime-security-standards` and `kubernetes-standards` (the other platform whose compromise
+is total — same layered containment criteria, different domain).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión, fecha de EOL y estado de feature por web antes de fijarla (§8). En
-> este dominio la memoria falla especialmente con NTLM, WSUS, LAPS y las fechas de soporte.
+> Verify the latest version, EOL date and feature status on the web before pinning it (§8). In
+> this domain, memory fails especially badly with NTLM, WSUS, LAPS and support dates.
 
-| Decisión | Por defecto | Motivo / alternativa justificable |
+| Decision | Default | Reason / justifiable alternative |
 |---|---|---|
-| ¿AD DS on-prem? | **Solo si hay una dependencia real que lo exija** | Justifican dominio propio: aplicaciones que solo hablan Kerberos/LDAP/NTLM, file servers y print, GPO sobre equipos no gestionables por Intune, OT/industrial, requisito de operación sin conectividad. **No lo justifican**: "siempre lo hemos tenido", correo, VPN, SSO web moderno o gestión de portátiles — todo eso vive mejor en `identity-access-management-standards`/`azure-standards` |
-| Híbrido | **Es el estado real de casi todos**, y hay que **diseñarlo**, no dejar que ocurra | El riesgo del híbrido es la **fusión de planos**: una cuenta con privilegio en AD que también lo tiene en el tenant convierte un compromiso on-prem en compromiso cloud. Cuentas privilegiadas de nube **solo en la nube** y viceversa; el servidor de sincronización es **Tier 0** |
-| Versión de SO | **Windows Server 2025** en despliegues nuevos y en DCs | Verificado ago-2026: GA 1-nov-2024, soporte estándar hasta **13-nov-2029**, extendido hasta **14-nov-2034**. **Server 2016 muere el 12-ene-2027** (migración urgente) y **Server 2022 sale de soporte estándar el 13-oct-2026** (sigue parcheado, sin funcionalidad nueva). Server 2019 en extendido hasta 9-ene-2029 |
-| Instalación | **Server Core** para DC y roles de infraestructura | Menos superficie, menos parches, menos "alguien navegó desde el servidor". GUI solo con justificación por dependencia de aplicación |
-| Nivel funcional | El más alto que soporten **todos** los DC, y plan para subirlo | Features de seguridad recientes (incluidas las de Kerberos y cuentas de servicio) dependen del nivel funcional, no solo de la versión del DC |
-| Modelo de administración | **Enterprise Access Model** (planos *control* / *gestión* / *datos-cargas*) como marco, con el **modelo de niveles AD (Tier 0/1/2) como su implementación on-prem** | Verificado ago-2026: Microsoft **no ha retirado el tier model**; lo reclasificó como *guía legacy* y lo documenta como **componente del EAM**. Si no hay migración a nube, el enfoque por niveles sigue siendo recomendación de alta prioridad. **Las tres reglas no han cambiado**: (1) una credencial de nivel superior nunca se expone en un sistema de nivel inferior; (2) el nivel inferior consume servicios del superior, nunca al revés; (3) **quien puede gestionar un sistema pertenece a su nivel, se quiera o no** — incluidos el hipervisor, el backup y la herramienta de gestión |
-| Estación de administración | **PAW** dedicada para Tier 0, sin correo, sin navegación, sin ofimática | Sin PAW, el tiering es un diagrama: la credencial de admin acaba tecleada en el equipo con el que se leen adjuntos |
-| Cuentas de servicio | **gMSA** por defecto (contraseña gestionada por el dominio, rotación automática, sin secreto humano) | La cuenta de usuario con SPN y contraseña estática es la vulnerabilidad estructural más rentable del directorio. **dMSA**: ver §3.4 — introducida en Server 2025, con historia de seguridad conocida; adóptala con la mitigación aplicada, no por defecto |
-| Contraseña de admin local | **Windows LAPS** (integrado en el SO) | Verificado ago-2026: el **LAPS legacy está deprecado**, su MSI **bloqueado** en Windows 11 23H2+ y sin cambios de código; se soporta solo hasta el EOL del SO donde ya estaba. Windows LAPS añade **respaldo a Entra ID, cifrado de la contraseña en AD, historial y gestión del password de DSRM en los DC** — esto último importa directamente para §3.9 |
-| Baseline de configuración | **Microsoft Security Compliance Toolkit** (baseline versionada + `LGPO.exe`), aplicada por **GPO** en servidores de dominio y por **Intune** en lo gestionado modernamente | Verificado ago-2026: SCT sigue siendo la vía soportada (SCM está retirado); baseline vigente de Server 2025 **v2602 (feb-2026)**, con cadencia de revisión acelerada desde v2506. Complementa —no sustituye— al CIS o al STIG si hay requisito formal |
-| Parcheo | **Transición planificada fuera de WSUS** | Verificado ago-2026: **WSUS está deprecado desde 20-sep-2024** (sin funcionalidad nueva ni nuevas peticiones de feature) **pero no muerto**: sigue enviándose con Server 2025, publica actualizaciones, sostiene el Software Update Point de ConfigMgr y **no tiene fecha de fin anunciada** (hereda el ciclo de Server 2025, hasta 2034). Reemplazo recomendado por Microsoft, **partido en dos**: **Intune/Windows Autopatch** para clientes y **Azure Update Manager** (vía Arc para no-Azure) para servidores. **No hay sustituto 1:1** |
-| PowerShell | **7.6 LTS** para automatización nueva; **Windows PowerShell 5.1 se conserva**, no se desinstala | Verificado ago-2026: **7.6 LTS** (18-mar-2026, sobre .NET 10) soportado hasta **14-nov-2028**; **7.4 LTS y 7.5 mueren ambos el 10-nov-2026** junto a .NET 8 — saltar de 7.4 a 7.5 no compra tiempo. 5.1 no tiene EOL propio: sigue el ciclo del SO |
-| Higiene medida | **PingCastle** (puntuación y tendencia) + **Purple Knight** (indicadores de exposición y compromiso) | Ambos gratuitos para autoevaluación. **PingCastle**: adquirido por **Netwrix**, edición Open Source bajo **NPOSL-3.0** (uso interno sí, monetizar o auditar a terceros no, eso exige licencia comercial) y **caduca por versión** — al llegar el fin de soporte de una versión, el binario deja de ejecutarse (el 3.3.0.0 caducó el 31-ene-2026): planifica la actualización como tarea recurrente. **Purple Knight** (Semperis): Community 5.0, 210+ indicadores, mapeo a MITRE ATT&CK y ANSSI, soporte de GCC High desde abr-2026 |
-| Rutas de ataque | **BloodHound Community Edition** (Apache-2.0, SpecterOps) en uso **defensivo**, recurrente | Es la herramienta con la que el defensor ve el grafo real de privilegio —lo que ve el atacante— y **corta las aristas**. La medida de éxito no es el informe: es la reducción del número de caminos a Tier 0 entre ejecuciones. BloodHound Enterprise añade cobertura continua de AD, Entra, AWS y Okta |
-| Guía externa de referencia | **"Detecting and Mitigating Active Directory Compromises"** (Five Eyes: ASD/ACSC, CISA, NSA, CCCS, NCSC-NZ, NCSC-UK) | Verificado ago-2026: publicada el **26-sep-2024**. 17 técnicas observadas con su mitigación, cubriendo AD DS, AD FS y AD CS. Es la mejor referencia única y gratuita del dominio; úsala como plan de trabajo |
+| On-prem AD DS? | **Only if there is a real dependency that demands it** | These justify your own domain: applications that only speak Kerberos/LDAP/NTLM, file and print servers, GPO over machines Intune cannot manage, OT/industrial, a requirement to operate without connectivity. **These do not justify it**: "we have always had it", mail, VPN, modern web SSO or laptop management — all of that lives better in `identity-access-management-standards`/`azure-standards` |
+| Hybrid | **It is the real state of almost everyone**, and it must be **designed**, not left to happen | The risk of hybrid is **plane fusion**: an account with privilege in AD that also holds it in the tenant turns an on-prem compromise into a cloud compromise. Privileged cloud accounts **only in the cloud** and vice versa; the synchronisation server is **Tier 0** |
+| OS version | **Windows Server 2025** for new deployments and for DCs | Verified Aug 2026: GA 1 Nov 2024, mainstream support until **13 Nov 2029**, extended until **14 Nov 2034**. **Server 2016 dies on 12 Jan 2027** (urgent migration) and **Server 2022 leaves mainstream support on 13 Oct 2026** (still patched, no new functionality). Server 2019 in extended support until 9 Jan 2029 |
+| Installation | **Server Core** for DCs and infrastructure roles | Less surface, fewer patches, less "somebody browsed the web from the server". GUI only when justified by an application dependency |
+| Functional level | The highest supported by **all** DCs, plus a plan to raise it | Recent security features (including those for Kerberos and service accounts) depend on the functional level, not just on the DC version |
+| Administration model | **Enterprise Access Model** (*control* / *management* / *data-workload* planes) as the framework, with the **AD tier model (Tier 0/1/2) as its on-prem implementation** | Verified Aug 2026: Microsoft **has not retired the tier model**; it reclassified it as *legacy guidance* and documents it as an **EAM component**. Where there is no cloud migration, the tiered approach remains a high-priority recommendation. **The three rules have not changed**: (1) a higher-tier credential is never exposed on a lower-tier system; (2) the lower tier consumes services from the higher one, never the other way round; (3) **whoever can manage a system belongs to its tier, like it or not** — including the hypervisor, the backup and the management tool |
+| Administration workstation | Dedicated **PAW** for Tier 0, with no mail, no browsing, no office software | Without a PAW, tiering is a diagram: the admin credential ends up typed into the machine used to read attachments |
+| Service accounts | **gMSA** by default (password managed by the domain, automatic rotation, no human-held secret) | The user account with an SPN and a static password is the most profitable structural vulnerability in the directory. **dMSA**: see §3.4 — introduced in Server 2025, with a known security history; adopt it with the mitigation applied, not by default |
+| Local admin password | **Windows LAPS** (built into the OS) | Verified Aug 2026: **legacy LAPS is deprecated**, its MSI **blocked** on Windows 11 23H2+ and receiving no code changes; it is supported only until the EOL of the OS where it was already installed. Windows LAPS adds **backup to Entra ID, password encryption in AD, history and management of the DSRM password on DCs** — the latter matters directly for §3.9 |
+| Configuration baseline | **Microsoft Security Compliance Toolkit** (versioned baseline + `LGPO.exe`), applied via **GPO** on domain servers and via **Intune** on modernly managed estate | Verified Aug 2026: SCT is still the supported route (SCM is retired); current Server 2025 baseline **v2602 (Feb 2026)**, with an accelerated revision cadence since v2506. It complements —does not replace— CIS or STIG where there is a formal requirement |
+| Patching | **Planned transition off WSUS** | Verified Aug 2026: **WSUS has been deprecated since 20 Sep 2024** (no new functionality and no new feature requests) **but it is not dead**: it still ships with Server 2025, publishes updates, underpins the ConfigMgr Software Update Point and **has no announced end date** (it inherits the Server 2025 cycle, through 2034). Microsoft's recommended replacement is **split in two**: **Intune/Windows Autopatch** for clients and **Azure Update Manager** (via Arc for non-Azure) for servers. **There is no 1:1 substitute** |
+| PowerShell | **7.6 LTS** for new automation; **Windows PowerShell 5.1 is kept**, not uninstalled | Verified Aug 2026: **7.6 LTS** (18 Mar 2026, on .NET 10) supported until **14 Nov 2028**; **7.4 LTS and 7.5 both die on 10 Nov 2026** along with .NET 8 — jumping from 7.4 to 7.5 buys no time. 5.1 has no EOL of its own: it follows the OS cycle |
+| Measured hygiene | **PingCastle** (score and trend) + **Purple Knight** (exposure and compromise indicators) | Both free for self-assessment. **PingCastle**: acquired by **Netwrix**, Open Source edition under **NPOSL-3.0** (internal use yes, monetising or auditing third parties no, that requires a commercial licence) and it **expires per version** — once a version reaches end of support, the binary stops running (3.3.0.0 expired on 31 Jan 2026): plan the upgrade as a recurring task. **Purple Knight** (Semperis): Community 5.0, 210+ indicators, mapping to MITRE ATT&CK and ANSSI, GCC High support since Apr 2026 |
+| Attack paths | **BloodHound Community Edition** (Apache-2.0, SpecterOps) used **defensively**, recurrently | It is the tool with which the defender sees the real privilege graph —what the attacker sees— and **cuts the edges**. The measure of success is not the report: it is the reduction in the number of paths to Tier 0 between runs. BloodHound Enterprise adds continuous coverage of AD, Entra, AWS and Okta |
+| External reference guidance | **"Detecting and Mitigating Active Directory Compromises"** (Five Eyes: ASD/ACSC, CISA, NSA, CCCS, NCSC-NZ, NCSC-UK) | Verified Aug 2026: published on **26 Sep 2024**. 17 observed techniques with their mitigations, covering AD DS, AD FS and AD CS. It is the best single free reference in the domain; use it as a work plan |
 
-## 3. Diseño, endurecimiento y operación
+## 3. Design, hardening and operation
 
-### 3.1 Diseño del directorio
+### 3.1 Directory design
 
-- **El bosque es el límite de seguridad. El dominio no lo es.** Un dominio adicional "por seguridad"
-  no aporta separación: quien es admin en un dominio tiene camino al bosque. Si necesitas separación
-  real (entidad legal distinta, requisito regulatorio, red aislada), es **otro bosque**, con
-  confianza selectiva, filtrado de SID y una razón escrita.
-- **Un dominio, un bosque, por defecto.** Los dominios múltiples heredados casi nunca sobreviven a
-  un análisis de coste/beneficio: consolidar reduce superficie, complejidad de replicación y
-  caminos de escalada.
-- **OU por función administrativa, no por organigrama**: la OU es la unidad de delegación y de
-  aplicación de GPO. Un árbol de OU que copia el organigrama produce delegaciones absurdas y GPO
-  imposibles de razonar. Separación explícita de OU por **nivel** (Tier 0/1/2) para que el
-  privilegio sea visible en la estructura.
-- **Sitios y replicación** modelados sobre la topología de red real (subredes registradas, coste de
-  enlaces, ventanas). Síntoma clásico: autenticación lenta o errática porque las subredes no están
-  asociadas a sitio y los clientes eligen un DC remoto.
-- **DNS integrado en AD** con zonas replicadas al bosque o al dominio según alcance; sin
-  reenviadores a resolutores no controlados y **con el DNS del DC apuntándose entre sí, nunca a
-  sí mismo como único servidor** (bloquea la replicación al arrancar). Delegación de la zona
-  `_msdcs` correcta o la localización de DC falla de formas difíciles de diagnosticar.
-- **Confianzas**: las mínimas, unidireccionales cuando basta, **selectivas** y con **filtrado de SID
-  activo**. Una confianza bidireccional con filtrado desactivado convierte dos bosques en uno solo a
-  efectos de compromiso. Inventariadas y revisadas: las confianzas son deuda que nadie recuerda
-  haber contraído.
-- **Los DC son Tier 0 y solo eso**: sin roles adicionales (nada de IIS, SQL, ficheros, aplicaciones,
-  hipervisor, backup ni agentes no aprobados), sin navegación a Internet y sin acceso saliente
-  general. **Todo lo que gestiona un DC es Tier 0**: hipervisor, almacenamiento, backup, EDR, PXE,
-  herramienta de despliegue y la consola de gestión. Ese inventario suele ser el hallazgo más
-  incómodo de una evaluación honesta.
+- **The forest is the security boundary. The domain is not.** An extra domain "for security"
+  provides no separation: whoever is admin in a domain has a path to the forest. If you need real
+  separation (a different legal entity, a regulatory requirement, an isolated network), it is
+  **another forest**, with selective trust, SID filtering and a written reason.
+- **One domain, one forest, by default.** Inherited multiple domains almost never survive a
+  cost/benefit analysis: consolidating reduces surface, replication complexity and
+  escalation paths.
+- **OUs by administrative function, not by org chart**: the OU is the unit of delegation and of
+  GPO application. An OU tree that copies the org chart produces absurd delegations and GPOs
+  impossible to reason about. Explicit OU separation by **tier** (Tier 0/1/2) so that
+  privilege is visible in the structure.
+- **Sites and replication** modelled on the real network topology (registered subnets, link
+  costs, windows). Classic symptom: slow or erratic authentication because subnets are not
+  associated with a site and clients pick a remote DC.
+- **AD-integrated DNS** with zones replicated to the forest or the domain according to scope; no
+  forwarders to uncontrolled resolvers and **with each DC's DNS pointing at the others, never at
+  itself as the only server** (it blocks replication at boot). Correct delegation of the
+  `_msdcs` zone, or DC location fails in ways that are hard to diagnose.
+- **Trusts**: as few as possible, one-way where that suffices, **selective** and with **SID filtering
+  enabled**. A two-way trust with filtering disabled turns two forests into one as far as
+  compromise is concerned. Inventoried and reviewed: trusts are debt nobody remembers
+  taking on.
+- **DCs are Tier 0 and nothing else**: no additional roles (no IIS, SQL, file shares, applications,
+  hypervisor, backup or unapproved agents), no Internet browsing and no general
+  outbound access. **Everything that manages a DC is Tier 0**: hypervisor, storage, backup, EDR, PXE,
+  deployment tooling and the management console. That inventory is usually the most
+  uncomfortable finding of an honest assessment.
 
-### 3.2 Tiering, PAW y el plano de administración
+### 3.2 Tiering, PAW and the administration plane
 
-- **Tier 0** = todo lo que puede controlar el directorio (DC, AD CS, ADFS, servidor de
-  sincronización a Entra, gestores de identidad, backup del directorio, virtualización que los
-  hospeda). **Tier 1** = servidores y aplicaciones. **Tier 2** = estaciones de usuario.
-- **Cuentas administrativas separadas por nivel**, sin buzón, sin navegación, sin uso interactivo
-  fuera de su plano. Una persona = varias cuentas; una cuenta = un nivel.
-- **PAW** para Tier 0 (y para la administración cloud privilegiada), endurecida con baseline propio,
-  arranque seguro, cifrado, sin correo ni navegador general, con acceso solo a los destinos de su
-  nivel. Sin PAW no hay tiering.
-- **Contención del inicio de sesión**: denegar por GPO el logon interactivo, por servicio y por lote
-  de las cuentas de Tier 0 en Tier 1 y Tier 2 (y recíprocamente en lo que aplique). Es el control
-  que hace efectiva la regla 1. `Authentication Policy Silos` y **Protected Users** para reforzarlo.
-- **Cero acceso permanente**: elevación con aprobación y ventana corta también on-prem. El patrón
-  genérico de PAM/JIT es de `identity-access-management-standards`; **aquí su aplicación al
-  directorio**.
-- **Regla de oro operativa**: si una credencial de Tier 0 se ha usado alguna vez en un sistema de
-  nivel inferior, se considera comprometida. No hay término medio ni "es que fue solo un momento".
+- **Tier 0** = everything that can control the directory (DCs, AD CS, ADFS, the Entra
+  synchronisation server, identity managers, directory backup, the virtualisation that
+  hosts them). **Tier 1** = servers and applications. **Tier 2** = user workstations.
+- **Administrative accounts separated by tier**, with no mailbox, no browsing, no interactive use
+  outside their plane. One person = several accounts; one account = one tier.
+- **PAW** for Tier 0 (and for privileged cloud administration), hardened with its own baseline,
+  secure boot, encryption, no mail or general browser, with access only to the destinations of its
+  tier. Without a PAW there is no tiering.
+- **Logon containment**: deny by GPO interactive, service and batch logon
+  for Tier 0 accounts on Tier 1 and Tier 2 (and reciprocally where applicable). It is the control
+  that makes rule 1 effective. `Authentication Policy Silos` and **Protected Users** reinforce it.
+- **Zero standing access**: elevation with approval and a short window, on-prem too. The generic
+  PAM/JIT pattern belongs to `identity-access-management-standards`; **here, its application to the
+  directory**.
+- **Golden operational rule**: if a Tier 0 credential has ever been used on a lower-tier
+  system, it is considered compromised. There is no middle ground and no "it was only for a moment".
 
-### 3.3 Grupos, privilegio y delegación
+### 3.3 Groups, privilege and delegation
 
-- **`Domain Admins`, `Enterprise Admins` y `Schema Admins` vacíos en operación normal.** La
-  pertenencia es un evento de elevación con ticket, ventana y alerta, no un estado. Igual con
-  `Administrators` del dominio, `Backup Operators`, `Account Operators`, `Print Operators` y
-  `Server Operators`, que son Tier 0 de facto por sus privilegios y casi nunca se necesitan.
-- **Delegación granular por OU** en lugar de pertenencia a grupos privilegiados: alta de usuarios,
-  reset de contraseñas, unión al dominio, gestión de equipos. Documentada y **auditada** — las ACL
-  delegadas acumuladas durante 15 años son el sustrato de la mayoría de los caminos de escalada.
-- **`AdminSDHolder` y `adminCount`**: la plantilla que reimpone ACL sobre los grupos protegidos cada
-  hora (SDProp). Dos consecuencias prácticas: (1) **modificar `AdminSDHolder` es una vía de
-  persistencia** — su ACL se audita y se alerta ante cambios; (2) los objetos con `adminCount=1`
-  huérfanos (cuentas que salieron de un grupo protegido y conservan la ACL y la herencia rota) son
-  ruido peligroso: se limpian.
+- **`Domain Admins`, `Enterprise Admins` and `Schema Admins` empty in normal operation.**
+  Membership is an elevation event with a ticket, a window and an alert, not a state. Same for
+  the domain's `Administrators`, `Backup Operators`, `Account Operators`, `Print Operators` and
+  `Server Operators`, which are Tier 0 de facto because of their privileges and are almost never needed.
+- **Granular delegation per OU** instead of membership of privileged groups: user creation,
+  password resets, domain join, computer management. Documented and **audited** — delegated
+  ACLs accumulated over 15 years are the substrate of most escalation paths.
+- **`AdminSDHolder` and `adminCount`**: the template that reimposes ACLs on protected groups every
+  hour (SDProp). Two practical consequences: (1) **modifying `AdminSDHolder` is a persistence
+  route** — its ACL is audited and changes are alerted on; (2) orphaned objects with `adminCount=1`
+  (accounts that left a protected group and keep the ACL and broken inheritance) are
+  dangerous noise: clean them up.
 - **`SeEnableDelegationPrivilege`, `DCSync` (Replicating Directory Changes All), `WriteDACL`,
-  `GenericAll`, `WriteOwner` sobre objetos de nivel superior**: son equivalentes a Domain Admin
-  aunque nadie lo llame así. **Se inventarían y se cortan**; es exactamente lo que revela el grafo
-  de BloodHound.
-- **Protected Users**: pertenencia para todas las cuentas privilegiadas. Fuerza Kerberos (sin NTLM,
-  sin delegación, sin cifrados débiles, sin caché de credenciales), a cambio de romper flujos
-  legacy — se despliega por anillos y se validan las dependencias. **Ojo**: no aplica a cuentas de
-  servicio que necesiten delegación, y no protege la cuenta si el DC no está al día.
-- **Cuentas de servicio**: **gMSA** por defecto. Toda cuenta de usuario con SPN y contraseña estática
-  es un hallazgo — su contraseña es *offline-crackable* por cualquier usuario del dominio (clase de
-  riesgo: solicitud masiva de tickets de servicio). Si por dependencia no puede migrarse: contraseña
-  larga y aleatoria (≥25 caracteres), rotación real, privilegio mínimo, **nunca** en grupos
-  privilegiados y **nunca** con delegación no restringida.
+  `GenericAll`, `WriteOwner` over higher-tier objects**: these are equivalent to Domain Admin
+  even if nobody calls them that. **Inventory them and cut them**; it is exactly what the BloodHound
+  graph reveals.
+- **Protected Users**: membership for all privileged accounts. It forces Kerberos (no NTLM,
+  no delegation, no weak ciphers, no credential caching), at the cost of breaking legacy
+  flows — deploy it in rings and validate the dependencies. **Careful**: it does not apply to service
+  accounts that need delegation, and it does not protect the account if the DC is not up to date.
+- **Service accounts**: **gMSA** by default. Every user account with an SPN and a static password
+  is a finding — its password is *offline-crackable* by any domain user (risk
+  class: mass service ticket requests). If a dependency prevents migration: a long,
+  random password (≥25 characters), real rotation, least privilege, **never** in privileged
+  groups and **never** with unconstrained delegation.
 
-### 3.4 dMSA: adóptala con la mitigación puesta
+### 3.4 dMSA: adopt it with the mitigation in place
 
-- **Qué son**: *delegated Managed Service Accounts*, introducidas en **Windows Server 2025**, que
-  extienden gMSA añadiendo la **migración de una cuenta de servicio no gestionada existente** a una
-  cuenta gestionada, vinculada a la identidad de una máquina.
-- **Riesgo conocido — BadSuccessor** (Akamai, Yuval Gordon): **abuso de la funcionalidad de
-  migración**, no un bug de memoria. Clase de riesgo: quien puede **crear objetos en una OU** puede
-  crear una dMSA y **vincularla a una cuenta privilegiada** mediante los atributos de migración
-  (`msDS-ManagedAccountPrecededByLink`, `msDS-DelegatedMSAState`), obteniendo del KDC tickets con los
-  SID de esa cuenta — **sin tocar sus grupos ni su credencial**. Verificado ago-2026: funciona en
-  configuración por defecto, y en el **91 %** de los entornos analizados por Akamai había cuentas
-  fuera de Domain Admins con los permisos necesarios. **Basta un solo DC de Server 2025 en el
-  bosque para estar expuesto.**
-- **Mitigación obligatoria antes de introducir el primer DC de Server 2025**:
-  1. **Restringir la creación de objetos `msDS-DelegatedManagedServiceAccount`** a un grupo
-     administrativo designado, revisando **quién puede crear objetos en cada OU** (que es el permiso
-     que casi nadie audita).
-  2. **SACL de auditoría sobre la creación de dMSA** (**evento 5137**) y sobre la modificación de sus
-     atributos de migración; alerta ante creación por identidad o desde ubicación inesperada.
-  3. Considerar el **bloqueo del caso de uso de migración a nivel de esquema del bosque** (método
-     publicado por Semperis) si no vas a usar la funcionalidad.
-- **Regla**: dMSA **no es el default**. gMSA lo es. dMSA se adopta cuando su migración aporta valor
-  real y con los tres controles anteriores verificados.
+- **What they are**: *delegated Managed Service Accounts*, introduced in **Windows Server 2025**, which
+  extend gMSA by adding **migration of an existing unmanaged service account** to a
+  managed account, bound to a machine identity.
+- **Known risk — BadSuccessor** (Akamai, Yuval Gordon): **abuse of the migration functionality**,
+  not a memory bug. Risk class: whoever can **create objects in an OU** can
+  create a dMSA and **link it to a privileged account** through the migration attributes
+  (`msDS-ManagedAccountPrecededByLink`, `msDS-DelegatedMSAState`), obtaining from the KDC tickets carrying that
+  account's SIDs — **without touching its groups or its credential**. Verified Aug 2026: it works in
+  a default configuration, and in **91 %** of the environments Akamai analysed there were accounts
+  outside Domain Admins with the necessary permissions. **A single Server 2025 DC in the
+  forest is enough to be exposed.**
+- **Mandatory mitigation before introducing the first Server 2025 DC**:
+  1. **Restrict creation of `msDS-DelegatedManagedServiceAccount` objects** to a designated
+     administrative group, reviewing **who can create objects in each OU** (which is the permission
+     that almost nobody audits).
+  2. **Audit SACL on dMSA creation** (**event 5137**) and on modification of its
+     migration attributes; alert on creation by an unexpected identity or from an unexpected location.
+  3. Consider **blocking the migration use case at the forest schema level** (method
+     published by Semperis) if you are not going to use the functionality.
+- **Rule**: dMSA **is not the default**. gMSA is. dMSA is adopted when its migration brings real
+  value and with the three controls above verified.
 
-### 3.5 AD CS: la PKI que compromete el directorio
+### 3.5 AD CS: the PKI that compromises the directory
 
-- **Frontera**: el diseño de la PKI (jerarquía, algoritmos, HSM, ciclo de vida de claves) es de
-  `cryptography-pki-standards`. **Aquí, el abuso del directorio a través de AD CS.**
-- **Familias de configuración vulnerable** (clase de riesgo y mitigación, sin procedimiento):
-  - **Plantilla que permite al solicitante fijar el sujeto** (`Enrollee Supplies Subject`) con EKU de
-    autenticación de cliente y enrolamiento abierto a usuarios poco privilegiados → **suplantación de
-    cualquier identidad, incluida la de administrador**. *Mitigación*: retirar el flag, o restringir
-    enrolamiento y exigir aprobación del gestor de certificados.
-  - **Plantilla con EKU "cualquier propósito" o sin EKU** y enrolamiento amplio → certificado
-    utilizable para autenticar. *Mitigación*: EKU explícita y mínima por plantilla.
-  - **Permisos de escritura o propiedad sobre la plantilla** por parte de grupos no privilegiados →
-    el atacante **crea** la configuración vulnerable. *Mitigación*: auditar propietario y ACL de
-    **todas** las plantillas, no solo de las publicadas.
-  - **Configuración a nivel de CA que permite indicar el sujeto alternativo con independencia de la
-    plantilla** → convierte plantillas seguras en explotables. *Mitigación*: desactivarla y auditar
-    el flag.
-  - **Permisos excesivos sobre la propia CA** (gestión de CA / gestión de certificados) → emisión y
-    aprobación arbitrarias. *Mitigación*: separación de funciones entre administración de PKI y de
-    AD; la CA es **Tier 0**.
-  - **Enrolamiento web y endpoints expuestos sin TLS ni protección de canal** → retransmisión de
-    autenticación hacia la CA. *Mitigación*: HTTPS, Extended Protection for Authentication, y
-    retirar los endpoints que no se usen.
-- **Mapeo fuerte certificado↔cuenta**: verificado ago-2026, el ciclo de **KB5014754** está **cerrado**
-  — los DC pasaron a **aplicación completa en febrero de 2025** y en **septiembre de 2025 Microsoft
-  eliminó la posibilidad de volver al modo compatibilidad**. Consecuencias: un certificado sin
-  extensión de SID **no autentica**; rompen tarjetas inteligentes, 802.1X, VPN y dispositivos
-  enrolados por SCEP de terceros que no incluyan el SID. **Requiere todos los DC en Server 2019+.**
-  Esto eleva mucho el listón frente a la suplantación por SAN, pero **no sustituye la higiene de
-  plantillas**: los otros vectores siguen vivos.
-- **Auditoría continua**: inventario de plantillas publicadas con sus flags, EKU, permisos de
-  enrolamiento y propietario; alerta ante emisión de certificados de autenticación para cuentas
-  privilegiadas. Es de las revisiones con mejor relación esfuerzo/riesgo del dominio.
+- **Boundary**: PKI design (hierarchy, algorithms, HSM, key lifecycle) belongs to
+  `cryptography-pki-standards`. **Here, the abuse of the directory through AD CS.**
+- **Families of vulnerable configuration** (risk class and mitigation, without procedure):
+  - **Template that lets the requester set the subject** (`Enrollee Supplies Subject`) with a client
+    authentication EKU and enrolment open to low-privileged users → **impersonation of
+    any identity, including an administrator's**. *Mitigation*: remove the flag, or restrict
+    enrolment and require certificate manager approval.
+  - **Template with an "any purpose" EKU or no EKU** and broad enrolment → a certificate
+    usable for authentication. *Mitigation*: explicit and minimal EKU per template.
+  - **Write or ownership permissions over the template** held by unprivileged groups →
+    the attacker **creates** the vulnerable configuration. *Mitigation*: audit the owner and ACL of
+    **every** template, not just the published ones.
+  - **CA-level configuration that allows the subject alternative name to be specified regardless of
+    the template** → it turns safe templates into exploitable ones. *Mitigation*: disable it and audit
+    the flag.
+  - **Excessive permissions over the CA itself** (CA management / certificate management) → arbitrary
+    issuance and approval. *Mitigation*: separation of duties between PKI and AD
+    administration; the CA is **Tier 0**.
+  - **Web enrolment and endpoints exposed without TLS or channel protection** → authentication
+    relay towards the CA. *Mitigation*: HTTPS, Extended Protection for Authentication, and
+    removal of the endpoints that are not used.
+- **Strong certificate↔account mapping**: verified Aug 2026, the **KB5014754** cycle is **closed**
+  — DCs moved to **full enforcement in February 2025** and in **September 2025 Microsoft
+  removed the ability to go back to compatibility mode**. Consequences: a certificate without the
+  SID extension **does not authenticate**; smart cards, 802.1X, VPN and devices
+  enrolled via third-party SCEP that do not include the SID break. **It requires all DCs on Server 2019+.**
+  This raises the bar considerably against SAN impersonation, but **it does not replace template
+  hygiene**: the other vectors are still alive.
+- **Continuous auditing**: an inventory of published templates with their flags, EKUs, enrolment
+  permissions and owner; alert on issuance of authentication certificates for
+  privileged accounts. It is one of the best effort/risk reviews in the domain.
 
-### 3.6 Autenticación: Kerberos, NTLM y el canal
+### 3.6 Authentication: Kerberos, NTLM and the channel
 
-- **Kerberos es el protocolo; NTLM es deuda.** Verificado ago-2026, con precisión (es el dato que
-  más se cita mal de memoria):
-  - Microsoft **deprecó NTLM en julio de 2024** (recomendación: `Negotiate` o Kerberos). *Deprecado
-    ≠ eliminado*: NTLM sigue funcionando.
-  - **NTLMv1 sí fue eliminado** como protocolo en **Windows 11 24H2 y Windows Server 2025**. Quedan
-    restos de criptografía NTLMv1 en escenarios concretos (p. ej. MS-CHAPv2 en entorno de dominio);
-    **Credential Guard** los cubre y los cambios en curso solo afectan a equipos **sin** Credential
+- **Kerberos is the protocol; NTLM is debt.** Verified Aug 2026, precisely (it is the datum
+  most often misquoted from memory):
+  - Microsoft **deprecated NTLM in July 2024** (recommendation: `Negotiate` or Kerberos). *Deprecated
+    ≠ removed*: NTLM still works.
+  - **NTLMv1 was indeed removed** as a protocol in **Windows 11 24H2 and Windows Server 2025**. Remnants
+    of NTLMv1 cryptography survive in specific scenarios (e.g. MS-CHAPv2 in a domain environment);
+    **Credential Guard** covers them and the changes under way only affect machines **without** Credential
     Guard.
-  - Clave `BlockNTLMv1SSO` (`HKLM\SYSTEM\CurrentControlSet\Control\Lsa\msv1_0`): desplegada en modo
-    **auditoría** desde las actualizaciones de sep-2025 (evento **4024** cuando se usan credenciales
-    derivadas de NTLMv1), y Microsoft **cambia el default a *enforce* en octubre de 2026** salvo que
-    la hayas fijado tú. **Acción**: despliégala tú en auditoría, recoge y corrige antes de esa fecha.
-  - En camino: **IAKerb** y **Local KDC** (Kerberos para cuentas locales y escenarios de grupo de
-    trabajo), previstos para la segunda mitad de 2026, que retiran motivos habituales de caída a
+  - The `BlockNTLMv1SSO` key (`HKLM\SYSTEM\CurrentControlSet\Control\Lsa\msv1_0`): deployed in
+    **audit** mode since the Sep 2025 updates (event **4024** when NTLMv1-derived credentials
+    are used), and Microsoft **flips the default to *enforce* in October 2026** unless
+    you have set it yourself. **Action**: deploy it yourself in audit mode, collect and fix before that date.
+  - On the way: **IAKerb** and **Local KDC** (Kerberos for local accounts and workgroup
+    scenarios), expected in the second half of 2026, which remove common reasons for falling back to
     NTLM.
-- **Plan NTLM realista**: auditar (los logs mejorados de 24H2/Server 2025 identifican cuenta,
-  proceso, máquina e IP, en cliente y en servidor) → eliminar dependencias → restringir por política
-  (`Network security: Restrict NTLM`) por anillos → bloquear. Empezar por los **DC**. Un bloqueo sin
-  fase de auditoría es una interrupción garantizada.
-- **NTLMv1 y LM: prohibidos** (`LmCompatibilityLevel` en el valor que solo permite NTLMv2 y rechaza
-  LM/NTLMv1 en cliente y servidor).
-- **Delegación Kerberos**:
-  - **No restringida (*unconstrained*): PROHIBIDA**, sin excepciones. Un servidor con delegación no
-    restringida almacena TGT de quien se conecta — incluidos los de cuentas privilegiadas y **los de
-    los propios DC**. Es una puerta trasera de dominio con nombre de feature.
-  - **Restringida** (a servicios concretos) o **RBCD** (control en el recurso, que es el modelo más
-    sano) con criterio, inventariadas y revisadas. **Cuidado**: quien puede escribir el atributo de
-    delegación del recurso controla quién puede suplantar contra él — ese permiso es privilegio.
-  - Cuentas sensibles marcadas como *no delegables* y/o en **Protected Users**.
-- **Endurecimiento del canal**, sin negociación:
-  - **Firma SMB obligatoria** en cliente y servidor (requisito, no "si el otro lado quiere"), y
-    **SMBv1 desinstalado**. La firma es lo que corta la clase de riesgo de retransmisión.
-  - **LDAP con firma obligatoria y *channel binding* (EPA)** en los DC; **LDAPS** para lo que aún
-    consulte en claro; prohibido el *simple bind* sin TLS.
-  - Cifrados Kerberos: **AES**; RC4 y DES retirados por política (verificando antes qué se rompe:
-    confianzas antiguas y appliances suelen ser el freno).
-- **`krbtgt`**: su clave firma todo ticket del dominio. Clase de riesgo: quien la obtiene puede
-  forjar tickets arbitrarios y **sobrevive al reset de todas las contraseñas**. Reglas: **rotación
-  doble** (dos cambios, separados por más del tiempo de vida máximo de ticket **y** por al menos un
-  ciclo completo de replicación verificado a todos los DC — hacerlas seguidas invalida tickets
-  válidos y provoca una caída de autenticación), rotación **programada** (no solo tras incidente) y
-  **obligatoria** ante cualquier sospecha de compromiso de DC. **La rotación de `krbtgt` no evicta a
-  un atacante que conserve otros mecanismos de persistencia**: es un paso de la erradicación, no la
-  erradicación.
-- **Contraseñas de máquina**: rotación automática cada 30 días por defecto — **no la desactives**
-  (una cuenta de equipo con contraseña congelada es una credencial estática de larga vida). Ojo con
-  las restauraciones de VM: un snapshot revertido puede desincronizar la contraseña y romper la
-  confianza del equipo.
-- **Política de contraseñas moderna**: longitud alta (frase de paso), **sin caducidad periódica
-  arbitraria**, **sin reglas de composición**, con **bloqueo por lista de contraseñas comprometidas**
-  (Entra Password Protection también on-prem, o equivalente), *fine-grained password policies* para
-  cuentas privilegiadas y de servicio, y **MFA** en todo acceso administrativo (mecanismos y política
-  en `identity-access-management-standards`). Bloqueo inteligente frente a *password spraying*, que
-  es la técnica que realmente se usa.
+- **Realistic NTLM plan**: audit (the improved logs in 24H2/Server 2025 identify account,
+  process, machine and IP, on client and server) → remove dependencies → restrict by policy
+  (`Network security: Restrict NTLM`) in rings → block. Start with the **DCs**. A block without
+  an audit phase is a guaranteed outage.
+- **NTLMv1 and LM: forbidden** (`LmCompatibilityLevel` at the value that only allows NTLMv2 and rejects
+  LM/NTLMv1 on client and server).
+- **Kerberos delegation**:
+  - **Unconstrained: FORBIDDEN**, no exceptions. A server with unconstrained
+    delegation stores the TGT of whoever connects — including those of privileged accounts and **those of
+    the DCs themselves**. It is a domain backdoor with a feature's name.
+  - **Constrained** (to specific services) or **RBCD** (control at the resource, which is the healthier
+    model) applied with judgement, inventoried and reviewed. **Careful**: whoever can write the resource's
+    delegation attribute controls who can impersonate against it — that permission is privilege.
+  - Sensitive accounts marked as *not delegable* and/or in **Protected Users**.
+- **Channel hardening**, non-negotiable:
+  - **Mandatory SMB signing** on client and server (required, not "if the other side wants it"), and
+    **SMBv1 uninstalled**. Signing is what cuts off the relay risk class.
+  - **LDAP with mandatory signing and *channel binding* (EPA)** on the DCs; **LDAPS** for whatever still
+    queries in the clear; *simple bind* without TLS is forbidden.
+  - Kerberos ciphers: **AES**; RC4 and DES retired by policy (checking first what breaks:
+    old trusts and appliances are usually the blocker).
+- **`krbtgt`**: its key signs every ticket in the domain. Risk class: whoever obtains it can
+  forge arbitrary tickets and **survives a reset of every password**. Rules: **double
+  rotation** (two changes, separated by more than the maximum ticket lifetime **and** by at least one
+  full replication cycle verified to all DCs — doing them back to back invalidates valid tickets
+  and causes an authentication outage), **scheduled** rotation (not only after an incident) and
+  **mandatory** rotation on any suspicion of DC compromise. **Rotating `krbtgt` does not evict
+  an attacker who retains other persistence mechanisms**: it is one step of eradication, not
+  eradication.
+- **Machine passwords**: automatic rotation every 30 days by default — **do not disable it**
+  (a computer account with a frozen password is a long-lived static credential). Careful with
+  VM restores: a reverted snapshot can desynchronise the password and break the machine's
+  trust.
+- **Modern password policy**: high length (passphrase), **no arbitrary periodic
+  expiry**, **no composition rules**, with **blocking against a list of compromised passwords**
+  (Entra Password Protection on-prem too, or an equivalent), *fine-grained password policies* for
+  privileged and service accounts, and **MFA** on all administrative access (mechanisms and policy
+  in `identity-access-management-standards`). Smart lockout against *password spraying*, which
+  is the technique actually used.
 
-### 3.7 Higiene medida y auditoría continua
+### 3.7 Measured hygiene and continuous auditing
 
-- **La higiene de AD se mide con puntuación y tendencia, no con opiniones.** Cadencia mínima
-  trimestral, con la serie histórica visible:
-  - **PingCastle**: score de riesgo por categorías; sirve para dirección y para la conversación con
-    negocio. Vigilar la caducidad por versión (§2).
-  - **Purple Knight**: indicadores de exposición y de compromiso, con mapeo a ATT&CK y ANSSI.
-  - **BloodHound CE**: el grafo. La métrica que importa es **cuántos caminos llegan a Tier 0 y desde
-    cuántas cuentas de origen**, y que ese número **baje** entre ejecuciones. Un informe que nadie
-    convierte en aristas cortadas es teatro.
-  - Recolección con SharpHound/AzureHound tratada como operación privilegiada: quién la ejecuta,
-    desde dónde y **dónde acaba el fichero** (un volcado del grafo del dominio en un portátil es un
-    regalo para el atacante). Se conserva cifrado, con retención acotada.
-- **Limpieza estructural recurrente**: cuentas y equipos inactivos, `adminCount` huérfanos, SPN
-  innecesarios, delegaciones no usadas, GPO no vinculadas, confianzas olvidadas, miembros de grupos
-  privilegiados, permisos "temporales" de hace años. **La superficie de AD crece sola**; si nadie
-  poda, el grafo se llena de caminos.
-- **Eventos que importan de verdad** (qué vigilar; el ciclo de vida de la regla es de
-  `detection-engineering-standards`, su recogida de `observability-standards`):
-  cambios en grupos privilegiados y en **`AdminSDHolder`**; creación o modificación de **dMSA** y sus
-  atributos de migración (**5137**); cambios en plantillas de certificado y **emisión de certificados
-  de autenticación para cuentas privilegiadas**; alta o cambio de **SPN**; modificación de atributos
-  de **delegación**; **replicación solicitada desde un origen que no es un DC** (indicador de
-  extracción del directorio); autenticación **NTLM** hacia DC y uso de credenciales derivadas de
-  **NTLMv1** (**4024**); bloqueos y fallos masivos (*spraying*); inicio de sesión de cuenta de Tier 0
-  en un sistema de nivel inferior; cambios de GPO y escrituras en **SYSVOL**; creación de cuentas y
-  de confianzas; cambio de `krbtgt`; parada de la auditoría o borrado del log de seguridad.
-- **Los logs de los DC salen del DC**: reenvío al SIEM con integridad y retención suficiente para
-  investigar meses atrás — los actores sofisticados persisten mucho más que la retención por
-  defecto. Un log que solo vive en el DC comprometido no es evidencia.
-- **Auditoría avanzada configurada por baseline** (categorías detalladas, no la política heredada),
-  incluyendo **línea de comandos en la creación de procesos** y **logging de bloque de script de
-  PowerShell**, con el SIEM verificando que los ingiere.
+- **AD hygiene is measured with a score and a trend, not with opinions.** Minimum quarterly
+  cadence, with the historical series visible:
+  - **PingCastle**: risk score by category; useful for direction and for the conversation with
+    the business. Watch out for per-version expiry (§2).
+  - **Purple Knight**: exposure and compromise indicators, with mapping to ATT&CK and ANSSI.
+  - **BloodHound CE**: the graph. The metric that matters is **how many paths reach Tier 0 and from
+    how many source accounts**, and that this number **goes down** between runs. A report nobody
+    turns into cut edges is theatre.
+  - Collection with SharpHound/AzureHound treated as a privileged operation: who runs it,
+    from where and **where the file ends up** (a dump of the domain graph on a laptop is a
+    gift to the attacker). It is kept encrypted, with bounded retention.
+- **Recurring structural cleanup**: inactive accounts and computers, orphaned `adminCount`, unnecessary
+  SPNs, unused delegations, unlinked GPOs, forgotten trusts, members of privileged
+  groups, "temporary" permissions from years ago. **AD's surface grows on its own**; if nobody
+  prunes, the graph fills with paths.
+- **Events that really matter** (what to watch; the rule lifecycle belongs to
+  `detection-engineering-standards`, its collection to `observability-standards`):
+  changes to privileged groups and to **`AdminSDHolder`**; creation or modification of **dMSA** and its
+  migration attributes (**5137**); changes to certificate templates and **issuance of authentication
+  certificates for privileged accounts**; creation or change of an **SPN**; modification of
+  **delegation** attributes; **replication requested from a source that is not a DC** (an indicator of
+  directory extraction); **NTLM** authentication towards DCs and use of credentials derived from
+  **NTLMv1** (**4024**); lockouts and mass failures (*spraying*); logon of a Tier 0 account
+  on a lower-tier system; GPO changes and writes to **SYSVOL**; creation of accounts and
+  of trusts; `krbtgt` change; auditing being stopped or the security log being cleared.
+- **DC logs leave the DC**: forwarded to the SIEM with integrity and retention sufficient to
+  investigate months back — sophisticated actors persist far longer than the default
+  retention. A log that only lives on the compromised DC is not evidence.
+- **Advanced auditing configured by baseline** (detailed categories, not the legacy policy),
+  including **command line in process creation** and **PowerShell script block
+  logging**, with the SIEM verifying that it ingests them.
 
-### 3.8 Operación del SO y PowerShell
+### 3.8 OS operation and PowerShell
 
-- **GPO** sigue siendo el mecanismo del dominio para servidores y equipos unidos; **Intune** para
-  flota moderna. Convivencia deliberada, no accidental: definir qué manda cada uno y evitar
-  configuraciones en ambos sitios (ganar/perder silencioso). Baseline aplicada **y verificada**, no
-  solo enlazada (§4).
-- **GPO como código**: exportadas, versionadas y revisadas por PR; detección de drift y de GPO
-  huérfanas o desvinculadas. **Los permisos de edición de una GPO enlazada a Tier 0 son Tier 0.**
-- **SYSVOL** es ejecución de código en toda la flota: su ACL, sus scripts y su integridad se
-  auditan. Nunca contraseñas en scripts ni en preferencias de GPO.
-- **PowerShell seguro** (los cuatro a la vez, o no cuenta):
-  - **Script Block Logging** y **Module Logging** activados por GPO, con transcripción a ubicación
-    protegida y reenvío al SIEM.
-  - **JEA** (Just Enough Administration) para tareas delegadas: endpoints restringidos con conjunto
-    de comandos acotado y ejecución bajo identidad virtual, en lugar de conceder administración
-    completa.
-  - **Remoting** solo sobre canal autenticado y cifrado, **con CredSSP prohibido** (expone
-    credenciales en el destino) y restringido por origen; administración desde PAW.
-  - **AppLocker o WDAC** en modo restrictivo donde se pueda, y **Constrained Language Mode** como
-    consecuencia útil de una política de control de aplicaciones bien puesta.
-  - `pwsh` 7.6 LTS para automatización nueva; **5.1 se conserva** para dependencias documentadas.
-    Ninguna política debe borrar 5.1 "para modernizar".
-- **Superficie del servidor**: Server Core, roles mínimos, **sin navegación desde servidores**,
-  firewall de host activo con reglas explícitas, cuentas locales gestionadas por Windows LAPS,
-  **Credential Guard** y **LSA Protection** activados donde el hardware lo permita (son controles de
-  primera línea contra el robo de credenciales en memoria), y arranque seguro + BitLocker en DC
-  (especialmente en sucursales y en cualquier DC no físicamente controlado).
-- **RODC** para emplazamientos sin seguridad física, con política de replicación de contraseñas
-  restrictiva — pero sin confundirlo con un control fuerte: es reducción de daño, no aislamiento.
+- **GPO** remains the domain mechanism for joined servers and machines; **Intune** for the
+  modern fleet. Deliberate coexistence, not accidental: define what each one governs and avoid
+  settings in both places (silent win/lose). Baseline applied **and verified**, not
+  merely linked (§4).
+- **GPO as code**: exported, versioned and reviewed by PR; drift detection and detection of orphaned
+  or unlinked GPOs. **Edit permissions on a GPO linked to Tier 0 are Tier 0.**
+- **SYSVOL** is code execution across the whole fleet: its ACL, its scripts and its integrity are
+  audited. Never passwords in scripts or in GPO preferences.
+- **Secure PowerShell** (all four at once, or it does not count):
+  - **Script Block Logging** and **Module Logging** enabled by GPO, with transcription to a protected
+    location and forwarding to the SIEM.
+  - **JEA** (Just Enough Administration) for delegated tasks: restricted endpoints with a bounded
+    command set and execution under a virtual identity, instead of granting full
+    administration.
+  - **Remoting** only over an authenticated and encrypted channel, **with CredSSP forbidden** (it exposes
+    credentials on the destination) and restricted by source; administration from a PAW.
+  - **AppLocker or WDAC** in restrictive mode wherever possible, and **Constrained Language Mode** as
+    a useful consequence of a well-implemented application control policy.
+  - `pwsh` 7.6 LTS for new automation; **5.1 is kept** for documented dependencies.
+    No policy should delete 5.1 "to modernise".
+- **Server surface**: Server Core, minimal roles, **no browsing from servers**,
+  host firewall enabled with explicit rules, local accounts managed by Windows LAPS,
+  **Credential Guard** and **LSA Protection** enabled where the hardware allows (they are front-line
+  controls against in-memory credential theft), and secure boot + BitLocker on DCs
+  (especially in branch offices and on any DC that is not physically controlled).
+- **RODC** for sites without physical security, with a restrictive password replication
+  policy — but do not mistake it for a strong control: it is damage reduction, not isolation.
 
-### 3.9 Continuidad: el peor día posible
+### 3.9 Continuity: the worst possible day
 
-- **Un backup normal no basta.** La recuperación de un bosque comprometido **no es restaurar
-  servidores**: es un procedimiento propio, largo y frágil, que casi nadie ha ejecutado nunca.
-  Diferencias que lo hacen distinto:
-  - Se restaura **estado del sistema** de un DC por dominio, en **modo restauración de servicios de
-    directorio (DSRM)**, **con la red aislada** para impedir que un DC superviviente comprometido
-    reinfecte o que la replicación propague el estado malo.
-  - Hay que **limpiar metadatos** de todos los DC que no se recuperan, **incautar los roles FSMO**,
-    **invalidar el pool de RID**, **rotar `krbtgt` dos veces**, rotar cuentas de confianza y
-    credenciales de servicio, y solo entonces reconstruir el resto de DC **desde cero** (nunca
-    restaurando el resto de backups: se promocionan limpios y replican del recuperado).
-  - **La contraseña de DSRM es parte del plan** y hay que conocerla el día del incidente: gestionada
-    por Windows LAPS en los DC (§2) y custodiada fuera del dominio.
-  - Todo el material necesario —medios, claves de cifrado del backup, credenciales, documentación,
-    contactos— debe estar **fuera del dominio que ha caído**. Un runbook alojado en un file server
-    del dominio no existe el día que hace falta.
-- **Backups**: estado del sistema de **al menos dos DC por dominio**, en emplazamientos distintos,
-  **cifrados**, **inmutables/offline** (frente a ransomware, que hoy busca el backup primero) y
-  dentro de la **vida útil de los objetos borrados** (*tombstone lifetime*) — un backup más antiguo
-  **no es restaurable**, y ese es el error que se descubre en el peor momento.
-- **La Papelera de AD activada** (recuperación de objetos borrados sin restaurar) es un control
-  distinto y complementario: cubre el borrado accidental, no el compromiso.
-- **Ensayo obligatorio**: recuperación de bosque probada en el **entorno de recuperación aislado
-  (IRE)** que especifica `bcdr-standards` §3.6 —no es un "laboratorio": un laboratorio protege al
-  mundo de lo que corre dentro, un IRE protege a lo que corre dentro del mundo, y en particular
-  del dominio comprometido—, al menos
-  anualmente y tras cambios estructurales, con **tiempo medido** y runbook actualizado con lo
-  aprendido. El proceso completo se cuenta en días, no en horas: si tu RTO dice otra cosa, el RTO es
-  ficción. El marco de continuidad y los RTO/RPO organizativos son de `bcdr-standards`; **este
-  procedimiento es de aquí**.
-- **Si el compromiso es de dominio, la decisión no es "limpiar o recuperar"**: la guía Five Eyes es
-  explícita en que la persistencia en AD resiste la remediación habitual y puede durar meses o años.
-  Se planifica **recuperación desde estado bueno conocido**, y la decisión se toma con el proceso de
-  `incident-response-forensics-standards` e `incident-management-standards`, no en caliente.
+- **A normal backup is not enough.** Recovering a compromised forest **is not restoring
+  servers**: it is a procedure of its own, long and fragile, that almost nobody has ever executed.
+  The differences that make it distinct:
+  - You restore the **system state** of one DC per domain, in **Directory Services Restore
+    Mode (DSRM)**, **with the network isolated** to stop a compromised surviving DC from
+    reinfecting or replication from propagating the bad state.
+  - You must **clean up metadata** for all DCs that are not recovered, **seize the FSMO roles**,
+    **invalidate the RID pool**, **rotate `krbtgt` twice**, rotate trust accounts and service
+    credentials, and only then rebuild the remaining DCs **from scratch** (never
+    restoring the other backups: they are promoted clean and replicate from the recovered one).
+  - **The DSRM password is part of the plan** and you have to know it on the day of the incident: managed
+    by Windows LAPS on the DCs (§2) and held in custody outside the domain.
+  - All the necessary material —media, backup encryption keys, credentials, documentation,
+    contacts— must be **outside the domain that has fallen**. A runbook hosted on a file server
+    in the domain does not exist on the day it is needed.
+- **Backups**: system state of **at least two DCs per domain**, in different locations,
+  **encrypted**, **immutable/offline** (against ransomware, which today goes for the backup first) and
+  within the **tombstone lifetime** of deleted objects — a backup older than that
+  **is not restorable**, and that is the mistake discovered at the worst possible moment.
+- **The AD Recycle Bin enabled** (recovery of deleted objects without restoring) is a
+  distinct and complementary control: it covers accidental deletion, not compromise.
+- **Mandatory rehearsal**: forest recovery tested in the **isolated recovery environment
+  (IRE)** specified by `bcdr-standards` §3.6 —it is not a "lab": a lab protects the
+  world from what runs inside it, an IRE protects what runs inside it from the world, and in particular
+  from the compromised domain—, at least
+  annually and after structural changes, with **measured time** and the runbook updated with what was
+  learned. The full process is counted in days, not hours: if your RTO says otherwise, the RTO is
+  fiction. The continuity framework and organisational RTO/RPO belong to `bcdr-standards`; **this
+  procedure belongs here**.
+- **If the compromise is domain-wide, the decision is not "clean or recover"**: the Five Eyes guidance is
+  explicit that persistence in AD resists ordinary remediation and can last months or years.
+  Plan for **recovery from a known good state**, and take the decision with the process in
+  `incident-response-forensics-standards` and `incident-management-standards`, not in the heat of the moment.
 
-## 4. Gates de calidad
+## 4. Quality gates
 
-1. **Higiene medida con puntuación y tendencia.** PingCastle y Purple Knight ejecutados al menos
-   trimestralmente, con la **serie histórica** publicada y objetivo de mejora. Un score puntual sin
-   tendencia no dice nada; una tendencia plana es un hallazgo de gestión.
-2. **Grafo de rutas de ataque con métrica de reducción.** Ejecución recurrente de BloodHound CE, con
-   número de caminos a Tier 0 y **evidencia de aristas cortadas** entre ejecuciones. Cada camino
-   nuevo tiene dueño y fecha.
-3. **Recuperación de bosque ensayada** en el IRE (`bcdr-standards` §3.6), con **tiempo real medido**, runbook
-   actualizado, contraseña de DSRM verificada y comprobación de que el backup está dentro del
-   *tombstone lifetime*. Sin ensayo, se declara explícitamente que **no existe capacidad de
-   recuperación**, y eso sube al registro de riesgos.
-4. **Baselines aplicadas y verificadas.** No basta con enlazar la GPO: se comprueba el estado
-   efectivo en el host (`gpresult`, herramienta de cumplimiento, escaneo) y se reporta la desviación.
-   Baseline vigente del SCT para la versión del SO, con excepciones documentadas, con dueño y con
-   caducidad.
-5. **Gate de tiering**: ninguna cuenta de Tier 0 inicia sesión fuera de su plano, verificado por
-   consulta a los logs, no por política escrita. Una sola ocurrencia es incidente y obliga a rotar
-   esa credencial.
-6. **Inventario privilegiado reconciliado**: miembros de grupos privilegiados, permisos equivalentes
-   a DA (DCSync, WriteDACL, delegación), cuentas de servicio con SPN, delegaciones, confianzas y
-   plantillas de certificado peligrosas — comparados con lo aprobado. Cualquier diferencia es
-   hallazgo.
-7. **Cobertura de NTLM medida**: auditoría activa y **número de autenticaciones NTLM hacia DC
-   descendiendo**, con fecha objetivo de bloqueo anterior al cambio de default de octubre de 2026
+1. **Hygiene measured with a score and a trend.** PingCastle and Purple Knight run at least
+   quarterly, with the **historical series** published and an improvement target. A one-off score without
+   a trend says nothing; a flat trend is a management finding.
+2. **Attack-path graph with a reduction metric.** Recurring BloodHound CE runs, with the
+   number of paths to Tier 0 and **evidence of edges cut** between runs. Every new path
+   has an owner and a date.
+3. **Forest recovery rehearsed** in the IRE (`bcdr-standards` §3.6), with **real measured time**, an updated
+   runbook, the DSRM password verified and a check that the backup is within the
+   *tombstone lifetime*. Without a rehearsal, it is explicitly declared that **there is no recovery
+   capability**, and that goes up to the risk register.
+4. **Baselines applied and verified.** Linking the GPO is not enough: the effective state on the host
+   is checked (`gpresult`, a compliance tool, a scan) and the deviation is reported.
+   The current SCT baseline for the OS version, with documented exceptions, with an owner and with
+   an expiry date.
+5. **Tiering gate**: no Tier 0 account logs on outside its plane, verified by
+   querying the logs, not by written policy. A single occurrence is an incident and forces rotation of
+   that credential.
+6. **Privileged inventory reconciled**: members of privileged groups, permissions equivalent
+   to DA (DCSync, WriteDACL, delegation), service accounts with SPNs, delegations, trusts and
+   dangerous certificate templates — compared against what was approved. Any difference is a
+   finding.
+7. **NTLM coverage measured**: auditing enabled and **the number of NTLM authentications towards DCs
+   falling**, with a target blocking date ahead of the October 2026 default change
    (§3.6).
-8. **Inventario de EOL sin excepciones silenciosas**: ningún SO fuera de soporte en el dominio; los
-   que queden, con ESU contratada, aislamiento y fecha de retirada (seguimiento en
+8. **EOL inventory with no silent exceptions**: no out-of-support OS in the domain; those
+   that remain, with ESU contracted, isolation and a retirement date (tracked in
    `vulnerability-management-standards`).
 
-## 5. Seguridad: dónde se pierde de verdad un dominio
+## 5. Security: where a domain is really lost
 
-- **Los tres patrones que causan la mayoría de los compromisos** no son exóticos: (1) credencial
-  privilegiada usada en un equipo de usuario; (2) cuenta de servicio con SPN y contraseña débil
-  reutilizada con privilegio excesivo; (3) permiso delegado olvidado que da control sobre un objeto
-  de nivel superior. Ninguno se arregla comprando producto.
-- **AD es el objetivo número uno de un ataque a empresa**, por diseño acumulado: defaults
-  permisivos, relaciones complejas, protocolos legacy vivos y poca herramienta nativa para
-  diagnosticar su seguridad. Asume que el atacante enumerará el directorio con **credenciales de
-  usuario normales** — casi todo es legible por cualquier miembro del dominio.
-- **Higiene > producto**: un directorio con Tier 0 vacío, sin delegación no restringida, con gMSA y
-  con las plantillas de certificado saneadas resiste más que uno lleno de agentes y con Domain
-  Admins de uso diario.
-- **La estación del administrador es el eslabón real.** Sin PAW, todo lo demás es papel.
-- **El híbrido fusiona planos si no lo impides**: el servidor de sincronización, sus cuentas y los
-  roles cloud privilegiados son Tier 0. Separación estricta de identidades on-prem y cloud
-  privilegiadas.
-- **Asume compromiso al diseñar la detección**: los eventos de §3.7 existen para descubrir a alguien
-  que **ya está dentro**. Si el SIEM no los ingiere y nadie los mira, el directorio está
-  indefenso aunque el score sea alto.
-- **Prioridad de parcheo**: los DC primero, siempre. Un DC sin parchear es todo el dominio sin
-  parchear. (Precedente reciente en el ecosistema de gestión: **CVE-2025-59287**, RCE crítica en
-  **WSUS**, oct-2025 — un servidor de parcheo comprometido distribuye código a toda la flota; trátalo
-  como Tier 0 o migra fuera de él.)
+- **The three patterns that cause most compromises** are not exotic: (1) a privileged
+  credential used on a user machine; (2) a service account with an SPN and a weak password
+  reused with excessive privilege; (3) a forgotten delegated permission that grants control over a
+  higher-tier object. None of them is fixed by buying a product.
+- **AD is the number one target of an attack on an enterprise**, by accumulated design: permissive
+  defaults, complex relationships, legacy protocols still alive and little native tooling to
+  diagnose its security. Assume the attacker will enumerate the directory with **ordinary
+  user credentials** — almost everything is readable by any member of the domain.
+- **Hygiene > product**: a directory with Tier 0 empty, no unconstrained delegation, with gMSA and
+  with sanitised certificate templates holds up better than one full of agents and with Domain
+  Admins in daily use.
+- **The administrator's workstation is the real weak link.** Without a PAW, everything else is paper.
+- **Hybrid fuses planes unless you prevent it**: the synchronisation server, its accounts and the
+  privileged cloud roles are Tier 0. Strict separation of privileged on-prem and cloud
+  identities.
+- **Assume compromise when designing detection**: the events in §3.7 exist to discover somebody
+  who is **already inside**. If the SIEM does not ingest them and nobody looks at them, the directory is
+  defenceless even if the score is high.
+- **Patching priority**: the DCs first, always. An unpatched DC is the whole domain
+  unpatched. (Recent precedent in the management ecosystem: **CVE-2025-59287**, critical RCE in
+  **WSUS**, Oct 2025 — a compromised patching server distributes code to the whole fleet; treat it
+  as Tier 0 or migrate off it.)
 
-## 6. Operabilidad
+## 6. Operability
 
-- **Monitorización del directorio como servicio**: salud de replicación (`repadmin /replsummary`,
-  `dcdiag`), retraso entre sitios, disponibilidad de FSMO, espacio y estado de `ntds.dit`, tiempo
-  (la deriva de reloj rompe Kerberos y es una causa de incidente clásica), y latencia de
-  autenticación por sitio. Alertas sobre síntomas, no sobre cada evento.
-- **Jerarquía de tiempo correcta**: el PDC emulator del dominio raíz como fuente, sincronizado con
-  origen externo confiable; el resto por jerarquía de dominio. En DC virtualizados, **desactivar la
-  sincronización de tiempo del hipervisor** o se pelea con el dominio.
-- **Virtualización de DC**: soporte de `VM-GenerationID` para evitar reversiones peligrosas de USN,
-  **nunca restaurar un DC desde snapshot** como método de recuperación, y el hipervisor tratado como
-  Tier 0 (incluido su almacenamiento y su consola).
-- **Capacidad y colocación**: al menos **dos DC por dominio**, distribuidos, con al menos uno
-  físicamente controlado; sitio con DC local donde la latencia lo justifique.
-- **Runbooks probados**: incautación de FSMO, limpieza de metadatos, rotación de `krbtgt`,
-  recuperación de objeto borrado, promoción y despromoción de DC, y respuesta a "un DC no replica
-  desde hace N días" (el silencio de replicación es a la vez avería y posible indicador).
-- **Gestión de cambios en el directorio**: cambios de esquema, de nivel funcional, de confianzas y de
-  GPO de Tier 0 son irreversibles o casi. Ventana, aprobación, backup previo verificado y plan de
-  reversión — el cambio de esquema **no se deshace**.
+- **Monitoring the directory as a service**: replication health (`repadmin /replsummary`,
+  `dcdiag`), inter-site lag, FSMO availability, space and state of `ntds.dit`, time
+  (clock drift breaks Kerberos and is a classic incident cause), and authentication
+  latency per site. Alerts on symptoms, not on every event.
+- **Correct time hierarchy**: the root domain's PDC emulator as the source, synchronised with a
+  trusted external origin; the rest by domain hierarchy. On virtualised DCs, **disable the
+  hypervisor's time synchronisation** or it fights with the domain.
+- **DC virtualisation**: `VM-GenerationID` support to avoid dangerous USN rollbacks,
+  **never restore a DC from a snapshot** as a recovery method, and the hypervisor treated as
+  Tier 0 (including its storage and its console).
+- **Capacity and placement**: at least **two DCs per domain**, distributed, with at least one
+  physically controlled; a site with a local DC where latency justifies it.
+- **Tested runbooks**: FSMO seizure, metadata cleanup, `krbtgt` rotation,
+  deleted object recovery, DC promotion and demotion, and response to "a DC has not replicated
+  for N days" (replication silence is both a fault and a possible indicator).
+- **Change management in the directory**: schema changes, functional level changes, trust changes and
+  Tier 0 GPO changes are irreversible or nearly so. Window, approval, verified prior backup and a
+  rollback plan — a schema change **cannot be undone**.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia**
-- Higiene medida (PingCastle/Purple Knight/BloodHound): **trimestral**, con tendencia.
-- Revisión de privilegio, delegaciones, confianzas, cuentas de servicio y plantillas de certificado:
-  **trimestral** para lo privilegiado, semestral el resto.
-- Ensayo de recuperación de bosque: **anual** como mínimo y tras cambios estructurales.
-- Rotación programada de `krbtgt` (doble, con verificación de replicación entre pasos).
-- Baseline del SCT: revisar con cada revisión publicada (cadencia acelerada desde v2506) y con cada
-  versión nueva del SO.
-- Plan de retirada de EOL con fecha: **Server 2016 → 12-ene-2027** es un hito de calendario, no una
-  intención.
-- Actualización de PingCastle antes del fin de soporte de la versión en uso (caduca y deja de
-  ejecutarse).
-- Migración fuera de WSUS planificada con fecha, aunque no haya EOL anunciado.
+**Cadence**
+- Measured hygiene (PingCastle/Purple Knight/BloodHound): **quarterly**, with a trend.
+- Review of privilege, delegations, trusts, service accounts and certificate templates:
+  **quarterly** for the privileged, half-yearly for the rest.
+- Forest recovery rehearsal: **annually** at a minimum and after structural changes.
+- Scheduled `krbtgt` rotation (double, with replication verification between steps).
+- SCT baseline: review with each published revision (accelerated cadence since v2506) and with each
+  new OS version.
+- EOL retirement plan with a date: **Server 2016 → 12 Jan 2027** is a calendar milestone, not an
+  intention.
+- PingCastle upgrade before the end of support of the version in use (it expires and stops
+  running).
+- Migration off WSUS planned with a date, even though no EOL has been announced.
 
-**PROHIBIDO**
-- ❌ **Delegación Kerberos no restringida** (*unconstrained*), en cualquier servidor y por cualquier
-  motivo.
-- ❌ **Cuentas de servicio con contraseña estática y SPN**: se migran a gMSA. Si no pueden, excepción
-  firmada con contraseña larga, rotación real y privilegio mínimo.
-- ❌ **Cuentas de administración de dominio usadas a diario**, o iniciando sesión en estaciones de
-  trabajo, servidores de aplicación o cualquier sistema fuera de Tier 0.
-- ❌ `Domain Admins`/`Enterprise Admins`/`Schema Admins` con miembros permanentes en operación normal.
-- ❌ **NTLMv1 y LM** habilitados; SMBv1 instalado; firma SMB opcional; LDAP sin firma ni *channel
-  binding*; *simple bind* en claro.
-- ❌ **Controladores de dominio con roles adicionales** (IIS, SQL, ficheros, aplicaciones, hipervisor,
-  backup) o **navegando a Internet**.
-- ❌ **Servidores fuera de soporte en el dominio** sin ESU, aislamiento y fecha de retirada.
-- ❌ Plantillas de certificado que permitan al solicitante fijar el sujeto con EKU de autenticación y
-  enrolamiento amplio; permisos de escritura sobre plantillas para grupos no privilegiados; CA con
-  la configuración que ignora la plantilla al fijar el sujeto alternativo.
-- ❌ **dMSA en un bosque con DC de Server 2025 sin la mitigación de BadSuccessor aplicada** (§3.4).
-- ❌ **LAPS legacy** en despliegues nuevos; contraseñas de administrador local compartidas o iguales
-  entre equipos.
-- ❌ Contraseñas en scripts, en SYSVOL, en preferencias de GPO, en tareas programadas o en la
-  descripción de objetos de AD.
-- ❌ **CredSSP** en remoting; administración de DC desde una estación de uso general.
-- ❌ Rotar `krbtgt` **dos veces seguidas sin esperar** replicación y vida máxima de ticket (provoca
-  caída de autenticación), o **no rotarla** tras sospecha de compromiso.
-- ❌ Desactivar la rotación de contraseñas de cuentas de máquina; restaurar un DC desde snapshot del
-  hipervisor.
-- ❌ Backup del directorio sin cifrar, sin copia inmutable/offline, o **más antiguo que el
+**FORBIDDEN**
+- ❌ **Unconstrained Kerberos delegation**, on any server and for any
+  reason.
+- ❌ **Service accounts with a static password and an SPN**: they are migrated to gMSA. If they cannot be, a signed
+  exception with a long password, real rotation and least privilege.
+- ❌ **Domain administration accounts used daily**, or logging on to
+  workstations, application servers or any system outside Tier 0.
+- ❌ `Domain Admins`/`Enterprise Admins`/`Schema Admins` with permanent members in normal operation.
+- ❌ **NTLMv1 and LM** enabled; SMBv1 installed; optional SMB signing; LDAP without signing or *channel
+  binding*; *simple bind* in the clear.
+- ❌ **Domain controllers with additional roles** (IIS, SQL, file shares, applications, hypervisor,
+  backup) or **browsing the Internet**.
+- ❌ **Out-of-support servers in the domain** without ESU, isolation and a retirement date.
+- ❌ Certificate templates that let the requester set the subject with an authentication EKU and
+  broad enrolment; write permissions on templates for unprivileged groups; a CA with
+  the configuration that ignores the template when setting the subject alternative name.
+- ❌ **dMSA in a forest with Server 2025 DCs without the BadSuccessor mitigation applied** (§3.4).
+- ❌ **Legacy LAPS** in new deployments; local administrator passwords shared or identical
+  across machines.
+- ❌ Passwords in scripts, in SYSVOL, in GPO preferences, in scheduled tasks or in the
+  description of AD objects.
+- ❌ **CredSSP** in remoting; DC administration from a general-purpose workstation.
+- ❌ Rotating `krbtgt` **twice in a row without waiting for** replication and the maximum ticket lifetime (it causes
+  an authentication outage), or **not rotating it** after a suspicion of compromise.
+- ❌ Disabling machine account password rotation; restoring a DC from a hypervisor
+  snapshot.
+- ❌ A directory backup that is unencrypted, without an immutable/offline copy, or **older than the
   *tombstone lifetime***.
-- ❌ Declarar "tenemos backup de AD" **sin ensayo de recuperación de bosque documentado**.
-- ❌ Confianzas bidireccionales con filtrado de SID desactivado, o confianzas sin dueño ni revisión.
-- ❌ Ejecutar herramientas de recolección (SharpHound) sin control del destino del volcado.
-- ❌ Fijar fechas de EOL, estados de retirada de NTLM, versiones o nombres de feature **de memoria**,
-  sin la verificación de §8.
+- ❌ Declaring "we have an AD backup" **without a documented forest recovery rehearsal**.
+- ❌ Two-way trusts with SID filtering disabled, or trusts with no owner and no review.
+- ❌ Running collection tools (SharpHound) without control over where the dump ends up.
+- ❌ Pinning EOL dates, NTLM retirement states, versions or feature names **from memory**,
+  without the verification in §8.
 
-### Checklist de revisión rápida (evaluación de un dominio existente)
+### Quick review checklist (assessing an existing domain)
 
-- [ ] Tier 0 identificado **completo** (incluye hipervisor, backup, PKI, sincronización a Entra) y aislado.
-- [ ] Grupos privilegiados vacíos en operación; elevación con ticket, ventana y alerta; PAW en uso real.
-- [ ] Delegaciones, ACL equivalentes a DA y confianzas inventariadas y reconciliadas.
-- [ ] Cuentas de servicio en gMSA; ninguna cuenta de usuario con SPN y contraseña estática.
-- [ ] Sin delegación no restringida; RBCD/restringida inventariada; Protected Users en privilegiados.
-- [ ] Plantillas de AD CS auditadas (flags, EKU, permisos, propietario); CA tratada como Tier 0.
-- [ ] Auditoría NTLM activa con tendencia a la baja; NTLMv1/LM bloqueados; firma SMB y LDAP obligatorias.
-- [ ] Windows LAPS desplegado, incluido el password de DSRM en los DC.
-- [ ] Baseline del SCT aplicada **y verificada** en DC y servidores; Server Core donde sea posible.
-- [ ] Script block logging, línea de comandos en creación de procesos y reenvío de logs de DC al SIEM.
-- [ ] PingCastle/Purple Knight/BloodHound con serie histórica y caminos a Tier 0 en descenso.
-- [ ] Backup de estado del sistema de ≥2 DC, cifrado, inmutable, dentro del *tombstone lifetime*.
-- [ ] **Recuperación de bosque ensayada** con tiempo medido y runbook fuera del dominio.
-- [ ] Sin SO fuera de soporte; plan con fecha para Server 2016 (12-ene-2027).
+- [ ] Tier 0 identified **completely** (includes hypervisor, backup, PKI, Entra synchronisation) and isolated.
+- [ ] Privileged groups empty in operation; elevation with ticket, window and alert; PAW in real use.
+- [ ] Delegations, DA-equivalent ACLs and trusts inventoried and reconciled.
+- [ ] Service accounts on gMSA; no user account with an SPN and a static password.
+- [ ] No unconstrained delegation; RBCD/constrained inventoried; Protected Users for the privileged.
+- [ ] AD CS templates audited (flags, EKUs, permissions, owner); CA treated as Tier 0.
+- [ ] NTLM auditing enabled with a downward trend; NTLMv1/LM blocked; SMB and LDAP signing mandatory.
+- [ ] Windows LAPS deployed, including the DSRM password on the DCs.
+- [ ] SCT baseline applied **and verified** on DCs and servers; Server Core wherever possible.
+- [ ] Script block logging, command line in process creation and forwarding of DC logs to the SIEM.
+- [ ] PingCastle/Purple Knight/BloodHound with a historical series and paths to Tier 0 falling.
+- [ ] System state backup of ≥2 DCs, encrypted, immutable, within the *tombstone lifetime*.
+- [ ] **Forest recovery rehearsed** with measured time and a runbook outside the domain.
+- [ ] No out-of-support OS; a dated plan for Server 2016 (12 Jan 2027).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier fecha, versión, estado de retirada o nombre de feature, **búscalo — no lo
-recuerdes**. Este dominio es donde más se equivoca la memoria:
+Before pinning any date, version, retirement state or feature name, **look it up — do not
+recall it**. This domain is where memory gets it wrong most often:
 
-1. **Ciclo de vida de Windows Server** (verificado ago-2026: **2025** GA 1-nov-2024, estándar hasta
-   13-nov-2029, extendido hasta 14-nov-2034; **2022** fin de soporte estándar 13-oct-2026; **2019**
-   extendido hasta 9-ene-2029; **2016** EOL **12-ene-2027**; **23H2** ya EOL desde 24-oct-2025).
-   Confírmalo en el ciclo de vida oficial de Microsoft antes de planificar migraciones.
-2. **Retirada de NTLM — el dato más citado de memoria y peor recordado.** Verificado ago-2026:
-   NTLM **deprecado** en jul-2024 (no eliminado); **NTLMv1 eliminado** en Windows 11 24H2 y Windows
-   Server 2025; clave `BlockNTLMv1SSO` en auditoría desde sep-2025 (evento 4024) y **cambio de
-   default a *enforce* previsto para octubre de 2026**; **IAKerb** y **Local KDC** anunciados para la
-   segunda mitad de 2026. **Huecos declarados**: no se verificó si el cambio de default de octubre de
-   2026 se ha adelantado, retrasado o ya aplicado, ni el **estado real de disponibilidad de IAKerb y
-   Local KDC** a esta fecha. Léelo en el artículo de soporte de Microsoft para tu build.
-3. **dMSA y BadSuccessor** (verificado ago-2026: técnica de Akamai, abuso de la funcionalidad de
-   migración, funciona en configuración por defecto, 91 % de entornos analizados expuestos).
-   **Hueco declarado**: **no se pudo confirmar si Microsoft ha publicado ya un parche o cambio de
-   comportamiento** — las fuentes consultadas indican que en su momento no existía y que la respuesta
-   era de configuración y detección. **Verifícalo antes de introducir un DC de Server 2025**; es el
-   punto de este documento con mayor probabilidad de haber cambiado.
-4. **Windows LAPS frente al legacy** (verificado ago-2026: legacy **deprecado**, MSI bloqueado en
-   Windows 11 23H2+, sin cambios de código, soportado solo hasta el EOL del SO donde ya estaba;
-   Windows LAPS disponible desde Server 2019 y clientes soportados, con cifrado en AD, historial,
-   respaldo a Entra ID y gestión del password de DSRM). **Hueco declarado**: no se verificó si
-   Microsoft ha anunciado desde entonces una fecha de retirada concreta del legacy.
-5. **WSUS** (verificado ago-2026: **deprecado el 20-sep-2024**, sin funcionalidad nueva, **sin fecha
-   de EOL anunciada**, todavía incluido en Server 2025 y soportando el SUP de ConfigMgr; reemplazo
-   recomendado partido entre **Intune/Windows Autopatch** para clientes y **Azure Update Manager**
-   —con Arc— para servidores; la parada de sincronización de drivers prevista para abr-2025 fue
-   pospuesta). **Hueco declarado**: el estado actual de esa sincronización de drivers no se confirmó.
-6. **Mapeo fuerte de certificados (KB5014754)** (verificado ago-2026: **aplicación completa desde
-   feb-2025** y **eliminación del modo compatibilidad en sep-2025**; exige todos los DC en Server
-   2019+). No se encontró ningún hito posterior en 2026; confírmalo si dependes de tarjetas
-   inteligentes, 802.1X o SCEP de terceros.
-7. **Enterprise Access Model y modelo de niveles** (verificado ago-2026: el tier model está
-   **reclasificado como guía legacy pero vigente**, documentado como componente del EAM, con
-   repositorio y guía de despliegue publicados por Microsoft). Comprueba el nombre y la URL vigentes
-   de la guía antes de citarla en un entregable: Microsoft ha renombrado y reorganizado este material
-   varias veces.
-8. **Herramientas de higiene**: **PingCastle** (verificado ago-2026: adquirido por **Netwrix**,
-   edición Open Source **NPOSL-3.0**, uso interno permitido, auditar a terceros requiere licencia
-   comercial, **caducidad por versión** — la 3.3.0.0 dejó de ejecutarse el 31-ene-2026) y
-   **Purple Knight** (verificado: Semperis, **Community 5.0**, gratuita, 210+ indicadores, soporte
-   GCC High desde 21-abr-2026). **Huecos declarados**: **la versión vigente de PingCastle en ago-2026
-   y su próxima fecha de caducidad no se verificaron**.
-9. **BloodHound** (verificado ago-2026: **Community Edition** libre bajo **Apache-2.0**, mantenida
-   por SpecterOps; **Enterprise** cubre AD, Entra, AWS y Okta; oferta **Scentry** para programas de
-   gestión de rutas de ataque; releases recientes incluyen la corrección de **CVE-2026-16221**).
-   **Hueco declarado**: **no se verificó el número de versión actual de CE**; consúltalo en su página
-   de releases. Aviso útil de la propia SpecterOps (abr-2026): buena parte del material formativo y
-   de la documentación de terceros está desactualizado respecto a la plataforma actual.
-10. **Microsoft Security Compliance Toolkit y baselines** (verificado ago-2026: **sigue siendo la vía
-    soportada**, SCM retirado; baseline de Windows Server 2025 **v2602 de feb-2026**, con cadencia de
-    revisión acelerada desde v2506; en Intune las baselines se consumen directamente sin importar,
-    derivadas de la baseline de cliente). **Hueco declarado**: no se verificó si hay una revisión
-    posterior a v2602 publicada entre feb-2026 y ago-2026.
-11. **PowerShell** (verificado ago-2026: **7.6 LTS** desde 18-mar-2026 sobre .NET 10, soportada hasta
-    14-nov-2028; **7.4 LTS y 7.5 terminan el 10-nov-2026** con .NET 8; **5.1 sin EOL propio**, sigue
-    el ciclo del SO). Verifica la versión de mantenimiento vigente antes de fijarla en un despliegue.
-12. **Guía Five Eyes "Detecting and Mitigating Active Directory Compromises"** (verificado ago-2026:
-    publicada el **26-sep-2024**, liderada por ASD/ACSC con CISA, NSA, CCCS, NCSC-NZ y NCSC-UK, 17
-    técnicas). **Hueco declarado**: **no se localizó ninguna revisión posterior**; comprueba si ha
-    salido una actualización antes de usarla como referencia normativa.
-13. **CVE del ecosistema de gestión y del directorio**: precedente verificado **CVE-2025-59287**
-    (RCE crítica en WSUS, oct-2025). Antes de dar por segura una plataforma, revisa los boletines de
-    Microsoft y el catálogo KEV de CISA para AD DS, AD CS, AD FS, WSUS y el agente de gestión que
-    uses.
-14. **Estado de los benchmarks aplicables** si hay requisito formal (CIS de la versión exacta de
-    Windows Server, DISA STIG, CCN-STIC/ENS). **Hueco declarado**: **no se verificaron las versiones
-    vigentes de CIS ni de STIG para Windows Server 2025** en ago-2026. Recuerda que el CIS va por
-    versión de producto: nunca cites "el CIS de Windows Server" en genérico.
+1. **Windows Server lifecycle** (verified Aug 2026: **2025** GA 1 Nov 2024, mainstream until
+   13 Nov 2029, extended until 14 Nov 2034; **2022** end of mainstream support 13 Oct 2026; **2019**
+   extended until 9 Jan 2029; **2016** EOL **12 Jan 2027**; **23H2** already EOL since 24 Oct 2025).
+   Confirm it against Microsoft's official lifecycle before planning migrations.
+2. **NTLM retirement — the fact most often quoted from memory and worst remembered.** Verified Aug 2026:
+   NTLM **deprecated** in Jul 2024 (not removed); **NTLMv1 removed** in Windows 11 24H2 and Windows
+   Server 2025; the `BlockNTLMv1SSO` key in audit mode since Sep 2025 (event 4024) and a **default change
+   to *enforce* expected in October 2026**; **IAKerb** and **Local KDC** announced for the
+   second half of 2026. **Declared gaps**: it was not verified whether the October 2026 default change
+   has been brought forward, delayed or already applied, nor the **actual availability status of IAKerb and
+   Local KDC** at this date. Read it in Microsoft's support article for your build.
+3. **dMSA and BadSuccessor** (verified Aug 2026: Akamai technique, abuse of the migration
+   functionality, works in a default configuration, 91 % of analysed environments exposed).
+   **Declared gap**: **it could not be confirmed whether Microsoft has already published a patch or behaviour
+   change** — the sources consulted indicate that at the time none existed and that the response
+   was configuration and detection. **Verify it before introducing a Server 2025 DC**; it is the
+   point in this document most likely to have changed.
+4. **Windows LAPS versus the legacy one** (verified Aug 2026: legacy **deprecated**, MSI blocked on
+   Windows 11 23H2+, no code changes, supported only until the EOL of the OS where it was already installed;
+   Windows LAPS available from Server 2019 and supported clients, with encryption in AD, history,
+   backup to Entra ID and DSRM password management). **Declared gap**: it was not verified whether
+   Microsoft has since announced a concrete retirement date for the legacy one.
+5. **WSUS** (verified Aug 2026: **deprecated on 20 Sep 2024**, no new functionality, **no announced
+   EOL date**, still included in Server 2025 and supporting the ConfigMgr SUP; the recommended
+   replacement split between **Intune/Windows Autopatch** for clients and **Azure Update Manager**
+   —with Arc— for servers; the driver synchronisation shutdown planned for Apr 2025 was
+   postponed). **Declared gap**: the current status of that driver synchronisation was not confirmed.
+6. **Strong certificate mapping (KB5014754)** (verified Aug 2026: **full enforcement since
+   Feb 2025** and **removal of compatibility mode in Sep 2025**; requires all DCs on Server
+   2019+). No later milestone was found in 2026; confirm it if you depend on smart
+   cards, 802.1X or third-party SCEP.
+7. **Enterprise Access Model and the tier model** (verified Aug 2026: the tier model is
+   **reclassified as legacy guidance but still current**, documented as an EAM component, with a
+   repository and deployment guide published by Microsoft). Check the current name and URL
+   of the guidance before citing it in a deliverable: Microsoft has renamed and reorganised this material
+   several times.
+8. **Hygiene tools**: **PingCastle** (verified Aug 2026: acquired by **Netwrix**,
+   Open Source edition **NPOSL-3.0**, internal use allowed, auditing third parties requires a commercial
+   licence, **per-version expiry** — 3.3.0.0 stopped running on 31 Jan 2026) and
+   **Purple Knight** (verified: Semperis, **Community 5.0**, free, 210+ indicators, GCC High
+   support since 21 Apr 2026). **Declared gaps**: **the current PingCastle version as of Aug 2026
+   and its next expiry date were not verified**.
+9. **BloodHound** (verified Aug 2026: **Community Edition** free under **Apache-2.0**, maintained
+   by SpecterOps; **Enterprise** covers AD, Entra, AWS and Okta; a **Scentry** offering for attack-path
+   management programmes; recent releases include the fix for **CVE-2026-16221**).
+   **Declared gap**: **the current CE version number was not verified**; check it on their releases
+   page. Useful warning from SpecterOps themselves (Apr 2026): much of the training material and
+   third-party documentation is out of date with respect to the current platform.
+10. **Microsoft Security Compliance Toolkit and baselines** (verified Aug 2026: **it is still the
+    supported route**, SCM retired; Windows Server 2025 baseline **v2602 of Feb 2026**, with an accelerated
+    revision cadence since v2506; in Intune the baselines are consumed directly without importing,
+    derived from the client baseline). **Declared gap**: it was not verified whether a revision
+    later than v2602 was published between Feb 2026 and Aug 2026.
+11. **PowerShell** (verified Aug 2026: **7.6 LTS** since 18 Mar 2026 on .NET 10, supported until
+    14 Nov 2028; **7.4 LTS and 7.5 end on 10 Nov 2026** with .NET 8; **5.1 with no EOL of its own**, it follows
+    the OS cycle). Verify the current servicing version before pinning it in a deployment.
+12. **Five Eyes guidance "Detecting and Mitigating Active Directory Compromises"** (verified Aug 2026:
+    published on **26 Sep 2024**, led by ASD/ACSC with CISA, NSA, CCCS, NCSC-NZ and NCSC-UK, 17
+    techniques). **Declared gap**: **no later revision was located**; check whether an
+    update has been released before using it as normative reference.
+13. **CVEs in the management ecosystem and the directory**: verified precedent **CVE-2025-59287**
+    (critical RCE in WSUS, Oct 2025). Before assuming a platform is safe, review Microsoft's
+    bulletins and CISA's KEV catalogue for AD DS, AD CS, AD FS, WSUS and the management agent you
+    use.
+14. **Status of the applicable benchmarks** if there is a formal requirement (CIS for the exact version of
+    Windows Server, DISA STIG, CCN-STIC/ENS). **Declared gap**: **the current versions of CIS and of
+    STIG for Windows Server 2025 were not verified** as of Aug 2026. Remember that CIS goes by
+    product version: never cite "the Windows Server CIS" generically.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

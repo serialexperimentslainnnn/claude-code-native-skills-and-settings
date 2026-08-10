@@ -3,286 +3,286 @@ name: operating-systems-standards
 description: Operating-system mechanics as an engineering constraint — what the kernel actually does to your program and which design decisions follow from it. Use when reasoning about CPU scheduling and latency (EEVDF versus the older CFS, sysctl_sched_base_slice, nice and sched_setscheduler, SCHED_FIFO/SCHED_RR/SCHED_DEADLINE via chrt, isolcpus and CPU pinning with taskset, sched_ext BPF schedulers, PREEMPT_RT and preempt=none/voluntary/full, interrupt latency and threaded IRQs, cyclictest), the real cost of a system call and a context switch (vDSO, KPTI and speculative-execution mitigation overhead, syscall batching), virtual memory (page faults, TLB misses, transparent huge pages and MADV_HUGEPAGE versus hugetlbfs, vm.overcommit_memory and Committed_AS, the OOM killer and oom_score_adj, memory.high versus memory.max in cgroup v2, PSI pressure metrics, swappiness and zram/zswap), I/O models (blocking versus O_NONBLOCK, select/poll/epoll, io_uring and its security history, O_DIRECT, readahead, page cache and dirty writeback tuning), filesystem durability semantics (fsync, fdatasync, sync_file_range, the fsync error-reporting problem and why a successful write is not a durable write, journalling modes, write barriers and volatile disk caches), namespaces and capabilities as the actual substance of a container, NUMA topology and numactl, virtualization and paravirtualization (KVM, virtio, steal time, ballooning), monolithic versus microkernel designs (seL4, QNX, Redox, Fuchsia/Zircon) and hard versus soft real-time requirements.
 ---
 
-# Estándares de sistemas operativos aplicados
+# Applied operating systems standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **usar el conocimiento del sistema operativo para decidir**: por qué un servicio tiene picos
-de latencia que no se explican por el código, por qué el proceso murió sin traza, por qué "lo escribí
-y se perdió", cuánto cuesta de verdad una llamada al sistema, qué garantiza y qué no garantiza un
-contenedor, y cuándo un requisito de tiempo real es real. **No es teoría de facultad**: cada apartado
-existe porque decide una elección de diseño o cierra una discusión.
+Applies to **using knowledge of the operating system to decide**: why a service has latency
+spikes that the code does not explain, why the process died with no trace, why "I wrote it
+and it was lost", how much a system call really costs, what a container does and does not
+guarantee, and when a real-time requirement is real. **This is not university theory**: every section
+exists because it decides a design choice or settles an argument.
 
 Triggers: EEVDF, CFS, `sysctl_sched_base_slice`, `nice`, `sched_setscheduler`, `chrt`, `SCHED_FIFO`,
 `SCHED_RR`, `SCHED_DEADLINE`, `SCHED_IDLE`, `taskset`, `isolcpus`, `nohz_full`, `sched_ext`/SCX,
-`PREEMPT_RT`, `preempt=none|voluntary|full`, `cyclictest`, "latencia de interrupción", vDSO,
-`getpid()` barato, KPTI, mitigaciones especulativas, cambio de contexto, `vm.overcommit_memory`,
-`CommitLimit`, `Committed_AS`, OOM killer, `oom_score_adj`, `/dev/kmsg` con "Out of memory: Killed
+`PREEMPT_RT`, `preempt=none|voluntary|full`, `cyclictest`, "interrupt latency", vDSO,
+cheap `getpid()`, KPTI, speculative mitigations, context switch, `vm.overcommit_memory`,
+`CommitLimit`, `Committed_AS`, OOM killer, `oom_score_adj`, `/dev/kmsg` with "Out of memory: Killed
 process", `transparent_hugepage`, `MADV_HUGEPAGE`, `hugetlbfs`, TLB, `vm.swappiness`, `zswap`,
 `zram`, `memory.max`, `memory.high`, `memory.pressure`, PSI (`/proc/pressure/*`), `cpu.max`,
-"throttling de CPU en el contenedor", `epoll`, `io_uring`, `O_NONBLOCK`, `O_DIRECT`, `fsync`,
-`fdatasync`, `sync_file_range`, `data=ordered`/`data=writeback`, *write barrier*, caché volátil de
-disco, `unshare`, `clone(CLONE_NEW*)`, `/proc/self/ns/`, `capabilities(7)`, `CAP_SYS_ADMIN`,
-`numactl`, `numastat`, "acceso remoto a memoria NUMA", KVM, virtio, *steal time*, *ballooning*,
-microkernel, seL4, QNX, Redox, Fuchsia/Zircon, "tiempo real duro", "tiempo real blando".
+"CPU throttling in the container", `epoll`, `io_uring`, `O_NONBLOCK`, `O_DIRECT`, `fsync`,
+`fdatasync`, `sync_file_range`, `data=ordered`/`data=writeback`, *write barrier*, volatile disk
+cache, `unshare`, `clone(CLONE_NEW*)`, `/proc/self/ns/`, `capabilities(7)`, `CAP_SYS_ADMIN`,
+`numactl`, `numastat`, "remote NUMA memory access", KVM, virtio, *steal time*, *ballooning*,
+microkernel, seL4, QNX, Redox, Fuchsia/Zircon, "hard real time", "soft real time".
 
-**Principio rector**: **el sistema operativo no es un detalle de implementación; es el que decide.**
-Un programa correcto sobre supuestos falsos del SO —que `write()` persiste, que un contenedor aísla,
-que un límite de memoria produce un error y no una muerte, que `nice` da tiempo real— falla en
-producción de la peor manera: tarde, sin traza y de forma no reproducible. La regla de trabajo que
-se deriva: **ningún comportamiento del SO se afirma de memoria; se lee de su documentación o se mide
-en el sistema concreto** (§4), porque **la respuesta depende de la versión del kernel, del sistema de
-ficheros, del hipervisor y del hardware**, y las cuatro cambian.
+**Guiding principle**: **the operating system is not an implementation detail; it is the one that decides.**
+A program that is correct on false assumptions about the OS —that `write()` persists, that a container isolates,
+that a memory limit produces an error and not a death, that `nice` gives real time— fails in
+production in the worst way: late, with no trace and non-reproducibly. The working rule that
+follows: **no OS behaviour is asserted from memory; it is read from its documentation or measured
+on the specific system** (§4), because **the answer depends on the kernel version, the
+filesystem, the hypervisor and the hardware**, and all four change.
 
-**No aplica**: ver `linux-administration-standards` (**la administración diaria es suya, sin
-excepción**: unidades systemd y su `Type=`/`Restart=`/dependencias, `journalctl` y retención,
-`systemd-analyze blame`, red del host, paquetes, hora, y el **diagnóstico operativo** de un host que
-va lento o no arranca. **Frontera precisa y pactada por este lado**: *el pomo de systemd es suyo, la
-semántica del kernel que hay detrás es mía* — `MemoryMax=` y `systemd-oomd` se configuran allí;
-**por qué `memory.high` estrangula y `memory.max` mata, y por qué eso es una decisión de diseño y no
-un accidente, es de aquí**), `performance-engineering-standards` (**la metodología de medición y el
-perfilado son suyos**: definir el objetivo de latencia como percentil + concurrencia + hardware,
-modelos de carga abierto/cerrado, omisión coordinada, muestreo, *flame graphs*, perfilado continuo,
-USE y RED. **Regla de arbitraje: *"¿cómo se mide y cómo se interpreta el número?" es suyo; "¿qué
-mecanismo del SO produce ese número y qué se cambia para moverlo?" es de aquí***. Un ajuste de esta
-skill sin la medición de la suya es superstición), `container-runtime-security-standards` (**el
-aislamiento del contenedor como control de seguridad es suyo**: perfiles seccomp, runtimes
-alternativos —gVisor, Kata—, escape, detección en runtime, capabilities como hardening del Pod.
-**Aquí solo el mecanismo**: qué es un namespace, qué comparte y qué no, y por qué un contenedor no es
-una máquina virtual), `kernel-drivers-standards` (**hermana directa**: el **código** que se escribe
-dentro del kernel, su concurrencia —spinlocks, RCU, contextos atómicos—, su DMA, su depuración con
-KASAN/lockdep y su proceso upstream. *"¿Cómo escribo este driver?" es suyo; "¿por qué el sistema se
-comporta así?" es de aquí*), `linux-hardening-standards` (baseline CIS/STIG y su medida; los
-`sysctl` de seguridad son suyos, los de comportamiento del SO son de aquí), `selinux-standards`
-(MAC), `linux-storage-standards` y `zfs-standards` (LVM, RAID, capas de bloque, ZFS — **la semántica
-de durabilidad y `fsync` se argumenta aquí y se implementa allí**), `sre-practice-standards`
-(SLO, error budget), `observability-standards` (plataforma de telemetría), `libvirt-kvm-standards`,
-`proxmox-ve-standards`, `vmware-standards`, `hyper-v-standards` y `xen-standards` (**operar el
-hipervisor es suyo**; aquí solo qué implica la virtualización para el programa que corre dentro:
-*steal time*, reloj, NUMA virtual), `kubernetes-standards` (requests/limits como objeto declarativo;
-**aquí qué hace el kernel cuando se alcanza ese límite**), `embedded-iot-standards` (**hermana**:
-el dispositivo físico, el RTOS y el superloop — **la discusión de tiempo real duro es
-frontera compartida**: el criterio de qué es tiempo real y qué garantiza `PREEMPT_RT` es de aquí, la
-elección de RTOS para un MCU es suya), `bsd-systems-standards` y `aix-solaris-hpux-standards` (otros
-sistemas operativos como plataforma de producción), `c-standards`, `cpp-standards`, `rust-standards`
-y `go-standards` (el lenguaje, su runtime y sus abstracciones sobre todo esto).
+**Not applicable**: see `linux-administration-standards` (**day-to-day administration is theirs, without
+exception**: systemd units and their `Type=`/`Restart=`/dependencies, `journalctl` and retention,
+`systemd-analyze blame`, host networking, packages, time, and the **operational diagnosis** of a host that
+is slow or will not boot. **Precise boundary agreed from this side**: *the systemd knob is theirs, the
+kernel semantics behind it are mine* — `MemoryMax=` and `systemd-oomd` are configured there;
+**why `memory.high` throttles and `memory.max` kills, and why that is a design decision and not
+an accident, belongs here**), `performance-engineering-standards` (**the measurement methodology and
+profiling are theirs**: defining the latency objective as a percentile + concurrency + hardware,
+open/closed load models, coordinated omission, sampling, *flame graphs*, continuous profiling,
+USE and RED. **Arbitration rule: *"how is the number measured and how is it interpreted?" is theirs; "which
+OS mechanism produces that number and what do you change to move it?" belongs here***. A tuning of this
+skill without their measurement is superstition), `container-runtime-security-standards` (**container
+isolation as a security control is theirs**: seccomp profiles, alternative
+runtimes —gVisor, Kata—, escape, runtime detection, capabilities as Pod hardening.
+**Here only the mechanism**: what a namespace is, what it shares and what it does not, and why a container is not
+a virtual machine), `kernel-drivers-standards` (**direct sibling**: the **code** written
+inside the kernel, its concurrency —spinlocks, RCU, atomic contexts—, its DMA, its debugging with
+KASAN/lockdep and its upstream process. *"How do I write this driver?" is theirs; "why does the system
+behave like this?" belongs here*), `linux-hardening-standards` (CIS/STIG baseline and its measurement; security
+`sysctl`s are theirs, OS behaviour ones belong here), `selinux-standards`
+(MAC), `linux-storage-standards` and `zfs-standards` (LVM, RAID, block layers, ZFS — **durability
+semantics and `fsync` are argued here and implemented there**), `sre-practice-standards`
+(SLO, error budget), `observability-standards` (telemetry platform), `libvirt-kvm-standards`,
+`proxmox-ve-standards`, `vmware-standards`, `hyper-v-standards` and `xen-standards` (**operating the
+hypervisor is theirs**; here only what virtualisation implies for the program running inside:
+*steal time*, clock, virtual NUMA), `kubernetes-standards` (requests/limits as a declarative object;
+**here what the kernel does when that limit is reached**), `embedded-iot-standards` (**sibling**:
+the physical device, the RTOS and the superloop — **the hard real-time discussion is a
+shared boundary**: the criteria for what real time is and what `PREEMPT_RT` guarantees belong here, the
+choice of RTOS for an MCU is theirs), `bsd-systems-standards` and `aix-solaris-hpux-standards` (other
+operating systems as a production platform), `c-standards`, `cpp-standards`, `rust-standards`
+and `go-standards` (the language, its runtime and its abstractions over all of this).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web contra la versión de kernel concreta antes de fijar nada (§8). Estado
-> **verificado** a agosto de 2026 contra el árbol de `git.kernel.org` y `kernel.org`.
+> Verify on the web against the specific kernel version before committing to anything (§8). State
+> **verified** as of August 2026 against the `git.kernel.org` tree and `kernel.org`.
 
-| Tema | Default | Cuándo se desvía, y con qué prueba |
+| Topic | Default | When to deviate, and with what evidence |
 |---|---|---|
-| Planificación | **No tocar nada.** El planificador por defecto es correcto para el 95% de las cargas | Solo con medida que demuestre que la latencia de planificación —no la de otra cosa— es el cuello |
-| Prioridad de tiempo real | **Prohibida por defecto** en servicios de propósito general | Solo con `SCHED_FIFO`/`SCHED_RR` acotado, presupuesto de CPU limitado y watchdog: **un bucle a prioridad RT sin ceder CPU cuelga el núcleo** |
-| Fijado de CPU | No | Cuando hay aislamiento estricto de núcleos (`isolcpus`, `nohz_full`) y se ha medido la ganancia frente al coste de perder equilibrado |
-| Huge pages | **`madvise`**, no `always` | `always` solo tras medir; `hugetlbfs` con reserva cuando la base de datos o la VM lo pida explícitamente |
-| Overcommit | **Modo 0 (heurístico)**, el default del kernel | Modo 2 solo cuando se exige que la asignación falle en vez de que el proceso muera |
-| Swap | **Sí, con swap configurado** (aunque sea pequeño, o `zram`/`zswap`) | Sin swap el kernel pierde la vía de reclamar páginas anónimas frías y llega antes al OOM killer: "quitar el swap" **no evita el OOM, lo adelanta** |
-| Límite de memoria | **`memory.max`** como red de seguridad + **`memory.high`** para estrangular antes | Ver §6.2: son mecanismos distintos, no dos formas de lo mismo |
-| E/S de red concurrente | **`epoll` en modo *level-triggered***, ya sea directo o vía el runtime del lenguaje | `io_uring` solo con justificación medida y decisión de seguridad explícita (§5.3) |
-| Durabilidad | **`fsync`/`fdatasync` con el error tratado como fatal** | Nunca "reintentar el `fsync`" (§6.4) |
-| Aislamiento fuerte | Máquina virtual | El contenedor **comparte kernel**: si el modelo de amenaza incluye una escalada por fallo del kernel, el contenedor no es la frontera (§5.2) |
-| Tiempo real | **Casi siempre es tiempo real *blando*** y se resuelve con presupuesto de latencia y colas | `PREEMPT_RT` cuando el plazo es duro en Linux; RTOS o microkernel cuando el plazo es duro **y** hay que certificarlo |
+| Scheduling | **Do not touch anything.** The default scheduler is correct for 95% of workloads | Only with a measurement proving that scheduling latency —not something else— is the bottleneck |
+| Real-time priority | **Forbidden by default** in general-purpose services | Only with bounded `SCHED_FIFO`/`SCHED_RR`, a limited CPU budget and a watchdog: **a loop at RT priority that never yields hangs the core** |
+| CPU pinning | No | When there is strict core isolation (`isolcpus`, `nohz_full`) and the gain has been measured against the cost of losing balancing |
+| Huge pages | **`madvise`**, not `always` | `always` only after measuring; `hugetlbfs` with reservation when the database or the VM explicitly asks for it |
+| Overcommit | **Mode 0 (heuristic)**, the kernel default | Mode 2 only when it is required that the allocation fails instead of the process dying |
+| Swap | **Yes, with swap configured** (even a small one, or `zram`/`zswap`) | Without swap the kernel loses the way to reclaim cold anonymous pages and reaches the OOM killer sooner: "removing swap" **does not avoid the OOM, it brings it forward** |
+| Memory limit | **`memory.max`** as a safety net + **`memory.high`** to throttle beforehand | See §6.2: they are different mechanisms, not two forms of the same thing |
+| Concurrent network I/O | **`epoll` in *level-triggered* mode**, whether directly or via the language runtime | `io_uring` only with measured justification and an explicit security decision (§5.3) |
+| Durability | **`fsync`/`fdatasync` with the error treated as fatal** | Never "retry the `fsync`" (§6.4) |
+| Strong isolation | Virtual machine | The container **shares the kernel**: if the threat model includes an escalation through a kernel flaw, the container is not the boundary (§5.2) |
+| Real time | **It is almost always *soft* real time** and is solved with a latency budget and queues | `PREEMPT_RT` when the deadline is hard on Linux; an RTOS or a microkernel when the deadline is hard **and** it has to be certified |
 
-### 2.1 Planificador vigente — el dato que más se cita mal
+### 2.1 The current scheduler — the fact most often misquoted
 
-**CFS ya no es el planificador de la clase justa de Linux: es EEVDF.** Verbatim de
-`Documentation/scheduler/sched-eevdf.rst` en el árbol actual: *"The Linux kernel began transitioning
+**CFS is no longer Linux's fair-class scheduler: it is EEVDF.** Verbatim from
+`Documentation/scheduler/sched-eevdf.rst` in the current tree: *"The Linux kernel began transitioning
 to EEVDF in version 6.6 … moving away from the earlier Completely Fair Scheduler (CFS) in favor of a
-version of EEVDF proposed by Peter Zijlstra in 2023"*. Consecuencias prácticas:
+version of EEVDF proposed by Peter Zijlstra in 2023"*. Practical consequences:
 
-- Los *tunables* clásicos de CFS (`sched_latency_ns`, `sched_min_granularity_ns`) **ya no son el
-  modelo**; el parámetro relevante es la *rebanada* base (`sysctl_sched_base_slice`). **Cualquier
-  guía de tuning que hable de `sched_latency_ns` está describiendo un kernel que no tienes.**
-- EEVDF asigna a cada tarea una *petición* (rebanada) y un plazo virtual, y elige la de plazo más
-  temprano entre las que tienen *lag* no negativo. Traducción operativa: una tarea que despierta y
-  ha consumido poco **puede expulsar** a la que corre, lo cual **mejora** la latencia interactiva y
-  **puede empeorar** el rendimiento agregado de cargas de lotes. Si un cambio de kernel movió el
-  perfil de latencia de un servicio, este es el primer sospechoso.
-- **`nice` no es prioridad de tiempo real.** Es un peso dentro de la clase justa: un proceso con
-  `nice -20` sigue cediendo ante cualquier tarea `SCHED_FIFO`, y no garantiza plazo alguno.
-- **`sched_ext` (SCX)** está en mainline desde 6.12: permite cargar planificadores escritos en eBPF y
-  cambiarlos en caliente, y la jerarquía de clases queda `stop > deadline > rt > ext > fair (EEVDF)
-  > idle`. Es una herramienta real —hay despliegues en juegos y en servidores— **y también una vía
-  rápida a un comportamiento no reproducible**: si se usa, el planificador cargado forma parte de la
-  configuración versionada del sistema y se declara en cualquier informe de rendimiento.
+- The classic CFS *tunables* (`sched_latency_ns`, `sched_min_granularity_ns`) **are no longer the
+  model**; the relevant parameter is the base *slice* (`sysctl_sched_base_slice`). **Any
+  tuning guide that talks about `sched_latency_ns` is describing a kernel you do not have.**
+- EEVDF assigns each task a *request* (slice) and a virtual deadline, and picks the earliest-deadline
+  one among those with non-negative *lag*. Operational translation: a task that wakes up and
+  has consumed little **can preempt** the running one, which **improves** interactive latency and
+  **can worsen** the aggregate throughput of batch workloads. If a kernel change moved the
+  latency profile of a service, this is the first suspect.
+- **`nice` is not real-time priority.** It is a weight within the fair class: a process with
+  `nice -20` still yields to any `SCHED_FIFO` task, and it guarantees no deadline whatsoever.
+- **`sched_ext` (SCX)** has been in mainline since 6.12: it allows loading schedulers written in eBPF and
+  swapping them live, and the class hierarchy becomes `stop > deadline > rt > ext > fair (EEVDF)
+  > idle`. It is a real tool —there are deployments in games and on servers— **and also a fast
+  route to non-reproducible behaviour**: if it is used, the loaded scheduler is part of the
+  system's versioned configuration and is declared in any performance report.
 
-### 2.2 Tiempo real: duro, blando y `PREEMPT_RT`
+### 2.2 Real time: hard, soft and `PREEMPT_RT`
 
-**Tiempo real no significa rápido: significa acotado.** Un sistema de tiempo real duro es el que
-tiene un plazo cuyo incumplimiento es un fallo del sistema, no una degradación. Casi todo lo que se
-llama "tiempo real" en una discusión de backend es **tiempo real blando** y se resuelve con
-presupuesto de latencia, colas acotadas y degradación controlada — no tocando el planificador.
+**Real time does not mean fast: it means bounded.** A hard real-time system is one that
+has a deadline whose breach is a system failure, not a degradation. Almost everything
+called "real time" in a backend discussion is **soft real time** and is solved with a
+latency budget, bounded queues and controlled degradation — not by touching the scheduler.
 
-`PREEMPT_RT` **está en el árbol principal**, como opción de configuración. Verbatim de
+`PREEMPT_RT` **is in the mainline tree**, as a configuration option. Verbatim from
 `kernel/Kconfig.preempt`: *"This option turns the kernel into a real-time kernel by replacing various
 locking primitives (spinlocks, rwlocks, etc.) with preemptible priority-inheritance aware variants,
 enforcing interrupt threading and introducing mechanisms to break up long non-preemptible sections."*
-Lo que hay que saber antes de activarlo:
+What you must know before enabling it:
 
-- Depende de `EXPERT` y de `ARCH_SUPPORTS_RT`: **no todas las arquitecturas lo soportan**, y hay que
-  comprobarlo para la tuya.
-- **Reduce la latencia máxima a costa del rendimiento agregado.** Es un intercambio, no una mejora:
-  quien lo activa "por si acaso" paga throughput sin necesitarlo.
-- No convierte tu aplicación en tiempo real: si la aplicación reserva memoria en el camino crítico,
-  falla de página, toca disco o llama a un servicio remoto, el plazo lo rompe ella. `PREEMPT_RT`
-  garantiza el kernel, no tu código.
-- **Se verifica midiendo la latencia máxima con carga real** (`cyclictest` con la carga de fondo del
-  sistema, durante horas), no leyendo la configuración.
+- It depends on `EXPERT` and on `ARCH_SUPPORTS_RT`: **not every architecture supports it**, and you must
+  check for yours.
+- **It reduces maximum latency at the cost of aggregate throughput.** It is a trade-off, not an improvement:
+  whoever enables it "just in case" pays throughput without needing to.
+- It does not make your application real time: if the application allocates memory on the critical path,
+  page faults, touches disk or calls a remote service, it is the application that breaks the deadline. `PREEMPT_RT`
+  guarantees the kernel, not your code.
+- **It is verified by measuring maximum latency under real load** (`cyclictest` with the system's
+  background load, for hours), not by reading the configuration.
 
-### 2.3 Monolítico frente a microkernel — qué decide de verdad
+### 2.3 Monolithic versus microkernel — what actually decides
 
-El debate no lo decide la elegancia ni el rendimiento: lo deciden **la certificación y el
-ecosistema de drivers**.
+The debate is decided neither by elegance nor by performance: it is decided by **certification and the
+driver ecosystem**.
 
-| Sistema | Estado verificado (ago-2026) | Qué lo hace elegible |
+| System | Verified status (Aug 2026) | What makes it eligible |
 |---|---|---|
-| **Linux** (monolítico modular) | Mainline 7.2-rc6, stable 7.1.6, LTS 6.18/6.12/6.6/6.1/5.15/5.10 | **Ecosistema**: soporta más hardware en más arquitecturas que nada. Casi siempre es la respuesta |
-| **seL4** (microkernel) | Kernel bajo **GPL-2.0-only**, código de usuario mayoritariamente **BSD-2-Clause** (`LICENSE.md`, SPDX por fichero); con **nota de syscall** análoga a la de Linux: usar servicios del kernel por llamada normal **no** convierte tu código en obra derivada | **Verificación formal** del kernel. Elegible cuando la garantía matemática es un requisito (defensa, aviónica, aislamiento crítico) — y solo entonces, porque el ecosistema es mínimo |
-| **QNX** (microkernel, comercial) | Propietario, con soporte y certificaciones de seguridad funcional | **Automoción y sistemas críticos con certificación y soporte comercial**. Se paga por el papel, y a veces el papel es el requisito |
-| **Fuchsia / Zircon** (microkernel) | Vivo: release **F30 (2026-04-07)**; su despliegue comercial sigue siendo esencialmente pantallas inteligentes de Google | Interés técnico y de investigación. **No es una plataforma sobre la que construir producto de terceros hoy** |
-| **Redox** (microkernel, Rust) | **MIT** (`LICENSE` en `gitlab.redox-os.org`) | Proyecto de investigación e ingeniería de referencia. No es plataforma de producción |
+| **Linux** (modular monolithic) | Mainline 7.2-rc6, stable 7.1.6, LTS 6.18/6.12/6.6/6.1/5.15/5.10 | **Ecosystem**: it supports more hardware on more architectures than anything else. It is almost always the answer |
+| **seL4** (microkernel) | Kernel under **GPL-2.0-only**, user-space code mostly **BSD-2-Clause** (`LICENSE.md`, SPDX per file); with a **syscall note** analogous to Linux's: using kernel services through a normal call does **not** make your code a derivative work | **Formal verification** of the kernel. Eligible when the mathematical guarantee is a requirement (defence, avionics, critical isolation) — and only then, because the ecosystem is minimal |
+| **QNX** (microkernel, commercial) | Proprietary, with support and functional safety certifications | **Automotive and critical systems with certification and commercial support**. You pay for the paperwork, and sometimes the paperwork is the requirement |
+| **Fuchsia / Zircon** (microkernel) | Alive: release **F30 (2026-04-07)**; its commercial deployment is still essentially Google smart displays | Technical and research interest. **It is not a platform on which to build third-party product today** |
+| **Redox** (microkernel, Rust) | **MIT** (`LICENSE` at `gitlab.redox-os.org`) | A reference research and engineering project. Not a production platform |
 
-Regla: **elegir microkernel es elegir un ecosistema pequeño a cambio de una propiedad concreta**
-(verificación formal, aislamiento de drivers, certificación). Si no se puede nombrar esa propiedad
-y quién la exige por escrito, la respuesta es Linux.
+Rule: **choosing a microkernel is choosing a small ecosystem in exchange for a specific property**
+(formal verification, driver isolation, certification). If you cannot name that property
+and who requires it in writing, the answer is Linux.
 
-## 3. Modelo mental e invariantes
+## 3. Mental model and invariants
 
-Los seis invariantes que esta skill exige asumir en cualquier diseño:
+The six invariants this skill requires you to assume in any design:
 
-1. **Una llamada al sistema no es una llamada a función.** Cuesta el cambio de modo, más el coste de
-   las mitigaciones de ejecución especulativa activas en ese sistema, más el efecto sobre cachés y
-   TLB. Por eso existen el **vDSO** (`clock_gettime`, `getpid` y compañía resueltos sin entrar al
-   kernel), la E/S por lotes y `epoll` frente a un `poll` por descriptor. El coste **no es una
-   constante universal**: depende del hardware y de qué mitigaciones estén activas — **se mide en el
-   sistema objetivo**.
-2. **Un cambio de contexto cuesta más que su tiempo de CPU**: se paga sobre todo en cachés y TLB
-   fríos. De ahí que "más hilos" deje de ayudar mucho antes de lo que la intuición dice, y que la
-   afinidad de CPU importe.
-3. **`write()` no significa "en disco"; significa "en la caché de páginas"** (§6.4).
-4. **La memoria virtual no es memoria.** Reservar no es tocar; `Committed_AS` no es RSS; una página
-   solo existe cuando se falla sobre ella. Medir "memoria usada" por el tamaño virtual es medir
-   nada.
-5. **El contenedor comparte kernel.** Todo lo que aísla son namespaces, cgroups, capabilities y
-   filtrado de llamadas: mecanismos del mismo kernel que se comparte (§5.2).
-6. **Bajo un hipervisor, el reloj y la CPU mienten.** *Steal time* significa que tu vCPU estaba
-   lista y no corría; una latencia inexplicable en una VM se busca **primero** ahí, y una medida de
-   tiempo tomada dentro de un invitado tiene ruido que no existe en bare metal.
+1. **A system call is not a function call.** It costs the mode switch, plus the cost of
+   the speculative execution mitigations active on that system, plus the effect on caches and
+   TLB. That is why the **vDSO** exists (`clock_gettime`, `getpid` and company resolved without entering the
+   kernel), along with batched I/O and `epoll` versus one `poll` per descriptor. The cost **is not a
+   universal constant**: it depends on the hardware and on which mitigations are active — **it is measured on the
+   target system**.
+2. **A context switch costs more than its CPU time**: it is paid mostly in cold caches and TLB.
+   Hence "more threads" stops helping far sooner than intuition says, and CPU
+   affinity matters.
+3. **`write()` does not mean "on disk"; it means "in the page cache"** (§6.4).
+4. **Virtual memory is not memory.** Reserving is not touching; `Committed_AS` is not RSS; a page
+   only exists when it is faulted on. Measuring "memory used" by virtual size is measuring
+   nothing.
+5. **The container shares the kernel.** All that isolates it is namespaces, cgroups, capabilities and
+   syscall filtering: mechanisms of the very kernel that is shared (§5.2).
+6. **Under a hypervisor, the clock and the CPU lie.** *Steal time* means your vCPU was
+   ready and was not running; unexplained latency in a VM is looked for **there first**, and a time
+   measurement taken inside a guest has noise that does not exist on bare metal.
 
-## 4. Cómo se verifica una afirmación sobre el sistema (calidad)
+## 4. How an assertion about the system is verified (quality)
 
-Esta skill no tiene *linter*; tiene una disciplina, y es un gate: **una afirmación sobre el
-comportamiento del SO no entra en un diseño, un informe ni un postmortem sin una de estas tres
-pruebas**:
+This skill has no *linter*; it has a discipline, and it is a gate: **an assertion about
+OS behaviour does not enter a design, a report or a postmortem without one of these three
+proofs**:
 
-1. **Cita de la documentación del kernel de la versión concreta** (`docs.kernel.org` o el fichero en
-   crudo de `git.kernel.org`; `man 2`/`man 7` para la interfaz de usuario). No de un blog, no de
-   memoria — la mitad de las guías de tuning que circulan describen kernels de hace diez años (§2.1
-   es el ejemplo canónico).
-2. **Lectura del estado real del sistema**: `/proc/pressure/*`, `/sys/fs/cgroup/.../memory.*`,
+1. **A quote from the kernel documentation of the specific version** (`docs.kernel.org` or the raw file
+   from `git.kernel.org`; `man 2`/`man 7` for the user interface). Not from a blog, not from
+   memory — half the tuning guides in circulation describe kernels from ten years ago (§2.1
+   is the canonical example).
+2. **Reading the real state of the system**: `/proc/pressure/*`, `/sys/fs/cgroup/.../memory.*`,
    `/proc/meminfo`, `/proc/interrupts`, `numastat`, `/sys/kernel/mm/transparent_hugepage/enabled`,
-   `chrt -p`, `taskset -pc`, `uname -r`. **El sistema sabe cómo está configurado; nadie más.**
-3. **Medida antes/después con la carga real**, con la metodología de
-   `performance-engineering-standards` y variando **un** parámetro. Un ajuste de `sysctl` sin
-   medición previa y posterior es folclore, y se revierte.
+   `chrt -p`, `taskset -pc`, `uname -r`. **The system knows how it is configured; nobody else does.**
+3. **A before/after measurement with the real load**, with the methodology of
+   `performance-engineering-standards` and varying **one** parameter. A `sysctl` tweak without prior
+   and subsequent measurement is folklore, and it gets reverted.
 
-Reglas adicionales: **el experimento se hace en un sistema idéntico al de producción** (misma
-versión de kernel, mismo hipervisor, mismo sistema de ficheros) — un resultado obtenido en el portátil
-no dice nada del servidor. Y **todo cambio de `sysctl`, parámetro de arranque o política de
-planificación se versiona como código** con el motivo escrito; un `sysctl` puesto a mano en
-producción desaparece en el siguiente reinicio, y su ausencia se diagnostica como "regresión
-misteriosa".
+Additional rules: **the experiment is run on a system identical to production** (same
+kernel version, same hypervisor, same filesystem) — a result obtained on a laptop
+says nothing about the server. And **every `sysctl` change, boot parameter or scheduling
+policy is versioned as code** with the reason written down; a `sysctl` set by hand in
+production disappears at the next reboot, and its absence gets diagnosed as a "mysterious
+regression".
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-### 5.1 La frontera que importa es el cambio de privilegio
-La superficie de ataque del sistema es **el conjunto de llamadas al sistema y de interfaces del
-kernel que un proceso puede alcanzar**. Reducirla es más eficaz que endurecer al proceso: menos
-llamadas alcanzables, menos código del kernel expuesto a entrada hostil. Los mecanismos concretos
-—perfiles seccomp, MAC, capabilities del Pod— son de las skills hermanas; **lo que esta skill fija
-es el criterio**: todo servicio expuesto corre con el conjunto mínimo de capacidades y de llamadas
-que necesita, y ese conjunto se determina observando, no adivinando.
+### 5.1 The boundary that matters is the privilege transition
+The system's attack surface is **the set of system calls and kernel interfaces
+a process can reach**. Reducing it is more effective than hardening the process: fewer
+reachable calls, less kernel code exposed to hostile input. The concrete mechanisms
+—seccomp profiles, MAC, Pod capabilities— belong to the sibling skills; **what this skill fixes
+is the criteria**: every exposed service runs with the minimum set of capabilities and calls
+it needs, and that set is determined by observing, not by guessing.
 
-### 5.2 Namespaces y capabilities: la sustancia real del contenedor
-- Un contenedor **es** un proceso con namespaces (pid, mount, net, uts, ipc, user, cgroup, time),
-  un cgroup con límites, un conjunto de capabilities y un filtro de llamadas. **No hay nada más.**
-  No hay hipervisor, no hay frontera de hardware: **el kernel es uno y es el mismo**.
-- **`CAP_SYS_ADMIN` es equivalente a root** a efectos prácticos: agrupa tantas operaciones distintas
-  que concederla anula el resto del ejercicio de mínimo privilegio.
-- **El *user namespace* es el que cambia el modelo**, porque permite que el root del contenedor no
-  sea el root del host. También ha sido, históricamente, fuente de vulnerabilidades por sí mismo:
-  es un intercambio consciente, no una mejora gratuita.
-- **Regla dura de diseño**: si el modelo de amenaza incluye *"el atacante controla el proceso y hay
-  un fallo del kernel"*, **el contenedor no es la frontera de seguridad**. Ahí van máquina virtual o
-  runtime con kernel propio. Decidir eso es una decisión de arquitectura, y se documenta.
-- **Lo que un namespace no aísla también es diseño**: el reloj (salvo *time namespace*), el
-  planificador, el estado del kernel, muchos ficheros de `/proc` y `/sys`, y —crucialmente para el
-  rendimiento— **la información que ven las bibliotecas de tiempo de ejecución**: un runtime que lee
-  el número de CPU del host dentro de un contenedor limitado a media CPU dimensionará mal su pool de
-  hilos y se auto-estrangulará (§6.3).
+### 5.2 Namespaces and capabilities: the real substance of the container
+- A container **is** a process with namespaces (pid, mount, net, uts, ipc, user, cgroup, time),
+  a cgroup with limits, a set of capabilities and a syscall filter. **There is nothing else.**
+  There is no hypervisor, there is no hardware boundary: **the kernel is one and it is the same one**.
+- **`CAP_SYS_ADMIN` is equivalent to root** for practical purposes: it groups so many different operations
+  that granting it voids the rest of the least-privilege exercise.
+- **The *user namespace* is what changes the model**, because it lets the container's root not
+  be the host's root. It has also, historically, been a source of vulnerabilities in itself:
+  it is a conscious trade-off, not a free improvement.
+- **Hard design rule**: if the threat model includes *"the attacker controls the process and there is
+  a kernel flaw"*, **the container is not the security boundary**. That calls for a virtual machine or a
+  runtime with its own kernel. Deciding that is an architecture decision, and it is documented.
+- **What a namespace does not isolate is also design**: the clock (except with a *time namespace*), the
+  scheduler, kernel state, many files under `/proc` and `/sys`, and —crucially for
+  performance— **the information the runtime libraries see**: a runtime that reads
+  the host's CPU count inside a container limited to half a CPU will size its thread pool wrongly
+  and throttle itself (§6.3).
 
-### 5.3 `io_uring`: rendimiento con un historial que hay que conocer
-`io_uring` es la interfaz de E/S asíncrona moderna de Linux y es genuinamente rápida. **También ha
-sido, con diferencia, la fuente más productiva de escaladas de privilegio del kernel de los últimos
-años**: Google reportó en 2023 que el **60% de los exploits** enviados a su programa de recompensas
-en 2022 explotaban `io_uring`, y que estuvo presente en **todas** las entregas que sortearon sus
-mitigaciones. Las consecuencias siguen vigentes y son operativas: **Google lo deshabilitó en
-ChromeOS** (a nivel de compilación) y lo restringió en Android y en sus servidores, y **Docker y
-containerd lo retiraron de su perfil seccomp por defecto** — de modo que **en un contenedor con el
-perfil estándar, `io_uring` simplemente no funciona**, y ese es un descubrimiento caro si se hace en
-producción. El subsistema ha madurado mucho desde entonces y sigue recibiendo CVE por su superficie
-creciente.
+### 5.3 `io_uring`: performance with a history you must know
+`io_uring` is Linux's modern asynchronous I/O interface and it is genuinely fast. **It has also
+been, by a wide margin, the most productive source of kernel privilege escalations of recent
+years**: Google reported in 2023 that **60% of the exploits** submitted to its bounty programme
+in 2022 exploited `io_uring`, and that it was present in **every** submission that bypassed its
+mitigations. The consequences are still current and operational: **Google disabled it in
+ChromeOS** (at compile time) and restricted it in Android and on its servers, and **Docker and
+containerd removed it from their default seccomp profile** — so that **in a container with the
+standard profile, `io_uring` simply does not work**, and that is an expensive discovery if it is made in
+production. The subsystem has matured a great deal since then and still receives CVEs because of its growing
+surface.
 
-**Criterio**: `io_uring` se habilita **deliberadamente, para la carga que lo justifique con una
-medida**, con la decisión de riesgo escrita — no por defecto en todas partes. Si la ganancia sobre
-`epoll` no se ha medido, no hay caso.
+**Criteria**: `io_uring` is enabled **deliberately, for the workload that justifies it with a
+measurement**, with the risk decision written down — not by default everywhere. If the gain over
+`epoll` has not been measured, there is no case.
 
-### 5.4 Los mecanismos del SO como control, no como accidente
-Límites de recursos (`RLIMIT_*`, `cgroup v2`), `oom_score_adj`, `sysctl` de comportamiento y
-namespaces **son controles de disponibilidad**: un proceso sin límite de memoria en un host
-compartido es una denegación de servicio esperando a ocurrir, y la víctima que elija el OOM killer
-probablemente no será el culpable (§6.2). Se configuran a propósito y se documentan.
+### 5.4 OS mechanisms as a control, not as an accident
+Resource limits (`RLIMIT_*`, `cgroup v2`), `oom_score_adj`, behaviour `sysctl`s and
+namespaces **are availability controls**: a process with no memory limit on a shared
+host is a denial of service waiting to happen, and the victim the OOM killer picks
+probably will not be the culprit (§6.2). They are configured on purpose and documented.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-### 6.1 Memoria virtual, TLB y huge pages
-Cada acceso a memoria pasa por la traducción de dirección; el **TLB** la acelera y es pequeño. Una
-carga con conjunto de trabajo grande y acceso disperso puede pasar una fracción significativa de su
-tiempo en fallos de TLB **sin que aparezca en ningún perfil de CPU como algo reconocible**. Las
-*huge pages* atacan exactamente eso: menos entradas para cubrir la misma memoria.
+### 6.1 Virtual memory, TLB and huge pages
+Every memory access goes through address translation; the **TLB** speeds it up and it is small. A
+workload with a large working set and scattered access can spend a significant fraction of its
+time in TLB misses **without it showing up in any CPU profile as anything recognisable**. *Huge
+pages* attack exactly that: fewer entries to cover the same memory.
 
-**Pero THP no es gratis** y la propia documentación del kernel lo dice. Verbatim de
+**But THP is not free** and the kernel's own documentation says so. Verbatim from
 `Documentation/admin-guide/mm/transhuge.rst`: *"In certain cases when hugepages are enabled system
-wide, application may end up allocating more memory resources"*, y la recomendación explícita:
+wide, application may end up allocating more memory resources"*, and the explicit recommendation:
 *"Applications that gets a lot of benefit from hugepages and that don't risk to lose memory by using
-hugepages, should use madvise(MADV_HUGEPAGE) on their critical mmapped regions"*, con la regla dura
-para el otro extremo del espectro: *"Embedded systems should enable hugepages only inside madvise
-regions to eliminate any risk of wasting any precious byte of memory"*. De ahí el default de §2:
-**`madvise`, no `always`** — `always` tiene historial de latencias erráticas por compactación y de
-memoria desperdiciada, y varias bases de datos recomiendan desactivarlo. **Se decide midiendo, y la
-decisión se documenta.**
+hugepages, should use madvise(MADV_HUGEPAGE) on their critical mmapped regions"*, with the hard rule
+for the other end of the spectrum: *"Embedded systems should enable hugepages only inside madvise
+regions to eliminate any risk of wasting any precious byte of memory"*. Hence the §2 default:
+**`madvise`, not `always`** — `always` has a history of erratic latencies from compaction and of
+wasted memory, and several databases recommend disabling it. **It is decided by measuring, and the
+decision is documented.**
 
-### 6.2 Overcommit, OOM killer y límites — decisiones de diseño, no accidentes
-Linux **sobrecompromete memoria por defecto**, y eso es una elección deliberada. Verbatim de
-`Documentation/mm/overcommit-accounting.rst`, modo 0: *"Heuristic overcommit handling. Obvious
+### 6.2 Overcommit, OOM killer and limits — design decisions, not accidents
+Linux **overcommits memory by default**, and that is a deliberate choice. Verbatim from
+`Documentation/mm/overcommit-accounting.rst`, mode 0: *"Heuristic overcommit handling. Obvious
 overcommits of address space are refused. Used for a typical system. It ensures a seriously wild
-allocation fails while allowing overcommit to reduce swap usage. This is the default."* Y modo 2:
+allocation fails while allowing overcommit to reduce swap usage. This is the default."* And mode 2:
 *"Don't overcommit … in most situations this means a process will not be killed while accessing
 pages but will receive errors on memory allocation as appropriate."*
 
-**Ahí está el intercambio completo, y es una decisión de arquitectura**: o el sistema promete lo que
-no tiene y algún día mata a alguien (modo 0/1), o rechaza asignaciones antes y el fallo aparece como
-error manejable en el punto de asignación (modo 2). Elegir modo 2 exige que las aplicaciones
-**manejen el fallo de asignación**, lo que muchas no hacen. Elegir el default significa aceptar que
-**el OOM killer es parte del diseño del sistema** y que hay que decirle a quién preferir: eso es
-`oom_score_adj` y la asignación de límites por servicio, no una plegaria.
+**That is the whole trade-off, and it is an architecture decision**: either the system promises what
+it does not have and one day kills somebody (mode 0/1), or it refuses allocations earlier and the failure appears as
+a manageable error at the point of allocation (mode 2). Choosing mode 2 requires applications to
+**handle the allocation failure**, which many do not. Choosing the default means accepting that
+**the OOM killer is part of the system's design** and that you must tell it whom to prefer: that is
+`oom_score_adj` and per-service limit allocation, not a prayer.
 
-En `cgroup v2` hay **dos mecanismos distintos**, y confundirlos es el error habitual. Verbatim de
+In `cgroup v2` there are **two different mechanisms**, and confusing them is the usual mistake. Verbatim from
 `Documentation/admin-guide/cgroup-v2.rst`:
 - `memory.high`: *"Memory usage throttle limit. If a cgroup's usage goes over the high boundary, the
   processes of the cgroup are throttled and put under heavy reclaim pressure. **Going over the high
@@ -291,147 +291,146 @@ En `cgroup v2` hay **dos mecanismos distintos**, y confundirlos es el error habi
   cgroup. If a cgroup's memory usage reaches this limit and can't be reduced, **the OOM killer is
   invoked in the cgroup**."*
 
-Traducción a criterio: **`memory.high` es la señal y el freno; `memory.max` es el disparo.** El
-diseño correcto pone `high` por debajo de `max` para que el sistema estrangule y avise antes de
-matar, y **vigila la presión (PSI, `/proc/pressure/memory` y `memory.pressure`)**: la presión sube
-mucho antes de que llegue la muerte, y es la única señal que permite reaccionar a tiempo. Un
-servicio con solo `max` no tiene aviso previo, tiene autopsia. Lo mismo con CPU: `cpu.max` produce
-*throttling* que se ve como latencia de cola inexplicable — **la métrica de estrangulamiento del
-cgroup es de recogida obligatoria** en cualquier despliegue con límites.
+Translated into criteria: **`memory.high` is the signal and the brake; `memory.max` is the trigger.** The
+correct design puts `high` below `max` so the system throttles and warns before
+killing, and **watches the pressure (PSI, `/proc/pressure/memory` and `memory.pressure`)**: pressure rises
+long before death arrives, and it is the only signal that allows reacting in time. A
+service with only `max` has no advance warning, it has an autopsy. Same with CPU: `cpu.max` produces
+*throttling* that shows up as unexplained tail latency — **the cgroup's throttling metric
+is mandatory to collect** in any deployment with limits.
 
-### 6.3 NUMA, virtualización y lo que el proceso cree saber de la máquina
-- **NUMA**: en un servidor de varios sockets, la memoria remota es más lenta y su ancho de banda es
-  compartido. Un proceso cuyos hilos migran entre nodos y cuya memoria está en el nodo equivocado
-  paga sin que nada lo indique. Se mira `numastat` antes de teorizar; se ancla (`numactl`) solo con
-  medida, porque anclar mal es peor que no anclar.
-- **Virtualización**: *steal time* (la vCPU lista que no corría) es lo primero que se mira ante
-  latencia inexplicable dentro de una VM; el *ballooning* puede retirar memoria bajo los pies del
-  invitado; y la paravirtualización (virtio) frente a la emulación completa cambia el rendimiento de
-  E/S en órdenes de magnitud — **saber cuál está en uso es un dato, no una curiosidad**.
-- **Lo que el proceso cree saber**: número de CPU, memoria total y topología leídos del host dentro
-  de un contenedor limitado producen pools de hilos y heaps mal dimensionados, y el resultado es
-  auto-estrangulamiento. **Todo runtime que dimensione recursos automáticamente se configura
-  explícitamente en entornos con límites.** Es una de las causas más comunes y más silenciosas de
-  latencia en Kubernetes.
+### 6.3 NUMA, virtualisation and what the process thinks it knows about the machine
+- **NUMA**: on a multi-socket server, remote memory is slower and its bandwidth is
+  shared. A process whose threads migrate between nodes and whose memory is on the wrong node
+  pays for it with nothing to indicate it. Look at `numastat` before theorising; pin (`numactl`) only with a
+  measurement, because pinning badly is worse than not pinning.
+- **Virtualisation**: *steal time* (the ready vCPU that was not running) is the first thing to look at when facing
+  unexplained latency inside a VM; *ballooning* can pull memory out from under the
+  guest; and paravirtualisation (virtio) versus full emulation changes I/O
+  performance by orders of magnitude — **knowing which one is in use is a fact, not a curiosity**.
+- **What the process thinks it knows**: CPU count, total memory and topology read from the host inside
+  a limited container produce badly sized thread pools and heaps, and the result is
+  self-throttling. **Every runtime that sizes resources automatically is configured
+  explicitly in environments with limits.** It is one of the most common and most silent causes of
+  latency in Kubernetes.
 
-### 6.4 Durabilidad: "lo escribí" no significa "está en disco"
-Un `write()` con éxito deja el dato en la **caché de páginas**; el kernel lo escribirá cuando le
-convenga. Solo `fsync`/`fdatasync` (o `O_DIRECT` con las condiciones adecuadas, o `O_SYNC`) piden la
-persistencia — y aun así, **si el disco tiene caché volátil y las barreras de escritura están
-desactivadas, el dato puede seguir sin estar en medio estable**. Toda promesa de durabilidad
-depende de la cadena completa: aplicación → sistema de ficheros → capa de bloques → controlador →
-disco. **Un eslabón mentiroso invalida la cadena entera.**
+### 6.4 Durability: "I wrote it" does not mean "it is on disk"
+A successful `write()` leaves the data in the **page cache**; the kernel will write it when it
+sees fit. Only `fsync`/`fdatasync` (or `O_DIRECT` under the right conditions, or `O_SYNC`) ask for
+persistence — and even then, **if the disk has a volatile cache and write barriers are
+disabled, the data may still not be on stable media**. Every durability promise
+depends on the whole chain: application → filesystem → block layer → controller →
+disk. **One lying link invalidates the entire chain.**
 
-**Y `fsync` puede mentir de una manera concreta y bien documentada.** El episodio conocido como
-*fsyncgate* (PostgreSQL, 2018) estableció el modelo mental correcto: cuando la escritura diferida
-falla, el kernel marca el error y lo **entrega una sola vez**; un segundo `fsync` sobre el mismo
-descriptor **puede devolver éxito aunque el dato nunca llegara a disco**, porque el error ya se
-consumió y las páginas se marcaron limpias. El propio Linux mejoró el reporte de errores de
-*writeback* (infraestructura `errseq_t` a partir de 4.13 y refinamientos posteriores), pero **la
-regla de diseño que salió de ahí sigue siendo la correcta y es la de esta skill**:
+**And `fsync` can lie in a specific and well-documented way.** The episode known as
+*fsyncgate* (PostgreSQL, 2018) established the correct mental model: when the deferred write
+fails, the kernel marks the error and **delivers it only once**; a second `fsync` on the same
+descriptor **may return success even though the data never reached disk**, because the error was already
+consumed and the pages were marked clean. Linux itself improved *writeback* error
+reporting (the `errseq_t` infrastructure from 4.13 onwards and later refinements), but **the
+design rule that came out of it is still the correct one and it is this skill's**:
 
-> **Un `fsync` fallido es un fallo fatal, no un reintento.** No se puede reescribir el buffer
-> —tanto el de la aplicación como el del kernel pueden estar ya reutilizados—; la única recuperación
-> válida es abortar y reconstruir desde el registro (WAL) o desde la copia.
+> **A failed `fsync` is a fatal failure, not a retry.** The buffer cannot be rewritten
+> —both the application's and the kernel's may already have been reused—; the only valid
+> recovery is to abort and rebuild from the log (WAL) or from the copy.
 
-Es exactamente lo que hizo PostgreSQL: entrar en pánico ante `fsync` fallido, cambio retroportado a
-todas las ramas soportadas. **Cualquier código propio que persista datos y trate `fsync` como
-reintentable tiene el mismo fallo latente.** Corolario para el diseño de sistemas: **si el dato
-importa, la durabilidad se prueba arrancando la máquina de un tirón** (corte de alimentación real o
-simulado a nivel de dispositivo) y comprobando que el último commit reconocido sobrevive. Una
-promesa de durabilidad sin esa prueba es una suposición.
+That is exactly what PostgreSQL did: panic on a failed `fsync`, a change backported to
+all supported branches. **Any of your own code that persists data and treats `fsync` as
+retryable has the same latent flaw.** Corollary for systems design: **if the data
+matters, durability is tested by yanking the machine's power** (a real or
+device-level simulated power cut) and checking that the last acknowledged commit survives. A
+durability promise without that test is an assumption.
 
-### 6.5 Modelo de E/S
-- **Bloqueante con un hilo por conexión** escala hasta donde escale el número de hilos; es simple y
-  correcto, y sigue siendo la respuesta correcta para concurrencias moderadas. No se descarta por
-  moda.
-- **`epoll` en modo *level-triggered*** es el default para alta concurrencia: el *edge-triggered* es
-  más rápido en el papel y **es una fuente clásica de fallos por eventos perdidos** si no se drena
-  el descriptor por completo. Se elige `epoll` casi siempre a través del runtime del lenguaje, no a
-  mano.
-- **`O_DIRECT` esquiva la caché de páginas**: útil cuando la aplicación gestiona su propia caché
-  (bases de datos), **contraproducente en casi todo lo demás**, y con requisitos estrictos de
-  alineamiento que se incumplen fácil.
-- **La escritura diferida (*dirty writeback*) es un pico de latencia esperándote**: acumular
-  gigabytes de páginas sucias y vaciarlas de golpe produce paradas visibles. Si el perfil de
-  escritura es grande y a ráfagas, los umbrales de páginas sucias **son un parámetro de diseño**, no
-  un ajuste esotérico.
+### 6.5 I/O model
+- **Blocking with one thread per connection** scales as far as the thread count scales; it is simple and
+  correct, and it is still the right answer for moderate concurrency. It is not discarded out of
+  fashion.
+- **`epoll` in *level-triggered* mode** is the default for high concurrency: *edge-triggered* is
+  faster on paper and **is a classic source of bugs from lost events** if the descriptor is not
+  fully drained. `epoll` is almost always chosen through the language runtime, not by
+  hand.
+- **`O_DIRECT` bypasses the page cache**: useful when the application manages its own cache
+  (databases), **counterproductive in almost everything else**, and with strict alignment
+  requirements that are easily breached.
+- **Deferred writing (*dirty writeback*) is a latency spike waiting for you**: accumulating
+  gigabytes of dirty pages and flushing them all at once produces visible stalls. If the write
+  profile is large and bursty, the dirty page thresholds **are a design parameter**, not
+  an esoteric tweak.
 
-## 7. Sostenibilidad a largo plazo y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-- **La versión de kernel es una decisión de arquitectura con fecha.** Se elige una rama **LTS**
-  soportada, se conoce su EOL y se planifica el salto **antes** de que llegue. Un ajuste validado en
-  una versión **se revalida** al saltar: EEVDF (§2.1) es la demostración de que un cambio de
-  planificador puede mover el perfil de latencia de un servicio sin que nadie tocara el código.
-- **Todo `sysctl`, parámetro de arranque, política de planificación y límite de cgroup vive como
-  código versionado**, con el motivo y la medida que lo justificó. Sin eso, dentro de un año nadie
-  sabrá si se puede quitar — y no se quitará nunca.
+- **The kernel version is an architecture decision with a date.** A supported **LTS** branch
+  is chosen, its EOL is known and the jump is planned **before** it arrives. A tuning validated on
+  one version **is revalidated** on the jump: EEVDF (§2.1) is the demonstration that a scheduler
+  change can move a service's latency profile without anybody touching the code.
+- **Every `sysctl`, boot parameter, scheduling policy and cgroup limit lives as
+  versioned code**, with the reason and the measurement that justified it. Without that, in a year nobody
+  will know whether it can be removed — and it will never be removed.
 
-Prohibiciones explícitas:
-- ❌ **Tocar el planificador, `sysctl` de memoria o parámetros de E/S sin medida antes y después**, y
-  sin variar un solo parámetro por experimento. PROHIBIDO el "tuning" copiado de un blog.
-- ❌ **Citar `sched_latency_ns`, `sched_min_granularity_ns` o "CFS" como si describieran el
-  planificador vigente.** Es EEVDF desde 6.6 (§2.1).
-- ❌ **Dar prioridad de tiempo real (`SCHED_FIFO`/`SCHED_RR`) a un proceso que puede consumir CPU sin
-  ceder.** Cuelga el núcleo. Si se hace, con presupuesto de CPU acotado y prueba de que no lo agota.
-- ❌ **Reintentar un `fsync` fallido** o suponer que un `write()` con éxito es durable (§6.4).
-  PROHIBIDO, sin matices.
-- ❌ **Desactivar el swap "para que no haya OOM"**: adelanta el OOM en vez de evitarlo.
-- ❌ **Desactivar el OOM killer globalmente** o poner `oom_score_adj` al mínimo en servicios grandes
-  sin haber pensado a quién quieres que mate el sistema en su lugar.
-- ❌ **Poner `memory.max` sin `memory.high` ni vigilancia de PSI**: es elegir la autopsia sobre el
-  aviso (§6.2).
-- ❌ **Desplegar con límites de CPU y no recoger la métrica de estrangulamiento del cgroup.** Es
-  latencia de cola invisible por construcción.
-- ❌ **Dejar que un runtime dimensione hilos o heap leyendo la topología del host dentro de un
-  contenedor limitado.**
-- ❌ **Tratar el contenedor como frontera de seguridad frente a un atacante con ejecución de código**
-  cuando el modelo de amenaza incluye fallos del kernel (§5.2).
-- ❌ **Conceder `CAP_SYS_ADMIN`** y llamar a eso mínimo privilegio.
-- ❌ **Habilitar `io_uring` por defecto** sin decisión de riesgo escrita y sin ganancia medida (§5.3).
-- ❌ **`transparent_hugepage=always` sin medir**, especialmente bajo bases de datos.
-- ❌ **Activar `PREEMPT_RT` "por si acaso"**: se paga en rendimiento agregado y no arregla una
-  aplicación que reserva memoria o toca disco en el camino crítico (§2.2).
-- ❌ **Elegir microkernel sin poder nombrar la propiedad concreta que se necesita y quién la exige**
+Explicit prohibitions:
+- ❌ **Touching the scheduler, memory `sysctl`s or I/O parameters without a before-and-after measurement**, and
+  without varying a single parameter per experiment. FORBIDDEN: "tuning" copied from a blog.
+- ❌ **Quoting `sched_latency_ns`, `sched_min_granularity_ns` or "CFS" as if they described the
+  current scheduler.** It has been EEVDF since 6.6 (§2.1).
+- ❌ **Giving real-time priority (`SCHED_FIFO`/`SCHED_RR`) to a process that can consume CPU without
+  yielding.** It hangs the core. If it is done, with a bounded CPU budget and proof that it does not exhaust it.
+- ❌ **Retrying a failed `fsync`** or assuming that a successful `write()` is durable (§6.4).
+  FORBIDDEN, with no nuance.
+- ❌ **Disabling swap "so there is no OOM"**: it brings the OOM forward instead of avoiding it.
+- ❌ **Disabling the OOM killer globally** or setting `oom_score_adj` to the minimum in large services
+  without having thought about whom you want the system to kill instead.
+- ❌ **Setting `memory.max` without `memory.high` and without watching PSI**: it is choosing the autopsy over the
+  warning (§6.2).
+- ❌ **Deploying with CPU limits and not collecting the cgroup's throttling metric.** It is
+  tail latency invisible by construction.
+- ❌ **Letting a runtime size threads or heap by reading the host's topology inside a
+  limited container.**
+- ❌ **Treating the container as a security boundary against an attacker with code execution**
+  when the threat model includes kernel flaws (§5.2).
+- ❌ **Granting `CAP_SYS_ADMIN`** and calling that least privilege.
+- ❌ **Enabling `io_uring` by default** without a written risk decision and without a measured gain (§5.3).
+- ❌ **`transparent_hugepage=always` without measuring**, especially under databases.
+- ❌ **Enabling `PREEMPT_RT` "just in case"**: it is paid for in aggregate throughput and it does not fix an
+  application that allocates memory or touches disk on the critical path (§2.2).
+- ❌ **Choosing a microkernel without being able to name the specific property needed and who requires it**
   (§2.3).
-- ❌ **Medir "memoria usada" por el tamaño virtual del proceso.**
-- ❌ **Extrapolar una medida tomada en el portátil, en otra versión de kernel o en otro hipervisor.**
+- ❌ **Measuring "memory used" by the process's virtual size.**
+- ❌ **Extrapolating a measurement taken on a laptop, on another kernel version or on another hypervisor.**
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Fuentes autoritativas: `kernel.org` y `docs.kernel.org`, el fichero en crudo del árbol
-(`git.kernel.org/.../plain/...`, que evita cualquier resumidor de por medio), `man7.org` para las
-interfaces de usuario, y `lwn.net` para el contexto y la historia de un subsistema. Comprobar antes
-de fijar nada:
+Authoritative sources: `kernel.org` and `docs.kernel.org`, the raw file from the tree
+(`git.kernel.org/.../plain/...`, which avoids any summariser in between), `man7.org` for the user
+interfaces, and `lwn.net` for a subsystem's context and history. Check before
+committing to anything:
 
-1. **Versión de kernel del sistema objetivo** y **qué ramas LTS siguen soportadas y hasta cuándo**
-   (`kernel.org/releases.json`). Todo lo demás depende de este dato.
-2. **Planificador vigente y sus parámetros** en `Documentation/scheduler/` de esa versión, y estado
-   de `sched_ext`. Verificado a ago-2026: **EEVDF** desde 6.6, `sched_ext` en mainline desde 6.12.
-3. **`PREEMPT_RT`**: soporte de tu arquitectura (`ARCH_SUPPORTS_RT`) y estado de las opciones en
-   `kernel/Kconfig.preempt` de esa versión.
-4. **Semántica exacta de los ficheros de `cgroup v2`** que vayas a usar en
-   `Documentation/admin-guide/cgroup-v2.rst` **de tu kernel**: los ficheros y su comportamiento se
-   añaden y se matizan entre versiones.
-5. **Modos de overcommit y comportamiento del OOM** en `Documentation/mm/` de tu versión.
-6. **Estado de seguridad de `io_uring`**: CVE recientes, si tu distribución lo trae habilitado, y si
-   el perfil seccomp por defecto de tu runtime de contenedores lo bloquea (a ago-2026, Docker y
-   containerd lo bloquean en `RuntimeDefault`).
-7. **Semántica de durabilidad de tu sistema de ficheros concreto** (ext4, XFS, Btrfs, ZFS, NFS) y de
-   la pila de bloques: modo de *journal*, barreras de escritura, y si la caché del dispositivo es
-   volátil. **NFS y los sistemas de ficheros en red tienen semántica propia** y no se asume la de
-   local.
-8. **Estado de los proyectos citados en §2.3** si van a decidir algo: última release y despliegue
-   real de Fuchsia, licencias de seL4 y Redox leídas **del fichero en crudo del repositorio**
-   (seL4 vive en GitHub, **Redox en `gitlab.redox-os.org`**), y las condiciones comerciales de QNX.
+1. **The target system's kernel version** and **which LTS branches are still supported and until when**
+   (`kernel.org/releases.json`). Everything else depends on this fact.
+2. **The current scheduler and its parameters** in `Documentation/scheduler/` of that version, and the status
+   of `sched_ext`. Verified as of Aug 2026: **EEVDF** since 6.6, `sched_ext` in mainline since 6.12.
+3. **`PREEMPT_RT`**: support for your architecture (`ARCH_SUPPORTS_RT`) and the status of the options in
+   `kernel/Kconfig.preempt` of that version.
+4. **The exact semantics of the `cgroup v2` files** you are going to use in
+   `Documentation/admin-guide/cgroup-v2.rst` **of your kernel**: the files and their behaviour are
+   added to and refined between versions.
+5. **Overcommit modes and OOM behaviour** in `Documentation/mm/` of your version.
+6. **Security status of `io_uring`**: recent CVEs, whether your distribution ships it enabled, and whether
+   your container runtime's default seccomp profile blocks it (as of Aug 2026, Docker and
+   containerd block it in `RuntimeDefault`).
+7. **The durability semantics of your specific filesystem** (ext4, XFS, Btrfs, ZFS, NFS) and of
+   the block stack: *journal* mode, write barriers, and whether the device cache is
+   volatile. **NFS and network filesystems have their own semantics** and the local ones are not assumed.
+8. **The status of the projects cited in §2.3** if they are going to decide anything: latest release and real
+   deployment of Fuchsia, the licences of seL4 and Redox read **from the repository's raw file**
+   (seL4 lives on GitHub, **Redox at `gitlab.redox-os.org`**), and QNX's commercial terms.
 
-**Huecos declarados**: (a) **no se dan aquí cifras de coste de llamada al sistema, de cambio de
-contexto ni de sobrecoste de las mitigaciones especulativas**, porque dependen del microarquitectura,
-de qué mitigaciones estén activas y del kernel: **se miden en el sistema objetivo**, y cualquier
-número absoluto citado de memoria estaría mal. (b) El estado exacto de `io_uring` en ChromeOS y en la
-política SELinux de Android a día de hoy **no se ha podido confirmar con fuente primaria fechada**;
-lo verificado es la restricción original y su efecto sobre los perfiles seccomp de los runtimes de
-contenedores. (c) La documentación de QNX y sus certificaciones está tras registro comercial y **no
-se ha verificado verbatim**.
+**Declared gaps**: (a) **no figures are given here for the cost of a system call, of a context
+switch or of the overhead of speculative mitigations**, because they depend on the microarchitecture,
+on which mitigations are active and on the kernel: **they are measured on the target system**, and any
+absolute number quoted from memory would be wrong. (b) The exact status of `io_uring` in ChromeOS and in
+Android's SELinux policy as of today **could not be confirmed with a dated primary source**;
+what is verified is the original restriction and its effect on the seccomp profiles of container
+runtimes. (c) QNX's documentation and its certifications are behind commercial registration and **have
+not been verified verbatim**.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,272 +3,272 @@ name: endpoint-security-standards
 description: Defending the endpoint as a control, and measuring whether the control is actually there. Use when selecting or operating an EDR/XDR agent (Microsoft Defender for Endpoint, CrowdStrike Falcon, SentinelOne, Elastic Defend) and deciding what to demand of it in a bake-off, weighing signature antivirus against behavioural telemetry, deploying application control with App Control for Business / WDAC versus AppLocker and its MSRC servicing-criteria gap, WDAC policy in audit versus enforced mode and managed installer, Attack Surface Reduction rules, LSA protection and Credential Guard, disk encryption posture with BitLocker TPM-only versus TPM+PIN, manage-bde protectors and recovery-key escrow, UEFI Secure Boot, Measured Boot and TPM PCR attestation, endpoint patch and third-party update coverage, EDR sensors on Linux (eBPF sensor versus loadable kernel module) and on macOS (Apple Endpoint Security API ceilings), the security agent itself as attack surface and as an availability risk after the July 2024 CrowdStrike Channel File 291 incident, Microsoft's Windows Endpoint Security Platform and the MVI move out of kernel mode, defensive awareness of BYOVD and userland unhooking, BYOD and MDM enrolment posture, endpoint DLP and why it leaks, or reporting real fleet agent coverage instead of licences purchased.
 ---
 
-# Estándares de seguridad del endpoint
+# Endpoint security standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **la defensa del puesto y su medición**: elección y exigencias reales a un EDR/XDR,
-techo del antivirus por firmas, control de aplicaciones, cifrado de disco y custodia de la
-clave de recuperación, arranque seguro y medido y atestación, parcheo del endpoint y del
-software de terceros, endurecimiento de credenciales locales, cobertura de agente en Linux y
-macOS y sus límites reales, **el propio agente como superficie de ataque y como riesgo de
-disponibilidad**, política BYOD y MDM, DLP en el endpoint, y las métricas que importan.
+Applies to **defending the endpoint and measuring it**: choosing an EDR/XDR and the real demands placed on it,
+the ceiling of signature antivirus, application control, disk encryption and custody of the
+recovery key, secure and measured boot and attestation, patching the endpoint and third-party
+software, hardening local credentials, agent coverage on Linux and
+macOS and its real limits, **the agent itself as attack surface and as an availability
+risk**, BYOD and MDM policy, endpoint DLP, and the metrics that matter.
 
 Triggers: EDR, XDR, MDE/Defender for Endpoint, Falcon, SentinelOne, Elastic Defend,
 `WDAC`/App Control for Business, `AppLocker`, `CIPolicy`/`.cip`, ASR rules, Credential Guard,
-LSA protection, `manage-bde`, BitLocker TPM+PIN, clave de recuperación, Secure Boot, Measured
-Boot, PCR, atestación, sensor eBPF vs módulo del kernel, Apple Endpoint Security API,
-BYOVD, *unhooking*, MDM, BYOD, DLP de endpoint, "cobertura de agentes".
+LSA protection, `manage-bde`, BitLocker TPM+PIN, recovery key, Secure Boot, Measured
+Boot, PCR, attestation, eBPF sensor vs kernel module, Apple Endpoint Security API,
+BYOVD, *unhooking*, MDM, BYOD, endpoint DLP, "agent coverage".
 
-**Postura estrictamente defensiva.** Las técnicas de evasión se describen **para detectarlas
-y para evaluar producto**, nunca como procedimiento.
+**Strictly defensive posture.** Evasion techniques are described **to detect them
+and to evaluate products**, never as a procedure.
 
-**No aplica**: ver `detection-engineering-standards` (**la regla de detección y su ingeniería
-son suyas, sin excepción**: Sigma, contenido del SIEM, normalización, cobertura, tests de
-detección. **Aquí el sensor que produce la telemetría y si está puesto**; allí qué se hace
-con ella), `soc-operations-standards` (turno, cola, triaje y cierre de la alerta que genera
-tu agente), `incident-response-forensics-standards` (**el compromiso ya confirmado**:
-contención, adquisición, timeline, reconstrucción — aquí solo el aislamiento como
-**capacidad** que se le exige al producto y se ensaya), `macos-fleet-standards` (**la flota
-Apple es suya**: ABM/ADE, MDM y DDM, perfiles, TCC/PPPC, Gatekeeper, XProtect, escrow de
-FileVault, extensiones de sistema. **Aquí solo qué se le puede exigir a un EDR de terceros en
-macOS y qué no, y por qué**), `developer-workstation-standards` (**el puesto de quien
-programa**: dotfiles, provisión como código, cadena de suministro del editor, claves en
-hardware — **frontera real: una política de endpoint mal hecha rompe herramientas de
-desarrollo**, y se negocia nombrando a las dos partes), `linux-hardening-standards` (**el
-baseline del sistema Linux**: CIS/STIG, `sysctl`, auditd, SSH, montajes, LUKS con desbloqueo
-desatendido, medición con OpenSCAP/Lynis — aquí solo el **sensor EDR** sobre ese host y sus
-límites), `windows-server-ad-standards` (el servidor, el directorio, Tier 0/PAW, LAPS y
-gMSA), `container-runtime-security-standards` (**el contenedor y el escape**: seccomp,
-capabilities, Falco/Tetragon, drift — un EDR de endpoint no cubre eso),
-`vulnerability-management-standards` (triaje CVE y SLA de remediación; aquí solo la
-**capacidad de desplegar** el parche y su cobertura), `identity-access-management-standards`
-(IdP, MFA, sesiones), `cryptography-pki-standards` (algoritmos, modos, KMS y ciclo de vida de
-claves; aquí solo la **postura** de cifrado del disco), `privacy-engineering-standards` (dato
-personal, minimización y clasificación que el DLP presupone), `grc-compliance-standards`
-(marco de control y evidencia), `email-security-standards` (el correo como canal de entrada),
-`mobile-standards` (iOS/Android como plataforma de aplicación),
-`ot-ics-security-standards` (**hermana**: el endpoint industrial que **no admite
-agente** y por qué), `offensive-security-standards` (ejercicio ofensivo con alcance y
-autorización por escrito; esta skill no lo ejecuta), `threat-intelligence-standards`.
+**Not applicable**: see `detection-engineering-standards` (**the detection rule and its engineering
+are theirs, without exception**: Sigma, SIEM content, normalisation, coverage, detection
+tests. **Here the sensor that produces the telemetry and whether it is deployed**; there what is done
+with it), `soc-operations-standards` (shift, queue, triage and closure of the alert your
+agent generates), `incident-response-forensics-standards` (**the already-confirmed compromise**:
+containment, acquisition, timeline, reconstruction — here only isolation as a
+**capability** demanded of the product and rehearsed), `macos-fleet-standards` (**the Apple
+fleet is theirs**: ABM/ADE, MDM and DDM, profiles, TCC/PPPC, Gatekeeper, XProtect, FileVault
+escrow, system extensions. **Here only what can and cannot be demanded of a third-party EDR on
+macOS, and why**), `developer-workstation-standards` (**the workstation of whoever
+writes code**: dotfiles, provisioning as code, editor supply chain, keys in
+hardware — **real boundary: a badly built endpoint policy breaks development
+tools**, and it is negotiated by naming both sides), `linux-hardening-standards` (**the
+Linux system baseline**: CIS/STIG, `sysctl`, auditd, SSH, mounts, LUKS with unattended
+unlock, measurement with OpenSCAP/Lynis — here only the **EDR sensor** on that host and its
+limits), `windows-server-ad-standards` (the server, the directory, Tier 0/PAW, LAPS and
+gMSA), `container-runtime-security-standards` (**the container and the escape**: seccomp,
+capabilities, Falco/Tetragon, drift — an endpoint EDR does not cover that),
+`vulnerability-management-standards` (CVE triage and remediation SLA; here only the
+**capability to deploy** the patch and its coverage), `identity-access-management-standards`
+(IdP, MFA, sessions), `cryptography-pki-standards` (algorithms, modes, KMS and key life
+cycle; here only the disk encryption **posture**), `privacy-engineering-standards` (personal
+data, minimisation and classification that DLP presupposes), `grc-compliance-standards`
+(control framework and evidence), `email-security-standards` (email as an entry channel),
+`mobile-standards` (iOS/Android as an application platform),
+`ot-ics-security-standards` (**sister skill**: the industrial endpoint that **takes no
+agent** and why), `offensive-security-standards` (offensive exercise with written scope and
+authorisation; this skill does not run it), `threat-intelligence-standards`.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar versión, nombre exacto de la característica y fechas por web antes de fijarlas
-> (§8). Microsoft ha **renombrado** varias de estas y la documentación va desacompasada.
+> Verify version, exact feature name and dates on the web before pinning them
+> (§8). Microsoft has **renamed** several of these and the documentation is out of step.
 
-| Necesidad | Por defecto | Alternativa justificable | Vetado |
+| Need | Default | Justifiable alternative | Vetoed |
 |---|---|---|---|
-| Detección en el endpoint | **EDR con telemetría de proceso y respuesta remota**, con retención medida | AV gestionado + telemetría a SIEM en flotas pequeñas | AV solo por firmas como única defensa |
-| Control de aplicaciones (Windows) | **App Control for Business (WDAC)** | AppLocker solo como capa de conveniencia o donde WDAC no llegue | **AppLocker como frontera de seguridad** (§3) |
-| Despliegue de control de apps | **Audit primero, medido, luego enforced** por anillos | Enforcement directo solo en equipos de propósito fijo (quiosco, cajero, EWS) | Pasar a *enforce* toda la flota a la vez |
-| Cifrado de disco (Windows) | **BitLocker con TPM+PIN** en portátiles y equipos que salen | TPM-only **solo** si el equipo no sale de zona controlada y hay control físico | TPM-only en un portátil; clave de recuperación sin custodia |
-| Arranque | **UEFI Secure Boot activo + Measured Boot** y PCR revisados | — | Secure Boot desactivado "porque un driver no arranca" |
-| Sensor en Linux | **eBPF** con suelo de versión de kernel verificado | Módulo del kernel solo si el kernel no llega y con plan de salida | Módulo propietario en kernels que el proveedor no valida |
-| Sensor en macOS | Agente sobre **Apple Endpoint Security** (+ NetworkExtension) | — | Producto que aún dependa de *kexts* y exija bajar la seguridad de arranque |
-| Actualización del agente | **Anillos + despliegue escalonado del contenido**, no solo del binario | — | Actualización de contenido *n-0* simultánea en toda la flota (§5) |
-| Métrica de cobertura | **% de activos del inventario con agente sano y reportando en las últimas 24 h** | — | Contar licencias compradas o consolas instaladas |
+| Endpoint detection | **EDR with process telemetry and remote response**, with measured retention | Managed AV + telemetry to SIEM in small fleets | Signature-only AV as the sole defence |
+| Application control (Windows) | **App Control for Business (WDAC)** | AppLocker only as a convenience layer or where WDAC does not reach | **AppLocker as a security boundary** (§3) |
+| App control rollout | **Audit first, measured, then enforced** by rings | Direct enforcement only on fixed-purpose machines (kiosk, till, EWS) | Moving the whole fleet to *enforce* at once |
+| Disk encryption (Windows) | **BitLocker with TPM+PIN** on laptops and machines that leave the premises | TPM-only **only** if the machine never leaves a controlled zone and there is physical control | TPM-only on a laptop; recovery key without escrow |
+| Boot | **UEFI Secure Boot active + Measured Boot** and PCRs reviewed | — | Secure Boot disabled "because a driver won't load" |
+| Sensor on Linux | **eBPF** with a verified kernel version floor | Kernel module only if the kernel is too old and with an exit plan | Proprietary module on kernels the vendor does not validate |
+| Sensor on macOS | Agent on **Apple Endpoint Security** (+ NetworkExtension) | — | A product that still depends on *kexts* and demands lowering boot security |
+| Agent update | **Rings + staged rollout of the content**, not just of the binary | — | Simultaneous *n-0* content update across the whole fleet (§5) |
+| Coverage metric | **% of inventory assets with a healthy agent reporting in the last 24 h** | — | Counting purchased licences or installed consoles |
 
-## 3. Control de aplicaciones: la diferencia que decide
+## 3. Application control: the difference that decides
 
-- **Dato duro, y es el que casi nadie cita bien**: Microsoft documenta que **App Control for
-  Business (antes WDAC)** *"was designed as a security feature under the servicing criteria
-  defined by the Microsoft Security Response Center (MSRC)"*, mientras que **AppLocker**
+- **Hard fact, and it is the one almost nobody quotes correctly**: Microsoft documents that **App Control for
+  Business (formerly WDAC)** *"was designed as a security feature under the servicing criteria
+  defined by the Microsoft Security Response Center (MSRC)"*, whereas **AppLocker**
   *"doesn't meet the servicing criteria for being a security feature"*.
-  **Consecuencia operativa**: un *bypass* de AppLocker **no es necesariamente** una
-  vulnerabilidad que MSRC parchee; uno de App Control sí. Por eso AppLocker **no puede ser tu
-  frontera de seguridad**: sirve como capa de higiene, no como control del que dependas.
-  Microsoft recomienda explícitamente WDAC/App Control a quien pueda implementarlo, y AppLocker
-  **solo recibe correcciones de seguridad, no mejoras funcionales**.
-- Matices que hay que conocer antes de diseñar: la política de App Control aplica **a toda la
-  máquina** (no por usuario; AppLocker sí distingue usuarios y grupos); sus reglas se basan en
-  atributos del certificado de firma, metadatos firmados del binario o hash, **sin regla por
-  ruta** (AppLocker sí la tiene, y por eso es más fácil de eludir); y **algunas
-  funcionalidades de App Control usan AppLocker por debajo** — señaladamente el *managed
-  installer*. No son alternativas limpias, se solapan.
-- El nombre cambió (**WDAC → App Control for Business**) y la documentación de Microsoft no
-  está sincronizada entre páginas: la FAQ suele ir más actualizada que las de visión general.
-  **Verifica el nombre y el comportamiento vigentes antes de escribir una política (§8).**
-- Regla de despliegue: **audit → medir el ruido → excepciones nominadas y con dueño →
-  enforce por anillos**. Una política de control de aplicaciones desplegada en *enforce* sin
-  fase de auditoría es un incidente de disponibilidad autoinfligido, y se revierte en pánico
-  — que es exactamente cómo mueren estos proyectos.
+  **Operational consequence**: an AppLocker *bypass* **is not necessarily** a
+  vulnerability that MSRC patches; an App Control one is. That is why AppLocker **cannot be your
+  security boundary**: it serves as a hygiene layer, not as a control you depend on.
+  Microsoft explicitly recommends WDAC/App Control to anyone who can implement it, and AppLocker
+  **only receives security fixes, not functional improvements**.
+- Nuances to know before designing: the App Control policy applies **to the whole
+  machine** (not per user; AppLocker does distinguish users and groups); its rules are based on
+  signing certificate attributes, signed binary metadata or hash, **with no path rule**
+  (AppLocker does have one, and that is why it is easier to bypass); and **some App Control
+  features use AppLocker underneath** — notably the *managed
+  installer*. They are not clean alternatives, they overlap.
+- The name changed (**WDAC → App Control for Business**) and Microsoft's documentation is
+  not synchronised across pages: the FAQ tends to be more up to date than the overview pages.
+  **Verify the current name and behaviour before writing a policy (§8).**
+- Rollout rule: **audit → measure the noise → named exceptions with an owner →
+  enforce by rings**. An application control policy deployed in *enforce* without an
+  audit phase is a self-inflicted availability incident, and it gets rolled back in a panic
+  — which is exactly how these projects die.
 
-## 4. Cifrado, arranque y credenciales locales
+## 4. Encryption, boot and local credentials
 
-- **BitLocker en modo TPM-only libera la clave sin intervención del usuario**, y esa clave
-  viaja por un bus (LPC o SPI) que se puede **esnifar con un analizador lógico barato**,
-  teniendo el equipo apagado y acceso físico. Se ha demostrado en portátiles empresariales de
-  varios fabricantes en minutos. La mitigación documentada por Microsoft es el protector
-  **TPM+PIN** (autenticación pre-arranque): la clave no sale hasta que el usuario introduce
-  el PIN, y el anti-*hammering* del TPM frena la fuerza bruta.
-- **Windows 11 24H2 activa el cifrado de dispositivo por defecto** en instalación limpia con
-  cuenta Microsoft, y se relajaron los requisitos de hardware (se retiraron HSTI y Modern
-  Standby). **Efecto colateral que hay que asumir: el parque de volúmenes BitLocker
-  *TPM-only* se ha disparado**, porque el OOBE no pide PIN. "Cifrado activo" en un informe
-  no dice nada si no dice **con qué protector**.
-- Límite honesto: el ataque de arranque en frío explota la remanencia de la DRAM y **no lo
-  para ningún protector**; y hay investigación dirigida también a configuraciones TPM+PIN.
-  TPM+PIN sube el listón, no lo cierra. Para portátiles: hibernar, no suspender.
-- **Custodia de la clave de recuperación es parte del control, no un extra**: escrow en el
-  directorio o en el MDM, con acceso auditado y **restauración probada**. Una clave que solo
-  vive en la cuenta personal del usuario no es custodia; es una pérdida de datos pendiente.
-- **Secure Boot + Measured Boot + atestación**: el arranque medido registra hashes en los PCR
-  del TPM y permite **atestar remotamente** el estado antes de conceder acceso a recursos. Es
-  el único control que responde a "¿este equipo arrancó lo que yo creo?" — y el que hace que
-  desactivar Secure Boot deje de ser gratis. Verifica qué atestación soporta de verdad tu MDM
-  o tu servicio de acceso condicional antes de prometerla.
-- Credenciales locales: contraseña de administrador local **única y rotada** por herramienta
-  de gestión, protección de LSA y Credential Guard donde el hardware llegue, y ningún secreto
-  en scripts de despliegue. Un endpoint comprometido con credencial reutilizada convierte una
-  máquina en toda la flota.
+- **BitLocker in TPM-only mode releases the key with no user intervention**, and that key
+  travels over a bus (LPC or SPI) that can be **sniffed with a cheap logic analyser**,
+  with the machine powered off and physical access. It has been demonstrated on corporate laptops from
+  several manufacturers in minutes. The mitigation documented by Microsoft is the
+  **TPM+PIN** protector (pre-boot authentication): the key does not come out until the user enters
+  the PIN, and the TPM's anti-*hammering* slows brute force.
+- **Windows 11 24H2 enables device encryption by default** on a clean install with a
+  Microsoft account, and the hardware requirements were relaxed (HSTI and Modern
+  Standby were dropped). **Side effect that has to be accepted: the estate of *TPM-only*
+  BitLocker volumes has exploded**, because the OOBE does not ask for a PIN. "Encryption on" in a report
+  says nothing unless it says **with which protector**.
+- Honest limit: the cold boot attack exploits DRAM remanence and **no protector
+  stops it**; and there is research aimed at TPM+PIN configurations too.
+  TPM+PIN raises the bar, it does not close it. For laptops: hibernate, do not suspend.
+- **Custody of the recovery key is part of the control, not an extra**: escrow in the
+  directory or in the MDM, with audited access and **tested restore**. A key that only
+  lives in the user's personal account is not custody; it is pending data loss.
+- **Secure Boot + Measured Boot + attestation**: measured boot records hashes in the TPM's PCRs
+  and allows the state to be **remotely attested** before granting access to resources. It is
+  the only control that answers "did this machine boot what I think it did?" — and the one that makes
+  disabling Secure Boot stop being free. Verify what attestation your MDM
+  or your conditional access service really supports before promising it.
+- Local credentials: local administrator password **unique and rotated** by a management
+  tool, LSA protection and Credential Guard where the hardware allows, and no secret
+  in deployment scripts. A compromised endpoint with a reused credential turns one
+  machine into the whole fleet.
 
-## 5. El EDR como superficie de ataque y como riesgo de disponibilidad
+## 5. The EDR as attack surface and as an availability risk
 
-- **El caso que hay que citar con datos, no con anécdota — CrowdStrike, 19-jul-2024**:
-  - **04:09 UTC**: se publica una actualización de configuración del sensor (**Channel File
-    291**). **05:27 UTC**: identificado y revertido — **79 minutos**. El daño ya estaba hecho.
-  - Alcance: **Microsoft estimó 8,5 millones de dispositivos Windows afectados, menos del 1 %
-    del parque**. Vuelos cancelados, servicios de emergencia caídos, hospitales parados.
-  - Causa raíz (RCA pública de CrowdStrike, ago-2024): un **Template Type** nuevo para IPC
-    definía **21 campos de entrada** mientras el código que invoca al *Content Interpreter*
-    aportaba **20 valores**. El desajuste pasó varias capas de validación porque en pruebas el
-    campo 21 se casaba con **comodín**. El 19 de julio se desplegó una instancia con criterio
-    **no comodín** para ese campo 21 → **lectura fuera de límites** → BSOD.
-  - Coste de recuperación: cada máquina requería **arranque manual en modo seguro o WinRE**
-    para borrar el fichero. Sin acceso físico o remoto fuera de banda, no había arreglo.
-  - **No era explotable**: el propio análisis y una revisión de terceros lo confirmaron; la
-    lectura fuera de límites no permite escribir memoria arbitraria ni controlar la ejecución.
-  - **Lecciones que sí son tuyas, no del proveedor**: (1) **el contenido de detección se
-    despliega como código**, con anillos y ventana — exige a tu proveedor control de
-    despliegue escalonado del **contenido**, no solo del sensor; (2) el EDR es una dependencia
-    de **disponibilidad de nivel plataforma**, y debe estar en tu BIA; (3) ten un
-    procedimiento **ensayado** de recuperación masiva sin red y con cifrado de disco activo —
-    ahí es donde la custodia de la clave de recuperación deja de ser burocracia.
-- **Movimiento estructural del sector**: tras el incidente Microsoft lanzó la **Windows
-  Resiliency Initiative** y una **Windows Endpoint Security Platform** que permite a los
-  socios del programa **MVI** ejecutar antivirus y EDR **fuera del kernel**, en modo usuario.
-  Preview privada anunciada para socios (CrowdStrike, Bitdefender, ESET, Trend Micro,
-  SentinelOne, Trellix, WithSecure y otros) a partir de mediados de 2025. **A agosto de 2026
-  seguía siendo trabajo en curso, no producto general — verifica el estado antes de
-  planificar sobre ello (§8)**, y no supongas que "fuera del kernel" significa cero acceso
-  privilegiado: la propuesta concede parte del acceso, no lo elimina.
-- **El agente amplía tu superficie**: corre con privilegio máximo, en todas las máquinas, con
-  un canal de actualización que ejecuta contenido de un tercero. Trátalo como tal: sigue sus
-  CVEs con la misma prioridad que el sistema operativo, restringe quién puede desinstalarlo o
-  ponerlo en modo *bypass* desde la consola (**la consola del EDR es un objetivo Tier 0**),
-  exige MFA y registro de auditoría en esa consola, y separa administración de investigación.
-- **Evasión, descrita para detectarla y para evaluar producto — sin recetario**:
-  - **BYOVD** (*bring your own vulnerable driver*): el atacante trae un driver **firmado y
-    legítimo** pero vulnerable para conseguir ejecución en kernel y cegar al agente. Defensa:
-    listas de bloqueo de drivers vulnerables aplicadas y **verificadas** (no solo activadas),
-    integridad de código con hipervisor donde el hardware llegue, y alerta sobre carga de
-    driver inusual. Pregunta de compra: *¿tu producto sobrevive a la carga de un driver
-    vulnerable conocido, y me lo demuestras en el piloto?*
-  - **Unhooking** en espacio de usuario: el malware restaura las funciones que el agente había
-    interceptado, dejándolo ciego sin tocar el kernel. Es la razón por la que **la telemetría
-    que solo viene de *hooks* en modo usuario no es de fiar**; exige al proveedor telemetría de
-    fuentes que el proceso atacado no controle.
-  - Regla de evaluación derivada: en un *bake-off*, la pregunta no es "¿detecta esta muestra?"
-    sino **"¿qué pasa cuando el atacante ataca al agente?"** y **"¿qué queda registrado
-    cuando el agente falla?"**.
+- **The case that must be cited with data, not with anecdote — CrowdStrike, 19-Jul-2024**:
+  - **04:09 UTC**: a sensor configuration update is published (**Channel File
+    291**). **05:27 UTC**: identified and reverted — **79 minutes**. The damage was already done.
+  - Scope: **Microsoft estimated 8.5 million Windows devices affected, less than 1 %
+    of the estate**. Flights cancelled, emergency services down, hospitals stopped.
+  - Root cause (CrowdStrike's public RCA, Aug-2024): a new **Template Type** for IPC
+    defined **21 input fields** while the code invoking the *Content Interpreter*
+    supplied **20 values**. The mismatch got through several validation layers because in testing the
+    21st field matched a **wildcard**. On 19 July an instance was deployed with a
+    **non-wildcard** criterion for that 21st field → **out-of-bounds read** → BSOD.
+  - Recovery cost: each machine required **manual boot into safe mode or WinRE**
+    to delete the file. Without physical or out-of-band remote access, there was no fix.
+  - **It was not exploitable**: the analysis itself and a third-party review confirmed it; the
+    out-of-bounds read does not allow writing arbitrary memory nor controlling execution.
+  - **Lessons that are yours, not the vendor's**: (1) **detection content is
+    deployed as code**, with rings and a window — demand from your vendor staged rollout control
+    of the **content**, not just of the sensor; (2) the EDR is a **platform-level availability**
+    dependency, and it must be in your BIA; (3) have a **rehearsed**
+    procedure for mass recovery with no network and with disk encryption on —
+    that is where custody of the recovery key stops being bureaucracy.
+- **Structural industry shift**: after the incident Microsoft launched the **Windows
+  Resiliency Initiative** and a **Windows Endpoint Security Platform** allowing partners in
+  the **MVI** programme to run antivirus and EDR **outside the kernel**, in user mode.
+  Private preview announced for partners (CrowdStrike, Bitdefender, ESET, Trend Micro,
+  SentinelOne, Trellix, WithSecure and others) from mid-2025. **As of August 2026
+  it was still work in progress, not a general product — verify the status before
+  planning on it (§8)**, and do not assume that "outside the kernel" means zero privileged
+  access: the proposal grants part of that access, it does not remove it.
+- **The agent widens your surface**: it runs with maximum privilege, on every machine, with
+  an update channel that executes third-party content. Treat it as such: track its
+  CVEs with the same priority as the operating system, restrict who can uninstall it or
+  put it in *bypass* mode from the console (**the EDR console is a Tier 0 target**),
+  demand MFA and audit logging on that console, and separate administration from investigation.
+- **Evasion, described to detect it and to evaluate products — no cookbook**:
+  - **BYOVD** (*bring your own vulnerable driver*): the attacker brings a **signed and
+    legitimate** but vulnerable driver to get kernel execution and blind the agent. Defence:
+    vulnerable driver blocklists applied and **verified** (not merely enabled),
+    hypervisor-enforced code integrity where the hardware allows, and an alert on unusual driver
+    loads. Purchasing question: *does your product survive the loading of a known vulnerable
+    driver, and will you demonstrate it to me in the pilot?*
+  - **Unhooking** in user space: the malware restores the functions the agent had
+    hooked, blinding it without touching the kernel. It is the reason why **telemetry
+    that comes only from user-mode *hooks* is not trustworthy**; demand from the vendor telemetry from
+    sources the attacked process does not control.
+  - Derived evaluation rule: in a *bake-off*, the question is not "does it detect this sample?"
+    but **"what happens when the attacker attacks the agent?"** and **"what remains logged
+    when the agent fails?"**.
 
-## 6. Cobertura real: Linux, macOS, BYOD y la métrica que importa
+## 6. Real coverage: Linux, macOS, BYOD and the metric that matters
 
-- **Linux**: el sensor moderno es **eBPF** (verificado en el kernel, sin módulo, actualizable
-  sin reinicio; Defender for Endpoint en Linux lo usa por defecto desde su versión de agente
-  correspondiente). Límites que hay que comprobar **antes** de prometer cobertura: **suelo de
-  versión de kernel** (Falco pide 5.8 mínimo, 5.15+ recomendado), **incompatibilidades por
-  distribución y kernel concretos** (hay builds documentadas que cuelgan con eBPF activo), y
-  el hecho de que **el verificador de eBPF es en sí superficie de ataque** — se le han
-  encontrado fallos de seguimiento de rangos en kernels antiguos. En un parque heterogéneo,
-  la heterogeneidad **es** el hueco de cobertura.
-- **macOS**: el agente vive **en espacio de usuario** sobre la API de **Endpoint Security**
-  (más NetworkExtension), y ahí hay techos duros: **la API de ES no entrega eventos de red**
-  (hacen falta sensores aparte), **Apple limita la tasa de eventos** para proteger el
-  rendimiento, el **log unificado requiere una *entitlement* privada** que los EDR no tienen,
-  y la instalación **no puede ser silenciosa** (aprobación de extensión de sistema, filtro de
-  red, permisos). Consecuencia: **un EDR multiplataforma no ve lo mismo en macOS que en
-  Windows**, y quien te diga lo contrario no ha leído la API. Producto que todavía dependa de
-  *kexts* y exija reducir la seguridad de arranque: **descartado**.
-- **BYOD**: decide **antes** entre gestión del dispositivo (MDM completo) y gestión solo de la
-  aplicación/datos. Si el dispositivo es personal, exigir agente completo es a la vez un
-  problema legal y una promesa que no se cumple. Postura defendible: acceso condicional por
-  **estado del dispositivo verificable**, contenedor de trabajo separado, y **sin acceso a
-  datos sensibles desde equipo no gestionado**. Cualquier cosa intermedia es teatro.
-- **Windows 10 terminó soporte el 14-oct-2025.** El programa **ESU de consumo se extendió
-  hasta el 12-oct-2027** (anunciado de forma discreta en la documentación, contradiciendo el
-  "octubre de 2026" que casi todo el mundo repite; en el EEE se hizo gratuito por presión
-  regulatoria). **Verifica las condiciones y el calendario del ESU comercial por separado
-  (§8)**: no son el mismo programa ni el mismo plazo.
-- **DLP en el endpoint falla, y hay que decirlo antes de comprarlo**: depende de clasificar
-  bien el dato (que casi nunca está hecho), no ve dentro de canales cifrados que no
-  intercepta, se sortea con capturas de pantalla, fotos con el móvil, portapapeles, formatos
-  transformados y canales nuevos cada trimestre, y genera un volumen de falsos positivos que
-  acaba en modo "solo auditoría" permanente. Uso defendible: **detección de fuga accidental y
-  disuasión con evidencia**, no prevención de un insider motivado. Si el caso de uso es el
-  insider, la respuesta es control de acceso y minimización del dato, no un agente.
-- **La métrica**: **cobertura real de la flota**, definida como *activos del inventario
-  autoritativo con agente instalado, sano y reportando en las últimas 24 h*. Las licencias
-  compradas y los equipos en consola no son cobertura: el hueco es exactamente la diferencia
-  entre el inventario y la consola, y ahí es donde entra el atacante. Métricas de apoyo: % con
-  cifrado **y protector correcto**, % con control de aplicaciones en *enforce*, mediana de
-  días hasta parche desplegado, y **% de agentes en modo degradado o *bypass***.
+- **Linux**: the modern sensor is **eBPF** (verified in the kernel, no module, updatable
+  without a reboot; Defender for Endpoint on Linux uses it by default from its corresponding
+  agent version). Limits to check **before** promising coverage: **kernel version
+  floor** (Falco asks for 5.8 minimum, 5.15+ recommended), **incompatibilities with specific
+  distributions and kernels** (there are documented builds that hang with eBPF enabled), and
+  the fact that **the eBPF verifier is itself attack surface** — range-tracking flaws have been
+  found in it on older kernels. In a heterogeneous estate,
+  the heterogeneity **is** the coverage gap.
+- **macOS**: the agent lives **in user space** on top of the **Endpoint Security** API
+  (plus NetworkExtension), and there are hard ceilings there: **the ES API does not deliver network events**
+  (separate sensors are needed), **Apple rate-limits events** to protect
+  performance, the **unified log requires a private *entitlement*** that EDRs do not have,
+  and installation **cannot be silent** (system extension approval, network
+  filter, permissions). Consequence: **a cross-platform EDR does not see the same on macOS as on
+  Windows**, and anyone telling you otherwise has not read the API. A product that still depends on
+  *kexts* and demands reducing boot security: **discarded**.
+- **BYOD**: decide **beforehand** between device management (full MDM) and management only of the
+  application/data. If the device is personal, demanding a full agent is both a
+  legal problem and a promise that is not kept. Defensible posture: conditional access based on
+  **verifiable device state**, a separate work container, and **no access to
+  sensitive data from an unmanaged machine**. Anything in between is theatre.
+- **Windows 10 reached end of support on 14-Oct-2025.** The **consumer ESU programme was extended
+  to 12-Oct-2027** (announced discreetly in the documentation, contradicting the
+  "October 2026" that almost everyone repeats; in the EEA it was made free under regulatory
+  pressure). **Verify the terms and calendar of the commercial ESU separately
+  (§8)**: they are neither the same programme nor the same deadline.
+- **Endpoint DLP fails, and that has to be said before buying it**: it depends on classifying
+  the data properly (which is almost never done), it does not see inside encrypted channels it does not
+  intercept, it is sidestepped with screenshots, phone photos, the clipboard, transformed
+  formats and new channels every quarter, and it generates a volume of false positives that
+  ends up in permanent "audit only" mode. Defensible use: **detection of accidental leakage and
+  deterrence with evidence**, not prevention of a motivated insider. If the use case is the
+  insider, the answer is access control and data minimisation, not an agent.
+- **The metric**: **real fleet coverage**, defined as *assets in the authoritative
+  inventory with an agent installed, healthy and reporting in the last 24 h*. Purchased licences
+  and machines in the console are not coverage: the gap is exactly the difference
+  between the inventory and the console, and that is where the attacker gets in. Supporting metrics: % with
+  encryption **and the correct protector**, % with application control in *enforce*, median
+  days to patch deployed, and **% of agents in degraded or *bypass* mode**.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisión trimestral de cobertura y de excepciones; revisión anual del producto
-  contra lo que se le exigió en la compra (no contra el cuadrante de turno); ejercicio anual de
-  **recuperación masiva** y de **aislamiento de host** — la capacidad de contención se ensaya
-  o no existe.
-- Toda exclusión de análisis (ruta, proceso, extensión) lleva **dueño, motivo y fecha de
-  revisión**. Las exclusiones son deuda de seguridad y crecen solas.
-- Fin de soporte del sistema operativo **planificado con presupuesto**, no descubierto el mes
-  anterior. Un equipo fuera de soporte sin ESU es una aceptación de riesgo firmada, no un
-  "pendiente".
+- **Cadence**: quarterly review of coverage and of exceptions; annual review of the product
+  against what was demanded of it at purchase (not against the quadrant of the day); annual exercise of
+  **mass recovery** and of **host isolation** — containment capability is rehearsed
+  or it does not exist.
+- Every scan exclusion (path, process, extension) carries an **owner, a reason and a review
+  date**. Exclusions are security debt and they grow by themselves.
+- Operating system end of support **planned with a budget**, not discovered the month
+  before. A machine out of support without ESU is a signed risk acceptance, not a
+  "pending item".
 
-**PROHIBIDO**
-- ❌ Presentar **licencias compradas o equipos en consola** como cobertura de la flota.
-- ❌ Tratar **AppLocker como frontera de seguridad**: no cumple los criterios de servicing de
-  característica de seguridad del MSRC.
-- ❌ Desplegar control de aplicaciones en *enforce* sin fase de auditoría medida.
-- ❌ **BitLocker TPM-only en equipos que salen del recinto**, o cifrado sin custodia probada
-  de la clave de recuperación.
-- ❌ Desactivar Secure Boot para que arranque un driver; usar productos que exijan reducir la
-  seguridad de arranque en macOS.
-- ❌ Exclusiones amplias del EDR (`C:\`, `*.exe`, carpetas de usuario) o excluir por comodidad
-  del equipo de desarrollo sin acuerdo escrito con ese equipo.
-- ❌ Consola del EDR sin MFA, sin auditoría, o con permiso de desinstalar/*bypass* repartido.
-- ❌ Aceptar actualización de **contenido** del proveedor sin control de despliegue escalonado,
-  y no tener procedimiento ensayado de recuperación masiva.
-- ❌ Vender el DLP de endpoint como prevención frente a un insider motivado.
-- ❌ Exigir agente completo en dispositivo personal como sustituto de una política BYOD real.
-- ❌ **Publicar procedimientos de evasión, cargadores, drivers vulnerables concretos o
-  bypasses listos de un producto.** Esta skill es metodología, criterio de compra y
-  detección; el trabajo ofensivo va con alcance y autorización por escrito
+**FORBIDDEN**
+- ❌ Presenting **purchased licences or machines in the console** as fleet coverage.
+- ❌ Treating **AppLocker as a security boundary**: it does not meet MSRC's servicing criteria
+  for a security feature.
+- ❌ Deploying application control in *enforce* without a measured audit phase.
+- ❌ **BitLocker TPM-only on machines that leave the premises**, or encryption without tested custody
+  of the recovery key.
+- ❌ Disabling Secure Boot so that a driver loads; using products that demand reducing
+  boot security on macOS.
+- ❌ Broad EDR exclusions (`C:\`, `*.exe`, user folders) or excluding for the convenience of
+  the development team without a written agreement with that team.
+- ❌ EDR console without MFA, without auditing, or with uninstall/*bypass* permission handed around.
+- ❌ Accepting vendor **content** updates without staged rollout control,
+  and not having a rehearsed mass recovery procedure.
+- ❌ Selling endpoint DLP as prevention against a motivated insider.
+- ❌ Demanding a full agent on a personal device as a substitute for a real BYOD policy.
+- ❌ **Publishing evasion procedures, loaders, specific vulnerable drivers or
+  ready-made bypasses for a product.** This skill is methodology, purchasing criteria and
+  detection; offensive work goes with written scope and authorisation
   (`offensive-security-standards`).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar producto, nombre de característica, versión o fecha en un entregable:
+Before pinning a product, feature name, version or date in a deliverable:
 
-1. **Nombre y comportamiento vigentes** en Microsoft Learn de App Control for Business/WDAC y
-   AppLocker (la FAQ suele ir por delante de las páginas de visión general), y la frase de
-   **servicing criteria del MSRC** citada **verbatim**.
-2. **Guía de contramedidas de BitLocker** (TPM-only vs TPM+PIN, DMA, arranque en frío) y el
-   comportamiento por defecto de la versión de Windows que despliegas.
-3. **Windows Endpoint Security Platform / MVI**: estado real (preview privada, general o
-   producto), socios y qué se ejecuta fuera del kernel.
-4. **Ciclo de vida**: fin de soporte de tu versión de Windows/macOS/distribución, y
-   condiciones y calendario de **ESU de consumo y de ESU comercial por separado**.
-5. **Tu EDR**: versión mínima soportada, CVEs abiertos del agente, requisitos de kernel del
-   sensor eBPF por distribución, y qué eventos entrega realmente en macOS.
-6. **Listas de bloqueo de drivers vulnerables**: versión vigente, cómo se distribuye y cómo se
-   verifica que está aplicada (no solo activada).
-7. **Resultados de evaluación independiente** (MITRE ATT&CK Evaluations, AV-Comparatives,
-   AV-TEST) de la ronda **más reciente**, y leídos como datos, no como ranking — la
-   interpretación del proveedor no es el resultado.
+1. **Current name and behaviour** on Microsoft Learn for App Control for Business/WDAC and
+   AppLocker (the FAQ tends to be ahead of the overview pages), and the **MSRC servicing
+   criteria** sentence quoted **verbatim**.
+2. **BitLocker countermeasures guidance** (TPM-only vs TPM+PIN, DMA, cold boot) and the
+   default behaviour of the Windows version you deploy.
+3. **Windows Endpoint Security Platform / MVI**: real status (private preview, general or
+   product), partners and what runs outside the kernel.
+4. **Life cycle**: end of support of your Windows/macOS/distribution version, and
+   terms and calendar of **consumer ESU and commercial ESU separately**.
+5. **Your EDR**: minimum supported version, open agent CVEs, kernel requirements of the
+   eBPF sensor per distribution, and which events it really delivers on macOS.
+6. **Vulnerable driver blocklists**: current version, how it is distributed and how you
+   verify it is applied (not merely enabled).
+7. **Independent evaluation results** (MITRE ATT&CK Evaluations, AV-Comparatives,
+   AV-TEST) from the **most recent** round, and read as data, not as a ranking — the
+   vendor's interpretation is not the result.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

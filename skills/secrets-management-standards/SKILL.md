@@ -3,515 +3,515 @@ name: secrets-management-standards
 description: Secrets lifecycle for already-generated credentials. Use when working with HashiCorp Vault or OpenBao (policies, dynamic secrets, seal/unseal, vault or bao CLI), Infisical, Bitwarden Secrets Manager, consuming AWS Secrets Manager, Azure Key Vault or GCP Secret Manager, External Secrets Operator (ExternalSecret, ClusterSecretStore), Secrets Store CSI Driver, sealed-secrets, SOPS with age, systemd LoadCredential= and systemd-creds, gitleaks, betterleaks or trufflehog scans, .gitleaks.toml, responding to a leaked credential, rotation runbooks, or replacing a static credential with short-lived federated identity.
 ---
 
-# Estándares de gestión de secretos
+# Secrets management standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **ciclo de vida operativo de los secretos ya generados**: decisión y despliegue del
-gestor, modelado de rutas y políticas, secretos dinámicos con TTL, mecanismo de inyección en
-el consumidor (fichero, API, credencial de systemd, operador de Kubernetes), rotación
-automática y su prueba, respuesta a la exposición de un secreto, detección de secretos en
-código e historial, cifrado de secretos cuando deben vivir en el repositorio, secretos en
-imágenes, capas de contenedor, artefactos de build, logs y backups, auditoría y mínimo
-privilegio sobre el propio gestor, HA/sellado y comportamiento ante su caída, y la separación
-entre secretos de humanos y secretos de máquinas.
+Applies to the **operational lifecycle of already-generated secrets**: deciding on and deploying the
+manager, modelling paths and policies, dynamic secrets with TTL, the injection mechanism into
+the consumer (file, API, systemd credential, Kubernetes operator), automatic rotation
+and testing it, responding to the exposure of a secret, detecting secrets in
+code and history, encrypting secrets when they must live in the repository, secrets in
+images, container layers, build artifacts, logs and backups, auditing and least
+privilege over the manager itself, HA/sealing and behaviour when it goes down, and the separation
+between human secrets and machine secrets.
 
-Triggers: `vault`/`bao` CLI, `vault.hcl`, políticas HCL, `bao operator unseal`,
+Triggers: `vault`/`bao` CLI, `vault.hcl`, HCL policies, `bao operator unseal`,
 `ExternalSecret`/`ClusterSecretStore`/`PushSecret`, `SecretProviderClass`, `SealedSecret`,
 `.sops.yaml`, `sops -e`, `age`/`age-keygen`, `LoadCredential=`/`LoadCredentialEncrypted=`/
 `systemd-creds`, `.gitleaks.toml`/`.gitleaksignore`, `gitleaks detect`, `trufflehog git`,
 `bws`, `infisical run`, `aws secretsmanager get-secret-value`, `az keyvault secret show`,
-`gcloud secrets versions access`, "rotar credencial", "secreto filtrado", "push protection".
+`gcloud secrets versions access`, "rotate credential", "leaked secret", "push protection".
 
-**Principio rector**: **el mejor secreto es el que no existe**. Antes de guardar una
-credencial, el trabajo es **eliminarla**: identidad federada de vida corta (OIDC del CI hacia
-la nube, workload identity del proveedor, SPIFFE/SPIRE entre servicios) sustituye al secreto
-estático sin custodia, sin rotación y sin riesgo de filtración. El gestor de secretos es para
-**lo que no se puede eliminar**, y su objetivo real no es ser una caja fuerte de contraseñas
-eternas, sino **emitir credenciales dinámicas con TTL corto**. Corolario: una arquitectura
-con muchos secretos guardados no es una arquitectura bien custodiada, es una arquitectura mal
-diseñada.
+**Guiding principle**: **the best secret is the one that does not exist**. Before storing a
+credential, the job is to **eliminate it**: short-lived federated identity (CI OIDC into
+the cloud, the provider's workload identity, SPIFFE/SPIRE between services) replaces the
+static secret with no custody, no rotation and no leak risk. The secrets manager is for
+**what cannot be eliminated**, and its real goal is not to be a vault of eternal
+passwords, but to **issue dynamic credentials with a short TTL**. Corollary: an architecture
+with many stored secrets is not a well-guarded architecture, it is a badly
+designed one.
 
-**No aplica**: ver `cryptography-pki-standards` (**elección de algoritmos, generación de
-claves, aleatoriedad, PKI y emisión de certificados, KMS/HSM como primitiva criptográfica y
-envelope encryption — todo eso es suyo**; aquí solo la **custodia, distribución, rotación
-operativa y consumo** del material ya generado),
-`identity-access-management-standards` (**la alternativa preferida al secreto estático**: IdP,
-flujos OAuth 2.1/OIDC, tokens, federación, SPIFFE/SPIRE, PAM/JIT — antes de guardar un secreto
-se comprueba allí si puede no existir), `cicd-standards` (el pipeline, su OIDC, el pinning de
-actions y los gates que ejecutan el escaneo), `kubernetes-standards` (el objeto `Secret`, el
-cifrado en etcd, RBAC y admisión), `iac-standards` (**el state de Terraform contiene secretos
-en claro** y las variables `sensitive`; el manejo del state es suyo), `aws-standards` /
-`azure-standards` / `gcp-standards` (configuración, IAM y coste del servicio gestionado
-concreto — aquí el criterio de uso y consumo), `data-platform-standards` (credenciales y
-cifrado en reposo del motor de datos), `windows-server-ad-standards` (gMSA/dMSA, LAPS y
-rotación de `krbtgt`: secretos **del directorio**), `bash-linux-scripting-standards` (el
-script que consume el secreto sin filtrarlo por `ps` o por el log),
-`incident-response-forensics-standards` (**la rotación masiva de credenciales durante un
-compromiso**: allí el proceso del incidente, aquí el mecanismo que la hace posible en horas y
-no en semanas), `incident-management-standards` (declaración, severidad y comunicación),
-`detection-engineering-standards` (**frontera compartida y bidireccional**: la telemetría de
-este dominio —lecturas anómalas del gestor, secreto detectado en un push, uso de una
-credencial desde un origen imposible, secreto que se lee tras haber sido revocado— es una
-**fuente de detección de primer orden**; el escaneo es mío, la regla que convierte el hallazgo
-en alerta y su runbook son suyos), `privacy-engineering-standards` (**un dato personal no es
-un secreto** y no se gestiona con estas herramientas), `grc-compliance-standards` (el control
-normativo que exige custodia y rotación, y su evidencia), `bcdr-standards` (custodia de claves
-de recuperación **fuera** del sistema respaldado y su papel en el plan de continuidad), y las
-skills de lenguaje —entre ellas `powershell-standards`, que **delega aquí** la elección del gestor
-y del escáner de secretos y se queda el criterio de código: `SecretManagement`/`SecretStore` como
-front-end, y la prohibición de `ConvertTo-SecureString -AsPlainText -Force` con un secreto escrito
-en el fichero—, `developer-workstation-standards` (**la elección del gestor de secretos y del escáner
-son de aquí**; **la custodia en la máquina del desarrollador es suya** —clave en hardware, PIN y
-toque obligatorio, `credential.helper` que **no** escriba en claro, token fuera del historial del
-shell y del `~/.netrc`, y el alcance de credenciales al que llega un agente de codificación—),
-y `solidity-standards` (el contrato es suyo; **la custodia de la clave de
-despliegue y de la clave de `owner`/`upgrader` es de aquí** —HSM o multifirma, rotación, umbral—.
-Dato que ordena la prioridad: **el compromiso de clave privada explica más del 25 % de los robos en
-cadena y cuatro de los diez mayores**; un contrato actualizable traslada todo el riesgo a quien
-tiene esa llave, así que **una sola clave caliente no es una arquitectura aceptable**).
+**Not applicable**: see `cryptography-pki-standards` (**algorithm choice, key
+generation, randomness, PKI and certificate issuance, KMS/HSM as a cryptographic primitive and
+envelope encryption — all of that is theirs**; here only the **custody, distribution, operational
+rotation and consumption** of already-generated material),
+`identity-access-management-standards` (**the preferred alternative to the static secret**: IdP,
+OAuth 2.1/OIDC flows, tokens, federation, SPIFFE/SPIRE, PAM/JIT — before storing a secret
+you check there whether it can not exist at all), `cicd-standards` (the pipeline, its OIDC, pinning
+of actions and the gates that run the scan), `kubernetes-standards` (the `Secret` object,
+encryption in etcd, RBAC and admission), `iac-standards` (**the Terraform state contains secrets
+in clear text** and `sensitive` variables; handling the state is theirs), `aws-standards` /
+`azure-standards` / `gcp-standards` (configuration, IAM and cost of the specific managed
+service — here the criteria for use and consumption), `data-platform-standards` (credentials and
+encryption at rest of the data engine), `windows-server-ad-standards` (gMSA/dMSA, LAPS and
+`krbtgt` rotation: **directory** secrets), `bash-linux-scripting-standards` (the
+script that consumes the secret without leaking it through `ps` or the log),
+`incident-response-forensics-standards` (**mass credential rotation during a
+compromise**: there the incident process, here the mechanism that makes it possible in hours and
+not in weeks), `incident-management-standards` (declaration, severity and communication),
+`detection-engineering-standards` (**shared and bidirectional boundary**: the telemetry of
+this domain —anomalous reads from the manager, a secret detected in a push, use of a
+credential from an impossible origin, a secret read after having been revoked— is a
+**first-order detection source**; the scanning is mine, the rule that turns the finding
+into an alert and its runbook are theirs), `privacy-engineering-standards` (**a personal data item is not
+a secret** and is not managed with these tools), `grc-compliance-standards` (the regulatory
+control that demands custody and rotation, and its evidence), `bcdr-standards` (custody of recovery
+keys **outside** the backed-up system and their role in the continuity plan), and the
+language skills —among them `powershell-standards`, which **delegates here** the choice of manager
+and secrets scanner and keeps the code criteria: `SecretManagement`/`SecretStore` as
+front-end, and the prohibition of `ConvertTo-SecureString -AsPlainText -Force` with a secret written
+in the file—, `developer-workstation-standards` (**the choice of secrets manager and scanner
+belong here**; **custody on the developer's machine is theirs** —key in hardware, PIN and
+mandatory touch, a `credential.helper` that does **not** write in clear text, token outside the shell
+history and the `~/.netrc`, and the credential scope a coding agent can reach—),
+and `solidity-standards` (the contract is theirs; **custody of the deployment
+key and of the `owner`/`upgrader` key belongs here** —HSM or multisig, rotation, threshold—.
+Fact that orders the priority: **private key compromise explains more than 25 % of on-chain
+thefts and four of the ten largest**; an upgradeable contract shifts all the risk to whoever
+holds that key, so **a single hot key is not an acceptable architecture**).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Datos verificados ago-2026. **Verificar versión, licencia y gobernanza por web antes de
-> comprometer una plataforma (§8)**: este dominio tuvo cambios de licencia, de fundación y de
-> mantenimiento en 2025-2026, y varios de ellos invalidan recomendaciones anteriores.
+> Data verified Aug 2026. **Verify version, licence and governance on the web before
+> committing to a platform (§8)**: this domain had licence, foundation and
+> maintenance changes in 2025-2026, and several of them invalidate earlier recommendations.
 
-### 2.1 La jerarquía de decisión (en este orden, siempre)
+### 2.1 The decision hierarchy (in this order, always)
 
-1. **¿Puede no existir el secreto?** → OIDC/workload identity federation (CI→nube),
-   SPIFFE/SPIRE (servicio→servicio), identidad gestionada del proveedor. **Sin secreto no hay
-   custodia, ni rotación, ni filtración.**
-2. **¿Puede ser dinámico?** → el gestor **genera** la credencial al vuelo con TTL (usuario de
-   base de datos, credencial cloud temporal, certificado de vida corta). El secreto existe
-   minutos, no años.
-3. **¿Puede ser de vida corta y revocable?** → token con TTL y revocación efectiva.
-4. **Solo entonces**: secreto estático en el gestor, con dueño, política, auditoría y
-   rotación probada.
+1. **Can the secret not exist?** → OIDC/workload identity federation (CI→cloud),
+   SPIFFE/SPIRE (service→service), the provider's managed identity. **With no secret there is no
+   custody, no rotation and no leak.**
+2. **Can it be dynamic?** → the manager **generates** the credential on the fly with a TTL (database
+   user, temporary cloud credential, short-lived certificate). The secret exists for
+   minutes, not years.
+3. **Can it be short-lived and revocable?** → token with TTL and effective revocation.
+4. **Only then**: static secret in the manager, with an owner, policy, auditing and
+   tested rotation.
 
-### 2.2 Gestor
+### 2.2 Manager
 
-| Necesidad | Por defecto | Alternativa justificable / vetado |
+| Need | Default | Justifiable alternative / vetoed |
 |---|---|---|
-| Solo una nube, cargas solo en ella | **El gestor nativo** (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager) | Es la opción KISS: IAM ya existe, integración nativa y cero operación. Desplegar Vault/OpenBao "por si acaso" con una sola nube es sobre-ingeniería |
-| Multi-nube, on-prem o secretos dinámicos serios | **OpenBao 2.6.1** (MPL-2.0, **OpenSSF/Linux Foundation, nivel Sandbox** desde jun-2025) | **HashiCorp Vault 2.0.3** sigue siendo válido y es más maduro en replicación — pero su licencia es **BUSL 1.1 desde ago-2023 y no ha cambiado** tras el cierre de la adquisición por **IBM (27-feb-2025)**: hoy el *Licensor* del fichero LICENSE es IBM. Es una decisión de **ADR con evaluación legal**, no técnica |
-| Gestor "de producto" con DX y UI | **Infisical 0.162.15** (núcleo MIT, `ee/` bajo licencia Enterprise propietaria) | Modelo *open core* honesto pero con funciones clave de pago (**los secretos dinámicos están en el tier Advanced**). Válido para equipos pequeños; verifica qué necesitas que esté en `ee/` antes de comprometerte |
-| Ya usas Bitwarden para el equipo | **Bitwarden Secrets Manager** | **Aviso de licencia poco conocido**: el servidor es AGPLv3, pero el **SDK donde vive el cliente `bws` (`bitwarden/sdk-sm`) NO es open source** — licencia propietaria que prohíbe usarlo con software distinto de Bitwarden. La polémica GPL de 2024 se resolvió para el gestor de contraseñas, **no** para Secrets Manager. Su operador de Kubernetes se instala oficialmente con `--devel` (canal pre-release): madurez no declarada |
-| Secretos de **humanos** (equipo) | **Gestor de contraseñas** con vaults compartidos y MFA | **No es el mismo problema ni la misma herramienta** (§3.7). Vetado: usar el gestor de secretos de servicio como caja de contraseñas del equipo, o al revés |
+| A single cloud, workloads only in it | **The native manager** (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager) | It is the KISS option: IAM already exists, native integration and zero operations. Deploying Vault/OpenBao "just in case" with a single cloud is over-engineering |
+| Multi-cloud, on-prem or serious dynamic secrets | **OpenBao 2.6.1** (MPL-2.0, **OpenSSF/Linux Foundation, Sandbox level** since Jun 2025) | **HashiCorp Vault 2.0.3** is still valid and is more mature in replication — but its licence is **BUSL 1.1 since Aug 2023 and has not changed** after the acquisition by **IBM closed (27 Feb 2025)**: today the *Licensor* in the LICENSE file is IBM. It is an **ADR decision with legal review**, not a technical one |
+| "Product-grade" manager with DX and UI | **Infisical 0.162.15** (MIT core, `ee/` under a proprietary Enterprise licence) | An honest *open core* model but with key paid features (**dynamic secrets are in the Advanced tier**). Valid for small teams; check what you need that sits in `ee/` before committing |
+| You already use Bitwarden for the team | **Bitwarden Secrets Manager** | **Little-known licence warning**: the server is AGPLv3, but the **SDK where the `bws` client lives (`bitwarden/sdk-sm`) is NOT open source** — a proprietary licence that forbids using it with software other than Bitwarden. The 2024 GPL controversy was resolved for the password manager, **not** for Secrets Manager. Its Kubernetes operator is officially installed with `--devel` (pre-release channel): undeclared maturity |
+| **Human** secrets (team) | **Password manager** with shared vaults and MFA | **It is not the same problem nor the same tool** (§3.7). Vetoed: using the service secrets manager as the team's password vault, or the other way round |
 
-**Sobre la compatibilidad Vault↔OpenBao (el dato más volátil de esta skill)**: sigue siendo
-**práctica en lo esencial** (API, políticas HCL, migración por snapshot Raft), pero **la
-divergencia es real y se acelera** — verifícala antes de asumir portabilidad:
-- OpenBao **eliminó `stored_shares`** (2.6.0) y **retira los seals integrados**
-  (`awskms`, `azurekeyvault`, `gcpckms`, `ocikms`, `pkcs11`, `alicloudkms`) **en 2.7.0**,
-  moviéndolos a plugins `kms` externos: es un cambio de despliegue, no cosmético.
-- Sus **namespaces tienen semántica distinta** de los de Vault Enterprise (identity store por
-  namespace, sin herencia de grupos; flag `unsafe_cross_namespace_identity`, por defecto
-  `false`, para restaurar el comportamiento de Vault).
-- A favor de OpenBao: namespaces sin coste (en Vault son Enterprise), *namespace sealing*,
-  imágenes distroless y no-root, almacenamiento transaccional, plugins vía OCI. Adopción real
-  verificable: **GitLab Secrets Manager está construido sobre OpenBao** y **EdgeX 4.0 lo hizo
-  su secret store por defecto**, sustituyendo a Vault.
-- A favor de Vault: replicación DR y de rendimiento, snapshots automatizados integrados,
-  Sentinel (OpenBao ofrece CEL). *(Comparativa de fuente secundaria: confírmala.)*
+**On Vault↔OpenBao compatibility (the most volatile fact in this skill)**: it remains
+**practical in the essentials** (API, HCL policies, migration by Raft snapshot), but **the
+divergence is real and accelerating** — verify it before assuming portability:
+- OpenBao **removed `stored_shares`** (2.6.0) and **is retiring the built-in seals**
+  (`awskms`, `azurekeyvault`, `gcpckms`, `ocikms`, `pkcs11`, `alicloudkms`) **in 2.7.0**,
+  moving them to external `kms` plugins: it is a deployment change, not a cosmetic one.
+- Its **namespaces have different semantics** from those of Vault Enterprise (identity store per
+  namespace, no group inheritance; `unsafe_cross_namespace_identity` flag, `false` by default,
+  to restore Vault's behaviour).
+- In OpenBao's favour: namespaces at no cost (in Vault they are Enterprise), *namespace sealing*,
+  distroless and non-root images, transactional storage, plugins via OCI. Verifiable real
+  adoption: **GitLab Secrets Manager is built on OpenBao** and **EdgeX 4.0 made it
+  its default secret store**, replacing Vault.
+- In Vault's favour: DR and performance replication, integrated automated snapshots,
+  Sentinel (OpenBao offers CEL). *(Comparison from a secondary source: confirm it.)*
 
-### 2.3 Inyección en el consumidor — de mejor a peor
+### 2.3 Injection into the consumer — best to worst
 
-| Mecanismo | Cuándo | Nota |
+| Mechanism | When | Note |
 |---|---|---|
-| **Sin secreto**: token federado obtenido en runtime | Siempre que la plataforma lo permita | El objetivo. `identity-access-management-standards` |
-| **API del gestor desde el proceso**, con caché en memoria y TTL | Aplicación que puede integrarse | Permite rotación **sin reinicio**, que es la mitad del valor de rotar |
-| **Fichero en tmpfs / `$CREDENTIALS_DIRECTORY`** | Servicios systemd, contenedores | En systemd: **memoria no *swappable*, inmutable si los privilegios lo permiten, accesible solo al UID del servicio y destruido al terminar** — el mejor mecanismo del ecosistema Linux |
-| **Volumen montado** (CSI driver, secret de K8s como volumen) | Kubernetes | Se **refresca** cuando cambia el secreto; las variables de entorno **no** |
-| **Variable de entorno** | Último recurso defendible | Ver abajo |
+| **No secret**: federated token obtained at runtime | Whenever the platform allows it | The goal. `identity-access-management-standards` |
+| **Manager API from the process**, with in-memory cache and TTL | Application that can be integrated | Allows rotation **without restart**, which is half the value of rotating |
+| **File in tmpfs / `$CREDENTIALS_DIRECTORY`** | systemd services, containers | In systemd: **non-*swappable* memory, immutable if privileges allow, accessible only to the service's UID and destroyed on exit** — the best mechanism in the Linux ecosystem |
+| **Mounted volume** (CSI driver, K8s secret as a volume) | Kubernetes | It is **refreshed** when the secret changes; environment variables are **not** |
+| **Environment variable** | Last defensible resort | See below |
 
-**Por qué las variables de entorno son la peor opción defendible** — con el argumento
-correcto, porque el que circula suele estar mal planteado:
-- **`/proc/PID/environ` NO es world-readable**: su acceso se rige por una comprobación
-  `PTRACE_MODE_READ_FSCREDS` (mismo UID, o root/`CAP_SYS_PTRACE`). Usar "cualquiera puede
-  leerlo" como argumento es **incorrecto** y te desacredita en la discusión técnica.
-- Los argumentos que **sí** se sostienen: **se heredan automáticamente por todo el árbol de
-  procesos** (cualquier subproceso, incluido el que no debía verlo, y cualquier `curl` que
-  lances desde ahí); **no hay control de acceso por credencial** (todo o nada); aparecen en
-  **volcados y trazas de crash**; son legibles por cualquier proceso del mismo UID y por root;
-  quedan expuestas en interfaces de introspección (`kubectl describe pod`, `docker inspect`);
-  **no se pueden rotar sin reiniciar el proceso**; y tienen límites de tamaño y problemas con
-  datos binarios. El propio documento de credenciales de systemd enumera exactamente estos
-  defectos frente a su modelo, donde el acceso se comprueba en el kernel en cada uso.
-- OWASP (Secrets Management Cheat Sheet) es explícito: *"using environment variables is
-  therefore not recommended unless the other methods are not possible"*, y prohíbe `ENV`/`ARG`
-  de Docker para secretos.
+**Why environment variables are the worst defensible option** — with the
+correct argument, because the one usually going around is badly framed:
+- **`/proc/PID/environ` is NOT world-readable**: access to it is governed by a
+  `PTRACE_MODE_READ_FSCREDS` check (same UID, or root/`CAP_SYS_PTRACE`). Using "anyone can
+  read it" as an argument is **incorrect** and discredits you in the technical discussion.
+- The arguments that **do** hold: **they are inherited automatically by the whole process
+  tree** (any subprocess, including the one that should not see it, and any `curl` you
+  launch from there); **there is no per-credential access control** (all or nothing); they appear in
+  **dumps and crash traces**; they are readable by any process with the same UID and by root;
+  they end up exposed in introspection interfaces (`kubectl describe pod`, `docker inspect`);
+  **they cannot be rotated without restarting the process**; and they have size limits and problems with
+  binary data. The systemd credentials document itself enumerates exactly these
+  defects against its model, where access is checked in the kernel on every use.
+- OWASP (Secrets Management Cheat Sheet) is explicit: *"using environment variables is
+  therefore not recommended unless the other methods are not possible"*, and forbids Docker
+  `ENV`/`ARG` for secrets.
 
-### 2.4 Herramientas de apoyo
+### 2.4 Supporting tools
 
-| Ámbito | Por defecto | Nota crítica |
+| Area | Default | Critical note |
 |---|---|---|
-| Escaneo de secretos | **gitleaks 8.30.1** (MIT) como base ya integrada; **Betterleaks 1.7.3** (MIT, *drop-in*, lee `.gitleaks.toml` y `.gitleaksignore`) como sucesor | **Dato que cambia la recomendación**: gitleaks se declaró **feature complete** — *"future releases will be security patches only"* — y su propio README apunta a Betterleaks, mantenido por los mismos autores. **Y su GitHub Action es otra cosa**: `gitleaks-action` **desde v2.0.0 dejó MIT y exige licencia comercial (`GITLEAKS_LICENSE`) para organizaciones**; además **v2 deja de funcionar el 16-sep-2026**. Escanea con el **binario**, no con la action |
-| Escaneo profundo / verificación de credencial viva | **trufflehog 3.96.0** (AGPL-3.0) | Su capacidad de **verificar** si la credencial sigue viva es lo que lo diferencia. Ojo con AGPL si lo integras en producto |
-| Alternativas | **Kingfisher** (MongoDB, Rust), **ggshield** (requiere SaaS), **Titus** (Praetorian) | **Nosey Parker está archivado desde 2026-04-24** (remite a Titus) y **detect-secrets de Yelp lleva ~27 meses sin release**: no empieces nada nuevo en ellos |
-| Cifrado de secretos en repo | **SOPS 3.13.3** (MPL-2.0, CNCF **Sandbox**, org `getsops`) con **age 1.3.1** (BSD-3) o KMS | **Riesgo de gobernanza abierto**: `cncf/toc#2098` (mar-2026) declara SOPS *"active but has some health issues"* y evalúa si puede relicenciarse fuera de MPL; si no, contempla **archivarlo o sacarlo de la CNCF**. Sigue siendo la mejor opción, pero **con vigilancia y plan B** |
-| Alternativa GitOps en K8s | **sealed-secrets 0.38.4** | **Mínimo duro 0.36.0+** (CVE-2026-22728: `/v1/rotate` permitía ampliar el scope a cluster-wide). **Trampa verificada**: existe `bitnamilegacy/sealed-secrets-controller` congelado en ~0.31.0 como efecto del archivado de imágenes de Bitnami — repuntar ahí te clava en una imagen sin parches. Registry alternativo válido y firmado con cosign: `ghcr.io/bitnami/sealed-secrets-controller` |
-| Sincronización a Kubernetes | **External Secrets Operator 2.8.0** | Ver §3.4: es potente pero tiene **historial de gobernanza y de CVEs críticas** que hay que conocer antes de adoptarlo |
-| Montaje directo en pod | **Secrets Store CSI Driver 1.6.0** (Kubernetes SIG Auth) | Evita materializar un `Secret` de K8s. Contrapartida: **DaemonSet privilegiado con hostPath del kubelet**, y sus mantenedores piden manos públicamente (bus factor bajo). En **1.6.0 la rotación cambió** al modelo `requiresRepublish: true` y **se eliminaron los RBAC de rotación** |
-| Identidad de carga | **SPIRE 1.15.2** (SPIFFE y SPIRE **graduados en CNCF** desde ago-2022) | Vault 2.0.0 ya acepta **SPIFFE JWT-SVID**; Entra ID documenta federación con SPIFFE/SPIRE |
+| Secret scanning | **gitleaks 8.30.1** (MIT) as the already-integrated baseline; **Betterleaks 1.7.3** (MIT, *drop-in*, reads `.gitleaks.toml` and `.gitleaksignore`) as the successor | **Fact that changes the recommendation**: gitleaks declared itself **feature complete** — *"future releases will be security patches only"* — and its own README points to Betterleaks, maintained by the same authors. **And its GitHub Action is another matter**: `gitleaks-action` **since v2.0.0 left MIT and requires a commercial licence (`GITLEAKS_LICENSE`) for organizations**; furthermore **v2 stops working on 16 Sep 2026**. Scan with the **binary**, not with the action |
+| Deep scanning / live credential verification | **trufflehog 3.96.0** (AGPL-3.0) | Its ability to **verify** whether the credential is still live is what sets it apart. Beware AGPL if you integrate it into a product |
+| Alternatives | **Kingfisher** (MongoDB, Rust), **ggshield** (requires SaaS), **Titus** (Praetorian) | **Nosey Parker has been archived since 2026-04-24** (points to Titus) and **Yelp's detect-secrets has gone ~27 months without a release**: do not start anything new on them |
+| Encrypting secrets in the repo | **SOPS 3.13.3** (MPL-2.0, CNCF **Sandbox**, `getsops` org) with **age 1.3.1** (BSD-3) or KMS | **Open governance risk**: `cncf/toc#2098` (Mar 2026) declares SOPS *"active but has some health issues"* and is evaluating whether it can be relicensed away from MPL; if not, it contemplates **archiving it or removing it from the CNCF**. It remains the best option, but **with vigilance and a plan B** |
+| GitOps alternative on K8s | **sealed-secrets 0.38.4** | **Hard minimum 0.36.0+** (CVE-2026-22728: `/v1/rotate` allowed widening the scope to cluster-wide). **Verified trap**: `bitnamilegacy/sealed-secrets-controller` exists frozen at ~0.31.0 as a side effect of Bitnami's image archiving — repointing there nails you to an unpatched image. Valid alternative registry, signed with cosign: `ghcr.io/bitnami/sealed-secrets-controller` |
+| Syncing to Kubernetes | **External Secrets Operator 2.8.0** | See §3.4: it is powerful but has a **history of governance issues and critical CVEs** you must know before adopting it |
+| Direct mount in the pod | **Secrets Store CSI Driver 1.6.0** (Kubernetes SIG Auth) | Avoids materialising a K8s `Secret`. Trade-off: **privileged DaemonSet with the kubelet's hostPath**, and its maintainers are publicly asking for hands (low bus factor). In **1.6.0 rotation changed** to the `requiresRepublish: true` model and **the rotation RBAC was removed** |
+| Workload identity | **SPIRE 1.15.2** (SPIFFE and SPIRE **graduated in the CNCF** since Aug 2022) | Vault 2.0.0 already accepts **SPIFFE JWT-SVID**; Entra ID documents federation with SPIFFE/SPIRE |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Secretos dinámicos: el objetivo real
+### 3.1 Dynamic secrets: the real goal
 
-- **Credencial de base de datos generada al vuelo con TTL** (minutos u horas), revocada al
-  expirar el lease. Elimina de golpe: la rotación manual, el secreto compartido entre
-  servicios, el "no sabemos quién usa esta contraseña" y la mayor parte del impacto de una
-  filtración.
-- **Requisitos de diseño que la gente descubre tarde**: la aplicación debe **renovar o
-  reconectar** cuando el lease caduca (un pool de conexiones con credencial caducada falla en
-  el peor momento); el gestor pasa a ser **dependencia en el camino crítico** (§3.6); y el
-  motor de datos debe soportar la creación/borrado de usuarios a ese ritmo.
-- Aplica también a credenciales cloud temporales, certificados de vida corta y tokens de
-  servicio. **Un secreto con TTL largo es una decisión, y se justifica en la PR.**
-- **Los gestores de nube no rotan solos, salvo casos concretos** — verifícalo antes de
-  prometerlo:
-  - **AWS Secrets Manager**: *managed rotation* sin Lambda solo para Aurora/RDS/DocumentDB/
-    Redshift y un conjunto de integraciones externas; el resto **sigue exigiendo tu Lambda**.
-    Desde jul-2026 emite notificaciones de cambio a **EventBridge** sin coste: úsalas para
-    detectar rotaciones que no ocurren.
-  - **Azure Key Vault**: **no tiene rotación nativa de *secretos*** (las *claves* sí). El
-    patrón oficial es evento `SecretNearExpiry` → Event Grid → Function, con esquema
-    **dual-key**. Además, desde mar-2026 los vaults creados con la API `2026-02-01` usan
-    **RBAC de Azure por defecto**, y **las API de control plane anteriores se retiran el
-    27-feb-2027**.
-  - **GCP Secret Manager**: **no rota**; emite un mensaje **`SECRET_ROTATE`** a Pub/Sub en
-    `next_rotation_time` y tú creas la versión nueva. La rotación de credenciales de Cloud SQL
-    está en **Preview** (jul-2026).
+- **Database credential generated on the fly with a TTL** (minutes or hours), revoked when
+  the lease expires. It eliminates in one go: manual rotation, the secret shared between
+  services, the "we don't know who uses this password" and most of the impact of a
+  leak.
+- **Design requirements people discover late**: the application must **renew or
+  reconnect** when the lease expires (a connection pool with an expired credential fails at
+  the worst moment); the manager becomes a **dependency on the critical path** (§3.6); and the
+  data engine must support creating/deleting users at that rate.
+- It also applies to temporary cloud credentials, short-lived certificates and service
+  tokens. **A secret with a long TTL is a decision, and is justified in the PR.**
+- **Cloud managers do not rotate on their own, except in specific cases** — verify it before
+  promising it:
+  - **AWS Secrets Manager**: *managed rotation* without Lambda only for Aurora/RDS/DocumentDB/
+    Redshift and a set of external integrations; the rest **still requires your Lambda**.
+    Since Jul 2026 it emits change notifications to **EventBridge** at no cost: use them to
+    detect rotations that do not happen.
+  - **Azure Key Vault**: **it has no native rotation of *secrets*** (*keys* do). The
+    official pattern is a `SecretNearExpiry` event → Event Grid → Function, with a
+    **dual-key** scheme. Also, since Mar 2026 vaults created with the `2026-02-01` API use
+    **Azure RBAC by default**, and **the earlier control plane APIs are retired on
+    27 Feb 2027**.
+  - **GCP Secret Manager**: **it does not rotate**; it emits a **`SECRET_ROTATE`** message to Pub/Sub at
+    `next_rotation_time` and you create the new version. Cloud SQL credential rotation
+    is in **Preview** (Jul 2026).
 
-### 3.2 Modelado, políticas y auditoría del gestor
+### 3.2 Modelling, policies and auditing of the manager
 
-- **El gestor es un objetivo de altísimo valor: su compromiso es el peor día de la
-  organización.** Se trata como Tier 0: red segmentada, acceso administrativo separado del
-  de consumo, MFA para humanos, y su telemetría vigilada por
+- **The manager is an extremely high-value target: its compromise is the organization's worst
+  day.** It is treated as Tier 0: segmented network, administrative access separated from
+  consumption access, MFA for humans, and its telemetry watched by
   `detection-engineering-standards`.
-- **Rutas por dominio de fallo**, no por equipo ni por comodidad:
-  `<entorno>/<servicio>/<propósito>`. Una política por identidad consumidora, con **solo
-  lectura de sus propias rutas**. Nadie —ni una aplicación, ni un pipeline— lee `*`.
-- **Separación de funciones**: quien administra el gestor no debería poder leer los secretos
-  de negocio en claro; quien los lee no administra políticas. Toda operación con material
-  raíz, auditada y con doble control.
-- **Auditoría con respuesta a preguntas concretas**: quién leyó qué y cuándo, qué identidad no
-  ha leído nunca un secreto que tiene concedido (permiso muerto → se retira), y qué secreto no
-  se ha leído en meses (candidato a borrado). **Un secreto que nadie lee es riesgo puro.**
-- **Alerta sobre el propio gestor**: pico de lecturas, lectura desde origen nuevo, cambio de
-  política, desactivación de auditoría, sellado/desellado no planificado, y **fallo de
-  autenticación repetido**. Sin `audit device` configurado y con destino monitorizado, no hay
-  gestión de secretos: hay un almacén.
-- **Verifica que el destino de auditoría no se convierta en la filtración**: precedente real
-  (HCSEC-2026-09) — secretos de webhook de GitHub quedaron expuestos en base64 en una
-  cabecera HTTP que acabó en logs de balanceadores, proxies y SIEM. Los logs de auditoría del
-  gestor son tan sensibles como su contenido.
+- **Paths by failure domain**, not by team or by convenience:
+  `<environment>/<service>/<purpose>`. One policy per consuming identity, with **read-only
+  access to its own paths**. Nobody —not an application, not a pipeline— reads `*`.
+- **Separation of duties**: whoever administers the manager should not be able to read the business
+  secrets in clear text; whoever reads them does not administer policies. Every operation with root
+  material audited and with dual control.
+- **Auditing that answers concrete questions**: who read what and when, which identity has
+  never read a secret it has been granted (dead permission → it is withdrawn), and which secret has
+  not been read in months (deletion candidate). **A secret nobody reads is pure risk.**
+- **Alerting on the manager itself**: read spikes, a read from a new origin, policy
+  change, auditing disabled, unplanned sealing/unsealing, and **repeated authentication
+  failures**. With no `audit device` configured and with a monitored destination, there is no
+  secrets management: there is a store.
+- **Verify that the audit destination does not become the leak**: real precedent
+  (HCSEC-2026-09) — GitHub webhook secrets were exposed in base64 in an
+  HTTP header that ended up in load balancer, proxy and SIEM logs. The manager's audit logs
+  are as sensitive as its contents.
 
-### 3.3 Rotación: si nunca se ha ejecutado, no existe
+### 3.3 Rotation: if it has never been run, it does not exist
 
-- **Toda credencial tiene periodo de rotación explícito y dueño.** Sin dueño no hay rotación,
-  hay intención.
-- **La rotación se ejecuta de verdad y de forma programada**, no "cuando toque". Un
-  procedimiento de rotación documentado pero nunca ejercitado falla exactamente el día del
-  incidente, que es cuando hay que ejecutarlo bajo presión y en masa.
-- **Diseña para el solapamiento (dual-key / expand-contract)**: dos credenciales válidas a la
-  vez durante la ventana de transición. Sin solapamiento, toda rotación es una caída
-  planificada, y por eso nadie rota.
-- **Métrica del programa**: *time-to-rotate-everything* — cuánto tardarías en rotar **todas**
-  las credenciales de un ámbito. Si la respuesta es "semanas", tienes un incidente latente,
-  igual que una PKI que no puede reemitir en 24 h.
-- La rotación es un **gate de recuperación**, no solo de higiene: el plan de respuesta a
-  compromiso depende de que este número sea pequeño.
+- **Every credential has an explicit rotation period and an owner.** With no owner there is no rotation,
+  there is intent.
+- **Rotation is actually executed and on a schedule**, not "when it's due". A
+  documented but never exercised rotation procedure fails exactly on the day of the
+  incident, which is when it has to be run under pressure and en masse.
+- **Design for overlap (dual-key / expand-contract)**: two credentials valid at
+  once during the transition window. Without overlap, every rotation is a planned
+  outage, and that is why nobody rotates.
+- **Programme metric**: *time-to-rotate-everything* — how long it would take you to rotate **all**
+  the credentials in a scope. If the answer is "weeks", you have a latent incident,
+  just like a PKI that cannot reissue within 24 h.
+- Rotation is a **recovery gate**, not just hygiene: the compromise response plan
+  depends on this number being small.
 
-### 3.4 Kubernetes: cómo llega el secreto al pod
+### 3.4 Kubernetes: how the secret reaches the pod
 
-Dos caminos válidos, y la elección se documenta:
+Two valid paths, and the choice is documented:
 
-- **External Secrets Operator (ESO)**: sincroniza desde el gestor a `Secret` de Kubernetes.
-  Cómodo y compatible con todo, pero **materializa el secreto en etcd** (exige cifrado en
-  reposo con proveedor KMS y RBAC estricto — `kubernetes-standards`). Antes de adoptarlo,
-  conoce su historial, porque cambia la evaluación de riesgo:
-  - **Ya no es `v0.x`**: 1.0 GA en nov-2025, 2.0 en feb-2026, hoy **2.8.0**. Ventana de
-    soporte **muy corta**: cada minor muere al salir la siguiente.
-  - **`v1beta1` no está deprecada: fue ELIMINADA en v0.17.0** (may-2025). La migración pasa
-    obligatoriamente por v0.16.2, y **no existe guía oficial de migración**. Gotcha añadido:
-    en 0.16.x el webhook convierte a `v1` aunque sirva ambas, produciendo **drift permanente
-    en Argo CD** si Git se queda en `v1beta1`.
-  - **CVEs críticas propias**: **CVE-2026-22822** (CVSS 9.3, `getSecretKey` recuperaba
-    secretos **cross-namespace** con el rolebinding del controlador; fix 1.2.0),
-    **CVE-2026-34984** (`getHostByName` en el motor de plantillas → exfiltración por DNS; fix
-    2.3.0), **CVE-2025-55196** (`PushSecret` sin selector de namespace → lectura cluster-wide;
-    fix 0.19.2). **Mínimo duro: 2.3.0+.**
-  - **Salud del proyecto**: CNCF **Sandbox** desde 2022 sin promoción; en jul-2025 los
-    mantenedores **pausaron todas las releases** por *burnout* y la CNCF TOC abrió una
-    **revisión de salud con checklist de archivado**; se resolvió con gobernanza nueva, y la
-    empresa que lo respaldaba (*External Secrets Inc.*) **cerró en nov-2025**. Es usable, pero
-    entra en tu registro de riesgos con dueño.
-- **Secrets Store CSI Driver**: monta el secreto como volumen sin crear un `Secret` de K8s
-  (salvo que actives la sincronización, que anula la ventaja). Preferible cuando el modelo de
-  amenaza incluye "quien lea etcd o tenga `get secrets` no debe ver esto".
-- **sealed-secrets / SOPS**: para GitOps **sin** gestor. Son cifrado en el repo, no gestión de
-  secretos: sin rotación, sin auditoría de lectura, sin TTL, sin revocación. Válidos y KISS
-  para homelab y equipos pequeños; **su límite hay que declararlo**, no descubrirlo.
-- **Vault/OpenBao en K8s**: **Vault Secrets Operator 1.5.0** (ojo, *breaking*: elimina
-  `spec.appRole.secretIDPath`) o **Vault Agent Injector (vault-k8s) 1.7.5**. HashiCorp no
-  recomienda uno sobre otro por defecto, pero la **carga sobre el gestor sí difiere**: VSO es
-  la más baja (pool por nodo con caché), el CSI provider intermedia, el **Agent Injector la
-  más alta** (sidecar por pod).
+- **External Secrets Operator (ESO)**: syncs from the manager to a Kubernetes `Secret`.
+  Convenient and compatible with everything, but **it materialises the secret in etcd** (requires encryption at
+  rest with a KMS provider and strict RBAC — `kubernetes-standards`). Before adopting it,
+  know its history, because it changes the risk assessment:
+  - **It is no longer `v0.x`**: 1.0 GA in Nov 2025, 2.0 in Feb 2026, today **2.8.0**. A **very
+    short** support window: each minor dies when the next one ships.
+  - **`v1beta1` is not deprecated: it was REMOVED in v0.17.0** (May 2025). Migration goes
+    necessarily through v0.16.2, and **there is no official migration guide**. Added gotcha:
+    in 0.16.x the webhook converts to `v1` even though it serves both, producing **permanent drift
+    in Argo CD** if Git stays on `v1beta1`.
+  - **Its own critical CVEs**: **CVE-2026-22822** (CVSS 9.3, `getSecretKey` retrieved
+    **cross-namespace** secrets with the controller's rolebinding; fix 1.2.0),
+    **CVE-2026-34984** (`getHostByName` in the templating engine → exfiltration via DNS; fix
+    2.3.0), **CVE-2025-55196** (`PushSecret` without a namespace selector → cluster-wide read;
+    fix 0.19.2). **Hard minimum: 2.3.0+.**
+  - **Project health**: CNCF **Sandbox** since 2022 with no promotion; in Jul 2025 the
+    maintainers **paused all releases** due to *burnout* and the CNCF TOC opened a
+    **health review with an archiving checklist**; it was resolved with new governance, and
+    the company backing it (*External Secrets Inc.*) **shut down in Nov 2025**. It is usable, but
+    it goes into your risk register with an owner.
+- **Secrets Store CSI Driver**: mounts the secret as a volume without creating a K8s `Secret`
+  (unless you enable syncing, which cancels out the advantage). Preferable when the threat
+  model includes "whoever reads etcd or has `get secrets` must not see this".
+- **sealed-secrets / SOPS**: for GitOps **without** a manager. They are encryption in the repo, not secrets
+  management: no rotation, no read auditing, no TTL, no revocation. Valid and KISS
+  for a homelab and small teams; **their limit must be declared**, not discovered.
+- **Vault/OpenBao on K8s**: **Vault Secrets Operator 1.5.0** (careful, *breaking*: it removes
+  `spec.appRole.secretIDPath`) or **Vault Agent Injector (vault-k8s) 1.7.5**. HashiCorp does not
+  recommend one over the other by default, but the **load on the manager does differ**: VSO is
+  the lowest (per-node pool with cache), the CSI provider is in between, the **Agent Injector the
+  highest** (sidecar per pod).
 
-### 3.5 Dónde se filtran los secretos de verdad
+### 3.5 Where secrets actually leak
 
-Por orden de frecuencia observada, no de dramatismo:
+In order of observed frequency, not of drama:
 
-- **Repositorio e historial de Git** (§3.8).
-- **Variables y logs de CI**: `set -x`, `echo` de depuración, salidas de error de un cliente
-  HTTP. El enmascarado del CI es **best effort**: se rompe con transformaciones (base64,
-  troceado, JSON escapado) y **el payload del compromiso de Trivy leía la memoria del proceso
-  del runner precisamente para saltárselo**.
-- **Imágenes y capas de contenedor**: un `ARG`/`ENV` o un `COPY` de un fichero borrado en una
-  capa posterior **sigue en la imagen**. Se usa `--mount=type=secret` de BuildKit
+- **Repository and Git history** (§3.8).
+- **CI variables and logs**: `set -x`, debug `echo`, error output from an HTTP
+  client. CI masking is **best effort**: it breaks with transformations (base64,
+  chunking, escaped JSON) and **the payload of the Trivy compromise read the memory of the runner
+  process precisely to bypass it**.
+- **Container images and layers**: an `ARG`/`ENV` or a `COPY` of a file deleted in a
+  later layer **is still in the image**. Use BuildKit's `--mount=type=secret`
   (`kubernetes-standards`).
-- **Artefactos de build y ficheros de configuración empaquetados**.
-- **State de Terraform** — en claro por diseño (`iac-standards`).
-- **Backups y snapshots**: si el backup contiene el secreto, el backup **es** el secreto. Su
-  clave de cifrado vive fuera del sistema respaldado (`cryptography-pki-standards`,
+- **Build artifacts and packaged configuration files**.
+- **Terraform state** — in clear text by design (`iac-standards`).
+- **Backups and snapshots**: if the backup contains the secret, the backup **is** the secret. Its
+  encryption key lives outside the backed-up system (`cryptography-pki-standards`,
   `bcdr-standards`).
-- **Telemetría**: URLs con token en query string, cabeceras `Authorization`, cuerpos de
-  petición, stack traces (`observability-standards`).
-- **Y el que casi nadie modela: el consumidor comprometido.** El gusano **Shai-Hulud** usa
-  **TruffleHog** dentro de la máquina de la víctima para cosechar credenciales, y su tercera
-  oleada (`@bitwarden/cli` 2026.4.0 malicioso, ~93 minutos en npm, abr-2026) **vaciaba
-  directamente AWS Secrets Manager, SSM Parameter Store, GCP Secret Manager y Azure Key
-  Vault** con la identidad legítima del proceso. **Ningún gestor te protege de un consumidor
-  comprometido**: por eso la defensa real son TTL cortos, mínimo privilegio por identidad y
-  detección de lecturas anómalas — no la caja fuerte.
+- **Telemetry**: URLs with a token in the query string, `Authorization` headers, request
+  bodies, stack traces (`observability-standards`).
+- **And the one almost nobody models: the compromised consumer.** The **Shai-Hulud** worm uses
+  **TruffleHog** inside the victim's machine to harvest credentials, and its third
+  wave (malicious `@bitwarden/cli` 2026.4.0, ~93 minutes on npm, Apr 2026) **directly emptied
+  AWS Secrets Manager, SSM Parameter Store, GCP Secret Manager and Azure Key
+  Vault** with the process's legitimate identity. **No manager protects you from a compromised
+  consumer**: that is why the real defence is short TTLs, least privilege per identity and
+  detection of anomalous reads — not the vault.
 
-### 3.6 HA, sellado y la pregunta que nadie hace
+### 3.6 HA, sealing and the question nobody asks
 
-**Si el gestor cae, ¿arranca tu aplicación?** Respóndelo por escrito antes de desplegarlo, no
-durante la caída:
+**If the manager goes down, does your application start?** Answer it in writing before deploying it, not
+during the outage:
 
-- Un gestor en el camino crítico del arranque convierte su indisponibilidad en indisponibilidad
-  total. Mitigaciones: **caché en memoria con TTL** y arranque degradado con la credencial
-  vigente; réplicas y despliegue multi-AZ; y **desellado automático** (auto-unseal contra
-  KMS/HSM) para que un reinicio no exija a un humano de madrugada.
-- El **auto-unseal traslada la confianza al KMS**: si ese KMS cae o le retiran permisos, el
-  gestor no se abre. Documenta el procedimiento de **desellado manual con quórum de Shamir**,
-  con las llaves custodiadas por personas distintas y **el procedimiento ensayado**. Una llave
-  de recuperación que nadie ha probado a usar es una llave que no existe.
-- **En OpenBao, presta atención a los cambios de sellado**: `stored_shares` eliminado en 2.6.0
-  y los seals integrados **saliendo del binario en 2.7.0** hacia plugins externos.
-- Backup del gestor (snapshot Raft) **cifrado, con clave fuera del propio gestor** y con
-  **restore probado**. Es el único caso donde restaurar mal significa perderlo todo a la vez.
-- **Vigila sus advisories como los del kernel.** Precedentes verificados de 2026: en OpenBao,
-  **CVE-2026-63132** (CVSS 9.1, canal lateral temporal en *recovery mode* que permitía extraer
-  el recovery token; fix 2.6.0) y escalada por *wildcards* en políticas con plantilla (fix
-  2.6.0); en Vault, **CVE-2026-5051** (bypass del guard del directorio de plugins de
-  auditoría), **CVE-2026-5052** (SSRF en la validación de retos ACME del motor PKI) y
-  **CVE-2026-3605** (bypass de política borrando metadata KVv2 vía glob).
+- A manager on the critical startup path turns its unavailability into total
+  unavailability. Mitigations: **in-memory cache with TTL** and degraded startup with the current
+  credential; replicas and multi-AZ deployment; and **automatic unsealing** (auto-unseal against
+  KMS/HSM) so that a restart does not require a human in the middle of the night.
+- **Auto-unseal shifts the trust to the KMS**: if that KMS goes down or has its permissions withdrawn, the
+  manager does not open. Document the procedure for **manual unsealing with a Shamir quorum**,
+  with the keys held by different people and **the procedure rehearsed**. A recovery key
+  nobody has tried to use is a key that does not exist.
+- **In OpenBao, pay attention to the sealing changes**: `stored_shares` removed in 2.6.0
+  and the built-in seals **leaving the binary in 2.7.0** towards external plugins.
+- Backup of the manager (Raft snapshot) **encrypted, with the key outside the manager itself** and with
+  **tested restore**. It is the only case where restoring badly means losing everything at once.
+- **Watch its advisories like the kernel's.** Verified 2026 precedents: in OpenBao,
+  **CVE-2026-63132** (CVSS 9.1, timing side channel in *recovery mode* that allowed extracting
+  the recovery token; fix 2.6.0) and escalation via *wildcards* in templated policies (fix
+  2.6.0); in Vault, **CVE-2026-5051** (bypass of the audit plugin directory guard),
+  **CVE-2026-5052** (SSRF in the PKI engine's ACME challenge validation) and
+  **CVE-2026-3605** (policy bypass by deleting KVv2 metadata via glob).
 
-### 3.7 Humanos ≠ máquinas
+### 3.7 Humans ≠ machines
 
-Son dos problemas con soluciones distintas y **no se mezclan**:
+They are two problems with different solutions and **they do not get mixed**:
 
-| | Secretos de humanos | Secretos de máquinas |
+| | Human secrets | Machine secrets |
 |---|---|---|
-| Herramienta | Gestor de contraseñas del equipo (vaults compartidos, MFA, recuperación) | Gestor de secretos de servicio (API, políticas, TTL, auditoría) |
-| Unidad | Persona, con onboarding/offboarding | Identidad de carga, con ciclo de vida del despliegue |
-| Objetivo | Que nadie reutilice ni comparta contraseñas | Que la credencial sea dinámica y de vida corta |
-| Fallo típico | Contraseña compartida por chat que sobrevive a la baja de quien la creó | Token estático de hace tres años que nadie sabe quién usa |
+| Tool | Team password manager (shared vaults, MFA, recovery) | Service secrets manager (API, policies, TTL, auditing) |
+| Unit | Person, with onboarding/offboarding | Workload identity, with the deployment's lifecycle |
+| Goal | That nobody reuses or shares passwords | That the credential be dynamic and short-lived |
+| Typical failure | Password shared over chat that outlives the departure of whoever created it | Static token from three years ago that nobody knows who uses |
 
-Regla dura: **una credencial que un humano puede leer y que también usa un servicio es una
-credencial que ya está comprometida a efectos de auditoría** — no puedes atribuir su uso.
+Hard rule: **a credential a human can read and that a service also uses is a
+credential that is already compromised for auditing purposes** — you cannot attribute its use.
 
-### 3.8 Respuesta a la exposición: rotar primero, limpiar después
+### 3.8 Exposure response: rotate first, clean up afterwards
 
-**Un secreto que ha estado en un repositorio, en un log o en un canal de chat está quemado.**
-Reescribir el historial no lo des-quema: clonado, cacheado por el forjado, indexado por bots
-que barren GitHub en segundos, y presente en forks y en las bases de datos de los atacantes.
+**A secret that has been in a repository, in a log or in a chat channel is burned.**
+Rewriting history does not un-burn it: cloned, cached by the forge, indexed by bots
+that sweep GitHub in seconds, and present in forks and in attackers' databases.
 
-Orden **no negociable**:
-1. **Rotar/revocar la credencial.** Primero. Antes de investigar cómo llegó ahí.
-2. **Verificar la revocación** (que la vieja ya no funciona) y **buscar uso** de la credencial
-   expuesta en los logs desde el momento de la exposición — es un caso de
-   `detection-engineering-standards`, y si hubo uso, un incidente de
+**Non-negotiable** order:
+1. **Rotate/revoke the credential.** First. Before investigating how it got there.
+2. **Verify the revocation** (that the old one no longer works) and **look for use** of the exposed
+   credential in the logs from the moment of exposure — it is a case for
+   `detection-engineering-standards`, and if there was use, an incident for
    `incident-response-forensics-standards`.
-3. **Limpiar el historial** (`git filter-repo`, `git-workflow-standards`) y coordinar el
-   force-push con quien tenga clones.
-4. **Arreglar la causa**: por qué el escaneo no lo cogió antes, por qué existía ese secreto
-   estático, y si podía haberse eliminado por federación.
+3. **Clean up the history** (`git filter-repo`, `git-workflow-standards`) and coordinate the
+   force-push with whoever has clones.
+4. **Fix the cause**: why the scan did not catch it earlier, why that static
+   secret existed, and whether it could have been eliminated through federation.
 
-**Prohibido invertir el orden.** "Lo borro del historial y luego vemos" es la respuesta que
-convierte una fuga en una brecha.
+**Reversing the order is forbidden.** "I'll delete it from the history and then we'll see" is the response that
+turns a leak into a breach.
 
-## 4. Gates de CI (rompen el build)
+## 4. CI gates (they break the build)
 
-1. **Pre-commit local + escaneo en CI** del diff con `gitleaks`/`betterleaks` — el pre-commit
-   es comodidad, **el gate de CI es el control**, porque el hook local se salta con
+1. **Local pre-commit + CI scan** of the diff with `gitleaks`/`betterleaks` — the pre-commit
+   is convenience, **the CI gate is the control**, because the local hook is skipped with
    `--no-verify`.
-2. **Escaneo del historial completo** al menos periódicamente (y siempre al abrir un repo
-   nuevo o al importarlo): el diff solo ve lo que llega hoy.
-3. **Push protection del forjado activada**: en GitHub, gratis en repos públicos, pero en
-   privados requiere **GitHub Secret Protection** (facturado por *active committer*) y **a
-   nivel de repo/organización está desactivada por defecto** — actívala explícitamente. En
-   GitLab, **Secret Push Protection es solo Ultimate** (GA en 17.5) y **omite binarios,
-   ficheros > 1 MiB y pushes de más de 350 000 líneas**: conoce sus huecos, no la trates como
-   red de seguridad total.
-4. **Hallazgo = build roto + rotación inmediata**, no un TODO ni una excepción silenciosa.
-   Toda supresión (`.gitleaksignore`, allowlist) lleva motivo, dueño y **caducidad**.
-5. **Escaneo de la imagen construida y del state de IaC**, no solo del código fuente: los
-   secretos aparecen en capas y en `terraform.tfstate`.
-6. **Prohibición de credenciales estáticas en el pipeline**: gate que falla si aparece
-   `AWS_ACCESS_KEY_ID`, una clave de service account JSON o un `client_secret` como variable
-   de CI donde exista OIDC (`cicd-standards`).
-7. **Test de rotación automatizado** en el entorno de preproducción: rota, comprueba que el
-   servicio sigue funcionando y que la credencial antigua **ya no autentica**. Sin esto, §3.3
-   es una intención.
-8. **Verificación de que el secreto no aparece en la salida**: prueba que ejecuta el arranque
-   del servicio y falla si un valor secreto conocido aparece en stdout/stderr o en el log
-   estructurado.
+2. **Full history scan** at least periodically (and always when opening a new repo
+   or importing it): the diff only sees what arrives today.
+3. **Forge push protection enabled**: on GitHub, free in public repos, but in
+   private ones it requires **GitHub Secret Protection** (billed per *active committer*) and **at
+   repo/organization level it is disabled by default** — enable it explicitly. On
+   GitLab, **Secret Push Protection is Ultimate only** (GA in 17.5) and **it skips binaries,
+   files > 1 MiB and pushes of more than 350,000 lines**: know its gaps, do not treat it as a
+   total safety net.
+4. **A finding = broken build + immediate rotation**, not a TODO nor a silent exception.
+   Every suppression (`.gitleaksignore`, allowlist) carries a reason, an owner and an **expiry**.
+5. **Scan of the built image and of the IaC state**, not just of the source code: the
+   secrets appear in layers and in `terraform.tfstate`.
+6. **Prohibition of static credentials in the pipeline**: a gate that fails if
+   `AWS_ACCESS_KEY_ID`, a JSON service account key or a `client_secret` appears as a CI variable
+   where OIDC exists (`cicd-standards`).
+7. **Automated rotation test** in the pre-production environment: rotate, check that the
+   service still works and that the old credential **no longer authenticates**. Without this, §3.3
+   is an intention.
+8. **Verification that the secret does not appear in the output**: a test that runs the service
+   startup and fails if a known secret value appears in stdout/stderr or in the structured
+   log.
 
-## 5. Seguridad específica
+## 5. Specific security
 
-- **Mínimo privilegio hasta el final**: una identidad, un conjunto de secretos, solo lectura.
-  El anti-patrón universal es la política amplia "para no bloquear al equipo", que convierte
-  cualquier compromiso de cualquier pod en compromiso total.
-- **Nunca pases secretos por argumentos de línea de comandos** (visibles en `ps`, en el
-  historial del shell y en los logs de auditoría del proceso): fichero, stdin o variable de
-  entorno del propio proceso, en ese orden.
-- **Nunca los pongas en la URL** (query string): acaban en logs de acceso, en el `Referer` y
-  en la telemetría.
-- **Un secreto por servicio y por entorno.** Compartir una credencial entre servicios destruye
-  la atribución y multiplica el radio de explosión de cada rotación.
-- **La cadena de suministro del propio tooling de secretos es superficie de ataque**, y el
-  precedente es explícito: el compromiso de `tj-actions/changed-files` (**CVE-2025-30066**)
-  volcó secretos de CI a los logs de build de más de 23 000 repositorios, y la campaña de 2026
-  contra Trivy/Checkmarx robó credenciales de CI a escala. Consecuencia: **pin por SHA de toda
-  action y por digest de toda imagen** que toque secretos, verificación de firma, y **egress
-  restringido en los jobs que los manejan**. Verificado ago-2026: **ni gitleaks, ni trufflehog,
-  ni SOPS, ni ESO, ni sealed-secrets han sufrido compromiso de cadena de suministro** — sí
-  vulnerabilidades propias (§2.4, §3.4), que es otra cosa.
-- **Federación OIDC: la trust policy es el control, y cambió en 2026.** GitHub Actions emite
-  ahora **subject claims inmutables** (`repo:org@<id>/repo@<id>:ref:...`), aplicado
-  automáticamente desde el **15-jul-2026** a repos nuevos y a los renombrados o transferidos:
-  las políticas de confianza que casan por path **se rompen o, peor, dejan de casar lo que
-  creías**. En GitLab, `CI_JOB_JWT*` fue **eliminado en 17.0** y la guía es confiar por
-  `project_id`/`namespace_id`, no por path (que un rename cambia). En Azure, `issuer`,
-  `subject` y `audience` son **case-sensitive** y hay límite de **20 credenciales federadas
-  por identidad gestionada**. Nunca uses comodines amplios en el `sub`.
-- **Nada de secretos en la telemetría ni en los mensajes de error.** El error de "credencial
-  inválida" no imprime la credencial, ni su prefijo, ni su longitud.
+- **Least privilege all the way**: one identity, one set of secrets, read-only.
+  The universal anti-pattern is the broad policy "so as not to block the team", which turns
+  any compromise of any pod into total compromise.
+- **Never pass secrets as command-line arguments** (visible in `ps`, in the
+  shell history and in the process audit logs): file, stdin or environment variable
+  of the process itself, in that order.
+- **Never put them in the URL** (query string): they end up in access logs, in the `Referer` and
+  in telemetry.
+- **One secret per service and per environment.** Sharing a credential between services destroys
+  attribution and multiplies the blast radius of every rotation.
+- **The supply chain of the secrets tooling itself is attack surface**, and the
+  precedent is explicit: the compromise of `tj-actions/changed-files` (**CVE-2025-30066**)
+  dumped CI secrets into the build logs of more than 23,000 repositories, and the 2026 campaign
+  against Trivy/Checkmarx stole CI credentials at scale. Consequence: **pin by SHA every
+  action and by digest every image** that touches secrets, signature verification, and **restricted
+  egress in the jobs that handle them**. Verified Aug 2026: **neither gitleaks, nor trufflehog,
+  nor SOPS, nor ESO, nor sealed-secrets have suffered a supply chain compromise** — they have had
+  their own vulnerabilities (§2.4, §3.4), which is a different thing.
+- **OIDC federation: the trust policy is the control, and it changed in 2026.** GitHub Actions now issues
+  **immutable subject claims** (`repo:org@<id>/repo@<id>:ref:...`), applied
+  automatically since **15 Jul 2026** to new repos and to renamed or transferred ones:
+  trust policies that match by path **break or, worse, stop matching what you
+  thought**. In GitLab, `CI_JOB_JWT*` was **removed in 17.0** and the guidance is to trust by
+  `project_id`/`namespace_id`, not by path (which a rename changes). In Azure, `issuer`,
+  `subject` and `audience` are **case-sensitive** and there is a limit of **20 federated credentials
+  per managed identity**. Never use broad wildcards in the `sub`.
+- **No secrets in telemetry nor in error messages.** The "invalid credential" error
+  does not print the credential, nor its prefix, nor its length.
 
-## 6. Operabilidad
+## 6. Operability
 
-- **Inventario**: qué secretos existen, quién los consume, cuándo se rotaron por última vez y
-  quién es el dueño. Sin inventario no hay rotación de emergencia posible, y por tanto no hay
-  respuesta a compromiso.
-- **Caché en el consumidor con TTL** para no convertir cada petición en una llamada al gestor
-  (coste, latencia y un punto de fallo por operación). Cachea en memoria, **nunca en disco en
-  claro**, y respeta el TTL como límite superior.
-- **Coste real**: AWS Secrets Manager factura ~0,40 USD por secreto y mes más llamadas — un
-  patrón de "un secreto por microservicio por entorno" se nota en la factura y empuja al
-  anti-patrón de agrupar todo en un secreto gigante compartido. Diseña la granularidad con el
-  coste y el radio de explosión sobre la mesa.
-- **Observabilidad del gestor**: latencia y tasa de error de lectura, leases activos, estado
-  de sellado, y **antigüedad del secreto más viejo sin rotar** como métrica publicada.
-- **Retirada**: cuando un servicio muere, sus secretos y sus políticas se borran en la misma
-  PR. Las credenciales huérfanas son el residuo con más rentabilidad para un atacante.
+- **Inventory**: which secrets exist, who consumes them, when they were last rotated and
+  who the owner is. Without an inventory there is no possible emergency rotation, and therefore no
+  compromise response.
+- **Cache in the consumer with a TTL** so as not to turn every request into a call to the manager
+  (cost, latency and a point of failure per operation). Cache in memory, **never on disk in
+  clear text**, and respect the TTL as an upper bound.
+- **Real cost**: AWS Secrets Manager bills ~0.40 USD per secret per month plus calls — a
+  "one secret per microservice per environment" pattern shows up in the bill and pushes towards the
+  anti-pattern of grouping everything into one giant shared secret. Design the granularity with
+  cost and blast radius on the table.
+- **Observability of the manager**: read latency and error rate, active leases, seal
+  state, and **the age of the oldest unrotated secret** as a published metric.
+- **Decommissioning**: when a service dies, its secrets and its policies are deleted in the same
+  PR. Orphaned credentials are the residue with the highest return for an attacker.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisar advisories del gestor (mensual — tiene críticas con regularidad),
-  versión de ESO/CSI driver/sealed-secrets (su ventana de soporte es corta), y **auditoría de
-  accesos y poda de permisos y secretos muertos, trimestral**.
-- **Riesgos de gobernanza en el registro, con dueño y fecha de revisión**: la licencia BUSL de
-  Vault bajo IBM, el nivel Sandbox y la revisión de salud de SOPS en la CNCF, la trayectoria
-  de ESO tras el cierre de la empresa que lo respaldaba, y el estado *feature complete* de
-  gitleaks. Ninguno es motivo de pánico; todos son motivo de plan B escrito.
-- Toda excepción (secreto estático que no se puede eliminar, TTL largo, política amplia) lleva
-  **motivo, dueño y fecha de salida**.
+- **Cadence**: review the manager's advisories (monthly — it has criticals regularly),
+  the version of ESO/CSI driver/sealed-secrets (their support window is short), and **auditing of
+  accesses and pruning of permissions and dead secrets, quarterly**.
+- **Governance risks in the register, with an owner and a review date**: Vault's BUSL licence
+  under IBM, the Sandbox level and the SOPS health review in the CNCF, the trajectory
+  of ESO after the shutdown of the company backing it, and the *feature complete* status of
+  gitleaks. None is cause for panic; all are cause for a written plan B.
+- Every exception (static secret that cannot be eliminated, long TTL, broad policy) carries
+  **a reason, an owner and an exit date**.
 
-**PROHIBIDO**
-- ❌ Guardar un secreto estático donde cabía **identidad federada de vida corta**.
-- ❌ Secretos en código, en el historial de Git, en `values.yaml`, en `*.tfvars`, en el state,
-  en `ENV`/`ARG` de un Dockerfile, en capas de imagen, en logs o en canales de chat.
-- ❌ Secretos como **argumentos de línea de comandos** o en la query string de una URL.
-- ❌ **Variables de entorno como mecanismo por defecto** de inyección (§2.3).
-- ❌ **Reescribir el historial antes de rotar**: rotar primero, limpiar después. Siempre.
-- ❌ Dar por seguro un secreto expuesto porque "el repo era privado" o "se borró enseguida".
-- ❌ Rotación documentada pero **nunca ejecutada**; procedimiento de desellado con quórum
-  nunca ensayado; backup del gestor sin restore probado.
-- ❌ Una credencial compartida entre servicios, entre entornos, o entre un humano y un
-  servicio.
-- ❌ Políticas comodín sobre el gestor, o trust policies OIDC con `sub` comodín.
-- ❌ Gestor de secretos **sin audit device configurado** y sin ese log monitorizado.
-- ❌ Gestor en el camino crítico del arranque **sin haber respondido** qué pasa cuando cae.
-- ❌ Tratar `sealed-secrets` o SOPS como sustituto de un gestor cuando hace falta rotación,
-  revocación o auditoría de lectura.
-- ❌ Usar `gitleaks-action` v2 sin conocer su **licencia comercial** y su fin de
-  funcionamiento (16-sep-2026); confiar solo en el hook de pre-commit sin gate de CI.
-- ❌ Apuntar sealed-secrets a `bitnamilegacy/*` (imagen congelada sin parches).
-- ❌ ESO por debajo de 2.3.0, sealed-secrets por debajo de 0.36.0, o cualquier gestor con CVE
-  crítica publicada sin parchear.
-- ❌ Empezar algo nuevo sobre `detect-secrets` o Nosey Parker (sin mantenimiento / archivado).
-- ❌ Actions o imágenes por **tag mutable** en pipelines que manejan secretos.
+**FORBIDDEN**
+- ❌ Storing a static secret where **short-lived federated identity** would have fit.
+- ❌ Secrets in code, in the Git history, in `values.yaml`, in `*.tfvars`, in the state,
+  in a Dockerfile's `ENV`/`ARG`, in image layers, in logs or in chat channels.
+- ❌ Secrets as **command-line arguments** or in a URL's query string.
+- ❌ **Environment variables as the default injection mechanism** (§2.3).
+- ❌ **Rewriting the history before rotating**: rotate first, clean up afterwards. Always.
+- ❌ Assuming an exposed secret is safe because "the repo was private" or "it was deleted straight away".
+- ❌ Rotation documented but **never executed**; quorum unsealing procedure
+  never rehearsed; manager backup without a tested restore.
+- ❌ A credential shared between services, between environments, or between a human and a
+  service.
+- ❌ Wildcard policies over the manager, or OIDC trust policies with a wildcard `sub`.
+- ❌ Secrets manager **with no audit device configured** and with that log unmonitored.
+- ❌ A manager on the critical startup path **without having answered** what happens when it goes down.
+- ❌ Treating `sealed-secrets` or SOPS as a substitute for a manager when rotation,
+  revocation or read auditing is needed.
+- ❌ Using `gitleaks-action` v2 without knowing its **commercial licence** and its end of
+  operation (16 Sep 2026); relying only on the pre-commit hook with no CI gate.
+- ❌ Pointing sealed-secrets at `bitnamilegacy/*` (frozen image with no patches).
+- ❌ ESO below 2.3.0, sealed-secrets below 0.36.0, or any manager with a published critical
+  CVE left unpatched.
+- ❌ Starting something new on `detect-secrets` or Nosey Parker (unmaintained / archived).
+- ❌ Actions or images by **mutable tag** in pipelines that handle secrets.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar versión, licencia, gobernanza o comportamiento, **búscalo — no lo recuerdes**.
-Datos verificados ago-2026 (los más volátiles del catálogo): Vault **2.0.3**, **BUSL 1.1 sin
-cambio**, *Licensor* ahora **IBM** (adquisición cerrada 27-feb-2025), nuevo ciclo de soporte
-IBM y **Community sin LTS**; OpenBao **2.6.1**, **MPL-2.0**, **OpenSSF/LF nivel Sandbox**;
+Before pinning a version, licence, governance or behaviour, **look it up — do not recall it**.
+Data verified Aug 2026 (the most volatile in the catalogue): Vault **2.0.3**, **BUSL 1.1 with no
+change**, *Licensor* now **IBM** (acquisition closed 27 Feb 2025), new IBM support cycle
+and **Community with no LTS**; OpenBao **2.6.1**, **MPL-2.0**, **OpenSSF/LF Sandbox level**;
 Infisical **0.162.15**; `bws` **2.1.0**; ESO **2.8.0**; Secrets Store CSI Driver **1.6.0**;
 sealed-secrets **0.38.4**; Vault Secrets Operator **1.5.0**; vault-k8s **1.7.5**; SOPS
-**3.13.3** (CNCF Sandbox, health issue abierta); age **1.3.1**; gitleaks **8.30.1** (feature
-complete) y Betterleaks **1.7.3**; trufflehog **3.96.0**; SPIRE **1.15.2** (SPIFFE/SPIRE
-graduados en CNCF); systemd **v261**.
+**3.13.3** (CNCF Sandbox, open health issue); age **1.3.1**; gitleaks **8.30.1** (feature
+complete) and Betterleaks **1.7.3**; trufflehog **3.96.0**; SPIRE **1.15.2** (SPIFFE/SPIRE
+graduated in the CNCF); systemd **v261**.
 
-1. **Licencia de Vault bajo IBM** y **nivel real de OpenBao en la Linux Foundation/OpenSSF**:
-   es el par de datos que más se cita mal. Léelo del fichero `LICENSE` y de la página del
-   proyecto, no de un blog.
-2. **Divergencia Vault↔OpenBao** antes de asumir portabilidad: seals integrados saliendo del
-   binario en 2.7.0, `stored_shares`, semántica de namespaces, replicación.
-3. **Advisories del gestor** (HCSEC de HashiCorp, security advisories de OpenBao): ambos
-   publicaron críticas en 2026.
-4. **Estado de mantenimiento** de gitleaks/Betterleaks, SOPS (issue de salud en la CNCF), ESO
-   y sealed-secrets antes de apostar el pipeline a alguno.
-5. **Claims OIDC y trust policies** vigentes de GitHub/GitLab hacia AWS/Azure/GCP: los subject
-   claims inmutables de GitHub cambiaron el formato en 2026 y rompen políticas existentes.
-6. **Mecanismo y coste de rotación** del gestor de nube concreto: ninguno de los tres rota
-   todo automáticamente, y lo que cubre la rotación gestionada cambia cada trimestre.
-7. **Directivas de credenciales de systemd** y su versión mínima en tu distribución antes de
-   basar un despliegue en ellas (`SetCredential=`/`LoadCredential=` desde 247;
-   `LoadCredentialEncrypted=`/`SetCredentialEncrypted=`/`systemd-creds` desde 250;
-   `ImportCredential=` desde 254).
-8. **Compromisos de cadena de suministro** de cualquier herramienta nueva del pipeline de
-   secretos antes de adoptarla.
+1. **Vault's licence under IBM** and **OpenBao's real level in the Linux Foundation/OpenSSF**:
+   it is the pair of facts most often misquoted. Read it from the `LICENSE` file and from the project's
+   page, not from a blog.
+2. **Vault↔OpenBao divergence** before assuming portability: built-in seals leaving the
+   binary in 2.7.0, `stored_shares`, namespace semantics, replication.
+3. **The manager's advisories** (HashiCorp's HCSEC, OpenBao security advisories): both
+   published criticals in 2026.
+4. **Maintenance status** of gitleaks/Betterleaks, SOPS (health issue in the CNCF), ESO
+   and sealed-secrets before betting the pipeline on any of them.
+5. **Current OIDC claims and trust policies** from GitHub/GitLab towards AWS/Azure/GCP: GitHub's immutable
+   subject claims changed format in 2026 and break existing policies.
+6. **Rotation mechanism and cost** of the specific cloud manager: none of the three rotates
+   everything automatically, and what managed rotation covers changes every quarter.
+7. **systemd credential directives** and their minimum version in your distribution before
+   basing a deployment on them (`SetCredential=`/`LoadCredential=` since 247;
+   `LoadCredentialEncrypted=`/`SetCredentialEncrypted=`/`systemd-creds` since 250;
+   `ImportCredential=` since 254).
+8. **Supply chain compromises** of any new tool in the secrets pipeline
+   before adopting it.
 
-**Huecos declarados — no verificados en este documento, verifícalos tú antes de usarlos**:
-- **Nivel exacto de OpenBao en la OpenSSF hoy** (Sandbox según la página del proyecto; una
-  lectura del índice sugería "Incubation" y **no existe anuncio de promoción localizable**), y
-  las **fechas de entrada/salida de LF Edge**.
-- La comparativa de **funciones de Vault ausentes en OpenBao** (replicación DR/rendimiento,
-  snapshots automatizados, Sentinel) procede de **fuente secundaria**.
-- **Resultado formal de la solicitud de incubación de ESO en la CNCF** (issue cerrado, sin
-  desenlace público localizado).
-- **Existencia y versión de `ImportCredentialEx=`** en systemd, y el **modo/propietario exacto
-  de los ficheros** de `$CREDENTIALS_DIRECTORY` (la documentación no fue accesible).
-- **Fecha exacta de systemd v261**.
-- **Guidance específica de CIS o NIST SP 800-190** contra las variables de entorno para
-  secretos: el argumentario de §2.3 se apoya en systemd y OWASP, **no** en NIST/CIS.
-- **Quién mantiene nominalmente hoy** el repositorio `gitleaks/gitleaks`, y los tiers de
+**Declared gaps — not verified in this document, verify them yourself before using them**:
+- **OpenBao's exact level in the OpenSSF today** (Sandbox according to the project's page; one
+  reading of the index suggested "Incubation" and **no locatable promotion announcement exists**), and
+  the **LF Edge entry/exit dates**.
+- The comparison of **Vault features absent in OpenBao** (DR/performance replication,
+  automated snapshots, Sentinel) comes from a **secondary source**.
+- **Formal outcome of ESO's incubation application in the CNCF** (issue closed, with no
+  publicly located resolution).
+- **Existence and version of `ImportCredentialEx=`** in systemd, and the **exact mode/owner
+  of the files** in `$CREDENTIALS_DIRECTORY` (the documentation was not accessible).
+- **Exact date of systemd v261**.
+- **Specific CIS or NIST SP 800-190 guidance** against environment variables for
+  secrets: the argument in §2.3 rests on systemd and OWASP, **not** on NIST/CIS.
+- **Who nominally maintains** the `gitleaks/gitleaks` repository today, and the tiers of
   gitleaks.io.
-- **Existencia de un Secret Store extension para AKS en cloud** (la documentación localizada
-  cubre Arc-enabled Kubernetes; para AKS el camino soportado es el add-on del CSI driver).
-- **Máximo de credenciales federadas por app registration** en Entra (el límite de 20
-  verificado es por *managed identity*).
-- **CVSS exactos** de varios CVE de Vault de 2026 y CVE-IDs de algunos boletines HCSEC.
-- **Cualquier incidente no publicado vía GHSA** en gestores SaaS (Doppler y equivalentes no
-  fueron consultados).
+- **Existence of a Secret Store extension for AKS in the cloud** (the located documentation
+  covers Arc-enabled Kubernetes; for AKS the supported path is the CSI driver add-on).
+- **Maximum federated credentials per app registration** in Entra (the verified limit of 20
+  is per *managed identity*).
+- **Exact CVSS** of several 2026 Vault CVEs and CVE-IDs of some HCSEC bulletins.
+- **Any incident not published via GHSA** in SaaS managers (Doppler and equivalents were not
+  consulted).
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

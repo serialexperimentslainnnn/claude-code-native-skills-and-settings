@@ -3,371 +3,371 @@ name: rpa-workflow-automation-standards
 description: Automating a business process with a robot that drives a user interface, and knowing when not to. Use when deciding between RPA and an API integration, when a screen-scraping or UI-driving automation is proposed against an ERP, a mainframe emulator, a legacy web app or a Citrix session, when building or reviewing robots in UiPath Studio (.xaml projects, Orchestrator queues, assets and Credential Stores), Automation Anywhere, SS&C Blue Prism, Power Automate Desktop (desktop flows, machine registration, attended versus unattended bots, Power Automate Premium/Process/Hosted Process licensing per bot), Robot Framework (.robot suites, SeleniumLibrary, Browser library) or Playwright driving a real application, when the robot needs an identity and credentials of its own instead of a named employee's account, when designing work queues, idempotent retries, partial-failure recovery and the half-completed transaction, when setting SLA, monitoring and alerting for an unattended process, when inventorying robots and finding the orphaned one still moving money, or when choosing a real workflow engine (Temporal, Camunda, Apache Airflow, Windmill, n8n) instead of RPA.
 ---
 
-# Estándares de RPA y automatización de procesos
+# RPA and process automation standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **automatizar un proceso de negocio de extremo a extremo**: decidir con qué se automatiza,
-construir el robot o el flujo, darle identidad y credenciales, orquestarlo, hacerlo resistente al
-fallo parcial, vigilarlo y **gobernarlo durante los años que va a seguir ejecutándose**.
+Applies to **automating a business process end to end**: deciding what to automate it with,
+building the robot or the flow, giving it an identity and credentials, orchestrating it, making it
+resilient to partial failure, watching it and **governing it for the years it will keep running**.
 
-Triggers: "automatizar este proceso", "el sistema no tiene API", `.xaml` de UiPath Studio,
-Orchestrator, colas y *assets*, Automation Anywhere Control Room, SS&C Blue Prism, *digital worker*,
-Power Automate Desktop, *desktop flow*, registro de máquina, bot atendido y desatendido,
-`.robot` de Robot Framework, Playwright o Selenium conduciendo una aplicación real (no un test),
-emulador 3270/5250, sesión Citrix, OCR sobre una pantalla, "el robot se ha roto porque han cambiado
-la pantalla", cola de trabajo, reintento, "el proceso se quedó a medias", inventario de robots,
-"¿de quién es este robot?", Temporal, Camunda, Airflow, Windmill, n8n.
+Triggers: "automate this process", "the system has no API", UiPath Studio `.xaml`,
+Orchestrator, queues and *assets*, Automation Anywhere Control Room, SS&C Blue Prism, *digital worker*,
+Power Automate Desktop, *desktop flow*, machine registration, attended and unattended bot,
+Robot Framework `.robot`, Playwright or Selenium driving a real application (not a test),
+3270/5250 emulator, Citrix session, OCR over a screen, "the robot broke because they changed
+the screen", work queue, retry, "the process was left half done", robot inventory,
+"whose robot is this?", Temporal, Camunda, Airflow, Windmill, n8n.
 
-**Regla dura que ordena todo el documento: si hay API, la RPA es la última opción, no la primera.**
-La RPA imita a una persona ante una interfaz de usuario; la integración por API habla el contrato que
-el sistema publica. La primera se rompe cuando alguien mueve un botón —y ese alguien no eres tú—; la
-segunda se rompe cuando el proveedor cambia el contrato, que es un evento anunciado, versionado y
-negociable. **Esa asimetría no se compensa con ninguna herramienta.**
+**Hard rule that orders the whole document: if there is an API, RPA is the last option, not the first.**
+RPA mimics a person in front of a user interface; API integration speaks the contract the
+system publishes. The first breaks when somebody moves a button —and that somebody is not you—; the
+second breaks when the vendor changes the contract, which is an announced, versioned and
+negotiable event. **No tool compensates for that asymmetry.**
 
-**La RPA es legítima, y solo, cuando se cumple al menos una y se documenta cuál:**
+**RPA is legitimate, and only, when at least one of these holds and which one is documented:**
 
-1. **El sistema no tiene API** y no la tendrá (producto cerrado, mainframe, aplicación de escritorio
-   sin integración).
-2. **El proveedor tiene API pero no la abre**, o cobra por ella un múltiplo del coste del robot.
-3. **El coste de integrar es desproporcionado frente a la vida del proceso**: proceso que desaparece
-   en 12 meses por una migración ya planificada.
-4. **Puente temporal explícito**, con fecha de retirada escrita, mientras se construye la integración
-   de verdad.
+1. **The system has no API** and will not have one (closed product, mainframe, desktop application
+   with no integration).
+2. **The vendor has an API but does not open it**, or charges a multiple of the robot's cost for it.
+3. **The cost of integrating is disproportionate to the life of the process**: a process that disappears
+   in 12 months because of an already planned migration.
+4. **An explicit temporary bridge**, with a written retirement date, while the real integration
+   is being built.
 
-Fuera de esos cuatro casos, un robot es **deuda técnica con nómina**: se ha comprado la fragilidad
-sin ninguna de las ventajas.
+Outside those four cases, a robot is **technical debt on the payroll**: you have bought the fragility
+without any of the advantages.
 
-**Segunda tesis, la que causa los incidentes reales: el estado peligroso no es el robot caído, es el
-proceso a medio ejecutar.** Un robot que falla en el paso 7 de 12 deja una factura registrada sin
-asentar, un pedido creado sin confirmar, un pago iniciado sin conciliar. La caída se ve; el estado
-inconsistente, no. Todo §3.3 existe por esto.
+**Second thesis, the one that causes the real incidents: the dangerous state is not the robot that is down, it is the
+half-executed process.** A robot that fails at step 7 of 12 leaves an invoice recorded but not
+posted, an order created but not confirmed, a payment started but not reconciled. The outage is visible; the
+inconsistent state is not. The whole of §3.3 exists because of this.
 
-**No aplica**: ver `lowcode-governance-standards` (hermana directa y con
-frontera nítida, porque Power Automate aparece en las dos: **suyo el gobierno de la plataforma
-low-code** —catálogo de aplicaciones y flujos, entornos y su ciclo de vida (ALM), *citizen
-developers* y su habilitación, políticas de prevención de pérdida de datos de conectores, *shadow
-IT*, modelo de licenciamiento de la plataforma, quién puede crear qué—; **de aquí el robot y su
-credencial**: que la automatización conduzca una interfaz de usuario, la identidad no humana con la
-que lo hace, la bóveda de la que saca la contraseña, la cola de trabajo, el reintento idempotente, la
-recuperación del proceso a medias y el SLA del proceso automatizado. Un *cloud flow* que llama a un
-conector es gobierno de plataforma; un *desktop flow* que pulsa botones con las credenciales de
-alguien es de aquí), `api-design-standards` (**la alternativa correcta**: contrato, versionado,
-paginación, idempotencia y compatibilidad de la integración que deberías estar construyendo en vez
-del robot), `identity-access-management-standards` (**diseño del IdP, ciclo de vida de la identidad
-no humana, RBAC y revisión de accesos son suyos**; aquí la exigencia de que el robot tenga identidad
-propia y qué se registra de lo que hace), `secrets-management-standards` (**la bóveda, la rotación y
-la emisión de credenciales efímeras son suyas**; aquí la regla de que el robot nunca guarda la
-contraseña y de qué pasa cuando la rotación rompe al robot), `ai-agents-standards` (**el bucle
-agéntico, el diseño de herramientas, el límite de iteraciones, la aprobación humana y los riesgos
-OWASP ASI son suyos**; ver §7.3: un LLM que pulsa botones hereda *todos* los problemas de esta skill
-y añade no determinismo), `ai-agent-workflow-standards` (agentes de codificación en el equipo, no
-robots de negocio), `testing-qa-standards` (**Playwright, Selenium y Robot Framework como herramienta
-de *test* son suyos**; aquí las mismas herramientas usadas para **operar** un sistema en producción,
-que es un uso distinto con riesgos distintos), `data-engineering-standards` y
-`streaming-cdc-standards` (**si el proceso es mover y transformar datos, la respuesta es un pipeline,
-no un robot**), `observability-standards` (plataforma de telemetría; aquí qué instrumenta un proceso
-automatizado), `incident-management-standards` e `itsm-itil-standards` (guardia, escalado, cambio y
-CMDB; aquí el robot como servicio que entra en esos procesos), `grc-compliance-standards` (SoA,
-control y auditoría; aquí la trazabilidad técnica que hace posible auditar al robot),
-`privacy-engineering-standards` (**el robot ve pantallas con datos personales y hace capturas**:
-minimización, retención y tratamiento son suyos), `appsec-standards` (clases de vulnerabilidad
-agnósticas), `python-standards` / `powershell-standards` (**muchas veces la respuesta honesta es un
-script de 40 líneas**, y su calidad se rige por ellas), `git-workflow-standards` (versionado del
-robot, que sí es obligatorio §4), `cicd-standards` (despliegue del robot entre entornos).
+**Not applicable**: see `lowcode-governance-standards` (direct sister with a
+sharp boundary, because Power Automate shows up in both: **hers the governance of the
+low-code platform** —application and flow catalogue, environments and their lifecycle (ALM), *citizen
+developers* and their enablement, connector data loss prevention policies, *shadow
+IT*, the platform licensing model, who may create what—; **ours the robot and its
+credential**: that the automation drives a user interface, the non-human identity with
+which it does so, the vault it takes the password from, the work queue, the idempotent retry, the
+recovery of the half-done process and the SLA of the automated process. A *cloud flow* calling a
+connector is platform governance; a *desktop flow* that clicks buttons with somebody's credentials
+is ours), `api-design-standards` (**the correct alternative**: contract, versioning,
+pagination, idempotency and compatibility of the integration you should be building instead
+of the robot), `identity-access-management-standards` (**IdP design, the lifecycle of the
+non-human identity, RBAC and access review are hers**; here the requirement that the robot has its own
+identity and what gets recorded of what it does), `secrets-management-standards` (**the vault, the rotation and
+the issuance of ephemeral credentials are hers**; here the rule that the robot never stores the
+password and what happens when rotation breaks the robot), `ai-agents-standards` (**the agentic
+loop, tool design, the iteration limit, human approval and the OWASP ASI
+risks are hers**; see §7.3: an LLM that clicks buttons inherits *all* the problems of this skill
+and adds non-determinism), `ai-agent-workflow-standards` (coding agents in the team, not
+business robots), `testing-qa-standards` (**Playwright, Selenium and Robot Framework as a *testing*
+tool are hers**; here the same tools used to **operate** a system in production,
+which is a different use with different risks), `data-engineering-standards` and
+`streaming-cdc-standards` (**if the process is moving and transforming data, the answer is a pipeline,
+not a robot**), `observability-standards` (telemetry platform; here what instruments an automated
+process), `incident-management-standards` and `itsm-itil-standards` (on-call, escalation, change and
+CMDB; here the robot as a service entering those processes), `grc-compliance-standards` (SoA,
+control and audit; here the technical traceability that makes auditing the robot possible),
+`privacy-engineering-standards` (**the robot sees screens with personal data and takes screenshots**:
+minimisation, retention and processing are hers), `appsec-standards` (agnostic vulnerability
+classes), `python-standards` / `powershell-standards` (**very often the honest answer is a
+40-line script**, and its quality is governed by them), `git-workflow-standards` (versioning of the
+robot, which is indeed mandatory §4), `cicd-standards` (deploying the robot across environments).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión, licencia y modelo de precio por web antes de fijarlos (§8).
+> Verify the latest version, licence and pricing model on the web before pinning them (§8).
 
-### 2.1 La escalera de decisión, de arriba abajo
+### 2.1 The decision ladder, top down
 
-Se elige **la primera que resuelve el problema**. Bajar un peldaño exige justificar por escrito por
-qué falla el anterior.
+You pick **the first one that solves the problem**. Going down a rung requires justifying in writing why
+the previous one fails.
 
-1. **No automatizar**: eliminar el paso. Muchos procesos son residuos de un sistema que ya no existe.
-   Automatizar un proceso malo produce un proceso malo más rápido.
-2. **Configurar el sistema** para que haga lo que hace la persona (regla, *workflow* nativo, informe
-   programado).
-3. **Integración por API / evento / webhook** entre los sistemas implicados.
-4. **Base de datos o fichero de intercambio**, si el proveedor lo soporta oficialmente.
-5. **Motor de workflow** con actividades codificadas (Temporal, Camunda, Airflow) para orquestar 3 y
-   4 cuando el proceso es largo, tiene estados y necesita durabilidad.
-6. **RPA**, con uno de los cuatro justificantes de §1 y **fecha de revisión**.
-7. **Persona con lista de comprobación**, si el volumen no justifica nada de lo anterior. Es una
-   respuesta válida y se descarta demasiado pronto.
+1. **Do not automate**: remove the step. Many processes are leftovers of a system that no longer exists.
+   Automating a bad process produces a bad process, faster.
+2. **Configure the system** so it does what the person does (rule, native *workflow*, scheduled
+   report).
+3. **API / event / webhook integration** between the systems involved.
+4. **Database or exchange file**, if the vendor officially supports it.
+5. **Workflow engine** with coded activities (Temporal, Camunda, Airflow) to orchestrate 3 and
+   4 when the process is long, has states and needs durability.
+6. **RPA**, with one of the four justifications from §1 and a **review date**.
+7. **A person with a checklist**, if the volume does not justify any of the above. It is a valid
+   answer and it is discarded far too early.
 
-### 2.2 Herramientas
+### 2.2 Tools
 
-| Herramienta | Licencia / modelo de coste | Cuándo |
+| Tool | Licence / cost model | When |
 |---|---|---|
-| **Power Automate Desktop** | Comercial por suscripción. A ago-2026, precios de lista: **Premium $15 usuario/mes** (RPA *atendido*), **Process $150 bot/mes** (RPA *desatendido*), **Hosted Process $215 bot/mes** (incluye VM alojada) | Casa Microsoft con Entra ID y Power Platform ya en marcha. **El salto de atendido a desatendido multiplica el coste por diez: es la decisión económica, no técnica** |
-| **UiPath** | Comercial. Nivel de entrada *Basic* publicado desde ~**$25/mes** con **2 robots**; el resto es "contact sales". Unidades: usuarios *Basic/Plus/Pro* y robots *Unattended* | Despliegues grandes con Orchestrator, colas y *Credential Store*. La madurez del orquestador es su ventaja real |
-| **Automation Anywhere** | Comercial, por bot/usuario. **No verificable en la web pública desde este documento** (§8) | Alternativa de la misma categoría |
-| **SS&C Blue Prism** | Comercial, históricamente por *digital worker*. **No verificable desde este documento** (§8) | Entornos muy regulados con control central fuerte |
-| **Robot Framework** | **Apache-2.0** (`LICENSE.txt` del repositorio) | Automatización guiada por palabras clave, legible por negocio, y sobre todo **testing**. Como RPA de producción exige que tú montes orquestación, colas y bóveda |
-| **Playwright** | **Apache-2.0** (`LICENSE` del repositorio) | Conducir un navegador de forma fiable. **La mejor opción técnica cuando el sistema objetivo es web**: selectores robustos, espera automática, trazas. Sin orquestador: se combina con 5 |
-| **Temporal** | **MIT** (`LICENSE` del repositorio) — servicio gestionado aparte | Procesos de larga duración con **durabilidad de la ejecución**, reintentos y compensaciones. El estado del proceso **es** el código |
-| **Camunda 8** | **Camunda License 1.0** — *source-available*, **no es open source**: *"If Your Use of the Software does not comply with the terms and conditions described in this License, You must purchase a commercial license"* | Procesos que negocio debe **ver y modelar** (BPMN), con tareas humanas |
-| **Apache Airflow** | **Apache-2.0** (`LICENSE`) | **Lotes programados con dependencias entre tareas.** No es un motor de procesos de negocio ni tiene tareas humanas |
+| **Power Automate Desktop** | Commercial, by subscription. As of Aug 2026, list prices: **Premium $15 user/month** (*attended* RPA), **Process $150 bot/month** (*unattended* RPA), **Hosted Process $215 bot/month** (includes hosted VM) | Microsoft shop with Entra ID and Power Platform already running. **The jump from attended to unattended multiplies the cost tenfold: that is the economic decision, not the technical one** |
+| **UiPath** | Commercial. *Basic* entry tier published from ~**$25/month** with **2 robots**; the rest is "contact sales". Units: *Basic/Plus/Pro* users and *Unattended* robots | Large deployments with Orchestrator, queues and *Credential Store*. The orchestrator's maturity is its real advantage |
+| **Automation Anywhere** | Commercial, per bot/user. **Not verifiable on the public web from this document** (§8) | Alternative in the same category |
+| **SS&C Blue Prism** | Commercial, historically per *digital worker*. **Not verifiable from this document** (§8) | Heavily regulated environments with strong central control |
+| **Robot Framework** | **Apache-2.0** (repository `LICENSE.txt`) | Keyword-driven automation, readable by the business, and above all **testing**. As production RPA it requires you to build orchestration, queues and vault yourself |
+| **Playwright** | **Apache-2.0** (repository `LICENSE`) | Driving a browser reliably. **The best technical option when the target system is web**: robust selectors, auto-waiting, traces. No orchestrator: combine with 5 |
+| **Temporal** | **MIT** (repository `LICENSE`) — managed service separate | Long-running processes with **execution durability**, retries and compensations. The process state **is** the code |
+| **Camunda 8** | **Camunda License 1.0** — *source-available*, **not open source**: *"If Your Use of the Software does not comply with the terms and conditions described in this License, You must purchase a commercial license"* | Processes the business must **see and model** (BPMN), with human tasks |
+| **Apache Airflow** | **Apache-2.0** (`LICENSE`) | **Scheduled batches with dependencies between tasks.** It is not a business process engine and has no human tasks |
 
-### 2.3 Motor de workflow ≠ RPA
+### 2.3 Workflow engine ≠ RPA
 
-Se confunden constantemente y no compiten:
+They are constantly confused and they do not compete:
 
-- **RPA** = la **mano** que opera una interfaz que no te pertenece. Frágil por construcción.
-- **Motor de workflow** = el **cerebro** que sabe en qué paso va el proceso, reintenta, compensa,
-  espera a una persona y sobrevive a un reinicio. No toca ninguna pantalla.
-- **Se usan juntos**: el motor orquesta y el robot es una de sus actividades, la más frágil, con
-  *timeout* y compensación propios. **Un robot que orquesta a otros robots es un motor de workflow
-  casero, mal hecho y sin durabilidad** — ese es el antipatrón más común del dominio.
-- Diferencias que deciden: Temporal da **durabilidad de la ejecución** (el proceso sobrevive al
-  reinicio del *worker* sin escribir estado a mano); Camunda da **modelo BPMN visible para negocio y
-  tareas humanas**; Airflow da **planificación de lotes con grafo de dependencias**. Elegir Airflow
-  para un proceso de negocio con esperas humanas es un error de categoría.
+- **RPA** = the **hand** that operates an interface that does not belong to you. Fragile by construction.
+- **Workflow engine** = the **brain** that knows which step the process is on, retries, compensates,
+  waits for a person and survives a restart. It touches no screen.
+- **They are used together**: the engine orchestrates and the robot is one of its activities, the most fragile one, with
+  its own *timeout* and compensation. **A robot that orchestrates other robots is a home-made
+  workflow engine, badly built and without durability** — that is the most common antipattern of the domain.
+- Differences that decide: Temporal gives **execution durability** (the process survives the
+  *worker* restart without writing state by hand); Camunda gives a **BPMN model visible to the business and
+  human tasks**; Airflow gives **batch scheduling with a dependency graph**. Choosing Airflow
+  for a business process with human waits is a category error.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 El robot como sistema, no como grabación
+### 3.1 The robot as a system, not as a recording
 
-- **Todo robot vive en control de versiones** y se despliega por pipeline entre entornos
-  (`git-workflow-standards`, `cicd-standards`). Un robot que solo existe en el orquestador es un
-  robot que no se puede revisar, revertir ni auditar.
-- **Nada de grabar y reproducir.** La grabación produce selectores por coordenadas y por índice, que
-  es exactamente lo que se rompe. Selectores **por identificador estable, por rol o por texto
-  anclado**; nunca por posición en pantalla, nunca por índice de tabla, nunca por captura de píxeles
-  si existe otra vía.
-- **Configuración fuera del robot**: URLs, rutas, umbrales, buzones. Un robot con el entorno
-  incrustado no se puede probar en preproducción.
-- **Separación por capas**: (a) *conectores* que hablan con cada sistema, (b) *reglas de negocio*,
-  (c) *orquestación*. Un cambio de pantalla debe tocar solo (a). Sin esta separación, cada cambio del
-  proveedor obliga a releer el proceso entero.
-- **OCR y visión por computador son el último recurso**, con umbral de confianza explícito y **rechazo
-  a cola de excepción** por debajo de él. Un OCR sin umbral inventa cifras en silencio, y esa es la
-  peor propiedad posible en un proceso financiero.
+- **Every robot lives in version control** and is deployed by pipeline across environments
+  (`git-workflow-standards`, `cicd-standards`). A robot that only exists in the orchestrator is a
+  robot that cannot be reviewed, reverted or audited.
+- **No record and replay.** Recording produces selectors by coordinate and by index, which
+  is exactly what breaks. Selectors **by stable identifier, by role or by anchored
+  text**; never by on-screen position, never by table index, never by pixel capture
+  if another route exists.
+- **Configuration outside the robot**: URLs, paths, thresholds, mailboxes. A robot with the environment
+  embedded cannot be tested in pre-production.
+- **Separation by layers**: (a) *connectors* that talk to each system, (b) *business rules*,
+  (c) *orchestration*. A screen change must touch only (a). Without this separation, every vendor
+  change forces you to re-read the whole process.
+- **OCR and computer vision are the last resort**, with an explicit confidence threshold and **rejection
+  to an exception queue** below it. OCR without a threshold invents figures silently, and that is the
+  worst possible property in a financial process.
 
-### 3.2 Colas de trabajo
+### 3.2 Work queues
 
-La unidad de trabajo es el **elemento de cola**, no "la ejecución del robot". Ejecutar en bucle sobre
-una lista en memoria hace imposible el reintento parcial y la observabilidad.
+The unit of work is the **queue item**, not "the robot run". Looping over
+an in-memory list makes partial retry and observability impossible.
 
-- Cada elemento tiene **identificador de negocio único** (número de factura, de pedido), **estado**
-  explícito (`pendiente`/`en curso`/`hecho`/`excepción de negocio`/`excepción de sistema`),
-  **contador de intentos** y **traza**.
-- **Distinguir excepción de negocio de excepción de sistema.** La primera (el cliente no existe, falta
-  el documento) **no se reintenta**: va a revisión humana. La segunda (la pantalla no respondió) se
-  reintenta con retroceso exponencial y un máximo. Confundirlas produce robots que reintentan 200
-  veces algo que nunca funcionará, o que descartan trabajo válido.
-- **Límite de reintentos y destino final explícito** (cola muerta con dueño), nunca reintento
-  infinito.
-- **Idempotencia obligatoria**: antes de crear algo, comprobar si ya existe por su clave de negocio.
-  Un reintento **no puede** duplicar un pago, un pedido ni un asiento. Si el sistema destino admite
-  clave de idempotencia, se usa; si no, se consulta antes de escribir.
+- Each item has a **unique business identifier** (invoice number, order number), an explicit
+  **state** (`pending`/`in progress`/`done`/`business exception`/`system exception`),
+  an **attempt counter** and a **trace**.
+- **Distinguish a business exception from a system exception.** The first (the customer does not exist, the
+  document is missing) **is not retried**: it goes to human review. The second (the screen did not respond) is
+  retried with exponential backoff and a maximum. Confusing them produces robots that retry 200
+  times something that will never work, or that discard valid work.
+- **Retry limit and an explicit final destination** (dead queue with an owner), never infinite
+  retry.
+- **Mandatory idempotency**: before creating anything, check whether it already exists by its business key.
+  A retry **cannot** duplicate a payment, an order or a ledger entry. If the target system accepts an
+  idempotency key, it is used; if not, you query before writing.
 
-### 3.3 El proceso a medio ejecutar
+### 3.3 The half-executed process
 
-Es el requisito de diseño, no una mejora:
+This is a design requirement, not an improvement:
 
-- **Punto de control tras cada paso con efecto externo**, persistido fuera del robot.
-- **Compensación definida para cada paso reversible** y **frontera explícita para los irreversibles**:
-  hay pasos que no se pueden deshacer (un correo enviado, un pago emitido) y el diseño debe
-  concentrarlos **al final** y detrás de la validación completa.
-- **Recuperación por reanudación**, no por reejecución completa: al arrancar, el robot consulta el
-  estado real del sistema destino y decide, en vez de suponer que empieza de cero.
-- **Cierre limpio**: ante señal de parada o ventana de mantenimiento, el robot **termina el elemento
-  en curso y no coge otro**. Matar el proceso a mitad de un elemento es cómo se generan los estados
-  inconsistentes que nadie encuentra hasta el cierre contable.
-- **Interruptor de parada global** accesible sin desplegar nada, y **probado**. Cuando un robot
-  empieza a hacer daño, el tiempo hasta pararlo es la métrica que importa.
+- **A checkpoint after every step with an external effect**, persisted outside the robot.
+- **A compensation defined for every reversible step** and an **explicit boundary for the irreversible ones**:
+  there are steps that cannot be undone (an email sent, a payment issued) and the design must
+  concentrate them **at the end** and behind full validation.
+- **Recovery by resumption**, not by full re-execution: on start-up, the robot queries the
+  real state of the target system and decides, instead of assuming it starts from scratch.
+- **Clean shutdown**: on a stop signal or a maintenance window, the robot **finishes the item
+  in progress and does not take another**. Killing the process midway through an item is how the inconsistent
+  states nobody finds until the accounting close get generated.
+- **A global stop switch** reachable without deploying anything, and **tested**. When a robot
+  starts doing damage, the time to stop it is the metric that matters.
 
-### 3.4 Entorno de ejecución
+### 3.4 Execution environment
 
-- **El robot desatendido corre en su propia máquina o sesión**, dedicada, no en el portátil de
-  nadie. La documentación de Microsoft lo dice sin rodeos: antes de registrar una máquina para
-  ejecutar flujos desde la nube, *"ensure the machine is secured and the machine's admins are
-  trusted"*, y al crear una conexión *"you allow Power Automate to create a Windows session on your
+- **The unattended robot runs on its own machine or session**, dedicated, not on anybody's
+  laptop. Microsoft's documentation says it bluntly: before registering a machine to
+  run flows from the cloud, *"ensure the machine is secured and the machine's admins are
+  trusted"*, and when creating a connection *"you allow Power Automate to create a Windows session on your
   machine to run your desktop flows. Make sure you trust co-owners of your flows before using your
-  connection in a flow."* Traducción operativa: **quien administra esa máquina o co-posee ese flujo
-  tiene, de facto, los permisos del robot.**
-- **Máquina reconstruible desde código** (imagen + configuración), porque se va a corromper.
-- **Atendido frente a desatendido no es solo precio**: el atendido corre con la sesión y los permisos
-  de una persona presente y por tanto **hereda su identidad** —es la vía rápida al problema de §5.1—;
-  el desatendido exige identidad propia y por eso es la única forma correcta de operar en producción.
+  connection in a flow."* Operational translation: **whoever administers that machine or co-owns that flow
+  has, de facto, the robot's permissions.**
+- **A machine rebuildable from code** (image + configuration), because it is going to get corrupted.
+- **Attended versus unattended is not just price**: the attended one runs with the session and permissions
+  of a person who is present and therefore **inherits their identity** —it is the fast lane to the problem in §5.1—;
+  the unattended one requires its own identity and is therefore the only correct way to operate in production.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-Gates en orden de coste creciente:
+Gates in order of increasing cost:
 
-1. **Revisión de código del robot**, con las mismas reglas que cualquier otro código
-   (`code-review-standards`). Un `.xaml` es código.
-2. **Análisis estático de la herramienta** (analizadores de UiPath, `robocop` para Robot Framework):
-   selectores frágiles, credenciales en claro, actividades obsoletas → rompen el build.
-3. **Tests de las reglas de negocio aisladas de la interfaz.** Si la lógica solo se puede probar
-   pulsando botones, la arquitectura de §3.1 está mal.
-4. **Entorno de preproducción con datos realistas** y ejecución completa del proceso. **PROHIBIDO
-   probar en producción "porque no hay otro entorno"**: si el sistema objetivo no tiene entorno de
-   pruebas, eso es un riesgo del proyecto que se escala, no una excusa.
-5. **Prueba de fallo inyectado**: matar el robot a mitad de elemento, cortar la red, devolver una
-   pantalla inesperada, expirar la sesión. **Verificar que el estado queda consistente y reanudable.**
-   Este es el test que distingue un robot serio de una grabación.
-6. **Prueba de rotación de credenciales**: rotar el secreto y comprobar que el robot sigue. Sin este
-   test, la rotación se acaba desactivando "porque rompe los robots", y ahí se pierde la partida.
-7. **Prueba de resistencia al cambio de interfaz**: al menos una revisión periódica contra la versión
-   más reciente del sistema objetivo, y **suscripción a sus notas de versión** — que es el único aviso
-   previo que vas a tener.
+1. **Code review of the robot**, with the same rules as any other code
+   (`code-review-standards`). A `.xaml` is code.
+2. **The tool's static analysis** (UiPath analysers, `robocop` for Robot Framework):
+   fragile selectors, cleartext credentials, deprecated activities → they break the build.
+3. **Tests of the business rules isolated from the interface.** If the logic can only be tested by
+   clicking buttons, the architecture in §3.1 is wrong.
+4. **A pre-production environment with realistic data** and a full run of the process. **FORBIDDEN
+   to test in production "because there is no other environment"**: if the target system has no test
+   environment, that is a project risk to be escalated, not an excuse.
+5. **Injected failure test**: kill the robot midway through an item, cut the network, return an
+   unexpected screen, expire the session. **Verify that the state is left consistent and resumable.**
+   This is the test that tells a serious robot from a recording.
+6. **Credential rotation test**: rotate the secret and check that the robot carries on. Without this
+   test, rotation ends up being disabled "because it breaks the robots", and that is where you lose the game.
+7. **Interface-change resilience test**: at least a periodic run against the most recent version
+   of the target system, and **a subscription to its release notes** — which is the only advance warning
+   you are going to get.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-### 5.1 El pecado original: la credencial del robot
+### 5.1 The original sin: the robot's credential
 
-El fallo estructural del dominio es un robot que corre **con la cuenta de una persona real**,
-normalmente la del analista que lo construyó, con sus permisos completos, sin caducidad y sin forma
-de distinguir en el registro qué hizo la persona y qué hizo el robot. Cuando esa persona cambia de
-puesto o se va, o el robot desaparece o alguien "hereda" una cuenta fantasma. Es, además, la vía
-directa a fraude no detectable: **el registro de auditoría del sistema destino dice que lo hizo
+The structural failure of the domain is a robot running **with a real person's account**,
+usually the analyst who built it, with their full permissions, with no expiry and with no way
+to tell in the log what the person did and what the robot did. When that person changes
+job or leaves, either the robot disappears or somebody "inherits" a ghost account. It is, moreover,
+the direct route to undetectable fraud: **the target system's audit log says it was done by
 Juan**.
 
-Reglas duras:
+Hard rules:
 
-- **Identidad propia por robot y por proceso.** Cuenta de servicio nominativa (`svc-rpa-<proceso>`),
-  no genérica, no compartida entre robots, no de persona. **Ni siquiera se comparte entre dos
-  procesos distintos del mismo robot**: si comparten, no puedes retirar permisos de uno sin romper el
-  otro.
-- **Mínimo privilegio real**: los permisos del proceso, no los del analista. Y **revisión periódica**
-  como cualquier otra identidad (`identity-access-management-standards`).
-- **La contraseña vive en la bóveda, no en el robot ni en el orquestador en claro**: Credential Store
-  de UiPath, Azure Key Vault, HashiCorp Vault, CyberArk. **Credenciales efímeras o rotación
-  automática siempre que el sistema destino lo admita**; si no lo admite, rotación programada y
-  documentada como riesgo aceptado.
-- **El robot no puede tener MFA interactivo** — es su limitación técnica y no se resuelve
-  desactivando MFA para toda la organización ni "recordando el dispositivo". Se resuelve con
-  autenticación no interactiva (certificado, clave gestionada, identidad de carga de trabajo) o se
-  documenta como riesgo con compensaciones (aislamiento de red, ventana horaria, límites de importe).
-- **Trazabilidad**: cada acción del robot enlaza `id de proceso + id de elemento de cola + versión del
-  robot + quién lo lanzó`. Auditar un proceso automatizado sin ese enlace es imposible.
-- **Segregación de funciones**: quien construye el robot **no** aprueba su despliegue a producción ni
-  administra su credencial. En procesos financieros esto es control, no burocracia
+- **Its own identity per robot and per process.** A named service account (`svc-rpa-<process>`),
+  not generic, not shared between robots, not a person's. **Not even shared between two
+  different processes of the same robot**: if they share, you cannot withdraw permissions from one without breaking the
+  other.
+- **Real least privilege**: the process's permissions, not the analyst's. And **periodic review**
+  like any other identity (`identity-access-management-standards`).
+- **The password lives in the vault, not in the robot nor in the orchestrator in cleartext**: UiPath's
+  Credential Store, Azure Key Vault, HashiCorp Vault, CyberArk. **Ephemeral credentials or automatic
+  rotation whenever the target system supports it**; if it does not, scheduled rotation and
+  documented as an accepted risk.
+- **The robot cannot have interactive MFA** — that is its technical limitation and it is not solved
+  by disabling MFA for the whole organisation nor by "remembering the device". It is solved with
+  non-interactive authentication (certificate, managed key, workload identity) or it is
+  documented as a risk with compensations (network isolation, time window, amount limits).
+- **Traceability**: every robot action links `process id + queue item id + robot
+  version + who launched it`. Auditing an automated process without that link is impossible.
+- **Segregation of duties**: whoever builds the robot does **not** approve its deployment to production nor
+  administer its credential. In financial processes this is control, not bureaucracy
   (`grc-compliance-standards`).
 
-### 5.2 Superficie del robot
+### 5.2 The robot's surface
 
-- **La máquina del robot es un sistema de producción** con acceso privilegiado a sistemas de negocio:
-  se endurece, se parchea y se monitoriza como tal. **PROHIBIDO** usarla como escritorio de nadie ni
-  darle navegación libre.
-- **Capturas de pantalla y registros con datos personales**: el robot ve nóminas, historiales y
-  cuentas. Capturas solo bajo error, con retención corta, cifradas y con acceso restringido
+- **The robot's machine is a production system** with privileged access to business systems:
+  it is hardened, patched and monitored as such. **FORBIDDEN** to use it as anybody's desktop or
+  to give it free browsing.
+- **Screenshots and logs with personal data**: the robot sees payslips, records and
+  accounts. Screenshots only on error, with short retention, encrypted and with restricted access
   (`privacy-engineering-standards`).
-- **Entrada no confiable**: los datos que el robot lee de correos, PDFs o pantallas son entrada de
-  terceros. Se validan antes de escribirlos en ningún sitio, y **jamás se interpolan en un comando,
-  una consulta o una fórmula**.
-- **Límites de acción**: importe máximo, número máximo de elementos por ejecución, ventana horaria
-  permitida. Un robot sin techo es una amplificación de errores a velocidad de máquina.
+- **Untrusted input**: the data the robot reads from emails, PDFs or screens is third-party
+  input. It is validated before being written anywhere, and **never interpolated into a command,
+  a query or a formula**.
+- **Action limits**: maximum amount, maximum number of items per run, allowed time
+  window. A robot with no ceiling is an amplification of errors at machine speed.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **El SLA es del proceso de negocio, no del robot.** "El robot estuvo arriba el 99 %" no dice nada;
-  lo que se mide es **elementos completados dentro del plazo comprometido**.
-- Métricas mínimas por proceso: elementos procesados, **tasa de excepción de negocio** y **de
-  sistema** por separado, tiempo por elemento, antigüedad del elemento más viejo en cola, y
-  **backlog** — que es la señal temprana de que algo va mal.
-- **Alertas sobre síntomas de negocio**: "la cola crece", "cero elementos procesados en la ventana
-  esperada", "la tasa de excepción supera el umbral". No sobre "el proceso no responde".
-- **Silencio sospechoso**: un robot programado que **no** se ejecuta no genera errores. Alerta por
-  ausencia (*dead man's switch*) obligatoria; sin ella, un robot parado pasa semanas inadvertido.
-- **Vuelta al proceso manual**: para todo proceso automatizado crítico hay un procedimiento manual
-  escrito y una estimación de cuánta gente hace falta. Si al automatizar se eliminó la capacidad de
-  hacerlo a mano y el robot cae en cierre de mes, el problema es de negocio, no de TI.
-- **Coste real por proceso**: licencia del bot, máquina, mantenimiento y **el tiempo humano de
-  gestionar la cola de excepciones**, que es lo que nadie suma. Un proceso con 30 % de excepciones no
-  está automatizado.
+- **The SLA belongs to the business process, not to the robot.** "The robot was up 99 %" says nothing;
+  what is measured is **items completed within the committed deadline**.
+- Minimum metrics per process: items processed, **business exception rate** and **system
+  exception rate** separately, time per item, age of the oldest item in the queue, and
+  **backlog** — which is the early signal that something is wrong.
+- **Alerts on business symptoms**: "the queue is growing", "zero items processed in the
+  expected window", "the exception rate exceeds the threshold". Not on "the process is not responding".
+- **Suspicious silence**: a scheduled robot that does **not** run generates no errors. Alerting on
+  absence (*dead man's switch*) is mandatory; without it, a stopped robot goes unnoticed for weeks.
+- **Fallback to the manual process**: for every critical automated process there is a written manual
+  procedure and an estimate of how many people it takes. If automating removed the capacity to
+  do it by hand and the robot goes down at month-end close, the problem is the business's, not IT's.
+- **Real cost per process**: bot licence, machine, maintenance and **the human time spent
+  managing the exception queue**, which is what nobody adds up. A process with 30 % exceptions is not
+  automated.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-### 7.1 Gobierno: el robot huérfano
+### 7.1 Governance: the orphaned robot
 
-**Un robot sin dueño de negocio sigue moviendo dinero.** No se para solo, no avisa y no aparece en
-ningún inventario de aplicaciones. Requisitos de existencia:
+**A robot with no business owner keeps moving money.** It does not stop by itself, it does not warn and it does not appear in
+any application inventory. Requirements for it to exist:
 
-- **Inventario central de robots** con: proceso, sistemas que toca, **dueño de negocio nombrado**,
-  dueño técnico, identidad que usa, permisos, criticidad, fecha de última revisión y **fecha de
-  caducidad**.
-- **Caducidad por defecto**: todo robot se revisa al menos anualmente; si nadie lo reclama, **se
-  apaga** (con periodo de gracia y aviso). Es la única forma conocida de evitar la acumulación.
-- **Registro en la CMDB y en el proceso de cambio** (`itsm-itil-standards`): un cambio en un sistema
-  del que depende un robot debe poder identificar ese robot **antes** del cambio.
-- **Plan de salida**: para cada robot, la condición bajo la que se sustituye por integración real y
-  quién la vigila. Sin esto, el "puente temporal" del justificante 4 de §1 es permanente.
+- **A central robot inventory** with: process, systems it touches, **named business owner**,
+  technical owner, identity it uses, permissions, criticality, date of last review and **expiry
+  date**.
+- **Expiry by default**: every robot is reviewed at least annually; if nobody claims it, **it is
+  switched off** (with a grace period and notice). It is the only known way to avoid accumulation.
+- **Registration in the CMDB and in the change process** (`itsm-itil-standards`): a change to a system
+  a robot depends on must be able to identify that robot **before** the change.
+- **Exit plan**: for each robot, the condition under which it is replaced by a real integration and
+  who watches for it. Without this, the "temporary bridge" of justification 4 in §1 is permanent.
 
-### 7.2 Prohibiciones
+### 7.2 Prohibitions
 
-- ❌ **PROHIBIDO** construir un robot contra un sistema que **sí** expone API, sin justificación
-  escrita y aprobada.
-- ❌ **PROHIBIDO** que un robot corra con la cuenta de una persona física.
-- ❌ **PROHIBIDO** compartir una identidad entre varios robots o procesos.
-- ❌ **PROHIBIDO** almacenar credenciales en el robot, en un fichero, en el repositorio o en el
-  orquestador en claro.
-- ❌ **PROHIBIDO** desactivar MFA de una organización, o excluir usuarios reales de MFA, "para que
-  funcione el robot".
-- ❌ **PROHIBIDO** grabar y reproducir, y prohibidos los selectores por coordenadas, por índice
-  posicional o por comparación de píxeles cuando existe alternativa.
-- ❌ **PROHIBIDO** un robot que no esté en control de versiones.
-- ❌ **PROHIBIDO** desplegar y probar directamente en producción.
-- ❌ **PROHIBIDO** un paso con efecto externo sin comprobación de idempotencia previa.
-- ❌ **PROHIBIDO** reintentar una excepción de negocio, y prohibido el reintento sin máximo ni
-  destino final.
-- ❌ **PROHIBIDO** un proceso sin interruptor de parada probado.
-- ❌ **PROHIBIDO** un robot en producción sin dueño de negocio nombrado ni fecha de revisión.
-- ❌ **PROHIBIDO** usar la máquina del robot como puesto de trabajo o darle navegación libre.
-- ❌ **PROHIBIDO** capturar pantallas con datos personales fuera de un error, sin cifrado y sin
-  retención acotada.
-- ❌ **PROHIBIDO** justificar un programa de RPA con cifras de ahorro de FTE del fabricante. **Las
-  cifras del tipo "la RPA ahorra un X % de FTE" son material comercial sin metodología publicada.** Si
-  hay que justificar la inversión, se mide **el proceso concreto antes y después**, contando la cola
-  de excepciones y el mantenimiento; si no se ha medido, se dice que no se ha medido.
-- ❌ **PROHIBIDO** llamar "automatizado" a un proceso cuyo porcentaje de excepciones manuales no se
-  publica.
+- ❌ **FORBIDDEN** to build a robot against a system that **does** expose an API, without written
+  and approved justification.
+- ❌ **FORBIDDEN** for a robot to run with a natural person's account.
+- ❌ **FORBIDDEN** to share one identity between several robots or processes.
+- ❌ **FORBIDDEN** to store credentials in the robot, in a file, in the repository or in the
+  orchestrator in cleartext.
+- ❌ **FORBIDDEN** to disable an organisation's MFA, or to exclude real users from MFA, "so that
+  the robot works".
+- ❌ **FORBIDDEN** to record and replay, and forbidden are selectors by coordinate, by positional
+  index or by pixel comparison when an alternative exists.
+- ❌ **FORBIDDEN** a robot that is not in version control.
+- ❌ **FORBIDDEN** to deploy and test directly in production.
+- ❌ **FORBIDDEN** a step with an external effect without a prior idempotency check.
+- ❌ **FORBIDDEN** to retry a business exception, and forbidden is retry without a maximum or a
+  final destination.
+- ❌ **FORBIDDEN** a process without a tested stop switch.
+- ❌ **FORBIDDEN** a robot in production without a named business owner or a review date.
+- ❌ **FORBIDDEN** to use the robot's machine as a workstation or to give it free browsing.
+- ❌ **FORBIDDEN** to capture screens with personal data outside an error, without encryption and without
+  bounded retention.
+- ❌ **FORBIDDEN** to justify an RPA programme with the vendor's FTE saving figures. **Figures
+  of the "RPA saves X % of FTE" kind are marketing material with no published methodology.** If
+  the investment must be justified, you measure **the specific process before and after**, counting the exception
+  queue and the maintenance; if it has not been measured, you say it has not been measured.
+- ❌ **FORBIDDEN** to call "automated" a process whose percentage of manual exceptions is not
+  published.
 
-### 7.3 Cuando el robot es un LLM
+### 7.3 When the robot is an LLM
 
-Un agente que "usa el ordenador" (pulsa botones, lee pantallas) **es RPA**, y por tanto hereda todo
-lo anterior: identidad propia, bóveda, mínimo privilegio, cola, idempotencia, límites, trazabilidad,
-interruptor de parada. **Y añade dos problemas que la RPA clásica no tiene**:
+An agent that "uses the computer" (clicks buttons, reads screens) **is RPA**, and therefore inherits everything
+above: its own identity, vault, least privilege, queue, idempotency, limits, traceability,
+stop switch. **And it adds two problems classic RPA does not have**:
 
-1. **No determinismo**: la misma pantalla puede producir dos acciones distintas. Todo lo que en RPA
-   clásica se prueba una vez, aquí hay que probarlo estadísticamente
+1. **Non-determinism**: the same screen can produce two different actions. Everything that in classic
+   RPA is tested once must be tested statistically here
    (`llm-evaluation-standards`).
-2. **Inyección de prompt indirecta**: el texto de la pantalla que el agente lee **es entrada del
-   atacante**. Un correo, un PDF o un campo de un formulario pueden contener instrucciones. Con
-   credenciales de negocio y acceso a sistemas transaccionales, esto es la tríada letal completa.
+2. **Indirect prompt injection**: the text on the screen the agent reads **is the attacker's
+   input**. An email, a PDF or a form field can contain instructions. With
+   business credentials and access to transactional systems, this is the full lethal trifecta.
 
-Consecuencia operativa, no filosófica: **aprobación humana obligatoria antes de cualquier acción
-irreversible o con impacto económico**, sin excepción, y límites de importe y de volumen impuestos
-**fuera** del agente. El diseño del bucle, sus topes y su *sandbox* son de `ai-agents-standards`; que
-además cumpla lo de aquí, no es opcional.
+Operational consequence, not philosophical: **mandatory human approval before any
+irreversible action or any action with economic impact**, without exception, and amount and volume limits enforced
+**outside** the agent. The design of the loop, its caps and its *sandbox* belong to `ai-agents-standards`; that
+it also complies with what is here is not optional.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-- **Modelos de precio, que cambian y son la mitad de la decisión**: página oficial de precios de
-  Power Automate (a ago-2026, lista: **Premium $15 usuario/mes**, **Process $150 bot/mes**, **Hosted
-  Process $215 bot/mes**), de UiPath (*Basic* desde ~**$25/mes** con 2 robots; el resto "contact
-  sales"). **Huecos declarados: no se pudo obtener el modelo de precio ni las condiciones de licencia
-  de Automation Anywhere ni de SS&C Blue Prism** desde fuentes públicas (una devolvió 404 y la otra
-  no resolvió). Antes de compararlos, exigir la oferta por escrito al fabricante y **verificar si el
-  precio es por robot concurrente, por proceso o por ejecución** — la diferencia decide el TCO.
-- **Licencias leídas en crudo**, no por la etiqueta de GitHub: Robot Framework **Apache-2.0**
+- **Pricing models, which change and are half the decision**: the official pricing page of
+  Power Automate (as of Aug 2026, list: **Premium $15 user/month**, **Process $150 bot/month**, **Hosted
+  Process $215 bot/month**), of UiPath (*Basic* from ~**$25/month** with 2 robots; the rest "contact
+  sales"). **Declared gaps: neither the pricing model nor the licensing terms
+  of Automation Anywhere or SS&C Blue Prism could be obtained** from public sources (one returned 404 and the other
+  did not resolve). Before comparing them, demand the offer in writing from the vendor and **verify whether the
+  price is per concurrent robot, per process or per run** — the difference decides the TCO.
+- **Licences read raw**, not by the GitHub label: Robot Framework **Apache-2.0**
   (`LICENSE.txt`), Playwright **Apache-2.0** (`LICENSE`), Temporal **MIT** (`LICENSE`), Airflow
-  **Apache-2.0** (`LICENSE`), y **Camunda: `Camunda License 1.0`, *source-available* y no OSI** —
-  releerla antes de asumir nada, porque condiciona el uso en producto.
-- **Versión y soporte** de la herramienta de RPA elegida, y **su matriz de compatibilidad con la
-  versión del sistema objetivo** (navegador, ERP, emulador). Es la causa número uno de rotura tras
-  una actualización.
-- **Notas de versión del sistema objetivo**: suscripción obligatoria; es el único aviso previo de que
-  la interfaz va a cambiar.
-- **CVEs** del orquestador y del *runtime* del robot: son sistemas con credenciales de negocio, no
-  herramientas de escritorio.
-- Estado actual de las capacidades de "uso del ordenador" de los modelos y de sus guías de seguridad
-  antes de proponer un agente para un proceso transaccional.
+  **Apache-2.0** (`LICENSE`), and **Camunda: `Camunda License 1.0`, *source-available* and not OSI** —
+  re-read it before assuming anything, because it conditions use in a product.
+- **Version and support** of the chosen RPA tool, and **its compatibility matrix with the
+  version of the target system** (browser, ERP, emulator). It is the number one cause of breakage after
+  an update.
+- **Release notes of the target system**: subscription mandatory; it is the only advance warning that
+  the interface is going to change.
+- **CVEs** of the orchestrator and of the robot *runtime*: they are systems with business credentials, not
+  desktop tools.
+- The current state of models' "computer use" capabilities and of their safety guidance
+  before proposing an agent for a transactional process.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

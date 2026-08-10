@@ -3,348 +3,348 @@ name: network-vendors-standards
 description: What actually changes when the box has a different logo — vendor operating models, licensing, lifecycle and vendor risk. Use when working with Cisco IOS / IOS-XE / NX-OS / IOS-XR and deciding which one a platform runs, Cisco EEM applets and event manager, Smart Licensing Using Policy (SLP), SLAC authorization codes, CSSM, CSLU, "license smart url", "show license all", Catalyst Center (formerly DNA Center), Junos OS and its candidate configuration, "commit check", "commit confirmed", "rollback 3", "show | compare", "load replace", apply-groups and apply-path, Junos Evolved, Arista EOS, SysDB and NetDB, CloudVision / CVaaS / CVP and ZTP as a service, EOS extensions and "config session", MikroTik RouterOS 7 and Winbox, RouterOS package channels and "/system package update", Huawei VRP and its regulatory status as a high-risk supplier, Nokia SR Linux or SR OS, FortiOS or PAN-OS acting as a WAN router rather than a firewall, choosing single-vendor versus multivendor and pricing the lock-in, TAC and RMA contract coverage, PSIRT and security advisory subscription as a process, EoS/EoL and last-date-of-support milestones, or a vendor acquisition that changes the roadmap under you.
 ---
 
-# Estándares de proveedores de red — el bloqueo está en el modelo operativo, no en el CLI
+# Network vendor standards — the lock-in is in the operating model, not the CLI
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica cuando **la decisión depende de quién fabrica la caja**: qué sistema operativo de red corre
-cada plataforma y qué implica; el modelo de configuración del vendor (transaccional frente a
-inmediato) y qué operación segura permite; el **licenciamiento** y qué deja de funcionar cuando
-caduca; el ciclo de vida del firmware y los hitos EoS/EoL; el consumo de avisos **PSIRT** como
-proceso, no como lectura ocasional; los contratos de soporte, TAC y RMA y qué cubren de verdad;
-el **riesgo de proveedor** (adquisiciones, restricciones regulatorias, discontinuación de línea); y
-el criterio de **estandarizar en un vendor frente a multivendor**, con el coste real de cada opción.
+Applies when **the decision depends on who makes the box**: which network operating system each
+platform runs and what that implies; the vendor's configuration model (transactional versus
+immediate) and what safe operation it allows; **licensing** and what stops working when it
+expires; the firmware lifecycle and the EoS/EoL milestones; consuming **PSIRT** advisories as a
+process, not as occasional reading; support, TAC and RMA contracts and what they really cover;
+**vendor risk** (acquisitions, regulatory restrictions, product-line discontinuation); and the
+criteria for **standardising on one vendor versus multivendor**, with the real cost of each option.
 
 Triggers: `IOS-XE`, `NX-OS`, `IOS-XR`, `Junos`, `Junos Evolved`, `EOS`, `RouterOS`, `VRP`,
 `SR Linux`, `SR OS`, `FortiOS`, `PAN-OS`; `event manager applet`, `commit confirmed`,
 `commit check`, `rollback`, `apply-groups`, `config session`, `show license all`,
 `license smart url`, SLAC, CSSM, CSLU, Catalyst Center, CloudVision/CVaaS, Winbox, ZTP;
-"EoS", "LDoS", "PSIRT", "TAC", "RMA", "renovación de licencias", "cambio de fabricante".
+"EoS", "LDoS", "PSIRT", "TAC", "RMA", "licence renewal", "vendor change".
 
-**No aplica** — el catálogo ya reparte esto: `networking-standards` es la **troncal**
-(direccionamiento, VLAN, MTU, plano OOB, elección de plataforma de perímetro) y **ya delega la
-profundidad**; `routing-switching-standards` decide **qué debe decir** la configuración de campus y
-borde (STP, MLAG, VRRP, política BGP, RPKI, CoPP, AAA — aquí sólo **en qué se traduce** eso en cada
-SO); `datacenter-fabric-standards` decide la malla (Clos, VXLAN/EVPN);
-`network-automation-standards` decide **cómo se genera, se prueba y se aplica** un cambio (Ansible,
-NAPALM, NETCONF/YANG, gNMI, containerlab, detección de drift — aquí sólo **qué expone cada vendor**
-y con qué fidelidad); `firewall-policy-standards` (la política de filtrado como artefacto, incluido
-FortiOS/PAN-OS **como firewall**); `wireless-standards` (WLAN y controladoras);
+**Not applicable** — the catalogue already splits this up: `networking-standards` is the **trunk**
+(addressing, VLAN, MTU, OOB plane, choice of edge platform) and **already delegates the
+depth**; `routing-switching-standards` decides **what the campus and edge configuration must say**
+(STP, MLAG, VRRP, BGP policy, RPKI, CoPP, AAA — here only **what that translates into** on each
+OS); `datacenter-fabric-standards` decides the fabric (Clos, VXLAN/EVPN);
+`network-automation-standards` decides **how a change is generated, tested and applied** (Ansible,
+NAPALM, NETCONF/YANG, gNMI, containerlab, drift detection — here only **what each vendor exposes**
+and with what fidelity); `firewall-policy-standards` (filtering policy as an artefact, including
+FortiOS/PAN-OS **as a firewall**); `wireless-standards` (WLAN and controllers);
 `load-balancing-standards`, `vpn-standards`, `dns-standards`, `network-troubleshooting-standards`
-(método reactivo). Hacia fuera: `vulnerability-management-standards` (**triaje y SLA de parcheo**;
-aquí sólo la **suscripción y el consumo** del feed PSIRT), `wan-legacy-standards` (MPLS, SD-WAN y
-circuitos heredados), `telco-5g-standards` (equipo de operador),
+(reactive method). Outward: `vulnerability-management-standards` (**triage and patching SLA**;
+here only the **subscription and consumption** of the PSIRT feed), `wan-legacy-standards` (MPLS,
+SD-WAN and legacy circuits), `telco-5g-standards` (carrier equipment),
 `high-speed-interconnect-standards` (InfiniBand/RoCE), `edge-computing-standards`,
-`finops-standards` (modelo de coste plurianual),
-`opensource-licensing-standards` (licencias de software libre — **el licenciamiento de red es
-contractual, no OSS**), `grc-compliance-standards` (due diligence de proveedor como control),
-`offensive-security-standards` (**esta skill es defensiva**).
+`finops-standards` (multi-year cost model),
+`opensource-licensing-standards` (free software licences — **network licensing is
+contractual, not OSS**), `grc-compliance-standards` (vendor due diligence as a control),
+`offensive-security-standards` (**this skill is defensive**).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión, el estado EoS/EoL y el nombre exacto de cada producto por web antes
-> de fijarlo en un proyecto real (§8). **Los nombres comerciales cambian sin cambiar el producto**:
-> Cisco renombró DNA Center a **Catalyst Center** y Viptela SD-WAN a **Catalyst SD-WAN** en 2023;
-> la documentación antigua sigue usando los nombres viejos.
+> Verify the latest version, the EoS/EoL status and the exact name of each product on the web before
+> pinning it in a real project (§8). **Commercial names change without the product changing**:
+> Cisco renamed DNA Center to **Catalyst Center** and Viptela SD-WAN to **Catalyst SD-WAN** in 2023;
+> the old documentation still uses the old names.
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Criterio primario de elección | **Modelo operativo** (transaccionalidad, API, telemetría, lifecycle) | Precio de compra, sólo si el TCO a 5 años lo respalda |
-| Nº de vendors en el core | **Uno**, salvo justificación explícita | Dos, si el riesgo de proveedor lo exige (§7) |
-| Nº de vendors por dominio (campus / DC / WAN) | Uno por dominio, con **frontera clara** en la interconexión | Multivendor dentro de un dominio: **casi nunca compensa** |
-| Interfaz de cambio | **NETCONF/YANG o gNMI** si el vendor lo soporta bien | CLI estructurada (`| display xml`, `| json`) — *screen scraping* sólo como último recurso |
-| Ventana de rollback | **Commit confirmado con temporizador** siempre que el SO lo ofrezca | Fuera de banda + reload programado si no lo ofrece |
-| Cadencia de firmware | Release **con soporte extendido/long-lived** del vendor, no la última | Release nueva sólo si arregla un CVE explotado o una feature contratada |
-| Suscripción PSIRT | **Obligatoria** para todo vendor en producción, con dueño nombrado | — |
+| Primary selection criterion | **Operating model** (transactionality, API, telemetry, lifecycle) | Purchase price, only if the 5-year TCO backs it |
+| No. of vendors in the core | **One**, unless explicitly justified | Two, if vendor risk demands it (§7) |
+| No. of vendors per domain (campus / DC / WAN) | One per domain, with a **clear boundary** at the interconnect | Multivendor within a domain: **almost never worth it** |
+| Change interface | **NETCONF/YANG or gNMI** if the vendor supports it well | Structured CLI (`| display xml`, `| json`) — *screen scraping* only as a last resort |
+| Rollback window | **Confirmed commit with a timer** whenever the OS offers it | Out of band + scheduled reload if it does not |
+| Firmware cadence | The vendor's **extended-support/long-lived** release, not the latest | A new release only if it fixes an exploited CVE or a contracted feature |
+| PSIRT subscription | **Mandatory** for every vendor in production, with a named owner | — |
 
-### Qué es cada sistema operativo (y dónde vive)
+### What each operating system is (and where it lives)
 
-- **Cisco IOS / IOS-XE** — el linaje de campus y sucursal. IOS-XE es IOS clásico reempaquetado sobre
-  un kernel Linux con separación de planos: soporta `guestshell`, contenedores de aplicación, YANG y
-  telemetría. Catalyst 9000, ISR/ASR 1000, y Catalyst 8000 corren IOS-XE.
-- **Cisco NX-OS** — la línea de centro de datos (Nexus). Modelo modular con procesos reiniciables,
-  `feature <x>` para activar funciones, y VDC/VRF. No comparte comandos con IOS-XE más allá de la
-  apariencia; **asumir que sí es el error clásico**.
-- **Cisco IOS-XR** — la línea de proveedor de servicio y core (ASR 9000, NCS). **Es el único de los
-  tres con modelo de configuración transaccional real**: `commit`, `commit confirmed`, `show
-  configuration commit changes`, `rollback configuration`. Si el equipo viene de IOS-XE, el modelo
-  mental cambia por completo.
-- **Junos OS / Junos Evolved** — un solo SO en toda la gama, con el mejor modelo de configuración
-  del sector (véase abajo). Evolved es la reescritura sobre Linux nativo; **la CLI se parece pero la
-  paridad de features no es total**: verificar por plataforma.
-- **Arista EOS** — un solo binario para toda la gama, sobre Linux estándar, con **SysDB** como base
-  de datos de estado en memoria y publish/subscribe entre agentes. La consecuencia práctica: un
-  agente que muere se reinicia y **relee su estado de SysDB** sin tirar el resto del sistema. CVP /
-  CVaaS agrega el SysDB de toda la red (NetDB/NetDL).
-- **MikroTik RouterOS 7** — Linux con una capa propia. Coste por prestación imbatible; modelo
-  operativo y postura de seguridad **muy por debajo** del resto (§5).
-- **Huawei VRP** — SO propio, funcionalmente competente y barato. El problema no es técnico: es
-  **regulatorio y de continuidad** (§5).
-- **Nokia SR Linux / SR OS**, **FortiOS**, **PAN-OS** — SR Linux es notable por su modelo abierto
-  (gNMI/YANG de primera clase). FortiOS y PAN-OS **hacen de router** en sucursales; aquí sólo eso,
-  su política de filtrado es de `firewall-policy-standards`.
+- **Cisco IOS / IOS-XE** — the campus and branch lineage. IOS-XE is classic IOS repackaged on top of
+  a Linux kernel with plane separation: it supports `guestshell`, application containers, YANG and
+  telemetry. Catalyst 9000, ISR/ASR 1000 and Catalyst 8000 run IOS-XE.
+- **Cisco NX-OS** — the data centre line (Nexus). Modular model with restartable processes,
+  `feature <x>` to enable functions, and VDC/VRF. It shares no commands with IOS-XE beyond
+  appearance; **assuming it does is the classic mistake**.
+- **Cisco IOS-XR** — the service provider and core line (ASR 9000, NCS). **It is the only one of the
+  three with a genuinely transactional configuration model**: `commit`, `commit confirmed`, `show
+  configuration commit changes`, `rollback configuration`. If the team comes from IOS-XE, the mental
+  model changes completely.
+- **Junos OS / Junos Evolved** — a single OS across the whole range, with the best configuration
+  model in the industry (see below). Evolved is the rewrite on native Linux; **the CLI looks similar
+  but feature parity is not total**: verify per platform.
+- **Arista EOS** — a single binary for the whole range, on standard Linux, with **SysDB** as the
+  in-memory state database and publish/subscribe between agents. The practical consequence: an
+  agent that dies restarts and **re-reads its state from SysDB** without taking down the rest of the
+  system. CVP / CVaaS aggregates the SysDB of the whole network (NetDB/NetDL).
+- **MikroTik RouterOS 7** — Linux with a proprietary layer on top. Unbeatable cost per feature;
+  operating model and security posture **far below** the rest (§5).
+- **Huawei VRP** — proprietary OS, functionally competent and cheap. The problem is not technical:
+  it is **regulatory and about continuity** (§5).
+- **Nokia SR Linux / SR OS**, **FortiOS**, **PAN-OS** — SR Linux stands out for its open model
+  (first-class gNMI/YANG). FortiOS and PAN-OS **act as routers** in branches; here only that,
+  their filtering policy belongs to `firewall-policy-standards`.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### El modelo de configuración es lo que decide la operabilidad
+### The configuration model is what decides operability
 
-El **candidate config + commit confirmado** de Junos es la mejor idea que ha producido la industria
-de redes, y la razón es concreta: **desacopla escribir de aplicar, y aplicar de confirmar**.
+Junos's **candidate config + confirmed commit** is the best idea the networking industry has
+produced, and the reason is concrete: **it decouples writing from applying, and applying from confirming**.
 
-- Se edita una **configuración candidata** que no afecta al equipo. Errores de sintaxis y de
-  semántica se detectan antes de tocar nada (`commit check`).
-- `show | compare` da el **diff exacto** de lo que va a cambiar. No hay que adivinar el estado
-  resultante.
-- `commit confirmed` aplica y arma un temporizador; si no se confirma con un segundo `commit`, el
-  equipo **revierte solo**. **El valor por defecto son 10 minutos, configurable de 1 a 65 535**
-  (Juniper, *Commit the Configuration*, CLI User Guide). Esto elimina la clase entera de incidentes
-  "me cerré el acceso a mí mismo".
-- **Rollback numerado**: `rollback 0..49` recupera configuraciones anteriores completas, y
-  `rollback rescue` una marcada como buena. No es un backup externo: vive en el equipo.
-- **Apply Groups** (`groups` + `apply-groups`, con `apply-path` para derivar listas de otra parte de
-  la config) aplican configuración común por herencia. Reducen repetición, pero **oscurecen la
-  configuración efectiva**: revisar siempre con `show configuration | display inheritance`.
+- You edit a **candidate configuration** that does not affect the device. Syntax and semantic errors
+  are caught before touching anything (`commit check`).
+- `show | compare` gives the **exact diff** of what is going to change. There is no need to guess
+  the resulting state.
+- `commit confirmed` applies and arms a timer; if it is not confirmed with a second `commit`, the
+  device **rolls back on its own**. **The default is 10 minutes, configurable from 1 to 65,535**
+  (Juniper, *Commit the Configuration*, CLI User Guide). This eliminates the entire class of
+  "I locked myself out" incidents.
+- **Numbered rollback**: `rollback 0..49` recovers complete previous configurations, and
+  `rollback rescue` one marked as good. It is not an external backup: it lives on the device.
+- **Apply Groups** (`groups` + `apply-groups`, with `apply-path` to derive lists from another part
+  of the config) apply common configuration by inheritance. They reduce repetition, but **they
+  obscure the effective configuration**: always review with `show configuration | display inheritance`.
 
-Traducción a los demás:
+Translation to the others:
 
-| Capacidad | Junos | IOS-XR | EOS | NX-OS / IOS-XE | RouterOS |
+| Capability | Junos | IOS-XR | EOS | NX-OS / IOS-XE | RouterOS |
 |---|---|---|---|---|---|
-| Config candidata | Sí, nativa | Sí, nativa | `configure session` | Parcial (`config replace`, `configure exclusive`) | No |
-| Diff antes de aplicar | `show \| compare` | `show configuration` | `show session-config diffs` | `show archive config differences` | No |
-| Commit confirmado | Sí (10 min por defecto) | Sí | `commit timer` en sesión | `configure replace` + `reload in` como sucedáneo | No |
-| Rollback numerado | 0–49 + `rescue` | Sí | Instantáneas de sesión | `archive` con ficheros | Backups manuales |
+| Candidate config | Yes, native | Yes, native | `configure session` | Partial (`config replace`, `configure exclusive`) | No |
+| Diff before applying | `show \| compare` | `show configuration` | `show session-config diffs` | `show archive config differences` | No |
+| Confirmed commit | Yes (10 min default) | Yes | `commit timer` in session | `configure replace` + `reload in` as a substitute | No |
+| Numbered rollback | 0–49 + `rescue` | Yes | Session snapshots | `archive` with files | Manual backups |
 
-**Criterio**: en un equipo sin commit confirmado, **todo cambio remoto de riesgo lleva un `reload
-in <n>` armado antes de tocar nada**, y se cancela al verificar. No es opcional.
+**Criteria**: on a device without confirmed commit, **every risky remote change carries a `reload
+in <n>` armed before touching anything**, cancelled once verified. It is not optional.
 
-### Automatización on-box: útil, y trampa de mantenimiento
+### On-box automation: useful, and a maintenance trap
 
-- Cisco **EEM** (`event manager applet`, con `event syslog`, `event timer`, `event none`, y
-  acciones `cli`, `syslog`, `mail`) permite reaccionar a eventos en el propio equipo. Es
-  legítimo para **contención inmediata** (deshabilitar un puerto que aletea) y para *self-healing*
-  acotado.
-- ❌ **PROHIBIDO** usar EEM (o scripts on-box equivalentes: Junos `op`/`event-options`, EOS
-  extensions, RouterOS scheduler) como **sustituto de la automatización externa**. Un applet en 300
-  equipos es lógica sin control de versiones, sin tests y sin inventario. Todo script on-box lleva
-  dueño, se genera desde la plantilla y se audita como configuración.
+- Cisco **EEM** (`event manager applet`, with `event syslog`, `event timer`, `event none`, and
+  `cli`, `syslog`, `mail` actions) allows reacting to events on the device itself. It is
+  legitimate for **immediate containment** (shutting down a flapping port) and for bounded
+  *self-healing*.
+- ❌ **FORBIDDEN** to use EEM (or equivalent on-box scripts: Junos `op`/`event-options`, EOS
+  extensions, RouterOS scheduler) as a **substitute for external automation**. An applet on 300
+  devices is logic with no version control, no tests and no inventory. Every on-box script has an
+  owner, is generated from the template and is audited as configuration.
 
-### Qué se puede automatizar de verdad, por vendor
+### What can really be automated, by vendor
 
-El eje real no es "¿tiene NETCONF?" sino **¿el modelo YANG cubre lo que necesito configurar, y el
-estado operacional se puede leer sin parsear texto?**
+The real axis is not "does it have NETCONF?" but **does the YANG model cover what I need to
+configure, and can operational state be read without parsing text?**
 
-- **Cobertura de modelo**: OpenConfig es la promesa; la realidad es que casi todo lo interesante
-  acaba en modelos **nativos** del vendor. Verificar caso a caso qué subárbol está soportado.
-- **Estado operacional**: gNMI `Subscribe` (telemetría por streaming) sustituye a SNMP; comprobar
-  qué *paths* emite el equipo y a qué cadencia. Sin esto no hay observabilidad de red decente.
-- **Fidelidad del `commit`**: NETCONF con `confirmed-commit` (RFC 6241) sólo vale si el equipo lo
-  implementa de verdad; muchos anuncian NETCONF y por debajo hacen CLI.
-- ❌ **PROHIBIDO** basar un plan de automatización en **screen scraping** de la CLI como estrategia
-  de destino. Es aceptable como puente para equipo heredado, con expectativa de vida y fecha de
-  salida escritas; nunca como diseño.
+- **Model coverage**: OpenConfig is the promise; the reality is that almost everything interesting
+  ends up in the vendor's **native** models. Verify case by case which subtree is supported.
+- **Operational state**: gNMI `Subscribe` (streaming telemetry) replaces SNMP; check which *paths*
+  the device emits and at what cadence. Without this there is no decent network observability.
+- **`commit` fidelity**: NETCONF with `confirmed-commit` (RFC 6241) is only worth it if the device
+  really implements it; many advertise NETCONF and underneath do CLI.
+- ❌ **FORBIDDEN** to base an automation plan on CLI **screen scraping** as the target strategy.
+  It is acceptable as a bridge for legacy equipment, with a written life expectancy and exit date;
+  never as a design.
 
-## 4. Calidad y verificación
+## 4. Quality and verification
 
-- **Antes de comprar**: exigir al fabricante, por escrito, (a) la matriz de soporte YANG/gNMI de la
-  plataforma exacta, (b) la fecha de EoS/LDoS del modelo, (c) el compromiso de duración de la rama
-  de firmware, y (d) el SLA de RMA en la geografía real de la instalación. **Sin las cuatro, no hay
-  decisión, hay apuesta.**
-- **Prueba de fuego previa a estandarizar**: reproducir el cambio más peligroso que se hará en
-  producción (cambio de política de borde, actualización de firmware con reinicio) en un laboratorio
-  virtual del propio vendor, midiendo el tiempo de reversión real. Si el vendor no ofrece imagen
-  virtual utilizable, **eso ya es un dato de la decisión**.
-- **Validación de configuración**: `commit check` (Junos), `configure session` + `show session-config
-  diffs` (EOS), `nft`-equivalente no existe aquí — el gate es del vendor. La verificación
-  independiente (Batfish, pyATS/Genie) y los tests de la tubería son de `network-automation`.
-- **Inventario de firmware como dato consultable**: modelo, versión, fecha de EoS y fecha del último
-  aviso PSIRT aplicado, en la fuente de verdad. Un parque sin este inventario **no puede responder**
-  a un aviso crítico en el plazo que exige `vulnerability-management-standards`.
+- **Before buying**: demand from the vendor, in writing, (a) the YANG/gNMI support matrix for the
+  exact platform, (b) the EoS/LDoS date of the model, (c) the commitment to the lifetime of the
+  firmware branch, and (d) the RMA SLA in the real geography of the installation. **Without all
+  four there is no decision, there is a bet.**
+- **Acid test before standardising**: reproduce the most dangerous change that will be made in
+  production (edge policy change, firmware upgrade with a reboot) in a virtual lab from the vendor
+  itself, measuring the real rollback time. If the vendor does not offer a usable virtual image,
+  **that is already a data point for the decision**.
+- **Configuration validation**: `commit check` (Junos), `configure session` + `show session-config
+  diffs` (EOS); an `nft` equivalent does not exist here — the gate belongs to the vendor. Independent
+  verification (Batfish, pyATS/Genie) and pipeline tests belong to `network-automation`.
+- **Firmware inventory as queryable data**: model, version, EoS date and date of the last applied
+  PSIRT advisory, in the source of truth. An estate without this inventory **cannot respond** to a
+  critical advisory within the deadline `vulnerability-management-standards` requires.
 
-## 5. Seguridad y riesgo de proveedor
+## 5. Security and vendor risk
 
-### PSIRT como proceso, no como noticia
+### PSIRT as a process, not as news
 
-- Suscribirse a los canales oficiales de **todos** los fabricantes en producción y **enrutarlos a
-  una cola con dueño**: Cisco Security Advisories (openVuln API), Juniper JSA, Arista Security
+- Subscribe to the official channels of **all** vendors in production and **route them to a queue
+  with an owner**: Cisco Security Advisories (openVuln API), Juniper JSA, Arista Security
   Advisories, Fortinet PSIRT, Palo Alto Security Advisories, MikroTik `mikrotik.com/supportsec`.
-- El disparador de acción no es la publicación: es el **triaje** (¿la plataforma está afectada? ¿la
-  feature vulnerable está habilitada? ¿está expuesta?). El SLA y la priorización (CVSS + EPSS + KEV)
-  son de `vulnerability-management-standards`; **el compromiso de aquí es que el aviso llegue y
-  tenga dueño**.
-- ❌ **PROHIBIDO** operar un equipo de red cuya rama de firmware ya no recibe correcciones de
-  seguridad y que esté expuesto a una red no confiable. Si no se puede actualizar, se aísla.
+- The trigger for action is not publication: it is **triage** (is the platform affected? is the
+  vulnerable feature enabled? is it exposed?). The SLA and prioritisation (CVSS + EPSS + KEV)
+  belong to `vulnerability-management-standards`; **the commitment here is that the advisory
+  arrives and has an owner**.
+- ❌ **FORBIDDEN** to operate a network device whose firmware branch no longer receives security
+  fixes and that is exposed to an untrusted network. If it cannot be updated, it is isolated.
 
-### MikroTik: el mejor precio del mercado y la peor exposición
+### MikroTik: the best price on the market and the worst exposure
 
-RouterOS ofrece prestaciones de gama alta a precio de gama baja, y eso lo convierte en el equipo más
-desplegado por gente sin operación de red detrás. El resultado es medible:
+RouterOS offers high-end features at low-end prices, and that makes it the most widely deployed
+device by people with no network operation behind them. The result is measurable:
 
-- CISA ha emitido avisos ICS sobre RouterOS y Cloud Hosted Router en 2026 — entre otros
-  **ICSA-26-211-01 (CVE-2026-14227**, expiración insuficiente de sesión en la API, con extracción de
-  la clave privada de WireGuard desde una sesión de bajo privilegio) e **ICSA-26-209-05
-  (CVE-2026-16347**, ausencia de protección frente a fuerza bruta en la autenticación de la API).
-  **Verificar el estado de parcheo por web (§8): al recogerse este dato no constaba parche.** La
-  API escucha en TCP 8728/8729.
-- El patrón histórico es constante y no es de CVE: **interfaz de gestión expuesta a Internet**.
-  Las campañas de botnet sobre MikroTik (Mēris y sucesoras) han reutilizado equipos comprometidos
-  años antes, donde **actualizar no bastaba** porque las credenciales ya estaban robadas y quedaban
-  scripts y reglas del atacante en el equipo.
-- **Criterio operativo**: si se usa MikroTik, (a) gestión **sólo** por OOB o VPN, nunca expuesta;
-  (b) Winbox/API/SSH/WWW restringidos por `address-list`; (c) tras cualquier sospecha de
-  compromiso, **reinstalación limpia y rotación de credenciales**, no actualización; (d) revisión
-  explícita de `/system scheduler`, `/system script`, usuarios y reglas NAT/firewall no reconocidas.
-- ❌ **PROHIBIDO** desplegar MikroTik en un borde crítico sin dueño operativo asignado. El ahorro
-  de la compra se lo come el primer incidente.
+- CISA has issued ICS advisories about RouterOS and Cloud Hosted Router in 2026 — among others
+  **ICSA-26-211-01 (CVE-2026-14227**, insufficient session expiration in the API, with extraction of
+  the WireGuard private key from a low-privilege session) and **ICSA-26-209-05
+  (CVE-2026-16347**, absence of brute-force protection in API authentication).
+  **Verify the patch status on the web (§8): when this data was collected no patch was on record.**
+  The API listens on TCP 8728/8729.
+- The historical pattern is constant and is not about CVEs: **management interface exposed to the Internet**.
+  The botnet campaigns against MikroTik (Mēris and successors) have reused devices compromised
+  years earlier, where **updating was not enough** because the credentials were already stolen and
+  the attacker's scripts and rules remained on the device.
+- **Operational criteria**: if MikroTik is used, (a) management **only** over OOB or VPN, never exposed;
+  (b) Winbox/API/SSH/WWW restricted by `address-list`; (c) after any suspicion of
+  compromise, **clean reinstall and credential rotation**, not an update; (d) explicit review
+  of `/system scheduler`, `/system script`, users and unrecognised NAT/firewall rules.
+- ❌ **FORBIDDEN** to deploy MikroTik at a critical edge without an assigned operational owner. The
+  purchase saving is eaten by the first incident.
 
-### Huawei: el riesgo no es técnico
+### Huawei: the risk is not technical
 
-- La UE llevaba desde 2020 con el **5G Toolbox** como recomendación **no vinculante**, aplicada de
-  forma desigual: **menos de la mitad de los 27 Estados miembros** habían usado poderes legales para
-  imponer restricciones. El paquete de ciberseguridad presentado por la Comisión el **20 de enero de
-  2026** propone convertir esas medidas en **obligatorias**, con retirada escalonada del equipo de
-  proveedores de alto riesgo y extensión del alcance más allá del 5G (fibra incluida).
-  **Es una propuesta legislativa, no derecho aplicable todavía**: los plazos de adopción y de
-  transposición son el dato que hay que verificar (§8), y **varían por país**.
-- **Criterio**: para infraestructura con vida útil de 7–10 años, la pregunta no es si Huawei
-  funciona (funciona), sino **si el marco regulatorio del país de despliegue permitirá amortizarla**.
-  Un mandato de retirada convierte una compra barata en una migración no presupuestada.
-- Este mismo razonamiento aplica a **cualquier** proveedor sujeto a control de exportación o a
-  restricción sectorial. Es análisis de riesgo, no geopolítica.
+- The EU had had the **5G Toolbox** since 2020 as a **non-binding** recommendation, applied
+  unevenly: **fewer than half of the 27 Member States** had used legal powers to
+  impose restrictions. The cybersecurity package presented by the Commission on **20 January
+  2026** proposes turning those measures into **mandatory** ones, with a phased removal of equipment
+  from high-risk vendors and an extension of scope beyond 5G (fibre included).
+  **It is a legislative proposal, not applicable law yet**: the adoption and
+  transposition deadlines are the data point to verify (§8), and **they vary by country**.
+- **Criteria**: for infrastructure with a 7–10 year service life, the question is not whether Huawei
+  works (it does), but **whether the regulatory framework of the country of deployment will let it be amortised**.
+  A removal mandate turns a cheap purchase into an unbudgeted migration.
+- This same reasoning applies to **any** vendor subject to export control or to a
+  sectoral restriction. It is risk analysis, not geopolitics.
 
-### Adquisiciones: el roadmap cambia bajo los pies
+### Acquisitions: the roadmap changes under your feet
 
-- **HPE cerró la compra de Juniper Networks el 2 de julio de 2025**, por unos 13 400 M USD; JNPR
-  dejó de cotizar. El DOJ impuso condiciones (desinversión de Instant On y subasta de licencia no
-  exclusiva del código fuente de Mist AI). Juniper opera como filial y su ex-CEO dirige la división
-  de red de HPE, que mantiene ambas marcas.
-- **Qué significa para una decisión de compra**: Junos como SO no se evapora, pero **las líneas
-  solapadas con Aruba son las candidatas naturales a racionalización**. Antes de estandarizar en una
-  gama concreta, exigir por escrito el compromiso de roadmap y las fechas de EoS de **ese** modelo.
-  Verificar el estado actual por web (§8): las decisiones de portfolio post-fusión se anuncian en
-  goteo.
-- La cláusula general: **toda estandarización en un vendor debe llevar escrito qué se hace si el
-  vendor es comprado, discontinúa la línea o queda restringido**. Sin ese párrafo, la
-  estandarización es una apuesta sin cobertura.
+- **HPE closed the acquisition of Juniper Networks on 2 July 2025**, for some USD 13.4 billion; JNPR
+  stopped trading. The DOJ imposed conditions (divestiture of Instant On and auction of a
+  non-exclusive licence to the Mist AI source code). Juniper operates as a subsidiary and its
+  ex-CEO runs HPE's networking division, which keeps both brands.
+- **What it means for a purchase decision**: Junos as an OS is not evaporating, but **the lines
+  overlapping with Aruba are the natural candidates for rationalisation**. Before standardising on a
+  specific range, demand in writing the roadmap commitment and the EoS dates of **that** model.
+  Verify the current status on the web (§8): post-merger portfolio decisions are announced
+  in dribs and drabs.
+- The general clause: **every standardisation on a vendor must have written down what is done if the
+  vendor is acquired, discontinues the line or becomes restricted**. Without that paragraph,
+  standardisation is an uncovered bet.
 
-### Licenciamiento: qué deja de funcionar cuando caduca
+### Licensing: what stops working when it expires
 
-- **Cisco Smart Licensing Using Policy (SLP)** es **obligatorio desde IOS-XE 17.3.2** (Smart
-  Licensing fue obligatorio de 16.10.1a a 17.3.1, y opcional entre 16.5.1 y 16.9.8). SLP eliminó el
-  PAK y el registro previo: **no se requiere registro ni generación de claves salvo para licencias
-  *export-controlled* o *enforced***. Transportes: `smart` (HTTP directo a Cisco), `cslu` (mediado
-  por CSLU on-premise) y offline para redes aisladas; `call-home` está en retirada y no debe usarse
-  en versiones nuevas. Para licencias controladas o caudal >250 Mbps hace falta instalar un
-  **SLAC**.
-- **Consecuencia operativa** que se ignora hasta que duele: una red aislada necesita un plan de
-  reporte de uso de licencia (CSLU o fichero offline) **desde el día uno**. Verificar `show license
-  all` / `show license status` como parte del inventario, no cuando salta el aviso.
-- **Regla transversal**: antes de comprar, exigir por escrito **qué funciones se degradan o se
-  bloquean** al expirar la licencia o al perder conectividad con el servidor de licencias, y **cómo
-  se comporta un equipo que reinicia sin poder validar**. Es la diferencia entre un aviso en el log
-  y una sucursal caída.
-- ❌ **PROHIBIDO** dimensionar un presupuesto de red contando sólo el CAPEX del hardware. La
-  suscripción plurianual, el soporte y la renovación son parte del precio (`finops-standards`).
+- **Cisco Smart Licensing Using Policy (SLP)** is **mandatory from IOS-XE 17.3.2** (Smart
+  Licensing was mandatory from 16.10.1a to 17.3.1, and optional between 16.5.1 and 16.9.8). SLP
+  removed the PAK and prior registration: **no registration or key generation is required except
+  for *export-controlled* or *enforced* licences**. Transports: `smart` (HTTP direct to Cisco),
+  `cslu` (mediated by on-premise CSLU) and offline for isolated networks; `call-home` is being
+  retired and must not be used on new versions. For controlled licences or throughput >250 Mbps you
+  need to install a **SLAC**.
+- **Operational consequence** that is ignored until it hurts: an isolated network needs a licence
+  usage reporting plan (CSLU or offline file) **from day one**. Verify `show license
+  all` / `show license status` as part of the inventory, not when the warning fires.
+- **Cross-cutting rule**: before buying, demand in writing **which functions degrade or are
+  blocked** when the licence expires or connectivity to the licence server is lost, and **how
+  a device that reboots without being able to validate behaves**. It is the difference between a
+  log warning and a branch office down.
+- ❌ **FORBIDDEN** to size a network budget counting only the hardware CAPEX. The
+  multi-year subscription, support and renewal are part of the price (`finops-standards`).
 
-## 6. Operabilidad — soporte, RMA y ciclo de vida
+## 6. Operability — support, RMA and lifecycle
 
-- **Los hitos que importan** (nombres exactos varían por vendor; verificar §8): anuncio de fin de
-  venta (EoS), última fecha de pedido, fin de mantenimiento de software, fin de soporte de
-  vulnerabilidades y **última fecha de soporte (LDoS)**. El único que decide es el **fin de
-  correcciones de seguridad**: a partir de ahí el equipo es deuda con fecha.
-- **Contrato de soporte**: verificar el nivel real contratado (tiempo de respuesta ≠ tiempo de
-  reposición), la cobertura geográfica del stock de RMA y si incluye acceso a descargas de software.
-  **En varios fabricantes, sin contrato vigente no se puede descargar ni el parche de seguridad** —
-  eso convierte la renovación en un control de seguridad, no en un gasto administrativo.
-- **Repuestos**: para equipos de borde sin RMA de 4 h en la ubicación real, el repuesto frío en sitio
-  suele ser más barato que subir el nivel de contrato. Decidirlo con el RTO, no con el catálogo.
-- **Equipo de segunda mano / gris**: legítimo para laboratorio y repuesto frío. ❌ PROHIBIDO en
-  producción crítica: sin cobertura de soporte, sin garantía de procedencia del firmware y con
-  riesgo de cadena de suministro.
+- **The milestones that matter** (exact names vary by vendor; verify §8): end-of-sale
+  announcement (EoS), last order date, end of software maintenance, end of vulnerability
+  support and **last date of support (LDoS)**. The only one that decides is the **end of
+  security fixes**: from then on the device is debt with a date.
+- **Support contract**: verify the actual level contracted (response time ≠ replacement
+  time), the geographic coverage of the RMA stock and whether it includes access to software downloads.
+  **With several vendors, without a valid contract you cannot even download the security patch** —
+  that turns renewal into a security control, not an administrative expense.
+- **Spares**: for edge devices without 4h RMA at the real location, a cold spare on site
+  is usually cheaper than raising the contract level. Decide it with the RTO, not with the catalogue.
+- **Second-hand / grey equipment**: legitimate for lab and cold spare. ❌ FORBIDDEN in
+  critical production: no support coverage, no guarantee of firmware provenance and with
+  supply chain risk.
 
-### Estandarizar en un vendor frente a multivendor — el coste real
+### Standardising on one vendor versus multivendor — the real cost
 
-| Eje | Un vendor | Multivendor |
+| Axis | One vendor | Multivendor |
 |---|---|---|
-| Coste operativo | **Menor**: una curva de aprendizaje, un modelo de commit, una tubería | Mayor: cada SO es un conjunto de plantillas, tests y modos de fallo |
-| Poder de negociación | Se degrada con el tiempo; el vendor lo sabe | **Mejor**, si es creíble (hay que poder cambiar de verdad) |
-| Riesgo de fallo correlacionado | **Alto**: un CVE crítico afecta al parque entero a la vez | Menor, a cambio de más superficie total |
-| Riesgo de proveedor (compra, EoL, regulación) | Concentrado | Diversificado |
-| Automatización | Sencilla y de alta fidelidad | Exige abstracción real (NetBox + plantillas por plataforma), no un `if vendor ==` |
+| Operating cost | **Lower**: one learning curve, one commit model, one pipeline | Higher: each OS is a set of templates, tests and failure modes |
+| Negotiating power | Degrades over time; the vendor knows it | **Better**, if credible (you have to be able to actually switch) |
+| Correlated failure risk | **High**: one critical CVE affects the whole estate at once | Lower, at the cost of more total surface |
+| Vendor risk (acquisition, EoL, regulation) | Concentrated | Diversified |
+| Automation | Simple and high fidelity | Requires real abstraction (NetBox + per-platform templates), not an `if vendor ==` |
 
-**Criterio por defecto**: **un vendor por dominio** (campus, DC, WAN), con fronteras protocolares
-estándar en la interconexión. Multivendor *dentro* de un dominio sólo se justifica si el segundo
-vendor está **operado de verdad** — no comprado "por si acaso". Un vendor secundario que nadie sabe
-configurar no diversifica riesgo: lo aumenta.
+**Default criteria**: **one vendor per domain** (campus, DC, WAN), with standard protocol
+boundaries at the interconnect. Multivendor *within* a domain is only justified if the second
+vendor is **genuinely operated** — not bought "just in case". A secondary vendor that nobody knows
+how to configure does not diversify risk: it increases it.
 
-**El bloqueo de proveedor real no está en el CLI.** Cambiar de sintaxis es una semana de trabajo. Lo
-que ata es todo lo demás: la fuente de verdad modelada según el modelo de datos del vendor, las
-plantillas, la plataforma de gestión (Catalyst Center, CVP, Mist, Apstra) con su inventario y sus
-flujos, el conocimiento operativo del equipo, los contratos plurianuales y las features propietarias
-sin equivalente estándar. **Toda decisión de comprar la plataforma de gestión del vendor debe
-evaluarse como decisión de bloqueo**, no como accesorio del hardware.
+**Real vendor lock-in is not in the CLI.** Changing syntax is a week's work. What
+ties you down is everything else: the source of truth modelled after the vendor's data model, the
+templates, the management platform (Catalyst Center, CVP, Mist, Apstra) with its inventory and its
+workflows, the team's operational knowledge, the multi-year contracts and the proprietary features
+with no standard equivalent. **Every decision to buy the vendor's management platform must be
+evaluated as a lock-in decision**, not as a hardware accessory.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-- Refrescar el inventario de EoS/LDoS **cada trimestre** y presupuestar la sustitución **con dos
-  años de antelación** al fin de correcciones de seguridad. Descubrirlo el mismo año es cómo se
-  acaba parcheando por excepción.
-- Congelar la rama de firmware por dominio y actualizar por ventana planificada, no por equipo.
-  Salir de esa cadencia sólo por CVE explotado o requisito contractual.
-- Documentar en un ADR (`software-architecture-patterns-standards`) la decisión de vendor con su
-  fecha, su alternativa descartada y **la condición que la reabriría** (adquisición, EoL de la gama,
-  cambio regulatorio, subida de precio por encima de un umbral).
+- Refresh the EoS/LDoS inventory **every quarter** and budget for replacement **two
+  years in advance** of the end of security fixes. Discovering it in the same year is how you
+  end up patching by exception.
+- Freeze the firmware branch per domain and update on a planned window, not per device.
+  Leave that cadence only for an exploited CVE or a contractual requirement.
+- Document in an ADR (`software-architecture-patterns-standards`) the vendor decision with its
+  date, the discarded alternative and **the condition that would reopen it** (acquisition, EoL of
+  the range, regulatory change, price rise above a threshold).
 
-Prohibiciones:
+Prohibitions:
 
-- ❌ **PROHIBIDO** escribir de memoria una versión, una fecha de EoS/LDoS, un nombre de feature, un
-  nivel de licencia o un identificador de CVE. Se verifica en la web del fabricante (§8).
-- ❌ **PROHIBIDO** aplicar un cambio remoto de riesgo sin ventana de reversión armada (commit
-  confirmado o `reload in`).
-- ❌ **PROHIBIDO** exponer a Internet la gestión de un equipo de red (Winbox, HTTP/HTTPS de
-  administración, API, SSH sin restricción de origen). Gestión por OOB o VPN.
-- ❌ **PROHIBIDO** desplegar con credenciales, comunidades SNMP o certificados de fábrica. Y
-  **prohibido documentar credenciales por defecto de terceros** en este catálogo: si hacen falta, se
-  consultan en la documentación del fabricante en el momento del despliegue y se cambian.
-- ❌ **PROHIBIDO** operar un vendor en producción sin suscripción PSIRT con dueño nombrado.
-- ❌ **PROHIBIDO** tratar el screen scraping de CLI como arquitectura de destino de automatización.
-- ❌ **PROHIBIDO** desplegar firmware descargado de un origen que no sea el fabricante, o sin
-  verificar su firma/hash publicado.
-- ❌ **PROHIBIDO** estandarizar en un vendor sin cláusula escrita de qué se hace ante adquisición,
-  discontinuación o restricción regulatoria.
-- ❌ **PROHIBIDO** citar cifras de TCO, "ahorro por automatización" o cuota de mercado procedentes
-  de material comercial del fabricante sin metodología publicada. Si no hay metodología, se dice que
-  no la hay.
+- ❌ **FORBIDDEN** to write from memory a version, an EoS/LDoS date, a feature name, a
+  licence level or a CVE identifier. It is verified on the vendor's website (§8).
+- ❌ **FORBIDDEN** to apply a risky remote change without an armed rollback window (confirmed
+  commit or `reload in`).
+- ❌ **FORBIDDEN** to expose the management of a network device to the Internet (Winbox,
+  administrative HTTP/HTTPS, API, SSH without source restriction). Management over OOB or VPN.
+- ❌ **FORBIDDEN** to deploy with factory credentials, SNMP communities or certificates. And
+  **forbidden to document third-party default credentials** in this catalogue: if they are needed,
+  they are looked up in the vendor's documentation at deployment time and changed.
+- ❌ **FORBIDDEN** to operate a vendor in production without a PSIRT subscription with a named owner.
+- ❌ **FORBIDDEN** to treat CLI screen scraping as the target automation architecture.
+- ❌ **FORBIDDEN** to deploy firmware downloaded from a source other than the vendor, or without
+  verifying its published signature/hash.
+- ❌ **FORBIDDEN** to standardise on a vendor without a written clause on what is done in the event
+  of acquisition, discontinuation or regulatory restriction.
+- ❌ **FORBIDDEN** to quote TCO figures, "automation savings" or market share coming
+  from the vendor's commercial material without published methodology. If there is no methodology,
+  you say there is none.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Comprobar **siempre** antes de decidir, en la fuente primaria del fabricante o del regulador:
+**Always** check before deciding, in the primary source of the vendor or the regulator:
 
-1. **Versión y rama de firmware** recomendada para la plataforma exacta (no la familia), y si es
-   rama de soporte extendido.
-2. **Hitos de ciclo de vida** del modelo concreto: EoS, fin de mantenimiento de software, **fin de
-   correcciones de seguridad** y LDoS. Cisco EoL Notices, Juniper EOL, Arista lifecycle policy.
-3. **Avisos PSIRT abiertos** para la plataforma y la versión, y si hay parche disponible. En
-   particular, **el estado de parcheo de los avisos de RouterOS citados en §5 (CVE-2026-14227,
-   CVE-2026-16347): al recogerse este documento no constaba parche del fabricante.**
-4. **Estado regulatorio del proveedor** en el país de despliegue: la propuesta de la Comisión de
-   **20 de enero de 2026** que hace vinculante el 5G Toolbox, su estado de tramitación, sus plazos
-   de retirada y **la norma nacional aplicable**, que difiere por Estado miembro.
-5. **Estado del portfolio post-adquisición HPE–Juniper** (cierre: 2 de julio de 2025): qué gamas se
-   mantienen, cuáles se racionalizan y con qué fechas.
-6. **Modelo y política de licencias vigente**: umbral de versión donde SLP es obligatorio, qué
-   requiere SLAC, qué transportes siguen soportados y **qué se degrada al expirar**.
-7. **Cobertura real de YANG/gNMI** de la plataforma: matriz de modelos soportados y *paths* de
-   telemetría publicados.
-8. **Nombres comerciales actuales** — se renombran sin avisar (DNA Center → Catalyst Center; Viptela
-   → Catalyst SD-WAN). Escribir el nombre viejo hace que la documentación no se encuentre.
+1. **Firmware version and branch** recommended for the exact platform (not the family), and whether
+   it is an extended-support branch.
+2. **Lifecycle milestones** of the specific model: EoS, end of software maintenance, **end of
+   security fixes** and LDoS. Cisco EoL Notices, Juniper EOL, Arista lifecycle policy.
+3. **Open PSIRT advisories** for the platform and the version, and whether a patch is available. In
+   particular, **the patch status of the RouterOS advisories cited in §5 (CVE-2026-14227,
+   CVE-2026-16347): when this document was compiled no vendor patch was on record.**
+4. **Regulatory status of the vendor** in the country of deployment: the Commission proposal of
+   **20 January 2026** making the 5G Toolbox binding, its legislative status, its removal
+   deadlines and **the applicable national rule**, which differs by Member State.
+5. **Status of the post-acquisition HPE–Juniper portfolio** (closing: 2 July 2025): which ranges are
+   kept, which are rationalised and with what dates.
+6. **Current licensing model and policy**: the version threshold where SLP is mandatory, what
+   requires SLAC, which transports are still supported and **what degrades on expiry**.
+7. **Real YANG/gNMI coverage** of the platform: matrix of supported models and published telemetry
+   *paths*.
+8. **Current commercial names** — they are renamed without warning (DNA Center → Catalyst Center;
+   Viptela → Catalyst SD-WAN). Writing the old name means the documentation cannot be found.
 
-**Huecos declarados**: (a) el estado de parcheo de los avisos MikroTik de julio de 2026 no se pudo
-confirmar en fuente primaria — `cisa.gov` devolvió HTTP 403 al intentar la cita verbatim, y el dato
-procede de resumen de búsqueda; **verificar en `mikrotik.com/supportsec` antes de actuar**. (b) Las
-fechas de adopción y transposición del paquete de ciberseguridad de la UE no se verificaron en el
-texto oficial: se conoce la fecha de presentación, no el calendario en vigor. (c) No se verificaron
-matrices de EoS/LDoS de modelos concretos: dependen de plataforma y no se escriben de memoria.
+**Declared gaps**: (a) the patch status of the July 2026 MikroTik advisories could not be
+confirmed in a primary source — `cisa.gov` returned HTTP 403 when attempting the verbatim citation,
+and the data comes from a search summary; **verify on `mikrotik.com/supportsec` before acting**. (b) The
+adoption and transposition dates of the EU cybersecurity package were not verified in the
+official text: the presentation date is known, not the calendar in force. (c) No EoS/LDoS matrices
+of specific models were verified: they depend on the platform and are not written from memory.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

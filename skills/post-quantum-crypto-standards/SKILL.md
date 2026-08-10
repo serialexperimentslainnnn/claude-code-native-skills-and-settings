@@ -3,19 +3,19 @@ name: post-quantum-crypto-standards
 description: Planning and executing the migration to post-quantum cryptography — the transition, not the PKI. Use when scoping harvest-now-decrypt-later exposure by data lifetime, building a cryptographic inventory or a CBOM (CycloneDX crypto assets), or working with FIPS 203 ML-KEM, FIPS 204 ML-DSA, FIPS 205 SLH-DSA, the pending FIPS 206 FN-DSA and HQC, legacy Kyber/Dilithium/Falcon/SPHINCS+ names, hybrid TLS 1.3 key exchange with X25519MLKEM768 (IANA group 4588 / 0x11EC) or the retired X25519Kyber768Draft00 (0x6399), OpenSSH KexAlgorithms mlkem768x25519-sha256 and sntrup761x25519-sha512@openssh.com, IKEv2 additional key exchanges (RFC 9370, ke1_mlkem768) and RFC 8784 preshared keys, liboqs / oqsprovider / Open Quantum Safe, PQC support in AWS KMS, Google Cloud KMS or Azure Managed HSM, signature and key sizes blowing up a handshake, a firmware image or a certificate chain, crypto-agility as a design requirement, or the migration deadlines in NIST IR 8547, SP 800-131A and NSA CNSA 2.0.
 ---
 
-# Estándares de migración post-cuántica
+# Post-quantum migration standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **la transición**: decidir qué migrar, en qué orden, con qué plazo y con qué
-evidencia. Cubre: modelo de amenaza *harvest now, decrypt later* (HNDL) y priorización **por
-vida útil del dato**, inventario criptográfico y CBOM, elección de algoritmo PQC y de
-parámetros, despliegue de **híbridos** en TLS, SSH e IKEv2/IPsec, el problema específico de
-las **firmas** (tamaño, cadenas de certificados, firmware, arranque seguro), **agilidad
-criptográfica** como requisito de diseño, calendarios normativos (NIST IR 8547, SP 800-131A,
-CNSA 2.0) y su traducción a un plan plurianual con presupuesto.
+Applies to **the transition**: deciding what to migrate, in what order, on what deadline and with what
+evidence. Covers: the *harvest now, decrypt later* (HNDL) threat model and prioritisation **by
+data lifetime**, cryptographic inventory and CBOM, choice of PQC algorithm and
+parameters, deployment of **hybrids** in TLS, SSH and IKEv2/IPsec, the specific problem of
+**signatures** (size, certificate chains, firmware, secure boot), **crypto-agility**
+as a design requirement, regulatory timelines (NIST IR 8547, SP 800-131A,
+CNSA 2.0) and their translation into a multi-year budgeted plan.
 
 Triggers: `ML-KEM`/`ML-DSA`/`SLH-DSA`/`FN-DSA`/`HQC`, `Kyber`/`Dilithium`/`Falcon`/`SPHINCS+`,
 FIPS 203/204/205/206, `X25519MLKEM768`, `0x11EC`, `mlkem768x25519-sha256`,
@@ -23,326 +23,326 @@ FIPS 203/204/205/206, `X25519MLKEM768`, `0x11EC`, `mlkem768x25519-sha256`,
 `oqsprovider`, `PQCSecretKey`, CBOM, "quantum-safe", "crypto-agility", "Q-day", CNSA 2.0,
 NIST IR 8547.
 
-**No aplica**: ver `cryptography-pki-standards` (**madre y frontera dura**: la elección de
-algoritmo clásico, modos AEAD, hashing de contraseñas, aleatoriedad, **toda la PKI** —
-jerarquía de CA, `nameConstraints`, ACME, ciclo de vida y revocación del certificado—,
-custodia de claves en HSM/KMS, mTLS y pinning, y la prohibición de implementar cripto propia.
-**Aquí solo la transición**: qué se sustituye, cuándo, en qué orden y cómo se demuestra. Si
-la pregunta es "qué CA y con qué claves", es suya; si es "cuándo dejo de poder usar esa
-clave y por qué la sustituyo", es de aquí), `secrets-management-standards` (custodia y
-rotación del secreto ya generado), `networking-standards` y `load-balancing-standards`
-(terminación TLS en el borde y su configuración), `vpn-standards` (**el túnel como
-servicio**: `wg0.conf`, `swanctl.conf`, propuestas IKEv2, concentrador y su operación —
-**aquí solo qué intercambio de claves PQC exigir y con qué plazo**),
-`identity-access-management-standards` (JOSE/JWT, tokens y federación),
-`cicd-standards` (firma de artefactos y OIDC del runner dentro del pipeline),
-`kubernetes-standards` (cert-manager y verificación en admisión),
-`vulnerability-management-standards` (triaje de CVE y SLA de parcheo: **el "riesgo cuántico"
-no es un CVE y no entra en su cola**), `grc-compliance-standards` (aceptación formal del
-riesgo residual y evidencia de auditoría), `opensource-licensing-standards` (licencia de las
-bibliotecas PQC que introduzcas), `solidity-standards` (primitivas de firma de la cadena),
-`assembly-standards` (implementación en tiempo constante), `mlsecops-standards` y
-`ai-governance-standards` (nada que ver: "quantum" en marketing de IA no es esto).
+**Not applicable**: see `cryptography-pki-standards` (**mother skill and hard boundary**: the choice of
+classical algorithm, AEAD modes, password hashing, randomness, **the whole PKI** —
+CA hierarchy, `nameConstraints`, ACME, certificate lifecycle and revocation—,
+key custody in HSM/KMS, mTLS and pinning, and the ban on rolling your own crypto.
+**Here only the transition**: what gets replaced, when, in what order and how it is proven. If
+the question is "which CA and with which keys", it is theirs; if it is "when do I stop being able to use that
+key and why do I replace it", it belongs here), `secrets-management-standards` (custody and
+rotation of the already-generated secret), `networking-standards` and `load-balancing-standards`
+(TLS termination at the edge and its configuration), `vpn-standards` (**the tunnel as a
+service**: `wg0.conf`, `swanctl.conf`, IKEv2 proposals, the concentrator and its operation —
+**here only which PQC key exchange to require and on what deadline**),
+`identity-access-management-standards` (JOSE/JWT, tokens and federation),
+`cicd-standards` (artifact signing and runner OIDC inside the pipeline),
+`kubernetes-standards` (cert-manager and admission-time verification),
+`vulnerability-management-standards` (CVE triage and patching SLA: **"quantum risk"
+is not a CVE and does not enter their queue**), `grc-compliance-standards` (formal acceptance of
+residual risk and audit evidence), `opensource-licensing-standards` (licence of the
+PQC libraries you introduce), `solidity-standards` (chain signature primitives),
+`assembly-standards` (constant-time implementation), `mlsecops-standards` and
+`ai-governance-standards` (nothing to do with this: "quantum" in AI marketing is not this).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> **Ningún dato de esta tabla se escribe de memoria en un entregable.** Fechas y estados de
-> FIPS, IR 8547 y CNSA 2.0 se re-verifican antes de comprometer un plan (§8).
+> **No datum in this table gets written from memory into a deliverable.** Dates and states of
+> FIPS, IR 8547 and CNSA 2.0 are re-verified before committing to a plan (§8).
 
-| Necesidad | Por defecto | Alternativa justificable | Vetado |
+| Need | Default | Justifiable alternative | Vetoed |
 |---|---|---|---|
-| Establecimiento de clave | **ML-KEM-768 en híbrido con X25519** (`X25519MLKEM768`) | ML-KEM-1024 si el requisito es CNSA 2.0 o el dato vive décadas | ML-KEM **solo**, sin componente clásico, en producción hoy |
-| Firma de propósito general | **ML-DSA-65** (o -87 si lo exige CNSA 2.0) | SLH-DSA cuando importa más la confianza en la hipótesis (solo hash) que el tamaño | FN-DSA (FIPS 206) antes de que exista el estándar final |
-| Firma de firmware / arranque | **LMS o XMSS (SP 800-208)**, con gestión de estado seria | SLH-DSA si no puedes garantizar el estado (es *stateless*) | Reutilizar una clave *stateful* sin control de índice: una firma repetida rompe el esquema |
-| KEM alternativo | Esperar a **HQC** como diversificación, no como reemplazo | — | Fijar HQC en un diseño antes de que se publique su FIPS |
-| Estrategia de despliegue | **Híbrido** (clásico + PQC) mientras dure la transición | PQC puro cuando el regulador lo exija y el ecosistema lo soporte | "Ya migraremos cuando salga el ordenador cuántico" |
-| Orden de trabajo | **Confidencialidad de larga vida primero**, firmas después | Firma primero si tu producto tiene *root of trust* en firmware que no se puede actualizar | Priorizar por sistema ("empecemos por producción") en vez de por dato |
-| Prerrequisito | **Inventario criptográfico + CBOM** antes de tocar nada | — | Migrar sin saber qué algoritmos usas: presupuesto quemado y huecos |
-| Biblioteca | La del proveedor de tu plataforma con soporte PQC (OpenSSL 3.5+, AWS-LC, BoringSSL, Go `crypto/tls`) | `liboqs`/`oqsprovider` para experimentar y para algoritmos aún no integrados | `liboqs` en producción sin leer su propio aviso de madurez |
-| Métrica de avance | **% de conexiones/artefactos con PQC negociado**, medido | — | "Estamos migrando" sin telemetría de qué se negocia realmente |
+| Key establishment | **ML-KEM-768 hybridised with X25519** (`X25519MLKEM768`) | ML-KEM-1024 if the requirement is CNSA 2.0 or the data lives for decades | ML-KEM **alone**, with no classical component, in production today |
+| General-purpose signature | **ML-DSA-65** (or -87 if CNSA 2.0 demands it) | SLH-DSA when confidence in the assumption (hash only) matters more than size | FN-DSA (FIPS 206) before the final standard exists |
+| Firmware / boot signature | **LMS or XMSS (SP 800-208)**, with serious state management | SLH-DSA if you cannot guarantee state (it is *stateless*) | Reusing a *stateful* key without index control: a repeated signature breaks the scheme |
+| Alternative KEM | Wait for **HQC** as diversification, not as a replacement | — | Pinning HQC in a design before its FIPS is published |
+| Deployment strategy | **Hybrid** (classical + PQC) for as long as the transition lasts | Pure PQC when the regulator requires it and the ecosystem supports it | "We'll migrate when the quantum computer shows up" |
+| Order of work | **Long-lived confidentiality first**, signatures afterwards | Signature first if your product has a *root of trust* in firmware that cannot be updated | Prioritising by system ("let's start with production") instead of by data |
+| Prerequisite | **Cryptographic inventory + CBOM** before touching anything | — | Migrating without knowing which algorithms you use: burnt budget and gaps |
+| Library | The one from your platform vendor with PQC support (OpenSSL 3.5+, AWS-LC, BoringSSL, Go `crypto/tls`) | `liboqs`/`oqsprovider` for experimentation and for algorithms not yet integrated | `liboqs` in production without reading its own maturity warning |
+| Progress metric | **% of connections/artifacts with PQC negotiated**, measured | — | "We're migrating" with no telemetry of what is actually negotiated |
 
-## 3. HNDL: la urgencia la fija el dato, no el sistema
+## 3. HNDL: urgency is set by the data, not the system
 
-- **Harvest now, decrypt later**: el adversario captura hoy tráfico cifrado y lo descifra
-  cuando exista una máquina capaz. Por eso la fecha límite **no** es "cuando llegue el
-  ordenador cuántico": es **hoy menos la vida útil del dato**.
-- Regla de Mosca, y es la única aritmética que hace falta: si **X** = años que el dato debe
-  seguir siendo secreto, **Y** = años que tardas en migrar y **Z** = años hasta que exista un
-  CRQC (*cryptanalytically relevant quantum computer*), **tienes un problema si X + Y > Z**.
-  Z no lo sabe nadie; X e Y sí los sabes tú, y son los únicos que puedes cambiar.
-- **Prioriza por tipo de dato, no por criticidad del sistema**: historia clínica, datos
-  genéticos, identidad, secreto industrial, material clasificado, expedientes legales y
-  **claves raíz de PKI y de firmware** tienen vida de décadas. Un carrito de la compra
-  cifrado tiene vida de minutos y no urge. Un sistema "crítico" que solo mueve datos
-  perecederos urge **menos** que un backup archivado de datos personales.
-- Superficies HNDL reales: **VPN e interconexiones** (el tráfico es interceptable y
-  archivable), backups y replicación fuera de sitio, mensajería y correo cifrados, tráfico
-  hacia proveedores cloud, y cualquier cosa que atraviese una red que no controlas.
-- **Las firmas no sufren HNDL.** Una firma solo importa mientras se verifica: falsificarla en
-  2035 no ayuda a quien la capturó en 2026. Por eso **el cifrado es más urgente que la
-  firma** — con una excepción que sí urge: **la raíz de confianza que no se puede
-  actualizar** (firmware, secure boot, dispositivos de campo con vida de 15-20 años). Ahí la
-  firma se decide hoy porque no habrá segunda oportunidad.
+- **Harvest now, decrypt later**: the adversary captures encrypted traffic today and decrypts it
+  when a capable machine exists. That is why the deadline is **not** "when the
+  quantum computer arrives": it is **today minus the data's lifetime**.
+- Mosca's rule, and it is the only arithmetic needed: if **X** = years the data must
+  stay secret, **Y** = years it takes you to migrate and **Z** = years until a
+  CRQC (*cryptanalytically relevant quantum computer*) exists, **you have a problem if X + Y > Z**.
+  Nobody knows Z; you do know X and Y, and they are the only ones you can change.
+- **Prioritise by data type, not by system criticality**: medical records, genetic
+  data, identity, trade secrets, classified material, legal files and
+  **PKI and firmware root keys** have decade-long lifetimes. An encrypted shopping
+  cart has a lifetime of minutes and is not urgent. A "critical" system that only moves
+  perishable data is **less** urgent than an archived backup of personal data.
+- Real HNDL surfaces: **VPNs and interconnections** (the traffic is interceptable and
+  archivable), off-site backups and replication, encrypted messaging and mail, traffic
+  towards cloud providers, and anything crossing a network you do not control.
+- **Signatures do not suffer HNDL.** A signature only matters while it is being verified: forging it in
+  2035 does not help whoever captured it in 2026. That is why **encryption is more urgent than
+  signature** — with one exception that is urgent: **the root of trust that cannot be
+  updated** (firmware, secure boot, field devices with a 15-20 year life). There the
+  signature is decided today because there will be no second chance.
 
-## 4. Inventario y CBOM: el primer paso real
+## 4. Inventory and CBOM: the first real step
 
-- **Sin inventario no hay migración, hay presupuesto quemado.** Antes de tocar un solo
-  handshake: dónde se usa cripto, con qué algoritmo, con qué tamaño de clave, con qué
-  biblioteca y versión, quién es el dueño y cuánto vive el dato que protege.
-- Fuentes que hay que cruzar, porque ninguna basta sola:
-  1. **Estático**: escaneo de código y dependencias, `grep` de primitivas, análisis del
-     binario. Encuentra lo que está escrito, no lo que se ejecuta.
-  2. **Dinámico**: qué se negocia de verdad en la red (versión TLS, grupo, suite, algoritmo
-     de firma del certificado). Encuentra la realidad, no la intención.
-  3. **Inventario de certificados y claves**: CA internas, almacenes, HSM/KMS, claves SSH,
-     claves de firma de código y de firmware. Es donde están las sorpresas.
-  4. **Terceros**: SaaS, proveedores, dispositivos embebidos y todo lo que no puedes
-     recompilar. Aquí la migración es **contractual**, no técnica: metedlo en las cláusulas y
-     en la revisión de proveedor ahora, no en 2032.
-- **CBOM**: **CycloneDX 1.6** (publicada también como **ECMA-424**) introdujo los activos
-  criptográficos; 1.7 los refina. **Verifica la versión vigente y el esquema exacto (§8).**
-  Se genera **en CI**, no como export anual: es la lista de trabajo viva de la migración y la
-  evidencia que pedirá la auditoría.
-- Salida del inventario: cada activo con **clase de dato, vida útil, algoritmo actual, quién
-  lo cambia y en qué ventana**. Sin esas cinco columnas no es un inventario, es una lista.
+- **Without an inventory there is no migration, there is burnt budget.** Before touching a single
+  handshake: where crypto is used, with what algorithm, with what key size, with what
+  library and version, who owns it and how long the data it protects lives.
+- Sources that must be cross-referenced, because none is enough alone:
+  1. **Static**: code and dependency scanning, `grep` for primitives, binary
+     analysis. Finds what is written, not what runs.
+  2. **Dynamic**: what is actually negotiated on the wire (TLS version, group, suite, certificate
+     signature algorithm). Finds reality, not intent.
+  3. **Certificate and key inventory**: internal CAs, stores, HSM/KMS, SSH keys,
+     code- and firmware-signing keys. That is where the surprises live.
+  4. **Third parties**: SaaS, suppliers, embedded devices and everything you cannot
+     recompile. Here migration is **contractual**, not technical: put it in the clauses and
+     in the supplier review now, not in 2032.
+- **CBOM**: **CycloneDX 1.6** (also published as **ECMA-424**) introduced cryptographic
+  assets; 1.7 refines them. **Verify the current version and the exact schema (§8).**
+  It is generated **in CI**, not as an annual export: it is the living work list of the migration and the
+  evidence the audit will ask for.
+- Inventory output: each asset with **data class, lifetime, current algorithm, who
+  changes it and in what window**. Without those five columns it is not an inventory, it is a list.
 
-## 5. Cómo se despliega hoy (estado real, verificable)
+## 5. How it is deployed today (real, verifiable state)
 
-### Estándares publicados y pendientes
+### Published and pending standards
 
-- **Publicados el 13-ago-2024, efectivos el 14-ago-2024** (Federal Register,
-  89 FR / anuncio de emisión): **FIPS 203 — Module-Lattice-Based Key-Encapsulation Mechanism
-  Standard (ML-KEM**, de CRYSTALS-Kyber), **FIPS 204 — Module-Lattice-Based Digital Signature
-  Standard (ML-DSA**, de CRYSTALS-Dilithium) y **FIPS 205 — Stateless Hash-Based Digital
-  Signature Standard (SLH-DSA**, de SPHINCS+). El mismo día el CMVP actualizó **SP 800-140C**
-  (FIPS 204/205 como métodos de firma aprobados) y **SP 800-140D** (FIPS 203 como KEM
-  aprobado) — dato que importa si tienes requisito FIPS 140-3.
-- **FIPS 206 (FN-DSA**, de FALCON): **seguía sin ser estándar final a agosto de 2026**. NIST
-  remitió el borrador para aprobación el 28-ago-2025 y en la conferencia de estandarización
-  PQC de sep-2025 constaba "still under development"; se espera final entre finales de 2026 y
-  2027. Motivo del retraso: el muestreo gaussiano en coma flotante de la firma es difícil de
-  implementar en tiempo constante. **No lo fijes en un diseño hasta que exista el final.**
-- **HQC**: seleccionado el **11-mar-2025** como KEM **de diversificación** (basado en códigos
-  correctores, no en retículos), como plan B si los retículos caen. FIPS esperado hacia 2027.
-  **No es un reemplazo de ML-KEM ni una razón para esperar.**
-- Nombres: **usa siempre los nombres FIPS** (ML-KEM, ML-DSA, SLH-DSA). "Kyber" y "Dilithium"
-  designan las versiones **pre-estándar**, incompatibles en el cable con las finales — el
-  cambio de punto de código TLS de `0x6399` a `0x11EC` existe exactamente por eso.
+- **Published on 13 Aug 2024, effective 14 Aug 2024** (Federal Register,
+  89 FR / issuance announcement): **FIPS 203 — Module-Lattice-Based Key-Encapsulation Mechanism
+  Standard (ML-KEM**, from CRYSTALS-Kyber), **FIPS 204 — Module-Lattice-Based Digital Signature
+  Standard (ML-DSA**, from CRYSTALS-Dilithium) and **FIPS 205 — Stateless Hash-Based Digital
+  Signature Standard (SLH-DSA**, from SPHINCS+). The same day the CMVP updated **SP 800-140C**
+  (FIPS 204/205 as approved signature methods) and **SP 800-140D** (FIPS 203 as an approved
+  KEM) — a datum that matters if you have a FIPS 140-3 requirement.
+- **FIPS 206 (FN-DSA**, from FALCON): **still not a final standard as of August 2026**. NIST
+  submitted the draft for approval on 28 Aug 2025 and at the PQC standardisation conference of
+  Sep 2025 it was listed as "still under development"; final is expected between late 2026 and
+  2027. Reason for the delay: the signature's floating-point Gaussian sampling is hard to
+  implement in constant time. **Do not pin it in a design until the final exists.**
+- **HQC**: selected on **11 Mar 2025** as a **diversification** KEM (code-based, not
+  lattice-based), as plan B if lattices fall. FIPS expected around 2027.
+  **It is not a replacement for ML-KEM nor a reason to wait.**
+- Names: **always use the FIPS names** (ML-KEM, ML-DSA, SLH-DSA). "Kyber" and "Dilithium"
+  designate the **pre-standard** versions, incompatible on the wire with the final ones — the
+  TLS code point change from `0x6399` to `0x11EC` exists for exactly that reason.
 
 ### TLS
 
-- El híbrido de facto es **`X25519MLKEM768`**, punto de código IANA **4588 = 0x11EC**
-  (`draft-ietf-tls-ecdhe-mlkem`), sobre **TLS 1.3**. Sustituyó a `X25519Kyber768Draft00`
-  (`0x6399`), que está **retirado** — si tu inventario lo encuentra, es deuda, no PQC.
-- Despliegue real de cliente, verificado: Chrome 124 (abr-2024) habilitó por defecto el
-  pre-estándar y **Chrome 131 (nov-2024) cambió a `X25519MLKEM768`**; Edge siguió por
-  Chromium; **Firefox 132** por defecto en HTTPS y **135** en QUIC/HTTP-3; Apple lo añadió en
-  macOS Tahoe 26 / iOS 26 (otoño 2025). Go retiró `x25519Kyber768Draft00` y usa
-  `X25519MLKEM768` por defecto en `crypto/tls`.
-- Adopción medida en Cloudflare: **~2 % a principios de 2024 → ~38 % en mar-2025 → >50 % del
-  tráfico humano en oct-2025 → >60 % de tráfico de cliente PQ-capaz en feb-2026** (Cloudflare
-  Radar); un estudio de 2026 mide **57,4 %** de conexiones iniciadas por navegador con
-  *key share* `X25519MLKEM768` — la diferencia es la base de medida, no una contradicción.
-  **Cita la fuente y la fecha o no uses la cifra (§8).**
-- **El origen va muy por detrás**: ~10 % del lado servidor de origen a principios de 2026,
-  tras activarlo Akamai por defecto en ene-2026. Conclusión operativa: **el navegador ya no
-  es tu problema; tu origen, tus balanceadores y tus servicios internos sí**.
-- Efecto secundario que hay que conocer antes de "arreglarlo": el *key share* de ~1 088-1 216
-  bytes ya se usa como **señal de detección de bots**. Un cliente que dice ser un navegador
-  moderno y no ofrece `X25519MLKEM768` canta. Si desactivas PQC "por compatibilidad", estás
-  cambiando tu huella.
+- The de facto hybrid is **`X25519MLKEM768`**, IANA code point **4588 = 0x11EC**
+  (`draft-ietf-tls-ecdhe-mlkem`), over **TLS 1.3**. It replaced `X25519Kyber768Draft00`
+  (`0x6399`), which is **retired** — if your inventory finds it, that is debt, not PQC.
+- Real client deployment, verified: Chrome 124 (Apr 2024) enabled the pre-standard by default
+  and **Chrome 131 (Nov 2024) switched to `X25519MLKEM768`**; Edge followed via
+  Chromium; **Firefox 132** by default on HTTPS and **135** on QUIC/HTTP-3; Apple added it in
+  macOS Tahoe 26 / iOS 26 (autumn 2025). Go retired `x25519Kyber768Draft00` and uses
+  `X25519MLKEM768` by default in `crypto/tls`.
+- Adoption measured at Cloudflare: **~2 % in early 2024 → ~38 % in Mar 2025 → >50 % of
+  human traffic in Oct 2025 → >60 % of PQ-capable client traffic in Feb 2026** (Cloudflare
+  Radar); a 2026 study measures **57.4 %** of browser-initiated connections with a
+  `X25519MLKEM768` *key share* — the difference is the measurement base, not a contradiction.
+  **Cite the source and the date or do not use the figure (§8).**
+- **The origin lags far behind**: ~10 % on the origin server side in early 2026,
+  after Akamai turned it on by default in Jan 2026. Operational conclusion: **the browser is no longer
+  your problem; your origin, your load balancers and your internal services are**.
+- A side effect to know about before "fixing it": the ~1,088-1,216-byte *key share*
+  is already used as a **bot detection signal**. A client claiming to be a modern
+  browser that does not offer `X25519MLKEM768` stands out. If you disable PQC "for compatibility", you are
+  changing your fingerprint.
 
-### SSH, IKEv2/IPsec y resto
+### SSH, IKEv2/IPsec and the rest
 
-- **SSH**: OpenSSH negocia híbrido **por defecto desde 10.0** (`mlkem768x25519-sha256`; 9.9 lo
-  introdujo; **10.1 avisa cuando el KEX no es post-cuántico**). Fija
-  `KexAlgorithms mlkem768x25519-sha256,sntrup761x25519-sha512@openssh.com` donde ambos
-  extremos lleguen. **Verifica versiones antes de fijarlas (§8).**
-- **IKEv2/IPsec**: **RFC 9370** (intercambios de clave adicionales, `ke1..ke7`) permite añadir
-  un KEM PQC sobre el DH clásico — propuesta tipo `ke1_mlkem768` en strongSwan. Interino
-  cuando el otro extremo no llega: **RFC 8784** (clave precompartida post-cuántica mezclada
-  en la derivación). La operación del túnel y su config son de `vpn-standards`.
-- **WireGuard** no negocia: su PSK opcional (`PresharedKey`) da resistencia HNDL simétrica; el
-  camino PQC propio son capas externas tipo Rosenpass. Verifica estado antes de prometer.
-- **Ficheros y backups**: `age` incorporó destinatarios híbridos `mlkem768x25519` en la serie
-  1.1.x — verifica versión y compatibilidad del destinatario antes de cifrar con ellos algo
-  que tengas que descifrar dentro de diez años.
-- **KMS/HSM**: AWS KMS ofrece ML-DSA en HSM validados (GA desde 2025-06-13), Google Cloud KMS
-  llevó a GA ML-DSA, SLH-DSA y ML-KEM, y Azure Key Vault/Managed HSM iba por detrás en 2026.
-  **Disponibilidad por región y por nivel de servicio: verifícala antes de diseñar (§8).**
+- **SSH**: OpenSSH negotiates hybrid **by default since 10.0** (`mlkem768x25519-sha256`; 9.9
+  introduced it; **10.1 warns when the KEX is not post-quantum**). Pin
+  `KexAlgorithms mlkem768x25519-sha256,sntrup761x25519-sha512@openssh.com` where both
+  ends can reach it. **Verify versions before pinning them (§8).**
+- **IKEv2/IPsec**: **RFC 9370** (additional key exchanges, `ke1..ke7`) allows adding
+  a PQC KEM on top of the classical DH — a `ke1_mlkem768`-style proposal in strongSwan. Interim
+  measure when the other end cannot get there: **RFC 8784** (post-quantum preshared key mixed
+  into the derivation). Tunnel operation and its config belong to `vpn-standards`.
+- **WireGuard** does not negotiate: its optional PSK (`PresharedKey`) gives symmetric HNDL resistance; its
+  own PQC path is external layers such as Rosenpass. Verify status before promising.
+- **Files and backups**: `age` added hybrid `mlkem768x25519` recipients in the
+  1.1.x series — verify version and recipient compatibility before encrypting with them anything
+  you have to decrypt ten years from now.
+- **KMS/HSM**: AWS KMS offers ML-DSA in validated HSMs (GA since 2025-06-13), Google Cloud KMS
+  took ML-DSA, SLH-DSA and ML-KEM to GA, and Azure Key Vault/Managed HSM was lagging in 2026.
+  **Availability by region and by service tier: verify it before designing (§8).**
 
-## 6. Firmas: tamaño, cadenas y por qué duele distinto
+## 6. Signatures: size, chains and why it hurts differently
 
-- El cifrado se migra cambiando un grupo en el handshake; **la firma cambia el formato de todo
-  lo firmado**. Un certificado, una cadena, una imagen de firmware y un token crecen a la vez.
-- **Tamaños, verbatim de las tablas oficiales** (FIPS 203 Tabla 3, FIPS 204 Tabla 2,
-  FIPS 205 Tabla 2), en bytes. Compáralos con los 32 B de una clave X25519 y los 64 B de una
-  firma Ed25519:
+- Encryption is migrated by changing a group in the handshake; **the signature changes the format of everything
+  signed**. A certificate, a chain, a firmware image and a token all grow at once.
+- **Sizes, verbatim from the official tables** (FIPS 203 Table 3, FIPS 204 Table 2,
+  FIPS 205 Table 2), in bytes. Compare them with the 32 B of an X25519 key and the 64 B of an
+  Ed25519 signature:
 
-  | Parámetro | Clave pública | Clave privada | Ciphertext / Firma |
+  | Parameter | Public key | Private key | Ciphertext / Signature |
   |---|---|---|---|
-  | ML-KEM-512 | 800 | 1 632 | 768 (ct) |
-  | **ML-KEM-768** | **1 184** | 2 400 | **1 088** (ct) |
-  | ML-KEM-1024 | 1 568 | 3 168 | 1 568 (ct) |
-  | ML-DSA-44 | 1 312 | 2 560 | 2 420 (sig) |
-  | **ML-DSA-65** | **1 952** | 4 032 | **3 309** (sig) |
-  | ML-DSA-87 | 2 592 | 4 896 | 4 627 (sig) |
-  | SLH-DSA-128s / 128f | 32 | — | **7 856** / **17 088** (sig) |
-  | SLH-DSA-192s / 192f | 48 | — | 16 224 / 35 664 (sig) |
-  | SLH-DSA-256s / 256f | 64 | — | 29 792 / **49 856** (sig) |
+  | ML-KEM-512 | 800 | 1,632 | 768 (ct) |
+  | **ML-KEM-768** | **1,184** | 2,400 | **1,088** (ct) |
+  | ML-KEM-1024 | 1,568 | 3,168 | 1,568 (ct) |
+  | ML-DSA-44 | 1,312 | 2,560 | 2,420 (sig) |
+  | **ML-DSA-65** | **1,952** | 4,032 | **3,309** (sig) |
+  | ML-DSA-87 | 2,592 | 4,896 | 4,627 (sig) |
+  | SLH-DSA-128s / 128f | 32 | — | **7,856** / **17,088** (sig) |
+  | SLH-DSA-192s / 192f | 48 | — | 16,224 / 35,664 (sig) |
+  | SLH-DSA-256s / 256f | 64 | — | 29,792 / **49,856** (sig) |
 
-  Lectura: ML-KEM añade ~1 KB por lado al handshake y es asumible; **ML-DSA multiplica por
-  ~30-50× la firma frente a Ed25519**; **SLH-DSA llega a ~50 KB por firma** — clave pública
-  minúscula, firma enorme y firmado lento, a cambio de descansar solo en hashes. La variante
-  `s` optimiza tamaño y la `f` velocidad: elegir mal duplica el problema.
-- Consecuencias concretas que hay que dimensionar **antes** de migrar:
-  - **Cadena de certificados**: una cadena PQC puede pasar de ~4 KB a decenas de KB. El
-    ClientHello/ServerHello deja de caber en los paquetes iniciales, aparecen *round trips*
-    extra y **amplificación** en QUIC. Mide latencia real, no solo bytes.
-  - **Firmware y arranque**: dispositivos con flash y RAM contadas, y con una clave pública
-    grabada en ROM que no se puede cambiar. Si el *root of trust* no es actualizable, **la
-    decisión de firma se toma ahora y para toda la vida del producto** — y por eso este es el
-    único frente donde la firma va antes que el cifrado.
-  - **Tokens y JOSE/COSE**: una firma ML-DSA en una cookie o cabecera puede reventar límites
-    de tamaño de proxies y navegadores. Verifica el límite antes, no en producción.
-- **Agilidad criptográfica es el entregable de verdad.** Diseña como si el algoritmo fuera a
-  cambiar dos veces más:
-  - Identificador de **algoritmo y versión de clave como metadato junto al dato/artefacto**,
-    nunca implícito.
-  - Toda la cripto **detrás de una interfaz propia**; nada de llamar a la primitiva desde 40
-    sitios. La medida de agilidad es: *¿cuántos ficheros toco para cambiar de algoritmo?*
-  - **Negociación, no algoritmo fijo en el protocolo**; y capacidad de **desactivar** un
-    algoritmo por configuración sin recompilar ni redesplegar.
-  - Prueba la agilidad **ejerciéndola**: un simulacro de rotación de algoritmo, igual que un
-    simulacro de restore. Una agilidad no ensayada no existe.
+  Reading: ML-KEM adds ~1 KB per side to the handshake and is bearable; **ML-DSA multiplies the
+  signature by ~30-50× versus Ed25519**; **SLH-DSA reaches ~50 KB per signature** — tiny public key,
+  huge signature and slow signing, in exchange for resting on hashes alone. The `s` variant
+  optimises size and `f` speed: choosing wrong doubles the problem.
+- Concrete consequences to size up **before** migrating:
+  - **Certificate chain**: a PQC chain can go from ~4 KB to tens of KB. The
+    ClientHello/ServerHello stops fitting in the initial packets, extra *round trips* appear
+    and **amplification** in QUIC. Measure real latency, not just bytes.
+  - **Firmware and boot**: devices with scarce flash and RAM, and with a large public key
+    burnt into ROM that cannot be changed. If the *root of trust* is not updatable, **the
+    signature decision is taken now and for the whole life of the product** — and that is why this is the
+    only front where the signature comes before encryption.
+  - **Tokens and JOSE/COSE**: an ML-DSA signature in a cookie or header can blow up size limits
+    of proxies and browsers. Verify the limit beforehand, not in production.
+- **Crypto-agility is the real deliverable.** Design as if the algorithm were going to
+  change twice more:
+  - **Algorithm identifier and key version as metadata alongside the data/artifact**,
+    never implicit.
+  - All crypto **behind your own interface**; no calling the primitive from 40
+    places. The measure of agility is: *how many files do I touch to change algorithm?*
+  - **Negotiation, not a fixed algorithm in the protocol**; and the ability to **disable** an
+    algorithm by configuration without recompiling or redeploying.
+  - Test agility **by exercising it**: an algorithm rotation drill, just like a
+    restore drill. An unrehearsed agility does not exist.
 
-## 7. Calendario, sostenibilidad y prohibiciones
+## 7. Timeline, sustainability and prohibitions
 
-- **NIST IR 8547 — "Transition to Post-Quantum Cryptography Standards"**: a agosto de 2026
-  seguía en **borrador público inicial (IPD, 12-nov-2024)**, con el periodo de comentarios
-  cerrado el 10-ene-2025 y nota de planificación de 21-ene-2025 — **no hay versión final
-  confirmada; no lo cites como norma cerrada**. Su calendario propuesto: RSA, ECDSA, ECDH,
-  DSA y FFDH **deprecated after 2030** y **disallowed after 2035**, incluidos los tamaños
-  altos (RSA-3072, P-384). Lectura correcta: **2030 no es fecha de fin de migración**, es la
-  fecha desde la que seguir usándolos exige análisis de riesgo y justificación documentada
-  del dueño del dato; 2035 elimina esa opción. **Los modos híbridos no caen bajo la
-  prohibición de 2035** — eso es lo que hace viable el enfoque por fases. AES-256, SHA-2 y
-  SHA-3 **no** están en ese calendario.
-- **SP 800-131A**: la revisión final vigente es la **Rev. 2 (2019)**; la **Rev. 3 está en
-  borrador público inicial (oct-2024)**, sube el mínimo de 112 a 128 bits de fuerza y funde
-  la transición asimétrica con la post-cuántica. Verifica si ya se finalizó (§8).
-- **CNSA 2.0 (NSA, solo para National Security Systems)** — calendario por categoría,
-  contrastado en fuentes secundarias coincidentes; **no pude descargar el PDF original de la
-  NSA (403 desde `media.defense.gov`): hueco declarado en §8, verifícalo contra el original
-  antes de comprometerlo en contrato**:
+- **NIST IR 8547 — "Transition to Post-Quantum Cryptography Standards"**: as of August 2026
+  it was still an **initial public draft (IPD, 12 Nov 2024)**, with the comment period
+  closed on 10 Jan 2025 and a planning note of 21 Jan 2025 — **there is no confirmed final version;
+  do not cite it as settled law**. Its proposed timeline: RSA, ECDSA, ECDH,
+  DSA and FFDH **deprecated after 2030** and **disallowed after 2035**, including the large
+  sizes (RSA-3072, P-384). Correct reading: **2030 is not a migration end date**, it is the
+  date from which continuing to use them requires risk analysis and documented justification
+  from the data owner; 2035 removes that option. **Hybrid modes do not fall under the
+  2035 prohibition** — that is what makes the phased approach viable. AES-256, SHA-2 and
+  SHA-3 are **not** on that timeline.
+- **SP 800-131A**: the current final revision is **Rev. 2 (2019)**; **Rev. 3 is in
+  initial public draft (Oct 2024)**, raises the minimum from 112 to 128 bits of strength and merges
+  the asymmetric transition with the post-quantum one. Verify whether it has been finalised (§8).
+- **CNSA 2.0 (NSA, for National Security Systems only)** — timeline by category,
+  cross-checked in agreeing secondary sources; **I could not download the original NSA
+  PDF (403 from `media.defense.gov`): declared gap in §8, verify it against the original
+  before committing to it in a contract**:
 
-  | Categoría | *Support and prefer* | *Exclusively use* |
+  | Category | *Support and prefer* | *Exclusively use* |
   |---|---|---|
-  | Firma de software y firmware | 2025 (empezar de inmediato) | **2030** |
-  | Navegadores/servidores web y servicios cloud | 2025 | 2033 |
-  | Equipamiento de red tradicional (VPN, routers) | 2026 | **2030** |
-  | Sistemas operativos | 2027 | 2033 |
-  | Equipamiento de nicho (dispositivos limitados, PKI grandes) | 2030 | 2033 |
-  | Aplicaciones a medida y equipo heredado | — | Actualizar o sustituir en 2033 |
+  | Software and firmware signing | 2025 (start immediately) | **2030** |
+  | Web browsers/servers and cloud services | 2025 | 2033 |
+  | Traditional networking equipment (VPN, routers) | 2026 | **2030** |
+  | Operating systems | 2027 | 2033 |
+  | Niche equipment (constrained devices, large PKIs) | 2030 | 2033 |
+  | Custom applications and legacy equipment | — | Update or replace by 2033 |
 
-  Algoritmos CNSA 2.0: **ML-KEM-1024**, **ML-DSA-87**, AES-256, SHA-384/SHA-512 y **LMS o
-  XMSS (SP 800-208)** para firma de software y firmware. La fecha que de verdad muerde no es
-  ninguna de la tabla: **desde el 1-ene-2027 se espera que toda adquisición nueva de NSS sea
-  conforme a CNSA 2.0**. La FAQ v2.1 (dic-2024) **excluye SLH-DSA de uso en NSS**, prohíbe
-  HashML-DSA, excluye HSS y XMSS^MT y descarta FN-DSA — **verifícalo contra el documento
-  original: es exactamente el tipo de detalle que se cita mal**. Y ojo: **CNSA 2.0 no aplica a
-  quien no opera NSS**; usarlo como excusa para exigir ML-KEM-1024 en una web comercial es
-  sobre-ingeniería.
-- **CA públicas y CA/Browser Forum — la asimetría que define 2026**: el **intercambio de
-  claves** ya es post-cuántico en la mayoría del tráfico, pero **el certificado del servidor
-  sigue siendo ECDSA P-256 o RSA-2048**. Estado verificado a agosto de 2026:
-  - **S/MIME primero**: el ballot **SMC013** (jul-2025) introdujo ML-DSA y ML-KEM en los
-    S/MIME Baseline Requirements, con certificados PQC **no híbridos**, para experimentación.
-  - **TLS todavía no**: el Server Certificate WG mantiene un *tracker* de ballots PQC y una
-    propuesta "SC0XX: Allow ML-DSA", pero **a mayo de 2026 no había requisito de línea base
-    que permita ML-DSA en certificados de confianza pública** (actas del SCWG de 21-may-2026:
-    desacuerdo sobre si el X.509 tradicional debe formar parte de la transición, dudas sobre
-    los logs de CT, ballot pendiente de reescribir). Microsoft mantiene un **piloto de raíces
-    ML-DSA solo para pruebas**; Chrome anunció soporte de anclas ML-DSA para **PKI privada**
-    en TLS 1.3 a partir de Chrome 150. **Ninguna raíz ML-DSA pública encadena a los almacenes
-    de Mozilla, Apple, Microsoft o Chrome**, y un estudio de jun-2026 sobre 32 011 dominios
-    midió **0 % de adopción** de certificados híbridos post-cuánticos.
-  - **El camino elegido no es cambiar la firma, es cambiar el formato**: **Merkle Tree
-    Certificates (MTC)**. Let's Encrypt publicó su hoja de ruta el **3-jun-2026** (entorno de
-    *staging* emisor de MTC a finales de 2026, producción en 2027), Chrome los declaró su vía
-    preferida para la web pública y Cloudflare corre un experimento con tráfico real; el
-    trabajo está en el WG **PLANTS** del IETF. **Motivo**: un cambio ingenuo de firma llevaría
-    el handshake HTTPS por encima de **10 KB**, lo que rompe del orden del **5 %** de las
-    conexiones en redes reales. Presión colateral: SC-081 recorta la validez máxima del
-    certificado por fases, lo que favorece amortizar una firma PQ entre muchos certificados
-    (el calendario de SC-081 lo fija `cryptography-pki-standards`; **verifica la fase vigente**).
-  - **Disponible hoy para PKI privada**: ML-DSA en DigiCert Private CA, AWS Private CA (GA
-    desde nov-2025) y OpenSSL 3.5 con el proveedor OQS. **Consecuencia de planificación: tu
-    PKI interna puede migrar firmas ya; tu cadena pública no depende de ti.**
-- **Cadencia**: revisa el plan PQC **semestralmente** mientras dure la transición y regenera
-  el CBOM en cada release. Cada excepción (un tercero que no llega, un dispositivo que no se
-  actualiza) lleva fecha de salida, dueño y ticket.
+  CNSA 2.0 algorithms: **ML-KEM-1024**, **ML-DSA-87**, AES-256, SHA-384/SHA-512 and **LMS or
+  XMSS (SP 800-208)** for software and firmware signing. The date that really bites is not
+  any of those in the table: **from 1 Jan 2027 every new NSS acquisition is expected to be
+  CNSA 2.0 compliant**. FAQ v2.1 (Dec 2024) **excludes SLH-DSA from use in NSS**, forbids
+  HashML-DSA, excludes HSS and XMSS^MT and rules out FN-DSA — **verify it against the original
+  document: it is exactly the kind of detail that gets misquoted**. And note: **CNSA 2.0 does not apply to
+  anyone who does not operate NSS**; using it as an excuse to demand ML-KEM-1024 on a commercial website is
+  over-engineering.
+- **Public CAs and the CA/Browser Forum — the asymmetry that defines 2026**: **key
+  exchange** is already post-quantum on most traffic, but **the server certificate
+  is still ECDSA P-256 or RSA-2048**. State verified as of August 2026:
+  - **S/MIME first**: ballot **SMC013** (Jul 2025) introduced ML-DSA and ML-KEM into the
+    S/MIME Baseline Requirements, with **non-hybrid** PQC certificates, for experimentation.
+  - **TLS not yet**: the Server Certificate WG keeps a PQC ballot *tracker* and a
+    proposal "SC0XX: Allow ML-DSA", but **as of May 2026 there was no baseline requirement
+    permitting ML-DSA in publicly trusted certificates** (SCWG minutes of 21 May 2026:
+    disagreement on whether traditional X.509 should be part of the transition, doubts about
+    the CT logs, ballot pending a rewrite). Microsoft maintains a **pilot of ML-DSA roots
+    for testing only**; Chrome announced support for ML-DSA anchors for **private PKI**
+    in TLS 1.3 from Chrome 150. **No public ML-DSA root chains to the stores
+    of Mozilla, Apple, Microsoft or Chrome**, and a Jun 2026 study of 32,011 domains
+    measured **0 % adoption** of post-quantum hybrid certificates.
+  - **The chosen path is not changing the signature, it is changing the format**: **Merkle Tree
+    Certificates (MTC)**. Let's Encrypt published its roadmap on **3 Jun 2026** (*staging* environment
+    issuing MTC by late 2026, production in 2027), Chrome declared them its
+    preferred route for the public web and Cloudflare runs an experiment with real traffic; the
+    work is in the IETF **PLANTS** WG. **Reason**: a naive signature change would push
+    the HTTPS handshake above **10 KB**, which breaks on the order of **5 %** of
+    connections on real networks. Collateral pressure: SC-081 cuts the maximum certificate
+    validity in phases, which favours amortising a PQ signature across many certificates
+    (the SC-081 timeline is set by `cryptography-pki-standards`; **verify the current phase**).
+  - **Available today for private PKI**: ML-DSA in DigiCert Private CA, AWS Private CA (GA
+    since Nov 2025) and OpenSSL 3.5 with the OQS provider. **Planning consequence: your
+    internal PKI can migrate signatures now; your public chain does not depend on you.**
+- **Cadence**: review the PQC plan **every six months** for as long as the transition lasts and regenerate
+  the CBOM on every release. Every exception (a third party that cannot get there, a device that cannot be
+  updated) carries an exit date, an owner and a ticket.
 
-**PROHIBIDO**
-- ❌ Escribir una fecha de deprecación o de prohibición **de memoria**. Un año mal citado
-  desplaza un plan plurianual y un presupuesto.
-- ❌ Citar NIST IR 8547 como norma final mientras siga en borrador, o presentar 2030 como
-  "fecha límite de migración".
-- ❌ Desplegar ML-KEM **sin componente clásico** en producción durante la transición: si
-  aparece una debilidad en el retículo, el híbrido te salva y el puro no.
-- ❌ Fijar FN-DSA/FIPS 206 o HQC en un diseño antes de que exista el estándar final.
-- ❌ Usar `Kyber`/`X25519Kyber768Draft00` (`0x6399`) o cualquier variante pre-estándar en
-  producción, o tratarlas como equivalentes a las finales.
-- ❌ Implementar tú mismo un algoritmo PQC. Sigue siendo válida la regla de
-  `cryptography-pki-standards`: **PROHIBIDO implementar primitivas propias**, y aquí más,
-  porque los ataques de canal lateral sobre retículos son un campo activo.
-- ❌ Migrar sin inventario ni CBOM, o priorizar por sistema en vez de por vida útil del dato.
-- ❌ Claves *stateful* (LMS/XMSS) sin control estricto del índice: reutilizar un índice
-  **rompe** el esquema, no lo degrada.
-- ❌ Vender "quantum-safe" o "quantum-proof" sin decir qué superficie concreta está migrada y
-  medida. Es la afirmación más inflada del sector.
-- ❌ Comprar QKD o "cripto cuántica" como sustituto de PQC: son cosas distintas, y varias
-  agencias nacionales desaconsejan la QKD para uso general — verifica su postura vigente
-  antes de gastar (§8).
-- ❌ Exigir parámetros CNSA 2.0 en sistemas que no son National Security Systems "por si
-  acaso".
+**FORBIDDEN**
+- ❌ Writing a deprecation or prohibition date **from memory**. A misquoted year
+  shifts a multi-year plan and a budget.
+- ❌ Citing NIST IR 8547 as a final standard while it remains a draft, or presenting 2030 as
+  a "migration deadline".
+- ❌ Deploying ML-KEM **without a classical component** in production during the transition: if
+  a lattice weakness appears, the hybrid saves you and the pure one does not.
+- ❌ Pinning FN-DSA/FIPS 206 or HQC in a design before the final standard exists.
+- ❌ Using `Kyber`/`X25519Kyber768Draft00` (`0x6399`) or any pre-standard variant in
+  production, or treating them as equivalent to the final ones.
+- ❌ Implementing a PQC algorithm yourself. The rule from
+  `cryptography-pki-standards` still holds: **FORBIDDEN to implement your own primitives**, and here more so,
+  because side-channel attacks on lattices are an active field.
+- ❌ Migrating without an inventory or CBOM, or prioritising by system instead of by data lifetime.
+- ❌ *Stateful* keys (LMS/XMSS) without strict index control: reusing an index
+  **breaks** the scheme, it does not degrade it.
+- ❌ Selling "quantum-safe" or "quantum-proof" without saying which concrete surface is migrated and
+  measured. It is the most inflated claim in the industry.
+- ❌ Buying QKD or "quantum crypto" as a substitute for PQC: they are different things, and several
+  national agencies advise against QKD for general use — verify their current position
+  before spending (§8).
+- ❌ Demanding CNSA 2.0 parameters on systems that are not National Security Systems "just in
+  case".
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar algoritmo, fecha, cifra o estado en un entregable:
+Before pinning an algorithm, date, figure or state in a deliverable:
 
-1. **CSRC de NIST**, publicación por publicación: FIPS 203/204/205 (final), **FIPS 206**
-   (¿sigue en borrador?), **HQC** (¿ya hay FIPS?), **IR 8547** (¿IPD o final? fechas exactas
-   de *deprecated*/*disallowed*), **SP 800-131A** (¿Rev. 2 o Rev. 3 final?) y SP 800-208.
-   **Las tablas de transición se citan verbatim.**
-2. **CNSA 2.0**: el aviso y la **FAQ vigentes de la NSA**, con su número de versión y fecha.
-   Calendario y exclusiones (SLH-DSA, HashML-DSA, HSS/XMSS^MT, FN-DSA) **verbatim**.
-3. **Tamaños** de clave, ciphertext y firma (§6): tomados verbatim de FIPS 203 Tabla 3,
-   FIPS 204 Tabla 2 y FIPS 205 Tabla 2 en esta revisión; recontrasta si cambia la edición.
-4. **Estado del despliegue TLS**: punto de código y nombre exacto del grupo, soporte por
-   navegador y por servidor, y **adopción medida con fuente y fecha** (Cloudflare Radar u
-   otra). Nunca una cifra sin origen.
-5. **Versiones**: OpenSSH (KEX híbrido por defecto y aviso de KEX no-PQ), OpenSSL/AWS-LC/
-   BoringSSL, strongSwan, Go, `age`, `liboqs`/`oqsprovider` y sus CVEs abiertos.
-6. **PQC en tu KMS/HSM**: algoritmos, regiones y validación FIPS 140-3 del módulo concreto en
-   el CMVP, no la nota de prensa.
-7. **CA públicas y CA/Browser Forum**: estado del ballot ML-DSA en los TLS Baseline
-   Requirements, avance de **Merkle Tree Certificates** (WG PLANTS, Let's Encrypt, Chrome) y
-   qué soporta tu CA hoy.
-8. **CycloneDX/CBOM**: versión vigente del esquema de activos criptográficos.
-9. **Reguladores europeos**: hoja de ruta PQC de la Comisión y de ENISA, y las guías de ANSSI,
-   BSI y CCN — imponen plazos propios en contratación pública.
+1. **NIST's CSRC**, publication by publication: FIPS 203/204/205 (final), **FIPS 206**
+   (still a draft?), **HQC** (is there a FIPS yet?), **IR 8547** (IPD or final? exact dates
+   of *deprecated*/*disallowed*), **SP 800-131A** (Rev. 2 or Rev. 3 final?) and SP 800-208.
+   **Transition tables are quoted verbatim.**
+2. **CNSA 2.0**: the NSA's **current advisory and FAQ**, with their version number and date.
+   Timeline and exclusions (SLH-DSA, HashML-DSA, HSS/XMSS^MT, FN-DSA) **verbatim**.
+3. **Sizes** of key, ciphertext and signature (§6): taken verbatim from FIPS 203 Table 3,
+   FIPS 204 Table 2 and FIPS 205 Table 2 in this revision; re-check if the edition changes.
+4. **TLS deployment state**: code point and exact group name, support by
+   browser and by server, and **measured adoption with source and date** (Cloudflare Radar or
+   another). Never a figure without an origin.
+5. **Versions**: OpenSSH (hybrid KEX by default and non-PQ KEX warning), OpenSSL/AWS-LC/
+   BoringSSL, strongSwan, Go, `age`, `liboqs`/`oqsprovider` and their open CVEs.
+6. **PQC in your KMS/HSM**: algorithms, regions and FIPS 140-3 validation of the specific module in
+   the CMVP, not the press release.
+7. **Public CAs and the CA/Browser Forum**: state of the ML-DSA ballot in the TLS Baseline
+   Requirements, progress of **Merkle Tree Certificates** (PLANTS WG, Let's Encrypt, Chrome) and
+   what your CA supports today.
+8. **CycloneDX/CBOM**: current version of the cryptographic assets schema.
+9. **European regulators**: PQC roadmap from the Commission and from ENISA, and the guidance from ANSSI,
+   BSI and CCN — they impose their own deadlines in public procurement.
 
-**Huecos declarados en esta versión** (ciérralos antes de usar el documento en un plan real):
-- El **PDF original de CNSA 2.0 y su FAQ de la NSA no pudo descargarse** (403 desde
-  `media.defense.gov`): el calendario y las exclusiones proceden de fuentes secundarias
-  coincidentes, **no de cita verbatim del original**.
-- Estado final de **FIPS 206**, de **HQC** y de **SP 800-131A Rev. 3**: verificado como
-  pendiente a agosto de 2026 vía fuentes secundarias; confirma contra CSRC.
-- Las **versiones de OpenSSH, `age`, AWS/Google/Azure KMS** de §5 vienen heredadas de
-  `cryptography-pki-standards` (verificadas allí); reconfírmalas antes de fijarlas.
+**Declared gaps in this version** (close them before using the document in a real plan):
+- The **original CNSA 2.0 PDF and the NSA FAQ could not be downloaded** (403 from
+  `media.defense.gov`): the timeline and the exclusions come from agreeing secondary sources,
+  **not from a verbatim quote of the original**.
+- Final state of **FIPS 206**, of **HQC** and of **SP 800-131A Rev. 3**: verified as
+  pending as of August 2026 via secondary sources; confirm against CSRC.
+- The **versions of OpenSSH, `age`, AWS/Google/Azure KMS** in §5 are inherited from
+  `cryptography-pki-standards` (verified there); re-confirm them before pinning them.
 
-Ya **cerrado en esta revisión** (no repitas el trabajo): tamaños de FIPS 203/204/205 tomados
-verbatim de las tablas oficiales, y estado del CA/Browser Forum y de Merkle Tree Certificates.
+Already **closed in this revision** (do not repeat the work): FIPS 203/204/205 sizes taken
+verbatim from the official tables, and the state of the CA/Browser Forum and of Merkle Tree Certificates.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

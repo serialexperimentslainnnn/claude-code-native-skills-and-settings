@@ -3,529 +3,529 @@ name: ibm-i-rpg-standards
 description: IBM i (AS/400, iSeries, System i) application engineering on Power. Use when working with RPG sources (.rpgle, .sqlrpgle, RPG III/RPGLE, **FREE fully free-form, /COPY and /INCLUDE prototypes), CL programs (.clle, CRTBNDCL, CL commands like WRKACTJOB, WRKSPLF, DSPFFD), DDS physical and logical files and display files (.pf, .lf, .dspf, .prtf), ILE modules, service programs, binding directories and activation groups (CRTRPGMOD, CRTSRVPGM, CRTPGM, ACTGRP), IFS and QSYS.LIB objects, library lists and *LIBL, Db2 for i with embedded SQL, SQL stored procedures, Run SQL Scripts, ACS, and IBM i Services SQL views (QSYS2, SYSTOOLS), record-level access opcodes (CHAIN, SETLL, READE, WRITE, UPDATE), journaling and commitment control, extracting business rules from RPG/CL/DDS for a characterization or modernization gate (DSPPGMREF, DSPDBR, QSYS2.PROGRAM_INFO, BOUND_MODULE_INFO, exit points via WRKREGINF or QSYS2.EXIT_POINT_INFO, Query/400 *QRYDFN, DDS validity-checking keywords, ADDPFTRG/ADDPFCST triggers and constraints), Db2 for i as a migration or CDC source (journals and journal receivers, CRTJRNRCV, CRTJRN, STRJRNPF, IMAGES(*BOTH), MNGRCV, ADDRMTJRN, RCVJRNE, QSYS2.DISPLAY_JOURNAL, remote journal, CPYTOIMPF and STMFCCSID, multi-member physical files and CREATE ALIAS, packed and zoned decimal, numeric dates, EBCDIC and CCSID 65535), IBM i Access Client Solutions, Rational Developer for i (RDi), VS Code with Code for IBM i, Merlin, Integrated Web Services (IWS), 5250 green-screen modernization, user profiles and adopted authority (USRPRF *OWNER, *ALLOBJ), QSECURITY system value, Technology Refresh levels, or IBM i release upgrades and per-core subscription licensing tiers.
 ---
 
-# Estándares de IBM i y RPG
+# IBM i and RPG standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**IBM i (AS/400) es la plataforma legacy que mejor envejece y peor se entiende desde fuera.** No
-está congelada: tiene releases nuevos, *Technology Refresh* periódicos, hardware nuevo (Power11) y
-hoja de ruta pública (§2). La compatibilidad hacia atrás es real: un programa RPG de los años 90
-compila y corre hoy. Eso es una virtud de ingeniería, no un síntoma de abandono.
+**IBM i (AS/400) is the legacy platform that ages best and is worst understood from the outside.** It
+is not frozen: it has new releases, periodic *Technology Refreshes*, new hardware (Power11) and a
+public roadmap (§2). Backward compatibility is real: an RPG program from the 90s compiles and runs
+today. That is an engineering virtue, not a symptom of abandonment.
 
-Lo que sí es cierto —y hay que decirlo aquí— es lo siguiente:
-- **Es una plataforma de proveedor único.** Sistema operativo, base de datos, hardware y buena
-  parte del tooling salen de IBM. No hay salida parcial: se está o no se está.
-- **El modelo de licencia se ha movido a suscripción** (§2), lo que convierte un coste antes
-  amortizado en un coste recurrente. Ese es el cambio económico relevante de los últimos años, no
-  la sintaxis del lenguaje.
-- **Escribir aplicaciones nuevas en RPG solo tiene sentido dentro de una base RPG existente que se
-  va a conservar**, y en ese caso se escribe en **formato totalmente libre** (§3), sin excepción.
-- **La deuda real de casi todas estas casas no es el lenguaje: es el estilo** — programas
-  monolíticos con acceso nativo por registro, sin ILE, sin control de versiones y con la lógica
-  atada a la pantalla 5250.
+What is true —and has to be said here— is this:
+- **It is a single-vendor platform.** Operating system, database, hardware and a good part of the
+  tooling come from IBM. There is no partial exit: you are either on it or you are not.
+- **The licensing model has moved to subscription** (§2), which turns a previously amortised cost
+  into a recurring one. That is the relevant economic change of recent years, not the syntax of the
+  language.
+- **Writing new applications in RPG only makes sense inside an existing RPG base that is going to be
+  kept**, and in that case it is written in **fully free-form format** (§3), without exception.
+- **The real debt in almost all of these shops is not the language: it is the style** — monolithic
+  programs with native record-level access, no ILE, no version control and the logic tied to the
+  5250 screen.
 
-Cubre: releases y soporte; economía de licencia; RPG y la regla de formato libre; **ILE** (módulos,
-programas de servicio, grupos de activación); **Db2 for i** y SQL frente a acceso nativo;
-herramientas modernas y control de versiones real; integración (IWS, servicios web, **IBM i
-Services**); modernización de pantallas; y seguridad de perfiles y autoridades.
+Covers: releases and support; licence economics; RPG and the free-form rule; **ILE** (modules,
+service programs, activation groups); **Db2 for i** and SQL versus native access; modern tooling and
+real version control; integration (IWS, web services, **IBM i Services**); screen modernisation; and
+profile and authority security.
 
-**No aplica**:
-- `legacy-modernization-standards` (**skill paraguas de este bloque**): suya la estrategia de
-  modernización **de este sistema** —qué "R" se le aplica y con qué costura— y el enrutado a la
-  skill de cada plataforma heredada; **aquí el criterio técnico de qué implica cada "R" en IBM i**.
-- `migration-projects-standards`: suya la **ejecución del corte** — ensayo, ventana, convivencia y
-  reconciliación entre IBM i y el destino, criterio de rollback y descomisionado.
-- `enterprise-architecture-standards`: suyos el inventario de aplicaciones y el modelo **TIME**
-  **a nivel de cartera** —qué sistemas se tocan, en qué orden y con qué presupuesto—; la "R" de
-  **este** sistema la decide `legacy-modernization-standards` dentro de ese marco, y **aquí qué
-  implica técnicamente cada opción en IBM i**. Los tres niveles, en una frase: *la cartera es de
-  EA, el sistema es de `legacy-modernization`, la plataforma es de aquí.*
-- `erp-sap-standards` (**destino frecuente cuando este sistema se sustituye por un paquete**, su
-  §3.8: la decisión estándar-frente-a-proceso-propio, el despliegue y la licencia son suyos —y
-  condicionan la fecha—; **aquí de dónde sale la regla y de dónde sale el dato**, §3.4 y §3.5. El
-  aviso que ambas sostienen: **que SAP traiga un proceso estándar no descubre por sí solo las
-  reglas que este sistema ejecuta hoy**, y esas hay que extraerlas igual).
-- `tech-leadership-standards` y `project-management-standards` (cómo se financia y se decide).
-- `refactoring-tech-debt-standards` (**suyos** *strangler fig*, rama por abstracción y
-  caracterización de código sin tests **como técnica**; **aquí dónde vive la lógica de negocio en
-  esta plataforma, con qué se localiza y qué forma tiene el caso ejecutable**, §3.4).
-- `streaming-cdc-standards` (**la CDC como disciplina es suya**: log frente a triggers frente a
-  sondeo, orden y semántica de entrega, esquema del evento, *snapshot* inicial y operación del
-  flujo. **Aquí el mecanismo de esta plataforma** —diarios y receptores, qué activar, qué cuesta y
-  qué rompe—, §3.5. Regla corta: **el diario es de aquí; leerlo como flujo de cambios es de allí.**
-  Aviso: **su catálogo de mecanismos por motor no incluye Db2 for i** (§8)).
-- `testing-qa-standards` (estrategia de prueba), `cicd-standards` (la pipeline),
-  `git-workflow-standards` (ramas, commits, releases).
-- `sql-standards` y `data-platform-standards` (el lenguaje SQL y el diseño de datos genérico;
-  **aquí Db2 for i solo en lo que decide sobre el programa**), `oracle-dba-standards` y
-  `sqlserver-dba-standards` (otros motores).
-- `dotnet-standards`, `jvm-spring-standards`, `python-standards`, `go-standards` (destinos de una
-  reescritura: **la calidad del código destino es suya**).
+**Not applicable**:
+- `legacy-modernization-standards` (**umbrella skill for this block**): theirs is the modernisation
+  strategy **for this system** —which "R" applies to it and with what seam— and the routing to the
+  skill of each inherited platform; **here the technical criteria of what each "R" implies on IBM i**.
+- `migration-projects-standards`: theirs is the **execution of the cutover** — rehearsal, window,
+  coexistence and reconciliation between IBM i and the target, rollback criteria and decommissioning.
+- `enterprise-architecture-standards`: theirs are the application inventory and the **TIME** model
+  **at portfolio level** —which systems get touched, in what order and with what budget—; the "R" for
+  **this** system is decided by `legacy-modernization-standards` within that frame, and **here what
+  each option technically implies on IBM i**. The three levels, in one sentence: *the portfolio is
+  EA's, the system is `legacy-modernization`'s, the platform is ours.*
+- `erp-sap-standards` (**frequent target when this system is replaced by a package**, its
+  §3.8: the standard-versus-own-process decision, the deployment and the licence are theirs —and
+  they drive the date—; **here where the rule comes from and where the data comes from**, §3.4 and §3.5. The
+  warning both uphold: **SAP bringing a standard process does not by itself uncover the rules
+  this system executes today**, and those have to be extracted all the same).
+- `tech-leadership-standards` and `project-management-standards` (how it is funded and decided).
+- `refactoring-tech-debt-standards` (**theirs** are *strangler fig*, branch by abstraction and
+  characterization of untested code **as a technique**; **here where the business logic lives on
+  this platform, what you locate it with and what shape the executable case takes**, §3.4).
+- `streaming-cdc-standards` (**CDC as a discipline is theirs**: log versus triggers versus
+  polling, ordering and delivery semantics, event schema, initial *snapshot* and operation of the
+  stream. **Here the mechanism of this platform** —journals and receivers, what to turn on, what it
+  costs and what it breaks—, §3.5. Short rule: **the journal is ours; reading it as a change stream is theirs.**
+  Warning: **their catalogue of mechanisms by engine does not include Db2 for i** (§8)).
+- `testing-qa-standards` (test strategy), `cicd-standards` (the pipeline),
+  `git-workflow-standards` (branches, commits, releases).
+- `sql-standards` and `data-platform-standards` (the SQL language and generic data design;
+  **here Db2 for i only in what it decides about the program**), `oracle-dba-standards` and
+  `sqlserver-dba-standards` (other engines).
+- `dotnet-standards`, `jvm-spring-standards`, `python-standards`, `go-standards` (targets of a
+  rewrite: **the quality of the target code is theirs**).
 - `grc-compliance-standards`, `privacy-engineering-standards`,
   `identity-access-management-standards`, `bcdr-standards`, `backup-recovery-standards`,
   `observability-standards`, `vulnerability-management-standards`.
-- `offensive-security-standards`: **esta skill es defensiva**.
-- `mainframe-zos-cobol-standards` y `mumps-standards`: **son tres plataformas distintas que la
-  gente mete en el mismo saco de "legacy" y que no comparten casi nada** — IBM i no es un
-  mainframe, no cobra por MSU, no usa JCL y su base de datos es parte del sistema operativo. No
-  extrapoles criterio entre ellas.
-- `aix-solaris-hpux-standards` (**la confusión más frecuente de todas, porque comparten
-  hardware**): **AIX e IBM i corren sobre Power y pueden convivir como particiones del mismo
-  servidor, pero son sistemas operativos distintos y no comparten nada del criterio de aplicación.**
-  AIX es Unix —`smit`, LVM, JFS2, `mksysb`, shell y binarios— y es de esa skill; IBM i tiene objetos,
-  bibliotecas, ILE y Db2 integrado en el sistema operativo, y es de aquí. **Lo que sí comparten y
-  vive allí**: PowerVM, LPAR, VIOS y la HMC, el ciclo de vida del hardware Power y el contrato de
-  soporte. Regla corta: **si la respuesta cambia al cambiar de partición, es de la skill del sistema
-  operativo; si es del hipervisor o del hierro, es de la de Unix propietario.**
+- `offensive-security-standards`: **this skill is defensive**.
+- `mainframe-zos-cobol-standards` and `mumps-standards`: **they are three distinct platforms that
+  people lump into the same "legacy" bag and that share almost nothing** — IBM i is not a
+  mainframe, it does not charge by MSU, it does not use JCL and its database is part of the operating
+  system. Do not extrapolate criteria between them.
+- `aix-solaris-hpux-standards` (**the most frequent confusion of all, because they share
+  hardware**): **AIX and IBM i run on Power and can coexist as partitions of the same
+  server, but they are different operating systems and share nothing of the application criteria.**
+  AIX is Unix —`smit`, LVM, JFS2, `mksysb`, shell and binaries— and belongs to that skill; IBM i has objects,
+  libraries, ILE and Db2 integrated into the operating system, and belongs here. **What they do share and
+  lives there**: PowerVM, LPAR, VIOS and the HMC, the Power hardware lifecycle and the support
+  contract. Short rule: **if the answer changes when you change partition, it belongs to the operating
+  system skill; if it is about the hypervisor or the iron, it belongs to the proprietary Unix one.**
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Decisión | Criterio | Nota verificada |
+| Decision | Criteria | Verified note |
 |---|---|---|
-| Release objetivo | **IBM i 7.6** para hardware nuevo; **7.5** si hay Power9 en el parque | 7.6: anunciada 8-abr-2025, **GA 18-abr-2025**; requiere **Power10 o superior**. 7.5 disponible desde may-2022 |
-| Release a abandonar | **7.4** | Retirada de comercialización 30-abr-2026; **cambio de nivel de servicio 30-sep-2026**; extensión de pago hasta 30-sep-2029 (política *Enhanced*: 5 años + 3 de extensión). GA de 7.4: 21-jun-2019 |
-| Techo por hardware | El release lo limita la generación Power, no el software | Power8 → 7.4 es el último; Power9 → 7.5 es el último; Power10/11 → 7.5 y 7.6 |
-| Cadencia | Aplicar **Technology Refresh** con calendario propio | Un TR trae funciones nuevas, no solo correcciones; quedarse en un TR viejo cierra puertas (IBM i Services, open source) |
-| Licencia | **Por *tier* de procesador (P05/P10/P20/P30) y, en tiers bajos, por usuarios** | P05/P10: procesador + usuarios (con opción ilimitada); **P20 y superiores: solo por core**. Verificado en el documento de *software tiers* de IBM |
-| Modelo comercial | **Suscripción**: la perpetua está en retirada | Perpetuas P05/P10 retiradas 7-may-2024; **P20/P30 retiradas con efecto 1-ene-2026**; en Power11 las licencias IBM i son **solo por suscripción** |
-| Lenguaje | **RPG en formato totalmente libre (`**FREE`)** para todo lo nuevo | Ver §3 |
-| Acceso a datos | **SQL embebido (`.sqlrpgle`) por defecto** | Ver §3.2 |
-| Arquitectura de programa | **ILE**: módulos + programas de servicio + directorio de vinculación | Ver §3.1 |
-| IDE | **VS Code + Code for IBM i** como opción por defecto; **RDi** si ya está licenciado | Code for IBM i: repo `codefori/vscode-ibmi`, **licencia MIT** (verificada en el `package.json` del repo), publicado en el Marketplace por HalcyonTech. **No es un producto IBM ni tiene soporte IBM** |
-| RDi | Vigilar su calendario | RDi **9.8 discontinúa soporte el 30-abr-2026**; **9.9** publicada el 5-dic-2025. RDi es producto IBM desarrollado y soportado por Fortra |
-| Administración | **IBM i Services** (vistas y procedimientos SQL en `QSYS2`/`SYSTOOLS`) | Ver §3.3 |
-| SCM | **Git**, con el fuente en el **IFS** (no en miembros de fuente) | Ver §4 |
+| Target release | **IBM i 7.6** for new hardware; **7.5** if there is Power9 in the estate | 7.6: announced 8 Apr 2025, **GA 18 Apr 2025**; requires **Power10 or higher**. 7.5 available since May 2022 |
+| Release to abandon | **7.4** | Withdrawn from marketing 30 Apr 2026; **service level date change 30 Sep 2026**; paid extension until 30 Sep 2029 (*Enhanced* policy: 5 years + 3 of extension). 7.4 GA: 21 Jun 2019 |
+| Hardware ceiling | The release is limited by the Power generation, not by the software | Power8 → 7.4 is the last; Power9 → 7.5 is the last; Power10/11 → 7.5 and 7.6 |
+| Cadence | Apply **Technology Refresh** on its own calendar | A TR brings new functions, not just fixes; staying on an old TR closes doors (IBM i Services, open source) |
+| Licence | **By processor *tier* (P05/P10/P20/P30) and, in low tiers, by users** | P05/P10: processor + users (with unlimited option); **P20 and above: by core only**. Verified in IBM's *software tiers* document |
+| Commercial model | **Subscription**: perpetual is being withdrawn | P05/P10 perpetuals withdrawn 7 May 2024; **P20/P30 withdrawn effective 1 Jan 2026**; on Power11 IBM i licences are **subscription only** |
+| Language | **RPG in fully free-form format (`**FREE`)** for everything new | See §3 |
+| Data access | **Embedded SQL (`.sqlrpgle`) by default** | See §3.2 |
+| Program architecture | **ILE**: modules + service programs + binding directory | See §3.1 |
+| IDE | **VS Code + Code for IBM i** as the default option; **RDi** if already licensed | Code for IBM i: repo `codefori/vscode-ibmi`, **MIT licence** (verified in the repo's `package.json`), published on the Marketplace by HalcyonTech. **It is not an IBM product and has no IBM support** |
+| RDi | Watch its calendar | RDi **9.8 support discontinued 30 Apr 2026**; **9.9** released 5 Dec 2025. RDi is an IBM product developed and supported by Fortra |
+| Administration | **IBM i Services** (SQL views and procedures in `QSYS2`/`SYSTOOLS`) | See §3.3 |
+| SCM | **Git**, with the source in the **IFS** (not in source members) | See §4 |
 
-**Discrepancia declarada**: la terminología de IBM cambió — lo que antes se llamaba *end of
-standard support* ahora se anuncia como *date change for service level*. Fuentes de terceros lo
-publican como "fin de soporte de 7.4 el 30-sep-2026", pero **no es fin de vida**: hay extensión de
-pago hasta 2029. No cites "EOL 2026" sin ese matiz.
+**Declared discrepancy**: IBM's terminology changed — what used to be called *end of
+standard support* is now announced as *date change for service level*. Third-party sources publish
+it as "end of support for 7.4 on 30 Sep 2026", but **it is not end of life**: there is a paid
+extension until 2029. Do not quote "EOL 2026" without that nuance.
 
-**Sobre la comparación de coste perpetua vs. suscripción**: circulan porcentajes (del orden de
-+20 %/+40 % a siete años) procedentes de análisis de prensa especializada, no de tarifas
-publicadas. **IBM no publica precios en las cartas de anuncio**: cualquier cifra que uses tiene que
-venir de tu propia oferta de partner. Ver §8.
+**On the perpetual vs. subscription cost comparison**: percentages circulate (of the order of
++20 %/+40 % over seven years) coming from trade-press analyses, not from published
+tariffs. **IBM does not publish prices in announcement letters**: any figure you use has to
+come from your own partner quote. See §8.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 ILE es la línea que separa mantenible de no mantenible
+### 3.1 ILE is the line that separates maintainable from unmaintainable
 
-- **Nada de programas monolíticos nuevos.** Lógica en **módulos** (`CRTRPGMOD`), agrupados en
-  **programas de servicio** (`CRTSRVPGM`) y enlazados por **directorio de vinculación**. El
-  programa de entrada solo orquesta.
-- **Prototipos y `/COPY` de interfaz**: la firma de cada procedimiento exportado vive en un fuente
-  de copia compartido; nadie llama a un procedimiento con una firma escrita a mano.
-- **Grupos de activación**: elección deliberada y documentada. `*NEW` por llamada es un coste de
-  arranque; `*CALLER` propaga; un grupo con nombre por aplicación es lo habitual. **`*DFTACTGRP` es
-  compatibilidad con OPM: no en código nuevo.** El grupo de activación determina el ámbito del
-  control de compromiso y de los ficheros abiertos: equivocarse aquí produce bugs de transacción,
-  no de rendimiento.
-- **Firma del programa de servicio**: gestiona el fichero de exportación con control de versiones.
-  Añadir exportaciones al final es compatible; reordenarlas obliga a recompilar a todos los
-  clientes. Es un contrato binario.
+- **No new monolithic programs.** Logic in **modules** (`CRTRPGMOD`), grouped into
+  **service programs** (`CRTSRVPGM`) and linked by **binding directory**. The
+  entry program only orchestrates.
+- **Prototypes and interface `/COPY`**: the signature of each exported procedure lives in a shared
+  copy source; nobody calls a procedure with a hand-written signature.
+- **Activation groups**: a deliberate and documented choice. `*NEW` per call is a startup
+  cost; `*CALLER` propagates; a named group per application is the usual. **`*DFTACTGRP` is
+  OPM compatibility: not in new code.** The activation group determines the scope of the
+  commitment control and of the open files: getting this wrong produces transaction bugs,
+  not performance ones.
+- **Service program signature**: manage the export file under version control.
+  Adding exports at the end is compatible; reordering them forces a recompile of all
+  clients. It is a binary contract.
 
-### 3.2 SQL frente a acceso nativo por registro
+### 3.2 SQL versus native record-level access
 
-- **SQL embebido es el default moderno**, y no por moda: el optimizador (SQE) trabaja sobre
-  conjuntos, aprovecha índices que no tienes que abrir a mano, y **el código dice qué quiere, no
-  cómo recorrerlo**. Un `CHAIN`/`READE` dentro de un bucle es un *join* escrito a mano y sin
-  estadísticas.
-- Lo que hay que reponer al dejar los *opcodes* nativos: control explícito del bloqueo de registro
-  y el "leer una fila por clave" (cursor o `SELECT INTO`). Ninguna de las dos cosas justifica
-  escribir la aplicación entera en acceso nativo.
-- **Regla dura**: código nuevo con SQL; el antiguo se convierte **solo** cuando toque por otra
-  razón y con test que compare resultados. **No hay campaña de conversión masiva que salga bien.**
-- **DDS en modo mantenimiento para datos**: tablas, vistas e índices nuevos **con SQL DDL**, no
-  PF/LF. DDS sigue siendo lo que hay para pantallas (DSPF) e impresos (PRTF).
-- **Journaling y control de compromiso activados** en todo fichero de negocio: es el prerequisito
-  de la recuperación y de la replicación, y se descubre tarde.
-- La **`*LIBL`** es resolución dinámica y fuente inagotable de incidentes: **la lista de
-  bibliotecas de un job de producción es configuración versionada**, no un ajuste de sesión.
+- **Embedded SQL is the modern default**, and not out of fashion: the optimiser (SQE) works on
+  sets, exploits indexes you do not have to open by hand, and **the code says what it wants, not
+  how to traverse it**. A `CHAIN`/`READE` inside a loop is a hand-written *join* with no
+  statistics.
+- What has to be replaced when leaving the native *opcodes*: explicit control of record locking
+  and the "read one row by key" (cursor or `SELECT INTO`). Neither of the two justifies
+  writing the whole application in native access.
+- **Hard rule**: new code with SQL; the old converts **only** when it has to be touched for another
+  reason and with a test that compares results. **There is no mass conversion campaign that ends well.**
+- **DDS in maintenance mode for data**: new tables, views and indexes **with SQL DDL**, not
+  PF/LF. DDS is still what there is for screens (DSPF) and printouts (PRTF).
+- **Journaling and commitment control enabled** on every business file: it is the prerequisite
+  for recovery and for replication, and it is discovered late.
+- The **`*LIBL`** is dynamic resolution and an inexhaustible source of incidents: **the library
+  list of a production job is versioned configuration**, not a session setting.
 
-### 3.3 Administrar con SQL, no con pantallas
+### 3.3 Administer with SQL, not with screens
 
-**IBM i Services** (vistas y procedimientos SQL en `QSYS2`/`SYSTOOLS`) son **la vía moderna de
-administrar**: objetos, PTFs, jobs, autoridades, usuarios y red se consultan con `SELECT`, lo que
-es automatizable, comparable entre entornos y auditable — un `WRKxxx` no deja evidencia. Todo
-control periódico (autoridades públicas excesivas, perfiles inactivos, PTFs pendientes) se escribe
-como consulta guardada en el repositorio, no como procedimiento manual.
+**IBM i Services** (SQL views and procedures in `QSYS2`/`SYSTOOLS`) are **the modern way to
+administer**: objects, PTFs, jobs, authorities, users and network are queried with `SELECT`, which
+is automatable, comparable across environments and auditable — a `WRKxxx` leaves no evidence. Every
+periodic check (excessive public authorities, inactive profiles, pending PTFs) is written
+as a saved query in the repository, not as a manual procedure.
 
-### 3.4 Dónde vive la lógica de negocio y cómo se localiza
+### 3.4 Where the business logic lives and how it is located
 
-**Este es el trabajo que decide si una migración de IBM i sale o no sale**, y el que nadie hace
-antes de firmar el proyecto. `legacy-modernization-standards` lo convierte en gate —*sin
-caracterización no hay cambio*— y `refactoring-tech-debt-standards` aporta la técnica genérica
-(*characterization test*, *golden master*). **Lo que se decide aquí es dónde buscar en esta
-plataforma, con qué se busca y qué límite tiene cada herramienta.**
+**This is the work that decides whether an IBM i migration succeeds or not**, and the one nobody does
+before signing the project. `legacy-modernization-standards` turns it into a gate —*no
+characterization, no change*— and `refactoring-tech-debt-standards` provides the generic technique
+(*characterization test*, *golden master*). **What is decided here is where to look on this
+platform, what you search with and what limit each tool has.**
 
-**La regla no está en "los programas RPG". Está repartida en al menos ocho sitios:**
+**The rule is not in "the RPG programs". It is spread across at least eight places:**
 
-1. **RPG de formato fijo y RPG III/OPM**: además del código, la lógica está en el **ciclo del
-   programa** (lo que ejecuta sin que nadie lo escriba), en las **especificaciones de salida** y en
-   los **indicadores numéricos** — un `*IN37` que decide un descuento **es** una regla de negocio, y
-   no la encuentras buscando texto. Es lo más caro de leer y donde más regla hay.
-2. **RPG libre e ILE**: es lo legible, y por eso se sobrepondera. Si el sistema ya está en
-   procedimientos y programas de servicio (§3.1), la extracción es más barata, pero **cubre la parte
-   del sistema que menos riesgo tiene**.
-3. **CL**: pasa por "fontanería" y no siempre lo es. Un `CL` que decide qué programa llamar según el
-   contenido de un área de datos, o que fija la `*LIBL` de un proceso, transporta reglas
-   —calendario, sociedad, entorno— que no aparecen en ningún RPG.
-4. **La base de datos**: *triggers* (`ADDPFTRG`, o `CREATE TRIGGER` en SQL) y **restricciones**
-   (`ADDPFCST`: clave, comprobación, referencial). Un trigger es lógica que se ejecuta **sin que
-   ningún programa la llame**: si migras los datos sin migrar el trigger, la regla desaparece en
-   silencio.
-5. **DDS**: la comprobación de validez vive en las palabras clave del propio DDS —`COMP`/`CMP`,
-   `RANGE`, `VALUES`, `CHECK`, con `CHKMSGID` para el mensaje— y **se copia del fichero físico al
-   fichero de pantalla por referencia de campo en el momento de crear el DSPF**. Verificado en la
-   documentación DDS de IBM. Consecuencia doble: (a) hay reglas de dominio declaradas fuera de todo
-   programa; (b) **solo se aplican al pasar por la pantalla**: ODBC, DFU, SQL o un servicio web
-   escriben sin ellas. Si la regla importa, no está donde la gente cree que está.
-6. **La pantalla 5250 misma**: orden de campos, campos protegidos según el caso, la secuencia de
-   pantallas que impide llegar a un estado inválido. Es diseño de proceso convertido en control de
-   acceso; se pierde entero al sustituir la interfaz.
-7. **Puntos de salida (*exit points*)**: programas registrados en la **facilidad de registro**
-   (`WRKREGINF`, y las vistas SQL `QSYS2.EXIT_POINT_INFO` y `QSYS2.EXIT_PROGRAM_INFO`, disponibles
-   desde 7.4 TR3 / 7.3 TR9 — verificado en la documentación de IBM i Services). Filtran FTP, ODBC,
-   DDM o el arranque de sesión, y a menudo llevan reglas de negocio ("este usuario no puede
-   descargar esta tabla"). **No aparecen leyendo la aplicación**: hay que ir a buscarlos.
-8. **Lo que vive fuera del código**: definiciones de **Query/400** (objetos `*QRYDFN`, `WRKQRY` /
-   `RUNQRY`; el producto sigue entregándose con el sistema operativo tras la simplificación de
-   licencias de IBM, no está retirado) y, sobre todo, **las hojas de cálculo del usuario final**
-   colgando del sistema por ODBC. Ahí es donde suele estar el cálculo real de comisiones, márgenes
-   o previsión — el sistema solo guarda los datos. **Un inventario que no las incluye subestima el
-   alcance por completo.**
+1. **Fixed-format RPG and RPG III/OPM**: beyond the code, the logic is in the **program
+   cycle** (what runs without anyone writing it), in the **output specifications** and in
+   the **numeric indicators** — an `*IN37` that decides a discount **is** a business rule, and
+   you do not find it by searching text. It is the most expensive to read and where most of the rule is.
+2. **Free-form RPG and ILE**: it is the readable part, and that is why it gets overweighted. If the system is already in
+   procedures and service programs (§3.1), extraction is cheaper, but **it covers the part
+   of the system with the least risk**.
+3. **CL**: it passes for "plumbing" and it is not always that. A `CL` that decides which program to call according to the
+   content of a data area, or that sets the `*LIBL` of a process, carries rules
+   —calendar, company, environment— that appear in no RPG.
+4. **The database**: *triggers* (`ADDPFTRG`, or `CREATE TRIGGER` in SQL) and **constraints**
+   (`ADDPFCST`: key, check, referential). A trigger is logic that runs **without
+   any program calling it**: if you migrate the data without migrating the trigger, the rule disappears in
+   silence.
+5. **DDS**: validity checking lives in the keywords of the DDS itself —`COMP`/`CMP`,
+   `RANGE`, `VALUES`, `CHECK`, with `CHKMSGID` for the message— and **is copied from the physical file to
+   the display file by field reference at the moment the DSPF is created**. Verified in the
+   IBM DDS documentation. Double consequence: (a) there are domain rules declared outside every
+   program; (b) **they only apply when going through the screen**: ODBC, DFU, SQL or a web service
+   write without them. If the rule matters, it is not where people think it is.
+6. **The 5250 screen itself**: field order, fields protected depending on the case, the sequence
+   of screens that prevents reaching an invalid state. It is process design turned into access
+   control; it is lost entirely when the interface is replaced.
+7. **Exit points**: programs registered in the **registration facility**
+   (`WRKREGINF`, and the SQL views `QSYS2.EXIT_POINT_INFO` and `QSYS2.EXIT_PROGRAM_INFO`, available
+   since 7.4 TR3 / 7.3 TR9 — verified in the IBM i Services documentation). They filter FTP, ODBC,
+   DDM or session startup, and often carry business rules ("this user cannot
+   download this table"). **They do not show up by reading the application**: you have to go looking for them.
+8. **What lives outside the code**: **Query/400** definitions (`*QRYDFN` objects, `WRKQRY` /
+   `RUNQRY`; the product is still shipped with the operating system after IBM's licensing
+   simplification, it is not withdrawn) and, above all, **the end user's spreadsheets**
+   hanging off the system over ODBC. That is where the real calculation of commissions, margins
+   or forecasting usually is — the system only stores the data. **An inventory that does not include them underestimates the
+   scope completely.**
 
-**Herramientas del propio sistema, y qué NO ven:**
+**The system's own tools, and what they do NOT see:**
 
-| Herramienta | Qué da | Límite que hay que declarar |
+| Tool | What it gives | Limit that has to be declared |
 |---|---|---|
-| `DSPPGMREF` | Objetos a los que se refiere cada programa o paquete SQL: ficheros (con su uso: entrada/salida/actualización), programas, áreas de datos, `*SRVPGM` | **Es lo que había al compilar**, no lo que hay: los nombres pueden no coincidir si hubo *override*. Al actualizar un programa ILE (`UPDPGM`/`UPDSRVPGM`) **se añaden entradas pero nunca se quitan**, así que sobra información obsoleta. **No admite más de una biblioteca por invocación**: hay que recorrerlas. Salida a fichero con el formato `QWHDRPPR` (`QADSPPGM` en `QSYS`) para poder consultarla con SQL |
-| `DSPDBR` | Ficheros lógicos y físicos dependientes de uno dado, y dependencias a nivel de miembro | **No muestra todas las relaciones padre/hijo de restricción** — límite reconocido por el propio soporte de IBM, que publica `DSPEDBR` dentro de `QMGTOOLS` para cubrirlo |
-| IBM i Services (`QSYS2.PROGRAM_INFO`, `BOUND_MODULE_INFO`, `BOUND_SRVPGM_INFO`, `PROGRAM_EXPORT_IMPORT_INFO`) | El grafo ILE completo **en SQL**: qué módulos hay en cada programa, qué programas de servicio se vinculan, qué se exporta e importa, con qué fuente se compiló | Caras de materializar a nivel de sistema; **IBM recomienda expresamente hacer una instantánea en tabla** y consultar sobre ella. Solo cubren ILE con la profundidad útil |
-| Catálogo SQL (`QSYS2.SYSTRIGGERS`, `SYSCST`, `SYSKEYCST`, `SYSINDEXES`, `SYSTABLES`, `SYSCOLUMNS`) | La lógica declarada **en la base**: triggers y restricciones existentes | Solo lo declarado en la base; nada de lo que hace el programa |
-| `QSYS2.EXIT_POINT_INFO` / `EXIT_PROGRAM_INFO` | Puntos de salida y programas registrados | Ver punto 7 arriba |
+| `DSPPGMREF` | Objects referenced by each program or SQL package: files (with their use: input/output/update), programs, data areas, `*SRVPGM` | **It is what there was at compile time**, not what there is: names may not match if there was an *override*. When updating an ILE program (`UPDPGM`/`UPDSRVPGM`) **entries are added but never removed**, so there is stale information left over. **It does not accept more than one library per invocation**: you have to walk them. Output to file with format `QWHDRPPR` (`QADSPPGM` in `QSYS`) so it can be queried with SQL |
+| `DSPDBR` | Logical and physical files dependent on a given one, and dependencies at member level | **It does not show all parent/child constraint relationships** — a limit acknowledged by IBM support itself, which publishes `DSPEDBR` inside `QMGTOOLS` to cover it |
+| IBM i Services (`QSYS2.PROGRAM_INFO`, `BOUND_MODULE_INFO`, `BOUND_SRVPGM_INFO`, `PROGRAM_EXPORT_IMPORT_INFO`) | The full ILE graph **in SQL**: which modules are in each program, which service programs are bound, what is exported and imported, with which source it was compiled | Expensive to materialise at system level; **IBM expressly recommends taking a snapshot into a table** and querying over it. They only cover ILE with useful depth |
+| SQL catalogue (`QSYS2.SYSTRIGGERS`, `SYSCST`, `SYSKEYCST`, `SYSINDEXES`, `SYSTABLES`, `SYSCOLUMNS`) | The logic declared **in the database**: existing triggers and constraints | Only what is declared in the database; nothing of what the program does |
+| `QSYS2.EXIT_POINT_INFO` / `EXIT_PROGRAM_INFO` | Exit points and registered programs | See point 7 above |
 
-**El punto ciego común, y hay que decirlo antes de prometer cobertura**: todo lo anterior es
-**análisis estático**. No ve las llamadas resueltas en ejecución (`CALL` con el nombre en una
-variable), ni el SQL dinámico, ni qué biblioteca resolvió realmente la `*LIBL` de ese job. **Un
-análisis estático de IBM i nunca está completo**, y el hueco tiene la forma exacta de lo que menos
-te esperas. Se complementa con evidencia de ejecución (traza, journal de auditoría, uso real de
-objetos) para saber **qué se usa**, y con las herramientas comerciales de análisis del ecosistema
-si el presupuesto lo permite — **no cites una por nombre sin verificar que sigue viva y qué cubre**
+**The common blind spot, and it has to be said before promising coverage**: everything above is
+**static analysis**. It does not see calls resolved at runtime (`CALL` with the name in a
+variable), nor dynamic SQL, nor which library actually resolved the `*LIBL` of that job. **A
+static analysis of IBM i is never complete**, and the gap has exactly the shape of what you least
+expect. It is complemented with execution evidence (trace, audit journal, real object
+usage) to know **what is used**, and with the ecosystem's commercial analysis tools
+if the budget allows — **do not quote one by name without verifying that it is still alive and what it covers**
 (§8).
 
-**Qué es una regla de negocio y qué es fontanería.** Sin este filtro se "extraen" 200.000 líneas y
-no se caracteriza nada. **Es regla** lo que un responsable del negocio podría querer cambiar sin
-tocar tecnología: cálculo (precio, descuento, comisión, impuesto, intereses), elegibilidad y
-condición ("este cliente no puede pedir a crédito por encima de X"), transición de estado (qué pasa
-al confirmar un pedido y qué queda prohibido después), plazo y calendario, y **derivación de datos**
-(cómo se rellena un campo a partir de otros). **Es fontanería** —y no se extrae, se descarta o se
-reescribe en el destino con sus propias reglas— la navegación entre pantallas, la validación de
-formato, el formateo y edición de números y fechas, la gestión de subficheros y ventanas, el
-control de errores de E/S, los *overrides* de fichero, el manejo de `*LIBL` y la apertura y cierre
-de ficheros. **Regla dura: si al describirlo en una frase aparece un concepto de la empresa, es
-regla; si solo aparecen conceptos de la plataforma, es fontanería.** El caso dudoso —la validación
-que es a la vez formato y dominio— se resuelve por el lado caro: se trata como regla.
+**What is a business rule and what is plumbing.** Without this filter, 200,000 lines get "extracted" and
+nothing gets characterized. **It is a rule** if a business owner could want to change it without
+touching technology: calculation (price, discount, commission, tax, interest), eligibility and
+condition ("this customer cannot order on credit above X"), state transition (what happens
+when an order is confirmed and what becomes forbidden afterwards), deadline and calendar, and **data derivation**
+(how a field is filled from others). **It is plumbing** —and it is not extracted, it is discarded or
+rewritten in the target with its own rules— screen navigation, format validation,
+number and date formatting and editing, subfile and window handling, I/O error
+handling, file *overrides*, `*LIBL` handling and opening and closing
+of files. **Hard rule: if describing it in one sentence brings up a company concept, it is a
+rule; if only platform concepts appear, it is plumbing.** The doubtful case —the validation
+that is both format and domain— is resolved on the expensive side: it is treated as a rule.
 
-**El aviso que sostiene todo lo demás**: **una regla que solo existe en el código y que nadie del
-negocio reconoce sigue siendo la regla que ejecuta la empresa hoy.** No se descarta porque no
-aparezca en ningún documento ni porque el responsable diga que "eso no se hace así": lleva años
-decidiendo, y el destino que no la reproduzca cambiará resultados el primer día. Se documenta como
-**comportamiento observado**, se lleva a decisión explícita del negocio —conservar, cambiar o
-eliminar— y **el cambio, si se decide, es un cambio funcional aparte del corte**, nunca un efecto
-lateral de la migración. Lo mismo con los defectos: un cálculo que está mal desde 1998 se
-caracteriza **tal como está** y se corrige después.
+**The warning that holds up everything else**: **a rule that only exists in the code and that nobody in the
+business recognises is still the rule the company runs on today.** It is not discarded because it does not
+appear in any document nor because the owner says "that is not how it is done": it has been deciding
+for years, and the target that does not reproduce it will change results on day one. It is documented as
+**observed behaviour**, taken to an explicit business decision —keep, change or
+remove— and **the change, if decided, is a functional change separate from the cutover**, never a side
+effect of the migration. The same with defects: a calculation that has been wrong since 1998 is
+characterized **as it is** and corrected afterwards.
 
-**Qué se entrega** (es el artefacto que `legacy-modernization-standards` exige como gate, con la
-forma que tiene en esta plataforma):
-- **Inventario de objetos con dueño y uso real**: programas, ficheros, triggers, restricciones,
-  puntos de salida, `*QRYDFN` y consumidores externos por ODBC/DDM — generado con SQL sobre las
-  vistas de arriba, **versionado en Git y regenerable**, no un Excel de una vez.
-- **Catálogo de reglas**: cada regla con identificador, enunciado en lenguaje de negocio, entradas y
-  salidas, excepciones, **evidencia** (programa, procedimiento y línea; o trigger; o palabra clave
-  DDS) y dueño de negocio que la ha confirmado o rechazado.
-- **Un caso de caracterización ejecutable por regla**, con sus datos: en esta plataforma, lo que
-  funciona es la comparación de salidas de **procesos batch** contra ficheros de referencia y la
-  llamada directa a procedimientos ILE (§3.1, §4). Una regla sin caso ejecutable **no está
-  caracterizada**: está anotada.
-- **Lista explícita de lo no cubierto**: lo dinámico, lo interactivo que solo se prueba por 5250 y
-  lo que vive en hojas de cálculo. **Un hueco declarado es el entregable; un hueco silencioso es el
-  riesgo.**
+**What is delivered** (it is the artifact that `legacy-modernization-standards` requires as a gate, with the
+shape it takes on this platform):
+- **Inventory of objects with owner and real usage**: programs, files, triggers, constraints,
+  exit points, `*QRYDFN` and external consumers over ODBC/DDM — generated with SQL over the
+  views above, **versioned in Git and regenerable**, not a one-off Excel.
+- **Rule catalogue**: each rule with identifier, statement in business language, inputs and
+  outputs, exceptions, **evidence** (program, procedure and line; or trigger; or DDS
+  keyword) and business owner who has confirmed or rejected it.
+- **One executable characterization case per rule**, with its data: on this platform, what
+  works is comparing the outputs of **batch processes** against reference files and the
+  direct call to ILE procedures (§3.1, §4). A rule without an executable case **is not
+  characterized**: it is noted.
+- **Explicit list of what is not covered**: the dynamic, the interactive that can only be tested over 5250 and
+  what lives in spreadsheets. **A declared gap is the deliverable; a silent gap is the
+  risk.**
 
-### 3.5 Db2 for i como origen de datos: journals, extracción y cuadre
+### 3.5 Db2 for i as a data source: journals, extraction and reconciliation
 
-**Reparto de autoridad, explícito**: `streaming-cdc-standards` es dueña de **la CDC como disciplina**
-—por qué el log gana a los triggers y al sondeo por marca de tiempo, orden y semántica de entrega,
-esquema y contrato del evento, gestión del *backfill* y del *snapshot* inicial, y la operación del
-flujo—. **De aquí es el mecanismo concreto de esta plataforma**: qué es el diario, qué hay que
-activar, qué cuesta y qué rompe. Y hay que decirlo porque la confusión es cara: **el catálogo de
-mecanismos de captura por motor no incluye Db2 for i** (§8), así que quien llegue buscando "el
-binlog del AS/400" no encuentra nada. El equivalente existe y **es de primera clase**: el *journal*.
+**Explicit split of authority**: `streaming-cdc-standards` owns **CDC as a discipline**
+—why the log beats triggers and timestamp polling, ordering and delivery semantics,
+event schema and contract, management of the *backfill* and the initial *snapshot*, and the operation of the
+stream—. **Ours is the concrete mechanism of this platform**: what the journal is, what has to be
+turned on, what it costs and what it breaks. And it has to be said because the confusion is expensive: **the catalogue of
+capture mechanisms by engine does not include Db2 for i** (§8), so whoever arrives looking for "the
+binlog of the AS/400" finds nothing. The equivalent exists and **is first class**: the *journal*.
 
-**Qué es un *journal* y un *journal receiver*.** El **diario** (`*JRN`) es el objeto lógico que
-define qué se registra; el **receptor de diario** (`*JRNRCV`) es el objeto que **contiene
-físicamente las entradas de cambio**. Cada cambio a un fichero diariado escribe una entrada con el
-tipo de operación, la imagen del registro, y quién, qué programa, qué job y cuándo. Es el mismo
-mecanismo que sostiene el control de compromiso, la recuperación y la replicación de alta
-disponibilidad de la plataforma: **por eso, en la mayoría de estas casas, ya está encendido**, y
-descubrirlo cambia el presupuesto de la migración. Al crear un esquema SQL, Db2 for i crea diario y
-receptor y **diaria automáticamente** las tablas creadas en él (`QSQJRN`); lo creado con DDS, no —
-ahí hay que activarlo a mano.
+**What a *journal* and a *journal receiver* are.** The **journal** (`*JRN`) is the logical object that
+defines what is recorded; the **journal receiver** (`*JRNRCV`) is the object that **physically
+contains the change entries**. Each change to a journalled file writes an entry with the
+type of operation, the record image, and who, which program, which job and when. It is the same
+mechanism that underpins commitment control, recovery and the high-availability replication
+of the platform: **that is why, in most of these shops, it is already turned on**, and
+discovering it changes the budget of the migration. When creating an SQL schema, Db2 for i creates journal and
+receiver and **automatically journals** the tables created in it (`QSQJRN`); what is created with DDS, no —
+there it has to be enabled by hand.
 
-**Qué hay que activar y qué cuesta:**
-- Se crea el receptor (`CRTJRNRCV`), se crea el diario (`CRTJRN`) y se arranca el diariado de cada
-  fichero físico (`STRJRNPF`). Comandos verificados en la documentación de IBM.
-- **`IMAGES(*BOTH)` frente a `IMAGES(*AFTER)`** es la decisión que más condiciona el destino:
-  `*AFTER` graba solo la imagen posterior; `*BOTH` graba también la anterior, y **es lo que permite
-  reconstruir un `UPDATE` como cambio y no como "estado nuevo"**. Herramientas de CDC comerciales
-  exigen `*BOTH` o `*AFTER` según el caso. Cuesta el doble de escritura en el receptor: se decide,
-  no se hereda.
-- **Gestión de receptores**: con `MNGRCV(*SYSTEM)` el sistema desconecta el receptor lleno y engancha
-  uno nuevo al alcanzar el umbral; `DLTRCV` decide si además los borra. **Esta es la trampa
-  operativa número uno de una CDC sobre IBM i**: si el sistema borra receptores que el lector aún no
-  ha procesado, **hay pérdida de datos silenciosa**. La retención de receptores es un requisito
-  acordado con el equipo de sistemas antes de conectar nada, y coordinado con la política de copias
-  (los receptores viven en disco y son de lo que más crece).
-- **Coste**: el diariado escribe a disco en cada cambio y hay sobrecarga adicional por apertura y
-  cierre de objetos; a más objetos diariados, más impacto. Se dimensiona con el equipo de
-  operaciones, no se enciende masivamente el viernes.
-- **Caché de diario** (`JRNCACHE`, opción **42 del sistema operativo, *HA Journal Performance*,
-  facturable): mejora el rendimiento agrupando entradas en memoria, pero **las entradas en caché no
-  son visibles** para `DSPJRN`, `RCVJRNE`, `RTVJRNE` ni la API `QjoRetrieveJournalEntries`, **ni se
-  envían al diario remoto**. Verificado en la documentación de IBM. Traducción: si el lector de CDC
-  "va perdiendo la cola", puede no ser un fallo del lector. Y en caída del sistema, lo que está en
-  memoria se pierde.
-- **Diario remoto**: se añade con `ADDRMTJRN` (no con `CRTJRN`) y permite leer el flujo desde otra
-  máquina, con distinción entre entradas confirmadas y no confirmadas. **Es la forma de no poner al
-  lector de CDC en el sistema de producción.**
+**What has to be turned on and what it costs:**
+- The receiver is created (`CRTJRNRCV`), the journal is created (`CRTJRN`) and journalling of each
+  physical file is started (`STRJRNPF`). Commands verified in the IBM documentation.
+- **`IMAGES(*BOTH)` versus `IMAGES(*AFTER)`** is the decision that most conditions the target:
+  `*AFTER` records only the after image; `*BOTH` also records the before one, and **it is what allows
+  reconstructing an `UPDATE` as a change and not as a "new state"**. Commercial CDC tools
+  require `*BOTH` or `*AFTER` depending on the case. It costs twice the writing in the receiver: it is decided,
+  not inherited.
+- **Receiver management**: with `MNGRCV(*SYSTEM)` the system detaches the full receiver and attaches
+  a new one when the threshold is reached; `DLTRCV` decides whether it also deletes them. **This is the number one
+  operational trap of a CDC over IBM i**: if the system deletes receivers that the reader has not yet
+  processed, **there is silent data loss**. Receiver retention is a requirement
+  agreed with the systems team before connecting anything, and coordinated with the backup policy
+  (receivers live on disk and are among the fastest growing things).
+- **Cost**: journalling writes to disk on every change and there is additional overhead from opening and
+  closing objects; the more journalled objects, the more impact. It is sized with the operations
+  team, it is not turned on massively on a Friday.
+- **Journal cache** (`JRNCACHE`, option **42 of the operating system, *HA Journal Performance*,
+  chargeable): improves performance by grouping entries in memory, but **cached entries are
+  not visible** to `DSPJRN`, `RCVJRNE`, `RTVJRNE` nor the `QjoRetrieveJournalEntries` API, **nor are they
+  sent to the remote journal**. Verified in the IBM documentation. Translation: if the CDC reader
+  "keeps losing the tail", it may not be a fault of the reader. And on a system crash, what is in
+  memory is lost.
+- **Remote journal**: it is added with `ADDRMTJRN` (not with `CRTJRN`) and allows reading the stream from another
+  machine, distinguishing between committed and uncommitted entries. **It is the way not to put the
+  CDC reader on the production system.**
 
-**Vías de lectura y extracción, con criterio:**
+**Reading and extraction routes, with criteria:**
 
-| Vía | Cuándo | Advertencia |
+| Route | When | Warning |
 |---|---|---|
-| `QSYS2.DISPLAY_JOURNAL` (función de tabla SQL, disponible desde 7.1) | Leer entradas de diario **con SQL**; es sobre lo que construyen varias herramientas comerciales | Hay que acotar los parámetros de entrada o el coste se dispara; **interpretar el BLOB con la imagen del registro no es trivial** y es donde se atasca todo el mundo que se lo construye a mano |
-| `RCVJRNE` / `RTVJRNE` / API `QjoRetrieveJournalEntries` | La vía de programa: `RCVJRNE` entrega entradas de forma continua a un programa de salida, y es lo que usan productos de replicación | Programa de salida en la máquina; sujeto a la caché de diario (arriba) |
-| **SQL sobre el catálogo y las tablas** (JDBC/ODBC, `Run SQL Scripts`) | Carga inicial, perfilado y cuadre | Es la vía correcta para el *snapshot*; el impacto en el sistema de producción se negocia y se ejecuta en ventana |
-| `CPYTOIMPF` a fichero de flujo en el IFS | Volcado delimitado cuando no hay conectividad directa | **Se decide el CCSID explícitamente** (`STMFCCSID`): el flujo hereda por defecto el CCSID EBCDIC de la tabla. Verificado en la documentación de IBM |
-| DDM / DRDA / servicios web (IWS, §6) | Integración puntual y consulta, no carga masiva | DDM y DRDA son además superficie de acceso a controlar (§5) |
-| Herramientas de terceros | Cuando la CDC es continua y el proyecto la paga | **Verifica producto, versión y mecanismo antes de citarlo** (§8) |
+| `QSYS2.DISPLAY_JOURNAL` (SQL table function, available since 7.1) | Reading journal entries **with SQL**; it is what several commercial tools build on | The input parameters have to be bounded or the cost explodes; **interpreting the BLOB with the record image is not trivial** and it is where everyone who builds it by hand gets stuck |
+| `RCVJRNE` / `RTVJRNE` / `QjoRetrieveJournalEntries` API | The program route: `RCVJRNE` delivers entries continuously to an exit program, and it is what replication products use | Exit program on the machine; subject to the journal cache (above) |
+| **SQL over the catalogue and the tables** (JDBC/ODBC, `Run SQL Scripts`) | Initial load, profiling and reconciliation | It is the correct route for the *snapshot*; the impact on the production system is negotiated and executed in a window |
+| `CPYTOIMPF` to a stream file in the IFS | Delimited dump when there is no direct connectivity | **The CCSID is decided explicitly** (`STMFCCSID`): the stream inherits by default the EBCDIC CCSID of the table. Verified in the IBM documentation |
+| DDM / DRDA / web services (IWS, §6) | Point integration and querying, not bulk load | DDM and DRDA are also an access surface to control (§5) |
+| Third-party tools | When the CDC is continuous and the project pays for it | **Verify product, version and mechanism before quoting it** (§8) |
 
-**Sobre las herramientas de terceros, sin marketing**: las que se apoyan en esta plataforma leen el
-diario, por una de las dos vías de arriba. A ago-2026 se ha verificado que **Qlik Replicate** y el
-conector de **Fivetran/HVR** capturan vía `DISPLAY_JOURNAL`, que **Informatica PowerExchange** captura
-desde los receptores, y que **Matillion** publica un conector de *streaming* para Db2 for i basado en
-entradas de diario. **El conector Db2 oficial de Debezium es de Db2 para Linux/UNIX/Windows y no
-cubre Db2 for i**; existe un conector comunitario de terceros que sí lee el diario — **no lo trates
-como equivalente en soporte**. Esta lista es señal de mercado, no recomendación: se re-verifica (§8).
+**On third-party tools, without marketing**: the ones that lean on this platform read the
+journal, by one of the two routes above. As of Aug 2026 it has been verified that **Qlik Replicate** and the
+**Fivetran/HVR** connector capture via `DISPLAY_JOURNAL`, that **Informatica PowerExchange** captures
+from the receivers, and that **Matillion** publishes a *streaming* connector for Db2 for i based on
+journal entries. **Debezium's official Db2 connector is for Db2 for Linux/UNIX/Windows and does not
+cover Db2 for i**; there is a third-party community connector that does read the journal — **do not treat it
+as equivalent in support**. This list is a market signal, not a recommendation: it gets re-verified (§8).
 
-**Las trampas del dato que rompen la migración** (esto es lo que hace que el proyecto se retrase, no
-el volumen):
-- **Empaquetado y con signo** (*packed* / *zoned*): números almacenados con el signo en el último
-  medio byte. Décadas de programas escribiendo directo dejan **valores con nibble de signo o de
-  dígito inválido** que ningún `SELECT` de muestra descubre y que revientan al convertir en masa.
-  **Se perfila el 100 % de las columnas numéricas antes de mover nada**, no una muestra.
-- **Fechas en numérico de 6, 7 u 8 dígitos**: `YYMMDD`, el formato de 7 dígitos con siglo delante, o
-  `YYYYMMDD`. Trae `0`, `999999`, día 31 en meses de 30, y **ventanas de siglo implícitas en el
-  código** ("menor que 40 es 20xx") que hay que extraer como regla (§3.4), no adivinar. Cada
-  combinación centinela se decide con el negocio: no todas significan "nulo".
-- **Archivos multi-miembro**: un fichero físico con varios miembros —típicamente un histórico por
-  año o por sociedad—. **SQL no tiene equivalente y usa el primer miembro por defecto**, así que una
-  extracción por SQL se lleva un trozo y parece correcta. Verificado en la documentación de IBM: se
-  accede con `CREATE ALIAS` sobre el miembro concreto (o con un lógico sobre todos, u `OVRDBF`).
-  **Comprobar la existencia de miembros múltiples es un paso obligatorio del inventario**, y además
-  la partición por miembro **es** una regla de negocio implícita.
-- **Longitud fija con relleno**: los `CHAR` vienen rellenos de blancos; claves de negocio que en el
-  destino se comparan con `VARCHAR` dejan de casar. Se decide una política de recorte **una vez** y
-  se aplica igual en carga y en cuadre.
-- **EBCDIC y CCSID**: el dato nace en EBCDIC. **`CCSID 65535` (`*HEX`) significa "no convertir"** y es
-  el hallazgo clásico: el cliente ODBC/JDBC lo trata como binario o falla. Hay que distinguir la
-  columna que es **de verdad binaria** de la que es texto que nunca se etiquetó, y etiquetarla; a
-  ciegas se corrompen acentos, `Ñ` y símbolos de moneda. **Redefinir el CCSID no reescribe los
-  bytes: cambia cómo se interpretan** — con lo que un error aquí es invisible hasta que alguien lee
-  un nombre propio.
-- **Campos redefinidos y reutilizados**: un campo cuyo significado depende del valor de otro, un
-  `CHAR(30)` que lleva tres subcampos dentro, un "código de estado" al que se le añadieron
-  significados nuevos sin cambiar la estructura, o campos declarados y ya no usados que siguen
-  llenos de datos viejos. **Ninguna herramienta lo detecta: sale del perfilado de valores reales más
-  la extracción de reglas de §3.4.** Un campo con dos significados **se separa en dos en el
-  destino**, y esa es una decisión de negocio con dueño.
+**The data traps that break the migration** (this is what makes the project slip, not
+the volume):
+- **Packed and signed** (*packed* / *zoned*): numbers stored with the sign in the last
+  half byte. Decades of programs writing directly leave **values with an invalid sign or digit
+  nibble** that no sample `SELECT` uncovers and that blow up when converting in bulk.
+  **100 % of the numeric columns are profiled before moving anything**, not a sample.
+- **Dates in numeric of 6, 7 or 8 digits**: `YYMMDD`, the 7-digit format with the century in front, or
+  `YYYYMMDD`. It brings `0`, `999999`, day 31 in months of 30, and **century windows implicit in the
+  code** ("less than 40 is 20xx") that have to be extracted as a rule (§3.4), not guessed. Each
+  sentinel combination is decided with the business: not all of them mean "null".
+- **Multi-member files**: a physical file with several members —typically a history per
+  year or per company—. **SQL has no equivalent and uses the first member by default**, so an
+  extraction over SQL takes one chunk and looks correct. Verified in the IBM documentation: it
+  is accessed with `CREATE ALIAS` over the specific member (or with a logical over all of them, or `OVRDBF`).
+  **Checking for the existence of multiple members is a mandatory step of the inventory**, and moreover
+  partitioning by member **is** an implicit business rule.
+- **Fixed length with padding**: `CHAR` values come padded with blanks; business keys that in the
+  target are compared with `VARCHAR` stop matching. A trimming policy is decided **once** and
+  applied the same way in load and in reconciliation.
+- **EBCDIC and CCSID**: the data is born in EBCDIC. **`CCSID 65535` (`*HEX`) means "do not convert"** and is
+  the classic finding: the ODBC/JDBC client treats it as binary or fails. You have to distinguish the
+  column that is **truly binary** from the one that is text that was never tagged, and tag it; done
+  blind, accents, `Ñ` and currency symbols get corrupted. **Redefining the CCSID does not rewrite the
+  bytes: it changes how they are interpreted** — so an error here is invisible until someone reads
+  a proper name.
+- **Redefined and reused fields**: a field whose meaning depends on the value of another, a
+  `CHAR(30)` that carries three subfields inside, a "status code" to which new meanings were added
+  without changing the structure, or fields declared and no longer used that are still
+  full of old data. **No tool detects it: it comes out of profiling real values plus
+  the rule extraction of §3.4.** A field with two meanings **is split into two in the
+  target**, and that is a business decision with an owner.
 
-**El cuadre no es opcional y se diseña antes de extraer.** Mínimo: recuento de filas y **sumas de
-control por columna numérica de negocio** (importes, no identificadores) por partición
-—ejercicio/sociedad/almacén—, comparadas contra el origen **en el mismo instante lógico**; recuento
-de valores distintos y de nulos/centinelas en las columnas clave; y para la CDC, el desfase entre la
-última entrada de diario aplicada y la del origen. El cuadre **se ejecuta en el ensayo y en el
-corte**, con la tolerancia acordada **por escrito antes** —la ejecución del corte y su
-reconciliación son de `migration-projects-standards`; **la definición de qué se cuadra en esta
-plataforma es de aquí**—. Una extracción que no cuadra **no se corrige a mano en el destino**: se
-corrige el proceso y se vuelve a ejecutar, porque el arreglo manual no es repetible y el corte se
-ejecuta más de una vez.
+**Reconciliation is not optional and is designed before extracting.** Minimum: row counts and **control
+sums per business numeric column** (amounts, not identifiers) per partition
+—fiscal year/company/warehouse—, compared against the source **at the same logical instant**; count
+of distinct values and of nulls/sentinels in the key columns; and for CDC, the lag between the
+last applied journal entry and the source's. Reconciliation **is executed in the rehearsal and in the
+cutover**, with the tolerance agreed **in writing beforehand** —the execution of the cutover and its
+reconciliation belong to `migration-projects-standards`; **the definition of what is reconciled on this
+platform belongs here**—. An extraction that does not reconcile **is not fixed by hand in the target**: the
+process is fixed and it is executed again, because the manual fix is not repeatable and the cutover is
+executed more than once.
 
-## 4. Calidad, control de versiones y CI
+## 4. Quality, version control and CI
 
-- **El fuente vive en Git, en el IFS** (`.rpgle`/`.sqlrpgle`/`.clle`/`.sql`), **no en miembros de
-  `QSYS.LIB`**: un miembro con fecha de modificación no es historia y no permite ramas, diff ni
-  revisión. **Es el cambio con más retorno de toda la modernización, y es previo a los demás.**
-- **Build reproducible**: script versionado (utilidades del ecosistema Code for IBM i, o CL propio)
-  que reconstruye desde cero en una biblioteca limpia. Si nadie sabe recompilar todo, no hay
-  entrega: hay parcheo.
-- **Entornos separados por biblioteca y `*LIBL`**, con datos de test propios y **enmascarados**.
-- **Pruebas**: unidad sobre procedimientos ILE (lo hace posible el diseño de §3.1) y regresión por
-  comparación de salidas en batch. Un programa monolítico que solo se prueba por 5250 es, en la
-  práctica, no testeable: eso es lo primero que hay que romper.
-- **Gate de CI mínimo**: compila limpio sin ignorar avisos, la suite pasa, y **ningún objeto se
-  crea a mano en producción**.
+- **The source lives in Git, in the IFS** (`.rpgle`/`.sqlrpgle`/`.clle`/`.sql`), **not in members of
+  `QSYS.LIB`**: a member with a modification date is not history and does not allow branches, diff nor
+  review. **It is the change with the highest return of the whole modernisation, and it comes before the others.**
+- **Reproducible build**: versioned script (Code for IBM i ecosystem utilities, or your own CL)
+  that rebuilds from scratch in a clean library. If nobody knows how to recompile everything, there is no
+  delivery: there is patching.
+- **Environments separated by library and `*LIBL`**, with their own **masked** test data.
+- **Tests**: unit over ILE procedures (made possible by the design of §3.1) and regression by
+  comparison of batch outputs. A monolithic program that can only be tested over 5250 is, in
+  practice, not testable: that is the first thing that has to be broken.
+- **Minimum CI gate**: compiles clean without ignoring warnings, the suite passes, and **no object is
+  created by hand in production**.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **`QSECURITY` 40 como mínimo**; 50 en entornos regulados. Por debajo de 40 la integridad del
-  sistema no está garantizada; subirlo es un proyecto, pero **quedarse en 30 no es defendible**.
-- **`*ALLOBJ` es el problema.** Todo perfil con `*ALLOBJ`/`*SECOFR` es administrador total del
-  sistema y de los datos. Inventaría quién lo tiene —incluido por perfil de grupo—, justifícalo uno
-  a uno y elimina el resto: aquí aparecen perfiles de aplicación y usuarios de servicio con
-  autoridad total.
-- **Autoridad pública**: `*EXCLUDE` en objetos de datos y concesión por lista de autorización.
-  `*PUBLIC *CHANGE` en bibliotecas de negocio es el hallazgo de auditoría garantizado.
-- **Autoridad adoptada (`USRPRF(*OWNER)`)** da acceso solo mientras corre el programa, y es riesgo
-  si el programa permite llegar a línea de comandos. Adopta desde el objeto más pequeño posible,
-  controla la propagación (`USEADPAUT`), y **ningún programa que adopta autoridad ofrece entrada de
-  comandos**.
-- **La puerta trasera no es el 5250**: son las interfaces abiertas (FTP, ODBC/JDBC, DRDA, DDM,
-  REST). Un usuario limitado por menú puede leer todas las tablas por ODBC si no hay programas de
-  salida ni autoridad a nivel de objeto. **La seguridad va en el objeto, no en el menú.**
-- **MFA nativa**: 7.6 incorpora TOTP en el sistema operativo, aplicable a todos los puntos de
-  autenticación (5250, FTP) y a perfiles SST/DST, sin coste adicional — razón suficiente, por sí
-  sola, para planificar el salto. 7.6 añade además cifrado del ASP del sistema (SYSBAS): verifica
-  el impacto operativo antes de activarlo.
-- **`QAUDJRN` activado y exportado al SIEM**: si el journal de auditoría no sale de la máquina, es
-  una zona ciega.
+- **`QSECURITY` 40 as a minimum**; 50 in regulated environments. Below 40 the integrity of the
+  system is not guaranteed; raising it is a project, but **staying at 30 is not defensible**.
+- **`*ALLOBJ` is the problem.** Every profile with `*ALLOBJ`/`*SECOFR` is a total administrator of the system
+  and of the data. Inventory who has it —including via group profile—, justify it one
+  by one and remove the rest: this is where application profiles and service users with total
+  authority show up.
+- **Public authority**: `*EXCLUDE` on data objects and granting by authorization list.
+  `*PUBLIC *CHANGE` on business libraries is the guaranteed audit finding.
+- **Adopted authority (`USRPRF(*OWNER)`)** grants access only while the program runs, and it is a risk
+  if the program allows reaching a command line. Adopt from the smallest object possible,
+  control propagation (`USEADPAUT`), and **no program that adopts authority offers command
+  entry**.
+- **The back door is not the 5250**: it is the open interfaces (FTP, ODBC/JDBC, DRDA, DDM,
+  REST). A user limited by menu can read all the tables over ODBC if there are no exit
+  programs nor object-level authority. **Security goes on the object, not on the menu.**
+- **Native MFA**: 7.6 incorporates TOTP into the operating system, applicable to all authentication
+  points (5250, FTP) and to SST/DST profiles, at no additional cost — reason enough, by
+  itself, to plan the jump. 7.6 also adds encryption of the system ASP (SYSBAS): verify
+  the operational impact before enabling it.
+- **`QAUDJRN` enabled and exported to the SIEM**: if the audit journal does not leave the machine, it is
+  a blind spot.
 
-## 6. Integración y modernización de la interfaz
+## 6. Integration and interface modernisation
 
-- **Servicios web**: **IWS** expone un programa o procedimiento como REST/SOAP sin salir de la
-  plataforma; para consumo, cliente HTTP nativo o funciones SQL. Con volumen o integración compleja,
-  la alternativa es un servicio externo que hable Db2 for i por SQL.
-- **La trampa habitual: envolver la pantalla 5250 en web sin rediseñar el flujo.** Sale la misma
-  secuencia de pantallas con CSS, con su navegación paso a paso, su validación campo a campo y su
-  sesión conversacional: **se gana aspecto, no usabilidad ni desacoplamiento**. Requisito previo a
-  cualquier interfaz nueva: que la lógica esté en procedimientos ILE invocables sin pantalla
-  (§3.1). Mientras viva en el programa de la DSPF, la capa web es maquillaje.
-- **API antes que pantalla**: la unidad de reutilización es el procedimiento, no el programa
-  interactivo.
+- **Web services**: **IWS** exposes a program or procedure as REST/SOAP without leaving the
+  platform; for consumption, native HTTP client or SQL functions. With volume or complex integration,
+  the alternative is an external service that speaks Db2 for i over SQL.
+- **The usual trap: wrapping the 5250 screen in web without redesigning the flow.** Out comes the same
+  sequence of screens with CSS, with its step-by-step navigation, its field-by-field validation and its
+  conversational session: **you gain looks, not usability nor decoupling**. Prerequisite to
+  any new interface: that the logic be in ILE procedures callable without a screen
+  (§3.1). While it lives in the DSPF's program, the web layer is make-up.
+- **API before screen**: the unit of reuse is the procedure, not the interactive
+  program.
 
-## 7. Cuándo quedarse, cuándo migrar y prohibiciones
+## 7. When to stay, when to migrate and prohibitions
 
-**Quedarse es correcto —y lo es más veces de lo que se cree— cuando:**
-- La aplicación cubre el negocio, el coste total (licencia + soporte + personal) es conocido y
-  competitivo, y hay hardware Power en soporte con camino a 7.5/7.6.
-- La operación es lo que la plataforma hace excepcionalmente bien: batch fiable, base de datos
-  integrada, muy poca administración por transacción, disponibilidad alta con equipo pequeño.
-- Se puede modernizar *dentro*: ILE, SQL, Git, CI, APIs. **Esa ruta es dramáticamente más barata
-  que reescribir y casi nadie la agota antes de plantear la migración.**
+**Staying is correct —and it is more often than people think— when:**
+- The application covers the business, the total cost (licence + support + staff) is known and
+  competitive, and there is Power hardware in support with a path to 7.5/7.6.
+- The operation is what the platform does exceptionally well: reliable batch, integrated
+  database, very little administration per transaction, high availability with a small team.
+- It can be modernised *inside*: ILE, SQL, Git, CI, APIs. **That route is dramatically cheaper
+  than rewriting and almost nobody exhausts it before raising migration.**
 
-**Migrar tiene sentido cuando** el proveedor único es un riesgo aceptado por dirección, cuando el
-coste de suscripción deja de ser competitivo frente al valor, cuando la funcionalidad se compra ya
-hecha (ERP), o cuando no hay ni habrá personal — **medido en tu casa, no en un artículo**.
+**Migrating makes sense when** the single vendor is a risk accepted by management, when the
+subscription cost stops being competitive against the value, when the functionality is bought ready
+made (ERP), or when there is no staff and there will not be — **measured in your shop, not in an article**.
 
-**Prohibiciones:**
+**Prohibitions:**
 
-- ❌ **PROHIBIDO** escribir código nuevo en RPG de formato fijo (columnas), en RPG III/OPM o con
-  indicadores numéricos como lógica. Todo lo nuevo: **`**FREE`**, procedimientos, variables con
-  nombre.
-- ❌ Programas monolíticos nuevos sin ILE, o `DFTACTGRP(*YES)` en código nuevo.
-- ❌ Acceso nativo por registro para lógica de conjunto nueva (bucles `CHAIN`/`READE` que son un
+- ❌ **FORBIDDEN** to write new code in fixed-format RPG (columns), in RPG III/OPM or with
+  numeric indicators as logic. Everything new: **`**FREE`**, procedures, named
+  variables.
+- ❌ New monolithic programs without ILE, or `DFTACTGRP(*YES)` in new code.
+- ❌ Native record-level access for new set logic (`CHAIN`/`READE` loops that are a
   *join*).
-- ❌ Definir tablas nuevas con DDS en lugar de SQL DDL.
-- ❌ **Miembros de fuente de `QSYS.LIB` como control de versiones.** El fuente va a Git, en el IFS.
-- ❌ Compilar o crear objetos a mano en producción.
-- ❌ `QSECURITY` por debajo de 40; `*ALLOBJ` repartido; `*PUBLIC *CHANGE` en bibliotecas de datos.
-- ❌ Programas que adoptan autoridad y permiten línea de comandos.
-- ❌ Confiar la seguridad al menú 5250 dejando ODBC/FTP/DDM sin controlar.
-- ❌ Presentar como modernización un envoltorio web de las mismas pantallas 5250 (§6).
-- ❌ **Prometer que se ha extraído la lógica de negocio a partir de análisis estático** (`DSPPGMREF`,
-  vistas de IBM i Services) **sin declarar el punto ciego**: llamadas dinámicas, SQL dinámico y
-  resolución por `*LIBL` no se ven ahí (§3.4).
-- ❌ Descartar una regla porque nadie del negocio la reconozca, o corregirla dentro del mismo cambio
-  que la migra. Se caracteriza tal como está y el cambio funcional va aparte (§3.4).
-- ❌ Dar por inventariada la lógica sin haber mirado **triggers, restricciones, palabras clave de
-  validez en DDS, programas de puntos de salida, `*QRYDFN` y las hojas de cálculo por ODBC** (§3.4).
-- ❌ **Extraer por SQL de un fichero multi-miembro sin comprobar los miembros**: SQL usa el primero y
-  el resultado parece correcto (§3.5).
-- ❌ Convertir columnas numéricas o fechas en numérico **sobre una muestra**: el perfilado es del
-  100 % de las filas (§3.5).
-- ❌ Mover datos ignorando el CCSID, o "arreglar" un `CCSID 65535` cambiando la etiqueta sin decidir
-  antes si la columna es binaria o texto sin etiquetar (§3.5).
-- ❌ Montar una CDC sobre diarios **sin acordar antes la retención de los receptores** con el equipo
-  de sistemas: si se borran antes de procesarse, la pérdida es silenciosa (§3.5).
-- ❌ Diagnosticar un lector de CDC "que pierde la cola" sin descartar la **caché de diario**: sus
-  entradas no son visibles ni se envían al diario remoto (§3.5).
-- ❌ Ejecutar un corte sin cuadre definido y tolerancia acordada por escrito, o reparar a mano en el
-  destino lo que no cuadró (§3.5).
-- ❌ Planificar un upgrade de release sin comprobar antes el techo que impone la generación Power.
-- ❌ Citar cifras de coste perpetua-vs-suscripción o de cuota de mercado de IDE sin nombrar la
-  fuente y su método (§8).
+- ❌ Defining new tables with DDS instead of SQL DDL.
+- ❌ **`QSYS.LIB` source members as version control.** The source goes to Git, in the IFS.
+- ❌ Compiling or creating objects by hand in production.
+- ❌ `QSECURITY` below 40; `*ALLOBJ` handed around; `*PUBLIC *CHANGE` on data libraries.
+- ❌ Programs that adopt authority and allow a command line.
+- ❌ Entrusting security to the 5250 menu while leaving ODBC/FTP/DDM uncontrolled.
+- ❌ Presenting as modernisation a web wrapper of the same 5250 screens (§6).
+- ❌ **Promising that the business logic has been extracted from static analysis** (`DSPPGMREF`,
+  IBM i Services views) **without declaring the blind spot**: dynamic calls, dynamic SQL and
+  resolution by `*LIBL` are not seen there (§3.4).
+- ❌ Discarding a rule because nobody in the business recognises it, or fixing it inside the same change
+  that migrates it. It is characterized as it is and the functional change goes separately (§3.4).
+- ❌ Considering the logic inventoried without having looked at **triggers, constraints, validity
+  keywords in DDS, exit point programs, `*QRYDFN` and the spreadsheets over ODBC** (§3.4).
+- ❌ **Extracting over SQL from a multi-member file without checking the members**: SQL uses the first and
+  the result looks correct (§3.5).
+- ❌ Converting numeric columns or numeric dates **over a sample**: profiling is of
+  100 % of the rows (§3.5).
+- ❌ Moving data ignoring the CCSID, or "fixing" a `CCSID 65535` by changing the tag without deciding
+  first whether the column is binary or untagged text (§3.5).
+- ❌ Setting up a CDC over journals **without agreeing receiver retention beforehand** with the systems
+  team: if they are deleted before being processed, the loss is silent (§3.5).
+- ❌ Diagnosing a CDC reader "that loses the tail" without ruling out the **journal cache**: its
+  entries are not visible nor sent to the remote journal (§3.5).
+- ❌ Executing a cutover without a defined reconciliation and a tolerance agreed in writing, or repairing by hand in the
+  target what did not reconcile (§3.5).
+- ❌ Planning a release upgrade without first checking the ceiling imposed by the Power generation.
+- ❌ Quoting perpetual-vs-subscription cost figures or IDE market share without naming the
+  source and its method (§8).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar por web:
+Before pinning anything in a real project, check on the web:
 
-1. **Release vigente de IBM i y su calendario**: a ago-2026, soportadas 7.6, 7.5 y 7.4 (esta última
-   con cambio de nivel de servicio el 30-sep-2026 y extensión hasta 30-sep-2029). **Hueco
-   declarado: IBM no había anunciado fechas de fin de soporte para 7.5 ni 7.6.** No las infieras
-   como si fueran anuncio; consulta la página oficial de soporte de releases de IBM i (PID
+1. **Current IBM i release and its calendar**: as of Aug 2026, 7.6, 7.5 and 7.4 are supported (the last
+   one with a service level change on 30 Sep 2026 and extension until 30 Sep 2029). **Declared
+   gap: IBM had not announced end-of-support dates for 7.5 or 7.6.** Do not infer them
+   as if they were an announcement; consult IBM's official release support page (PID
    5770-SS1).
-2. **Matriz release ↔ generación Power** y nivel mínimo de firmware antes de comprometer un
+2. **Release ↔ Power generation matrix** and minimum firmware level before committing to an
    upgrade.
-3. **Modelo de licencia vigente**: qué tiers siguen teniendo perpetua, condiciones de la
-   suscripción y del *5250 Enterprise Enablement*. **Precios no se documentan aquí: IBM no los
-   publica en las cartas de anuncio y solo son fiables vía oferta de partner.**
-4. **Estado y licencia de Code for IBM i**: a ago-2026, `codefori/vscode-ibmi`, **licencia MIT**
-   verificada en el repositorio; proyecto **comunitario, sin soporte de IBM**. Verifica también si
-   sigue siendo el repositorio activo antes de apoyar una decisión en él — el feed de releases de
-   GitHub no es la fuente de verdad si el proyecto se muda.
-5. **Estado de RDi**: 9.8 con discontinuación de soporte el 30-abr-2026; 9.9 publicada el
-   5-dic-2025. Verifica el calendario de 9.9 y quién la soporta (IBM contrata a Fortra).
-6. **Nivel de Technology Refresh** vigente para tu release y qué IBM i Services añade: la lista de
-   vistas SQL crece en cada TR y determina qué puedes automatizar.
-7. Boletines de seguridad de IBM i, PTFs de seguridad acumulativos y CVEs de los componentes open
-   source portados (que llegan con su propio calendario).
-8. **Cifras de adopción de herramientas** (encuestas de mercado tipo Fortra): son encuestas de
-   autoinforme con muestra no publicada; **úsalas como señal de tendencia, nunca como dato duro**.
-9. **Todo nombre de comando o de vista SQL de esta skill, contra `ibm.com/docs` del release del
-   cliente, antes de teclearlo.** Verificados a ago-2026 en documentación de IBM: `DSPPGMREF`
-   (formato de salida `QWHDRPPR` sobre `QADSPPGM`, una sola biblioteca por invocación, entradas que
-   se añaden pero no se quitan al actualizar un programa ILE), `DSPDBR` (y el límite con las
-   restricciones padre/hijo, que IBM cubre con `DSPEDBR` de `QMGTOOLS`), `WRKREGINF`,
-   `QSYS2.EXIT_POINT_INFO` y `EXIT_PROGRAM_INFO` (7.4 TR3 / 7.3 TR9), `QSYS2.PROGRAM_INFO`,
-   `BOUND_MODULE_INFO`, `BOUND_SRVPGM_INFO`, `PROGRAM_EXPORT_IMPORT_INFO`, las palabras clave DDS
-   `COMP`/`CMP`, `RANGE`, `VALUES`, `CHECK` y `CHKMSGID`, `CRTJRNRCV`, `CRTJRN`, `STRJRNPF`,
+3. **Current licensing model**: which tiers still have perpetual, conditions of the
+   subscription and of the *5250 Enterprise Enablement*. **Prices are not documented here: IBM does not
+   publish them in announcement letters and they are only reliable via a partner quote.**
+4. **Status and licence of Code for IBM i**: as of Aug 2026, `codefori/vscode-ibmi`, **MIT licence**
+   verified in the repository; **community** project, **without IBM support**. Verify also whether
+   it is still the active repository before basing a decision on it — the GitHub releases
+   feed is not the source of truth if the project moves.
+5. **RDi status**: 9.8 with support discontinuation on 30 Apr 2026; 9.9 released
+   5 Dec 2025. Verify the 9.9 calendar and who supports it (IBM contracts Fortra).
+6. **Technology Refresh level** current for your release and which IBM i Services it adds: the list of
+   SQL views grows with each TR and determines what you can automate.
+7. IBM i security bulletins, cumulative security PTFs and CVEs of the ported open
+   source components (which arrive on their own calendar).
+8. **Tool adoption figures** (market surveys of the Fortra type): they are self-reported
+   surveys with an unpublished sample; **use them as a trend signal, never as hard data**.
+9. **Every command or SQL view name in this skill, against `ibm.com/docs` for the client's
+   release, before typing it.** Verified as of Aug 2026 in IBM documentation: `DSPPGMREF`
+   (output format `QWHDRPPR` over `QADSPPGM`, a single library per invocation, entries that
+   are added but not removed when updating an ILE program), `DSPDBR` (and the limit with the
+   parent/child constraints, which IBM covers with `DSPEDBR` from `QMGTOOLS`), `WRKREGINF`,
+   `QSYS2.EXIT_POINT_INFO` and `EXIT_PROGRAM_INFO` (7.4 TR3 / 7.3 TR9), `QSYS2.PROGRAM_INFO`,
+   `BOUND_MODULE_INFO`, `BOUND_SRVPGM_INFO`, `PROGRAM_EXPORT_IMPORT_INFO`, the DDS keywords
+   `COMP`/`CMP`, `RANGE`, `VALUES`, `CHECK` and `CHKMSGID`, `CRTJRNRCV`, `CRTJRN`, `STRJRNPF`,
    `CHGJRN`, `IMAGES(*BOTH)`/`(*AFTER)`, `MNGRCV(*SYSTEM)`, `DLTRCV`, `ADDRMTJRN`, `RCVJRNE`,
-   `RTVJRNE`, `QjoRetrieveJournalEntries`, `JRNCACHE` (opción 42, *HA Journal Performance*),
-   `QSYS2.DISPLAY_JOURNAL` (desde 7.1), `CPYTOIMPF` con `STMFCCSID`, y `CREATE ALIAS` sobre un
-   miembro concreto. **Un comando inventado le cuesta un día a quien lo teclee: si no lo confirmas,
-   no lo escribas.**
-10. **Hueco declarado — sintaxis y parámetros exactos**: aquí se fija **qué se decide**, no la
-    sintaxis. Los parámetros concretos de `RCVJRNE`, `RCVSIZOPT`, `FIXLENDTA` y el formato de las
-    entradas de diario **no se documentan en esta skill** y se consultan en el manual de *Journal
-    management* del release en uso. Parte de la verificación anterior se apoyó en documentación de
-    releases 7.1-7.6 indistintamente: **confirma en el release del cliente** antes de comprometer un
-    diseño.
-11. **Herramientas de CDC y análisis de terceros**: a ago-2026 se verificó que Qlik Replicate y el
-    conector de Fivetran/HVR capturan vía `QSYS2.DISPLAY_JOURNAL`, que Informatica PowerExchange
-    captura desde los receptores de diario, y que Matillion publica un conector de *streaming* para
-    Db2 for i basado en entradas de diario. **El conector Db2 oficial de Debezium es de Db2 LUW**;
-    para IBM i existe un conector comunitario de terceros. **Hueco declarado: esto se contrastó con
-    documentación de producto y discusión de comunidad, no con una matriz de soporte publicada por
-    Debezium** — verifica antes de apoyar una decisión de compra, y verifica igual cualquier
-    herramienta comercial de análisis de código del ecosistema antes de nombrarla.
-12. **Db2 for i no aparece en el catálogo de mecanismos de captura de `streaming-cdc-standards`**
-    (verificado en el propio catálogo de skills, ago-2026): esa skill enumera WAL de PostgreSQL,
-    binlog de MySQL/MariaDB, LogMiner de Oracle, CDC de SQL Server y *change streams* de MongoDB. El
-    mecanismo de esta plataforma es el diario y está en §3.5. **No infieras de esa ausencia que IBM i
-    no tiene captura por log: la tiene, y es de primera clase.**
+   `RTVJRNE`, `QjoRetrieveJournalEntries`, `JRNCACHE` (option 42, *HA Journal Performance*),
+   `QSYS2.DISPLAY_JOURNAL` (since 7.1), `CPYTOIMPF` with `STMFCCSID`, and `CREATE ALIAS` over a
+   specific member. **An invented command costs a day to whoever types it: if you do not confirm it,
+   do not write it.**
+10. **Declared gap — exact syntax and parameters**: here **what is decided** is fixed, not the
+    syntax. The concrete parameters of `RCVJRNE`, `RCVSIZOPT`, `FIXLENDTA` and the format of the
+    journal entries **are not documented in this skill** and are consulted in the *Journal
+    management* manual of the release in use. Part of the verification above relied on documentation of
+    releases 7.1-7.6 indistinctly: **confirm on the client's release** before committing to a
+    design.
+11. **Third-party CDC and analysis tools**: as of Aug 2026 it was verified that Qlik Replicate and the
+    Fivetran/HVR connector capture via `QSYS2.DISPLAY_JOURNAL`, that Informatica PowerExchange
+    captures from the journal receivers, and that Matillion publishes a *streaming* connector for
+    Db2 for i based on journal entries. **Debezium's official Db2 connector is for Db2 LUW**;
+    for IBM i there is a third-party community connector. **Declared gap: this was contrasted with
+    product documentation and community discussion, not with a support matrix published by
+    Debezium** — verify before basing a purchase decision on it, and verify likewise any
+    commercial code analysis tool of the ecosystem before naming it.
+12. **Db2 for i does not appear in the catalogue of capture mechanisms of `streaming-cdc-standards`**
+    (verified in the skills catalogue itself, Aug 2026): that skill enumerates PostgreSQL's WAL,
+    MySQL/MariaDB's binlog, Oracle's LogMiner, SQL Server's CDC and MongoDB's *change streams*. The
+    mechanism of this platform is the journal and it is in §3.5. **Do not infer from that absence that IBM i
+    does not have log-based capture: it has it, and it is first class.**
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

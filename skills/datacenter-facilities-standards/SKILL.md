@@ -3,133 +3,133 @@ name: datacenter-facilities-standards
 description: The physical plant of a data centre or server room — everything bolted to the rack but not inside the server. Use when sizing A/B utility feeds and per-phase load balance, specifying UPS topology (double conversion, line-interactive, eco mode) and real autonomy at measured load, running a generator load bank test or a black-building test, choosing switched and metered PDUs and reading per-outlet current, discovering that two PSUs share one circuit, planning hot/cold aisle containment, CRAC/CRAH versus in-row versus rear-door heat exchangers, direct-to-chip liquid cooling and immersion at high kW/rack, ASHRAE TC 9.9 Thermal Guidelines classes A1-A4 and H1 and the recommended versus allowable envelope, rack density in kW and floor loading on a raised floor, structured cabling and labelling (ANSI/TIA-568, ANSI/TIA-606), fire detection and suppression under NFPA 75, NFPA 76, NFPA 2001 and NFPA 855, VESDA aspirating detection and lithium battery off-gassing, physical access control mantraps and CCTV retention, Uptime Institute Tier I-IV and TCDD/TCCF/TCOS certification, EN 50600 and ISO/IEC 22237 availability classes, ANSI/TIA-942 ratings, PUE under ISO/IEC 30134-2, comparing colocation versus an own room versus cloud on cost, or writing the preventive maintenance and testing calendar for power and cooling plant.
 ---
 
-# Estándares de planta física de centro de datos
+# Data centre physical plant standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre **la instalación física que sostiene al hierro**: energía desde la acometida hasta la
-regleta, refrigeración desde el enfriador hasta la entrada de aire del servidor, el espacio
-(rack, suelo, peso, cableado), la protección contra incendios, el control de acceso físico y
-el **mantenimiento y las pruebas** que hacen que todo eso sea verdad y no un diagrama.
+Covers **the physical installation that holds up the hardware**: power from the utility feed to the
+rack strip, cooling from the chiller to the server air inlet, the space
+(rack, floor, weight, cabling), fire protection, physical access control and
+the **maintenance and testing** that make all of that true instead of a diagram.
 
-**Frontera en una línea, acordada con `server-hardware-standards`: si va atornillado al rack
-pero no dentro del servidor, es de aquí.** El chasis, la PSU, el BMC y el disco son suyos; el
-circuito que alimenta esa PSU, el SAI que lo respalda, la PDU donde se enchufa, el aire que le
-entra y la baldosa que lo aguanta son de aquí.
+**Boundary in one line, agreed with `server-hardware-standards`: if it is bolted to the rack
+but not inside the server, it belongs here.** The chassis, the PSU, the BMC and the disk are theirs; the
+circuit feeding that PSU, the UPS backing it, the PDU it plugs into, the air that goes
+into it and the floor tile that holds it up belong here.
 
-**Principio rector**: **la redundancia se demuestra quitando cosas, no dibujándolas.** Un
-esquema con dos de todo no es redundante hasta que se apaga una rama con carga real y el
-servicio no se entera. Casi todos los fallos caros de planta son *redundancia de papel*: dos
-fuentes en un mismo circuito, dos ramas de UPS con un único cuadro aguas arriba, un grupo
-electrógeno que arranca en vacío todos los meses y nunca ha visto la carga.
+**Guiding principle**: **redundancy is proven by taking things away, not by drawing them.** A
+diagram with two of everything is not redundant until one branch is powered off under real load and
+the service does not notice. Almost every expensive plant failure is *paper redundancy*: two
+power supplies on the same circuit, two UPS branches with a single upstream board, a generator
+that starts unloaded every month and has never seen the load.
 
-Triggers: acometida A/B, "¿qué autonomía tiene el SAI?", grupo electrógeno, prueba con banco de
-carga (*load bank*), *black building test*, conmutador de transferencia (ATS/STS), PDU
-conmutada/medida, "reparto entre fases", desequilibrio de fase, "las dos fuentes en la misma
-regleta", pasillo frío/caliente, contención, CRAC/CRAH, in-row, puerta trasera refrigerada
-(RDHx), CDU, *direct-to-chip*, inmersión monofásica/bifásica, ASHRAE TC 9.9, clases A1–A4/H1,
-*recommended* vs. *allowable*, kW por rack, kg por baldosa, suelo técnico, ANSI/TIA-568,
-ANSI/TIA-606, etiquetado de latiguillos, NFPA 75/76/2001/855, VESDA, *off-gassing* de litio,
-esclusa/*mantrap*, retención de CCTV, Tier I–IV, TCDD/TCCF/TCOS, EN 50600, ISO/IEC 22237,
-ANSI/TIA-942, PUE, ISO/IEC 30134-2, "¿colo o sala propia?", plan de mantenimiento preventivo.
+Triggers: A/B utility feed, "how much autonomy does the UPS have?", generator, load bank
+test (*load bank*), *black building test*, transfer switch (ATS/STS), switched/metered
+PDU, "phase balancing", phase imbalance, "both power supplies on the same
+strip", cold/hot aisle, containment, CRAC/CRAH, in-row, rear-door heat exchanger
+(RDHx), CDU, *direct-to-chip*, single-phase/two-phase immersion, ASHRAE TC 9.9, classes A1–A4/H1,
+*recommended* vs. *allowable*, kW per rack, kg per floor tile, raised floor, ANSI/TIA-568,
+ANSI/TIA-606, patch cord labelling, NFPA 75/76/2001/855, VESDA, lithium *off-gassing*,
+airlock/*mantrap*, CCTV retention, Tier I–IV, TCDD/TCCF/TCOS, EN 50600, ISO/IEC 22237,
+ANSI/TIA-942, PUE, ISO/IEC 30134-2, "colo or our own room?", preventive maintenance plan.
 
-**No aplica**: ver `server-hardware-standards` (**dentro del chasis**: PSU, BMC, firmware,
-garantía; aquí el circuito que la alimenta y la exigencia de que sean dos distintos),
-`onprem-standards` (**paraguas de plataforma y su tabla de enrutado §1.2**: esta skill es la
-capa física que le faltaba; sus invariantes de §1.3 mandan),
-`cmdb-inventory-standards` (**el registro**: rack, U, circuito y PDU son *datos de inventario*
-y viven en el DCIM — aquí se decide qué significan y cuáles hay que mantener),
-`os-provisioning-standards` (el recorrido del servidor **desde que hay corriente e IP**),
-`datacenter-fabric-standards` (la malla Clos/EVPN que corre por ese cableado),
-`high-speed-interconnect-standards` (InfiniBand/RoCE y la longitud de enlace que impone la
-topología física), `networking-standards` y `routing-switching-standards` (direccionamiento,
-VLAN, campus), `network-automation-standards` (la configuración como código),
-`gpu-computing-standards` (**la GPU como recurso**: TDP, DCGM, *throttling*; aquí el kW/rack y
-el circuito de líquido que se lo lleva), `hpc-standards` (el clúster y su planificador; aquí la
-sala donde vive), `green-it-standards` (**la métrica y el informe**: SCI, GHG Protocol, WUE,
-CUE, ERF/REF, EED y el esquema europeo de informe de centros de datos, calor residual como
-huella — aquí PUE solo como **decisión de diseño y operación**, no como reporte regulatorio),
-`bcdr-standards` (**RTO/RPO, sitio alterno y declaración de desastre**; aquí la resiliencia del
-sitio, no la estrategia de continuidad), `ha-clustering-standards` (redundancia de servicio),
-`linux-storage-standards` y `zfs-standards` (el dato), `kubernetes-standards` (lo que corre
-encima), `finops-standards` (coste en nube y su comparación),
-`homelab-standards` (**proporcionalidad**: en casa la planta es un SAI de 1500 VA y una
-ventana; nada de este documento se aplica literalmente allí),
-`grc-compliance-standards` (el control de seguridad física como evidencia de auditoría
-ISO 27001 A.7 / ENS), `identity-access-management-standards` (identidad lógica; aquí la
-tarjeta y el torno), `incident-management-standards` (la gestión del incidente cuando la sala
-se cae), `vulnerability-management-standards`, `iac-standards`, `observability-standards`,
-`sre-practice-standards`, y `embedded-iot-standards` (el sensor y su
-firmware; aquí qué hay que medir en sala).
+**Not applicable**: see `server-hardware-standards` (**inside the chassis**: PSU, BMC, firmware,
+warranty; here, the circuit that feeds it and the requirement that there be two distinct ones),
+`onprem-standards` (**platform umbrella and its routing table §1.2**: this skill is the
+physical layer it was missing; its §1.3 invariants win),
+`cmdb-inventory-standards` (**the record**: rack, U, circuit and PDU are *inventory data*
+and live in the DCIM — here we decide what they mean and which ones must be maintained),
+`os-provisioning-standards` (the server's journey **from the moment there is power and an IP**),
+`datacenter-fabric-standards` (the Clos/EVPN fabric that runs over that cabling),
+`high-speed-interconnect-standards` (InfiniBand/RoCE and the link length imposed by the
+physical topology), `networking-standards` and `routing-switching-standards` (addressing,
+VLAN, campus), `network-automation-standards` (configuration as code),
+`gpu-computing-standards` (**the GPU as a resource**: TDP, DCGM, *throttling*; here the kW/rack and
+the liquid circuit that carries it away), `hpc-standards` (the cluster and its scheduler; here the
+room where it lives), `green-it-standards` (**the metric and the report**: SCI, GHG Protocol, WUE,
+CUE, ERF/REF, EED and the European data centre reporting scheme, waste heat as
+footprint — here PUE only as a **design and operations decision**, not as regulatory reporting),
+`bcdr-standards` (**RTO/RPO, alternate site and disaster declaration**; here site
+resilience, not continuity strategy), `ha-clustering-standards` (service redundancy),
+`linux-storage-standards` and `zfs-standards` (the data), `kubernetes-standards` (what runs
+on top), `finops-standards` (cloud cost and its comparison),
+`homelab-standards` (**proportionality**: at home the plant is a 1500 VA UPS and a
+window; nothing in this document applies literally there),
+`grc-compliance-standards` (physical security control as audit evidence for
+ISO 27001 A.7 / ENS), `identity-access-management-standards` (logical identity; here the
+badge and the turnstile), `incident-management-standards` (managing the incident when the room
+goes down), `vulnerability-management-standards`, `iac-standards`, `observability-standards`,
+`sre-practice-standards`, and `embedded-iot-standards` (the sensor and its
+firmware; here, what has to be measured in the room).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web edición vigente de cada norma, capacidades de producto y precios antes de
-> fijar nada (§8). Las citas normativas de este documento se piden **verbatim** a la fuente.
+> Verify on the web the current edition of every standard, product capabilities and prices before
+> committing to anything (§8). The normative quotations in this document are taken **verbatim** from the source.
 
-| Decisión | Por defecto | Motivo / alternativa justificable |
+| Decision | Default | Reason / justifiable alternative |
 |---|---|---|
-| Sala propia vs. colocation | **Colocation** salvo escala o requisito de soberanía | Construir planta redundante real (2 acometidas, grupo, refrigeración N+1, incendios, guardia 24×7) tiene un coste fijo que no se amortiza por debajo de decenas de racks. La sala propia se justifica por latencia a un proceso local, por control regulatorio o porque ya existe amortizada |
-| Colocation vs. nube | **Se decide con carga medida, no con lista de precios** | La nube gana en carga variable y proyecto corto; la colocation gana en carga estable 24×7 de varios años con hardware propio. **El comparativo honesto incluye personal, transporte, refresco de hardware y salida de datos** — omitir cualquiera invalida el número |
-| Alimentación al rack | **Dos ramas (A/B) en circuitos, cuadros y SAI distintos** | Es *el* invariante de la skill. Cada rama dimensionada para llevar el 100 % de la carga sola |
-| Carga por rama | **≤ 40–45 % del nominal del circuito en operación normal** | Si cada rama va al 80 %, perder una rama dispara el magnetotérmico de la otra. La redundancia 2N exige que **cada rama tenga hueco para toda la carga**, no la mitad |
-| PDU | **Conmutada y medida por toma**, con ambas ramas en racks distintos | Sin medida por toma no hay reparto de fases posible ni detección de deriva. La conmutación evita el desplazamiento físico para un ciclo de energía |
-| Topología de SAI | **Doble conversión (VFI)** en sala de producción | El modo *eco* / *line-interactive* mejora el PUE a costa de un tiempo de transferencia y de exponer la carga a la calidad de red. Se acepta solo con carga tolerante demostrada |
-| Autonomía de SAI | **La que cubre arranque y toma de carga del grupo, con margen medido** | Los minutos de catálogo son a carga nominal y con baterías nuevas. **La autonomía real se mide con banco de carga al perfil actual**, y decae con la edad de la batería |
-| Grupo electrógeno | **Con contrato de combustible y prueba periódica con carga real** | Un grupo probado en vacío no prueba nada: no calienta, no revela el *wet stacking* ni la capacidad del ATS bajo escalón de carga |
-| Refrigeración | **Pasillo frío/caliente con contención** como línea base | La contención es la mejora de eficiencia con mejor relación coste/beneficio de toda la sala y no depende del proveedor |
-| Redundancia de frío | **N+1 en unidades y en bombas, con distribución concurrente** | Perder una unidad no puede exigir bajar la carga IT. Ojo: N+1 de máquinas con una única tubería sigue siendo un punto único |
-| Temperatura de consigna | **Envolvente *recommended* de ASHRAE (18–27 °C a la entrada de la máquina)** | Ver §3.3: se mide en la **entrada del equipo**, no en el retorno ni en el ambiente |
-| Refrigeración líquida | **No, hasta que la densidad la obligue** (§3.4) | Introduce agua/dieléctrico, CDU, mantenimiento nuevo y personal nuevo. Se adopta por densidad medida, no por moda |
-| Clasificación del sitio | **EN 50600 / ISO/IEC 22237** si hay que declarar un nivel; **Uptime Tier** solo si de verdad se va a certificar | Ver §3.7: "somos Tier III" sin certificado no significa nada |
-| Extinción | **Detección temprana por aspiración + agente limpio o preacción**, según NFPA 75 y evaluación de riesgo | Ver §5.3. El agente concreto y la concentración los fija NFPA 2001 y el ingeniero de protección contra incendios, no esta skill |
-| Métrica de eficiencia | **PUE anualizado, con categoría de medida declarada (ISO/IEC 30134-2)** | Un PUE sin categoría, sin frontera y sin periodo es marketing (§6.2) |
+| Own room vs. colocation | **Colocation** unless scale or a sovereignty requirement says otherwise | Building real redundant plant (2 utility feeds, generator, N+1 cooling, fire protection, 24×7 guard) has a fixed cost that does not amortise below tens of racks. An own room is justified by latency to a local process, by regulatory control or because it already exists and is amortised |
+| Colocation vs. cloud | **Decided with measured load, not with a price list** | Cloud wins on variable load and short projects; colocation wins on stable 24×7 load over several years with your own hardware. **An honest comparison includes staff, transport, hardware refresh and data egress** — leaving any of them out invalidates the number |
+| Power to the rack | **Two branches (A/B) on distinct circuits, boards and UPS** | It is *the* invariant of this skill. Each branch sized to carry 100 % of the load on its own |
+| Load per branch | **≤ 40–45 % of the circuit rating in normal operation** | If each branch runs at 80 %, losing one branch trips the other's breaker. 2N redundancy requires that **each branch has room for the whole load**, not half of it |
+| PDU | **Switched and metered per outlet**, with both branches on distinct racks | Without per-outlet metering there is no possible phase balancing and no drift detection. Switching avoids a physical trip for a power cycle |
+| UPS topology | **Double conversion (VFI)** in a production room | *Eco* / *line-interactive* mode improves PUE at the cost of a transfer time and of exposing the load to mains quality. Accepted only with demonstrated tolerant load |
+| UPS autonomy | **Whatever covers generator start and load pickup, with measured margin** | Datasheet minutes are at nominal load and with new batteries. **Real autonomy is measured with a load bank against the current profile**, and decays with battery age |
+| Generator | **With a fuel contract and periodic testing under real load** | A generator tested unloaded proves nothing: it does not heat up, it does not reveal *wet stacking* or the ATS's capability under a load step |
+| Cooling | **Cold/hot aisle with containment** as the baseline | Containment is the efficiency improvement with the best cost/benefit ratio in the whole room and does not depend on the vendor |
+| Cooling redundancy | **N+1 in units and in pumps, with concurrent distribution** | Losing one unit must not require reducing the IT load. Careful: N+1 machines on a single pipe is still a single point |
+| Setpoint temperature | **ASHRAE *recommended* envelope (18–27 °C at the machine inlet)** | See §3.3: it is measured at the **equipment inlet**, not at the return or in the ambient |
+| Liquid cooling | **No, until density forces it** (§3.4) | It introduces water/dielectric, a CDU, new maintenance and new staff. Adopted on measured density, not on fashion |
+| Site classification | **EN 50600 / ISO/IEC 22237** if a level has to be declared; **Uptime Tier** only if you really are going to certify | See §3.7: "we are Tier III" without a certificate means nothing |
+| Suppression | **Very early aspirating detection + clean agent or pre-action**, per NFPA 75 and a risk assessment | See §5.3. The specific agent and concentration are set by NFPA 2001 and the fire protection engineer, not by this skill |
+| Efficiency metric | **Annualised PUE, with the measurement category declared (ISO/IEC 30134-2)** | A PUE with no category, no boundary and no period is marketing (§6.2) |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Energía: la cadena completa y dónde se rompe
+### 3.1 Power: the whole chain and where it breaks
 
-La cadena es: **acometida → cuadro general → SAI → cuadro de distribución → circuito de rack →
-PDU → toma → PSU**. La redundancia solo existe si **todos** los eslabones están duplicados.
-El fallo clásico no es que falte un SAI: es que las dos ramas se juntan en un punto que nadie
-dibujó (un cuadro compartido, un único ATS, un único cuarto eléctrico).
+The chain is: **utility feed → main board → UPS → distribution board → rack circuit →
+PDU → outlet → PSU**. Redundancy only exists if **every** link is duplicated.
+The classic failure is not a missing UPS: it is that the two branches meet at a point nobody
+drew (a shared board, a single ATS, a single electrical room).
 
-- **Dos fuentes en el mismo circuito no son redundancia.** Son dos fuentes. Cubren el fallo de
-  una PSU y **ninguna otra cosa**: ni el magnetotérmico, ni la PDU, ni el cuadro, ni el SAI, ni
-  el mantenimiento de esa rama. Es el error más repetido del dominio y se detecta con una sola
-  pregunta al inventario: *¿qué circuito alimenta a cada PDU de este rack?* Si el DCIM no lo
-  sabe, no se sabe.
-- **Reparto entre fases.** En distribución trifásica, cada rama se reparte entre L1/L2/L3. Un
-  desequilibrio alto sobrecarga una fase y el neutro mientras el total parece holgado. Se
-  mide en la PDU y se corrige moviendo tomas, no ignorándolo.
-- **Factor de simultaneidad.** La suma de las etiquetas de las PSU **no** es la carga real; la
-  carga real medida suele quedar muy por debajo. Dimensionar por etiqueta desperdicia
-  capacidad; dimensionar por medida sin margen de pico y de arranque dispara protecciones.
-  Se dimensiona por **medida sostenida + pico observado + margen de crecimiento fechado**.
-- **Corriente de arranque.** Encender un rack entero a la vez tras un corte tiene un pico muy
-  superior al régimen. El arranque escalonado es requisito de diseño, no una cortesía.
+- **Two power supplies on the same circuit are not redundancy.** They are two power supplies. They cover the failure of
+  one PSU and **nothing else**: not the breaker, not the PDU, not the board, not the UPS, not
+  maintenance on that branch. It is the most repeated mistake in the domain and it is detected with a single
+  question to the inventory: *which circuit feeds each PDU in this rack?* If the DCIM does not
+  know, nobody knows.
+- **Phase balancing.** In three-phase distribution, each branch is spread across L1/L2/L3. A high
+  imbalance overloads one phase and the neutral while the total looks comfortable. It is
+  measured at the PDU and corrected by moving outlets, not by ignoring it.
+- **Diversity factor.** The sum of the PSU labels is **not** the real load; the
+  measured real load usually falls far below. Sizing by label wastes
+  capacity; sizing by measurement with no peak and inrush margin trips protections.
+  Size by **sustained measurement + observed peak + dated growth margin**.
+- **Inrush current.** Powering up a whole rack at once after an outage has a peak far
+  above steady state. Staggered start-up is a design requirement, not a courtesy.
 
-### 3.2 Refrigeración: aire, contención y agua
+### 3.2 Cooling: air, containment and water
 
-- **El objetivo es la temperatura de entrada al equipo**, no la de la sala. Todo lo demás
-  (retorno, ambiente, salida del CRAC) es instrumentación intermedia.
-- **Contención**: pasillo frío o pasillo caliente, más **paneles ciegos en toda U vacía** y
-  sellado de pasos de cable. Sin eso, el aire frío recircula, el CRAC trabaja contra sí mismo y
-  el rack de arriba se cuece con la sala entera "a 21 °C".
-- **Agua a la puerta**: puertas traseras refrigeradas (RDHx) son el escalón intermedio entre
-  aire de sala y líquido al chip. Traen agua al rack sin tocar el servidor.
-- **Punto de rocío y humedad**: importa el límite superior de punto de rocío para no condensar
-  sobre tubería fría, y el inferior por electrostática. Ver §3.3.
+- **The target is the equipment inlet temperature**, not the room's. Everything else
+  (return, ambient, CRAC discharge) is intermediate instrumentation.
+- **Containment**: cold aisle or hot aisle, plus **blanking panels in every empty U** and
+  sealing of cable cut-outs. Without that, cold air recirculates, the CRAC works against itself and
+  the top rack cooks with the whole room "at 21 °C".
+- **Water to the door**: rear-door heat exchangers (RDHx) are the intermediate step between
+  room air and liquid to the chip. They bring water to the rack without touching the server.
+- **Dew point and humidity**: what matters is the upper dew point limit so as not to condense
+  on cold pipework, and the lower one because of static electricity. See §3.3.
 
-### 3.3 ASHRAE TC 9.9 — lo que dice de verdad
+### 3.3 ASHRAE TC 9.9 — what it actually says
 
-Referencia: *Thermal Guidelines for Data Processing Environments*, **5.ª edición (2021)**,
-ASHRAE Datacom Series Book 1 — **verificar por web si hay 6.ª edición antes de citarla** (§8).
+Reference: *Thermal Guidelines for Data Processing Environments*, **5th edition (2021)**,
+ASHRAE Datacom Series Book 1 — **verify on the web whether there is a 6th edition before citing it** (§8).
 
-Distinción que casi siempre se cuenta mal, en palabras del propio ASHRAE Journal (mayo 2022,
-columna de TC 9.9, verbatim):
+A distinction that is almost always told wrong, in ASHRAE's own words (ASHRAE Journal, May 2022,
+TC 9.9 column, verbatim):
 
 > "The recommended range is likely the most important range for data center designers and
 > operators. Facilities should be designed and operated to target the recommended range for
@@ -137,85 +137,85 @@ columna de TC 9.9, verbatim):
 > "ITE, on the other hand, should be designed to operate within the extremes of the applicable
 > allowable environmental classes."
 
-Y el punto de medida, verbatim de la misma fuente:
+And the measurement point, verbatim from the same source:
 
 > "Note that the temperature/humidity ranges listed in this column refer to the ITE inlet
 > conditions and should not be confused with 'space' conditions, discharge air conditions from
 > cooling equipment or return air conditions to cooling equipment."
 
-Consecuencias operativas:
+Operational consequences:
 
-- **Recomendada (A1–A4): 64.4 °F–80.6 °F (18–27 °C)**, sin cambios desde la 2.ª edición (2008).
-  "Subir la sala a 27 °C" no es una herejía: es el extremo de la envolvente recomendada.
-- **Permitida por clase** (temperatura seca, entrada del equipo): **A1 59–89.6 °F (15–32 °C)**,
-  **A2 50–95 °F (10–35 °C)**, **A3 41–104 °F (5–40 °C)**, **A4 41–113 °F (5–45 °C)**. A3 y A4
-  se añadieron en la 3.ª edición precisamente para permitir refrigeración sin refrigeración
-  mecánica.
-- **Clase H1**, añadida en la 5.ª edición para equipo **de alta densidad refrigerado por aire**
-  (aceleradores, HPC): su envolvente es **más fría**, no más caliente — recomendada
-  **64.4–71.6 °F (18–22 °C)**. Contraintuitivo y decisivo: **la densidad alta revierte la
-  tendencia a subir la temperatura de sala**.
-- **Quién decide la clase**: el fabricante del equipo. No se deduce del aspecto del servidor.
-- La clase de un equipo es **límite de garantía**, no objetivo de operación. Operar
-  permanentemente en el borde de *allowable* traslada riesgo de fallo y consumo de ventilador
-  al servidor.
+- **Recommended (A1–A4): 64.4 °F–80.6 °F (18–27 °C)**, unchanged since the 2nd edition (2008).
+  "Raising the room to 27 °C" is not heresy: it is the top end of the recommended envelope.
+- **Allowable per class** (dry bulb temperature, equipment inlet): **A1 59–89.6 °F (15–32 °C)**,
+  **A2 50–95 °F (10–35 °C)**, **A3 41–104 °F (5–40 °C)**, **A4 41–113 °F (5–45 °C)**. A3 and A4
+  were added in the 3rd edition precisely to allow cooling without mechanical
+  refrigeration.
+- **Class H1**, added in the 5th edition for **high-density air-cooled equipment**
+  (accelerators, HPC): its envelope is **colder**, not hotter — recommended
+  **64.4–71.6 °F (18–22 °C)**. Counter-intuitive and decisive: **high density reverses the
+  trend of raising room temperature**.
+- **Who decides the class**: the equipment manufacturer. It cannot be deduced from what the server looks like.
+- A piece of equipment's class is a **warranty limit**, not an operating target. Operating
+  permanently at the edge of *allowable* shifts failure risk and fan power consumption
+  onto the server.
 
-### 3.4 Densidad y refrigeración líquida: cuándo deja de ser opcional
+### 3.4 Density and liquid cooling: when it stops being optional
 
-**Dato contra el folclore** (Uptime Institute, *Global Data Center Survey 2025*, autodeclarado
-por operadores): la densidad **modal** media ronda los **9 kW/rack** y **más del 80 % de los
-operadores declara no tener ningún rack por encima del umbral de alta densidad**. La sala
-media del mundo no es una sala de GPU. **Diseñar toda la sala para 100 kW/rack porque el
-sector habla de IA es sobredimensionar por titulares.**
+**Data against the folklore** (Uptime Institute, *Global Data Center Survey 2025*, self-reported
+by operators): the **modal** average density is around **9 kW/rack** and **more than 80 % of
+operators report having no rack above the high-density threshold**. The average
+room in the world is not a GPU room. **Designing the entire room for 100 kW/rack because the
+industry is talking about AI is oversizing based on headlines.**
 
-Criterio, con la disciplina de que **el umbral exacto depende del equipo y del proyecto**:
+Criteria, with the discipline that **the exact threshold depends on the equipment and the project**:
 
-- Hasta ~**10–15 kW/rack**: aire de sala con contención, bien hecho, basta.
-- ~**15–40 kW/rack**: zona de transición — contención estricta, refrigeración en fila o puerta
-  trasera refrigerada. Aquí el problema ya no es el frío, es el **caudal de aire y el ruido**.
-- Por encima de ~**40–50 kW/rack**: **el aire deja de ser viable en la práctica** y se pasa a
-  líquido directo al chip (*direct-to-chip*, con CDU y circuito primario/secundario).
-- **Inmersión** (monofásica o bifásica): nicho. Resuelve densidades altísimas y elimina
-  ventiladores, pero cambia el modelo de mantenimiento por completo (extraer un servidor de un
-  tanque no es sustituir un disco en caliente) y arrastra restricciones de fluido, de
-  garantía del fabricante y de normativa de incendios.
-- **El límite real suele ser eléctrico, no térmico**: una sala diseñada para 5–10 kW/rack de
-  media no admite racks de 50 kW aunque se resuelva el frío, porque no hay circuito, ni
-  cuadro, ni SAI, ni acometida. **Antes de discutir el enfriador, se comprueba la acometida.**
-- Adoptar líquido **añade un modo de fallo nuevo dentro de la sala** (fuga) y un plan de
-  mantenimiento nuevo (calidad del fluido, filtros, detección de fugas, purga). No se adopta
-  sin ese plan escrito.
+- Up to ~**10–15 kW/rack**: room air with containment, done well, is enough.
+- ~**15–40 kW/rack**: transition zone — strict containment, in-row cooling or rear-door
+  heat exchanger. Here the problem is no longer the cold, it is **air flow and noise**.
+- Above ~**40–50 kW/rack**: **air stops being viable in practice** and you move to
+  direct-to-chip liquid (*direct-to-chip*, with a CDU and primary/secondary circuits).
+- **Immersion** (single-phase or two-phase): niche. It solves very high densities and eliminates
+  fans, but it changes the maintenance model completely (pulling a server out of a
+  tank is not swapping a disk hot) and drags in fluid, manufacturer warranty
+  and fire code constraints.
+- **The real limit is usually electrical, not thermal**: a room designed for an average of 5–10 kW/rack
+  does not take 50 kW racks even if the cooling is solved, because there is no circuit, no
+  board, no UPS and no utility feed. **Before discussing the chiller, check the utility feed.**
+- Adopting liquid **adds a new failure mode inside the room** (a leak) and a new maintenance
+  plan (fluid quality, filters, leak detection, purging). It is not adopted
+  without that plan in writing.
 
-### 3.5 Espacio: rack, peso y suelo
+### 3.5 Space: rack, weight and floor
 
-- **Peso**: un rack lleno de almacenamiento o de GPU se acerca a límites estructurales. Se
-  verifica **carga puntual sobre baldosa y carga distribuida sobre forjado** contra la ficha
-  del suelo técnico y del edificio, **y el recorrido de transporte** (montacargas, rampa,
-  puertas) — que es donde se descubre tarde.
-- **Suelo técnico**: si se usa como pleno de impulsión, cada baldosa perforada mal colocada y
-  cada paso de cable sin sellar es una fuga de presión. Un suelo técnico usado solo como
-  canalización de cables es una decisión legítima y más simple.
-- **Profundidad y pasillos**: la profundidad del rack la fijan los servidores más largos y la
-  gestión de cable trasera; los pasillos, la normativa de evacuación y la extracción de equipo.
-- **Reserva de U**: no se llena un rack al 100 % de U ni al 100 % de su circuito. Ambas
-  reservas se registran en el DCIM.
+- **Weight**: a rack full of storage or GPUs approaches structural limits. **Point
+  load on the floor tile and distributed load on the slab** are verified against the raised floor
+  and building datasheets, **and so is the transport route** (goods lift, ramp,
+  doors) — which is where it gets discovered too late.
+- **Raised floor**: if it is used as a supply plenum, every badly placed perforated tile and
+  every unsealed cable cut-out is a pressure leak. A raised floor used only as a
+  cable pathway is a legitimate and simpler decision.
+- **Depth and aisles**: rack depth is set by the longest servers and by
+  rear cable management; aisles, by evacuation regulations and equipment removal.
+- **U reserve**: a rack is not filled to 100 % of its U nor to 100 % of its circuit. Both
+  reserves are recorded in the DCIM.
 
-### 3.6 Cableado y etiquetado
+### 3.6 Cabling and labelling
 
-- **Estructurado y documentado**, según ANSI/TIA-568 (componentes y clases) y
-  **ANSI/TIA-606 (administración y etiquetado)** — verificar la revisión vigente de ambas (§8).
-- **Regla operativa**: **todo latiguillo se etiqueta en los dos extremos** con un identificador
-  que existe en el inventario. Un cable sin etiqueta es un cable que nadie se atreve a quitar,
-  y así nacen las marañas que sobreviven a tres generaciones de servidores.
-- **Longitud por recorrido, no aleatoria**: el sobrante bloquea el aire trasero y es causa real
-  de puntos calientes. Potencia y datos por bandejas separadas; fibra con su radio de curvatura.
-- **Retirada**: quitar el cable es parte de la retirada del equipo. Si no está en el
-  procedimiento, no ocurre.
+- **Structured and documented**, per ANSI/TIA-568 (components and classes) and
+  **ANSI/TIA-606 (administration and labelling)** — verify the current revision of both (§8).
+- **Operational rule**: **every patch cord is labelled at both ends** with an identifier
+  that exists in the inventory. An unlabelled cable is a cable nobody dares to remove,
+  and that is how the tangles that outlive three generations of servers are born.
+- **Length to suit the route, not random**: slack blocks rear airflow and is a real cause
+  of hot spots. Power and data on separate trays; fibre with its bend radius.
+- **Removal**: pulling the cable is part of decommissioning the equipment. If it is not in the
+  procedure, it does not happen.
 
-### 3.7 Uptime Institute Tier — qué significa y qué no
+### 3.7 Uptime Institute Tier — what it means and what it does not
 
-**Es de los datos que más se afirman mal.** Definiciones **verbatim** del propio Uptime
-Institute (*Explaining the Uptime Institute's Tier Classification System*):
+**It is one of the most misstated pieces of data out there.** Definitions **verbatim** from Uptime
+Institute itself (*Explaining the Uptime Institute's Tier Classification System*):
 
 > **Tier I:** "A Tier I data center provides dedicated site infrastructure to support
 > information technology beyond an office setting."
@@ -226,250 +226,250 @@ Institute (*Explaining the Uptime Institute's Tier Classification System*):
 > **Tier IV:** "Tier IV site infrastructure builds on Tier III, adding the concept of Fault
 > Tolerance to the site infrastructure topology."
 
-Y la distinción entre los tres certificados, que es donde se miente más (misma fuente,
+And the distinction between the three certificates, which is where most of the lying happens (same source,
 verbatim):
 
-> **Diseño (TCDD):** "Uptime Institute consultants review 100% of the design documents,
+> **Design (TCDD):** "Uptime Institute consultants review 100% of the design documents,
 > ensuring each subsystem among electrical, mechanical, monitoring, and automation meet the
 > fundamental concepts."
-> **Instalación construida (TCCF):** "During a TCCF, a team of Uptime Institute consultants
+> **Constructed facility (TCCF):** "During a TCCF, a team of Uptime Institute consultants
 > conducts a site visit, identifying discrepancies between the design drawings and installed
 > equipment."
-> **Sostenibilidad operativa (TCOS):** "Uptime Institute will assess the operational plans and
+> **Operational sustainability (TCOS):** "Uptime Institute will assess the operational plans and
 > parameters for any Tier Certified data center, and help the client understand where issues
 > may occur."
 
-Reglas que se derivan y que hay que aplicar en cualquier pliego o comparativa:
+Rules that follow, and that must be applied in any tender or comparison:
 
-- **Un certificado de diseño (TCDD) no dice nada de lo construido.** Es el reclamo comercial
-  más común: "Tier III certificado" a secas suele ser TCDD. Se pide el **tipo** de certificado,
-  el **número de premio** y la **fecha**.
-- **TCDD es prerrequisito de TCCF, y ambos lo son de TCOS.** No hay atajo.
-- **Uptime usa numeración romana (Tier I–IV).** "Tier 3", "Tier 3+" y "Tier 4 ready" **no son
-  designaciones de Uptime**: son marketing y no se aceptan como requisito contractual.
-- **El Tier es topología, no una lista de componentes.** Los mismos N chillers y N UPS dan
-  Tier II o Tier III según cómo estén distribuidos.
-- **Alternativas para especificar sin certificar**: **EN 50600** y su hermana internacional
-  **ISO/IEC 22237** (clases de disponibilidad 1–4, más una clase de protección separada, y
-  aplicadas por subsistema: energía, clima, telecomunicaciones) y **ANSI/TIA-942**
-  (*ratings* 1–4). Verificar por web las partes y ediciones vigentes de cada una (§8).
+- **A design certificate (TCDD) says nothing about what was built.** It is the most common
+  sales claim: a bare "certified Tier III" is usually TCDD. Ask for the **type** of certificate,
+  the **award number** and the **date**.
+- **TCDD is a prerequisite for TCCF, and both are prerequisites for TCOS.** There is no shortcut.
+- **Uptime uses Roman numerals (Tier I–IV).** "Tier 3", "Tier 3+" and "Tier 4 ready" **are not
+  Uptime designations**: they are marketing and are not accepted as a contractual requirement.
+- **Tier is topology, not a component list.** The same N chillers and N UPS give
+  Tier II or Tier III depending on how they are distributed.
+- **Alternatives for specifying without certifying**: **EN 50600** and its international sibling
+  **ISO/IEC 22237** (availability classes 1–4, plus a separate protection class, and
+  applied per subsystem: power, environmental control, telecommunications) and **ANSI/TIA-942**
+  (*ratings* 1–4). Verify on the web the current parts and editions of each (§8).
 
-## 4. Aceptación y pruebas — la sección que hace real todo lo anterior
+## 4. Acceptance and testing — the section that makes everything above real
 
-**Un grupo electrógeno sin prueba con carga es un adorno.** Esta sección es el equivalente de
-"tests" en una skill de software: sin ella, §3 es documentación.
+**A generator with no load test is an ornament.** This section is the equivalent of
+"tests" in a software skill: without it, §3 is documentation.
 
-Escalera de pruebas, de menor a mayor coste y confianza:
+Testing ladder, from lowest to highest cost and confidence:
 
-1. **Inspección y termografía** del cuadro eléctrico: conexiones flojas y puntos calientes.
-   Barata, anual, encuentra fallos antes de que sean incendios.
-2. **Arranque en vacío del grupo** (semanal/mensual): solo prueba que arranca. **No cuenta como
-   prueba.**
-3. **Prueba con banco de carga** (*load bank*): el grupo asume carga real, alcanza temperatura y
-   revela *wet stacking*, refrigeración, escape y regulación. **Anual como mínimo.**
-4. **Prueba de autonomía del SAI a carga real medida**, no a nominal de catálogo. Es la única
-   forma de saber los minutos que hay.
-5. **Prueba de conmutación**: abrir cada rama de alimentación por separado, con carga, y
-   comprobar que nada cae. Esto es lo que valida el "dos circuitos distintos" de §3.1 y lo que
-   destapa el rack con dos PSU en la misma rama.
-6. **Black building test**: corte total simulado de la acometida, con carga de producción o
-   equivalente. Es la prueba definitiva y la que más miedo da; por eso casi nadie la hace, y
-   por eso los fallos aparecen el día real.
+1. **Inspection and thermography** of the electrical board: loose connections and hot spots.
+   Cheap, annual, finds faults before they become fires.
+2. **Unloaded generator start** (weekly/monthly): only proves that it starts. **It does not count as
+   a test.**
+3. **Load bank test** (*load bank*): the generator takes real load, reaches temperature and
+   reveals *wet stacking*, cooling, exhaust and regulation. **Annual at a minimum.**
+4. **UPS autonomy test at measured real load**, not at catalogue nominal. It is the only
+   way to know how many minutes there are.
+5. **Switchover test**: open each power branch separately, under load, and
+   check that nothing goes down. This is what validates the "two distinct circuits" of §3.1 and what
+   uncovers the rack with two PSUs on the same branch.
+6. **Black building test**: simulated total loss of the utility feed, with production load or
+   equivalent. It is the definitive test and the scariest one; that is why almost nobody does it, and
+   that is why the failures show up on the real day.
 
-Reglas:
+Rules:
 
-- **Toda prueba se planifica con ventana, plan de retorno y criterio de aborto por escrito**, y
-  deja un informe con medidas. Una prueba sin informe no ocurrió.
-- **Se prueba antes de necesitarlo**: la aceptación del sitio (*commissioning*, niveles L1–L5)
-  se hace **antes** de meter carga de producción, no después.
-- **Baterías**: la prueba de impedancia/descarga es el único indicador honesto de su estado; la
-  edad de la batería es una estimación, no una medida.
-- **Registro de mantenimiento preventivo** por activo, con fecha de la última prueba y de la
-  siguiente, **en el inventario** (`cmdb-inventory-standards`), no en un Excel de alguien.
+- **Every test is planned with a window, a back-out plan and abort criteria in writing**, and
+  leaves a report with measurements. A test with no report did not happen.
+- **Test before you need it**: site acceptance (*commissioning*, levels L1–L5)
+  is done **before** putting production load in, not after.
+- **Batteries**: an impedance/discharge test is the only honest indicator of their state;
+  battery age is an estimate, not a measurement.
+- **Preventive maintenance record** per asset, with the date of the last test and of the
+  next one, **in the inventory** (`cmdb-inventory-standards`), not in somebody's spreadsheet.
 
-## 5. Seguridad de la instalación
+## 5. Facility security
 
-### 5.1 Acceso físico
+### 5.1 Physical access
 
-- **Mínimo privilegio también aquí**: acceso por rol y por ventana temporal, no permanente;
-  revisión periódica de la lista y **baja inmediata al salir de la organización** (una tarjeta
-  activa de un ex-empleado es el equivalente físico de una cuenta huérfana). Doble factor en la
-  puerta (tarjeta + PIN o biometría) y esclusa/*mantrap* donde el riesgo lo justifique.
-- **Acompañamiento de terceros** (mantenimiento, obra, operadora) registrado y no delegable.
-- **Racks con cerradura** y, en colocation, **jaula propia**: el vecino no es de confianza.
-- **CCTV** con retención definida, **y esa retención es dato personal**: plazo, base legal y
-  acceso se documentan (ver `privacy-engineering-standards`).
-- **Registro de entradas y salidas de material**: un servidor que sale de la sala sin registro
-  es una fuga de datos potencial. La retirada incluye borrado o destrucción certificada del
-  soporte antes de que el equipo salga del control físico.
+- **Least privilege here too**: access by role and by time window, not permanent;
+  periodic review of the list and **immediate removal on leaving the organisation** (an active badge
+  belonging to an ex-employee is the physical equivalent of an orphan account). Two factors at the
+  door (badge + PIN or biometrics) and an airlock/*mantrap* where the risk justifies it.
+- **Escorting of third parties** (maintenance, construction, carrier) recorded and non-delegable.
+- **Locked racks** and, in colocation, **your own cage**: the neighbour is not trusted.
+- **CCTV** with a defined retention, **and that retention is personal data**: period, legal basis and
+  access are documented (see `privacy-engineering-standards`).
+- **Log of material entering and leaving**: a server that leaves the room without a record
+  is a potential data leak. Decommissioning includes certified erasure or destruction of the
+  media before the equipment leaves physical control.
 
-### 5.2 Superficie que se olvida
+### 5.2 The surface everybody forgets
 
-- **La sala eléctrica, la de baterías y el patio del grupo son parte del perímetro.** Cortar la
-  alimentación desde fuera es más fácil que entrar en la sala.
-- **BMS/DCIM/SCADA de planta**: la gestión de clima y energía es una red industrial conectada,
-  a menudo con credenciales por defecto y sin parches. **Va en su propia VLAN, sin salida a
-  Internet y sin acceso desde la red de usuarios.**
-- **Botón de parada de emergencia (EPO)**: obligatorio por normativa en muchos sitios y causa
-  documentada de caídas accidentales. Se protege físicamente contra pulsación involuntaria.
-- **Sensores de fuga** bajo suelo y en el circuito de líquido; **detección de agua** en toda
-  sala con tubería.
+- **The electrical room, the battery room and the generator yard are part of the perimeter.** Cutting
+  power from outside is easier than getting into the room.
+- **Plant BMS/DCIM/SCADA**: environmental and power management is a connected industrial network,
+  often with default credentials and unpatched. **It goes in its own VLAN, with no route to
+  the Internet and no access from the user network.**
+- **Emergency power off button (EPO)**: mandatory by regulation in many places and a documented cause
+  of accidental outages. It is physically protected against involuntary activation.
+- **Leak sensors** under the floor and in the liquid circuit; **water detection** in every
+  room with pipework.
 
-### 5.3 Incendios
+### 5.3 Fire
 
-- Marco: **NFPA 75** (protección de equipo de TI) y **NFPA 76** (instalaciones de
-  telecomunicaciones de red pública); el sistema de agente limpio en sí lo rige **NFPA 2001**;
-  el almacenamiento de energía con baterías, **NFPA 855**. Verificar ediciones vigentes (§8):
-  la **edición 2024 de NFPA 75** trasladó los requisitos de baterías de litio a NFPA 855 y
-  **añadió requisitos para equipo de refrigeración por inmersión y para detección de
-  *off-gassing***.
-- **Detección temprana por aspiración (VEWFD/VESDA)** en sala: detecta la combustión antes de
-  que haya llama, que es cuando todavía se puede intervenir sin descargar nada.
-- **Preacción de doble enclavamiento** frente a rociador húmedo sobre racks; agente limpio
-  cuando el riesgo de daño por agua lo justifica.
-- **Baterías de litio**: el riesgo no es el mismo que el del plomo. *Off-gassing*, fuga térmica
-  y reignición cambian la estrategia de detección y de compartimentación.
-- **Descarga acústica**: la descarga de agente por boquilla genera niveles de ruido capaces de
-  **dañar discos duros**. Es un fallo real y documentado, y se mitiga en diseño.
-- El diseño concreto (agente, concentración, tiempo de retención, estanqueidad) lo firma un
-  ingeniero de protección contra incendios. **Esta skill exige que exista y esté probado, no
-  lo diseña.**
+- Framework: **NFPA 75** (protection of IT equipment) and **NFPA 76** (public network
+  telecommunications facilities); the clean agent system itself is governed by **NFPA 2001**;
+  battery energy storage, by **NFPA 855**. Verify the current editions (§8):
+  the **2024 edition of NFPA 75** moved lithium battery requirements to NFPA 855 and
+  **added requirements for immersion cooling equipment and for *off-gassing*
+  detection**.
+- **Very early aspirating detection (VEWFD/VESDA)** in the room: it detects combustion before
+  there is a flame, which is when you can still intervene without discharging anything.
+- **Double-interlock pre-action** rather than a wet sprinkler over racks; clean agent
+  when the risk of water damage justifies it.
+- **Lithium batteries**: the risk is not the same as with lead. *Off-gassing*, thermal runaway
+  and re-ignition change the detection and compartmentation strategy.
+- **Acoustic discharge**: agent discharge through a nozzle generates noise levels capable of
+  **damaging hard disks**. It is a real, documented failure, and it is mitigated in design.
+- The specific design (agent, concentration, hold time, room integrity) is signed off by a
+  fire protection engineer. **This skill requires that it exists and has been tested, it does not
+  design it.**
 
-## 6. Operación y eficiencia
+## 6. Operation and efficiency
 
-### 6.1 Instrumentación mínima
+### 6.1 Minimum instrumentation
 
-Sin estas medidas la sala se opera a ciegas, y son exactamente las que faltan cuando hay un
-incidente:
+Without these measurements the room is operated blind, and they are exactly the ones missing when there is an
+incident:
 
-- **Energía**: por acometida, por SAI, por cuadro, **por circuito de rack y por toma de PDU**.
-- **Clima**: temperatura **en entrada de rack** (arriba, medio, abajo — el gradiente vertical
-  es la señal de recirculación), humedad, punto de rocío, presión diferencial en pleno.
-- **Estado**: SAI (carga, autonomía estimada, estado de batería, bypass), grupo (nivel de
-  combustible, horas, fallo de arranque), enfriadoras, detección de agua, puertas.
-- **Alertas sobre síntoma**: rama de alimentación perdida, circuito por encima del umbral de
-  conmutación, temperatura de entrada fuera de envolvente, SAI en bypass, grupo en fallo.
-  **Todo lo demás es ruido.**
+- **Power**: per utility feed, per UPS, per board, **per rack circuit and per PDU outlet**.
+- **Environment**: temperature **at the rack inlet** (top, middle, bottom — the vertical gradient
+  is the recirculation signal), humidity, dew point, differential pressure in the plenum.
+- **State**: UPS (load, estimated autonomy, battery state, bypass), generator (fuel
+  level, hours, start failure), chillers, water detection, doors.
+- **Alerts on symptoms**: power branch lost, circuit above the switchover
+  threshold, inlet temperature outside the envelope, UPS on bypass, generator in fault.
+  **Everything else is noise.**
 
-### 6.2 PUE — por qué el número del proveedor casi nunca es comparable
+### 6.2 PUE — why the vendor's number is almost never comparable
 
-Norma: **ISO/IEC 30134-2**. Verificado: la **edición 2 es ISO/IEC 30134-2:2026, publicada el
-16 de enero de 2026**, y sustituye a la 30134-2:2016 (retirada) y a su Amd 1:2018. **Cualquier
-documento que cite "ISO/IEC 30134-2:2016" está desactualizado** — verificar antes de citar (§8).
+Standard: **ISO/IEC 30134-2**. Verified: **edition 2 is ISO/IEC 30134-2:2026, published on
+16 January 2026**, and it replaces 30134-2:2016 (withdrawn) and its Amd 1:2018. **Any
+document citing "ISO/IEC 30134-2:2016" is out of date** — verify before citing (§8).
 
-PUE = energía total de la instalación / energía del equipo de TI. Es una división trivial, y
-por eso mismo se manipula sin mentir:
+PUE = total facility energy / IT equipment energy. It is a trivial division, and
+that is exactly why it is manipulated without lying:
 
-- **Frontera del sistema**: ¿entra la oficina? ¿la iluminación? ¿la pérdida del transformador
-  de media tensión? ¿la refrigeración de la sala eléctrica? Distinta frontera, distinto número.
-- **Categoría de medida**: la norma define categorías según **dónde** se mide la energía de TI
-  (salida del SAI, salida de la PDU, entrada del equipo) y con qué granularidad temporal. **Un
-  PUE sin categoría declarada no es comparable con ninguno.**
-- **Periodo**: PUE anualizado ≠ PUE instantáneo del mejor día de invierno. El *design PUE* de un
-  folleto es una simulación, no una medida.
-- **Carga parcial**: una sala al 20 % de ocupación tiene un PUE malísimo por física, no por mala
-  operación. Comparar PUE entre sitios con ocupación distinta no dice nada.
-- **Clima**: un sitio nórdico gana por geografía. No es mérito de ingeniería.
-- **Cifra de referencia, con su metodología y sus límites**: Uptime Institute (*Global Data
-  Center Survey 2025*) reporta una **media ponderada de 1,54**, sexto año consecutivo
-  esencialmente plana, sobre **n≈681 respuestas autodeclaradas** a la pregunta por **el mayor
-  centro de datos de la organización**. Es **autodeclarada, no auditada y no ponderada por
-  carga**, así que no representa una media mundial: los hiperescalares están infrarrepresentados.
-  **Se cita con esas cuatro salvedades o no se cita.**
-- **Lo que PUE no mide**: nada de lo que hace el equipo de TI. Apagar servidores zombis
-  **empeora** el PUE y mejora todo lo demás. Por eso PUE se acompaña de energía total y de
-  trabajo útil, nunca solo.
-- **Métricas hermanas** (WUE de agua, CUE de carbono, ERF/REF de reutilización de calor) y todo
-  el reporte regulatorio son de `green-it-standards`. Aquí solo se decide **medirlas** y **no
-  optimizar PUE a costa de disparar el consumo de agua**, que es el intercambio silencioso de
-  la refrigeración evaporativa.
+- **System boundary**: does the office count? the lighting? the medium-voltage transformer
+  losses? the cooling of the electrical room? Different boundary, different number.
+- **Measurement category**: the standard defines categories according to **where** IT energy is measured
+  (UPS output, PDU output, equipment inlet) and with what temporal granularity. **A
+  PUE with no declared category is not comparable with any other.**
+- **Period**: annualised PUE ≠ instantaneous PUE on the best winter day. The *design PUE* in a
+  brochure is a simulation, not a measurement.
+- **Partial load**: a room at 20 % occupancy has a dreadful PUE by physics, not by bad
+  operation. Comparing PUE between sites with different occupancy says nothing.
+- **Climate**: a Nordic site wins by geography. It is not an engineering achievement.
+- **Reference figure, with its methodology and its limits**: Uptime Institute (*Global Data
+  Center Survey 2025*) reports a **weighted average of 1.54**, the sixth consecutive year
+  essentially flat, over **n≈681 self-reported responses** to the question about **the organisation's
+  largest data centre**. It is **self-reported, not audited and not weighted by
+  load**, so it does not represent a world average: hyperscalers are under-represented.
+  **It is cited with those four caveats or it is not cited.**
+- **What PUE does not measure**: anything the IT equipment does. Switching off zombie servers
+  **worsens** PUE and improves everything else. That is why PUE is accompanied by total energy and
+  useful work, never on its own.
+- **Sibling metrics** (WUE for water, CUE for carbon, ERF/REF for heat reuse) and all
+  regulatory reporting belong to `green-it-standards`. Here we only decide **to measure them** and **not
+  to optimise PUE at the cost of blowing up water consumption**, which is the silent trade-off of
+  evaporative cooling.
 
-### 6.3 Calor residual
+### 6.3 Waste heat
 
-La reutilización del calor deja de ser anecdótica cuando hay líquido: **el agua caliente de un
-circuito directo al chip es mucho más aprovechable que el aire tibio de un pasillo caliente**.
-La decisión es de urbanismo y de contrato con un consumidor de calor cercano, no de ingeniería
-de sala; la contabilidad (ERF/REF) es de `green-it-standards`.
+Heat reuse stops being anecdotal once there is liquid: **the hot water from a
+direct-to-chip circuit is far more usable than the lukewarm air from a hot aisle**.
+The decision is one of urban planning and of a contract with a nearby heat consumer, not of room
+engineering; the accounting (ERF/REF) belongs to `green-it-standards`.
 
-## 7. Sostenibilidad a largo plazo y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-**Cadencia mínima**: revisión anual del plan de mantenimiento preventivo y de la matriz de
-pruebas; revisión de capacidad (kW, U, toneladas de frío, puertos) trimestral con datos del
-DCIM; revisión de la lista de acceso físico al menos semestral; revisión de ediciones de norma
-citadas en pliegos, anual (§8).
+**Minimum cadence**: annual review of the preventive maintenance plan and of the testing
+matrix; capacity review (kW, U, tons of cooling, ports) quarterly with DCIM
+data; review of the physical access list at least every six months; review of the editions of standards
+cited in tenders, annually (§8).
 
-**Curva de capacidad**: la sala se llena por **el primer recurso que se agote** — casi siempre
-energía o frío, casi nunca espacio en U. Se proyecta con la medida, con fecha, y **se decide
-qué hacer al 70 % de ocupación, no al 95 %**, porque ampliar planta lleva meses o años.
+**Capacity curve**: the room fills up through **the first resource that runs out** — almost always
+power or cooling, almost never U space. It is projected from measurement, with a date, and **you decide
+what to do at 70 % occupancy, not at 95 %**, because expanding plant takes months or years.
 
-Prohibiciones:
+Prohibitions:
 
-- ❌ **Dos fuentes del mismo servidor en el mismo circuito** y llamarlo redundante.
-- ❌ **Declarar un grupo electrógeno operativo sin prueba con carga documentada** en el último
-  año. Arrancarlo en vacío no cuenta.
-- ❌ **Declarar la autonomía del SAI a partir de la ficha del fabricante** en lugar de una
-  medida al perfil de carga actual.
-- ❌ **Poner en producción una sala sin *commissioning* documentado**, o meter carga antes de
-  las pruebas de aceptación.
-- ❌ **Racks sin paneles ciegos** y pasos de cable sin sellar en sala con contención: se está
-  pagando frío para recircularlo.
-- ❌ **Cargar ambas ramas por encima del punto en que una sola no aguanta el total.** Es
-  redundancia contable, no eléctrica.
-- ❌ **Latiguillos sin etiqueta en ambos extremos**, o etiquetas que no existen en el inventario.
-- ❌ **Afirmar un Tier sin certificado**, confundir TCDD con TCCF, o usar "Tier 3+" / "Tier IV
-  ready" como si fuera una designación de Uptime Institute.
-- ❌ **Publicar o comparar un PUE sin frontera, categoría de medida (ISO/IEC 30134-2) y periodo.**
-- ❌ **Citar una temperatura de sala sin decir dónde se mide.** Solo cuenta la entrada al equipo.
-- ❌ **Operar de forma permanente en el extremo *allowable* de la clase ASHRAE** como si fuera el
-  objetivo de diseño.
-- ❌ **Adoptar refrigeración líquida sin plan de detección de fugas, de mantenimiento de fluido y
-  de intervención**, ni verificar antes que la acometida y el cuadro dan esa potencia.
-- ❌ **BMS/DCIM en la red corporativa o expuesto a Internet**, con credenciales por defecto o sin
-  ciclo de parcheo.
-- ❌ **Sacar un servidor de la sala sin registrar la salida** y sin borrado o destrucción
-  certificada del soporte.
-- ❌ **Citar cifras de vida útil de servidor ("5 años") o de PUE medio del sector como hechos.**
-  Si no traen metodología, muestra y frontera, se citan como estimación o no se citan.
-- ❌ **Diseñar toda la sala para densidades de IA sin carga que las justifique.** La densidad se
-  mide; la reserva se planifica por zonas, no aplicando el peor caso a todo el edificio.
+- ❌ **Two power supplies of the same server on the same circuit** and calling it redundant.
+- ❌ **Declaring a generator operational without a documented load test** in the last
+  year. Starting it unloaded does not count.
+- ❌ **Declaring UPS autonomy from the manufacturer's datasheet** instead of a
+  measurement against the current load profile.
+- ❌ **Putting a room into production without documented *commissioning***, or bringing load in before
+  the acceptance tests.
+- ❌ **Racks without blanking panels** and unsealed cable cut-outs in a room with containment: you are
+  paying for cooling in order to recirculate it.
+- ❌ **Loading both branches beyond the point where one alone cannot carry the total.** That is
+  accounting redundancy, not electrical redundancy.
+- ❌ **Patch cords without a label at both ends**, or labels that do not exist in the inventory.
+- ❌ **Claiming a Tier without a certificate**, confusing TCDD with TCCF, or using "Tier 3+" / "Tier IV
+  ready" as if it were an Uptime Institute designation.
+- ❌ **Publishing or comparing a PUE without boundary, measurement category (ISO/IEC 30134-2) and period.**
+- ❌ **Quoting a room temperature without saying where it is measured.** Only the equipment inlet counts.
+- ❌ **Operating permanently at the *allowable* extreme of the ASHRAE class** as if it were the
+  design target.
+- ❌ **Adopting liquid cooling without a leak detection, fluid maintenance and
+  intervention plan**, or without first verifying that the utility feed and the board deliver that power.
+- ❌ **BMS/DCIM on the corporate network or exposed to the Internet**, with default credentials or without
+  a patching cycle.
+- ❌ **Taking a server out of the room without recording the exit** and without certified erasure or
+  destruction of the media.
+- ❌ **Quoting server lifetime figures ("5 years") or industry average PUE as facts.**
+  If they do not come with methodology, sample and boundary, they are cited as an estimate or not cited.
+- ❌ **Designing the whole room for AI densities without load to justify them.** Density is
+  measured; headroom is planned by zone, not by applying the worst case to the whole building.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier dato de este documento en un pliego, un diseño o un informe:
+Before committing any figure from this document to a tender, a design or a report:
 
-1. **ASHRAE TC 9.9, *Thermal Guidelines for Data Processing Environments***: confirmar que la
-   **5.ª edición (2021)** sigue siendo la vigente y que no hay 6.ª. Las envolventes de §3.3
-   están tomadas **verbatim** de la columna de TC 9.9 en *ASHRAE Journal*, mayo de 2022 (Quirk,
-   Davidson, Schmidt), que reproduce las tablas de la 5.ª edición. **Hueco declarado**: el
-   libro de ASHRAE es de pago y no se ha podido leer en crudo; las cifras se han contrastado
-   contra esa columna publicada por ASHRAE, no contra el libro.
-2. **Uptime Institute**: las definiciones de Tier I–IV y de TCDD/TCCF/TCOS de §3.7 son
-   **verbatim** de *Explaining the Uptime Institute's Tier Classification System*
-   (journal.uptimeinstitute.com). **Hueco declarado**: el documento normativo *Tier Standard:
-   Topology* no es de acceso libre; no se ha leído en crudo. Antes de contratar, pedir al
-   proveedor el certificado concreto y verificarlo con Uptime.
-3. **ISO/IEC 30134-2**: verificado que la edición vigente es **ISO/IEC 30134-2:2026 (edición
-   2.0, publicada el 16 de enero de 2026)** — confirmado en la ficha del IEC Webstore
-   (publicación 111538) — y que la 2016 y su Amd 1:2018 están retiradas. **Hueco declarado**:
-   `iso.org` devuelve 403 y el texto de la norma es de pago; **no se ha leído el articulado**,
-   así que la definición exacta de las categorías de medida debe consultarse en la norma antes
-   de declarar una en un informe. Nota de frontera: `green-it-standards` cita esta norma sin
-   año; conviene comprobar si su texto asume la edición de 2016.
-4. **EN 50600 / ISO/IEC 22237 / ANSI/TIA-942 / ANSI/TIA-568 / ANSI/TIA-606**: comprobar partes
-   publicadas y revisión vigente de cada una. La serie ISO/IEC 22237 estaba **incompleta** en
-   las fuentes consultadas; no se ha verificado parte por parte. **Hueco declarado.**
-5. **NFPA 75 / 76 / 2001 / 855**: verificar edición vigente (NFPA reedita en ciclos de ~3–4
-   años). Confirmado que **NFPA 75 edición 2024** existe y que trasladó los requisitos de
-   baterías de litio a NFPA 855 y añadió requisitos de inmersión y de *off-gassing*; **hueco
-   declarado**: el texto de NFPA es de pago y no se ha leído en crudo.
-6. **Umbrales de densidad para líquido (§3.4)**: **no hay una cifra normativa**. El rango
-   40–50 kW/rack procede de guías de fabricante, que discrepan entre sí (se han visto umbrales
-   desde ~35 kW). Se usa como orden de magnitud, **nunca como criterio de aceptación**; el
-   número que manda es el de la ficha del equipo concreto.
-7. **Cifras de sector**: cualquier media de PUE, de densidad o de vida útil se cita con
-   fuente, año, tamaño de muestra y método de recogida. La de §6.2 es autodeclarada.
-8. **Producto y precio**: capacidades de SAI, PDU, CDU y enfriadoras, plazos de entrega
-   (críticos y muy variables para equipo eléctrico) y tarifas de colocation se verifican
-   contra el fabricante y el proveedor, nunca de memoria.
+1. **ASHRAE TC 9.9, *Thermal Guidelines for Data Processing Environments***: confirm that the
+   **5th edition (2021)** is still current and that there is no 6th. The envelopes in §3.3
+   are taken **verbatim** from the TC 9.9 column in *ASHRAE Journal*, May 2022 (Quirk,
+   Davidson, Schmidt), which reproduces the tables of the 5th edition. **Declared gap**: the
+   ASHRAE book is paid-for and could not be read raw; the figures have been cross-checked
+   against that column published by ASHRAE, not against the book.
+2. **Uptime Institute**: the Tier I–IV and TCDD/TCCF/TCOS definitions in §3.7 are
+   **verbatim** from *Explaining the Uptime Institute's Tier Classification System*
+   (journal.uptimeinstitute.com). **Declared gap**: the normative document *Tier Standard:
+   Topology* is not freely accessible; it has not been read raw. Before contracting, ask the
+   provider for the specific certificate and verify it with Uptime.
+3. **ISO/IEC 30134-2**: verified that the current edition is **ISO/IEC 30134-2:2026 (edition
+   2.0, published on 16 January 2026)** — confirmed on the IEC Webstore record
+   (publication 111538) — and that the 2016 edition and its Amd 1:2018 are withdrawn. **Declared gap**:
+   `iso.org` returns 403 and the text of the standard is paid-for; **the clauses have not been read**,
+   so the exact definition of the measurement categories must be consulted in the standard before
+   declaring one in a report. Boundary note: `green-it-standards` cites this standard without a
+   year; it is worth checking whether its text assumes the 2016 edition.
+4. **EN 50600 / ISO/IEC 22237 / ANSI/TIA-942 / ANSI/TIA-568 / ANSI/TIA-606**: check the published
+   parts and current revision of each. The ISO/IEC 22237 series was **incomplete** in
+   the sources consulted; it has not been verified part by part. **Declared gap.**
+5. **NFPA 75 / 76 / 2001 / 855**: verify the current edition (NFPA reissues on ~3–4 year
+   cycles). Confirmed that **NFPA 75 edition 2024** exists and that it moved lithium
+   battery requirements to NFPA 855 and added immersion and *off-gassing* requirements; **declared
+   gap**: the NFPA text is paid-for and has not been read raw.
+6. **Density thresholds for liquid (§3.4)**: **there is no normative figure**. The
+   40–50 kW/rack range comes from manufacturer guidance, which disagrees with itself (thresholds
+   from ~35 kW have been seen). It is used as an order of magnitude, **never as an acceptance criterion**; the
+   number that governs is the one on the specific equipment's datasheet.
+7. **Industry figures**: any average of PUE, density or lifetime is cited with
+   source, year, sample size and collection method. The one in §6.2 is self-reported.
+8. **Product and price**: UPS, PDU, CDU and chiller capabilities, lead times
+   (critical and highly variable for electrical equipment) and colocation rates are verified
+   against the manufacturer and the provider, never from memory.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

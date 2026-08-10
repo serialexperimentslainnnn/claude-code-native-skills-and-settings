@@ -3,360 +3,360 @@ name: ctf-lab-standards
 description: Use when building or running an isolated security training lab or playing CTFs — host-only or internal-network VMs with snapshots, Kali, REMnux, FLARE-VM, INetSim, detonating challenge binaries or malware samples in a disposable VM, Hack The Box, TryHackMe, PortSwigger Web Security Academy, pwn.college, OverTheWire, Proving Grounds, CTFtime events, jeopardy vs attack-defense vs king-of-the-hill formats, writeups and platform terms of service, or planning OSCP/CPTS study.
 ---
 
-# Estándares de laboratorio de seguridad y CTF
+# Security lab and CTF standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **entrenar seguridad ofensiva en un entorno donde la autorización es intrínseca**:
-construcción y aislamiento del laboratorio, ejecución segura de binarios de reto y muestras de
-malware, uso de plataformas de entrenamiento dentro de sus términos, competición en CTF,
-método de aprendizaje y medición del progreso, ética de la competición y transferencia (o no)
-de lo aprendido al trabajo real. Triggers: "laboratorio de seguridad", "VM desechable",
-"host-only", "snapshot antes de detonar", "Kali", "REMnux", "FLARE-VM", "INetSim",
+Applies to **training offensive security in an environment where authorisation is intrinsic**:
+lab construction and isolation, safe execution of challenge binaries and malware
+samples, use of training platforms within their terms, CTF competition,
+learning method and progress measurement, competition ethics and transfer (or not)
+of what is learned to real work. Triggers: "security lab", "disposable VM",
+"host-only", "snapshot before detonating", "Kali", "REMnux", "FLARE-VM", "INetSim",
 "Hack The Box", "HTB", "TryHackMe", "PortSwigger Web Security Academy", "pwn.college",
 "OverTheWire", "Proving Grounds", "CTFtime", "jeopardy", "attack-defense", "king of the hill",
 "writeup", "flag", "pwn", "reversing", "OSCP", "CPTS".
 
-### Precondición dura — dónde está la autorización aquí
+### Hard precondition — where the authorisation lives here
 
-En este dominio la autorización **no se firma, viene dada por el entorno**, y por eso hay que
-comprobar que el entorno realmente la da. Solo se practica sobre **una** de estas tres cosas:
+In this domain authorisation **is not signed, it comes from the environment**, and that is why you
+must check that the environment really gives it. You only practise on **one** of these three things:
 
-1. **Infraestructura propia** en un laboratorio aislado (VMs, targets vulnerables que tú has
-   desplegado, tu propio código).
-2. **Plataforma de entrenamiento** cuyos **términos de servicio vigentes** autorizan
-   explícitamente la actividad, y **solo dentro de su alcance**: sus máquinas objetivo, no su
-   infraestructura, no otros usuarios.
-3. **CTF o evento** en curso, dentro de sus reglas publicadas y de su ventana.
+1. **Your own infrastructure** in an isolated lab (VMs, vulnerable targets you have
+   deployed, your own code).
+2. **A training platform** whose **terms of service in force** explicitly authorise
+   the activity, and **only within its scope**: its target machines, not its
+   infrastructure, not other users.
+3. **A CTF or event** in progress, within its published rules and its window.
 
-Cualquier otra cosa —un sistema de un tercero, un servicio "que parece de prueba", el router
-del vecino, la web de tu antigua empresa— **no está autorizada** y el marco penal es el mismo
-que para un ataque real (ver §1 de `offensive-security-standards`: en España, arts. 197 bis y
-197 ter y 264 CP; **el consentimiento del titular es lo que hace lícita la prueba**). Que sea
-"para aprender" no es una eximente. **Esto no es asesoramiento jurídico**: ante duda, consulta
-legal.
+Anything else —a third party's system, a service that "looks like a test one", the neighbour's
+router, your former employer's website— **is not authorised**, and the criminal framework is the
+same as for a real attack (see §1 of `offensive-security-standards`: in Spain, arts. 197 bis and
+197 ter and 264 CP; **the owner's consent is what makes the test lawful**). That it is
+"to learn" is no defence. **This is not legal advice**: when in doubt, consult
+a lawyer.
 
-**No aplica**: ver `offensive-security-standards` (ejercicio ofensivo **autorizado contra
-sistemas de un tercero o de la organización**: pentest, red team, purple team, bug bounty,
-RoE, informe, retest — allí la autorización se firma y hay un cliente asumiendo riesgo;
-**aquí no hay cliente ni riesgo de negocio, solo aprendizaje**), `homelab-standards`
-(laboratorio personal **de propósito general**: hardware, consumo, coste, self-hosting,
-backups de servicios que usas de verdad — **la frontera es el propósito y el aislamiento**:
-aquí el laboratorio existe para detonar cosas hostiles y por eso está segmentado y es
-desechable; allí para prestar servicio y por eso se le hace backup), `appsec-standards`
-(clases de vulnerabilidad y su prevención en código propio),
-`vulnerability-management-standards` (CVE, CVSS/EPSS/KEV, SLA de remediación),
-`networking-standards` (diseño de red real, VLANs y firewalling de producción),
-`kubernetes-standards`, `bash-linux-scripting-standards` (calidad del tooling propio),
+**Not applicable**: see `offensive-security-standards` (**authorised** offensive exercise **against
+third-party or organisation systems**: pentest, red team, purple team, bug bounty,
+RoE, report, retest — there the authorisation is signed and there is a client assuming risk;
+**here there is no client and no business risk, only learning**), `homelab-standards`
+(personal **general-purpose** lab: hardware, power draw, cost, self-hosting,
+backups of services you actually use — **the boundary is purpose and isolation**:
+here the lab exists to detonate hostile things and that is why it is segmented and
+disposable; there it exists to provide a service and that is why it gets backed up), `appsec-standards`
+(vulnerability classes and their prevention in your own code),
+`vulnerability-management-standards` (CVE, CVSS/EPSS/KEV, remediation SLA),
+`networking-standards` (real network design, VLANs and production firewalling),
+`kubernetes-standards`, `bash-linux-scripting-standards` (quality of your own tooling),
 `grc-compliance-standards`, `cryptography-pki-standards`,
-`identity-access-management-standards`, `air-gapped-standards` (**suyos el registro/espejo
-interno y el aislamiento de red como disciplina**; **aquí la dirección de la amenaza es la
-inversa**: allí el aislamiento protege al recinto del mundo, aquí protege al mundo del
-laboratorio), las skills de nube y de lenguaje. Además:
-`incident-response-forensics-standards` (forense e IR reales — aquí solo la
-categoría forense de un CTF, que se le parece poco),
+`identity-access-management-standards`, `air-gapped-standards` (**theirs the internal
+registry/mirror and network isolation as a discipline**; **here the direction of the threat is the
+opposite**: there isolation protects the enclave from the world, here it protects the world from the
+lab), the cloud and language skills. Also:
+`incident-response-forensics-standards` (real forensics and IR — here only the
+forensics category of a CTF, which resembles it little),
 `detection-engineering-standards`, `linux-hardening-standards`,
 `container-runtime-security-standards`.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web versiones, estado de las plataformas y **sus términos de servicio
-> vigentes** antes de fijar nada (§8). Los datos son de agosto 2026 y caducan.
+> Verify on the web versions, platform status and **their terms of service
+> in force** before pinning anything (§8). The data is from August 2026 and expires.
 
-| Ámbito | Default | Motivo / alternativa justificable |
+| Scope | Default | Reason / justifiable alternative |
 |---|---|---|
-| Aislamiento de red del lab | **Red `host-only` / interna del hipervisor, sin ruta a LAN doméstica ni a internet** | Es el control primario. Cualquier otra medida es secundaria; si el lab enruta a tu LAN, no es un lab, es un vector |
-| Simulación de internet | **INetSim** en la VM Linux del lab respondiendo DNS y servicios | Permite que la muestra "vea internet" sin que la haya. Verificación mínima: desde la VM Windows, resolver un dominio debe dar la IP del servicio local y el tráfico externo debe fallar |
-| VM de análisis Windows | **FLARE-VM** sobre Windows en VM dedicada, **nunca el host** | Exige desactivar la protección antivirus del sistema (o la instalación falla), lo que la vuelve inaceptable fuera de una VM aislada y desechable |
-| VM de análisis/servicios Linux | **REMnux** (imagen prefabricada o sobre base Ubuntu LTS) | Trae el instrumental de análisis y hace de "internet falso" con INetSim |
-| Distribución ofensiva | **Kali Linux** en VM, exclusiva del lab | Nunca como SO del host ni del portátil de trabajo: es un arsenal en el equipo desde el que gestionas tu vida |
-| Estado de la VM | **Snapshot limpio antes de cada detonación; revertir siempre después** | La VM se considera comprometida en cuanto se ejecuta algo hostil. No se "limpia": se revierte |
-| Credenciales y datos en las VMs del lab | **Ninguna real**: sin cuentas personales, sin tokens, sin claves SSH, sin sesiones de navegador, sin carpetas compartidas con el host | Las carpetas compartidas y el portapapeles del hipervisor son rutas de escape documentadas. Se desactivan |
-| Plataforma web (base) | **PortSwigger Web Security Academy** | Gratuita, mantenida por el equipo de investigación de PortSwigger, laboratorios interactivos y rutas de aprendizaje de principiante a experto. Es el mejor punto de partida para web |
-| Fundamentos de sistemas y pwn | **pwn.college** (curriculum universitario abierto) y **OverTheWire** para wargames de shell | Progresión estructurada y gratuita; verificar estado actual antes de recomendarlas (§8) |
-| Plataforma de máquinas | **Hack The Box** y/o **TryHackMe**, según objetivo | THM guía más y frena menos al principiante; HTB penaliza más y enseña más al intermedio. HTB tiene **AUP estricta** sobre writeups y sobre uso del contenido (§4) |
-| Calendario de competición | **CTFtime** | Referencia de eventos, formatos y ranking. Formatos que lista: **Jeopardy**, **Attack-Defence** y mixto/hack-quest — *King of the Hill* no es una etiqueta formal suya |
-| Certificación | **Ninguna por defecto**; si hace falta, la que exija el mercado objetivo | **OSCP** sigue siendo la que filtran los reclutadores; **CPTS** (HTB) es mucho más barata y su examen de 10 días se parece más a un encargo real, pero está peor reconocida por ATS y reclutadores. La certificación abre la puerta; el laboratorio es lo que da la competencia |
+| Lab network isolation | **`host-only` / hypervisor internal network, with no route to the home LAN or to the internet** | It is the primary control. Any other measure is secondary; if the lab routes to your LAN, it is not a lab, it is a vector |
+| Internet simulation | **INetSim** on the lab's Linux VM answering DNS and services | It lets the sample "see the internet" without there being one. Minimum check: from the Windows VM, resolving a domain must return the local service's IP and external traffic must fail |
+| Windows analysis VM | **FLARE-VM** on Windows in a dedicated VM, **never the host** | It requires disabling the system's antivirus protection (or the install fails), which makes it unacceptable outside an isolated, disposable VM |
+| Linux analysis/services VM | **REMnux** (prebuilt image or on top of an Ubuntu LTS base) | It brings the analysis instrumentation and acts as "fake internet" with INetSim |
+| Offensive distribution | **Kali Linux** in a VM, exclusive to the lab | Never as the host OS or that of the work laptop: it is an arsenal on the machine from which you run your life |
+| VM state | **Clean snapshot before every detonation; always revert afterwards** | The VM is considered compromised the moment something hostile runs. It is not "cleaned": it is reverted |
+| Credentials and data in the lab VMs | **None real**: no personal accounts, no tokens, no SSH keys, no browser sessions, no folders shared with the host | Shared folders and the hypervisor clipboard are documented escape routes. They get disabled |
+| Web platform (base) | **PortSwigger Web Security Academy** | Free, maintained by PortSwigger's research team, interactive labs and learning paths from beginner to expert. It is the best starting point for web |
+| Systems and pwn fundamentals | **pwn.college** (open university curriculum) and **OverTheWire** for shell wargames | Structured and free progression; verify current status before recommending them (§8) |
+| Machine platform | **Hack The Box** and/or **TryHackMe**, depending on the goal | THM guides more and holds the beginner back less; HTB penalises more and teaches the intermediate more. HTB has a **strict AUP** on writeups and on use of its content (§4) |
+| Competition calendar | **CTFtime** | Reference for events, formats and ranking. Formats it lists: **Jeopardy**, **Attack-Defence** and mixed/hack-quest — *King of the Hill* is not a formal label of theirs |
+| Certification | **None by default**; if one is needed, whichever the target market demands | **OSCP** is still the one recruiters filter by; **CPTS** (HTB) is far cheaper and its 10-day exam is closer to a real engagement, but it is less recognised by ATS and recruiters. The certification opens the door; the lab is what gives the competence |
 
-## 3. Construcción del laboratorio
+## 3. Building the lab
 
-### Topología mínima
+### Minimum topology
 
 ```
-[ HOST ]  ── sin puente ──  ( red interna / host-only del hipervisor )
+[ HOST ]  ── no bridge ──  ( hypervisor internal / host-only network )
                                         │
                     ┌───────────────────┼───────────────────┐
-              [ Analista/atacante ]  [ Servicios ]      [ Víctima ]
+              [ Analyst/attacker ]   [ Services ]       [ Victim ]
               Kali / REMnux          INetSim, DNS,      Windows + FLARE-VM
-                                     captura            o target vulnerable
+                                     capture            or vulnerable target
 ```
 
-Reglas del diseño, en orden de importancia:
+Design rules, in order of importance:
 
-1. **Sin puente ni NAT hacia la LAN.** El adaptador de red de cada VM del lab va a una red
-   interna del hipervisor. Si necesitas descargar herramientas, se hace **antes**, con la VM
-   en NAT, y se conmuta a red interna **antes** de introducir nada hostil.
-2. **Verificar el aislamiento, no asumirlo.** Comprobación explícita tras cada cambio de
-   topología: desde la VM víctima, ni la puerta de enlace real ni una IP pública deben
-   responder; sí debe responder el servicio simulado local. **Un lab cuyo aislamiento no se ha
-   comprobado se considera no aislado.**
-3. **Firewall del host activo** y, si el hipervisor lo permite, reglas que bloqueen el
-   reenvío desde la red del lab. Defensa en profundidad: la red interna es el control, el
-   firewall es el respaldo cuando alguien deja un adaptador mal configurado.
-4. **Nada compartido con el host**: carpetas compartidas desactivadas, portapapeles
-   bidireccional desactivado, arrastrar-y-soltar desactivado, USB no expuesto. Son
-   precisamente los canales por los que una muestra escapa de la VM.
-5. **Snapshots con nombre y propósito**: `base-limpia`, `herramientas-instaladas`,
-   `pre-detonacion`. Revertir es la operación normal, no la excepción.
-6. **Segmentación física o lógica adicional** si el host está en una red compartida: VLAN
-   dedicada o, mejor, hardware separado. Un laboratorio de malware en el mismo dominio de
-   difusión que el portátil de trabajo o los dispositivos domésticos no está aislado.
+1. **No bridge or NAT towards the LAN.** Every lab VM's network adapter goes to a hypervisor
+   internal network. If you need to download tools, it is done **beforehand**, with the VM
+   on NAT, and you switch to the internal network **before** introducing anything hostile.
+2. **Verify the isolation, do not assume it.** Explicit check after every topology
+   change: from the victim VM, neither the real gateway nor a public IP must
+   answer; the local simulated service must answer. **A lab whose isolation has not been
+   checked is considered not isolated.**
+3. **Host firewall on** and, if the hypervisor allows it, rules that block
+   forwarding from the lab network. Defence in depth: the internal network is the control, the
+   firewall is the backstop when someone leaves an adapter misconfigured.
+4. **Nothing shared with the host**: shared folders disabled, bidirectional
+   clipboard disabled, drag-and-drop disabled, USB not exposed. They are
+   precisely the channels through which a sample escapes the VM.
+5. **Snapshots with a name and a purpose**: `clean-base`, `tools-installed`,
+   `pre-detonation`. Reverting is the normal operation, not the exception.
+6. **Additional physical or logical segmentation** if the host is on a shared network: a dedicated
+   VLAN or, better, separate hardware. A malware lab in the same broadcast
+   domain as the work laptop or the home devices is not isolated.
 
-### Ejecutar binarios de reto y muestras: el riesgo es real
+### Running challenge binaries and samples: the risk is real
 
-- Un binario de reto de CTF es **código arbitrario de un desconocido**. Que venga de una
-  plataforma reputada reduce la probabilidad, no la elimina, y en un CTF con retos subidos por
-  participantes tampoco reduce mucho.
-- Una muestra de malware **hace exactamente lo que dice el nombre**: cifra, se propaga por la
-  red que alcance, roba credenciales del navegador, persiste. Por eso se detona en VM
-  desechable, en red interna, sin credenciales, con snapshot previo y con reversión posterior.
-  No hay versión "rápida" de esto.
-- **La VM no es una frontera de seguridad perfecta**: han existido y existirán fugas de
-  hipervisor. Para muestras dirigidas o de origen desconocido, hardware dedicado y aislado
-  físicamente, no una VM en el portátil de trabajo.
-- **Nunca ejecutar nada de un reto en el host**, ni "solo para ver qué strings tiene". El
-  análisis estático también se hace en la VM.
-- Sube muestras a servicios públicos de análisis con criterio: **lo que subes se publica**
-  para la industria. Una muestra de un incidente real puede contener datos del cliente y su
-  subida avisa al atacante de que fue detectado. En CTF da igual; en trabajo real, no.
+- A CTF challenge binary is **arbitrary code from a stranger**. That it comes from a
+  reputable platform reduces the probability, it does not eliminate it, and in a CTF with challenges
+  uploaded by participants it does not reduce it much either.
+- A malware sample **does exactly what the name says**: it encrypts, it spreads across the
+  network it can reach, it steals browser credentials, it persists. That is why it is detonated in a
+  disposable VM, on an internal network, with no credentials, with a prior snapshot and a revert afterwards.
+  There is no "quick" version of this.
+- **The VM is not a perfect security boundary**: hypervisor escapes have existed and will
+  exist. For targeted samples or samples of unknown origin, dedicated hardware physically
+  isolated, not a VM on the work laptop.
+- **Never run anything from a challenge on the host**, not even "just to see what strings it has". Static
+  analysis is also done in the VM.
+- Upload samples to public analysis services with judgement: **what you upload is published**
+  for the industry. A sample from a real incident may contain client data and uploading it
+  tells the attacker they were detected. In a CTF it does not matter; in real work, it does.
 
-### Higiene del toolchain
-- Las herramientas se instalan **en la VM del lab, jamás en el host**. El host mantiene solo
-  el hipervisor.
-- Herramientas de repositorios de terceros: se revisan como cualquier binario que ejecutas y
-  se ejecutan dentro del lab. En 2026 el patrón de ataque dominante ha sido comprometer
-  **tooling de seguridad y CI** (campaña TeamPCP, marzo 2026) — la comunidad de seguridad es
-  objetivo prioritario, y un script "de un writeup" es un vector perfecto.
-- **Nunca ejecutes a ciegas el comando de un writeup.** Léelo, entiéndelo, y ejecútalo en la
-  VM. Ese hábito es además exactamente el que te exigirá un ejercicio autorizado.
+### Toolchain hygiene
+- Tools are installed **in the lab VM, never on the host**. The host keeps only
+  the hypervisor.
+- Third-party repository tools: they are reviewed like any binary you run and
+  they are run inside the lab. In 2026 the dominant attack pattern has been compromising
+  **security and CI tooling** (TeamPCP campaign, March 2026) — the security community is a
+  priority target, and a script "from a writeup" is a perfect vector.
+- **Never blindly run a command from a writeup.** Read it, understand it, and run it in the
+  VM. That habit is moreover exactly the one an authorised engagement will demand of you.
 
-## 4. Calidad del aprendizaje
+## 4. Learning quality
 
-> Esta sección sustituye a los gates de CI de la plantilla: aquí lo que hay que controlar es
-> el aprendizaje y la integridad del laboratorio, no un build.
+> This section replaces the template's CI gates: what has to be controlled here is
+> the learning and the integrity of the lab, not a build.
 
-### Categorías y qué entrena cada una
+### Categories and what each one trains
 
-| Categoría | Habilidad real que construye | Transferencia al trabajo |
+| Category | Real skill it builds | Transfer to work |
 |---|---|---|
-| **Web** | Comprensión del protocolo, de la lógica de autorización y de la cadena de confianza cliente-servidor | **Alta**. Es la que más se parece al trabajo real |
-| **Pwn / binary exploitation** | Modelo de memoria, ABI, mitigaciones y cómo se rompen | **Media**: rara vez la aplicarás, pero es lo que te hace entender de verdad qué protege un sistema |
-| **Reversing** | Leer lo que hace un binario sin fuente; paciencia estructurada | **Alta** si vas a malware/IR; media si no |
-| **Cripto** | Distinguir "usar cripto" de "usarla bien"; por qué el ECB, el nonce reutilizado y el rolling-your-own fallan | **Media-alta** conceptual, baja operativa. Ver `cryptography-pki-standards` |
-| **Forense** | Metodología de evidencia, sistemas de ficheros, memoria, timelines | **Media**: los retos son puzles; el IR real es proceso, escala y presión |
-| **OSINT** | Correlación de fuentes abiertas | **Alta** en reconocimiento, con un límite legal y ético que el CTF no enseña (§5) |
-| **Hardware / ICS** | Protocolos y superficies físicas | Baja/nicha, alta si es tu sector |
-| **Cloud** | Confusión de identidad, permisos y metadatos: donde ocurre el compromiso moderno | **Muy alta**. Infrarrepresentada en CTF respecto a su peso real |
+| **Web** | Understanding of the protocol, of authorisation logic and of the client-server trust chain | **High**. It is the one that most resembles real work |
+| **Pwn / binary exploitation** | Memory model, ABI, mitigations and how they are broken | **Medium**: you will rarely apply it, but it is what makes you truly understand what protects a system |
+| **Reversing** | Reading what a binary does without source; structured patience | **High** if you are going into malware/IR; medium if not |
+| **Crypto** | Telling "using crypto" apart from "using it well"; why ECB, nonce reuse and rolling-your-own fail | **Medium-high** conceptually, low operationally. See `cryptography-pki-standards` |
+| **Forensics** | Evidence methodology, filesystems, memory, timelines | **Medium**: the challenges are puzzles; real IR is process, scale and pressure |
+| **OSINT** | Correlation of open sources | **High** in reconnaissance, with a legal and ethical limit the CTF does not teach (§5) |
+| **Hardware / ICS** | Protocols and physical surfaces | Low/niche, high if it is your sector |
+| **Cloud** | Identity, permission and metadata confusion: where the modern compromise happens | **Very high**. Underrepresented in CTFs relative to its real weight |
 
-### Formatos
-- **Jeopardy**: retos independientes por categoría y puntos. El formato de entrada, y el 90 %
-  de lo que jugarás.
-- **Attack-Defence**: servicios idénticos que defiendes mientras atacas a los demás. Es el que
-  más se parece a operar bajo presión, y el único que enseña que **parchear también puntúa**.
-  Exigente de infraestructura, casi siempre presencial y con plazas limitadas.
-- **King of the Hill**: objetivos compartidos que se toman y se mantienen. Enseña
-  persistencia y expulsión del rival; poco frecuente para principiantes.
+### Formats
+- **Jeopardy**: independent challenges by category and points. The entry format, and 90 %
+  of what you will play.
+- **Attack-Defence**: identical services that you defend while attacking the others. It is the one
+  that most resembles operating under pressure, and the only one that teaches that **patching scores too**.
+  Infrastructure-heavy, almost always on-site and with limited places.
+- **King of the Hill**: shared objectives that are taken and held. It teaches
+  persistence and evicting the rival; uncommon for beginners.
 
-### Método (lo que separa jugar de aprender)
-- **Cuaderno de notas propio, desde el primer día.** Comando, por qué lo lanzaste, qué
-  esperabas, qué salió. El valor del CTF está en el registro, no en la flag: la flag se olvida
-  en una semana.
-- **Writeup propio de todo lo que resuelves**, aunque no lo publiques (y aunque no puedas
-  publicarlo, §5). Escribir obliga a reconstruir el razonamiento y detecta dónde tuviste
-  suerte en lugar de criterio. Es además el ensayo directo del entregable de un ejercicio real
+### Method (what separates playing from learning)
+- **Your own notebook, from day one.** The command, why you ran it, what you
+  expected, what came out. The value of a CTF is in the record, not in the flag: the flag is forgotten
+  in a week.
+- **Your own writeup of everything you solve**, even if you do not publish it (and even if you cannot
+  publish it, §5). Writing forces you to reconstruct the reasoning and detects where you got
+  lucky instead of using judgement. It is moreover the direct rehearsal of a real exercise's deliverable
   (`offensive-security-standards` §6).
-- **Cuándo mirar la pista**: cuando llevas ~30-45 min sin ninguna hipótesis nueva que probar —
-  no cuando la hipótesis actual falla. Atascarse sin hipótesis no enseña nada; probar y fallar
-  con criterio sí.
-- **Cómo usar un writeup ajeno**: lee solo el paso siguiente, vuelve al reto, y **rehaz el
-  reto entero desde cero después**. Leer un walkthrough completo antes de intentarlo produce
-  la ilusión de competencia, que es peor que no saber, porque no te avisa.
-- **No quemarse**: el CTF castiga a base de fallo, y el burnout es el modo de fallo más común
-  de esta disciplina. Sesiones acotadas, dificultad escalonada, y parar cuando deja de enseñar.
-  Cadencia sostenida > maratones.
-- **Medir progreso** por señales reales: reducción del tiempo hasta la primera hipótesis
-  válida, retos resueltos sin pista, capacidad de explicar la solución a otro, y **rehacer un
-  reto viejo sin notas**. El ranking y el número de flags no miden competencia.
-- **Especializar después de barrer**: primero una pasada amplia por todas las categorías para
-  saber qué existe; luego profundidad en una o dos. Al revés se construye un techo temprano.
+- **When to look at the hint**: when you have gone ~30-45 min with no new hypothesis to test —
+  not when the current hypothesis fails. Getting stuck with no hypothesis teaches nothing; testing and failing
+  with judgement does.
+- **How to use someone else's writeup**: read only the next step, go back to the challenge, and **redo the
+  whole challenge from scratch afterwards**. Reading a full walkthrough before attempting it produces
+  the illusion of competence, which is worse than not knowing, because it does not warn you.
+- **Do not burn out**: CTFs punish through failure, and burnout is the most common failure mode
+  of this discipline. Bounded sessions, graded difficulty, and stopping when it stops teaching.
+  Sustained cadence > marathons.
+- **Measure progress** by real signals: reduction in the time to the first valid
+  hypothesis, challenges solved without a hint, ability to explain the solution to someone else, and **redoing an
+  old challenge without notes**. Ranking and the number of flags do not measure competence.
+- **Specialise after sweeping**: first a broad pass through all the categories to
+  know what exists; then depth in one or two. The other way round builds an early ceiling.
 
-### Integridad del laboratorio (los "gates" de aquí)
-Antes de cada sesión de detonación, esta comprobación es obligatoria y no negociable:
-1. Adaptador de red de todas las VMs implicadas en **red interna/host-only** — verificado, no
-   supuesto.
-2. Carpetas compartidas, portapapeles y arrastrar-y-soltar **desactivados**.
-3. **Snapshot limpio tomado** y con nombre.
-4. Sin credenciales, claves ni sesiones reales dentro de la VM.
-5. Firewall del host activo.
+### Lab integrity (the "gates" here)
+Before each detonation session, this check is mandatory and non-negotiable:
+1. Network adapter of every VM involved on an **internal/host-only network** — verified, not
+   assumed.
+2. Shared folders, clipboard and drag-and-drop **disabled**.
+3. **Clean snapshot taken** and named.
+4. No real credentials, keys or sessions inside the VM.
+5. Host firewall on.
 
-Tras la sesión: **revertir al snapshot**, siempre. Y periódicamente: reconstruir la VM base
-desde cero, porque los snapshots acumulados esconden estado que ya no controlas.
+After the session: **revert to the snapshot**, always. And periodically: rebuild the base VM
+from scratch, because accumulated snapshots hide state you no longer control.
 
-## 5. Ética y límites
+## 5. Ethics and limits
 
-- **No atacar la infraestructura de la plataforma**, solo sus objetivos. Las plataformas lo
-  prohíben expresamente: HTB, por ejemplo, prohíbe la comunicación directa entre sistemas de
-  miembros y el ataque a clientes de otros usuarios, y **prohíbe el DoS sobre cualquier
-  máquina, dentro o fuera de su red**, exigiendo notificar de inmediato cualquier DoS
-  accidental. Si encuentras un fallo en la plataforma, se reporta por su programa de
-  divulgación, no se explota.
-- **No compartir flags ni soluciones fuera de lo permitido.** Compartir la flag no ayuda a
-  nadie a aprender y suele ser causa de expulsión. En HTB el reparto de soluciones está
-  limitado al ámbito cerrado de tu equipo, y publicarlas fuera de su lista aprobada infringe
-  los términos, con contenido "retirado" como criterio general para writeups. **TryHackMe es
-  en la práctica más permisivo con walkthroughs públicos.** Verifica la política vigente de
-  cada plataforma antes de publicar (§8): cambian y son ellas quienes mandan.
-- **Reglas del evento por encima de la costumbre**: sin colaboración entre equipos si está
-  prohibida, sin múltiples cuentas, sin atacar la scoreboard, sin flag-sharing. En
-  attack-defence, sin destruir el servicio del rival más allá de lo que las reglas permitan.
-- **Términos de servicio vigentes, no recordados.** Las AUP se actualizan: la de HTB vigente
-  desde el **1 abr 2026** añadió, entre otras cosas, la prohibición de usar su contenido para
-  entrenar, evaluar o comparar modelos de IA/LLM, la limitación del uso de sus recursos a fines
-  formativos, y la prohibición de compartir o distribuir exploits y herramientas de ataque
-  destinadas a dañar sistemas fuera de los entornos de entrenamiento designados.
-- **El puente hacia el trabajo real**: nada de lo aprendido aquí se aplica contra un sistema
-  que no sea tuyo sin autorización escrita. Ese es el dominio de
-  `offensive-security-standards`, y su §1 es una precondición dura, no una recomendación. El
-  CTF **no** te da permiso para nada fuera del CTF.
-- **OSINT tiene límite legal y ético** que el CTF no enseña: el reto premia encontrar a la
-  persona; la ley y la decencia limitan qué se recolecta sobre personas reales, y el RGPD
-  aplica. Practicar OSINT sobre gente real sin encargo ni consentimiento no es entrenamiento,
-  es vigilancia.
-- **IA en CTF**: los sistemas autónomos ya resuelven jeopardy de nivel medio en minutos, con
-  casos reportados en 2026 de agentes despachando conjuntos completos de retos y superando a
-  la mayoría de equipos humanos en plataformas de iniciación. Consecuencias: (a) respeta la
-  política del evento sobre uso de IA, que varía y a veces la prohíbe; (b) delegar la
-  resolución destruye el propósito — el objetivo es que aprendas tú; (c) el valor diferencial
-  humano se desplaza hacia lo que la IA hace peor: contexto, priorización y lógica de negocio.
+- **Do not attack the platform's infrastructure**, only its targets. The platforms expressly
+  forbid it: HTB, for example, forbids direct communication between members'
+  systems and attacking other users' clients, and **forbids DoS against any
+  machine, inside or outside its network**, requiring immediate notification of any accidental
+  DoS. If you find a flaw in the platform, it is reported through its disclosure
+  programme, it is not exploited.
+- **Do not share flags or solutions beyond what is permitted.** Sharing the flag does not help
+  anyone learn and is usually grounds for a ban. On HTB the sharing of solutions is
+  limited to the closed scope of your team, and publishing them outside its approved list breaches
+  the terms, with "retired" content as the general criterion for writeups. **TryHackMe is
+  in practice more permissive with public walkthroughs.** Verify each platform's policy in force
+  before publishing (§8): they change and they are the ones in charge.
+- **Event rules above custom**: no collaboration between teams if it is forbidden,
+  no multiple accounts, no attacking the scoreboard, no flag-sharing. In
+  attack-defence, no destroying the rival's service beyond what the rules allow.
+- **Terms of service in force, not remembered.** AUPs get updated: HTB's, in force
+  since **1 Apr 2026**, added, among other things, the prohibition on using its content to
+  train, evaluate or benchmark AI/LLM models, the limitation of the use of its resources to
+  training purposes, and the prohibition on sharing or distributing exploits and attack tools
+  intended to harm systems outside the designated training environments.
+- **The bridge to real work**: nothing learned here is applied against a system
+  that is not yours without written authorisation. That is the domain of
+  `offensive-security-standards`, and its §1 is a hard precondition, not a recommendation. The
+  CTF gives you **no** permission for anything outside the CTF.
+- **OSINT has a legal and ethical limit** the CTF does not teach: the challenge rewards finding the
+  person; the law and decency limit what is collected about real people, and the GDPR
+  applies. Practising OSINT on real people with no engagement or consent is not training,
+  it is surveillance.
+- **AI in CTFs**: autonomous systems already solve medium-level jeopardy in minutes, with
+  cases reported in 2026 of agents dispatching complete challenge sets and beating
+  most human teams on entry-level platforms. Consequences: (a) respect the
+  event's policy on AI use, which varies and sometimes forbids it; (b) delegating the
+  solving destroys the purpose — the goal is for you to learn; (c) the differential human
+  value shifts towards what AI does worse: context, prioritisation and business logic.
 
-## 6. Del CTF al trabajo real
+## 6. From CTF to real work
 
-Qué transfiere y qué no. Ignorar esto produce profesionales muy buenos resolviendo cosas que
-no ocurren.
+What transfers and what does not. Ignoring this produces professionals who are very good at solving
+things that do not happen.
 
-**Transfiere bien**: método de enumeración, tolerancia a la frustración, lectura de código y
-protocolos ajenos, hábito de documentar, agilidad con el instrumental, y la intuición de
-"esto huele raro".
+**Transfers well**: enumeration method, tolerance of frustration, reading other people's code and
+protocols, the habit of documenting, agility with the instrumentation, and the intuition of
+"this smells wrong".
 
-**No transfiere**: el sesgo hacia lo exótico. Los CTF premian la cadena ingeniosa y el truco
-raro porque tienen que ser divertidos y tener solución única. **El trabajo real es
-mayoritariamente autorización rota, configuración por defecto, credenciales donde no deben
-estar, parches que faltan y segmentación que no existe** — hallazgos aburridos con impacto
-enorme. Un CTF sin flags de "IDOR en el endpoint de facturas" no significa que ese hallazgo no
-sea el más común y el más rentable en un encargo real.
+**Does not transfer**: the bias towards the exotic. CTFs reward the clever chain and the rare
+trick because they have to be fun and have a unique solution. **Real work is
+mostly broken authorisation, default configuration, credentials where they should not
+be, missing patches and segmentation that does not exist** — boring findings with enormous
+impact. A CTF with no "IDOR in the invoices endpoint" flags does not mean that finding is not
+the most common and the most profitable in a real engagement.
 
-**Tampoco transfiere**:
-- **Alcance y restricciones**: en un CTF todo vale; en un ejercicio real hay ventana, RoE,
-  exclusiones y stop conditions.
-- **No-daño**: en CTF puedes romper el reto; en producción, romper es el fracaso del ejercicio.
-- **Comunicación**: el trabajo real es informe, severidad justificada, deconfliction y
-  retest. La flag no se la entregas a nadie.
-- **Escala y ruido**: en un CTF hay 5 servicios; en un cliente, 5000 activos y el problema es
-  priorizar, no encontrar.
-- **Defensa**: el CTF apenas enseña qué telemetría dejas. El purple team, sí.
+**Nor does this transfer**:
+- **Scope and restrictions**: in a CTF anything goes; in a real exercise there is a window, RoE,
+  exclusions and stop conditions.
+- **No harm**: in a CTF you can break the challenge; in production, breaking is the exercise's failure.
+- **Communication**: real work is a report, justified severity, deconfliction and
+  retest. You do not hand the flag to anyone.
+- **Scale and noise**: in a CTF there are 5 services; at a client, 5000 assets and the problem is
+  prioritising, not finding.
+- **Defence**: the CTF barely teaches what telemetry you leave. Purple teaming does.
 
-**Certificaciones y su papel real**: son un filtro de contratación, no una medida de
-competencia. **OSCP** sigue siendo el nombre que filtran los reclutadores; desde nov 2024
-convive con **OSCP+**, con validez de tres años renovable, mientras que el OSCP "clásico" es
-vitalicio. Su examen sigue con formato de ~24 h más informe, con Active Directory obligatorio,
-**sin puntos extra**, lo que sube el listón efectivo. **CPTS** (HTB) es notablemente más barata
-y su examen de 10 días se aproxima más a un encargo real, a costa de menos reconocimiento
-formal. Señal de 2026 sobre el peso institucional de estos títulos: ISC2 recortó en abril de
-2026 su lista de certificaciones que eximen experiencia para CISSP, sacando OSCP de ella.
-Elige por el mercado al que apuntas y **verifica precio, formato y política de vigencia en la
-fuente oficial** (§8): cambian con frecuencia y los agregadores no coinciden entre sí.
+**Certifications and their real role**: they are a hiring filter, not a measure of
+competence. **OSCP** is still the name recruiters filter by; since Nov 2024 it
+coexists with **OSCP+**, valid for three years and renewable, while the "classic" OSCP is
+for life. Its exam still has a ~24 h format plus report, with Active Directory mandatory,
+**with no bonus points**, which raises the effective bar. **CPTS** (HTB) is markedly cheaper
+and its 10-day exam is closer to a real engagement, at the cost of less formal
+recognition. A 2026 signal about the institutional weight of these titles: ISC2 cut in April
+2026 its list of certifications that waive experience for CISSP, removing OSCP from it.
+Choose by the market you are aiming at and **verify price, format and validity policy at the
+official source** (§8): they change frequently and the aggregators do not agree with each other.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-### Cadencia
-- **Términos de servicio de cada plataforma**: releer antes de publicar cualquier writeup y al
-  menos anualmente. Son documentos vivos (la AUP de HTB cambió en abril de 2026).
-- **Reglas del evento**: leer completas antes de cada CTF. No se presumen por analogía con
-  otro evento.
-- **VM base**: reconstruir desde cero periódicamente, no encadenar snapshots indefinidamente.
-- **Herramientas del lab**: actualizar dentro del lab y revisar procedencia; comprobar
-  incidentes de cadena de suministro de lo que instalas (§8).
-- **Aislamiento**: reverificar tras cualquier cambio de hipervisor, de red doméstica o de
-  topología del lab. Una actualización del hipervisor puede reactivar carpetas compartidas.
+### Cadence
+- **Each platform's terms of service**: reread before publishing any writeup and at
+  least annually. They are living documents (HTB's AUP changed in April 2026).
+- **Event rules**: read them in full before each CTF. They are not presumed by analogy with
+  another event.
+- **Base VM**: rebuild from scratch periodically, do not chain snapshots indefinitely.
+- **Lab tools**: update inside the lab and review provenance; check
+  supply-chain incidents for what you install (§8).
+- **Isolation**: re-verify after any change of hypervisor, home network or lab
+  topology. A hypervisor update can re-enable shared folders.
 
-### PROHIBIDO
+### FORBIDDEN
 
-**De esta skill como documento**:
-- ❌ Incluir **payloads listos para usar**, exploits armados o soluciones de retos concretos.
-- ❌ Documentar **bypasses concretos** de productos de seguridad o técnicas de evasión de
-  detección para uso real.
-- ❌ Listar **credenciales por defecto** de terceros.
-- ❌ Convertir esto en recetario: método de laboratorio y de aprendizaje, no walkthrough.
+**Of this skill as a document**:
+- ❌ Including **ready-to-use payloads**, weaponised exploits or solutions to specific challenges.
+- ❌ Documenting **specific bypasses** of security products or detection evasion
+  techniques for real use.
+- ❌ Listing third parties' **default credentials**.
+- ❌ Turning this into a cookbook: lab and learning method, not a walkthrough.
 
-**De la práctica**:
-- ❌ Practicar contra **cualquier sistema que no sea tuyo, de una plataforma que lo autorice o
-  de un CTF en curso**. Sin excepciones, sin "solo mirar", sin "es de una empresa que ya no
-  existe".
-- ❌ Ejecutar binarios de reto o muestras **en el host**, o en una VM con red puenteada, o con
-  carpetas compartidas o portapapeles activos.
-- ❌ Detonar sin **snapshot previo**, o seguir usando la VM tras la detonación sin revertir.
-- ❌ Guardar credenciales, claves SSH, sesiones o datos personales reales dentro de las VMs
-  del lab.
-- ❌ Conectar el laboratorio a la LAN doméstica o corporativa, o compartir con ella dominio de
-  difusión.
-- ❌ Instalar el arsenal ofensivo en el equipo de trabajo o usar Kali como SO del host.
-- ❌ **Atacar la infraestructura de la plataforma**, a otros usuarios, o lanzar DoS contra
-  cualquier objetivo (prohibido expresamente por las plataformas, dentro y fuera de su red).
-- ❌ Compartir flags, o publicar soluciones de contenido activo cuando los términos lo
-  prohíben.
-- ❌ Ejecutar comandos de un writeup **sin entenderlos**, y menos fuera del lab.
-- ❌ Subir a servicios públicos de análisis muestras que puedan contener datos de un cliente
-  real o alertar a un atacante activo.
-- ❌ Usar OSINT sobre personas reales sin encargo, consentimiento o base legal.
-- ❌ Aplicar en producción o en un cliente lo aprendido aquí sin la autorización escrita que
-  exige `offensive-security-standards` §1.
-- ❌ Confundir ranking, flags o certificación con competencia profesional.
-- ❌ Fijar de memoria versiones, estado de plataformas o términos de servicio sin la
-  verificación de §8.
+**Of the practice**:
+- ❌ Practising against **any system that is not yours, not from a platform that authorises it or
+  not from a CTF in progress**. No exceptions, no "just looking", no "it belongs to a company that no
+  longer exists".
+- ❌ Running challenge binaries or samples **on the host**, or in a VM with a bridged network, or with
+  shared folders or clipboard enabled.
+- ❌ Detonating without a **prior snapshot**, or continuing to use the VM after detonation without reverting.
+- ❌ Storing real credentials, SSH keys, sessions or personal data inside the lab
+  VMs.
+- ❌ Connecting the lab to the home or corporate LAN, or sharing a broadcast domain with
+  it.
+- ❌ Installing the offensive arsenal on the work machine or using Kali as the host OS.
+- ❌ **Attacking the platform's infrastructure**, other users, or launching DoS against
+  any target (expressly forbidden by the platforms, inside and outside their network).
+- ❌ Sharing flags, or publishing solutions to active content when the terms
+  forbid it.
+- ❌ Running commands from a writeup **without understanding them**, still less outside the lab.
+- ❌ Uploading to public analysis services samples that may contain a real client's data
+  or alert an active attacker.
+- ❌ Using OSINT on real people with no engagement, consent or legal basis.
+- ❌ Applying in production or at a client what is learned here without the written authorisation
+  `offensive-security-standards` §1 requires.
+- ❌ Confusing ranking, flags or certification with professional competence.
+- ❌ Pinning from memory versions, platform status or terms of service without the
+  verification of §8.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de recomendar plataforma, herramienta o versión, o de publicar nada:
+Before recommending a platform, tool or version, or publishing anything:
 
-1. **Términos de servicio y AUP vigentes** de cada plataforma que vayas a usar, en su fuente
-   oficial: qué está permitido atacar, qué se puede publicar y sobre qué contenido. Referencia
-   a agosto 2026: la AUP de **HTB** vigente desde el **1 abr 2026**. **Pendiente de
-   verificar**: el texto exacto de la **Acceptable Use Policy de TryHackMe** (sus cláusulas
-   sobre infraestructura y writeups no se pudieron confirmar en fuente primaria; la lectura de
-   "más permisivo con walkthroughs" procede de observación del ecosistema, no del documento).
-2. **Estado y modelo actual de las plataformas**: que sigan existiendo y con qué modelo de
-   acceso. Verificado a agosto 2026: **PortSwigger Web Security Academy** activa y gratuita.
-   **Pendiente de verificar**: estado, modelo y términos actuales de **pwn.college**,
-   **OverTheWire** y **OffSec Proving Grounds** — no se confirmaron en fuente primaria.
-3. **Reglas del evento** concreto antes de cada CTF, incluida su política sobre uso de IA.
-4. **Versiones actuales** de **Kali Linux**, **REMnux** y **FLARE-VM** en kali.org, remnux.org
-   y el repositorio oficial de FLARE-VM. **Pendiente de verificar**: no se fijó ninguna versión
-   concreta en este documento porque las fuentes localizadas eran secundarias y discrepantes.
-5. **Procedencia e incidentes de cadena de suministro** de cualquier herramienta que instales
-   — precedente 2026: la campaña **TeamPCP** (marzo 2026) comprometió tooling de seguridad y
-   CI ampliamente desplegado. El tooling de seguridad es objetivo prioritario.
-6. **Certificaciones**: precio, formato de examen, vigencia y política de renovación en la web
-   oficial del emisor. Los datos de §6 (formato OSCP/OSCP+, coste relativo de CPTS, recorte de
-   la lista de exenciones de CISSP en abril de 2026) proceden de fuentes secundarias
-   coincidentes pero **no contrastadas contra la fuente oficial**: reconfírmalos antes de
-   decidir una compra.
-7. **Marco legal**: el encuadre penal de §1 es orientativo y puede haber cambiado; **no es
-   asesoramiento jurídico**. Ante cualquier duda sobre la licitud de una práctica, consulta
-   legal.
-8. **Fugas de hipervisor**: antes de detonar algo serio, comprobar si hay vulnerabilidad de
-   escape conocida y sin parchear en la versión de tu hipervisor. **Pendiente de verificar**:
-   no se revisó el estado de CVEs de escape de hipervisor a agosto 2026.
+1. **Terms of service and AUP in force** for every platform you are going to use, at its official
+   source: what may be attacked, what may be published and about which content. Reference
+   as of August 2026: **HTB**'s AUP in force since **1 Apr 2026**. **Pending
+   verification**: the exact text of **TryHackMe's Acceptable Use Policy** (its clauses
+   on infrastructure and writeups could not be confirmed in a primary source; the reading of
+   "more permissive with walkthroughs" comes from observing the ecosystem, not from the document).
+2. **Current status and model of the platforms**: that they still exist and with what access
+   model. Verified as of August 2026: **PortSwigger Web Security Academy** active and free.
+   **Pending verification**: current status, model and terms of **pwn.college**,
+   **OverTheWire** and **OffSec Proving Grounds** — they were not confirmed in a primary source.
+3. **The specific event's rules** before each CTF, including its policy on AI use.
+4. **Current versions** of **Kali Linux**, **REMnux** and **FLARE-VM** at kali.org, remnux.org
+   and the official FLARE-VM repository. **Pending verification**: no specific version was
+   pinned in this document because the sources located were secondary and discrepant.
+5. **Provenance and supply-chain incidents** of any tool you install
+   — 2026 precedent: the **TeamPCP** campaign (March 2026) compromised widely deployed security
+   and CI tooling. Security tooling is a priority target.
+6. **Certifications**: price, exam format, validity and renewal policy on the issuer's
+   official website. The data in §6 (OSCP/OSCP+ format, relative cost of CPTS, cut to
+   the CISSP exemption list in April 2026) comes from secondary sources that
+   agree but are **not contrasted against the official source**: reconfirm them before
+   deciding on a purchase.
+7. **Legal framework**: the criminal framing in §1 is indicative and may have changed; **it is not
+   legal advice**. In case of any doubt about the lawfulness of a practice, consult
+   a lawyer.
+8. **Hypervisor escapes**: before detonating anything serious, check whether there is a known and
+   unpatched escape vulnerability in your hypervisor's version. **Pending verification**:
+   the state of hypervisor escape CVEs as of August 2026 was not reviewed.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

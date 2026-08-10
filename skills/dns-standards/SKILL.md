@@ -3,471 +3,471 @@ name: dns-standards
 description: DNS service architecture, zone design and DNS security. Use when editing zone files or named.conf, unbound.conf, knot.conf, kresd config, nsd.conf, pdns.conf, dnsmasq.conf or pihole.toml, designing SOA timers, TTL, delegation and glue, CNAME-at-apex with ALIAS/ANAME, CAA, HTTPS/SVCB, SSHFP, TLSA/DANE, PTR records, DNSSEC signing and KSK/ZSK rollover, NSEC3 parameters, RRL, TSIG-protected AXFR/IXFR, split-horizon views, anycast authoritatives, .internal or home.arpa naming, zone-as-code with dnscontrol or octodns, named-checkzone, kdig, dig +trace, DoT/DoH/DoQ resolver transport, dangling subdomain takeover, DNS tunneling exfiltration or registrar/NS hijack.
 ---
 
-# Estándares de DNS — servicio crítico y superficie de ataque
+# DNS standards — critical service and attack surface
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al diseñar, desplegar, revisar o auditar **el servicio DNS y sus datos**: separación
-autoritativo/recursivo, redundancia y anycast, elección de software por rol, diseño de zona
-(SOA, TTL, delegación, glue, ápice), tipos de registro modernos, autenticación de correo en
-DNS, DNSSEC y su ciclo de vida, transporte cifrado (DoT/DoH/DoQ), espacio de nombres interno,
-zona como código, validación y monitorización, y la seguridad del nombre como activo
-(registrador, NS, subdominios colgantes, tunneling, amplificación, transferencias).
+Applies when designing, deploying, reviewing or auditing **the DNS service and its data**:
+authoritative/recursive separation, redundancy and anycast, software choice by role, zone design
+(SOA, TTL, delegation, glue, apex), modern record types, mail authentication in DNS, DNSSEC and
+its lifecycle, encrypted transport (DoT/DoH/DoQ), internal namespace, zone as code, validation
+and monitoring, and the security of the name as an asset (registrar, NS, dangling subdomains,
+tunneling, amplification, transfers).
 
-Triggers: ficheros de zona (`db.*`, `*.zone`, `$ORIGIN`, `$TTL`), `named.conf`,
+Triggers: zone files (`db.*`, `*.zone`, `$ORIGIN`, `$TTL`), `named.conf`,
 `named-checkconf`/`named-checkzone`, `unbound.conf`, `unbound-checkconf`, `knot.conf`,
 `kresd`/`kresctl`, `nsd.conf`, `pdns.conf`, `recursor.conf`, `dnsdist.conf`, `dnsmasq.conf`,
-`pihole.toml`, `Corefile` *fuera* de Kubernetes, `dnscontrol`/`dnsconfig.js`, `octodns`
+`pihole.toml`, `Corefile` *outside* Kubernetes, `dnscontrol`/`dnsconfig.js`, `octodns`
 (`config/*.yaml`), `dig`/`kdig`/`delv`/`drill`, `dnsviz`, `zonemaster`, `keymgr`/`dnssec-signzone`,
-`rndc`, `TSIG`, "TTL", "SOA", "glue", "CNAME en el ápice", "DMARC", "SPF", "DKIM", "MTA-STS",
-"CAA", "DANE", "DNSSEC caducado", "NXDOMAIN", "subdominio colgante", "takeover".
+`rndc`, `TSIG`, "TTL", "SOA", "glue", "CNAME at the apex", "DMARC", "SPF", "DKIM", "MTA-STS",
+"CAA", "expired DNSSEC", "NXDOMAIN", "dangling subdomain", "takeover".
 
-**Principio rector** (hereda el de `networking-standards`: *la red es default-deny y documentada
-como código; lo que no está en el SoT no existe*): **la zona es código y el nombre es un activo
-de identidad**. Todo registro existe porque alguien lo justificó y quedó en el repo; todo nombre
-que ya no sirve se borra el día que deja de servir. Quien controla tu delegación controla tu
-correo, tus certificados y tu identidad: el DNS no es "infraestructura de apoyo", es la raíz de
-confianza operativa de casi todo lo demás.
+**Guiding principle** (inherits the one from `networking-standards`: *the network is default-deny
+and documented as code; what is not in the SoT does not exist*): **the zone is code and the name is
+an identity asset**. Every record exists because someone justified it and it landed in the repo;
+every name that no longer serves a purpose is deleted the day it stops serving one. Whoever
+controls your delegation controls your mail, your certificates and your identity: DNS is not
+"supporting infrastructure", it is the operational root of trust of almost everything else.
 
-**No aplica**: ver `networking-standards` (**madre**: diseño de red, direccionamiento e IPAM,
-VLAN, routing/BGP y RPKI, MTU/MSS, proxies y balanceadores, overlays, colocación del resolver en
-la topología y bloqueo de DNS saliente en el borde como *decisión de red* — aquí el **servidor
-DNS, su zona y sus datos**), `firewall-policy-standards` (la política que permite `53/853/443`
-hacia el resolver y que filtra el egress DNS: **tú defines qué resolver es legítimo y qué
-telemetría produce; ellos escriben y gobiernan la regla**), `linux-hardening-standards` (baseline
-CIS del host que sirve DNS, incluido su firewall de host, `systemd` sandboxing del demonio y
-`resolv.conf` como control del baseline), `cryptography-pki-standards` (**elección de algoritmos
-DNSSEC y gestión/custodia de claves**, TLS de DoT/DoH, emisión ACME y `CAA` como control de
-emisión visto desde la PKI — aquí sólo el **registro publicado** y su operación),
-`detection-engineering-standards` (**reglas de detección sobre los logs de consulta**: tunneling,
-DGA, NXDOMAIN anómalo, C2 — la telemetría y su calidad son de esta skill, la analítica es suya),
-`observability-standards` (métricas, dashboards y alertas del servicio), `onprem-standards`
-(paraguas de plataforma y plano OOB), `homelab-standards` (Pi-hole/AdGuard y DNS doméstico: la
-frontera es el rigor exigido, no el tamaño), `kubernetes-standards` (**CoreDNS dentro del
-clúster**, `dnsPolicy`, `ndots`, Gateway API), `aws-standards`/`azure-standards`/`gcp-standards`
-(Route 53, Azure DNS y Cloud DNS como servicio gestionado del proveedor, incluidas sus zonas
-privadas), `secrets-management-standards` (custodia de las **credenciales de API del proveedor
-DNS** que usan los retos ACME DNS-01), `identity-access-management-standards` (MFA y cuentas
-del registrador como identidad privilegiada), `incident-response-forensics-standards` (el log
-DNS como evidencia y su cadena de custodia durante un compromiso), `data-platform-standards`
-(retención y coste del almacén de logs de consulta), `grc-compliance-standards` (DNS como
-control ante ENS/ISO/NIS2), `bcdr-standards` (RTO/RPO del servicio de nombres),
-`iac-standards`/`cicd-standards` (el repo y el pipeline que despliegan la zona).
+**Not applicable**: see `networking-standards` (**parent**: network design, addressing and IPAM,
+VLAN, routing/BGP and RPKI, MTU/MSS, proxies and load balancers, overlays, resolver placement in
+the topology and blocking outbound DNS at the edge as a *network decision* — here the **DNS
+server, its zone and its data**), `firewall-policy-standards` (the policy that permits `53/853/443`
+towards the resolver and that filters DNS egress: **you define which resolver is legitimate and what
+telemetry it produces; they write and govern the rule**), `linux-hardening-standards` (CIS baseline
+of the host serving DNS, including its host firewall, `systemd` sandboxing of the daemon and
+`resolv.conf` as a baseline control), `cryptography-pki-standards` (**DNSSEC algorithm choice
+and key management/custody**, TLS for DoT/DoH, ACME issuance and `CAA` as an issuance control seen
+from the PKI — here only the **published record** and its operation),
+`detection-engineering-standards` (**detection rules over query logs**: tunneling,
+DGA, anomalous NXDOMAIN, C2 — the telemetry and its quality are this skill's, the analytics are
+theirs), `observability-standards` (service metrics, dashboards and alerts), `onprem-standards`
+(platform umbrella and OOB plane), `homelab-standards` (Pi-hole/AdGuard and home DNS: the
+boundary is the rigour required, not the size), `kubernetes-standards` (**CoreDNS inside the
+cluster**, `dnsPolicy`, `ndots`, Gateway API), `aws-standards`/`azure-standards`/`gcp-standards`
+(Route 53, Azure DNS and Cloud DNS as the provider's managed service, including their private
+zones), `secrets-management-standards` (custody of the **DNS provider API credentials**
+used by ACME DNS-01 challenges), `identity-access-management-standards` (MFA and registrar
+accounts as privileged identity), `incident-response-forensics-standards` (the DNS log
+as evidence and its chain of custody during a compromise), `data-platform-standards`
+(retention and cost of the query log store), `grc-compliance-standards` (DNS as a
+control against ENS/ISO/NIS2), `bcdr-standards` (RTO/RPO of the name service),
+`iac-standards`/`cicd-standards` (the repo and the pipeline that deploy the zone).
 
-Además:
-`vpn-standards` (resolución dentro del túnel, DNS *split* del cliente VPN y fuga de DNS fuera
-del túnel), `network-troubleshooting-standards` (**diagnóstico**: tú fijas cuál es la respuesta
-correcta y quién debe darla; él averigua por qué el paquete o la respuesta no llegan — cuando
-el síntoma es "no resuelve", el diseño de zona y de resolver es de aquí, la captura y el
-seguimiento por capas es suyo), `linux-administration-standards` (`resolv.conf`, `resolvectl`,
-`systemd-resolved`, `nsswitch.conf` y la resolución **desde el host**),
+Also:
+`vpn-standards` (resolution inside the tunnel, VPN client *split* DNS and DNS leakage outside
+the tunnel), `network-troubleshooting-standards` (**diagnosis**: you set what the correct answer
+is and who must give it; they find out why the packet or the answer does not arrive — when
+the symptom is "it does not resolve", the zone and resolver design is from here, the capture and
+the layer-by-layer tracking is theirs), `linux-administration-standards` (`resolv.conf`, `resolvectl`,
+`systemd-resolved`, `nsswitch.conf` and resolution **from the host**),
 `ha-clustering-standards`, `proxmox-ve-standards`.
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión y el estado de mantenimiento por web antes de fijarla en un
-> proyecto real (§8). **2026 es un año anómalo**: el análisis con LLM ha disparado el volumen de
-> CVE en BIND, Unbound y dnsmasq, y las ramas publican parches de seguridad casi mensuales.
-> Versión fijada hoy = deuda mañana; lo que se fija es la **rama**, no el punto.
+> Verify the latest version and maintenance status on the web before pinning it in a
+> real project (§8). **2026 is an anomalous year**: LLM-assisted analysis has driven up the volume of
+> CVEs in BIND, Unbound and dnsmasq, and the branches publish security patches almost monthly.
+> A version pinned today = debt tomorrow; what gets pinned is the **branch**, not the point release.
 
-| Rol | Por defecto | Alternativa justificable | Vetado |
+| Role | Default | Justifiable alternative | Vetoed |
 |---|---|---|---|
-| Autoritativo | **Knot DNS 3.5.x** (3.5.6 la más reciente etiquetada) por firmado automático y rendimiento | **BIND 9.20.x** (9.20.26, 22-jul-2026) si necesitas su ecosistema; **NSD 4.15.0** (07-jul-2026) como secundario minimalista; **PowerDNS Authoritative 5.1.x** con backend SQL/LMDB si la zona vive en base de datos | **BIND 9.18 (EOL jun-2026)**; ramas de desarrollo (9.21/9.23) en producción; el mismo proceso sirviendo autoritativo y recursivo |
-| Recursivo/validador | **Unbound 1.25.x** (1.25.2, 22-jul-2026, release de seguridad) o **Knot Resolver 6.4.x** (6.4.0, 17-jun-2026) | BIND 9.20.x como recursivo si ya es el estándar de la casa | `dnsmasq` y `systemd-resolved` como **validadores DNSSEC** de referencia; resolver abierto a Internet |
-| Balanceo/proxy DNS y protección | **dnsdist 2.0.x/2.1.x** delante de recursivos y autoritativos (rate limiting, DoH/DoT/DoQ terminación, políticas) | Anycast + ECMP sin proxy en autoritativos puros | Publicar el recursivo directo a Internet "para pruebas" |
-| DNS de clúster | **CoreDNS 1.14.6** (10-jul-2026) — **su configuración dentro de Kubernetes la fija `kubernetes-standards`** | CoreDNS como recursivo de propósito general sólo en escenarios muy acotados | CoreDNS como autoritativo público de zonas de negocio |
-| Reenviador ligero / DHCP-DNS pequeño | `dnsmasq` **2.93** (fija ≥2.93: cierra el lote de 6 CVE coordinados de may-2026, incl. desbordamiento de heap CVE-2026-2291) | Reenviador del router sólo en lab | Cualquier `dnsmasq` < 2.92rel2 expuesto |
-| Filtrado DNS lab/hogar | **Pi-hole FTL 6.7** (06-jul-2026, embebe dnsmasq 2.93) o **AdGuard Home 0.107.78** (13-jul-2026) | — | Filtrado doméstico como único resolver corporativo o sin redundancia |
-| Zona como código | **dnscontrol 4.45.0** (01-ago-2026) para multi-proveedor con `preview`/`push`; **octoDNS 1.21.1** (01-ago-2026) si prefieres YAML declarativo y Python | Terraform con el provider del proveedor DNS cuando la zona ya vive en IaC del mismo cloud | Editar zonas en la consola web del registrador o del proveedor |
-| DNS público autoritativo | **Dos operadores independientes** (p. ej. propio + gestionado), cada uno anycast | Un único proveedor **sólo** con SLA, anycast multi-región y plan de salida escrito | Todos los NS en el mismo AS, el mismo datacenter o el mismo proveedor |
-| Transporte del stub al resolver | **DoT (853)** hacia el resolver corporativo, o `53` en red de confianza con egress bloqueado | **DoQ (RFC 9250, may-2022)** donde el software lo soporte y el operador lo controle | DoH de aplicación hacia un tercero, sin política |
-| Diagnóstico | `kdig`, `dig +trace`, `delv`, `dnsviz`, `zonemaster` | `drill` | `nslookup` como herramienta de diagnóstico (oculta el detalle que necesitas) |
+| Authoritative | **Knot DNS 3.5.x** (3.5.6 the most recent tagged) for automatic signing and performance | **BIND 9.20.x** (9.20.26, 22 Jul 2026) if you need its ecosystem; **NSD 4.15.0** (7 Jul 2026) as a minimalist secondary; **PowerDNS Authoritative 5.1.x** with an SQL/LMDB backend if the zone lives in a database | **BIND 9.18 (EOL Jun 2026)**; development branches (9.21/9.23) in production; the same process serving authoritative and recursive |
+| Recursive/validator | **Unbound 1.25.x** (1.25.2, 22 Jul 2026, security release) or **Knot Resolver 6.4.x** (6.4.0, 17 Jun 2026) | BIND 9.20.x as recursive if it is already the house standard | `dnsmasq` and `systemd-resolved` as reference **DNSSEC validators**; a resolver open to the Internet |
+| DNS load balancing/proxy and protection | **dnsdist 2.0.x/2.1.x** in front of recursives and authoritatives (rate limiting, DoH/DoT/DoQ termination, policies) | Anycast + ECMP with no proxy on pure authoritatives | Publishing the recursive directly to the Internet "for testing" |
+| Cluster DNS | **CoreDNS 1.14.6** (10 Jul 2026) — **its configuration inside Kubernetes is set by `kubernetes-standards`** | CoreDNS as a general-purpose recursive only in very bounded scenarios | CoreDNS as a public authoritative for business zones |
+| Lightweight forwarder / small DHCP-DNS | `dnsmasq` **2.93** (pin ≥2.93: closes the batch of 6 coordinated CVEs from May 2026, incl. heap overflow CVE-2026-2291) | The router's forwarder in a lab only | Any `dnsmasq` < 2.92rel2 exposed |
+| Lab/home DNS filtering | **Pi-hole FTL 6.7** (6 Jul 2026, embeds dnsmasq 2.93) or **AdGuard Home 0.107.78** (13 Jul 2026) | — | Home filtering as the sole corporate resolver or without redundancy |
+| Zone as code | **dnscontrol 4.45.0** (1 Aug 2026) for multi-provider with `preview`/`push`; **octoDNS 1.21.1** (1 Aug 2026) if you prefer declarative YAML and Python | Terraform with the DNS provider's provider when the zone already lives in IaC of the same cloud | Editing zones in the registrar's or provider's web console |
+| Public authoritative DNS | **Two independent operators** (e.g. self-hosted + managed), each one anycast | A single provider **only** with an SLA, multi-region anycast and a written exit plan | All NS in the same AS, the same datacenter or the same provider |
+| Stub-to-resolver transport | **DoT (853)** towards the corporate resolver, or `53` on a trusted network with egress blocked | **DoQ (RFC 9250, May 2022)** where the software supports it and the operator controls it | Application DoH towards a third party, with no policy |
+| Diagnosis | `kdig`, `dig +trace`, `delv`, `dnsviz`, `zonemaster` | `drill` | `nslookup` as a diagnostic tool (it hides the detail you need) |
 
-**Criterio de elección, no de gusto**: autoritativo → Knot/NSD si quieres mínimo y rápido, BIND si
-quieres el ecosistema, PowerDNS si el dato vive en SQL. Recursivo → Unbound/Knot Resolver.
-Cualquier candidato se descarta si no tiene **release de seguridad en los últimos 12 meses** o su
-rama está EOL: eso es el filtro previo a toda discusión técnica.
+**Choice criteria, not taste**: authoritative → Knot/NSD if you want minimal and fast, BIND if
+you want the ecosystem, PowerDNS if the data lives in SQL. Recursive → Unbound/Knot Resolver.
+Any candidate is discarded if it has no **security release in the last 12 months** or its
+branch is EOL: that is the filter that precedes any technical discussion.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Arquitectura
+### 3.1 Architecture
 
-- **Autoritativo y recursivo NUNCA en el mismo servidor ni en el mismo proceso.** Son dos
-  servicios con dos modelos de amenaza opuestos: el autoritativo es público y no debe cachear
-  nada de terceros; el recursivo es interno, cachea todo y no debe responder a nadie de fuera.
-  Mezclarlos habilita envenenamiento de caché con datos "autoritativos" y convierte un fallo de
-  uno en caída del otro. Si el software ofrece ambos roles, se despliegan por separado igualmente.
-- **Mínimo de autoritativos: dos, y con diversidad real** — distinto software o al menos distinto
-  proceso y versión, distinta red/AS, distinta ubicación, idealmente distinto proveedor.
-  Dos NS en el mismo hipervisor son un NS con dos nombres. Regla práctica: 2 proveedores × anycast.
-- **Anycast para autoritativos públicos**: misma IP anunciada desde varias ubicaciones, con
-  health check que **retira el anuncio BGP** cuando el demonio deja de responder (el diseño BGP,
-  en `networking-standards`). Sin retirada automática, anycast agrava el fallo en vez de mitigarlo.
-- **Recursivos**: al menos dos por sitio, en dominios de fallo distintos, con la misma política y
-  el mismo contenido de RPZ/filtrado. Un resolver único es un SPOF que tumba todo el sitio.
-- **Modelo oculto (`hidden primary`)**: el primario que firma no está publicado en el NS RRset;
-  sólo los secundarios lo están. Reduce superficie y separa "quien edita" de "quien responde".
-- **Split-horizon con criterio**: sólo cuando el mismo nombre debe resolver a algo distinto dentro
-  y fuera, y asumiendo su coste (dos verdades que divergen). Prefiere **nombres distintos** o
-  subdominio interno delegado. Si usas vistas, la vista interna es un superconjunto explícito y
-  documentado, y ambas se generan del **mismo** SoT.
+- **Authoritative and recursive NEVER on the same server nor in the same process.** They are two
+  services with two opposite threat models: the authoritative one is public and must not cache
+  anything from third parties; the recursive one is internal, caches everything and must not answer
+  anyone from outside. Mixing them enables cache poisoning with "authoritative" data and turns a
+  failure of one into an outage of the other. If the software offers both roles, they are deployed separately anyway.
+- **Minimum authoritatives: two, and with real diversity** — different software or at least a different
+  process and version, different network/AS, different location, ideally a different provider.
+  Two NS on the same hypervisor are one NS with two names. Rule of thumb: 2 providers × anycast.
+- **Anycast for public authoritatives**: the same IP announced from several locations, with a
+  health check that **withdraws the BGP announcement** when the daemon stops answering (the BGP design,
+  in `networking-standards`). Without automatic withdrawal, anycast aggravates the failure instead of mitigating it.
+- **Recursives**: at least two per site, in different failure domains, with the same policy and
+  the same RPZ/filtering content. A single resolver is a SPOF that takes down the whole site.
+- **Hidden model (`hidden primary`)**: the primary that signs is not published in the NS RRset;
+  only the secondaries are. It reduces surface and separates "who edits" from "who answers".
+- **Split-horizon with judgement**: only when the same name must resolve to something different inside
+  and outside, and assuming its cost (two truths that diverge). Prefer **different names** or
+  a delegated internal subdomain. If you use views, the internal view is an explicit and
+  documented superset, and both are generated from the **same** SoT.
 
-### 3.2 Zona: TTL, SOA, delegación
+### 3.2 Zone: TTL, SOA, delegation
 
-- **TTL con criterio, no un número copiado**: registros estables (NS, MX, SPF/DKIM/DMARC)
-  horas; registros de servicio en producción 300-3600 s; registros de failover y health-based,
-  30-60 s asumiendo el coste en consultas. Un TTL alto es resiliencia ante caída del autoritativo;
-  uno bajo es agilidad. Elige a sabiendas.
-- **Bajar el TTL ANTES de migrar** — el error clásico y el más caro. Secuencia: bajar TTL a 60 s
-  → **esperar al menos el TTL anterior completo** (si estaba a 86400, esperas un día) → migrar →
-  verificar desde varios resolvers públicos y regiones → restaurar el TTL. Bajarlo el mismo día
-  del corte no sirve de nada: los resolvers siguen sirviendo el valor viejo.
-- **SOA**: `refresh` y `retry` son irrelevantes si usas **NOTIFY + IXFR** (que es lo que debes
-  usar); lo que importa de verdad es **`expire`** (cuánto sirve un secundario sin poder hablar
-  con el primario — no lo pongas corto: es tu colchón ante una partición) y **`minimum`**, que
-  hoy significa **TTL del NXDOMAIN negativo** (RFC 2308), no un TTL por defecto. Serial:
-  `YYYYMMDDnn` o entero incremental generado por la herramienta, **nunca a mano**.
-- **Delegación y glue**: los `NS` del hijo deben coincidir exactamente con los del padre; el
-  **glue** (registro A/AAAA en el padre) es obligatorio y sólo obligatorio cuando el NS está
-  *dentro* de la zona delegada. Glue obsoleto tras cambiar la IP de un NS es una de las averías
-  más difíciles de ver desde dentro: se diagnostica **desde fuera**, con `dig +trace` y consulta
-  directa a los servidores del TLD.
-- **Consistencia entre padre e hijo**: NS RRset, `DS` y glue se verifican como gate (§4).
-  Cualquier divergencia es un hallazgo, no una curiosidad.
-- **`CNAME` en el ápice está prohibido por el protocolo** (el ápice tiene SOA y NS, y CNAME no
-  puede coexistir). Alternativas, en orden: (1) `ALIAS`/`ANAME` del proveedor —resolución en el
-  lado servidor, no estándar IETF, comportamiento y geolocalización dependen del proveedor;
-  (2) registro **`HTTPS`** en el ápice con `AliasMode` (RFC 9460) —lo correcto a futuro, pero
-  el cliente que no lo soporte necesita igualmente A/AAAA; (3) A/AAAA fijos actualizados por
-  automatización. Nunca "apuntar el ápice a un CNAME y esperar que el resolver lo perdone".
-- **Registros modernos que sí se fijan**:
-  - **`CAA` (RFC 8659) obligatorio en toda zona**: restringe qué CA puede emitir para el dominio,
-    con `issue`, `issuewild` (ponlo a `;` si no usas wildcards) e `iodef` para notificación.
-    Es barato, se comprueba en el momento de la emisión y corta la mis-emisión.
-  - **`HTTPS`/`SVCB` (RFC 9460, nov-2023)**: consultados de serie por Firefox, Safari y Chrome;
-    habilitan HTTP/3 sin *upgrade dance*, upgrade a https y **ECH**. Publica al menos
-    `alpn="h3,h2"` en los servicios web. RFC 9461 (mapeo DoH, `dohpath`) y RFC 9462 (DDR)
-    dependen de ellos para descubrir resolvers cifrados. Los clientes antiguos los ignoran: no
-    hay riesgo de compatibilidad, sí de olvidar mantenerlos coherentes con A/AAAA.
-  - **`SSHFP`**: útil sólo si el cliente valida y la zona está firmada; sin DNSSEC no aporta
-    seguridad, sólo comodidad.
-  - **`TLSA`/DANE**: **honestidad** — la adopción real es residual. En un escaneo de 5,5 M de
-    dominios (feb-2026) unos **30** publicaban TLSA frente a ~16.000 con MTA-STS. M365 valida
-    ambos; Google Workspace y Yahoo soportan MTA-STS y **no** DANE. Postfix y Exim traen DANE
-    nativo (MTA-STS requiere complemento tipo `postfix-tlspol`). **Criterio**: publica TLSA sólo
-    si tu zona está firmada, tienes rotación de certificado y TLSA **acoplada y probada**, y tu
-    ecosistema (correo `.nl`/`.de`, requisitos internet.nl, sector público europeo) lo pide.
-    Fuera de ahí, **MTA-STS primero**; DANE mal operado es una interrupción de correo garantizada.
-- **PTR**: mantén el inverso de lo que envía correo o participa en TLS mutuo; FCrDNS (A→PTR→A
-  coherente) es requisito práctico de entregabilidad. Delegación inversa IPv6 (`ip6.arpa`) por
-  automatización o no existirá.
-- **Wildcards (`*`)**: prohibidos salvo caso justificado y acotado. Ocultan errores tipográficos,
-  rompen NXDOMAIN como señal y convierten cualquier subdominio inventado en superficie válida.
+- **TTL with judgement, not a copied number**: stable records (NS, MX, SPF/DKIM/DMARC)
+  hours; production service records 300-3600 s; failover and health-based records,
+  30-60 s assuming the cost in queries. A high TTL is resilience against the authoritative going down;
+  a low one is agility. Choose knowingly.
+- **Lower the TTL BEFORE migrating** — the classic and most expensive mistake. Sequence: lower the TTL to 60 s
+  → **wait at least the full previous TTL** (if it was at 86400, you wait a day) → migrate →
+  verify from several public resolvers and regions → restore the TTL. Lowering it the same day
+  as the cutover is worthless: resolvers keep serving the old value.
+- **SOA**: `refresh` and `retry` are irrelevant if you use **NOTIFY + IXFR** (which is what you should
+  use); what really matters is **`expire`** (how long a secondary serves without being able to talk
+  to the primary — do not set it short: it is your cushion against a partition) and **`minimum`**, which
+  today means **negative NXDOMAIN TTL** (RFC 2308), not a default TTL. Serial:
+  `YYYYMMDDnn` or an incremental integer generated by the tool, **never by hand**.
+- **Delegation and glue**: the child's `NS` must match the parent's exactly; the
+  **glue** (A/AAAA record in the parent) is mandatory and only mandatory when the NS is
+  *inside* the delegated zone. Stale glue after changing an NS's IP is one of the hardest
+  faults to see from inside: it is diagnosed **from outside**, with `dig +trace` and a direct query
+  to the TLD's servers.
+- **Consistency between parent and child**: NS RRset, `DS` and glue are verified as a gate (§4).
+  Any divergence is a finding, not a curiosity.
+- **`CNAME` at the apex is forbidden by the protocol** (the apex has SOA and NS, and CNAME cannot
+  coexist). Alternatives, in order: (1) the provider's `ALIAS`/`ANAME` —resolution on the
+  server side, not an IETF standard, behaviour and geolocation depend on the provider;
+  (2) an **`HTTPS`** record at the apex with `AliasMode` (RFC 9460) —the right thing going forward, but
+  a client that does not support it still needs A/AAAA; (3) fixed A/AAAA updated by
+  automation. Never "point the apex at a CNAME and hope the resolver forgives it".
+- **Modern records that do get pinned**:
+  - **`CAA` (RFC 8659) mandatory in every zone**: restricts which CA can issue for the domain,
+    with `issue`, `issuewild` (set it to `;` if you do not use wildcards) and `iodef` for notification.
+    It is cheap, it is checked at issuance time and it stops mis-issuance.
+  - **`HTTPS`/`SVCB` (RFC 9460, Nov 2023)**: queried by default by Firefox, Safari and Chrome;
+    they enable HTTP/3 without the *upgrade dance*, upgrade to https and **ECH**. Publish at least
+    `alpn="h3,h2"` on web services. RFC 9461 (DoH mapping, `dohpath`) and RFC 9462 (DDR)
+    depend on them to discover encrypted resolvers. Old clients ignore them: there is
+    no compatibility risk, but there is the risk of forgetting to keep them consistent with A/AAAA.
+  - **`SSHFP`**: useful only if the client validates and the zone is signed; without DNSSEC it adds no
+    security, only convenience.
+  - **`TLSA`/DANE**: **honesty** — real adoption is residual. In a scan of 5.5M
+    domains (Feb 2026) around **30** published TLSA versus ~16,000 with MTA-STS. M365 validates
+    both; Google Workspace and Yahoo support MTA-STS and **not** DANE. Postfix and Exim ship DANE
+    natively (MTA-STS requires an add-on such as `postfix-tlspol`). **Criteria**: publish TLSA only
+    if your zone is signed, you have certificate rotation and TLSA **coupled and tested**, and your
+    ecosystem (`.nl`/`.de` mail, internet.nl requirements, European public sector) demands it.
+    Outside that, **MTA-STS first**; badly operated DANE is a guaranteed mail outage.
+- **PTR**: maintain the reverse for anything that sends mail or takes part in mutual TLS; FCrDNS (consistent
+  A→PTR→A) is a practical deliverability requirement. IPv6 reverse delegation (`ip6.arpa`) by
+  automation or it will not exist.
+- **Wildcards (`*`)**: forbidden except in a justified and bounded case. They hide typos,
+  break NXDOMAIN as a signal and turn any made-up subdomain into valid surface.
 
-### 3.3 Correo: autenticación en DNS
+### 3.3 Mail: authentication in DNS
 
-- **SPF**: un único registro TXT por dominio, terminado en **`-all`** (fail) una vez validado con
-  datos reales; `~all` sólo como fase temporal con fecha de salida escrita. **Límite duro de 10
-  lookups DNS** (`include`, `a`, `mx`, `ptr`, `exists`, `redirect`): superarlo produce
-  `PermError` y **el SPF deja de valer**, silenciosamente. Se mide en CI, no se estima.
-  `ptr` está deprecado: no se usa. Dominios que no envían correo: `v=spf1 -all` + `MX .` + DMARC
-  `p=reject` (los dominios "parked" son el vector de suplantación más olvidado).
-- **DKIM**: claves **RSA-2048 o Ed25519** (los algoritmos y su custodia, en
-  `cryptography-pki-standards`), un selector por sistema emisor, rotación programada con
-  solapamiento (publicar nuevo selector → migrar firmantes → retirar el viejo). Selectores de
-  proveedores que ya no usas: se borran.
-- **DMARC**: el objetivo es **`p=reject`**. `p=none` es una **fase de observación con fecha de
-  fin**, no un estado permanente; un `p=none` de más de un trimestre es una decisión de no
-  proteger el dominio, tomada por omisión. Ruta: `p=none` + `rua` → analizar informes → alinear
-  emisores → `p=quarantine` con `pct` creciente → `p=reject`, incluyendo subdominios (`sp=`).
-  Base normativa actualizada: **DMARCbis — RFC 9989** (Standards Track, may-2026, obsoleta
-  RFC 7489 y 9091) y **RFC 9990** (informes agregados).
-- **Requisitos vigentes de los grandes proveedores** (verificado ago-2026): Google y Yahoo exigen
-  SPF+DKIM+DMARC alineado a remitentes de **≥5.000 mensajes/día** desde feb-2024, y Gmail pasó de
-  aplazamiento `421` a **rechazo permanente `550` en nov-2025**; **Microsoft** aplica desde el
-  **5-may-2025** rechazo directo (`550 5.7.515`) para outlook.com/hotmail.com/live.com, sin fase
-  de aviso; La Poste se sumó en sep-2025. Todos exigen además desuscripción en un clic
-  (`List-Unsubscribe` + `List-Unsubscribe-Post`, RFC 8058) y tasa de queja por debajo del 0,3%
-  (opera por debajo del 0,1%). La tendencia declarada es endurecer hacia políticas estrictas:
-  **asume que `p=none` dejará de ser suficiente y adelántate**.
-- **MTA-STS (RFC 8461) y TLS-RPT (RFC 8460)**: publica ambos. MTA-STS requiere el TXT en
-  `_mta-sts.<dominio>` **y** la política servida por HTTPS en `mta-sts.<dominio>/.well-known/`
-  con certificado válido — dos sistemas que deben caducar juntos y no lo hacen solos: es la causa
-  habitual de que ~30% de los despliegues medidos estén mal configurados. Empieza en
-  `mode: testing`, pasa a `enforce` cuando TLS-RPT esté limpio. El `id` de la política cambia con
-  cada modificación o los remitentes servirán la cacheada.
+- **SPF**: a single TXT record per domain, ending in **`-all`** (fail) once validated with
+  real data; `~all` only as a temporary phase with a written exit date. **Hard limit of 10
+  DNS lookups** (`include`, `a`, `mx`, `ptr`, `exists`, `redirect`): exceeding it produces
+  `PermError` and **SPF stops being worth anything**, silently. It is measured in CI, not estimated.
+  `ptr` is deprecated: it is not used. Domains that do not send mail: `v=spf1 -all` + `MX .` + DMARC
+  `p=reject` ("parked" domains are the most forgotten spoofing vector).
+- **DKIM**: **RSA-2048 or Ed25519** keys (the algorithms and their custody, in
+  `cryptography-pki-standards`), one selector per sending system, scheduled rotation with
+  overlap (publish new selector → migrate signers → retire the old one). Selectors of
+  providers you no longer use: they get deleted.
+- **DMARC**: the goal is **`p=reject`**. `p=none` is an **observation phase with an end
+  date**, not a permanent state; a `p=none` older than a quarter is a decision not to
+  protect the domain, taken by omission. Route: `p=none` + `rua` → analyse reports → align
+  senders → `p=quarantine` with increasing `pct` → `p=reject`, including subdomains (`sp=`).
+  Updated normative basis: **DMARCbis — RFC 9989** (Standards Track, May 2026, obsoletes
+  RFC 7489 and 9091) and **RFC 9990** (aggregate reports).
+- **Current requirements of the big providers** (verified Aug 2026): Google and Yahoo require
+  aligned SPF+DKIM+DMARC from senders of **≥5,000 messages/day** since Feb 2024, and Gmail moved from
+  `421` deferral to **permanent `550` rejection in Nov 2025**; **Microsoft** has applied since
+  **5 May 2025** direct rejection (`550 5.7.515`) for outlook.com/hotmail.com/live.com, with no warning
+  phase; La Poste joined in Sep 2025. All of them additionally require one-click unsubscribe
+  (`List-Unsubscribe` + `List-Unsubscribe-Post`, RFC 8058) and a complaint rate below 0.3%
+  (operate below 0.1%). The declared trend is to harden towards strict policies:
+  **assume `p=none` will stop being sufficient and get ahead of it**.
+- **MTA-STS (RFC 8461) and TLS-RPT (RFC 8460)**: publish both. MTA-STS requires the TXT at
+  `_mta-sts.<domain>` **and** the policy served over HTTPS at `mta-sts.<domain>/.well-known/`
+  with a valid certificate — two systems that must expire together and do not do so on their own: it is the
+  usual cause of ~30% of measured deployments being misconfigured. Start at
+  `mode: testing`, move to `enforce` when TLS-RPT is clean. The policy `id` changes with
+  every modification or senders will serve the cached one.
 
-### 3.4 Espacio de nombres interno
+### 3.4 Internal namespace
 
-- **Usa un subdominio de un dominio que poseas** (`corp.example.com`, `internal.example.com`):
-  es la única opción que permite DNSSEC, certificados públicos y coexistencia con split-horizon
-  sin colisiones.
-- Alternativas reservadas y legítimas: **`.internal`** (reservado por ICANN el 29-jul-2024 para
-  uso privado, nunca se delegará en la raíz) y **`home.arpa`** (RFC 8375, red doméstica).
-  Ambas son **inseguras por definición**: no hay cadena DNSSEC ni certificado público posible.
-- **PROHIBIDO inventarse TLD** (`.local` —que además es mDNS, RFC 6762—, `.lan`, `.corp`, `.home`,
-  `.dev` como interno, `.intranet`): colisión con delegaciones reales, fuga de consultas a la raíz,
-  y cuando el TLD acaba delegado de verdad, un tercero recibe tu tráfico interno con tus
-  credenciales dentro. El caso `.dev` ya ocurrió.
-- **Integración DHCP/directorio**: actualización dinámica del DNS desde el servidor DHCP (Kea) con
-  **TSIG** y ámbito acotado a la zona dinámica, nunca con clave compartida global. En entornos
-  con Active Directory, DNS integrado en el directorio con actualizaciones **seguras únicamente**
-  (el detalle de AD, en `windows-server-ad-standards`), y delegación explícita entre la zona AD
-  y la zona corporativa: dos autoridades sobre el mismo nombre es un incidente esperando fecha.
-- **Búsqueda (`search`) mínima**: listas largas multiplican consultas y crean resoluciones
-  accidentales. Nombres cualificados (FQDN) en configuración de servicios, siempre.
+- **Use a subdomain of a domain you own** (`corp.example.com`, `internal.example.com`):
+  it is the only option that allows DNSSEC, public certificates and coexistence with split-horizon
+  without collisions.
+- Reserved and legitimate alternatives: **`.internal`** (reserved by ICANN on 29 Jul 2024 for
+  private use, it will never be delegated in the root) and **`home.arpa`** (RFC 8375, home network).
+  Both are **insecure by definition**: there is no possible DNSSEC chain nor public certificate.
+- **FORBIDDEN to invent TLDs** (`.local` —which is also mDNS, RFC 6762—, `.lan`, `.corp`, `.home`,
+  `.dev` as internal, `.intranet`): collision with real delegations, leakage of queries to the root,
+  and when the TLD ends up genuinely delegated, a third party receives your internal traffic with your
+  credentials inside. The `.dev` case already happened.
+- **DHCP/directory integration**: dynamic DNS update from the DHCP server (Kea) with
+  **TSIG** and scope bounded to the dynamic zone, never with a global shared key. In environments
+  with Active Directory, DNS integrated in the directory with **secure updates only**
+  (the AD detail, in `windows-server-ad-standards`), and explicit delegation between the AD zone
+  and the corporate zone: two authorities over the same name is an incident waiting for a date.
+- **Minimal search (`search`)**: long lists multiply queries and create accidental
+  resolutions. Qualified names (FQDN) in service configuration, always.
 
-### 3.5 Zona como código
+### 3.5 Zone as code
 
-- El **SoT es el repo**, no el panel del proveedor. `dnscontrol` u `octoDNS` generan y empujan;
-  el acceso humano al panel queda para emergencias, con MFA y auditoría.
-- El pipeline: PR → validación de sintaxis y de política → `preview`/`plan` con **diff explícito**
-  → revisión humana obligatoria para NS, DS, MX y registros de autenticación de correo → `push`.
-- **Detección de deriva** periódica: diff entre lo publicado y el repo. Una diferencia es un
-  hallazgo con dueño (o un cambio manual que alguien hizo bajo presión y no documentó).
-- Credenciales de API del proveedor DNS: en gestor de secretos, con permisos limitados a las zonas
-  necesarias (`secrets-management-standards`). Ese token permite emitir certificados por DNS-01
-  para **todo** tu dominio: trátalo como clave de identidad, no como config.
+- The **SoT is the repo**, not the provider's panel. `dnscontrol` or `octoDNS` generate and push;
+  human access to the panel is left for emergencies, with MFA and auditing.
+- The pipeline: PR → syntax and policy validation → `preview`/`plan` with an **explicit diff**
+  → mandatory human review for NS, DS, MX and mail authentication records → `push`.
+- Periodic **drift detection**: diff between what is published and the repo. A difference is a
+  finding with an owner (or a manual change someone made under pressure and did not document).
+- DNS provider API credentials: in a secrets manager, with permissions limited to the zones
+  required (`secrets-management-standards`). That token allows issuing certificates via DNS-01
+  for **all** of your domain: treat it as an identity key, not as config.
 
-## 4. Gates de calidad obligatorios
+## 4. Mandatory quality gates
 
-En orden de coste creciente. Los cuatro primeros rompen el build.
+In order of increasing cost. The first four break the build.
 
-1. **Sintaxis y carga**: `named-checkconf` + `named-checkzone` (o `knotc zone-check`,
-   `unbound-checkconf`, `pdnsutil check-all-zones`, `kresctl validate`) sobre cada zona y cada
-   config. Una zona que no carga es un corte total, no un aviso.
-2. **Política de zona en CI**:
-   - SPF: **contar los lookups DNS** y fallar por encima de 10; un único registro `v=spf1`.
-   - DMARC presente; **fallar si `p=none` supera la fecha límite** registrada en el repo.
-   - `CAA` presente en el ápice y coherente con la CA que realmente emite.
-   - Ningún `CNAME` en el ápice; ningún `CNAME` coexistiendo con otros tipos.
-   - TTL dentro de rangos acordados por clase de registro.
-   - Serial creciente respecto al publicado.
-3. **Coherencia padre-hijo y delegación**: NS del padre == NS del hijo, glue correcto, `DS`
-   coincidente con la DNSKEY publicada. `dig +trace`, `dnsviz` o `zonemaster` en el pipeline.
-4. **Prueba negativa**: verifica que el **recursivo interno no responde desde fuera**, que el
-   **autoritativo no recursa** (`RD` ignorado, no hay respuesta para nombres ajenos), y que
-   `AXFR` está denegado a quien no tiene TSIG. Un DNS probado sólo por el camino feliz no está
-   probado.
-5. **Resolución desde fuera, continua**: sondas desde varias regiones y varios resolvers públicos
-   —no sólo desde tu red, donde la caché te miente— comprobando respuesta correcta, coherencia
-   entre todos los NS, y latencia. Añade la verificación de **validación DNSSEC** extremo a extremo.
-6. **Vigilancia de caducidades, con alerta anticipada y dueño**:
-   - **Firmas RRSIG** (alerta al 50% de la vida restante; una firma caducada es una caída total
-     y autoinfligida, y el recursivo validante te deja fuera de Internet).
-   - **Registro de dominio** (multi-año + auto-renovación **y** alerta independiente del
-     registrador: si la alerta la manda quien te va a cortar, no es una alerta).
-   - Certificado de la política **MTA-STS** y del endpoint DoH/DoT.
-   - Selectores DKIM y ventana de rotación.
-7. **Ensayo de rollover y de restauración**: la primera rotación de KSK no se hace en producción
-   sin haberla hecho en un entorno igual. Restaura la zona desde el repo en un servidor limpio al
-   menos una vez por semestre.
-8. **Prueba de failover**: apaga un autoritativo y un recursivo (en ventana) y comprueba que
-   nadie se entera. Un secundario nunca ejercitado no cuenta como redundancia.
+1. **Syntax and load**: `named-checkconf` + `named-checkzone` (or `knotc zone-check`,
+   `unbound-checkconf`, `pdnsutil check-all-zones`, `kresctl validate`) over every zone and every
+   config. A zone that does not load is a total outage, not a warning.
+2. **Zone policy in CI**:
+   - SPF: **count the DNS lookups** and fail above 10; a single `v=spf1` record.
+   - DMARC present; **fail if `p=none` exceeds the deadline** recorded in the repo.
+   - `CAA` present at the apex and consistent with the CA that actually issues.
+   - No `CNAME` at the apex; no `CNAME` coexisting with other types.
+   - TTL within ranges agreed by record class.
+   - Serial increasing with respect to the published one.
+3. **Parent-child coherence and delegation**: parent NS == child NS, correct glue, `DS`
+   matching the published DNSKEY. `dig +trace`, `dnsviz` or `zonemaster` in the pipeline.
+4. **Negative test**: verify that the **internal recursive does not answer from outside**, that the
+   **authoritative does not recurse** (`RD` ignored, no answer for foreign names), and that
+   `AXFR` is denied to anyone without TSIG. A DNS tested only along the happy path is not
+   tested.
+5. **Continuous resolution from outside**: probes from several regions and several public resolvers
+   —not just from your network, where the cache lies to you— checking correct answer, coherence
+   between all NS, and latency. Add end-to-end **DNSSEC validation** verification.
+6. **Expiry watch, with early alerting and an owner**:
+   - **RRSIG signatures** (alert at 50% of remaining life; an expired signature is a total
+     and self-inflicted outage, and the validating recursive leaves you off the Internet).
+   - **Domain registration** (multi-year + auto-renewal **and** an alert independent of the
+     registrar: if the alert is sent by the one who is going to cut you off, it is not an alert).
+   - Certificate of the **MTA-STS** policy and of the DoH/DoT endpoint.
+   - DKIM selectors and rotation window.
+7. **Rollover and restore rehearsal**: the first KSK rotation is not done in production
+   without having done it in an identical environment. Restore the zone from the repo on a clean server at
+   least once every six months.
+8. **Failover test**: shut down an authoritative and a recursive (in a window) and check that
+   nobody notices. A secondary that is never exercised does not count as redundancy.
 
-## 5. Seguridad
+## 5. Security
 
 ### 5.1 DNSSEC
 
-- **Valida siempre en el recursivo** (coste cero de operación, beneficio inmediato). La validación
-  global ronda el **35-36%** de usuarios (APNIC) y ~49% en la UE: estás en el lado correcto de esa
-  estadística, no en el marginal. Referencia normativa: **RFC 9364 (BCP 237)**.
-- **Firmar la zona propia: cuándo compensa.** Sí, si el nombre soporta correo, certificados,
-  identidad federada o servicios financieros, o si necesitas DANE/SSHFP con valor real. No —o no
-  todavía— si no puedes automatizar el firmado y la rotación, porque el modo de fallo es
-  **caída total del nombre**, no degradación. Datos honestos: las delegaciones firmadas rondan el
-  **7%**, `.com` ~4,3% y `.net` ~5,3%; y aunque ~8% de las consultas van a dominios firmados,
-  sólo ~0,5-0,6% se validan extremo a extremo (Cloudflare Radar, 2026, en crecimiento sostenido).
-  Firmar es correcto; creer que te protege de un atacante ya presente en el resolver del cliente,
-  no.
-- **Automatizado o no se hace**: firmado en línea y gestión de claves del propio servidor
-  (Knot `keymgr`/DNSSEC automático, BIND `dnssec-policy`, PowerDNS `pdnsutil`). Rotación de ZSK
-  automática; **KSK con CDS/CDNSKEY (RFC 7344/8078)** para que el padre se actualice solo donde
-  el registrador lo soporte. **Firmar a mano con cron y `dnssec-signzone` está vetado**: el 100%
-  de las caídas por DNSSEC que verás son firmas caducadas o un DS que no se actualizó.
-- **NSEC3 sólo si necesitas evitar el enumerado**, y con los parámetros de **RFC 9276 (BCP 236)**:
-  **0 iteraciones y salt vacío**. Iteraciones altas son coste para ti y amplificación para el
-  atacante, no seguridad. Si la enumeración de la zona no es un problema, **NSEC plano** es más
-  simple y más barato.
-- **Monitoriza la cadena completa** (DS en el padre ↔ DNSKEY ↔ RRSIG ↔ expiración) desde un
-  validador externo, no desde tu propio servidor.
-- Algoritmos, longitudes y custodia de claves: `cryptography-pki-standards`.
+- **Always validate on the recursive** (zero operational cost, immediate benefit). Global
+  validation is around **35-36%** of users (APNIC) and ~49% in the EU: you are on the right side of that
+  statistic, not on the marginal one. Normative reference: **RFC 9364 (BCP 237)**.
+- **Signing your own zone: when it pays off.** Yes, if the name supports mail, certificates,
+  federated identity or financial services, or if you need DANE/SSHFP with real value. No —or not
+  yet— if you cannot automate signing and rotation, because the failure mode is
+  **total outage of the name**, not degradation. Honest data: signed delegations are around
+  **7%**, `.com` ~4.3% and `.net` ~5.3%; and although ~8% of queries go to signed domains,
+  only ~0.5-0.6% are validated end to end (Cloudflare Radar, 2026, growing steadily).
+  Signing is correct; believing that it protects you from an attacker already present in the client's resolver,
+  not.
+- **Automated or it does not get done**: inline signing and key management by the server itself
+  (Knot `keymgr`/automatic DNSSEC, BIND `dnssec-policy`, PowerDNS `pdnsutil`). Automatic ZSK
+  rotation; **KSK with CDS/CDNSKEY (RFC 7344/8078)** so that the parent updates itself where
+  the registrar supports it. **Signing by hand with cron and `dnssec-signzone` is vetoed**: 100%
+  of the DNSSEC outages you will see are expired signatures or a DS that was not updated.
+- **NSEC3 only if you need to prevent enumeration**, and with the parameters of **RFC 9276 (BCP 236)**:
+  **0 iterations and empty salt**. High iteration counts are cost for you and amplification for the
+  attacker, not security. If zone enumeration is not a problem, **plain NSEC** is
+  simpler and cheaper.
+- **Monitor the full chain** (DS in the parent ↔ DNSKEY ↔ RRSIG ↔ expiry) from an
+  external validator, not from your own server.
+- Algorithms, lengths and key custody: `cryptography-pki-standards`.
 
-### 5.2 Disponibilidad y abuso
+### 5.2 Availability and abuse
 
-- **Nunca un resolver abierto**: el recursivo responde sólo a redes propias (`access-control` /
-  `allow-query`). Un recursivo abierto es un amplificador para terceros y un canal de
-  envenenamiento para ti.
-- **Amplificación en autoritativos**: **RRL (Response Rate Limiting)** activado con `slip` para
-  no castigar a clientes legítimos, **minimal-any (RFC 8482)** para no responder ANY completo, y
-  respuestas mínimas. Complementa con limitación en dnsdist y anti-DDoS aguas arriba.
-- **Cache poisoning**: las mitigaciones actuales (puerto de origen aleatorio, 0x20, cookies DNS
-  RFC 7873, DNSSEC, QNAME minimisation RFC 9156) **bastan pero no sobran**: siguen apareciendo
-  variantes (p. ej. NS promiscuos, CVE-2025-11411 en Unbound, envenenamiento entre zonas
-  CVE-2026-13321 en BIND en jul-2026). **Traducción operativa: parchea rápido**; la defensa
-  estructural existe, pero cada trimestre alguien encuentra una grieta en la implementación.
-- **Higiene del recursivo**: QNAME minimisation activo, `harden-below-nxdomain`, NXDOMAIN cut
-  (RFC 8020), rechazo de respuestas fuera de bailiwick, y **no** reescribir NXDOMAIN a una IP
-  propia (rompe la señal, el correo y la detección).
+- **Never an open resolver**: the recursive answers only to your own networks (`access-control` /
+  `allow-query`). An open recursive is an amplifier for third parties and a poisoning channel
+  for you.
+- **Amplification on authoritatives**: **RRL (Response Rate Limiting)** enabled with `slip` so as
+  not to punish legitimate clients, **minimal-any (RFC 8482)** so as not to answer a full ANY, and
+  minimal responses. Complement with rate limiting in dnsdist and upstream anti-DDoS.
+- **Cache poisoning**: current mitigations (random source port, 0x20, DNS cookies
+  RFC 7873, DNSSEC, QNAME minimisation RFC 9156) **are enough but with no margin to spare**: variants
+  keep appearing (e.g. promiscuous NS, CVE-2025-11411 in Unbound, cross-zone poisoning
+  CVE-2026-13321 in BIND in Jul 2026). **Operational translation: patch fast**; the structural
+  defence exists, but every quarter someone finds a crack in the implementation.
+- **Recursive hygiene**: QNAME minimisation active, `harden-below-nxdomain`, NXDOMAIN cut
+  (RFC 8020), rejection of out-of-bailiwick answers, and **do not** rewrite NXDOMAIN to an IP
+  of your own (it breaks the signal, mail and detection).
 
-### 5.3 El nombre como activo: secuestro y abandono
+### 5.3 The name as an asset: hijack and abandonment
 
-- **Secuestro de dominio: la vía de compromiso total más barata que existe.** Con control del
-  registrador o de los NS, un atacante emite certificados válidos (DNS-01/HTTP-01), redirige el
-  correo, pasa cualquier reset de contraseña y suplanta la marca — sin tocar un solo servidor
-  tuyo. Controles **no negociables**:
-  - **Registrar lock / transfer lock** activo y, en los TLD que lo ofrezcan, **registry lock**
-    (bloqueo en el registro, con desbloqueo fuera de banda) para los dominios de negocio.
-  - **MFA resistente a phishing** en la cuenta del registrador y del proveedor DNS; cuentas
-    nominales, sin correo de contacto en el propio dominio que gestionas (dependencia circular).
-  - **Auto-renovación multi-año** y alerta de expiración independiente del registrador.
-  - **Vigilancia del NS RRset y del DS**: alerta ante cualquier cambio no originado en el repo.
-    Un cambio de NS que no venga de un PR es un incidente hasta que se demuestre lo contrario.
-  - `CAA` con `iodef` y **monitorización de Certificate Transparency** para detectar emisión
-    no autorizada para tus nombres.
-- **Subdominios colgantes (*dangling*) y takeover**: un `CNAME` o A/AAAA que apunta a un recurso
-  liberado (bucket, PaaS, CDN, IP elástica devuelta) permite que un tercero reclame ese destino y
-  sirva contenido bajo tu nombre —con cookies, SSO y confianza de marca incluidos.
-  - **Indicador**: registros que resuelven a un destino que devuelve error de "recurso no
-    reclamado", o cuya IP ya no pertenece a ninguno de tus rangos ni cuentas.
-  - **Mitigación**: el borrado del registro DNS forma parte de la **misma** operación que la baja
-    del recurso (`iac-standards`: destruir el recurso y su registro en el mismo `apply`);
-    inventario cruzado periódico entre zona y recursos activos como gate recurrente; TTL bajo
-    en registros de vida corta. Reserva especial de atención a los subdominios de campañas y
-    entornos temporales, que nadie recuerda dar de baja.
-- **Ciclo de vida**: cada registro tiene dueño y motivo en el repo. Registro sin dueño = registro
-  a borrar, con período de gracia y observación de tráfico previa.
+- **Domain hijacking: the cheapest route to total compromise that exists.** With control of the
+  registrar or the NS, an attacker issues valid certificates (DNS-01/HTTP-01), redirects
+  mail, passes any password reset and impersonates the brand — without touching a single server
+  of yours. **Non-negotiable** controls:
+  - **Registrar lock / transfer lock** enabled and, in the TLDs that offer it, **registry lock**
+    (lock at the registry, with out-of-band unlocking) for business domains.
+  - **Phishing-resistant MFA** on the registrar and DNS provider account; named
+    accounts, with no contact address in the very domain you manage (circular dependency).
+  - **Multi-year auto-renewal** and an expiry alert independent of the registrar.
+  - **Watch the NS RRset and the DS**: alert on any change not originating in the repo.
+    An NS change that does not come from a PR is an incident until proven otherwise.
+  - `CAA` with `iodef` and **Certificate Transparency monitoring** to detect unauthorised
+    issuance for your names.
+- **Dangling subdomains and takeover**: a `CNAME` or A/AAAA pointing at a released resource
+  (bucket, PaaS, CDN, returned elastic IP) allows a third party to claim that destination and
+  serve content under your name —with cookies, SSO and brand trust included.
+  - **Indicator**: records that resolve to a destination returning a "resource not
+    claimed" error, or whose IP no longer belongs to any of your ranges or accounts.
+  - **Mitigation**: deleting the DNS record is part of the **same** operation as decommissioning
+    the resource (`iac-standards`: destroy the resource and its record in the same `apply`);
+    periodic cross-inventory between zone and active resources as a recurring gate; low TTL
+    on short-lived records. Pay special attention to campaign subdomains and
+    temporary environments, which nobody remembers to decommission.
+- **Lifecycle**: every record has an owner and a reason in the repo. A record without an owner = a record
+  to delete, with a grace period and prior traffic observation.
 
-### 5.4 DNS como canal y como control
+### 5.4 DNS as a channel and as a control
 
-- **Registra el 100% de las consultas del resolver** con cliente, nombre, tipo y respuesta.
-  Es la telemetría de seguridad de mayor relación valor/coste que existe. Tú garantizas su
-  **calidad, cobertura y retención**; la analítica y las reglas son de
+- **Log 100% of the resolver's queries** with client, name, type and answer.
+  It is the security telemetry with the highest value/cost ratio that exists. You guarantee its
+  **quality, coverage and retention**; the analytics and the rules belong to
   `detection-engineering-standards`.
-- **Exfiltración y C2 por DNS**: clase de riesgo real y de bajo coste para el atacante.
-  **Indicadores** (para el operador, no procedimiento): volumen anómalo de consultas a un mismo
-  dominio de segundo nivel, etiquetas largas y de alta entropía, número inusual de subdominios
-  únicos, predominio de TXT/NULL/CNAME, y tasa alta de NXDOMAIN por cliente.
-  **Mitigación**: resolución forzada por el resolver corporativo, límite de tasa por cliente,
-  bloqueo de dominios recién registrados y de categorías de riesgo (RPZ), y respaldo con EDR
-  —porque el DoH dentro de HTTPS no se cierra sólo con red.
-- **Transferencias de zona**: `AXFR`/`IXFR` **sólo con TSIG (RFC 8945, STD 93)** y ACL por IP,
-  claves distintas por par de servidores y rotadas. `AXFR` abierto entrega el mapa completo de tu
-  infraestructura a cualquiera. Verifica que está denegado como prueba negativa (§4).
-- **Privacidad y transporte cifrado — lo que implica para el operador**: DoT (853) es
-  distinguible y por tanto **gobernable**; DoH (443) es indistinguible del tráfico web y
-  **anula el filtrado y la visibilidad DNS** si lo activa la aplicación. Criterio: ofrece **tu
-  propio** DoT/DoH/DoQ (mejor privacidad en el último salto sin perder control), impón política
-  de navegador (`DnsOverHttpsMode` en Chrome/Edge, `network.trr.mode` en Firefox) y coordina con
-  `firewall-policy-standards` el bloqueo de `53`/`853` salientes y de los resolvers DoH públicos
-  conocidos. Y asume lo que cambia en el cable: con **ECH** (vía registros `HTTPS`) el SNI deja de
-  ser visible — la inspección basada en SNI es una capacidad en extinción, no una estrategia.
-- Cifrar el transporte **no** anonimiza frente al operador del resolver: mueve la confianza, no la
-  elimina. Elegir un resolver público "por privacidad" es cambiar de observador.
+- **Exfiltration and C2 over DNS**: a real risk class and a low-cost one for the attacker.
+  **Indicators** (for the operator, not a procedure): anomalous query volume to a single
+  second-level domain, long high-entropy labels, an unusual number of unique subdomains,
+  predominance of TXT/NULL/CNAME, and a high NXDOMAIN rate per client.
+  **Mitigation**: forced resolution through the corporate resolver, per-client rate limiting,
+  blocking of newly registered domains and of risk categories (RPZ), and backup with EDR
+  —because DoH inside HTTPS cannot be closed with network alone.
+- **Zone transfers**: `AXFR`/`IXFR` **only with TSIG (RFC 8945, STD 93)** and an IP ACL,
+  different keys per server pair and rotated. An open `AXFR` hands the complete map of your
+  infrastructure to anyone. Verify it is denied as a negative test (§4).
+- **Privacy and encrypted transport — what it implies for the operator**: DoT (853) is
+  distinguishable and therefore **governable**; DoH (443) is indistinguishable from web traffic and
+  **nullifies DNS filtering and visibility** if the application enables it. Criteria: offer **your
+  own** DoT/DoH/DoQ (better privacy on the last hop without losing control), enforce browser policy
+  (`DnsOverHttpsMode` in Chrome/Edge, `network.trr.mode` in Firefox) and coordinate with
+  `firewall-policy-standards` the blocking of outbound `53`/`853` and of known public DoH
+  resolvers. And assume what changes on the wire: with **ECH** (via `HTTPS` records) the SNI stops
+  being visible — SNI-based inspection is a capability going extinct, not a strategy.
+- Encrypting the transport does **not** anonymise you against the resolver's operator: it moves trust, it does not
+  remove it. Choosing a public resolver "for privacy" is changing observer.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Señales que se vigilan siempre**: QPS y su distribución por tipo, latencia de respuesta
-  (p50/p95/p99), tasa de SERVFAIL y de NXDOMAIN, ratio de acierto de caché, fallos de validación
-  DNSSEC, consultas rechazadas por ACL/RRL, retraso de transferencia entre primario y secundarios
-  (serial divergente), y tiempo hasta expiración de RRSIG y de dominio. Umbrales y alertas, en
+- **Signals that are always watched**: QPS and its distribution by type, response latency
+  (p50/p95/p99), SERVFAIL and NXDOMAIN rate, cache hit ratio, DNSSEC validation
+  failures, queries rejected by ACL/RRL, transfer lag between primary and secondaries
+  (divergent serial), and time to RRSIG and domain expiry. Thresholds and alerts, in
   `observability-standards`.
-- **SERVFAIL es la señal más importante y la peor entendida**: puede ser fallo de validación,
-  autoritativo caído o timeout. Distinguir los tres casos exige log del recursivo, no del cliente.
-- **Capacidad**: dimensiona por percentil real de QPS con margen para picos de NXDOMAIN (malware y
-  aplicaciones rotas los generan a miles). La caché es lo que sostiene el servicio: vigila su
-  tasa de acierto antes que la CPU.
-- **Coste del TTL bajo**: cada reducción multiplica consultas a tus autoritativos. Un TTL de 30 s
-  en un registro muy consultado es una decisión de capacidad, no sólo de agilidad.
-- **Runbooks con dueño**: firma DNSSEC caducada, DS incorrecto tras rollover, secundario que no
-  transfiere, resolver caído, dominio cerca de expirar, sospecha de secuestro de NS, subdominio
-  reclamado por un tercero, resolver bajo amplificación. Cada uno con su comprobación desde fuera.
-- **Recuperación**: el estado que hay que poder restaurar es el **repo de zonas + las claves
-  DNSSEC** (custodia y respaldo cifrado en `cryptography-pki-standards` y `bcdr-standards`).
-  Perder la KSK sin respaldo obliga a un rollover de emergencia con ventana de indisponibilidad.
+- **SERVFAIL is the most important and worst understood signal**: it can be a validation failure,
+  a downed authoritative or a timeout. Distinguishing the three cases requires the recursive's log, not the client's.
+- **Capacity**: size by real QPS percentile with margin for NXDOMAIN spikes (malware and
+  broken applications generate them by the thousand). The cache is what sustains the service: watch its
+  hit rate before the CPU.
+- **Cost of a low TTL**: every reduction multiplies queries to your authoritatives. A 30 s TTL
+  on a heavily queried record is a capacity decision, not just an agility one.
+- **Runbooks with an owner**: expired DNSSEC signature, incorrect DS after rollover, secondary that does not
+  transfer, downed resolver, domain close to expiring, suspected NS hijack, subdomain
+  claimed by a third party, resolver under amplification. Each one with its check from outside.
+- **Recovery**: the state you must be able to restore is the **zone repo + the DNSSEC
+  keys** (custody and encrypted backup in `cryptography-pki-standards` and `bcdr-standards`).
+  Losing the KSK without a backup forces an emergency rollover with a window of unavailability.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisión de versión y CVE de todo el stack DNS **mensual** durante 2026 (BIND,
-  Unbound y dnsmasq están publicando parches de seguridad casi cada mes por el aluvión de
-  hallazgos asistidos por LLM); ninguna rama EOL en producción sin plan de salida fechado.
-- **Revisión semestral del contenido de la zona**: registros sin dueño, apuntando a recursos
-  inexistentes, selectores DKIM huérfanos, `include` de SPF de proveedores que ya no usas.
-- **Deprecación real**: retirar un servicio incluye borrar su registro DNS, su selector DKIM, su
-  entrada en SPF y su regla de firewall el mismo día.
+- **Cadence**: version and CVE review of the whole DNS stack **monthly** during 2026 (BIND,
+  Unbound and dnsmasq are publishing security patches almost every month due to the flood of
+  LLM-assisted findings); no EOL branch in production without a dated exit plan.
+- **Half-yearly review of the zone content**: records without an owner, pointing at
+  non-existent resources, orphan DKIM selectors, SPF `include` of providers you no longer use.
+- **Real deprecation**: retiring a service includes deleting its DNS record, its DKIM selector, its
+  SPF entry and its firewall rule on the same day.
 
-**PROHIBIDO**
-- ❌ Servir autoritativo y recursivo desde el mismo servidor o proceso.
-- ❌ Resolver recursivo abierto a Internet; autoritativo que recursa.
-- ❌ Un único servidor autoritativo, o varios sin diversidad de red/proveedor/ubicación.
-- ❌ Migrar sin haber bajado el TTL con la antelación de al menos un TTL completo.
-- ❌ `CNAME` en el ápice, o `CNAME` coexistiendo con otros tipos.
-- ❌ Zona firmada con firmado o rotación **manual**; DNSSEC sin monitorización de expiración.
-- ❌ NSEC3 con iteraciones > 0 o con salt (contra RFC 9276).
-- ❌ `AXFR` sin TSIG y sin ACL; clave TSIG única compartida por toda la infraestructura.
-- ❌ TLD inventados (`.local`, `.lan`, `.corp`, `.home`) para nombres internos.
-- ❌ SPF con más de 10 lookups, múltiples registros `v=spf1`, o mecanismo `ptr`.
-- ❌ DMARC en `p=none` indefinido; dominio sin correo sin `v=spf1 -all` + `p=reject` + `MX .`.
-- ❌ Zona sin `CAA`, o `CAA` que no coincide con la CA que realmente emite.
-- ❌ Publicar `TLSA`/DANE sin zona firmada o sin rotación acoplada al certificado.
-- ❌ Editar zonas en el panel del proveedor en lugar del repo; ignorar la deriva detectada.
-- ❌ Dominio sin registrar-lock, sin MFA en el registrador o sin alerta de expiración
-  independiente del propio registrador.
-- ❌ Contacto administrativo del dominio en una dirección del propio dominio gestionado.
-- ❌ Borrar un recurso sin borrar su registro DNS (subdominio colgante).
-- ❌ Reescribir NXDOMAIN a una IP propia ("search hijacking").
-- ❌ Wildcards en el ápice o en zonas de producción sin justificación acotada.
-- ❌ Resolver sin logging de consultas, o con retención por debajo de la ventana de investigación.
-- ❌ Permitir DoH de aplicación hacia terceros sin política de navegador.
-- ❌ `dnsmasq` < 2.93, BIND 9.18 o cualquier rama EOL expuesta.
+**FORBIDDEN**
+- ❌ Serving authoritative and recursive from the same server or process.
+- ❌ A recursive resolver open to the Internet; an authoritative that recurses.
+- ❌ A single authoritative server, or several without network/provider/location diversity.
+- ❌ Migrating without having lowered the TTL at least a full TTL in advance.
+- ❌ `CNAME` at the apex, or `CNAME` coexisting with other types.
+- ❌ A signed zone with **manual** signing or rotation; DNSSEC without expiry monitoring.
+- ❌ NSEC3 with iterations > 0 or with salt (against RFC 9276).
+- ❌ `AXFR` without TSIG and without an ACL; a single TSIG key shared by the whole infrastructure.
+- ❌ Invented TLDs (`.local`, `.lan`, `.corp`, `.home`) for internal names.
+- ❌ SPF with more than 10 lookups, multiple `v=spf1` records, or the `ptr` mechanism.
+- ❌ DMARC at `p=none` indefinitely; a domain without mail lacking `v=spf1 -all` + `p=reject` + `MX .`.
+- ❌ A zone without `CAA`, or `CAA` that does not match the CA that actually issues.
+- ❌ Publishing `TLSA`/DANE without a signed zone or without rotation coupled to the certificate.
+- ❌ Editing zones in the provider's panel instead of the repo; ignoring detected drift.
+- ❌ A domain without registrar lock, without MFA at the registrar or without an expiry alert
+  independent of the registrar itself.
+- ❌ The domain's administrative contact at an address in the very domain being managed.
+- ❌ Deleting a resource without deleting its DNS record (dangling subdomain).
+- ❌ Rewriting NXDOMAIN to an IP of your own ("search hijacking").
+- ❌ Wildcards at the apex or in production zones without bounded justification.
+- ❌ A resolver without query logging, or with retention below the investigation window.
+- ❌ Allowing application DoH towards third parties without browser policy.
+- ❌ `dnsmasq` < 2.93, BIND 9.18 or any EOL branch exposed.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión, RFC, cifra de adopción o requisito de proveedor,
-**búscalo — no lo recuerdes**. Verificado ago-2026:
+Before pinning any version, RFC, adoption figure or provider requirement,
+**look it up — do not recall it**. Verified Aug 2026:
 
-- **Software** (rama y última publicada): BIND **9.20.26** (22-jul-2026; 9.18 **EOL jun-2026**;
-  9.20 con soporte hasta ~Q1-2028; **9.22 retrasada al menos a Q4-2026**), Unbound **1.25.2**
-  (22-jul-2026), NSD **4.15.0** (07-jul-2026), Knot DNS **3.5.6** (última etiqueta), Knot Resolver
-  **6.4.x** (6.4.0, 17-jun-2026), PowerDNS Recursor **5.4.4**, PowerDNS Authoritative rama
-  **5.1.x**, dnsdist **2.0.7/2.1.0**, CoreDNS **1.14.6** (10-jul-2026), dnsmasq **2.93**,
-  Pi-hole FTL **6.7** (06-jul-2026), AdGuard Home **0.107.78** (13-jul-2026),
-  dnscontrol **4.45.0** y octoDNS **1.21.1** (ambos 01-ago-2026). Todos con mantenimiento activo.
-- **CVE**: CVE-2026-13321 (BIND, envenenamiento entre zonas, CVSS 8.6, corregido en 9.20.26 el
-  22-jul-2026, junto a otras 8); CVE-2025-11411 (Unbound, NS promiscuos, 1.24.1/1.24.2);
-  lote coordinado de 6 CVE en dnsmasq (11-may-2026) con CVE-2026-2291 corregido en 2.93/2.92rel2.
-  **Re-verifica el mes en curso**: la cadencia de 2026 es mensual.
-- **Correo**: Google/Yahoo desde feb-2024 (≥5.000/día); Gmail de `421` a rechazo `550` en
-  nov-2025; Microsoft desde 05-may-2025 con `550 5.7.515` sin fase de aviso; La Poste sep-2025.
-  DMARCbis publicado en **RFC 9989** (Standards Track, may-2026, obsoleta 7489 y 9091) y
-  **RFC 9990** (informes agregados).
-- **Adopción**: DNSSEC — validación ~35-36% global / ~49% UE (APNIC, 2025-2026), delegaciones
-  firmadas ~7%, `.com` ~4,3% y `.net` ~5,3%; validación extremo a extremo ~0,47% (Q1-2026) →
-  ~0,596% (may-2026) sobre ~8% de consultas a dominios firmados (Cloudflare Radar). DANE — ~30
-  dominios con TLSA frente a ~16.000 con MTA-STS sobre 5,5 M escaneados (feb-2026); MTA-STS por
-  debajo del 1% del top 1 M y ~30% mal configurado (IMC'25).
-- **RFC verificados**: 9460 (SVCB/HTTPS, nov-2023), 9461/9462 (DoH mapping y DDR), 8659 (CAA,
-  obsoleta 6844), 8461 (MTA-STS), 8460 (TLS-RPT), 8945 (TSIG, **STD 93**), 8482 (ANY mínimo),
-  9250 (DoQ, may-2022), 9276 (NSEC3, **BCP 236**), 9364 (DNSSEC, **BCP 237**), 8375 (`home.arpa`).
+- **Software** (branch and latest published): BIND **9.20.26** (22 Jul 2026; 9.18 **EOL Jun 2026**;
+  9.20 supported until ~Q1 2028; **9.22 delayed to at least Q4 2026**), Unbound **1.25.2**
+  (22 Jul 2026), NSD **4.15.0** (7 Jul 2026), Knot DNS **3.5.6** (latest tag), Knot Resolver
+  **6.4.x** (6.4.0, 17 Jun 2026), PowerDNS Recursor **5.4.4**, PowerDNS Authoritative branch
+  **5.1.x**, dnsdist **2.0.7/2.1.0**, CoreDNS **1.14.6** (10 Jul 2026), dnsmasq **2.93**,
+  Pi-hole FTL **6.7** (6 Jul 2026), AdGuard Home **0.107.78** (13 Jul 2026),
+  dnscontrol **4.45.0** and octoDNS **1.21.1** (both 1 Aug 2026). All actively maintained.
+- **CVE**: CVE-2026-13321 (BIND, cross-zone poisoning, CVSS 8.6, fixed in 9.20.26 on
+  22 Jul 2026, along with 8 others); CVE-2025-11411 (Unbound, promiscuous NS, 1.24.1/1.24.2);
+  coordinated batch of 6 CVEs in dnsmasq (11 May 2026) with CVE-2026-2291 fixed in 2.93/2.92rel2.
+  **Re-verify the current month**: the 2026 cadence is monthly.
+- **Mail**: Google/Yahoo since Feb 2024 (≥5,000/day); Gmail from `421` to `550` rejection in
+  Nov 2025; Microsoft since 5 May 2025 with `550 5.7.515` with no warning phase; La Poste Sep 2025.
+  DMARCbis published in **RFC 9989** (Standards Track, May 2026, obsoletes 7489 and 9091) and
+  **RFC 9990** (aggregate reports).
+- **Adoption**: DNSSEC — validation ~35-36% globally / ~49% EU (APNIC, 2025-2026), signed
+  delegations ~7%, `.com` ~4.3% and `.net` ~5.3%; end-to-end validation ~0.47% (Q1 2026) →
+  ~0.596% (May 2026) over ~8% of queries to signed domains (Cloudflare Radar). DANE — ~30
+  domains with TLSA versus ~16,000 with MTA-STS out of 5.5M scanned (Feb 2026); MTA-STS below
+  1% of the top 1M and ~30% misconfigured (IMC'25).
+- **Verified RFCs**: 9460 (SVCB/HTTPS, Nov 2023), 9461/9462 (DoH mapping and DDR), 8659 (CAA,
+  obsoletes 6844), 8461 (MTA-STS), 8460 (TLS-RPT), 8945 (TSIG, **STD 93**), 8482 (minimal ANY),
+  9250 (DoQ, May 2022), 9276 (NSEC3, **BCP 236**), 9364 (DNSSEC, **BCP 237**), 8375 (`home.arpa`).
 
-**Huecos declarados — NO rellenar de memoria, verificar antes de usar**:
-1. **PowerDNS Authoritative**: las fechas de blog encontradas para 5.1.0 (03-jun-2026) y 5.1.3
-   (30-may-2026) son **incoherentes entre sí**; el punto exacto vigente de la rama 5.1.x y el
-   estado de soporte de 5.0.x/4.9.x **no están confirmados**. Verificar en
-   `doc.powerdns.com/authoritative/changelog/` antes de fijar versión.
-2. **RFC 9991** (informes de fallo de DMARCbis): citado por fuentes secundarias, **no verificado**
-   contra rfc-editor. Comprobar número y estado antes de referenciarlo.
-3. **`.internal`**: reservado por ICANN (29-jul-2024), pero **no consta RFC del IETF publicado**;
-   sólo un Internet-Draft. Verificar en datatracker si necesitas base normativa.
-4. **Fechas exactas de release de Knot DNS 3.5.6 y de la rama LTS de Knot**: obtenidas de
-   etiquetas de repositorio, sin fecha confirmada ni política de soporte verificada.
-5. **RFC 2308 (TTL negativo), 7873 (cookies DNS), 9156 (QNAME minimisation), 7344/8078 (CDS/CDNSKEY),
-   8058 (one-click unsubscribe), 6762 (mDNS/`.local`), 8020 (NXDOMAIN cut)**: números citados de
-   memoria y **no verificados** en esta pasada. Contrastar antes de citarlos como autoridad.
-6. **Requisitos de Apple** como proveedor de correo: se anticipa alineamiento con Google/Microsoft
-   pero **no hay política formal confirmada**. No lo afirmes como requisito.
-7. **Estado de mantenimiento de `zonemaster` y `dnsviz`**: no verificado.
+**Declared gaps — DO NOT fill from memory, verify before using**:
+1. **PowerDNS Authoritative**: the blog dates found for 5.1.0 (3 Jun 2026) and 5.1.3
+   (30 May 2026) are **mutually inconsistent**; the exact current point release of the 5.1.x branch and the
+   support status of 5.0.x/4.9.x are **not confirmed**. Verify at
+   `doc.powerdns.com/authoritative/changelog/` before pinning a version.
+2. **RFC 9991** (DMARCbis failure reports): cited by secondary sources, **not verified**
+   against rfc-editor. Check the number and status before referencing it.
+3. **`.internal`**: reserved by ICANN (29 Jul 2024), but **no published IETF RFC is on record**;
+   only an Internet-Draft. Verify in the datatracker if you need a normative basis.
+4. **Exact release dates of Knot DNS 3.5.6 and of the Knot LTS branch**: obtained from
+   repository tags, with no confirmed date nor verified support policy.
+5. **RFC 2308 (negative TTL), 7873 (DNS cookies), 9156 (QNAME minimisation), 7344/8078 (CDS/CDNSKEY),
+   8058 (one-click unsubscribe), 6762 (mDNS/`.local`), 8020 (NXDOMAIN cut)**: numbers cited from
+   memory and **not verified** in this pass. Cross-check before citing them as authority.
+6. **Apple's requirements** as a mail provider: alignment with Google/Microsoft is anticipated
+   but **there is no confirmed formal policy**. Do not state it as a requirement.
+7. **Maintenance status of `zonemaster` and `dnsviz`**: not verified.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

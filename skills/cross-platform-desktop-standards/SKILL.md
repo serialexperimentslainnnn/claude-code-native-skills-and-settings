@@ -3,391 +3,391 @@ name: cross-platform-desktop-standards
 description: Shipping a desktop application to Windows, macOS and Linux from one codebase, and paying its real cost. Use when choosing between Electron (main.js, preload.js, BrowserWindow, contextIsolation, electron-builder, electron-forge, electron-updater, Squirrel), Tauri (tauri.conf.json, src-tauri, WebView2 / WKWebView / WebKitGTK, the Tauri updater and its signing key), Qt / PySide6 / PyQt (.pro, CMake with Qt6, .ui and .qrc files, qmake, windeployqt / macdeployqt, and the commercial-versus-LGPLv3-versus-GPLv3 licence choice and the relinking obligation), .NET MAUI or Avalonia (.axaml, WinUI 3, Mac Catalyst), Flutter desktop, wxWidgets or GTK, integrating with the OS (tray icon, native notifications, global hotkeys, launch at login, file associations, deep links, clipboard, the user's filesystem), packaging and signing (Authenticode signtool, an EV/OV code-signing certificate on an HSM or token, SmartScreen reputation, macOS codesign with hardened runtime, entitlements, notarytool and stapler, Gatekeeper, .dmg and .pkg, Flatpak manifests and flatpak-builder, snapcraft.yaml and strict versus classic confinement, AppImage, MSIX, MSI, WiX), auto-update channels and update signature verification, or desktop accessibility with UI Automation, NSAccessibility and AT-SPI.
 ---
 
-# Estándares de escritorio multiplataforma
+# Cross-platform desktop standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **entregar una aplicación de escritorio a más de un sistema operativo desde una misma base
-de código**: elegir la tecnología con su coste real, integrarse con el sistema, empaquetar, **firmar
-y notarizar**, distribuir, actualizar y mantener eso durante años. Cubre también la pregunta previa:
-**si de verdad tiene que ser una app de escritorio y no una web**.
+Applies to **shipping a desktop application to more than one operating system from a single code
+base**: choosing the technology with its real cost, integrating with the system, packaging, **signing
+and notarising**, distributing, updating and maintaining that for years. It also covers the prior question:
+**whether it really has to be a desktop app and not a web app**.
 
-Triggers: `main.js`/`preload.js` de Electron, `BrowserWindow`, `contextIsolation`, `electron-builder`,
+Triggers: Electron's `main.js`/`preload.js`, `BrowserWindow`, `contextIsolation`, `electron-builder`,
 `electron-forge`, `electron-updater`, `tauri.conf.json`, `src-tauri/`, WebView2, WKWebView,
-WebKitGTK, `.axaml` de Avalonia, WinUI 3, Mac Catalyst, `.pro`/`qmake`/`CMakeLists.txt` con Qt6,
+WebKitGTK, Avalonia's `.axaml`, WinUI 3, Mac Catalyst, `.pro`/`qmake`/`CMakeLists.txt` with Qt6,
 `.ui`, `.qrc`, `windeployqt`, `macdeployqt`, PySide6/PyQt, Flutter desktop, wxWidgets, GTK,
 `signtool`, Authenticode, SmartScreen, `codesign`, *hardened runtime*, `.entitlements`, `notarytool`,
-`stapler`, Gatekeeper, `.dmg`, `.pkg`, `.msix`, WiX, `flatpak-builder` y su manifiesto,
-`snapcraft.yaml`, AppImage, bandeja del sistema, notificación nativa, atajo global, arranque al
-iniciar sesión, asociación de ficheros, *deep link* con esquema propio, UI Automation,
+`stapler`, Gatekeeper, `.dmg`, `.pkg`, `.msix`, WiX, `flatpak-builder` and its manifest,
+`snapcraft.yaml`, AppImage, system tray, native notification, global hotkey, launch at
+login, file association, *deep link* with a custom scheme, UI Automation,
 NSAccessibility, AT-SPI.
 
-**Principio rector**: **una app de escritorio se justifica por lo que la web no puede hacer.** Acceso
-al sistema de ficheros del usuario sin fricción, presencia permanente (bandeja, atajo global,
-arranque con la sesión), integración con otras aplicaciones, hardware, funcionamiento sin conexión
-como estado normal y no como degradación. **Si la lista de razones está vacía, la respuesta es una
-web** —o una PWA instalable, `pwa-standards`—, y te ahorras firma, notarización, actualizador,
-empaquetado por plataforma y tres canales de distribución para siempre.
+**Guiding principle**: **a desktop app is justified by what the web cannot do.** Frictionless access
+to the user's filesystem, permanent presence (tray, global hotkey,
+launch with the session), integration with other applications, hardware, working offline
+as the normal state and not as a degradation. **If the list of reasons is empty, the answer is a
+web app** — or an installable PWA, `pwa-standards` — and you save yourself signing, notarisation, an updater,
+per-platform packaging and three distribution channels forever.
 
-**Segunda tesis, la que más se subestima**: **elegir Electron es firmar un compromiso de seguridad
-recurrente.** Empaquetas Chromium, así que **heredas su calendario de CVEs**: cada actualización de
-Chromium es tuya, y una app que no actualiza es una superficie de ataque completa distribuida en el
-puesto del usuario. Eso no es un detalle de mantenimiento: es la línea principal del presupuesto de
-operación de la app (§7.1).
+**Second thesis, the most underestimated one**: **choosing Electron is signing a recurring security
+commitment.** You package Chromium, so **you inherit its CVE calendar**: every Chromium
+update is yours, and an app that does not update is a complete attack surface distributed onto the
+user's desk. That is not a maintenance detail: it is the main line of the app's operating
+budget (§7.1).
 
-**No aplica**: ver `mobile-standards` (**iOS y Android nativos son suyos**: SwiftUI, Compose, firma y
-publicación en App Store y Play, permisos y ciclo de vida móvil. **Frontera: si el mismo código
-compila también a móvil —Flutter, MAUI, Compose Multiplatform—, la parte de escritorio se decide
-aquí y la de tienda móvil, allí**), `pwa-standards` (**la web instalable como alternativa real a esta
-skill**: *service worker*, manifiesto, caché *offline* y modelo de actualización son suyos. La
-comparación honesta: una PWA no da bandeja, ni atajo global, ni arranque al iniciar sesión, ni acceso
-completo al sistema de ficheros; una app de escritorio cuesta firma, notarización y actualizador. Ese
-es el intercambio, y ninguna de las dos skills debe suavizarlo), `frontend-frameworks-standards` y
-`frontend-web-platform-standards` (**la UI web que va dentro del webview es suya** —framework, modelo
-de render, CSP, presupuesto de bundle, build—; **aquí la ventana, el proceso, el puente al sistema y
-lo que se entrega firmado**), `typescript-standards`, `rust-standards`, `dotnet-standards`,
-`dart-standards`, `cpp-standards`, `python-standards` (**el lenguaje, su build, su lint y sus tests
-son suyos**; aquí la arquitectura de la app de escritorio y su entrega),
-`accessibility-standards` (**WCAG y la conformidad son suyas**; aquí las APIs de accesibilidad
-nativas —UI Automation, NSAccessibility, AT-SPI— y por qué un webview embebido las cumple de otra
-forma), `cryptography-pki-standards` (elección de algoritmos y gestión de PKI; aquí el uso concreto
-de la firma de código y de la verificación en el actualizador), `secrets-management-standards`
-(**custodia y rotación de la clave privada de firma**; aquí la regla de que vive en HSM/token y de
-que la firma ocurre en un paso aislado de CI), `cicd-standards` (la pipeline que construye, firma y
-publica), `vulnerability-management-standards` (triaje y SLA de las CVEs que heredas de Chromium o de
-Qt), `appsec-standards` (modelado de amenazas general; aquí los *sinks* concretos de un webview
-embebido), `macos-fleet-standards` y `endpoint-security-standards` (**el despliegue gestionado en
-flota, MDM y el control de aplicaciones son suyos**; aquí producir un artefacto que esos sistemas
-puedan aceptar), `i18n-standards` (localización), `webassembly-standards` (Wasm dentro de la app).
+**Not applicable**: see `mobile-standards` (**native iOS and Android are theirs**: SwiftUI, Compose, signing and
+publishing on the App Store and Play, permissions and the mobile lifecycle. **Boundary: if the same code
+also compiles to mobile — Flutter, MAUI, Compose Multiplatform — the desktop part is decided
+here and the mobile store part, there**), `pwa-standards` (**the installable web as a real alternative to this
+skill**: *service worker*, manifest, *offline* cache and update model are theirs. The
+honest comparison: a PWA gives you no tray, no global hotkey, no launch at login, no full
+filesystem access; a desktop app costs you signing, notarisation and an updater. That
+is the trade-off, and neither skill should soften it), `frontend-frameworks-standards` and
+`frontend-web-platform-standards` (**the web UI that goes inside the webview is theirs** — framework, render
+model, CSP, bundle budget, build —; **here the window, the process, the bridge to the system and
+what gets shipped signed**), `typescript-standards`, `rust-standards`, `dotnet-standards`,
+`dart-standards`, `cpp-standards`, `python-standards` (**the language, its build, its lint and its tests
+are theirs**; here the desktop app's architecture and its delivery),
+`accessibility-standards` (**WCAG and conformance are theirs**; here the native accessibility
+APIs — UI Automation, NSAccessibility, AT-SPI — and why an embedded webview meets them in a different
+way), `cryptography-pki-standards` (algorithm choice and PKI management; here the concrete use
+of code signing and of verification in the updater), `secrets-management-standards`
+(**custody and rotation of the private signing key**; here the rule that it lives on an HSM/token and
+that signing happens in an isolated CI step), `cicd-standards` (the pipeline that builds, signs and
+publishes), `vulnerability-management-standards` (triage and SLA for the CVEs you inherit from Chromium or
+Qt), `appsec-standards` (general threat modelling; here the concrete *sinks* of an embedded
+webview), `macos-fleet-standards` and `endpoint-security-standards` (**managed fleet deployment,
+MDM and application control are theirs**; here producing an artifact those systems
+can accept), `i18n-standards` (localisation), `webassembly-standards` (Wasm inside the app).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-Coste real de cada opción. **No hay opción gratis**: la columna que decide es la última.
+The real cost of each option. **There is no free option**: the column that decides is the last one.
 
-| Opción | Licencia (leída en crudo) | Motor de UI | Lo que cuesta de verdad |
+| Option | Licence (read raw) | UI engine | What it really costs |
 |---|---|---|---|
-| **Electron** | MIT | Chromium **empaquetado** | Tamaño (~100–200 MB por artefacto) y RAM por proceso; **soporte solo de los 3 majors estables más recientes**, con un major nuevo cada 8 semanas → **obligación permanente de reempaquetar por CVEs de Chromium** |
-| **Tauri 2.x** | `Apache-2.0 OR MIT` (`Cargo.toml` del workspace) | **Webview del sistema**: WebView2 (Windows), WKWebView (macOS), **WebKitGTK 4.1** (Linux) | Artefacto pequeño, pero **fragmentación de motor**: tu app se comporta distinto por SO y por distro; WebKitGTK es el eslabón débil. Requiere Rust en el equipo |
-| **Qt 6** | **Triple**: comercial, **LGPLv3**, y **GPLv3 para ciertos módulos** | Nativo propio | La licencia (§2.1). Widgets maduros, accesibilidad y rendimiento excelentes; curva y coste de C++ o del *binding* Python |
-| **Avalonia** | MIT (`licence.md`) | Render propio (Skia) | .NET en todas partes **incluido Linux**; ecosistema menor que WPF y menos "nativo" visualmente |
-| **.NET MAUI** | MIT | Nativo por plataforma | **No soporta Linux**: la doc oficial lista Android, iOS, **Mac Catalyst** y Windows (WinUI 3), más Tizen por Samsung. Si necesitas Linux, MAUI queda descartado de entrada |
-| **Flutter desktop** | BSD-3-Clause | Render propio | Windows/macOS/Linux soportados; **la sensación no es nativa** y la integración con el escritorio depende de *plugins* de calidad desigual. Lenguaje: `dart-standards` |
-| **wxWidgets** | **wxWindows Library Licence 3.1** (LGPL2+ con excepción de enlace) | Widgets nativos reales | API antigua; la excepción de la licencia permite distribuir binarios bajo tus términos, que es su ventaja frente a Qt |
-| **GTK 4** | LGPL-2.1+ | Nativo GNOME | Excelente en Linux, **de segunda en Windows y macOS**. Elegirlo para multiplataforma es casi siempre un error |
-| **Nativo por plataforma** | — | WinUI/AppKit/GTK | Tres bases de código. La mejor experiencia y el mayor coste; se justifica en apps de nicho profesional donde la integración lo es todo |
+| **Electron** | MIT | **Bundled** Chromium | Size (~100–200 MB per artifact) and RAM per process; **support only for the 3 most recent stable majors**, with a new major every 8 weeks → **a permanent obligation to repackage for Chromium CVEs** |
+| **Tauri 2.x** | `Apache-2.0 OR MIT` (workspace `Cargo.toml`) | **System webview**: WebView2 (Windows), WKWebView (macOS), **WebKitGTK 4.1** (Linux) | A small artifact, but **engine fragmentation**: your app behaves differently per OS and per distro; WebKitGTK is the weak link. It requires Rust on the team |
+| **Qt 6** | **Triple**: commercial, **LGPLv3**, and **GPLv3 for certain modules** | Its own native one | The licence (§2.1). Mature widgets, excellent accessibility and performance; the curve and cost of C++ or of the Python *binding* |
+| **Avalonia** | MIT (`licence.md`) | Its own renderer (Skia) | .NET everywhere **including Linux**; a smaller ecosystem than WPF and visually less "native" |
+| **.NET MAUI** | MIT | Native per platform | **It does not support Linux**: the official docs list Android, iOS, **Mac Catalyst** and Windows (WinUI 3), plus Tizen from Samsung. If you need Linux, MAUI is ruled out from the start |
+| **Flutter desktop** | BSD-3-Clause | Its own renderer | Windows/macOS/Linux supported; **the feel is not native** and desktop integration depends on *plugins* of uneven quality. Language: `dart-standards` |
+| **wxWidgets** | **wxWindows Library Licence 3.1** (LGPL2+ with a linking exception) | Real native widgets | An old API; the licence exception allows distributing binaries under your own terms, which is its advantage over Qt |
+| **GTK 4** | LGPL-2.1+ | Native GNOME | Excellent on Linux, **second-rate on Windows and macOS**. Choosing it for cross-platform work is almost always a mistake |
+| **Native per platform** | — | WinUI/AppKit/GTK | Three code bases. The best experience and the highest cost; it is justified in niche professional apps where integration is everything |
 
-**Criterio de elección honesto, por tipo de aplicación:**
+**Honest choice criteria, by application type:**
 
-- **App interna de empresa, equipo web, plazo corto** → **Electron**, con el presupuesto de
-  actualización aceptado por escrito.
-- **Herramienta pequeña, sensible al tamaño o al consumo, equipo con Rust** → **Tauri**, aceptando la
-  matriz de pruebas por motor de webview.
-- **App de larga vida, con mucha UI, rendimiento, tablas grandes o accesibilidad exigente** →
-  **Qt** (o nativo). Es la opción con mejor accesibilidad y peor coste de licencia.
-- **Casa .NET que necesita Linux** → **Avalonia**. Casa .NET que no lo necesita → **WPF/WinUI**
-  y ya no es multiplataforma.
-- **App que ya existe en móvil con Flutter** → **Flutter desktop**, sabiendo que la parte de
-  integración con el escritorio la escribirás tú.
-- **Utilidad de sistema, herramienta de administración, algo sin apenas UI** → **CLI**. La mitad de
-  las apps de escritorio propuestas son una CLI con una ventana encima.
+- **Internal company app, web team, short deadline** → **Electron**, with the update budget
+  accepted in writing.
+- **A small tool, size- or consumption-sensitive, a team with Rust** → **Tauri**, accepting the
+  per-webview-engine test matrix.
+- **A long-lived app, with a lot of UI, performance, large tables or demanding accessibility** →
+  **Qt** (or native). It is the option with the best accessibility and the worst licence cost.
+- **A .NET shop that needs Linux** → **Avalonia**. A .NET shop that does not → **WPF/WinUI**
+  and it is no longer cross-platform.
+- **An app that already exists on mobile with Flutter** → **Flutter desktop**, knowing that the desktop
+  integration part is one you will write yourself.
+- **A system utility, an administration tool, something with barely any UI** → **a CLI**. Half of
+  the desktop apps proposed are a CLI with a window on top.
 
-### 2.1 Qt: la licencia es la decisión, no el detalle
+### 2.1 Qt: the licence is the decision, not the detail
 
-Qt se ofrece bajo **licencia comercial**, **LGPLv3** y **GPLv3 según el módulo**. La documentación
-oficial lo dice así: la comercial es *"appropriate for development of proprietary/commercial software
-where you do not want to share any source code"*, y **hay módulos que "no están disponibles bajo LGPL
-v3, sino bajo GPL"** —a ago-2026 la lista incluye Qt Quick 3D, Qt MQTT, Qt Virtual Keyboard y Qt
-Wayland Compositor, entre otros (**la lista cambia entre versiones: verifícala, §8**). Usar uno de
-esos módulos en un producto cerrado **convierte tu app en GPL o te obliga a comprar licencia**.
+Qt is offered under a **commercial licence**, **LGPLv3** and **GPLv3 depending on the module**. The official
+documentation puts it like this: the commercial one is *"appropriate for development of proprietary/commercial software
+where you do not want to share any source code"*, and **there are modules that "are not available under LGPL
+v3, but under GPL"** — as of Aug 2026 the list includes Qt Quick 3D, Qt MQTT, Qt Virtual Keyboard and Qt
+Wayland Compositor, among others (**the list changes between versions: verify it, §8**). Using one of
+those modules in a closed product **turns your app into GPL or forces you to buy a licence**.
 
-La trampa clásica es el **enlace estático**. Bajo LGPL, la FAQ de Qt es explícita: *"Dynamic linking
-is usually recommended here"* y *"The user of your application has to be able to re-link your
-application against a different or modified version of the Qt library"*; con LGPLv3 se añade que
-*"the user needs to be able to run the re-linked binary on its intended target device"*. Traducido a
-ingeniería:
+The classic trap is **static linking**. Under LGPL, Qt's FAQ is explicit: *"Dynamic linking
+is usually recommended here"* and *"The user of your application has to be able to re-link your
+application against a different or modified version of the Qt library"*; with LGPLv3 it adds that
+*"the user needs to be able to run the re-linked binary on its intended target device"*. Translated into
+engineering terms:
 
-- **Enlace dinámico** de Qt y no toques más: es el camino sin sorpresas.
-- **Enlace estático bajo LGPL** obliga a entregar los objetos o el material necesario para
-  **re-enlazar** tu binario con otra versión de Qt. Es posible, pero es un compromiso de entrega
-  permanente, y casi nadie que lo hace lo cumple.
-- **LGPLv3 prohíbe la tivoización**: si tu app va en un dispositivo bloqueado que impide sustituir la
-  librería, LGPLv3 no te sirve. Ahí solo hay licencia comercial.
-- **Prohibido mezclar**: la propia web de Qt dice que *"Combining or mixing the Commercial Qt
+- **Dynamic linking** of Qt and touch nothing else: it is the path without surprises.
+- **Static linking under LGPL** obliges you to ship the objects or the material needed to
+  **re-link** your binary with a different version of Qt. It is possible, but it is a permanent
+  delivery commitment, and almost nobody who does it honours it.
+- **LGPLv3 forbids tivoisation**: if your app goes onto a locked device that prevents replacing the
+  library, LGPLv3 is no use to you. There, only a commercial licence works.
+- **Mixing is forbidden**: Qt's own website says that *"Combining or mixing the Commercial Qt
   licensing and the Qt Community Edition within the same application or device development project is
   not allowed"*.
-- Los *bindings* tienen licencia propia y distinta: **PySide6 es LGPL**, **PyQt es GPL o comercial de
-  Riverbank**. Elegir PyQt en un producto cerrado sin comprar licencia es la infracción más repetida
-  del ecosistema Python.
+- The *bindings* have their own, different licences: **PySide6 is LGPL**, **PyQt is GPL or a
+  Riverbank commercial licence**. Choosing PyQt in a closed product without buying a licence is the most repeated
+  infringement in the Python ecosystem.
 
-### 2.2 Electron: el calendario es el contrato
+### 2.2 Electron: the calendar is the contract
 
-Electron publica un major cada **8 semanas**, alineado con el ciclo de 4 semanas de Chromium, y
-**"the latest three stable major versions are supported by the Electron team"**. A ago-2026 el
-calendario oficial daba (verificar §8): **41 → Chromium M146**, **42 → M148**, **43 → M150**, con 44
-(M152) previsto para el 25-ago-2026. Consecuencias que van al plan de proyecto, no al backlog:
+Electron publishes a major every **8 weeks**, aligned with Chromium's 4-week cycle, and
+**"the latest three stable major versions are supported by the Electron team"**. As of Aug 2026 the
+official calendar gave (verify §8): **41 → Chromium M146**, **42 → M148**, **43 → M150**, with 44
+(M152) planned for 25-Aug-2026. Consequences that go into the project plan, not the backlog:
 
-- **Estás como mucho a ~16 semanas de quedarte sin soporte.** La cadencia de tu app **es** la de
-  Electron: presupuesta una release de mantenimiento cada 8 semanas, sin excepción.
-- **Sin actualizador automático funcionando no puedes cumplir esto.** El actualizador no es una
-  característica: es el mecanismo de parcheo de seguridad de tu producto (§5.3).
-- Si el ciclo de 8 semanas no cabe en tu organización (validación, certificación, entorno regulado),
-  **Electron es la opción equivocada** y hay que decirlo antes de empezar, no después.
+- **You are at most ~16 weeks from running out of support.** Your app's cadence **is**
+  Electron's: budget for a maintenance release every 8 weeks, without exception.
+- **Without a working automatic updater you cannot meet this.** The updater is not a
+  feature: it is your product's security patching mechanism (§5.3).
+- If the 8-week cycle does not fit your organisation (validation, certification, a regulated environment),
+  **Electron is the wrong option** and that must be said before starting, not afterwards.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Separación de procesos y del puente
+### 3.1 Process and bridge separation
 
-En cualquier tecnología de webview, el modelo es el mismo: **proceso privilegiado (main/backend) y
-proceso de UI (renderer/webview) que se trata como no confiable**. El puente entre ambos es una **API
-explícita y mínima**, nunca acceso genérico.
+In any webview technology the model is the same: **a privileged process (main/backend) and
+a UI process (renderer/webview) that is treated as untrusted**. The bridge between the two is an **explicit
+and minimal API**, never generic access.
 
-- Electron: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` en todos los
-  renderers. El `preload` expone **funciones concretas** por `contextBridge`, jamás `ipcRenderer`
-  crudo. La propia documentación de Electron lo dice: *"It is paramount that you do not enable
-  Node.js integration in any renderer that loads remote content"* y *"Do not expose Electron APIs to
+- Electron: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` in every
+  renderer. The `preload` exposes **specific functions** through `contextBridge`, never raw
+  `ipcRenderer`. Electron's own documentation says it: *"It is paramount that you do not enable
+  Node.js integration in any renderer that loads remote content"* and *"Do not expose Electron APIs to
   untrusted web content"*.
-- Tauri: **lista de permisos y capacidades explícita** en la configuración; el comando expuesto valida
-  sus argumentos como si viniesen de la red, porque efectivamente pueden.
-- Regla común: **el proceso de UI nunca recibe una ruta de fichero arbitraria ni un comando de
-  sistema.** El backend decide qué operación existe; la UI solo la invoca.
+- Tauri: an **explicit permission and capability list** in the configuration; the exposed command validates
+  its arguments as if they came from the network, because they effectively can.
+- Common rule: **the UI process never receives an arbitrary file path or a system
+  command.** The backend decides which operation exists; the UI only invokes it.
 
-### 3.2 Integración con el sistema, que es la razón de existir de la app
+### 3.2 Integration with the system, which is the app's reason to exist
 
-Cada punto de integración es específico por plataforma y **hay que decidir qué se soporta en cada
-una**, no descubrirlo en producción:
+Every integration point is platform-specific and **you have to decide what is supported on each
+one**, not discover it in production:
 
-- **Notificaciones**: API nativa (Windows Toast con AUMID registrado, `UNUserNotificationCenter` en
-  macOS, `org.freedesktop.Notifications` en Linux). En macOS requieren app firmada y permiso del
-  usuario; **si no está firmada, no llegan**.
-- **Bandeja / área de estado**: en Windows y macOS es estable; **en Linux es un campo de minas**
-  (GNOME requiere extensión para `AppIndicator`). Si la app *depende* de la bandeja para funcionar,
-  el diseño está mal: la bandeja es un acceso, no el único.
-- **Atajos globales**: son un recurso compartido del sistema; **conflicto silencioso** con otras apps
-  es lo normal. Configurables siempre, con detección de fallo al registrar. En Wayland, el registro
-  global está restringido: se hace por portal, y puede no estar disponible.
-- **Arranque al iniciar sesión**: `LaunchAgents`/`SMAppService` en macOS, clave `Run` o Tarea
-  Programada en Windows, `.desktop` en `~/.config/autostart` en Linux. **Siempre opcional, siempre
-  desactivable desde la propia app**, y desactivado por defecto salvo que el producto sea residente.
-- **Asociaciones de fichero y esquemas propios (`miapp://`)**: son **superficie de ataque**. Un
-  esquema propio permite que cualquier página web invoque tu app con parámetros; ese *handler* valida
-  y rechaza como si fuese un endpoint público. Los ficheros abiertos por asociación se parsean con la
-  misma desconfianza.
-- **Portapapeles**: leerlo de forma continua es una fuga de datos (gestores de contraseñas). Se lee
-  bajo acción explícita del usuario, nunca en un temporizador.
-- **El sistema de ficheros del usuario es una responsabilidad, no una comodidad.** Reglas duras:
-  escritura **atómica** (fichero temporal en el mismo volumen + `rename`), **nunca** borrar lo que no
-  creaste, respetar las rutas del sistema (`%APPDATA%`, `~/Library/Application Support`,
-  XDG en Linux) en vez de inventar directorios en `$HOME`, y **desinstalar sin dejar restos** salvo
-  los datos del usuario, que se preguntan.
+- **Notifications**: the native API (Windows Toast with a registered AUMID, `UNUserNotificationCenter` on
+  macOS, `org.freedesktop.Notifications` on Linux). On macOS they require a signed app and the user's
+  permission; **if it is not signed, they do not arrive**.
+- **Tray / status area**: on Windows and macOS it is stable; **on Linux it is a minefield**
+  (GNOME requires an extension for `AppIndicator`). If the app *depends* on the tray to work,
+  the design is wrong: the tray is one entry point, not the only one.
+- **Global hotkeys**: they are a shared system resource; a **silent conflict** with other apps
+  is the norm. Always configurable, with failure detection on registration. On Wayland, global
+  registration is restricted: it is done through a portal, and it may not be available.
+- **Launch at login**: `LaunchAgents`/`SMAppService` on macOS, the `Run` key or a Scheduled
+  Task on Windows, a `.desktop` file in `~/.config/autostart` on Linux. **Always optional, always
+  disableable from the app itself**, and off by default unless the product is resident.
+- **File associations and custom schemes (`myapp://`)**: they are **attack surface**. A
+  custom scheme allows any web page to invoke your app with parameters; that *handler* validates
+  and rejects as if it were a public endpoint. Files opened through an association are parsed with the
+  same distrust.
+- **Clipboard**: reading it continuously is a data leak (password managers). It is read
+  under an explicit user action, never on a timer.
+- **The user's filesystem is a responsibility, not a convenience.** Hard rules:
+  **atomic** writes (a temporary file on the same volume + `rename`), **never** deleting what you did
+  not create, respecting the system paths (`%APPDATA%`, `~/Library/Application Support`,
+  XDG on Linux) instead of inventing directories in `$HOME`, and **uninstalling without leaving remains** except
+  for the user's data, which you ask about.
 
-### 3.3 Empaquetado por plataforma
+### 3.3 Per-platform packaging
 
-| Plataforma | Formato por defecto | Alternativa | Nota |
+| Platform | Default format | Alternative | Note |
 |---|---|---|---|
-| Windows | **MSI o MSIX** para empresa | NSIS/Squirrel para consumo | Empresa necesita instalación desatendida y por GPO/Intune; un instalador por-usuario sin MSI se lo pone imposible al equipo de puesto |
-| macOS | **`.dmg` firmado y notarizado** | `.pkg` si hay que instalar componentes del sistema | Universal binary (arm64 + x86_64) o dos artefactos, decidido explícitamente |
-| Linux | **Flatpak** | AppImage para "descargar y ejecutar", `.deb`/`.rpm` para flota gestionada | Snap solo si el objetivo es Ubuntu y aceptas su tienda única |
+| Windows | **MSI or MSIX** for enterprise | NSIS/Squirrel for consumer | Enterprise needs unattended installation and deployment through GPO/Intune; a per-user installer without MSI makes it impossible for the desktop team |
+| macOS | **A signed and notarised `.dmg`** | `.pkg` if system components have to be installed | A universal binary (arm64 + x86_64) or two artifacts, decided explicitly |
+| Linux | **Flatpak** | AppImage for "download and run", `.deb`/`.rpm` for a managed fleet | Snap only if the target is Ubuntu and you accept its single store |
 
-**Diferencias reales de aislamiento en Linux, que no son cosmética:**
+**Real isolation differences on Linux, which are not cosmetic:**
 
-- **Flatpak**: *sandbox* real por defecto. La documentación oficial describe el estado inicial como
+- **Flatpak**: a real *sandbox* by default. The official documentation describes the initial state as
   *"no access to any host files except the runtime, the app, `~/.var/app/$FLATPAK_ID` …"*, *"no
-  access to the network"*, *"no access to any device nodes"*, *"limited syscalls"*. El acceso se pide
-  por **portales** (selector de ficheros, notificaciones), que dan permiso implícito por acción del
-  usuario. **`--filesystem=home` anula casi toda la ventaja**: si tu manifiesto lo lleva, el sandbox
-  es decorativo. Úsalo como señal de revisión.
-- **Snap**: confinamiento **strict** con interfaces declaradas, o **classic**, que **no confina** y
-  requiere aprobación manual de la tienda. Si tu snap es *classic*, no vendas aislamiento (verificar
-  la redacción actual de la doc, §8).
-- **AppImage**: **no hay sandbox, ninguno**. Es un binario portable con sus dependencias. Es cómodo
-  para distribuir y **no aporta ninguna garantía de seguridad**; decirlo de otro modo es mentir al
-  usuario.
+  access to the network"*, *"no access to any device nodes"*, *"limited syscalls"*. Access is requested
+  through **portals** (file chooser, notifications), which grant implicit permission through a user
+  action. **`--filesystem=home` cancels almost all the advantage**: if your manifest carries it, the sandbox
+  is decorative. Use it as a review signal.
+- **Snap**: **strict** confinement with declared interfaces, or **classic**, which **does not confine** and
+  requires manual store approval. If your snap is *classic*, do not sell isolation (verify
+  the current wording of the docs, §8).
+- **AppImage**: **there is no sandbox, none**. It is a portable binary with its dependencies. It is convenient
+  for distribution and **it provides no security guarantee whatsoever**; saying otherwise is lying to the
+  user.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-Gates en orden de coste creciente:
+Gates in order of increasing cost:
 
-1. **Lint y tests del lenguaje** (delegados a la skill del lenguaje) + **auditoría de dependencias**
-   en cada build.
-2. **Test de la frontera de procesos**: cada comando expuesto por el puente tiene test con entradas
-   inválidas y maliciosas (rutas con `..`, rutas absolutas, símbolos de shell, tamaños absurdos).
-3. **E2E de la app empaquetada, no del código fuente**: Playwright con el driver de Electron,
-   WebdriverIO, o el *runner* nativo de la tecnología. Probar la app sin empaquetar deja fuera
-   exactamente los fallos que solo aparecen empaquetados (rutas de recursos, firma, permisos).
-4. **Matriz de plataformas real en CI**: Windows, macOS (arm64 **y** x86_64 si publicas ambos) y al
-   menos dos entornos Linux distintos. Con Tauri, la matriz incluye **versión de WebKitGTK**, porque
-   ahí es donde se rompe.
-5. **Prueba de instalación, actualización y desinstalación** como caso de test, incluida la
-   **actualización desde la versión N-2**. La migración de datos del usuario entre versiones se
-   prueba con datos reales de la versión antigua, no con datos nuevos.
-6. **Arranque en frío medido** y tamaño del artefacto **con umbral que rompe el build**. Sin umbral,
-   ambos crecen monótonamente.
-7. **Accesibilidad**: recorrido completo con teclado y con el lector de pantalla de cada plataforma
-   (Narrator/NVDA, VoiceOver, Orca). Es el gate que casi nadie pone y el que más problemas evita.
+1. **Language lint and tests** (delegated to the language skill) + **dependency audit**
+   on every build.
+2. **Process boundary tests**: every command exposed by the bridge has tests with invalid
+   and malicious inputs (paths with `..`, absolute paths, shell symbols, absurd sizes).
+3. **E2E of the packaged app, not of the source code**: Playwright with the Electron driver,
+   WebdriverIO, or the technology's native *runner*. Testing the app unpackaged leaves out
+   exactly the failures that only appear when packaged (resource paths, signing, permissions).
+4. **A real platform matrix in CI**: Windows, macOS (arm64 **and** x86_64 if you publish both) and at
+   least two different Linux environments. With Tauri, the matrix includes the **WebKitGTK version**, because
+   that is where it breaks.
+5. **Installation, update and uninstallation testing** as a test case, including the
+   **update from version N-2**. Migration of the user's data between versions is
+   tested with real data from the old version, not with new data.
+6. **Measured cold start** and artifact size **with a threshold that breaks the build**. Without a threshold,
+   both grow monotonically.
+7. **Accessibility**: a complete run with the keyboard and with each platform's screen reader
+   (Narrator/NVDA, VoiceOver, Orca). It is the gate almost nobody puts in and the one that avoids the most problems.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-### 5.1 El webview embebido
+### 5.1 The embedded webview
 
-Aplicar la lista oficial de Electron íntegra (equivalente en Tauri): **solo contenido por HTTPS**,
-`contextIsolation` activo, `nodeIntegration` desactivado, `sandbox` activo, **CSP definida**,
-`webSecurity` **nunca** desactivado, `allowRunningInsecureContent` desactivado, manejador explícito de
-peticiones de permiso, y **`shell.openExternal` jamás con contenido no confiable** —la propia doc
-avisa de que *"improper use of openExternal can be leveraged to compromise the user's host"*.
+Apply Electron's official checklist in full (equivalent in Tauri): **HTTPS content only**,
+`contextIsolation` on, `nodeIntegration` off, `sandbox` on, **a defined CSP**,
+`webSecurity` **never** disabled, `allowRunningInsecureContent` off, an explicit handler for
+permission requests, and **`shell.openExternal` never with untrusted content** — the docs themselves
+warn that *"improper use of openExternal can be leveraged to compromise the user's host"*.
 
-**Regla adicional que no aparece en las listas: no cargues una URL remota como UI de la aplicación.**
-Si el contenido viene del servidor, cualquier XSS en tu web se convierte en ejecución con los
-privilegios de la app de escritorio. La UI se empaqueta; lo remoto va en un `webview` aislado y sin
-puente, o en el navegador del usuario.
+**An additional rule that does not appear in the checklists: do not load a remote URL as the application's UI.**
+If the content comes from the server, any XSS on your website turns into execution with the
+desktop app's privileges. The UI is packaged; the remote content goes into an isolated `webview` with no
+bridge, or into the user's browser.
 
-### 5.2 Firma de código
+### 5.2 Code signing
 
-- **Windows**: firma Authenticode con **sello de tiempo** (sin sello, el binario deja de validar
-  cuando caduca el certificado). Desde el **1 de junio de 2023**, los *Baseline Requirements* del
-  CA/Browser Forum exigen que la clave privada del suscriptor *"is generated, stored, and used in a
-  suitable Hardware Crypto Module"* — es decir, **token/HSM obligatorio**, lo que hace imposible
-  meter el `.pfx` en un secreto de CI y obliga a firmar con un servicio de firma en la nube o un
-  *runner* con acceso al HSM. (Versión vigente de los BR a ago-2026: **3.11.0**, verificar §8.)
-  **SmartScreen** es reputación, no firma: un certificado OV nuevo arrastra avisos hasta acumular
-  descargas; EV los evita antes. Presupuéstalo.
-- **Windows, kernel**: si el producto incluye un **driver en modo kernel**, el mundo es otro. Desde
-  **Windows 10 versión 1607**, *"Windows will not load any new kernel-mode drivers which are not
-  signed by the Dev Portal"*, con excepciones tasadas (equipo actualizado desde una versión anterior,
-  **Secure Boot desactivado**, o certificado de entidad final emitido **antes del 29 de julio de
-  2015** encadenado a una CA cross-signed soportada). Traducción: **el cross-signing ya no es una
-  vía**; hay que registrarse en el Hardware Dev Center —lo que **exige un certificado EV**— y firmar
-  por el portal (atestación o HLK).
-- **macOS**: firma con **hardened runtime** y *entitlements* mínimos, **notarización obligatoria** y
-  **`stapler`** para que funcione sin conexión. Gatekeeper, según Apple, *"verifies that the software
+- **Windows**: Authenticode signing with a **timestamp** (without one, the binary stops validating
+  when the certificate expires). Since **1 June 2023**, the CA/Browser Forum's *Baseline Requirements*
+  require the subscriber's private key to be *"generated, stored, and used in a
+  suitable Hardware Crypto Module"* — that is, **a token/HSM is mandatory**, which makes it impossible
+  to put the `.pfx` into a CI secret and forces you to sign with a cloud signing service or a
+  *runner* with access to the HSM. (Current version of the BRs as of Aug 2026: **3.11.0**, verify §8.)
+  **SmartScreen** is reputation, not signing: a new OV certificate drags warnings along until it accumulates
+  downloads; EV avoids them from the start. Budget for it.
+- **Windows, kernel**: if the product includes a **kernel-mode driver**, it is a different world. Since
+  **Windows 10 version 1607**, *"Windows will not load any new kernel-mode drivers which are not
+  signed by the Dev Portal"*, with limited exceptions (a machine upgraded from an earlier version,
+  **Secure Boot disabled**, or an end-entity certificate issued **before 29 July
+  2015** chained to a supported cross-signed CA). Translation: **cross-signing is no longer a
+  route**; you have to register on the Hardware Dev Center — which **requires an EV certificate** — and sign
+  through the portal (attestation or HLK).
+- **macOS**: signing with the **hardened runtime** and minimal *entitlements*, **mandatory notarisation** and
+  **`stapler`** so that it works offline. Gatekeeper, according to Apple, *"verifies that the software
   is from an identified developer, is notarized by Apple to be free of known malicious content, and
-  hasn't been altered"*. Sin notarizar, la app **no se abre** por la vía normal. Cada *entitlement*
-  que pidas (`com.apple.security.cs.allow-unsigned-executable-memory`,
-  `disable-library-validation`) desactiva una protección: se justifica uno a uno o no va.
-- **Linux**: firma del repositorio (`.deb`/`.rpm`), firma del *bundle* Flatpak, y en AppImage
-  **firma detached publicada junto al artefacto** — que casi nadie verifica, así que la verificación
-  la tiene que hacer tu propio actualizador.
-- **La clave privada nunca está en el repositorio ni en una variable de entorno de CI.** Token/HSM o
-  servicio de firma; el paso de firma es un *job* aislado, con la mínima superficie posible, y
-  auditado. Ver `secrets-management-standards`.
+  hasn't been altered"*. Without notarisation, the app **does not open** through the normal route. Every *entitlement*
+  you request (`com.apple.security.cs.allow-unsigned-executable-memory`,
+  `disable-library-validation`) disables a protection: it is justified one by one or it does not go in.
+- **Linux**: repository signing (`.deb`/`.rpm`), signing of the Flatpak *bundle*, and on AppImage
+  **a detached signature published alongside the artifact** — which almost nobody verifies, so the verification
+  has to be done by your own updater.
+- **The private key is never in the repository nor in a CI environment variable.** A token/HSM or
+  a signing service; the signing step is an isolated *job*, with the smallest possible surface, and
+  audited. See `secrets-management-standards`.
 
-### 5.3 Actualización automática
+### 5.3 Automatic updates
 
-**Un actualizador sin verificación de firma es una puerta trasera con nombre de característica.** Es
-literalmente un mecanismo que descarga un binario y lo ejecuta con los privilegios del usuario.
-Requisitos no negociables:
+**An updater without signature verification is a backdoor with a feature's name.** It is
+literally a mechanism that downloads a binary and runs it with the user's privileges.
+Non-negotiable requirements:
 
-- **HTTPS con validación de certificado**, y **firma del artefacto y del manifiesto verificada por el
-  cliente contra una clave embebida en la app**. Tauri lo impone por diseño: *"Tauri's updater needs a
-  signature to verify that the update is from a trusted source. This cannot be disabled."* Ese es el
-  listón para cualquier otra tecnología.
-- **La clave de firma del actualizador es distinta de la de firma de código** y su pérdida es
-  terminal: la propia doc de Tauri lo dice —*"if you lose this key you will NOT be able to publish new
-  updates to the users that have the app already installed"*—. Custodia y copia con el mismo rigor que
-  una CA raíz.
-- **Protección contra *downgrade***: el cliente rechaza versiones inferiores a la instalada.
-- **Despliegue por fases con interruptor de parada**, porque una actualización mala se distribuye a
-  toda la base instalada en horas y **no se puede revertir desde el servidor**.
-- **Sin telemetría obligatoria para actualizar**: el canal de actualización no es un canal de
-  analítica. Ver `privacy-engineering-standards`.
+- **HTTPS with certificate validation**, and **the artifact's and the manifest's signature verified by the
+  client against a key embedded in the app**. Tauri imposes it by design: *"Tauri's updater needs a
+  signature to verify that the update is from a trusted source. This cannot be disabled."* That is the
+  bar for any other technology.
+- **The updater's signing key is different from the code-signing one** and losing it is
+  terminal: Tauri's own docs say so — *"if you lose this key you will NOT be able to publish new
+  updates to the users that have the app already installed"*. Custody and backup with the same rigour as
+  a root CA.
+- **Protection against *downgrade***: the client rejects versions lower than the installed one.
+- **Phased rollout with a stop switch**, because a bad update is distributed to
+  the whole installed base within hours and **it cannot be reverted from the server**.
+- **No mandatory telemetry in order to update**: the update channel is not an analytics
+  channel. See `privacy-engineering-standards`.
 
-### 5.4 Datos locales
+### 5.4 Local data
 
-Credenciales y tokens van al almacén del sistema (**DPAPI/Credential Manager**, **Keychain**,
-**Secret Service/`libsecret`**), nunca en un JSON en `%APPDATA%`. Y la advertencia honesta: **el
-almacén del sistema protege frente a otro usuario del equipo, no frente a malware ejecutándose como
-el propio usuario.** Prometer más que eso es falso.
+Credentials and tokens go to the system store (**DPAPI/Credential Manager**, **Keychain**,
+**Secret Service/`libsecret`**), never into a JSON file in `%APPDATA%`. And the honest warning: **the
+system store protects against another user of the machine, not against malware running as
+the user themselves.** Promising more than that is false.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Presupuesto explícito y medido en CI**: tamaño del instalador, tamaño instalado, RAM en reposo
-  tras 30 min con la app abierta, y **tiempo hasta ventana interactiva en arranque en frío** con
-  disco frío. *Cualquier* cifra de consumo de Electron citada sin decir versión, número de renderers
-  y metodología es folclore: **mide la tuya y ponla como umbral**, no cites la de un blog.
-- **El coste real de un webview no es el binario, es el proceso por ventana.** Reducir ventanas y
-  renderers vale más que optimizar el bundle.
-- **Arranque**: ventana visible primero, contenido después; carga perezosa de todo lo no crítico.
-- **Telemetría de escritorio, si existe**: **consentimiento explícito y desactivable**, sin
-  identificadores persistentes salvo necesidad demostrada, y con lo que se envía documentado. Lo
-  mínimo útil: versión, plataforma, y **fracción de la base instalada por versión** — sin ese dato no
-  sabes cuánta gente sigue con una versión vulnerable, que es la métrica operativa clave.
-- **Errores y *crash reports***: simbolizados, sin PII, con retención acotada, y **con un modo de
-  desactivarlos** en despliegues gestionados.
-- **Registro local rotado y acotado** en la ruta estándar de la plataforma, y accesible desde la
-  propia app ("abrir carpeta de registros"): es la diferencia entre un ticket de soporte resoluble y
-  uno eterno.
+- **An explicit budget measured in CI**: installer size, installed size, RAM at rest
+  after 30 min with the app open, and **time to an interactive window on cold start** with
+  a cold disk. *Any* Electron consumption figure quoted without stating the version, the number of renderers
+  and the methodology is folklore: **measure your own and set it as the threshold**, do not quote one from a blog.
+- **A webview's real cost is not the binary, it is the process per window.** Reducing windows and
+  renderers is worth more than optimising the bundle.
+- **Start-up**: a visible window first, content after; lazy loading of everything non-critical.
+- **Desktop telemetry, if it exists**: **explicit and disableable consent**, without
+  persistent identifiers unless a need is demonstrated, and with what is sent documented. The
+  useful minimum: version, platform, and **the fraction of the installed base per version** — without that data you do not
+  know how many people are still on a vulnerable version, which is the key operational metric.
+- **Errors and *crash reports***: symbolised, without PII, with bounded retention, and **with a way to
+  disable them** in managed deployments.
+- **A rotated and bounded local log** at the platform's standard path, and accessible from the
+  app itself ("open log folder"): it is the difference between a solvable support ticket and
+  an eternal one.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-### 7.1 El compromiso recurrente
+### 7.1 The recurring commitment
 
-Antes de escribir una línea, alguien firma esto: **cadencia de actualización del motor** (8 semanas
-con Electron; con Tauri, lo que actualicen los sistemas de tus usuarios, que **no controlas**),
-**renovación del certificado de firma** con su recordatorio a 90 días, **cuota anual del Apple
-Developer Program** sin la cual dejas de poder notarizar —y por tanto de publicar—, y **matriz de
-sistemas operativos soportados con fecha de retirada**. Una app de escritorio sin dueño de estas
-cuatro cosas se queda sin poder publicar el día que caduca algo, normalmente en medio de un incidente.
+Before writing a line, someone signs up to this: **the engine's update cadence** (8 weeks
+with Electron; with Tauri, whatever your users' systems update to, which **you do not control**),
+**renewal of the signing certificate** with its 90-day reminder, the **annual Apple
+Developer Program fee** without which you can no longer notarise — and therefore no longer publish —, and a **matrix
+of supported operating systems with a retirement date**. A desktop app with no owner for these
+four things ends up unable to publish the day something expires, usually in the middle of an incident.
 
-### 7.2 Prohibiciones
+### 7.2 Prohibitions
 
-- ❌ **PROHIBIDO** desactivar `contextIsolation` o activar `nodeIntegration` en un renderer que cargue
-  contenido remoto.
-- ❌ **PROHIBIDO** desactivar `webSecurity`, `sandbox` o la validación de certificados TLS "para
-  desarrollo" en una rama que pueda llegar a *release*.
-- ❌ **PROHIBIDO** exponer `ipcRenderer` o una API genérica de ejecución al webview: la superficie es
-  una lista de comandos concretos y validados.
-- ❌ **PROHIBIDO** cargar la UI principal desde una URL remota.
-- ❌ **PROHIBIDO** distribuir sin firmar en Windows y macOS, y **prohibido publicar en macOS sin
-  notarizar y sin `stapler`**.
-- ❌ **PROHIBIDO** guardar el certificado de firma o su contraseña en el repositorio, en la imagen de
-  CI o en una variable de entorno; y prohibido firmar sin sello de tiempo.
-- ❌ **PROHIBIDO** un actualizador que no verifique firma del artefacto, o que acepte versiones
-  inferiores a la instalada.
-- ❌ **PROHIBIDO** quedarse en una versión de Electron sin soporte (fuera de los tres majors
-  vigentes) en producto distribuido.
-- ❌ **PROHIBIDO** enlazar Qt estáticamente bajo LGPL sin cumplir —y documentar— la obligación de
-  re-enlace; y prohibido usar un módulo GPL-only de Qt en un producto cerrado sin licencia comercial.
-- ❌ **PROHIBIDO** usar PyQt en producto cerrado sin licencia de Riverbank (PySide6 es la vía LGPL).
-- ❌ **PROHIBIDO** `--filesystem=home` en un manifiesto Flatpak sin justificación revisada, y
-  prohibido vender un AppImage o un snap *classic* como "aislado".
-- ❌ **PROHIBIDO** guardar credenciales fuera del almacén del sistema.
-- ❌ **PROHIBIDO** escribir en el sistema de ficheros del usuario de forma no atómica, fuera de las
-  rutas estándar de la plataforma, o borrar ficheros que la app no creó.
-- ❌ **PROHIBIDO** leer el portapapeles de forma continua o en segundo plano.
-- ❌ **PROHIBIDO** registrar un esquema `miapp://` sin tratar sus parámetros como entrada hostil.
-- ❌ **PROHIBIDO** telemetría activada por defecto sin consentimiento, o actualización condicionada a
-  aceptarla.
-- ❌ **PROHIBIDO** entregar sin recorrido de teclado completo ni prueba con lector de pantalla.
-- ❌ **PROHIBIDO** citar consumos de RAM o tamaños "típicos" de Electron sin medición propia (§6).
+- ❌ **FORBIDDEN** to disable `contextIsolation` or enable `nodeIntegration` in a renderer that loads
+  remote content.
+- ❌ **FORBIDDEN** to disable `webSecurity`, `sandbox` or TLS certificate validation "for
+  development" on a branch that can reach a *release*.
+- ❌ **FORBIDDEN** to expose `ipcRenderer` or a generic execution API to the webview: the surface is
+  a list of specific and validated commands.
+- ❌ **FORBIDDEN** to load the main UI from a remote URL.
+- ❌ **FORBIDDEN** to distribute unsigned on Windows and macOS, and **forbidden to publish on macOS without
+  notarising and without `stapler`**.
+- ❌ **FORBIDDEN** to store the signing certificate or its password in the repository, in the CI
+  image or in an environment variable; and forbidden to sign without a timestamp.
+- ❌ **FORBIDDEN** an updater that does not verify the artifact's signature, or that accepts versions
+  lower than the installed one.
+- ❌ **FORBIDDEN** to stay on an unsupported Electron version (outside the three current
+  majors) in a distributed product.
+- ❌ **FORBIDDEN** to link Qt statically under LGPL without meeting — and documenting — the re-linking
+  obligation; and forbidden to use a GPL-only Qt module in a closed product without a commercial licence.
+- ❌ **FORBIDDEN** to use PyQt in a closed product without a Riverbank licence (PySide6 is the LGPL route).
+- ❌ **FORBIDDEN** `--filesystem=home` in a Flatpak manifest without reviewed justification, and
+  forbidden to sell an AppImage or a *classic* snap as "isolated".
+- ❌ **FORBIDDEN** to store credentials outside the system store.
+- ❌ **FORBIDDEN** to write to the user's filesystem non-atomically, outside the
+  platform's standard paths, or to delete files the app did not create.
+- ❌ **FORBIDDEN** to read the clipboard continuously or in the background.
+- ❌ **FORBIDDEN** to register a `myapp://` scheme without treating its parameters as hostile input.
+- ❌ **FORBIDDEN** telemetry enabled by default without consent, or an update conditional on
+  accepting it.
+- ❌ **FORBIDDEN** to ship without a complete keyboard run and a screen-reader test.
+- ❌ **FORBIDDEN** to quote "typical" Electron RAM consumption or sizes without your own measurement (§6).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-- **Electron**: `releases.electronjs.org/schedule` — qué majors están dentro de los tres soportados
-  **hoy**, sus fechas de EOL y la versión de Chromium asociada. A ago-2026: 41/42/43 (M146/M148/M150),
-  con 44 (M152) previsto para el 25-ago-2026.
-- **Tauri**: versión actual (2.11.5 a ago-2026), `rust-version` mínima del workspace, motores de
-  webview y versiones mínimas por plataforma, y estado de WebKitGTK en las distros objetivo.
-- **Qt**: **lista actual de módulos GPL-only** en `doc.qt.io/qt-6/licensing.html` —cambia entre
-  versiones— y condiciones de la licencia comercial vigente. **Leer la licencia del *binding*
-  concreto** (PySide6 vs. PyQt) antes de elegirlo.
-- **Licencias en crudo** (`LICENSE`, `LICENCE`, `licence.md`, `COPYING`, ojo con `master` vs. `main`)
-  de cualquier framework de UI que enlaces. Verificadas para este documento: Tauri
+- **Electron**: `releases.electronjs.org/schedule` — which majors are within the three supported
+  **today**, their EOL dates and the associated Chromium version. As of Aug 2026: 41/42/43 (M146/M148/M150),
+  with 44 (M152) planned for 25-Aug-2026.
+- **Tauri**: current version (2.11.5 as of Aug 2026), the workspace's minimum `rust-version`, webview
+  engines and minimum versions per platform, and the state of WebKitGTK in the target distros.
+- **Qt**: the **current list of GPL-only modules** at `doc.qt.io/qt-6/licensing.html` — it changes between
+  versions — and the terms of the current commercial licence. **Read the licence of the specific
+  *binding*** (PySide6 vs. PyQt) before choosing it.
+- **Raw licences** (`LICENSE`, `LICENCE`, `licence.md`, `COPYING`, watch out for `master` vs. `main`)
+  of any UI framework you link against. Verified for this document: Tauri
   `Apache-2.0 OR MIT`, Avalonia MIT, wxWidgets **wxWindows Library Licence 3.1**.
-- **Firma de código Windows**: versión vigente de los *Baseline Requirements* del CA/Browser Forum
-  (3.11.0, efectiva 16-jun-2026, a ago-2026) y los requisitos de módulo hardware; oferta actual de
-  servicios de firma en la nube compatibles con CI.
-- **macOS**: requisitos vigentes de notarización, herramienta actual (`notarytool`; `altool` está
-  retirado) y cambios de Gatekeeper o de *entitlements* en la última versión de macOS.
-- **Linux**: redacción actual de los modos de confinamiento de Snap (*strict*/*classic*/*devmode*) y
-  del proceso de aprobación de *classic* — **este documento no pudo verificarlo en la fuente
-  oficial** (la doc de Snapcraft no respondió); trátalo como pendiente. Estado de los portales de
-  Flatpak para atajos globales y autoarranque bajo Wayland.
-- **.NET MAUI / Avalonia / Flutter**: plataformas soportadas y versiones mínimas en la doc oficial —
-  a ago-2026 **MAUI no lista Linux**.
-- **CVEs**: de Chromium (si Electron), de WebKitGTK y WebView2 (si Tauri), de Qt (si Qt). Es un flujo
-  continuo, no una comprobación puntual → `vulnerability-management-standards`.
+- **Windows code signing**: the current version of the CA/Browser Forum's *Baseline Requirements*
+  (3.11.0, effective 16-Jun-2026, as of Aug 2026) and the hardware module requirements; the current offering of
+  cloud signing services compatible with CI.
+- **macOS**: the current notarisation requirements, the current tool (`notarytool`; `altool` is
+  retired) and Gatekeeper or *entitlement* changes in the latest macOS version.
+- **Linux**: the current wording of Snap's confinement modes (*strict*/*classic*/*devmode*) and
+  of the *classic* approval process — **this document could not verify it in the official
+  source** (the Snapcraft docs did not respond); treat it as pending. The state of Flatpak's portals
+  for global hotkeys and autostart under Wayland.
+- **.NET MAUI / Avalonia / Flutter**: supported platforms and minimum versions in the official docs —
+  as of Aug 2026 **MAUI does not list Linux**.
+- **CVEs**: of Chromium (if Electron), of WebKitGTK and WebView2 (if Tauri), of Qt (if Qt). It is a
+  continuous flow, not a one-off check → `vulnerability-management-standards`.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

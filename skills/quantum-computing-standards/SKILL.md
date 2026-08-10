@@ -3,151 +3,151 @@ name: quantum-computing-standards
 description: Quantum computing as an R&D decision with honest expectations — what today's hardware can and cannot do. Use when evaluating a quantum proposal or vendor pitch, reading qubit-count and quantum-advantage claims and separating physical from logical qubits, fidelity and error rates, NISQ limits, decoherence and T1/T2, surface codes and qLDPC error correction and the physical-to-logical overhead, gate-based versus quantum annealing (D-Wave) and why they are not interchangeable, algorithms with a proven speedup (Shor factoring, Grover's quadratic search, quantum phase estimation, Hamiltonian simulation of chemistry and materials) versus QAOA/VQE heuristics with no proven advantage, resource estimation for a quantum attack, writing circuits with Qiskit, Cirq, PennyLane, Q#/QDK, Braket or OpenQASM, buying cloud quantum access (IBM Quantum Platform, Amazon Braket, Azure Quantum), quantum-inspired classical algorithms, or budgeting quantum R&D and training. Also covers "quantum" marketing claims in a procurement or board setting.
 ---
 
-# Estándares de computación cuántica
+# Quantum computing standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers: qué se puede hacer hoy y qué no
+## 1. Scope and triggers: what can be done today and what cannot
 
-Esta skill existe para **una sola cosa**: que nadie comprometa presupuesto, arquitectura o
-promesa de producto sobre una capacidad que no existe. El contenido técnico es secundario
-respecto al criterio de §1 y a las prohibiciones de §7.
+This skill exists for **one thing only**: that nobody commits budget, architecture or a product
+promise to a capability that does not exist. The technical content is secondary to the criteria
+in §1 and the prohibitions in §7.
 
-### 1.1 Lo que NO se puede hacer hoy
+### 1.1 What CANNOT be done today
 
-- **No se puede romper RSA ni la criptografía de curva elíptica.** No hay ninguna máquina
-  cerca de ello. Referencia de coste, verbatim del propio artículo de Craig Gidney
-  (arXiv:2505.15917, 21-may-2025): *"In Gidney+Ekerå 2019, I co-published an estimate stating
+- **RSA and elliptic-curve cryptography cannot be broken.** No machine is anywhere near it.
+  Cost reference, verbatim from Craig Gidney's own paper
+  (arXiv:2505.15917, 21 May 2025): *"In Gidney+Ekerå 2019, I co-published an estimate stating
   that 2048 bit RSA integers could be factored in eight hours by a quantum computer with 20
   million noisy qubits. In this paper, I substantially reduce the number of qubits required.
   I estimate that a 2048 bit RSA integer could be factored in less than a week by a quantum
-  computer with less than a million noisy qubits."* Bajo supuestos explícitos: *"a uniform
+  computer with less than a million noisy qubits."* Under explicit assumptions: *"a uniform
   gate error rate of 0.1%, a surface code cycle time of 1 microsecond, and a control system
-  reaction time of 10 microseconds"*. **Menos de un millón de qubits físicos ruidosos, y las
-  máquinas actuales tienen del orden de cientos.** Nótese además la dirección del dato: la
-  estimación **bajó de 20 millones a menos de 1 millón en seis años**, no por mejor hardware,
-  sino por mejores algoritmos. Esa es la razón de que el plazo de la amenaza sea incierto.
-- **No hay ventaja demostrada en optimización empresarial, machine learning ni finanzas.**
-  Los algoritmos variacionales (VQE, QAOA) son heurísticas: **no tienen prueba de ventaja
-  asintótica**, y en la práctica compiten mal contra un buen solver clásico. Cualquier
-  presentación que prometa "optimizar la ruta de reparto" con cuántica está vendiendo una
-  heurística sin garantías contra otra que ya funciona.
-- **No hay ordenador cuántico tolerante a fallos.** Nadie ejecuta hoy un algoritmo largo con
-  corrección de errores completa. Lo que hay son demostraciones de que la corrección
-  **empieza** a funcionar.
-- **No se puede usar en producción.** Ni por capacidad, ni por disponibilidad, ni por coste,
-  ni por reproducibilidad de resultados.
+  reaction time of 10 microseconds"*. **Fewer than a million noisy physical qubits, and current
+  machines have on the order of hundreds.** Note also the direction of the figure: the
+  estimate **dropped from 20 million to under 1 million in six years**, not through better
+  hardware but through better algorithms. That is why the threat timeline is uncertain.
+- **There is no demonstrated advantage in enterprise optimisation, machine learning or finance.**
+  Variational algorithms (VQE, QAOA) are heuristics: **they have no proof of asymptotic
+  advantage**, and in practice they compete badly against a good classical solver. Any
+  presentation promising to "optimise the delivery route" with quantum is selling a
+  heuristic with no guarantees against one that already works.
+- **There is no fault-tolerant quantum computer.** Nobody today runs a long algorithm with
+  full error correction. What exists are demonstrations that correction **starts**
+  to work.
+- **It cannot be used in production.** Not on capacity, not on availability, not on cost,
+  not on reproducibility of results.
 
-### 1.2 Lo que sí se puede hacer hoy
+### 1.2 What can be done today
 
-- **Experimentar, formar equipo y estimar recursos.** Escribir circuitos, ejecutarlos en
-  simulador y en hardware real por nube, y sobre todo **calcular cuántos qubits lógicos y
-  cuántas puertas necesitaría tu problema** — que es el resultado más útil, porque casi
-  siempre demuestra que el problema no es candidato.
-- **Simulación cuántica de química y materiales**: el caso de uso más creíble a medio plazo,
-  porque es el problema para el que la máquina está estructuralmente indicada (simular un
-  sistema cuántico con un sistema cuántico) y donde existen algoritmos con ventaja
-  exponencial demostrada para tareas concretas. Sigue sin ser producción.
-- **Aprovechar los algoritmos "quantum-inspired"**: varios avances clásicos han salido de
-  intentar simular algoritmos cuánticos. Ese retorno es real y se cobra hoy, sin hardware.
+- **Experiment, build up a team and estimate resources.** Write circuits, run them on a
+  simulator and on real hardware over the cloud, and above all **calculate how many logical
+  qubits and how many gates your problem would need** — which is the most useful result, because
+  it almost always proves the problem is not a candidate.
+- **Quantum simulation of chemistry and materials**: the most credible medium-term use case,
+  because it is the problem the machine is structurally suited to (simulating a quantum
+  system with a quantum system) and where algorithms with demonstrated exponential advantage
+  exist for specific tasks. It is still not production.
+- **Take advantage of "quantum-inspired" algorithms**: several classical advances have come out
+  of trying to simulate quantum algorithms. That return is real and is collected today, with no hardware.
 
-### 1.3 NISQ, ruido y la distancia entre qubit físico y lógico
+### 1.3 NISQ, noise and the distance between a physical and a logical qubit
 
-Estamos en la era **NISQ** (*Noisy Intermediate-Scale Quantum*): pocos qubits, ruidosos y sin
-corrección de errores efectiva. Un qubit pierde su estado por **decoherencia** en microsegundos
-a milisegundos, y cada puerta introduce error. Con un error por puerta del orden de 10⁻³, un
-circuito de unos pocos miles de puertas ya produce ruido en lugar de resultado. **Ese es el
-techo real, no el número de qubits.**
+We are in the **NISQ** era (*Noisy Intermediate-Scale Quantum*): few qubits, noisy and with no
+effective error correction. A qubit loses its state through **decoherence** in microseconds
+to milliseconds, and every gate introduces error. With a per-gate error on the order of 10⁻³, a
+circuit of a few thousand gates already produces noise instead of a result. **That is the
+real ceiling, not the qubit count.**
 
-La **corrección cuántica de errores** codifica un **qubit lógico** en muchos **qubits
-físicos**. El hito de referencia es Google Quantum AI, *"Quantum error correction below the
-surface code threshold"* (arXiv:2408.13687, ago-2024; Nature 638, 2025), con estos números
-verbatim: código de **distancia 7 sobre 101 qubits físicos**, *"The logical error rate of our
+**Quantum error correction** encodes a **logical qubit** in many **physical
+qubits**. The reference milestone is Google Quantum AI, *"Quantum error correction below the
+surface code threshold"* (arXiv:2408.13687, Aug 2024; Nature 638, 2025), with these figures
+verbatim: **distance-7 code over 101 physical qubits**, *"The logical error rate of our
 larger quantum memory is suppressed by a factor of Λ = 2.14 ± 0.02 when increasing the code
-distance by two"*, error lógico de *"0.143% ± 0.003% error per cycle"*, y una memoria lógica
+distance by two"*, logical error of *"0.143% ± 0.003% error per cycle"*, and a logical memory
 *"exceeding its best physical qubit's lifetime by a factor of 2.4 ± 0.3"*.
 
-**Cómo se lee ese resultado, que es lo que importa**: es un hito científico de primer orden —
-demuestra que añadir qubits físicos ahora **reduce** el error en lugar de aumentarlo, que es
-la precondición de todo lo demás. Y a la vez: **101 qubits físicos para UN qubit lógico de
-memoria**, con un factor de mejora de 2,4× sobre el mejor qubit físico. No es un qubit lógico
-computando, es un qubit lógico **recordando**. Extrapolar de ahí a "romper RSA" salta unos
-cuatro órdenes de magnitud y varias capacidades que aún no existen (puertas lógicas de alta
-fidelidad, destilación de estados mágicos a escala, decodificación en tiempo real sostenida).
+**How to read that result, which is what matters**: it is a first-rate scientific milestone —
+it demonstrates that adding physical qubits now **reduces** the error instead of increasing it,
+which is the precondition for everything else. And at the same time: **101 physical qubits for ONE
+logical memory qubit**, with an improvement factor of 2.4× over the best physical qubit. It is not a
+logical qubit computing, it is a logical qubit **remembering**. Extrapolating from there to "breaking
+RSA" jumps some four orders of magnitude and several capabilities that do not yet exist (high-fidelity
+logical gates, magic-state distillation at scale, sustained real-time decoding).
 
-**Regla de lectura de cualquier anuncio**: un número de qubits sin **fidelidad de puerta de
-dos qubits**, sin **conectividad** y sin decir si son **físicos o lógicos** es publicidad, no
-una especificación.
+**Rule for reading any announcement**: a qubit count with no **two-qubit gate fidelity**,
+no **connectivity** and no statement of whether they are **physical or logical** is advertising, not
+a specification.
 
-**No aplica**: ver **`post-quantum-crypto-standards`** (**frontera dura**: *harvest now,
-decrypt later*, inventario criptográfico y CBOM, elección de ML-KEM/ML-DSA/SLH-DSA, híbridos
-en TLS/SSH/IPsec, agilidad criptográfica y **todo el calendario normativo** —NIST IR 8547,
-SP 800-131A, CNSA 2.0—. **La única consecuencia práctica y urgente hoy de esta disciplina es
-esa migración, y es enteramente suya**: aquí solo se explica *por qué* existe la amenaza y se
-enlaza), `cryptography-pki-standards` (algoritmos clásicos, PKI y custodia de claves),
-`hpc-standards` (clúster, planificador Slurm, MPI y entorno de software del cómputo clásico
-con el que compite y contra el que hay que comparar), `gpu-computing-standards` (aceleradores
-y su aprovisionamiento — **los simuladores cuánticos corren aquí**), `deep-learning-standards`
-y `classical-ml-standards` (el baseline clásico que cualquier propuesta "quantum ML" debe
-batir **antes** de considerarse), `ai-governance-standards` (gobernanza de reclamaciones
-tecnológicas y diligencia debida sobre proveedores), `grc-compliance-standards` (aceptación
-formal de riesgo tecnológico y evidencia), `tech-leadership-standards` (decisión de
-*build-vs-buy* y de invertir en I+D no productiva), `python-standards` (el lenguaje de
-Qiskit, Cirq y PennyLane), `blockchain-web3-standards` (el "riesgo cuántico" sobre
-firmas de cadena se trata allí como riesgo, y su remedio en `post-quantum-crypto`),
-`llm-app-engineering-standards` y `mlsecops-standards` (**nada que ver**: "quantum" en
-marketing de IA no es esto).
+**Not applicable**: see **`post-quantum-crypto-standards`** (**hard boundary**: *harvest now,
+decrypt later*, cryptographic inventory and CBOM, choice of ML-KEM/ML-DSA/SLH-DSA, hybrids
+in TLS/SSH/IPsec, cryptographic agility and **the whole regulatory calendar** —NIST IR 8547,
+SP 800-131A, CNSA 2.0—. **The only practical and urgent consequence of this discipline today is
+that migration, and it is entirely theirs**: here we only explain *why* the threat exists and
+link out), `cryptography-pki-standards` (classical algorithms, PKI and key custody),
+`hpc-standards` (cluster, Slurm scheduler, MPI and the software environment of the classical
+computing it competes with and against which it must be compared), `gpu-computing-standards` (accelerators
+and their provisioning — **quantum simulators run here**), `deep-learning-standards`
+and `classical-ml-standards` (the classical baseline any "quantum ML" proposal must
+beat **before** being considered), `ai-governance-standards` (governance of technology
+claims and vendor due diligence), `grc-compliance-standards` (formal acceptance
+of technology risk and evidence), `tech-leadership-standards` (the
+*build-vs-buy* decision and investing in non-productive R&D), `python-standards` (the language of
+Qiskit, Cirq and PennyLane), `blockchain-web3-standards` (the "quantum risk" to chain
+signatures is handled there as a risk, and its remedy in `post-quantum-crypto`),
+`llm-app-engineering-standards` and `mlsecops-standards` (**nothing to do with this**: "quantum" in
+AI marketing is not this).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web antes de fijar nada (§8). Este dominio cambia de titular cada trimestre y
-> la mitad de los titulares se corrigen después.
+> Verify on the web before committing to anything (§8). This domain changes headline every quarter and
+> half the headlines get corrected afterwards.
 
-| Decisión | Por defecto | Alternativa justificable | Vetado |
+| Decision | Default | Justifiable alternative | Vetoed |
 |---|---|---|---|
-| ¿Invertir? | **I+D y formación, con presupuesto acotado y objetivo de aprendizaje** | Investigación aplicada si el negocio es química, materiales o farma | Proyecto de producción con fecha de entrega |
-| Primer entregable | **Estimación de recursos** de tu problema en qubits lógicos y puertas | Prototipo en simulador | Ejecutar en hardware real "a ver qué sale" |
-| Baseline | **Siempre el mejor algoritmo clásico disponible**, medido | — | Comparar contra fuerza bruta clásica para inflar la ventaja |
-| Acceso a hardware | **Nube por horas** (IBM Quantum Platform, Amazon Braket, Azure Quantum) | Convenio con centro de investigación | **Comprar hardware**: obsoleto antes de amortizarse |
-| SDK | **Qiskit** (**Apache-2.0**, `LICENSE.txt`: *"Copyright 2017 IBM and its contributors / Apache License Version 2.0"*) si el objetivo es IBM; **Cirq** (**Apache-2.0**) para Google; **PennyLane** (**Apache-2.0**) para variacional y diferenciación automática; **Q#/QDK** (**MIT**, *"Copyright (c) Microsoft Corporation"*) para el ecosistema Microsoft | Escribir/exportar a **OpenQASM** para no atarse al SDK | Diseñar sobre un SDK propietario de un fabricante único |
-| Modelo | **Puertas** para cualquier algoritmo con ventaja demostrada | **Annealing** (D-Wave) **solo** para optimización combinatoria formulable como QUBO/Ising, y comparado contra un solver clásico | Presentar annealing y puertas como lo mismo |
-| Cripto | **Ir a `post-quantum-crypto-standards` y ejecutar su plan** | — | Esperar a "cuando llegue el ordenador cuántico" |
+| Invest? | **R&D and training, with a bounded budget and a learning objective** | Applied research if the business is chemistry, materials or pharma | Production project with a delivery date |
+| First deliverable | **Resource estimation** of your problem in logical qubits and gates | Prototype on a simulator | Running on real hardware "to see what comes out" |
+| Baseline | **Always the best available classical algorithm**, measured | — | Comparing against classical brute force to inflate the advantage |
+| Hardware access | **Cloud by the hour** (IBM Quantum Platform, Amazon Braket, Azure Quantum) | Agreement with a research centre | **Buying hardware**: obsolete before it pays for itself |
+| SDK | **Qiskit** (**Apache-2.0**, `LICENSE.txt`: *"Copyright 2017 IBM and its contributors / Apache License Version 2.0"*) if the target is IBM; **Cirq** (**Apache-2.0**) for Google; **PennyLane** (**Apache-2.0**) for variational work and automatic differentiation; **Q#/QDK** (**MIT**, *"Copyright (c) Microsoft Corporation"*) for the Microsoft ecosystem | Writing/exporting to **OpenQASM** so as not to be tied to the SDK | Designing on a proprietary SDK from a single vendor |
+| Model | **Gates** for any algorithm with demonstrated advantage | **Annealing** (D-Wave) **only** for combinatorial optimisation expressible as QUBO/Ising, and compared against a classical solver | Presenting annealing and gates as the same thing |
+| Crypto | **Go to `post-quantum-crypto-standards` and execute its plan** | — | Waiting for "when the quantum computer arrives" |
 
-## 3. Modelos y algoritmos: dónde hay ventaja y dónde no
+## 3. Models and algorithms: where there is advantage and where there is not
 
-### 3.1 Puertas frente a *annealing* — no son lo mismo
+### 3.1 Gates versus *annealing* — they are not the same
 
-- **Modelo de puertas** (IBM, Google, Quantinuum, IonQ…): universal. Es el único que puede
-  ejecutar Shor, Grover, estimación de fase o simulación hamiltoniana. Es donde vive toda la
-  teoría de ventaja demostrada.
-- **Annealing cuántico** (D-Wave): **no es universal**. Resuelve una familia concreta de
-  problemas de optimización (formulables como QUBO/Ising) buscando el estado fundamental de
-  un hamiltoniano. Tiene muchos más qubits, y esa cifra **no es comparable** con la de una
-  máquina de puertas: son unidades distintas. **No puede ejecutar Shor.** La ventaja del
-  annealing frente a los mejores heurísticos clásicos sigue siendo objeto de disputa, y varias
-  demostraciones han sido igualadas o superadas por métodos clásicos.
+- **Gate model** (IBM, Google, Quantinuum, IonQ…): universal. It is the only one that can
+  run Shor, Grover, phase estimation or Hamiltonian simulation. It is where all the theory of
+  demonstrated advantage lives.
+- **Quantum annealing** (D-Wave): **it is not universal**. It solves a specific family of
+  optimisation problems (expressible as QUBO/Ising) by seeking the ground state of
+  a Hamiltonian. It has many more qubits, and that figure **is not comparable** with that of a
+  gate machine: they are different units. **It cannot run Shor.** The advantage of
+  annealing over the best classical heuristics remains disputed, and several
+  demonstrations have been matched or beaten by classical methods.
 
-Confundir ambos modelos, o comparar sus recuentos de qubits, es el error de lectura más común
-en material comercial y en prensa.
+Confusing the two models, or comparing their qubit counts, is the most common reading error
+in commercial material and in the press.
 
-### 3.2 Algoritmos con ventaja demostrada
+### 3.2 Algorithms with demonstrated advantage
 
-| Algoritmo | Ventaja | Estado real |
+| Algorithm | Advantage | Real status |
 |---|---|---|
-| **Shor** (factorización, log discreto) | **Exponencial** | Demostrada en teoría. Irrealizable con el hardware actual (§1.1) |
-| **Grover** (búsqueda no estructurada) | **Cuadrática** (√N) | Real pero modesta; el coste de cargar los datos suele comerse la ventaja |
-| **Estimación de fase / simulación hamiltoniana** | Exponencial para ciertos sistemas | El caso de uso más creíble: química cuántica y materiales |
-| **VQE / QAOA** (variacionales) | **Ninguna demostrada** | Heurísticas. Sufren *barren plateaus*. Compiten mal con solvers clásicos |
-| **"Quantum machine learning"** | **Ninguna demostrada** en datos clásicos | El cuello de botella es cargar datos clásicos en estados cuánticos |
+| **Shor** (factoring, discrete log) | **Exponential** | Demonstrated in theory. Unachievable with current hardware (§1.1) |
+| **Grover** (unstructured search) | **Quadratic** (√N) | Real but modest; the cost of loading the data usually eats the advantage |
+| **Phase estimation / Hamiltonian simulation** | Exponential for certain systems | The most credible use case: quantum chemistry and materials |
+| **VQE / QAOA** (variational) | **None demonstrated** | Heuristics. They suffer *barren plateaus*. They compete badly with classical solvers |
+| **"Quantum machine learning"** | **None demonstrated** on classical data | The bottleneck is loading classical data into quantum states |
 
-### 3.3 Grover NO rompe la criptografía simétrica — dilo explícitamente
+### 3.3 Grover does NOT break symmetric cryptography — say it explicitly
 
-Es la confusión más extendida y la que más presupuesto desvía. **La ventaja de Grover es
-cuadrática, no exponencial**: reduce una búsqueda de 2ⁿ a 2^(n/2). Sobre AES-128 eso equivale
-a un ataque de ~2⁶⁴ operaciones cuánticas **secuenciales**, que no es una amenaza práctica —
-y sobre AES-256 no queda ni cerca.
+It is the most widespread confusion and the one that diverts the most budget. **Grover's advantage is
+quadratic, not exponential**: it reduces a search from 2ⁿ to 2^(n/2). On AES-128 that amounts
+to an attack of ~2⁶⁴ **sequential** quantum operations, which is not a practical threat —
+and on AES-256 it is nowhere close.
 
-NIST IR 8105, *Report on Post-Quantum Cryptography* (abril 2016), §2, verbatim:
+NIST IR 8105, *Report on Post-Quantum Cryptography* (April 2016), §2, verbatim:
 
 > *"Grover's algorithm provides a quadratic speed-up for quantum search algorithms in
 > comparison with search algorithms on classical computers. We don't know that Grover's
@@ -156,165 +156,165 @@ NIST IR 8105, *Report on Post-Quantum Cryptography* (abril 2016), §2, verbatim:
 > for search algorithms is impossible, suggesting that symmetric algorithms and hash functions
 > should be usable in a quantum era."*
 
-Y su Tabla 1: **AES → "Larger key sizes needed"**; **SHA-2, SHA-3 → "Larger output needed"**;
+And its Table 1: **AES → "Larger key sizes needed"**; **SHA-2, SHA-3 → "Larger output needed"**;
 **RSA, ECDSA/ECDH, DSA → "No longer secure"**.
 
-Conclusión operativa: **el problema es exclusivamente la criptografía de clave pública.**
-AES-256 y SHA-384 siguen valiendo. Quien te venda "sustituir tu cifrado simétrico por cuántico"
-no ha leído esto. **El plan de sustitución de la clave pública es de
+Operational conclusion: **the problem is exclusively public-key cryptography.**
+AES-256 and SHA-384 still hold. Anyone selling you "replace your symmetric encryption with quantum"
+has not read this. **The public-key replacement plan belongs to
 `post-quantum-crypto-standards`.**
 
-### 3.4 "Harvest now, decrypt later": lo único urgente hoy
+### 3.4 "Harvest now, decrypt later": the only urgent thing today
 
-El tráfico y los datos cifrados **hoy** con clave pública clásica pueden estar siendo
-capturados y almacenados para descifrarlos cuando exista la máquina. Si tu dato debe seguir
-siendo confidencial dentro de 10-20 años (historia clínica, secreto industrial, información
-clasificada, datos personales de larga vida), **la exposición ya está ocurriendo**, con
-independencia de cuándo llegue el hardware.
+Traffic and data encrypted **today** with classical public key may be being
+captured and stored to be decrypted once the machine exists. If your data must remain
+confidential 10-20 years from now (medical records, trade secrets, classified
+information, long-lived personal data), **the exposure is already happening**, regardless
+of when the hardware arrives.
 
-**Y aquí termina esta skill**: el criterio de priorización por vida útil del dato, el
-inventario criptográfico, la elección de algoritmo, los híbridos y el calendario normativo
-son **enteramente de `post-quantum-crypto-standards`**. No se duplica nada aquí. Si la
-pregunta es "qué hago", la respuesta es ir allí.
+**And this skill ends here**: the prioritisation criteria by data lifetime, the
+cryptographic inventory, the algorithm choice, the hybrids and the regulatory calendar
+are **entirely `post-quantum-crypto-standards`'**. Nothing is duplicated here. If the
+question is "what do I do", the answer is to go there.
 
-## 4. Ventaja cuántica: el patrón dominante es la refutación
+## 4. Quantum advantage: the dominant pattern is refutation
 
-**Toda reclamación de ventaja cuántica debe tratarse como provisional hasta que sobreviva a
-varios años de mejora de los algoritmos clásicos.** No es escepticismo: es el historial.
+**Every quantum-advantage claim must be treated as provisional until it survives
+several years of classical algorithm improvement.** This is not scepticism: it is the record.
 
-Caso de referencia. Google reclamó en 2019 supremacía cuántica con Sycamore (53 qubits, 200
-segundos frente a un estimado de 10.000 años clásicos). En 2024-2025, *"Leapfrogging Sycamore:
+Reference case. Google claimed quantum supremacy in 2019 with Sycamore (53 qubits, 200
+seconds against an estimated 10,000 classical years). In 2024-2025, *"Leapfrogging Sycamore:
 harnessing 1432 GPUs for 7× faster quantum random circuit sampling"* (*National Science
-Review*, colección de marzo de 2025), abstract verbatim: *"Here we report an energy-efficient
+Review*, March 2025 collection), abstract verbatim: *"Here we report an energy-efficient
 classical simulation algorithm, using 1432 GPUs to simulate quantum random circuit sampling
 that generates uncorrelated samples with a higher linear cross-entropy score and is 7× faster
-than the Sycamore 53-qubit experiment."* Y su conclusión, también verbatim: *"Our work
+than the Sycamore 53-qubit experiment."* And its conclusion, also verbatim: *"Our work
 provides the first unambiguous experimental evidence to refute Sycamore's claim of quantum
 advantage, and redefines the boundary of quantum computational advantage using random circuit
 sampling."*
 
-Es decir: **la demostración de supremacía más famosa de la historia del campo fue refutada
-clásicamente**, no por mejor hardware sino por mejor software, sobre GPUs disponibles
-comercialmente. El mismo patrón se ha repetido con varias reclamaciones de *boson sampling*.
+That is: **the most famous supremacy demonstration in the history of the field was refuted
+classically**, not through better hardware but through better software, on commercially
+available GPUs. The same pattern has repeated with several *boson sampling* claims.
 
-Consecuencias de método:
-- El listón "esto es clásicamente imposible" se mueve **hacia abajo** con el tiempo. Una
-  ventaja demostrada este año puede ser un cálculo de clúster el que viene.
-- **Las tareas de las demostraciones de ventaja no son útiles.** *Random circuit sampling* y
-  *boson sampling* se eligen precisamente porque son duras de simular, no porque resuelvan
-  nada. Ventaja ≠ utilidad.
-- Reclamaciones más recientes (Google presentó en octubre de 2025 un experimento llamado
-  *Quantum Echoes* sobre un subconjunto de 65 qubits de Willow, descrito como la primera
-  ventaja cuántica **verificable**, con un factor citado de ~13.000×) **no se pudieron
-  verificar en fuente primaria en esta pasada** y deben tratarse como afirmación del
-  fabricante pendiente de réplica independiente (§8).
+Methodological consequences:
+- The bar of "this is classically impossible" moves **downwards** over time. An
+  advantage demonstrated this year may be a cluster calculation next year.
+- **The tasks in advantage demonstrations are not useful.** *Random circuit sampling* and
+  *boson sampling* are chosen precisely because they are hard to simulate, not because they solve
+  anything. Advantage ≠ usefulness.
+- More recent claims (in October 2025 Google presented an experiment called
+  *Quantum Echoes* on a 65-qubit subset of Willow, described as the first
+  **verifiable** quantum advantage, with a cited factor of ~13,000×) **could not be
+  verified against a primary source in this pass** and must be treated as a vendor
+  claim pending independent replication (§8).
 
-**Cifras de qubits de hoja de ruta**: los planes de los fabricantes (p. ej. IBM anunciando un
-sistema tolerante a fallos con **200 qubits lógicos y 100 millones de puertas para 2029**)
-son **objetivos comerciales**, no capacidad entregada, y esa cifra entró aquí por búsqueda
-web y **no por fuente primaria** (el sitio de IBM devolvió 403). Tratar toda hoja de ruta como
-lo que es: una intención, con historial de deslizamiento en todo el sector.
+**Roadmap qubit figures**: vendor plans (e.g. IBM announcing a
+fault-tolerant system with **200 logical qubits and 100 million gates by 2029**)
+are **commercial targets**, not delivered capability, and that figure entered here through a web
+search and **not through a primary source** (IBM's site returned 403). Treat every roadmap as
+what it is: an intention, with a track record of slippage across the whole sector.
 
-## 5. Coste y cuándo tiene sentido invertir
+## 5. Cost and when investing makes sense
 
-- **La inversión que casi siempre tiene sentido**: formación de dos o tres personas, un
-  presupuesto pequeño de tiempo de nube, y **una estimación de recursos** para los problemas
-  candidatos del negocio. Coste bajo, retorno principal: **saber decir que no** con criterio
-  cuando llegue el proveedor.
-- **La inversión que casi nunca tiene sentido**: comprar hardware, comprometer una fecha de
-  producto, o financiar un piloto de optimización empresarial sin baseline clásico medido.
-- **Filtro de tres preguntas para cualquier propuesta**:
-  1. ¿Cuál es el **problema formulado matemáticamente** y qué algoritmo cuántico concreto lo
-     resuelve?
-  2. ¿Cuántos **qubits lógicos** y cuántas puertas requiere, y cuándo estarán disponibles
-     según la estimación de recursos?
-  3. ¿Qué hace el **mejor algoritmo clásico** hoy con el mismo problema, medido?
-  Si falta cualquiera de las tres, la respuesta es no.
-- **El baseline clásico se mide, no se supone.** Muchos "problemas cuánticos" desaparecen
-  cuando alguien perfila el código clásico existente.
-- **Reproducibilidad**: el hardware cuántico es ruidoso y cambiante. Un resultado sin número
-  de *shots*, sin calibración del dispositivo del día, sin semilla y sin la estrategia de
-  mitigación de errores usada **no es reproducible ni comparable**.
+- **The investment that almost always makes sense**: training two or three people, a
+  small budget of cloud time, and **a resource estimation** for the business's candidate
+  problems. Low cost, main return: **being able to say no** with grounds
+  when the vendor turns up.
+- **The investment that almost never makes sense**: buying hardware, committing to a product
+  date, or funding an enterprise optimisation pilot with no measured classical baseline.
+- **Three-question filter for any proposal**:
+  1. What is the **mathematically formulated problem** and which specific quantum algorithm
+     solves it?
+  2. How many **logical qubits** and how many gates does it require, and when will they be available
+     according to the resource estimation?
+  3. What does the **best classical algorithm** do today with the same problem, measured?
+  If any of the three is missing, the answer is no.
+- **The classical baseline is measured, not assumed.** Many "quantum problems" disappear
+  when somebody profiles the existing classical code.
+- **Reproducibility**: quantum hardware is noisy and changeable. A result with no number
+  of *shots*, no device calibration for the day, no seed and no error-mitigation
+  strategy used **is neither reproducible nor comparable**.
 
-## 6. Prácticas de ingeniería (si aun así vas a experimentar)
+## 6. Engineering practices (if you are going to experiment anyway)
 
-- **Circuitos en control de versiones**, con exportación a **OpenQASM** además del SDK, para
-  no depender de un fabricante.
-- **Simulador primero, siempre.** Si el circuito no funciona sin ruido, no va a funcionar con
-  ruido. El simulador es determinista y barato; el hardware, ni una cosa ni la otra.
-- **Registrar por ejecución**: dispositivo, fecha, calibración, número de *shots*,
-  transpilación aplicada y método de mitigación de errores. Sin eso el resultado no se puede
-  defender.
-- **La transpilación cambia el circuito**: el mapeo a la conectividad real inserta puertas
-  SWAP y puede multiplicar la profundidad. Medir el circuito **transpilado**, no el escrito.
-- **Coste de nube acotado por presupuesto duro**: el tiempo de QPU se factura por ejecución y
-  un barrido de parámetros mal planteado se come el presupuesto del trimestre.
-- **Datos sensibles**: la ejecución en nube cuántica es ejecución en un tercero. Aplican las
-  mismas reglas de clasificación de datos que a cualquier SaaS.
+- **Circuits in version control**, with export to **OpenQASM** as well as the SDK, so as
+  not to depend on a vendor.
+- **Simulator first, always.** If the circuit does not work without noise, it is not going to work with
+  noise. The simulator is deterministic and cheap; the hardware is neither.
+- **Log per run**: device, date, calibration, number of *shots*,
+  transpilation applied and error-mitigation method. Without that the result cannot be
+  defended.
+- **Transpilation changes the circuit**: mapping to the real connectivity inserts SWAP
+  gates and can multiply the depth. Measure the **transpiled** circuit, not the one written.
+- **Cloud cost bounded by a hard budget**: QPU time is billed per run and
+  a badly planned parameter sweep eats the quarter's budget.
+- **Sensitive data**: running on a quantum cloud is running on a third party. The
+  same data classification rules apply as to any SaaS.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-Cadencia: revisar el estado del campo **una vez al año**, no cada titular. Lo que cambia de
-verdad —fidelidad de puerta, qubits lógicos operativos, coste de recursos de Shor— se mueve
-en años. Lo que cambia cada semana es el marketing.
+Cadence: review the state of the field **once a year**, not with every headline. What really
+changes —gate fidelity, operational logical qubits, Shor resource cost— moves
+over years. What changes every week is the marketing.
 
-**Prohibiciones explícitas:**
+**Explicit prohibitions:**
 
-- ❌ **PROHIBIDO** vender, prometer o presupuestar "ventaja cuántica" en un proyecto de negocio
-  **sin un problema formulado matemáticamente**, sin el algoritmo concreto que lo resuelve y
-  sin la estimación de recursos que diga cuándo sería ejecutable.
-- ❌ **PROHIBIDO** citar cifras de qubits **sin distinguir físicos de lógicos** y sin la
-  fidelidad de puerta de dos qubits y la conectividad. Un número de qubits solo no significa
-  nada.
-- ❌ **PROHIBIDO** presentar una hoja de ruta de fabricante como capacidad disponible.
-- ❌ **PROHIBIDO** afirmar que la computación cuántica "rompe el cifrado" sin precisar que se
-  refiere **solo a la clave pública**, y que Grover **no** rompe la simétrica (§3.3).
-- ❌ **PROHIBIDO** comparar recuentos de qubits entre *annealing* y modelo de puertas, o
-  presentarlos como la misma tecnología.
-- ❌ **PROHIBIDO** citar una reclamación de ventaja cuántica sin comprobar si ha sido igualada
-  o refutada clásicamente. El caso Sycamore es el precedente, no la excepción.
-- ❌ **PROHIBIDO** proponer un piloto de optimización o de "quantum machine learning" sin un
-  baseline clásico **medido** con el mejor solver disponible.
-- ❌ **PROHIBIDO** justificar una compra de hardware cuántico con argumentos de posicionamiento
-  o de imagen.
-- ❌ **PROHIBIDO** publicar un resultado de hardware cuántico sin *shots*, calibración,
-  transpilación y método de mitigación de errores.
-- ❌ **PROHIBIDO** duplicar aquí criterio de migración post-cuántica: algoritmos, plazos e
-  inventario son de `post-quantum-crypto-standards`.
-- ❌ **PROHIBIDO** aplazar la migración post-cuántica alegando que "la máquina no existe": el
-  modelo de amenaza es de captura hoy y descifrado después (§3.4).
+- ❌ **FORBIDDEN** to sell, promise or budget "quantum advantage" in a business project
+  **without a mathematically formulated problem**, without the specific algorithm that solves it and
+  without the resource estimation that says when it would be executable.
+- ❌ **FORBIDDEN** to cite qubit figures **without distinguishing physical from logical** and without the
+  two-qubit gate fidelity and the connectivity. A qubit count alone means
+  nothing.
+- ❌ **FORBIDDEN** to present a vendor roadmap as available capability.
+- ❌ **FORBIDDEN** to claim that quantum computing "breaks encryption" without specifying that it
+  refers **only to public key**, and that Grover does **not** break symmetric (§3.3).
+- ❌ **FORBIDDEN** to compare qubit counts between *annealing* and the gate model, or
+  to present them as the same technology.
+- ❌ **FORBIDDEN** to cite a quantum-advantage claim without checking whether it has been matched
+  or refuted classically. The Sycamore case is the precedent, not the exception.
+- ❌ **FORBIDDEN** to propose an optimisation or "quantum machine learning" pilot without a
+  **measured** classical baseline using the best available solver.
+- ❌ **FORBIDDEN** to justify a quantum hardware purchase with positioning
+  or image arguments.
+- ❌ **FORBIDDEN** to publish a quantum hardware result without *shots*, calibration,
+  transpilation and error-mitigation method.
+- ❌ **FORBIDDEN** to duplicate post-quantum migration criteria here: algorithms, deadlines and
+  inventory belong to `post-quantum-crypto-standards`.
+- ❌ **FORBIDDEN** to postpone post-quantum migration on the grounds that "the machine does not exist": the
+  threat model is capture today and decrypt later (§3.4).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada:
+Before committing to anything:
 
-1. **Estado de la corrección de errores**: número de **qubits lógicos operativos** (no de
-   memoria) y su tasa de error, en publicación revisada por pares. Lo verificado aquí:
-   Google, distancia 7 sobre **101 qubits físicos**, Λ = 2,14 ± 0,02, 0,143 % de error lógico
-   por ciclo, vida 2,4 ± 0,3× la del mejor qubit físico (arXiv:2408.13687, verbatim del
-   abstract). Comprobar qué ha cambiado desde entonces.
-2. **Coste de un ataque a RSA/ECC**: la estimación vigente. La última verificada es Gidney
-   2025: *"less than a week … with less than a million noisy qubits"* para RSA-2048, bajo
-   supuestos explícitos de tasa de error y tiempos de ciclo. **Esta cifra ha bajado 20× en
-   seis años por mejoras algorítmicas: volver a comprobarla es obligatorio, no opcional.**
-3. **Reclamaciones de ventaja cuántica**: si la que te citan sigue en pie. Verificado aquí:
-   Sycamore 2019 **refutada** por simulación clásica sobre 1432 GPUs (*National Science
-   Review*, verbatim). **Hueco declarado**: el experimento *Quantum Echoes* de Google
-   (oct-2025, ~65 qubits, ~13.000×, "verifiable quantum advantage") **entró por WebSearch y no
-   se pudo confirmar en fuente primaria** — el blog de Google devolvió 404 y el identificador
-   de arXiv probado correspondía a otro artículo. **No usarlo sin verificarlo.**
-4. **Hojas de ruta de fabricante**: IBM Starling (200 qubits lógicos, 100 M de puertas, 2029),
-   Nighthawk y Loon **entraron por WebSearch**: `ibm.com/roadmaps/quantum` y el blog de IBM
-   Quantum devolvieron 403. **Hueco declarado**: confirmar en fuente primaria antes de citar
-   cualquiera de esos números, y tratarlos siempre como objetivo, no como capacidad.
-5. **SDKs**: versión actual y licencia. Verificadas en crudo: **Qiskit Apache-2.0**, **Cirq
-   Apache-2.0**, **PennyLane Apache-2.0**, **Q#/QDK MIT**. Comprobar además si el SDK sigue
-   activo y si el fabricante ha cambiado el modelo de acceso a hardware.
-6. **NIST IR 8105** es de **abril de 2016**: su tabla sobre el impacto por algoritmo sigue
-   siendo correcta conceptualmente, pero **el calendario y los algoritmos concretos están
-   superados** por FIPS 203/204/205 y por NIST IR 8547 — todo eso vive en
-   `post-quantum-crypto-standards`, que es donde hay que ir.
-7. **D-Wave y annealing**: si la reclamación de ventaja que se cite ha sido igualada por
-   métodos clásicos. Ha ocurrido varias veces.
+1. **State of error correction**: number of **operational logical qubits** (not
+   memory ones) and their error rate, in a peer-reviewed publication. What was verified here:
+   Google, distance 7 over **101 physical qubits**, Λ = 2.14 ± 0.02, 0.143 % logical error
+   per cycle, lifetime 2.4 ± 0.3× that of the best physical qubit (arXiv:2408.13687, verbatim from the
+   abstract). Check what has changed since then.
+2. **Cost of an attack on RSA/ECC**: the current estimate. The last one verified is Gidney
+   2025: *"less than a week … with less than a million noisy qubits"* for RSA-2048, under
+   explicit assumptions on error rate and cycle times. **This figure has dropped 20× in
+   six years through algorithmic improvements: re-checking it is mandatory, not optional.**
+3. **Quantum-advantage claims**: whether the one being cited to you still stands. Verified here:
+   Sycamore 2019 **refuted** by classical simulation on 1432 GPUs (*National Science
+   Review*, verbatim). **Declared gap**: Google's *Quantum Echoes* experiment
+   (Oct 2025, ~65 qubits, ~13,000×, "verifiable quantum advantage") **came in via WebSearch and
+   could not be confirmed against a primary source** — Google's blog returned 404 and the arXiv
+   identifier tried corresponded to a different paper. **Do not use it without verifying it.**
+4. **Vendor roadmaps**: IBM Starling (200 logical qubits, 100 M gates, 2029),
+   Nighthawk and Loon **came in via WebSearch**: `ibm.com/roadmaps/quantum` and the IBM
+   Quantum blog returned 403. **Declared gap**: confirm against a primary source before citing
+   any of those numbers, and always treat them as a target, not as capability.
+5. **SDKs**: current version and licence. Verified raw: **Qiskit Apache-2.0**, **Cirq
+   Apache-2.0**, **PennyLane Apache-2.0**, **Q#/QDK MIT**. Also check whether the SDK is still
+   active and whether the vendor has changed the hardware access model.
+6. **NIST IR 8105** is from **April 2016**: its table on the impact per algorithm is still
+   conceptually correct, but **the calendar and the specific algorithms are superseded**
+   by FIPS 203/204/205 and by NIST IR 8547 — all of that lives in
+   `post-quantum-crypto-standards`, which is where to go.
+7. **D-Wave and annealing**: whether the advantage claim being cited has been matched by
+   classical methods. It has happened several times.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

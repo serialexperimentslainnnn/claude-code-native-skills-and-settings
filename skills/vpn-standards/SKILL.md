@@ -3,647 +3,655 @@ name: vpn-standards
 description: VPN tunnels and remote access as a designed, operated service. Use when writing or reviewing wg0.conf and its AllowedIPs, PersistentKeepalive, Endpoint, PresharedKey or Table= keys, running wg genkey/pubkey/show/setconf or wg-quick up/down, choosing wg-quick versus systemd-networkd [WireGuard]/[WireGuardPeer] or NetworkManager wireguard profiles, swanctl.conf and ipsec.conf/ipsec.secrets with charon, IKEv2 proposals and esp/ah rekeying, phase-2 proposal mismatch, MOBIKE, ke1_mlkem768 and RFC 9370 hybrid key exchange, client.ovpn and server.conf with tls-crypt, tls-auth, dev tun, redirect-gateway and the ovpn-dco kernel module, tailscale up --advertise-routes/--exit-node and tailnet ACL grants, netbird up, headscale nodes/preauthkeys, nebula-cert sign and lighthouse config, zerotier-cli join, rosenpass psk exchange, split tunneling and DNS-leak decisions, short-lived client certificates versus permanent keys, overlapping site subnets, concentrator redundancy and session logging, or hardening an internet-facing remote-access appliance.
 ---
 
-# Estándares de VPN — túneles y acceso remoto
+# VPN standards — tunnels and remote access
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **elegir, diseñar, desplegar, operar y retirar un túnel cifrado y el acceso remoto que
-se apoya en él**: decisión entre sitio-a-sitio, acceso remoto de usuario y malla; el desplazamiento
-del mercado hacia ZTNA; WireGuard y su modelo de claves; mallas con plano de control (Tailscale,
-NetBird, Netmaker, ZeroTier, Nebula, Headscale) y el riesgo de delegar ese plano; IPsec/IKEv2 por
-interoperabilidad; OpenVPN donde sigue justificado; postura del cliente y ciclo de vida del acceso;
-operación del túnel (MTU/MSS, resolución dentro del túnel, rutas y solapamientos, redundancia y
-capacidad del concentrador); y la seguridad del concentrador como activo expuesto y como fuente de
-evidencia forense.
+Applies when **choosing, designing, deploying, operating and retiring an encrypted tunnel and the
+remote access built on it**: the choice between site-to-site, user remote access and mesh; the
+market's shift towards ZTNA; WireGuard and its key model; meshes with a control plane (Tailscale,
+NetBird, Netmaker, ZeroTier, Nebula, Headscale) and the risk of delegating that plane; IPsec/IKEv2
+for interoperability; OpenVPN where it is still justified; device posture and the access lifecycle;
+tunnel operation (MTU/MSS, resolution inside the tunnel, routes and overlaps, concentrator
+redundancy and capacity); and the security of the concentrator both as an exposed asset and as a
+source of forensic evidence.
 
 Triggers: `wg0.conf`, `[Interface]`/`[Peer]`, `AllowedIPs`, `PersistentKeepalive`, `Endpoint`,
 `PresharedKey`, `Table=`, `wg genkey|pubkey|show|setconf|syncconf`, `wg-quick up|down`,
-`systemd-networkd` `.netdev` con `[WireGuard]`/`[WireGuardPeer]`, perfiles `wireguard` de
-NetworkManager, `swanctl.conf`, `ipsec.conf`, `ipsec.secrets`, `charon`, `strongswan`,
+`systemd-networkd` `.netdev` with `[WireGuard]`/`[WireGuardPeer]`, NetworkManager `wireguard`
+profiles, `swanctl.conf`, `ipsec.conf`, `ipsec.secrets`, `charon`, `strongswan`,
 `ke1_mlkem768`, `ppk=yes`, `client.ovpn`, `server.conf`, `tls-crypt`, `redirect-gateway`,
-`ovpn-dco`/`win-dco`, `tailscale up`, `--advertise-routes`, `--exit-node`, ACL/`grants` del tailnet,
+`ovpn-dco`/`win-dco`, `tailscale up`, `--advertise-routes`, `--exit-node`, tailnet ACL/`grants`,
 `netbird up`, `headscale nodes|preauthkeys`, `nebula-cert`, `lighthouse`, `zerotier-cli join`,
-`rosenpass`, "split tunneling", "fuga de DNS", "solapamiento de subredes", "concentrador VPN",
-"acceso remoto", "always-on VPN".
+`rosenpass`, "split tunneling", "DNS leak", "subnet overlap", "VPN concentrator",
+"remote access", "always-on VPN".
 
-**Principio rector** (hereda el de `networking-standards`: *la red es default-deny y documentada
-como código; lo que no está en el SoT no existe*): **el túnel transporta, no autoriza**. Un paquete
-que sale de `wg0` es un paquete no confiable que acaba de entrar en tu red: estar dentro de la VPN
-no es una credencial, no es una autorización y no sustituye a ninguna política. Todo túnel tiene
-dueño, alcance escrito, caducidad y una regla de filtrado que lo recibe.
+**Guiding principle** (inherited from `networking-standards`: *the network is default-deny and
+documented as code; what is not in the SoT does not exist*): **the tunnel transports, it does not
+authorise**. A packet leaving `wg0` is an untrusted packet that has just entered your network: being
+inside the VPN is not a credential, is not an authorisation and does not replace any policy. Every
+tunnel has an owner, a written scope, an expiry date and a filtering rule that receives it.
 
-**No aplica**: ver `networking-standards` (**madre**: topología y direccionamiento/IPAM que evita
-los solapamientos, VLAN y segmentación, routing y BGP para anunciar los prefijos del túnel,
-**MTU/MSS como criterio de diseño de red**, proxies y balanceo, **elección de la plataforma de
-perímetro** —OPNsense/VyOS/appliance—, plano de gestión OOB y ZTNA como principio de arquitectura),
-`firewall-policy-standards` (**la política que filtra el tráfico que sale del túnel**: matriz de
-flujos, `forward` con `policy drop`, egress, dueño/caducidad de cada regla, MSS clamping como regla,
-conntrack — un `wg0` que entra en `forward` sin reglas es una VPN sin firewall; **aquí se decide qué
-túnel existe y cómo se opera, allí qué atraviesa**),
-`network-troubleshooting-standards` (**diagnóstico reactivo**: "la VPN conecta pero no navego" es
-**suyo** —es MTU/PMTU y se demuestra con captura en ambos extremos—, igual que "se cae a los 5
-minutos", "resuelve mal dentro del túnel" o "va bien un rato"; **aquí se fija el valor correcto de
-MTU/keepalive/DNS y por qué**, allí se averigua cuál está mal en un caso concreto),
-`identity-access-management-standards` (**la identidad**: IdP, OIDC/SAML, MFA resistente a phishing,
-passkeys, SSO, SCIM y desprovisión, PAM/JIT y cuentas break-glass — **el usuario y su autenticación
-son suyos, el túnel y su terminación son de aquí**),
-`cryptography-pki-standards` (**los algoritmos, la PKI y los certificados del túnel**: suites,
-tamaños de clave, emisión y revocación de certificados de cliente y de gateway, CRL/OCSP, ACME,
-custodia de la CA, criterio de migración post-cuántica — **aquí sólo qué se configura en el túnel y
-con qué vida útil**), `secrets-management-standards` (custodia y rotación de las claves privadas,
-PSK y tokens de enrolamiento; nunca en el repo ni en el fichero de config),
-`dns-standards` (**el servicio DNS y sus datos**: qué resolver es legítimo, split-horizon, zonas
-internas; **aquí sólo qué resolver se empuja al cliente y cómo se evita que consulte fuera**),
-`detection-engineering-standards` (reglas y analítica sobre los logs de sesión VPN: geolocalización
-imposible, fuerza bruta, sesiones concurrentes),
-`incident-response-forensics-standards` (el compromiso del concentrador como incidente: contención,
-imagen del appliance, cadena de custodia, rotación masiva de credenciales),
-`vulnerability-management-standards` (triaje y SLA de parcheo de los CVE de concentrador con
-KEV/EPSS — **aquí el argumento de exposición, allí la cadencia formal**),
-`observability-standards` (métricas, dashboards y alertas del túnel como servicio),
-`sre-practice-standards` (SLO del acceso remoto y presupuesto de error),
-`incident-management-standards` (mando y comunicación cuando la caída de la VPN es un incidente
-declarado), `linux-hardening-standards` (baseline del host que termina el túnel, `sysctl` de
-reenvío, sandboxing systemd del demonio), `selinux-standards` (confinamiento del proceso),
-`linux-administration-standards` (unidades systemd, `systemd-networkd`, `resolvectl` y la
-resolución **desde el host**), `bash-linux-scripting-standards` (scripts de automatización),
-`kubernetes-standards` (service mesh y mTLS entre pods: **no** es una VPN),
-`microservices-architecture-standards` (mTLS este-oeste entre servicios),
+**Not applicable**: see `networking-standards` (**parent**: topology and addressing/IPAM that avoids
+the overlaps, VLANs and segmentation, routing and BGP to announce the tunnel prefixes,
+**MTU/MSS as a network design criterion**, proxies and load balancing, **choice of the perimeter
+platform** —OPNsense/VyOS/appliance—, OOB management plane and ZTNA as an architectural principle),
+`firewall-policy-standards` (**the policy that filters the traffic leaving the tunnel**: flow
+matrix, `forward` with `policy drop`, egress, owner/expiry of each rule, MSS clamping as a rule,
+conntrack — a `wg0` that enters `forward` with no rules is a VPN without a firewall; **here we decide
+which tunnel exists and how it is operated, there what traverses it**),
+`network-troubleshooting-standards` (**reactive diagnosis**: "the VPN connects but I can't browse" is
+**theirs** —it is MTU/PMTU and it is proven with a capture at both ends—, as are "it drops after 5
+minutes", "it resolves badly inside the tunnel" or "it works for a while"; **here we fix the correct
+value of MTU/keepalive/DNS and why**, there they work out which one is wrong in a specific case),
+`identity-access-management-standards` (**identity**: IdP, OIDC/SAML, phishing-resistant MFA,
+passkeys, SSO, SCIM and deprovisioning, PAM/JIT and break-glass accounts — **the user and their
+authentication are theirs, the tunnel and its termination are ours**),
+`cryptography-pki-standards` (**the algorithms, the PKI and the tunnel certificates**: suites,
+key sizes, issuance and revocation of client and gateway certificates, CRL/OCSP, ACME,
+CA custody, post-quantum migration criteria — **here only what is configured in the tunnel and
+with what lifetime**), `secrets-management-standards` (custody and rotation of private keys,
+PSKs and enrolment tokens; never in the repo nor in the config file),
+`dns-standards` (**the DNS service and its data**: which resolver is legitimate, split-horizon,
+internal zones; **here only which resolver is pushed to the client and how it is prevented from
+querying outside**),
+`detection-engineering-standards` (rules and analytics over VPN session logs: impossible
+geolocation, brute force, concurrent sessions),
+`incident-response-forensics-standards` (compromise of the concentrator as an incident: containment,
+appliance imaging, chain of custody, mass credential rotation),
+`vulnerability-management-standards` (triage and patching SLA for concentrator CVEs with
+KEV/EPSS — **here the exposure argument, there the formal cadence**),
+`observability-standards` (metrics, dashboards and alerts for the tunnel as a service),
+`sre-practice-standards` (remote-access SLOs and error budget),
+`incident-management-standards` (command and communication when the VPN outage is a declared
+incident), `linux-hardening-standards` (baseline of the host terminating the tunnel, forwarding
+`sysctl`, systemd sandboxing of the daemon), `selinux-standards` (process confinement),
+`linux-administration-standards` (systemd units, `systemd-networkd`, `resolvectl` and resolution
+**from the host**), `bash-linux-scripting-standards` (automation scripts),
+`kubernetes-standards` (service mesh and mTLS between pods: this is **not** a VPN),
+`microservices-architecture-standards` (east-west mTLS between services),
 `aws-standards`/`azure-standards`/`gcp-standards` (Site-to-Site VPN, Virtual Network Gateway, Cloud
-VPN y sus ZTNA gestionados como servicio del proveedor), `iac-standards`/`cicd-standards` (el código
-y el pipeline que despliegan la config), `onprem-standards` (paraguas de plataforma),
-`homelab-standards` (túnel doméstico: la frontera es el rigor exigido, no el tamaño),
-`grc-compliance-standards` (el acceso remoto como control auditable ante ENS/ISO/NIS2/DORA),
-`bcdr-standards` (el acceso remoto como dependencia crítica de la recuperación: si el DR depende de
-la VPN, la VPN es parte del DR), `offensive-security-standards` (validación ofensiva del acceso
-remoto, con alcance y autorización).
+VPN and their managed ZTNA as a provider service), `iac-standards`/`cicd-standards` (the code
+and the pipeline that deploy the config), `onprem-standards` (platform umbrella),
+`homelab-standards` (home tunnel: the boundary is the rigour demanded, not the size),
+`grc-compliance-standards` (remote access as an auditable control against ENS/ISO/NIS2/DORA),
+`bcdr-standards` (remote access as a critical dependency of recovery: if DR depends on
+the VPN, the VPN is part of DR), `offensive-security-standards` (offensive validation of remote
+access, with scope and authorisation).
 
-También existen y son frontera: `ha-clustering-standards` (el par de concentradores como recurso de
-clúster: VIP, quórum, fencing y failover — **la mecánica de HA es suya, el estado del túnel que debe
-sobrevivir al failover es de aquí**) y `podman-systemd-containers-standards` (el demonio del túnel o
-el agente de malla ejecutado como contenedor con Quadlet: unidad, red y privilegios son suyos).
+Also existing and on the boundary: `ha-clustering-standards` (the concentrator pair as a cluster
+resource: VIP, quorum, fencing and failover — **the HA mechanics are theirs, the tunnel state that
+must survive the failover is ours**) and `podman-systemd-containers-standards` (the tunnel daemon or
+the mesh agent run as a container with Quadlet: unit, network and privileges are theirs).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión y el estado del proyecto **por web** antes de fijar nada (§8).
-> Fechas de release obtenidas de `api.github.com` y del git upstream, no de páginas HTML.
+> Verify the latest version and the project's status **on the web** before committing to anything (§8).
+> Release dates obtained from `api.github.com` and from the upstream git, not from HTML pages.
 
-| Ámbito | Por defecto | Alternativa justificable | Vetado |
+| Area | Default | Justifiable alternative | Vetoed |
 |---|---|---|---|
-| Protocolo de túnel | **WireGuard** in-kernel (Linux ≥5.6; `wireguard-tools` **1.0.20260223**, 23-feb-2026) | IPsec/IKEv2 con **strongSwan 6.0.7** (08-jun-2026) cuando hay que interoperar con equipo de terceros o exigen FIPS/PQC estandarizado | PPTP, L2TP sin IPsec, SSL-VPN propietaria sin parcheo, cualquier cripto negociable con suites débiles |
-| WireGuard en userspace | Sólo donde **no** hay implementación en kernel (macOS, Windows, contenedor sin privilegios): `wireguard-go` | — | `wireguard-go` en un Linux moderno "porque ya funciona": copia por paquete y coste fijo de context switch |
-| Gestión de la interfaz WG | **`systemd-networkd`** (`.netdev` con `[WireGuard]`/`[WireGuardPeer]` + `.network`) en servidores | `wg-quick` en hosts sencillos y clientes; NetworkManager en escritorio | Scripts propios que reimplementan `wg-quick` a medias |
-| Malla con plano de control | **NetBird** (control plane 100% open source y self-hostable, binario unificado desde 0.65; **0.76.1**, 31-jul-2026) o **Headscale 0.29.3** (29-jul-2026) si quieres cliente Tailscale sin su coordinador | **Tailscale** cuando el valor es el producto gestionado y aceptas el modelo; **Nebula 1.11.0** (23-jul-2026, MIT, basado en certificados, sin SaaS) para sitios aislados o desconectados | Malla WireGuard manual con más de ~10 nodos: la distribución de claves no escala |
-| Acceso remoto de usuario | **ZTNA por aplicación** con identidad del IdP (`identity-access-management-standards`) sobre el túnel | VPN de concentrador cuando el acceso es a red heredada no publicable por aplicación | VPN full-tunnel que concede "la red" y llamarlo control de acceso |
-| SSL-VPN sobre TCP/443 | **OpenVPN 2.7.5** (02-jul-2026) sólo para redes hostiles que bloquean UDP y para clientes heredados | 2.6.21 (02-jul-2026) donde 2.7 aún no esté empaquetado | OpenVPN como default nuevo por costumbre; TCP-sobre-TCP como modo habitual |
-| Aceleración OpenVPN | **DCO**: módulo `ovpn` **upstream en Linux 6.16**, `win-dco` por defecto en Windows | `ovpn-backports` en kernels anteriores; `tap-windows6` sólo para lo que `win-dco` no cubre | `wintun` en Windows (**eliminado en 2.7**) |
-| Post-cuántico | **strongSwan ≥6.0.x con RFC 9370** (`ke1_mlkem768`) + PPK (RFC 8784) cuando el requisito es real y estandarizado | Rosenpass sobre WireGuard (**pre-1.0**: v0.2.3, 03-ago-2026) en escenarios donde asumas software pre-1.0 | Prometer "quantum-safe": **WireGuard no trae PQC de serie**; sólo el hueco de PSK |
-| Terminación | Host Linux dedicado y minimalista, o plataforma de perímetro de la casa | Appliance comercial si ya es el estándar, con el parcheo de §5 aceptado como compromiso | Concentrador comercial sin ventana de parcheo de emergencia comprometida por escrito |
-| Autenticación de máquina | Clave pública WireGuard registrada + PSK opcional; o certificado X.509 de **vida corta** en IPsec/OpenVPN | — | Clave o certificado permanente sin caducidad ni revocación probada |
-| Autenticación de usuario | **MFA resistente a phishing** (passkeys/WebAuthn, FIDO2) delegada en el IdP | TOTP sólo como paso intermedio con fecha de salida | SMS, push sin *number matching*, o "el certificado ya identifica al usuario" |
-| Filtrado del tráfico del túnel | `forward` con `policy drop` y matriz de flujos (`firewall-policy-standards`) | — | `wg0` en `forward` sin reglas |
+| Tunnel protocol | **WireGuard** in-kernel (Linux ≥5.6; `wireguard-tools` **1.0.20260223**, 23 Feb 2026) | IPsec/IKEv2 with **strongSwan 6.0.7** (8 Jun 2026) when you have to interoperate with third-party equipment or FIPS/standardised PQC is required | PPTP, L2TP without IPsec, proprietary SSL-VPN with no patching, any negotiable crypto with weak suites |
+| WireGuard in userspace | Only where there is **no** kernel implementation (macOS, Windows, unprivileged container): `wireguard-go` | — | `wireguard-go` on a modern Linux "because it works already": per-packet copy and fixed context-switch cost |
+| WG interface management | **`systemd-networkd`** (`.netdev` with `[WireGuard]`/`[WireGuardPeer]` + `.network`) on servers | `wg-quick` on simple hosts and clients; NetworkManager on the desktop | Home-grown scripts that half-reimplement `wg-quick` |
+| Mesh with a control plane | **NetBird** (100% open source and self-hostable control plane, unified binary since 0.65; **0.76.1**, 31 Jul 2026) or **Headscale 0.29.3** (29 Jul 2026) if you want the Tailscale client without its coordinator | **Tailscale** when the value is the managed product and you accept the model; **Nebula 1.11.0** (23 Jul 2026, MIT, certificate-based, no SaaS) for isolated or disconnected sites | Manual WireGuard mesh with more than ~10 nodes: key distribution does not scale |
+| User remote access | **Per-application ZTNA** with IdP identity (`identity-access-management-standards`) over the tunnel | Concentrator VPN when the access is to a legacy network that cannot be published per application | Full-tunnel VPN that grants "the network" and calling that access control |
+| SSL-VPN over TCP/443 | **OpenVPN 2.7.5** (2 Jul 2026) only for hostile networks that block UDP and for legacy clients | 2.6.21 (2 Jul 2026) where 2.7 is not yet packaged | OpenVPN as a new default out of habit; TCP-over-TCP as the usual mode |
+| OpenVPN acceleration | **DCO**: `ovpn` module **upstream in Linux 6.16**, `win-dco` by default on Windows | `ovpn-backports` on earlier kernels; `tap-windows6` only for what `win-dco` does not cover | `wintun` on Windows (**removed in 2.7**) |
+| Post-quantum | **strongSwan ≥6.0.x with RFC 9370** (`ke1_mlkem768`) + PPK (RFC 8784) when the requirement is real and standardised | Rosenpass over WireGuard (**pre-1.0**: v0.2.3, 3 Aug 2026) in scenarios where you accept pre-1.0 software | Promising "quantum-safe": **WireGuard does not ship PQC**; only the PSK hook |
+| Termination | Dedicated, minimal Linux host, or the house's perimeter platform | Commercial appliance if it is already the standard, with the patching of §5 accepted as a commitment | Commercial concentrator with no emergency patching window committed in writing |
+| Machine authentication | Registered WireGuard public key + optional PSK; or **short-lived** X.509 certificate in IPsec/OpenVPN | — | Permanent key or certificate with no expiry and no proven revocation |
+| User authentication | **Phishing-resistant MFA** (passkeys/WebAuthn, FIDO2) delegated to the IdP | TOTP only as an interim step with an exit date | SMS, push without *number matching*, or "the certificate already identifies the user" |
+| Filtering of tunnel traffic | `forward` with `policy drop` and a flow matrix (`firewall-policy-standards`) | — | `wg0` in `forward` with no rules |
 
-**Criterio de elección, no de gusto.** WireGuard si controlas ambos extremos. IPsec si el otro
-extremo lo impone o hay requisito de certificación. OpenVPN si el camino es hostil y necesitas
-TCP/443. Malla gestionada si tienes clientes móviles, NAT por todas partes y ACL por identidad.
-ZTNA si lo que necesitas publicar es **una aplicación**, no una red.
+**A criterion of choice, not of taste.** WireGuard if you control both ends. IPsec if the other
+end imposes it or there is a certification requirement. OpenVPN if the path is hostile and you need
+TCP/443. Managed mesh if you have mobile clients, NAT everywhere and identity-based ACLs.
+ZTNA if what you need to publish is **an application**, not a network.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 La decisión de partida: qué modelo resuelve tu problema
+### 3.1 The starting decision: which model solves your problem
 
-| Modelo | Qué resuelve | Qué **no** resuelve |
+| Model | What it solves | What it does **not** solve |
 |---|---|---|
-| **Sitio a sitio** | Unir dos redes con enrutado estable, pocos extremos, direcciones conocidas | Identidad de usuario, movilidad, granularidad por aplicación |
-| **Acceso remoto de concentrador** | Meter un portátil "dentro" para alcanzar servicios heredados | Autorización: da red, no aplicaciones. Escala mal y concentra riesgo |
-| **Malla (mesh)** | Muchos extremos móviles tras NAT, conectividad directa peer-to-peer, ACL por identidad | El plano de control se convierte en tu nueva raíz de confianza |
-| **ZTNA / proxy por aplicación** | Publicar una aplicación concreta a una identidad concreta, sin dar red | Protocolos que no son publicables por aplicación; dependencia del proveedor |
+| **Site to site** | Joining two networks with stable routing, few ends, known addresses | User identity, mobility, per-application granularity |
+| **Concentrator remote access** | Getting a laptop "inside" to reach legacy services | Authorisation: it gives network, not applications. Scales badly and concentrates risk |
+| **Mesh** | Many mobile ends behind NAT, direct peer-to-peer connectivity, identity-based ACLs | The control plane becomes your new root of trust |
+| **ZTNA / per-application proxy** | Publishing a specific application to a specific identity, without giving network | Protocols that cannot be published per application; provider dependency |
 
-- **El desplazamiento del mercado es real y tiene causa técnica, no de moda**: la VPN de
-  concentrador otorga acceso *de red* tras una única autenticación, y ese modelo se rompió por dos
-  vías simultáneas — (1) el concentrador se convirtió en el objetivo preferente y explotado (§5.1),
-  y (2) el perímetro dejó de existir con SaaS y teletrabajo. NIST SP 800-207 lo dice sin rodeos: la
-  ubicación en la red no otorga confianza.
-- **Traducción operativa, no eslogan**: no hay que "quitar la VPN". Hay que (a) **dejar de usar el
-  túnel como autorización** —cada acceso se autoriza por identidad, dispositivo y aplicación—, y
-  (b) reducir la VPN al transporte de lo que aún no se puede publicar por aplicación, con alcance
-  mínimo y caducidad. La VPN sobrevive como **capa de transporte**, muere como **capa de confianza**.
-- **Criterio de migración**: publica primero lo que es HTTP(S) (proxy/ZTNA), después lo que habla un
-  protocolo con identidad propia (SSH con certificados, RDP tras broker), y deja en el túnel el
-  resto —con inventario y fecha de revisión. Una VPN que "se queda para todo lo demás" sin lista es
-  la VPN de siempre con nombre nuevo.
+- **The market shift is real and has a technical cause, not a fashion one**: the concentrator VPN
+  grants *network* access after a single authentication, and that model broke along two
+  simultaneous paths — (1) the concentrator became the preferred and exploited target (§5.1),
+  and (2) the perimeter ceased to exist with SaaS and remote work. NIST SP 800-207 says it without
+  hedging: location on the network does not grant trust.
+- **Operational translation, not a slogan**: you do not have to "remove the VPN". You have to (a)
+  **stop using the tunnel as authorisation** —each access is authorised by identity, device and
+  application—, and (b) reduce the VPN to transporting what cannot yet be published per application,
+  with minimal scope and an expiry date. The VPN survives as a **transport layer**, it dies as a
+  **trust layer**.
+- **Migration criterion**: publish first what is HTTP(S) (proxy/ZTNA), then what speaks a
+  protocol with its own identity (SSH with certificates, RDP behind a broker), and leave the rest in
+  the tunnel —with an inventory and a review date. A VPN that "stays for everything else" without a
+  list is the same old VPN with a new name.
 
-### 3.2 WireGuard: lo que hay que entender antes de escribir un `wg0.conf`
+### 3.2 WireGuard: what you have to understand before writing a `wg0.conf`
 
-- **Cripto fija y sin negociación**: ChaCha20-Poly1305, Curve25519, BLAKE2s, HKDF. No hay suites que
-  elegir, no hay downgrade que negociar y no hay "phase 1/phase 2" que descuadrar. Ese es su valor
-  principal frente a IPsec y no se toca; si tu requisito exige agilidad criptográfica o algoritmo
-  certificado concreto, **WireGuard no es tu protocolo** (ver `cryptography-pki-standards`).
-- **UDP y silencio por diseño**: no responde a quien no presenta una clave válida. Un escaneo no lo
-  ve. Eso reduce superficie, pero también significa que **el fallo de conexión no te dice nada**:
-  el diagnóstico es asimétrico y necesita captura en ambos extremos
+- **Fixed crypto with no negotiation**: ChaCha20-Poly1305, Curve25519, BLAKE2s, HKDF. There are no
+  suites to choose, no downgrade to negotiate and no "phase 1/phase 2" to mismatch. That is its main
+  value against IPsec and it is not up for discussion; if your requirement demands cryptographic
+  agility or a specific certified algorithm, **WireGuard is not your protocol** (see
+  `cryptography-pki-standards`).
+- **UDP and silence by design**: it does not answer anyone who does not present a valid key. A scan
+  does not see it. That reduces surface, but it also means that **a connection failure tells you
+  nothing**: diagnosis is asymmetric and needs a capture at both ends
   (`network-troubleshooting-standards`).
-- **`AllowedIPs` es enrutado *y* control de acceso a la vez — el error conceptual más común.**
-  - En **salida**: define qué destinos se encaminan por ese peer (`wg-quick` crea la ruta).
-  - En **entrada**: es *cryptokey routing* — un paquete que llega por el túnel con origen **fuera**
-    del `AllowedIPs` de ese peer **se descarta**. Es la única autorización que WireGuard tiene.
-  - Consecuencia práctica: **`AllowedIPs = 0.0.0.0/0, ::/0` en un peer cliente del servidor
-    significa "este peer puede suplantar cualquier origen"**. Cada peer lleva **exactamente** su
-    `/32` (y su `/128`), o el prefijo del sitio que legítimamente enruta, y nada más.
-  - `0.0.0.0/0` es legítimo **sólo en el lado cliente hacia el servidor** (full-tunnel) o en un peer
-    que es de verdad la salida por defecto.
-  - Esto **no** sustituye al firewall: WireGuard valida el origen, no el destino ni el puerto.
-- **Claves**: una clave privada por dispositivo, generada **en el dispositivo** (`wg genkey`),
-  nunca reutilizada entre nodos ni entre entornos, `umask 077`, fichero `0600`, y nunca en el repo
-  (`secrets-management-standards`). La clave pública es un identificador de dispositivo, no de
-  persona: **no hay identidad de usuario en WireGuard**.
-- **Rotación**: WireGuard no rota claves solo. La rotación es una operación coordinada (añadir el
-  nuevo peer, migrar, retirar el viejo) y por eso, más allá de unos pocos nodos, se automatiza o no
-  se hace — que es exactamente el argumento para una malla gestionada (§3.3). Fija una cadencia
-  (anual como suelo, inmediata ante baja o sospecha) y **prueba la retirada**: un peer eliminado del
-  servidor pierde el acceso al instante; comprobarlo es el gate.
-- **`PresharedKey`**: capa simétrica adicional por par de peers. Su uso previsto es **resistencia
-  post-cuántica** (§3.6), no "más seguridad" genérica. Si se usa, es un secreto más que custodiar y
-  rotar por par.
-- **`PersistentKeepalive`**: **25 s** es el valor de referencia para el peer que está tras NAT o
-  firewall stateful, y sirve para que la asociación de NAT no expire. Reglas: lo pone **el lado que
-  está detrás del NAT**, no el servidor público; ponerlo en todos los peers de una malla es tráfico
-  y batería a cambio de nada. Sin él, el síntoma es el clásico "funciona cuando yo inicio, no cuando
-  inician ellos" y "se cae cuando dejo de usarlo".
-- **Roaming**: WireGuard actualiza el `Endpoint` del peer al recibir un paquete autenticado desde
-  una IP nueva. Es su gran virtud móvil, y también el motivo por el que **filtrar por IP de origen
-  del cliente no funciona** como control.
-- **Límites reales que hay que decir en voz alta**: sin gestión de identidad, sin autenticación de
-  usuario, sin MFA, sin distribución de claves, sin ACL más allá de `AllowedIPs`, sin NAT traversal
-  propio (necesita un extremo alcanzable o un relé), sin revocación centralizada. Todo eso lo pone
-  otra capa; si no la pones tú, no está.
-- **`Table = off`** cuando quieres controlar el enrutado a mano (routing dinámico sobre el túnel,
-  policy routing); con `Table` automático y `AllowedIPs = 0.0.0.0/0`, `wg-quick` instala reglas de
-  política que pueden romper el acceso de gestión del propio host. Cambio remoto ⇒ ventana de
-  rescate abierta (§4).
+- **`AllowedIPs` is routing *and* access control at the same time — the most common conceptual error.**
+  - On **egress**: it defines which destinations are routed through that peer (`wg-quick` creates the
+    route).
+  - On **ingress**: it is *cryptokey routing* — a packet arriving through the tunnel with a source
+    **outside** that peer's `AllowedIPs` **is dropped**. It is the only authorisation WireGuard has.
+  - Practical consequence: **`AllowedIPs = 0.0.0.0/0, ::/0` on a client peer of the server
+    means "this peer can spoof any source"**. Each peer carries **exactly** its
+    `/32` (and its `/128`), or the prefix of the site it legitimately routes, and nothing else.
+  - `0.0.0.0/0` is legitimate **only on the client side towards the server** (full-tunnel) or on a
+    peer that really is the default exit.
+  - This does **not** replace the firewall: WireGuard validates the source, not the destination nor
+    the port.
+- **Keys**: one private key per device, generated **on the device** (`wg genkey`),
+  never reused between nodes or between environments, `umask 077`, `0600` file, and never in the repo
+  (`secrets-management-standards`). The public key is a device identifier, not a person's:
+  **there is no user identity in WireGuard**.
+- **Rotation**: WireGuard does not rotate keys on its own. Rotation is a coordinated operation (add
+  the new peer, migrate, retire the old one) and for that reason, beyond a handful of nodes, it is
+  automated or it does not happen — which is exactly the argument for a managed mesh (§3.3). Set a
+  cadence (annual as a floor, immediate on a leaver or on suspicion) and **test the removal**: a peer
+  deleted from the server loses access instantly; checking that is the gate.
+- **`PresharedKey`**: an additional symmetric layer per peer pair. Its intended use is
+  **post-quantum resistance** (§3.6), not generic "more security". If it is used, it is one more
+  secret to hold in custody and rotate per pair.
+- **`PersistentKeepalive`**: **25 s** is the reference value for the peer that is behind NAT or a
+  stateful firewall, and it exists so the NAT association does not expire. Rules: it is set by **the
+  side that is behind the NAT**, not by the public server; setting it on every peer of a mesh is
+  traffic and battery in exchange for nothing. Without it, the symptom is the classic "it works when
+  I initiate, not when they initiate" and "it drops when I stop using it".
+- **Roaming**: WireGuard updates the peer's `Endpoint` upon receiving an authenticated packet from a
+  new IP. That is its great mobile virtue, and also the reason why **filtering by the client's source
+  IP does not work** as a control.
+- **Real limits that must be said out loud**: no identity management, no user authentication, no
+  MFA, no key distribution, no ACLs beyond `AllowedIPs`, no NAT traversal of its own (it needs a
+  reachable end or a relay), no centralised revocation. All of that is provided by another layer; if
+  you do not provide it, it is not there.
+- **`Table = off`** when you want to control routing by hand (dynamic routing over the tunnel,
+  policy routing); with automatic `Table` and `AllowedIPs = 0.0.0.0/0`, `wg-quick` installs policy
+  rules that can break management access to the host itself. Remote change ⇒ rescue window open (§4).
 
-### 3.3 Mallas gestionadas: qué compras y qué entregas
+### 3.3 Managed meshes: what you buy and what you give up
 
-**Qué aportan sobre WireGuard puro** (y por qué a partir de cierto tamaño no es opcional):
-identidad federada contra tu IdP, distribución y rotación automática de claves, **ACL por identidad
-y no por IP**, NAT traversal (STUN/UPnP/hole punching) con **relés de respaldo** cuando el punch
-falla —DERP en Tailscale/Headscale, relés propios en NetBird—, DNS de malla, altas y bajas
-inmediatas, y visibilidad de qué nodo habla con cuál.
+**What they add over plain WireGuard** (and why past a certain size it is not optional):
+federated identity against your IdP, automatic key distribution and rotation, **identity-based
+rather than IP-based ACLs**, NAT traversal (STUN/UPnP/hole punching) with **fallback relays** when
+the punch fails —DERP in Tailscale/Headscale, own relays in NetBird—, mesh DNS, immediate joins and
+removals, and visibility of which node talks to which.
 
-**Qué entregas: el plano de control es la nueva raíz de confianza.**
-- Quien controla el coordinador **distribuye claves, ACL y rutas**. Su compromiso no es "una fuga de
-  metadatos": es la capacidad de introducir un nodo en tu red o de reescribir quién puede hablar con
-  quién. Trátalo con el mismo criterio que tu IdP o tu CA, no como una herramienta de red.
-- **Evidencia de que el cliente y el plano son superficie real, no teórica** — boletines propios de
-  Tailscale de 2026 (verbatim de su página de boletines): **TS-2026-004** (04-jun) *Tailscale SSH
-  Unix socket forwarding did not respect symlink permissions*; **TS-2026-005** (03-jun) *Tailscale
-  Serve Unix socket proxy targets were not restricted to `root`*; **TS-2026-006** (11-jun) *Tailscale
+**What you give up: the control plane is the new root of trust.**
+- Whoever controls the coordinator **distributes keys, ACLs and routes**. Its compromise is not "a
+  metadata leak": it is the ability to introduce a node into your network or to rewrite who can talk
+  to whom. Treat it with the same criteria as your IdP or your CA, not as a network tool.
+- **Evidence that the client and the plane are real surface, not theoretical** — Tailscale's own 2026
+  bulletins (verbatim from their bulletins page): **TS-2026-004** (4 Jun) *Tailscale SSH
+  Unix socket forwarding did not respect symlink permissions*; **TS-2026-005** (3 Jun) *Tailscale
+  Serve Unix socket proxy targets were not restricted to `root`*; **TS-2026-006** (11 Jun) *Tailscale
   SSH allowed users to be addressed by numeric UID, bypassing `root` user restrictions*;
-  **TS-2026-007** (10-jul) *Insufficient inbound packet filtering in Services permitted access to
-  loopback-bound listeners*; **TS-2026-008** (13-jul) *A single malformed HTTP request to a node
-  running Tailscale Serve or Funnel could pin a CPU core indefinitely*; **TS-2026-009** (13-jul)
+  **TS-2026-007** (10 Jul) *Insufficient inbound packet filtering in Services permitted access to
+  loopback-bound listeners*; **TS-2026-008** (13 Jul) *A single malformed HTTP request to a node
+  running Tailscale Serve or Funnel could pin a CPU core indefinitely*; **TS-2026-009** (13 Jul)
   *Insecure command line argument handling in Tailscale SSH permitted `root` user access in
-  violation of ACLs*. Léelo como lo que es: **agente con privilegios en todos tus nodos**, con
-  funciones que exponen servicios y que se saltan ACL cuando fallan. Suscríbete a los boletines del
-  proveedor que elijas y trata su parcheo como parcheo de agente privilegiado, no de app.
-- **Preguntas que se responden por escrito antes de adoptar**: ¿el plano de control es
-  self-hostable? ¿el proveedor puede añadir un nodo a tu red sin tu consentimiento? ¿los relés ven
-  tráfico en claro (no deberían: el cifrado es extremo a extremo) o sólo lo reenvían? ¿dónde vive el
-  plano y bajo qué jurisdicción? ¿qué pasa con la red si el proveedor cae —los túneles ya
-  establecidos sobreviven, las altas no? ¿qué historial de boletines tiene? ¿qué licencia y qué
-  modelo de negocio, y qué pasa si cambian?
-- **El modelo de negocio cambia y te afecta**: en 2026 hubo movimiento de precios y licencias en
-  este espacio (Tailscale hacia precio por asiento; ZeroTier endureciendo el controlador
-  autohospedado; NetBird formalizando su edición autohospedada). **No fijes de memoria ninguna de
-  esas condiciones** — verifica la vigente antes de comprometer una plataforma (§8).
-- **Criterio de salida escrito desde el día uno**: qué haces si el proveedor cambia licencia, sube
-  precio o desaparece. La opción "todo el plano en casa" (Headscale/NetBird self-hosted/Nebula) es
-  precisamente el seguro contra eso, con el coste de operarlo tú.
-- **Nebula** es la elección distinta: basado en **certificados** con CA propia, sin llamada a casa,
-  sin SaaS; a cambio, la operación de la CA y el `lighthouse` son tuyas
+  violation of ACLs*. Read it for what it is: **a privileged agent on all your nodes**, with
+  features that expose services and that bypass ACLs when they fail. Subscribe to the bulletins of
+  whichever provider you choose and treat its patching as privileged-agent patching, not app patching.
+- **Questions answered in writing before adopting**: is the control plane
+  self-hostable? can the provider add a node to your network without your consent? do the relays see
+  cleartext traffic (they should not: encryption is end to end) or do they only forward it? where does
+  the plane live and under which jurisdiction? what happens to the network if the provider goes down
+  —do already-established tunnels survive, do new joins not? what bulletin history does it have? what
+  licence and what business model, and what happens if they change?
+- **The business model changes and it affects you**: in 2026 there was movement in prices and
+  licences in this space (Tailscale towards per-seat pricing; ZeroTier tightening the self-hosted
+  controller; NetBird formalising its self-hosted edition). **Do not pin any of those
+  conditions from memory** — verify the current one before committing to a platform (§8).
+- **A written exit criterion from day one**: what you do if the provider changes its licence, raises
+  the price or disappears. The "whole plane in-house" option (Headscale/NetBird self-hosted/Nebula) is
+  precisely the insurance against that, at the cost of operating it yourself.
+- **Nebula** is the different choice: **certificate**-based with your own CA, no phoning home,
+  no SaaS; in exchange, operating the CA and the `lighthouse` is on you
   (`cryptography-pki-standards`).
 
-### 3.4 IPsec/IKEv2: cuándo y con qué disciplina
+### 3.4 IPsec/IKEv2: when and with what discipline
 
-- **Se usa cuando el otro extremo lo impone** (appliance de un tercero, operador, requisito de
-  certificación) o cuando necesitas PQC estandarizado (§3.6). Es más complejo y con más superficie
-  —el historial de CVE de strongSwan de 2026 lo confirma (§8)—, pero sigue vivo porque es el único
-  denominador común entre fabricantes.
-- **IKEv2 siempre**; IKEv1, agresivo, XAUTH y PSK de grupo, vetados.
-- **El clásico *mismatch* de fase 2**: la fase 1 (IKE_SA) levanta, la fase 2 (CHILD_SA) no, y el log
-  no lo dice claro. Causas por orden de frecuencia: propuestas ESP que no coinciden (cifrado, MAC,
-  grupo PFS), **selectores de tráfico** (`local_ts`/`remote_ts`) que no son idénticos y espejados en
-  ambos lados, y modo túnel vs. transporte. **Regla**: la propuesta se acuerda **por escrito** con
-  el tercero antes de configurar, se escribe **explícita** en ambos extremos (nada de listas largas
-  "por si acaso", que enmascaran el desacuerdo y negocian a la baja), y los selectores se comparan
-  literalmente. Un lado con `0.0.0.0/0` y el otro con `/24` es la causa nº1 de "levanta y se cae".
-- **Rekeying**: define vidas de IKE_SA y CHILD_SA coherentes en ambos extremos y con márgenes
-  distintos, o tendrás cortes periódicos exactos (síntoma: "se cae cada 8 horas"). Sospecha del
-  rekey ante cualquier caída con periodicidad regular.
-- **MOBIKE (RFC 4555)** para clientes móviles: permite cambiar de IP/interfaz sin renegociar. Es lo
-  que hace usable IKEv2 en un portátil que salta de WiFi a 4G. Actívalo o asume reconexiones.
-- **Fragmentación IKE**: los mensajes con certificados o con claves PQC superan la MTU. Activa
-  fragmentación IKEv2 (RFC 7383) y **no bloquees ICMP**; si no, el túnel "a veces no levanta" según
-  qué certificado use el cliente.
-- **NAT-T (UDP/4500)**: necesario en casi todo escenario real. `strongswan` moderno se configura con
-  `swanctl.conf`; `ipsec.conf`/`starter` es la vía heredada y en retirada.
-- **DPD (dead peer detection)** activo en ambos lados, o un túnel muerto seguirá "arriba" en la
-  tabla y el tráfico caerá en un agujero negro.
+- **It is used when the other end imposes it** (a third party's appliance, a carrier, a
+  certification requirement) or when you need standardised PQC (§3.6). It is more complex and has
+  more surface —strongSwan's 2026 CVE history confirms it (§8)—, but it is still alive because it is
+  the only common denominator between vendors.
+- **IKEv2 always**; IKEv1, aggressive mode, XAUTH and group PSKs are vetoed.
+- **The classic phase-2 *mismatch***: phase 1 (IKE_SA) comes up, phase 2 (CHILD_SA) does not, and the
+  log does not say so clearly. Causes in order of frequency: ESP proposals that do not match
+  (encryption, MAC, PFS group), **traffic selectors** (`local_ts`/`remote_ts`) that are not identical
+  and mirrored on both sides, and tunnel vs. transport mode. **Rule**: the proposal is agreed **in
+  writing** with the third party before configuring, is written **explicitly** at both ends (no long
+  lists "just in case", which mask the disagreement and negotiate downwards), and the selectors are
+  compared literally. One side with `0.0.0.0/0` and the other with a `/24` is the number-one cause of
+  "it comes up and it drops".
+- **Rekeying**: define IKE_SA and CHILD_SA lifetimes that are coherent at both ends and with
+  different margins, or you will have exactly periodic outages (symptom: "it drops every 8 hours").
+  Suspect rekeying on any outage with a regular periodicity.
+- **MOBIKE (RFC 4555)** for mobile clients: it allows changing IP/interface without renegotiating. It
+  is what makes IKEv2 usable on a laptop hopping from WiFi to 4G. Enable it or accept reconnections.
+- **IKE fragmentation**: messages with certificates or with PQ keys exceed the MTU. Enable IKEv2
+  fragmentation (RFC 7383) and **do not block ICMP**; otherwise the tunnel "sometimes does not come
+  up" depending on which certificate the client uses.
+- **NAT-T (UDP/4500)**: needed in almost every real scenario. Modern `strongswan` is configured with
+  `swanctl.conf`; `ipsec.conf`/`starter` is the legacy path and is being retired.
+- **DPD (dead peer detection)** enabled on both sides, or a dead tunnel will still be "up" in the
+  table and traffic will fall into a black hole.
 
-### 3.5 OpenVPN: dónde sigue justificado
+### 3.5 OpenVPN: where it is still justified
 
-- **Justificaciones válidas y sólo esas**: el camino bloquea UDP y necesitas **TCP/443** para
-  parecer tráfico web; hay clientes heredados o plataformas sin cliente WireGuard aceptable;
-  necesitas autenticación de usuario integrada (PAM, LDAP, plugins) sin montar otra capa.
-- **TCP-sobre-TCP es una penalización real** (*TCP meltdown*): úsalo como plan B, no como default.
-  Si UDP está disponible, UDP.
-- **Config mínima no negociable**: `tls-crypt` (mejor que `tls-auth`: además de autenticar, cifra el
-  canal de control y oculta la huella de OpenVPN), certificados de servidor **y** de cliente con
-  `remote-cert-tls`, CRL activa y probada, cifrado AEAD (AES-GCM/ChaCha20-Poly1305), TLS ≥1.2 con
-  1.3 preferido, y `verify-x509-name` para que un certificado de cliente no pueda hacerse pasar por
-  el servidor.
-- **DCO cambia el rendimiento y el modelo de despliegue**: módulo `ovpn` **upstream desde Linux
-  6.16** (sustituye al out-of-tree `ovpn-dco-v2`; `ovpn-backports` para kernels anteriores), y en
-  Windows `win-dco` es el default con `tap-windows6` como respaldo — `wintun` **fue eliminado** en
-  2.7. Si dependías de `wintun`, es un cambio de despliegue, no un detalle.
-- **`redirect-gateway`** convierte el cliente en full-tunnel: es una **decisión de riesgo**
-  (§3.7), no un valor por defecto.
+- **Valid justifications, and only those**: the path blocks UDP and you need **TCP/443** to
+  look like web traffic; there are legacy clients or platforms with no acceptable WireGuard client;
+  you need integrated user authentication (PAM, LDAP, plugins) without building another layer.
+- **TCP-over-TCP is a real penalty** (*TCP meltdown*): use it as plan B, not as the default.
+  If UDP is available, UDP.
+- **Non-negotiable minimum config**: `tls-crypt` (better than `tls-auth`: besides authenticating, it
+  encrypts the control channel and hides OpenVPN's fingerprint), server **and** client certificates
+  with `remote-cert-tls`, an active and tested CRL, AEAD encryption (AES-GCM/ChaCha20-Poly1305),
+  TLS ≥1.2 with 1.3 preferred, and `verify-x509-name` so that a client certificate cannot impersonate
+  the server.
+- **DCO changes performance and the deployment model**: the `ovpn` module **upstream since Linux
+  6.16** (replacing the out-of-tree `ovpn-dco-v2`; `ovpn-backports` for earlier kernels), and on
+  Windows `win-dco` is the default with `tap-windows6` as fallback — `wintun` **was removed** in
+  2.7. If you depended on `wintun`, that is a deployment change, not a detail.
+- **`redirect-gateway`** turns the client into full-tunnel: it is a **risk decision**
+  (§3.7), not a default value.
 
-### 3.6 Post-cuántico: lo que hay hoy y lo que no
+### 3.6 Post-quantum: what exists today and what does not
 
-- **WireGuard no trae PQC de serie.** Su cripto es fija; el único punto de extensión es el
-  `PresharedKey`, y por diseño (el propio proyecto lo documenta como uso previsto del hueco).
-  **Prohibido vender un despliegue WireGuard como "quantum-safe"**.
-- **Vía WireGuard**: **Rosenpass** ejecuta un intercambio PQ aparte e inyecta el resultado en el
-  hueco de PSK, refrescándolo periódicamente; el protocolo WireGuard queda intacto. Estado real:
-  **pre-1.0** (v0.2.3, 03-ago-2026). Adóptalo sabiendo que es software pre-1.0 y que su
-  despliegue es **todo-o-nada por peer** salvo modo permisivo. NetBird lo integra como opción.
-- **Vía IPsec**: **RFC 9370** (múltiples intercambios de clave en IKEv2, con `IKE_INTERMEDIATE` para
-  que las claves grandes no revienten el `IKE_SA_INIT`) + **RFC 8784** (PPK) es la ruta
-  estandarizada. strongSwan la soporta desde 6.0.0 (`ke1_mlkem768`, `ppk=yes`). Es la opción
-  defendible si el requisito es formal/certificable.
-- **Criterio**: el modelo de amenaza es *harvest now, decrypt later*. Si tu tráfico tiene valor a
-  10+ años, el híbrido (clásico **+** PQ, nunca PQ solo) es hoy razonable en IPsec y experimental en
-  WireGuard. Los algoritmos, su estado de estandarización y el plan de migración se deciden en
-  `cryptography-pki-standards`, no aquí.
+- **WireGuard does not ship PQC.** Its crypto is fixed; the only extension point is the
+  `PresharedKey`, and by design (the project itself documents it as the intended use of that hook).
+  **Selling a WireGuard deployment as "quantum-safe" is forbidden**.
+- **Via WireGuard**: **Rosenpass** runs a separate PQ exchange and injects the result into the
+  PSK hook, refreshing it periodically; the WireGuard protocol stays intact. Real status:
+  **pre-1.0** (v0.2.3, 3 Aug 2026). Adopt it knowing it is pre-1.0 software and that its
+  deployment is **all-or-nothing per peer** except in permissive mode. NetBird integrates it as an
+  option.
+- **Via IPsec**: **RFC 9370** (multiple key exchanges in IKEv2, with `IKE_INTERMEDIATE` so that
+  large keys do not blow up `IKE_SA_INIT`) + **RFC 8784** (PPK) is the standardised route.
+  strongSwan supports it since 6.0.0 (`ke1_mlkem768`, `ppk=yes`). It is the defensible option
+  if the requirement is formal/certifiable.
+- **Criterion**: the threat model is *harvest now, decrypt later*. If your traffic has value over
+  10+ years, hybrid (classical **+** PQ, never PQ alone) is reasonable today in IPsec and experimental
+  in WireGuard. The algorithms, their standardisation status and the migration plan are decided in
+  `cryptography-pki-standards`, not here.
 
-### 3.7 Acceso remoto de usuario: el ciclo completo
+### 3.7 User remote access: the full cycle
 
-- **Identidad primero**: autenticación contra el IdP corporativo con **MFA resistente a phishing**
-  (passkeys/FIDO2). Nada de secreto compartido, nada de "el certificado ya es el usuario", nada de
-  SMS. La política y el IdP, en `identity-access-management-standards`.
-- **Credenciales de vida corta > claves permanentes.** El objetivo es que la credencial del cliente
-  caduque sola: certificado de vida corta emitido tras autenticar en el IdP, o token/perfil que
-  expira. Una clave permanente en un portátil perdido es acceso permanente hasta que alguien se
-  acuerde de revocarlo. Si usas claves permanentes (WireGuard puro), **la revocación es un proceso
-  con dueño y con prueba**, no una intención.
-- **Split tunneling: decisión de riesgo explícita y documentada**, nunca un default heredado.
-  - *Full tunnel*: todo el tráfico pasa por la organización — inspección, filtrado y registro
-    completos; a cambio, latencia, coste de ancho de banda, capacidad del concentrador y un SPOF de
-    conectividad para el usuario.
-  - *Split tunnel*: sólo lo corporativo entra al túnel — rendimiento y coste mejores; a cambio,
-    pierdes visibilidad del resto del tráfico del dispositivo y aceptas que el endpoint está
-    expuesto a Internet mientras está "dentro".
-  - **Criterio**: si tu control de contenido y tu telemetría viven en el endpoint (EDR + resolución
-    DNS forzada + proxy), el split tunnel es defendible; si viven en el perímetro, el split tunnel
-    los desactiva. Decide, escríbelo y **revísalo**; el híbrido (split por destino, con lo sensible
-    y el DNS forzados al túnel) es el punto de equilibrio habitual.
-  - Lo que **nunca** es aceptable: split tunneling que deje la resolución DNS fuera del túnel
-    (§3.8) o que permita al cliente actuar de puente entre Internet y la red corporativa.
-- **Postura del dispositivo** como condición de acceso: dispositivo gestionado e inventariado,
-  disco cifrado, EDR vivo y actualizado, SO parcheado, y **reevaluación continua**, no sólo en la
-  conexión. Un portátil que cumplía al conectar y deja de cumplir a la hora debe perder el acceso.
-  BYOD sin postura ⇒ ZTNA por aplicación, jamás túnel de red.
-- **Desprovisión el mismo día** — y "el mismo día" es un compromiso medible: la baja en el IdP
-  revoca el acceso VPN, revoca el certificado, elimina el peer del concentrador y **corta las
-  sesiones activas**. La mayoría de los despliegues fallan en ese último punto: bloquear el login
-  no expulsa a quien ya está dentro. Prueba la desprovisión trimestralmente con una cuenta de
-  ensayo (§4).
-- **Always-on con excepción de portal cautivo**: el cliente levanta el túnel al arrancar y sólo
-  permite tráfico fuera de él para el portal de la red visitada, con caducidad corta.
+- **Identity first**: authentication against the corporate IdP with **phishing-resistant MFA**
+  (passkeys/FIDO2). No shared secret, no "the certificate is already the user", no
+  SMS. The policy and the IdP, in `identity-access-management-standards`.
+- **Short-lived credentials > permanent keys.** The goal is for the client credential to
+  expire on its own: a short-lived certificate issued after authenticating at the IdP, or a
+  token/profile that expires. A permanent key on a lost laptop is permanent access until someone
+  remembers to revoke it. If you use permanent keys (plain WireGuard), **revocation is a process with
+  an owner and with proof**, not an intention.
+- **Split tunnelling: an explicit, documented risk decision**, never an inherited default.
+  - *Full tunnel*: all traffic passes through the organisation — full inspection, filtering and
+    logging; in exchange, latency, bandwidth cost, concentrator capacity and a connectivity SPOF
+    for the user.
+  - *Split tunnel*: only corporate traffic enters the tunnel — better performance and cost; in
+    exchange, you lose visibility of the rest of the device's traffic and you accept that the
+    endpoint is exposed to the Internet while it is "inside".
+  - **Criterion**: if your content control and your telemetry live on the endpoint (EDR + forced
+    DNS resolution + proxy), split tunnelling is defensible; if they live at the perimeter, split
+    tunnelling disables them. Decide, write it down and **review it**; the hybrid (split by
+    destination, with the sensitive traffic and DNS forced into the tunnel) is the usual balance
+    point.
+  - What is **never** acceptable: split tunnelling that leaves DNS resolution outside the tunnel
+    (§3.8) or that lets the client act as a bridge between the Internet and the corporate network.
+- **Device posture** as a condition of access: managed and inventoried device,
+  encrypted disk, EDR alive and up to date, patched OS, and **continuous reassessment**, not just at
+  connection time. A laptop that complied on connecting and stops complying an hour later must lose
+  access. BYOD without posture ⇒ per-application ZTNA, never a network tunnel.
+- **Deprovisioning the same day** — and "the same day" is a measurable commitment: the leaver in
+  the IdP revokes VPN access, revokes the certificate, removes the peer from the concentrator and
+  **cuts active sessions**. Most deployments fail at that last point: blocking the login
+  does not evict whoever is already inside. Test deprovisioning quarterly with a test account (§4).
+- **Always-on with a captive-portal exception**: the client brings the tunnel up at boot and only
+  allows traffic outside it for the visited network's portal, with a short expiry.
 
-### 3.8 Operación del túnel: lo que rompe en la práctica
+### 3.8 Tunnel operation: what breaks in practice
 
-- **MTU y MSS: la causa nº1 de "la VPN conecta pero algunas webs no cargan"** — el handshake TCP
-  (paquetes pequeños) funciona, la transferencia (paquetes grandes con DF) se cuelga.
-  - Ajusta la **MTU del túnel** *y además* haz **MSS clamping** en `forward`: son medidas
-    complementarias, no alternativas. Los valores de referencia y el cálculo, en
-    `networking-standards`; la regla nft que lo aplica, en `firewall-policy-standards`.
-  - **No bloquees ICMP tipo 3 código 4** (*fragmentation needed*) ni ICMPv6 *packet-too-big*: sin
-    ellos PMTUD muere y el fallo es silencioso e intermitente.
-  - Vigila el offload (GRO/GSO/TSO) en la interfaz del túnel: agrega por encima de la MTU y
-    descarta con DF activo.
-  - El **diagnóstico** de un caso concreto es de `network-troubleshooting-standards`; aquí se fija
-    que el valor debe estar puesto, probado con paquete grande y DF, y documentado.
-- **DNS dentro del túnel y fugas de DNS**: el cliente debe usar el resolver corporativo para lo
-  corporativo. Las fugas típicas son (a) el cliente conserva el resolver del DHCP local, (b) el SO
-  consulta a varios resolvers en paralelo y gana el de fuera, (c) el navegador usa **DoH propio** y
-  se salta el resolver del sistema entero, y (d) mDNS/NetBIOS resolviendo por fuera. Controles:
-  empujar el resolver y los dominios de búsqueda desde el túnel, política de navegador que
-  desactive el DoH no controlado, y **verificación activa** de que la consulta sale por donde debe.
-  Qué resolver es legítimo y cómo se diseña: `dns-standards`.
-- **Rutas y solapamiento de direccionamiento** — el clásico de fusionar dos sedes con
-  `192.168.1.0/24`: **no hay arreglo elegante**, sólo tres salidas, en orden de preferencia:
-  (1) **renumerar** uno de los lados (correcto, doloroso, definitivo); (2) **NAT 1:1** del prefijo
-  solapado en el túnel, con un rango "espejo" documentado en el IPAM —funciona, rompe todo lo que
-  lleve IPs embebidas en el protocolo o en configuración, y multiplica el coste de diagnóstico;
-  (3) publicar sólo servicios concretos por proxy/ZTNA y no unir las redes. La prevención es de
-  `networking-standards`: **plan de direccionamiento con bloques grandes y sin solapes desde el
-  día uno**, porque las fusiones llegan.
-- **Rutas anunciadas con criterio**: un peer que anuncia `0.0.0.0/0` a la malla se convierte en la
-  salida de todo el mundo sin que nadie lo decida. Las rutas del túnel se aprueban como cualquier
-  otro cambio de routing, y se filtran (`AllowedIPs` en WireGuard, ACL de rutas en la malla,
-  `--advertise-routes` que requiere aprobación explícita en Tailscale/Headscale/NetBird).
-- **Redundancia y capacidad del concentrador**: par activo/pasivo o activo/activo con nombre DNS o
-  IP virtual, failover **ejercitado**, y dimensionado por **usuarios concurrentes en el peor día**
-  (no por plantilla) con margen para el escenario de continuidad —marzo de 2020 enseñó que el
-  concentrador dimensionado al 30% de la plantilla es un incidente de negocio. Si el DR depende de
-  la VPN, la VPN es infraestructura crítica de DR (`bcdr-standards`).
-- **El túnel se monitoriza como servicio, no como interfaz**: "el peer está configurado" no es
-  "el túnel funciona". Ver §6.
+- **MTU and MSS: the number-one cause of "the VPN connects but some websites don't load"** — the TCP
+  handshake (small packets) works, the transfer (large packets with DF) hangs.
+  - Adjust the **tunnel MTU** *and also* do **MSS clamping** in `forward`: they are
+    complementary measures, not alternatives. The reference values and the calculation, in
+    `networking-standards`; the nft rule that applies it, in `firewall-policy-standards`.
+  - **Do not block ICMP type 3 code 4** (*fragmentation needed*) nor ICMPv6 *packet-too-big*: without
+    them PMTUD dies and the failure is silent and intermittent.
+  - Watch offload (GRO/GSO/TSO) on the tunnel interface: it aggregates above the MTU and
+    drops with DF set.
+  - **Diagnosing** a specific case belongs to `network-troubleshooting-standards`; here we fix
+    that the value must be set, tested with a large packet and DF, and documented.
+- **DNS inside the tunnel and DNS leaks**: the client must use the corporate resolver for
+  corporate traffic. The typical leaks are (a) the client keeps the local DHCP resolver, (b) the OS
+  queries several resolvers in parallel and the outside one wins, (c) the browser uses its **own DoH**
+  and bypasses the whole system resolver, and (d) mDNS/NetBIOS resolving outside. Controls:
+  push the resolver and the search domains from the tunnel, a browser policy that
+  disables uncontrolled DoH, and **active verification** that the query leaves where it should.
+  Which resolver is legitimate and how it is designed: `dns-standards`.
+- **Routes and address overlap** — the classic of merging two sites with
+  `192.168.1.0/24`: **there is no elegant fix**, only three ways out, in order of preference:
+  (1) **renumber** one of the sides (correct, painful, definitive); (2) **1:1 NAT** of the overlapping
+  prefix in the tunnel, with a documented "mirror" range in the IPAM —it works, it breaks everything
+  that carries IPs embedded in the protocol or in configuration, and it multiplies the cost of
+  diagnosis; (3) publish only specific services via proxy/ZTNA and do not join the networks. Prevention
+  belongs to `networking-standards`: **an addressing plan with large blocks and no overlaps from
+  day one**, because mergers do come.
+- **Routes announced with judgement**: a peer that announces `0.0.0.0/0` to the mesh becomes
+  everyone's exit without anyone deciding it. Tunnel routes are approved like any other
+  routing change, and they are filtered (`AllowedIPs` in WireGuard, route ACLs in the mesh,
+  `--advertise-routes` requiring explicit approval in Tailscale/Headscale/NetBird).
+- **Concentrator redundancy and capacity**: active/passive or active/active pair with a DNS name or
+  a virtual IP, **exercised** failover, and sizing by **concurrent users on the worst day**
+  (not by headcount) with margin for the continuity scenario —March 2020 taught that the
+  concentrator sized for 30% of headcount is a business incident. If DR depends on
+  the VPN, the VPN is critical DR infrastructure (`bcdr-standards`).
+- **The tunnel is monitored as a service, not as an interface**: "the peer is configured" is not
+  "the tunnel works". See §6.
 
-## 4. Gates de calidad obligatorios
+## 4. Mandatory quality gates
 
-En orden de coste creciente. Los cinco primeros bloquean el despliegue.
+In increasing order of cost. The first five block the deployment.
 
-1. **Validación de configuración antes de aplicar**: `wg-quick strip` / `wg setconf` contra la
-   config candidata, `swanctl --load-all` en modo prueba, `openvpn --config ... --test-crypto`,
-   `networkctl` para las unidades. Config que no valida no llega ni a staging.
-2. **Revisión de `AllowedIPs` como gate de seguridad, no de red**: ningún peer con más alcance del
-   que le corresponde; `0.0.0.0/0`/`::/0` sólo en el lado que legítimamente lo requiere y con
-   justificación escrita. Este gate es el equivalente WireGuard del "any/any" del firewall.
-3. **Ventana de rescate abierta en todo cambio remoto** que toque túnel, rutas o acceso remoto:
-   consola OOB, segundo camino de administración o reversión temporizada
-   (`systemd-run --on-active` que restaura la config anterior salvo confirmación). Cambiar el túnel
-   por el propio túnel sin red de seguridad es el autobloqueo más previsible del oficio.
-4. **Prueba negativa obligatoria**: (a) un peer retirado **pierde** el acceso de inmediato;
-   (b) un origen fuera de su `AllowedIPs` se descarta; (c) el tráfico entre dos clientes VPN está
-   denegado si así lo dice la política; (d) el concentrador no expone nada más que su puerto de
-   túnel. Un túnel probado sólo por el camino feliz no está probado.
-5. **Prueba de MTU extremo a extremo con paquete grande y bit DF**, no sólo `ping` por defecto, y
-   con la aplicación real (transferencia grande, no un `curl` a una página de una línea). Este es el
-   gate que evita el 90% de los tickets de "la VPN va rara".
-6. **Prueba de fuga de DNS y de rutas** tras cada cambio de cliente o de perfil: la resolución sale
-   por donde debe, el tráfico que debe ir al túnel va al túnel, y el que no, no. Con split tunneling
-   activo esta prueba es obligatoria en **cada** cambio de perfil.
-7. **Ensayo de desprovisión trimestral**: cuenta de ensayo dada de baja en el IdP ⇒ se comprueba que
-   pierde el acceso **y que su sesión activa se corta**. Documentar el tiempo real hasta el corte.
-8. **Ensayo de failover del concentrador** en ventana: los túneles sitio-a-sitio se restablecen, los
-   clientes reconectan, y se mide cuánto tarda. Un secundario nunca ejercitado no es redundancia.
-9. **Prueba de carga antes de la temporada alta o del evento de continuidad**: usuarios concurrentes
-   objetivo con tráfico realista, midiendo CPU de cifrado, sesiones y ancho de banda.
-10. **Revisión periódica del inventario de túneles y peers** (trimestral): cada túnel y cada peer con
-    dueño, motivo, alcance y última actividad; los inactivos se retiran. Un peer de un proveedor que
-    terminó el contrato hace un año es un acceso permanente que nadie recuerda.
+1. **Configuration validation before applying**: `wg-quick strip` / `wg setconf` against the
+   candidate config, `swanctl --load-all` in test mode, `openvpn --config ... --test-crypto`,
+   `networkctl` for the units. A config that does not validate does not even reach staging.
+2. **Review of `AllowedIPs` as a security gate, not a network one**: no peer with more reach than
+   it should have; `0.0.0.0/0`/`::/0` only on the side that legitimately requires it and with
+   written justification. This gate is the WireGuard equivalent of the firewall's "any/any".
+3. **Rescue window open on every remote change** that touches the tunnel, routes or remote access:
+   OOB console, a second administration path or a timed rollback
+   (`systemd-run --on-active` restoring the previous config unless confirmed). Changing the tunnel
+   through the tunnel itself with no safety net is the most predictable self-lockout in the trade.
+4. **Mandatory negative test**: (a) a removed peer **loses** access immediately;
+   (b) a source outside its `AllowedIPs` is dropped; (c) traffic between two VPN clients is
+   denied if the policy says so; (d) the concentrator exposes nothing beyond its tunnel port.
+   A tunnel tested only along the happy path is not tested.
+5. **End-to-end MTU test with a large packet and the DF bit**, not just a default `ping`, and
+   with the real application (a large transfer, not a `curl` to a one-line page). This is the
+   gate that avoids 90% of the "the VPN is behaving oddly" tickets.
+6. **DNS leak and route test** after each client or profile change: resolution goes out
+   where it should, the traffic that must go to the tunnel goes to the tunnel, and what must not,
+   does not. With split tunnelling active this test is mandatory on **every** profile change.
+7. **Quarterly deprovisioning drill**: a test account marked as a leaver in the IdP ⇒ check that
+   it loses access **and that its active session is cut**. Document the real time to cut-off.
+8. **Concentrator failover drill** in a window: site-to-site tunnels re-establish, the
+   clients reconnect, and how long it takes is measured. A secondary that is never exercised is not
+   redundancy.
+9. **Load test before the high season or the continuity event**: the target concurrent users
+   with realistic traffic, measuring encryption CPU, sessions and bandwidth.
+10. **Periodic review of the inventory of tunnels and peers** (quarterly): every tunnel and every peer
+    with an owner, reason, scope and last activity; inactive ones are retired. A peer belonging to a
+    provider whose contract ended a year ago is permanent access nobody remembers.
 
-## 5. Seguridad
+## 5. Security
 
-### 5.1 El concentrador VPN es un objetivo de primer orden — con datos, no con retórica
+### 5.1 The VPN concentrator is a first-order target — with data, not rhetoric
 
-**Evidencia (catálogo KEV de CISA, versión 2026.07.29, 1.656 entradas; consultado directamente del
-JSON de CISA, no de una nota de prensa).** Vulnerabilidades **activamente explotadas** en
-dispositivos de acceso remoto y perímetro añadidas desde ene-2025:
+**Evidence (CISA KEV catalogue, version 2026.07.29, 1,656 entries; consulted directly from
+CISA's JSON, not from a press note).** **Actively exploited** vulnerabilities in
+remote-access and perimeter devices added since Jan 2025:
 
-| Añadido | CVE | Producto |
+| Added | CVE | Product |
 |---|---|---|
-| 2025-01-08 | CVE-2025-0282 | Ivanti Connect Secure / Policy Secure / ZTA Gateways — desbordamiento de pila |
-| 2025-01-24 | CVE-2025-23006 | SonicWall SMA1000 — deserialización |
-| 2025-02-18 | CVE-2024-53704 | SonicWall SonicOS **SSLVPN** — autenticación incorrecta |
-| 2025-04-04 | CVE-2025-22457 | Ivanti Connect Secure / Policy Secure / ZTA Gateways — desbordamiento de pila |
-| 2025-04-16 | CVE-2021-20035 | SonicWall SMA100 — inyección de comandos (CVE **de 2021**, explotado en 2025) |
-| 2025-05-01 | CVE-2023-44221 | SonicWall SMA100 — inyección de comandos |
-| 2025-06-30 | CVE-2025-6543 | Citrix NetScaler ADC/Gateway — desbordamiento de búfer |
-| 2025-07-10 | CVE-2025-5777 | Citrix NetScaler ADC/Gateway — lectura fuera de límites |
-| 2025-08-26 | CVE-2025-7775 | Citrix NetScaler — desbordamiento de memoria |
-| 2025-09-25 | CVE-2025-20333 y CVE-2025-20362 | Cisco Secure Firewall ASA / FTD |
-| 2025-12-17 | CVE-2025-40602 | SonicWall SMA1000 — autorización ausente |
-| 2026-02-25 | CVE-2026-20127 | Cisco Catalyst SD-WAN Controller/Manager — bypass de autenticación |
-| 2026-03-30 | CVE-2026-3055 | Citrix NetScaler — lectura fuera de límites |
-| 2026-05-29 | CVE-2026-0257 | Palo Alto Networks PAN-OS — bypass de autenticación |
-| 2026-06-08 | CVE-2026-50751 | Check Point Security Gateway — autenticación incorrecta |
-| 2026-07-14 | CVE-2026-15409 y CVE-2026-15410 | SonicWall SMA1000 — SSRF y **inyección de código** (encadenables) |
-| 2026-07-22 | CVE-2026-16232 | Check Point SmartConsole — autenticación incorrecta |
-| 2026-07-27 | CVE-2025-68686 | Fortinet FortiOS — exposición de información |
+| 2025-01-08 | CVE-2025-0282 | Ivanti Connect Secure / Policy Secure / ZTA Gateways — stack overflow |
+| 2025-01-24 | CVE-2025-23006 | SonicWall SMA1000 — deserialisation |
+| 2025-02-18 | CVE-2024-53704 | SonicWall SonicOS **SSLVPN** — improper authentication |
+| 2025-04-04 | CVE-2025-22457 | Ivanti Connect Secure / Policy Secure / ZTA Gateways — stack overflow |
+| 2025-04-16 | CVE-2021-20035 | SonicWall SMA100 — command injection (a CVE **from 2021**, exploited in 2025) |
+| 2025-05-01 | CVE-2023-44221 | SonicWall SMA100 — command injection |
+| 2025-06-30 | CVE-2025-6543 | Citrix NetScaler ADC/Gateway — buffer overflow |
+| 2025-07-10 | CVE-2025-5777 | Citrix NetScaler ADC/Gateway — out-of-bounds read |
+| 2025-08-26 | CVE-2025-7775 | Citrix NetScaler — memory overflow |
+| 2025-09-25 | CVE-2025-20333 and CVE-2025-20362 | Cisco Secure Firewall ASA / FTD |
+| 2025-12-17 | CVE-2025-40602 | SonicWall SMA1000 — missing authorisation |
+| 2026-02-25 | CVE-2026-20127 | Cisco Catalyst SD-WAN Controller/Manager — authentication bypass |
+| 2026-03-30 | CVE-2026-3055 | Citrix NetScaler — out-of-bounds read |
+| 2026-05-29 | CVE-2026-0257 | Palo Alto Networks PAN-OS — authentication bypass |
+| 2026-06-08 | CVE-2026-50751 | Check Point Security Gateway — improper authentication |
+| 2026-07-14 | CVE-2026-15409 and CVE-2026-15410 | SonicWall SMA1000 — SSRF and **code injection** (chainable) |
+| 2026-07-22 | CVE-2026-16232 | Check Point SmartConsole — improper authentication |
+| 2026-07-27 | CVE-2025-68686 | Fortinet FortiOS — information exposure |
 | 2026-07-27 | CVE-2026-16812 | Arista VeloCloud Orchestrator |
 
-**Lectura obligatoria de esa tabla** (clase de riesgo, nunca procedimiento de explotación):
-- **La familia dominante es el bypass de autenticación pre-auth**, no la ejecución tras
-  autenticarse. El control "sólo usuarios válidos" no protege a un dispositivo cuyo fallo está
-  *antes* de esa comprobación.
-- **La explotación llega en días, a veces horas**, y los grupos que la usan buscan persistencia en el
-  propio appliance —donde tu EDR no llega y tu inventario de software no mira.
-- **El CVE viejo mata**: CVE-2021-20035 se explotaba activamente en 2025. Un appliance sin ventana de
-  parcheo acumula deuda explotable durante años.
-- **Ningún fabricante está limpio.** La elección de marca no es un control de seguridad; el proceso
-  de parcheo sí.
+**Mandatory reading of that table** (risk class, never an exploitation procedure):
+- **The dominant family is pre-auth authentication bypass**, not execution after
+  authenticating. The "only valid users" control does not protect a device whose flaw is
+  *before* that check.
+- **Exploitation arrives in days, sometimes hours**, and the groups using it seek persistence in the
+  appliance itself —where your EDR does not reach and your software inventory does not look.
+- **The old CVE kills**: CVE-2021-20035 was being actively exploited in 2025. An appliance with no
+  patching window accumulates exploitable debt for years.
+- **No vendor is clean.** The choice of brand is not a security control; the patching
+  process is.
 
-**Consecuencias de diseño — esto es lo que hay que hacer con ese dato**:
-- **Exposición mínima**: sólo el puerto del túnel a Internet. El **plano de gestión del concentrador
-  nunca** se publica (ni HTTPS de administración, ni SSH, ni API) — llega por OOB o por bastión
-  (`networking-standards`). Buena parte de los CVE de la tabla afectan a interfaces de gestión o de
-  portal expuestas.
-- **Ventana de parcheo de emergencia comprometida por escrito** antes de comprar: horas, no
-  semanas, para un KEV en el dispositivo de borde. La cadencia formal y el SLA por riesgo, en
+**Design consequences — this is what you have to do with that data**:
+- **Minimal exposure**: only the tunnel port to the Internet. The **concentrator's management plane
+  is never** published (neither administration HTTPS, nor SSH, nor API) — it is reached over OOB or
+  via a bastion (`networking-standards`). A good part of the CVEs in the table affect management or
+  portal interfaces that were exposed.
+- **An emergency patching window committed in writing** before purchase: hours, not
+  weeks, for a KEV on the edge device. The formal cadence and the risk-based SLA, in
   `vulnerability-management-standards`.
-- **Superficie mínima por diseño**: un demonio WireGuard en un host Linux minimalista, endurecido y
-  parcheable en minutos tiene órdenes de magnitud menos superficie que un appliance con portal web,
-  SSO integrado, antivirus y consola de gestión. Cuando puedas elegir, elige lo pequeño.
-- **Asume el compromiso del concentrador en el modelo de amenaza**: segmenta lo que hay detrás,
-  filtra la salida del túnel, no guardes credenciales de dominio en el appliance y ten decidido de
-  antemano cómo lo aíslas y lo reconstruyes desde imagen limpia
-  (`incident-response-forensics-standards`). Un appliance comprometido **no se limpia, se
-  reconstruye**.
-- **Vigila el fabricante activamente**: suscripción a sus avisos, y revisión del KEV como disparador
-  operativo. Que un producto tuyo entre en KEV es un incidente, no una tarea de mantenimiento.
+- **Minimal surface by design**: a WireGuard daemon on a minimal, hardened Linux host that is
+  patchable in minutes has orders of magnitude less surface than an appliance with a web portal,
+  integrated SSO, antivirus and management console. When you can choose, choose the small thing.
+- **Assume the concentrator is compromised in the threat model**: segment what is behind it,
+  filter the tunnel's outbound traffic, do not store domain credentials on the appliance and have
+  decided in advance how you isolate it and rebuild it from a clean image
+  (`incident-response-forensics-standards`). A compromised appliance is **not cleaned, it is
+  rebuilt**.
+- **Watch the vendor actively**: subscribe to its advisories, and review KEV as an operational
+  trigger. One of your products entering KEV is an incident, not a maintenance task.
 
-### 5.2 Higiene criptográfica y de claves
+### 5.2 Cryptographic and key hygiene
 
-- **Sin negociación es mejor que con negociación**: donde puedas elegir, prefiere protocolo de
-  suite fija (WireGuard). Donde negocies (IPsec/TLS), la propuesta es **explícita y corta**; listas
-  largas "por compatibilidad" son un downgrade esperando ocurrir.
-- **Ninguna clave privada sale del dispositivo que la usa.** Generación local, permisos `0600`,
-  fuera del repo y fuera de las copias de seguridad en claro (`secrets-management-standards`).
-- **Revocación probada**: CRL/OCSP funcionando y verificado con un certificado revocado de verdad;
-  eliminación de peer verificada. Una revocación no probada no existe.
-- **PSK y tokens de enrolamiento**: caducidad corta, un solo uso donde se pueda, y rotación. Un
-  token de enrolamiento de malla es una llave para entrar en tu red.
-- Algoritmos, longitudes, PKI y plan post-cuántico: `cryptography-pki-standards`.
+- **No negotiation is better than negotiation**: where you can choose, prefer a fixed-suite
+  protocol (WireGuard). Where you negotiate (IPsec/TLS), the proposal is **explicit and short**; long
+  lists "for compatibility" are a downgrade waiting to happen.
+- **No private key leaves the device that uses it.** Local generation, `0600` permissions,
+  out of the repo and out of cleartext backups (`secrets-management-standards`).
+- **Proven revocation**: CRL/OCSP working and verified with a genuinely revoked certificate;
+  peer removal verified. An untested revocation does not exist.
+- **PSKs and enrolment tokens**: short expiry, single use where possible, and rotation. A
+  mesh enrolment token is a key to enter your network.
+- Algorithms, lengths, PKI and the post-quantum plan: `cryptography-pki-standards`.
 
-### 5.3 El túnel no autoriza: filtrado y segmentación de lo que sale de él
+### 5.3 The tunnel does not authorise: filtering and segmenting what leaves it
 
-- **`forward` con `policy drop` y matriz de flujos** para el tráfico que entra desde el túnel, igual
-  que para cualquier otra zona (`firewall-policy-standards`). La zona VPN es una zona más y suele
-  ser la **menos** confiable: dispositivos que no controlas del todo, en redes que no controlas nada.
-- **Aislamiento entre clientes VPN** salvo requisito explícito: por defecto, un cliente no habla con
-  otro cliente.
-- **Egress del túnel filtrado**: un cliente comprometido con full-tunnel usa tu salida a Internet
-  con tu reputación.
-- **Acceso por aplicación, no por red**, siempre que el protocolo lo permita. El concentrador es el
-  transporte; la autorización la pone la identidad.
+- **`forward` with `policy drop` and a flow matrix** for the traffic entering from the tunnel, just
+  as for any other zone (`firewall-policy-standards`). The VPN zone is one more zone and is usually
+  the **least** trusted: devices you do not fully control, on networks you control not at all.
+- **Isolation between VPN clients** unless there is an explicit requirement: by default, one client
+  does not talk to another client.
+- **Filtered tunnel egress**: a compromised client on full-tunnel uses your Internet exit
+  with your reputation.
+- **Access per application, not per network**, whenever the protocol allows it. The concentrator is
+  the transport; authorisation is provided by identity.
 
-### 5.4 Registro de sesiones y forense
+### 5.4 Session logging and forensics
 
-- **Se registra, como mínimo**: identidad autenticada, dispositivo, IP pública de origen y su
-  geolocalización, IP asignada en el túnel, marca temporal de inicio y fin, motivo de la
-  desconexión, bytes, y **el resultado de la evaluación de postura**. Sin la asociación
-  *IP-del-túnel ↔ usuario ↔ ventana temporal*, ninguna investigación posterior puede atribuir nada.
-- **Retención** al menos igual a la ventana de investigación de la organización, con integridad
-  protegida y **fuera del propio concentrador** (si el appliance cae, sus logs caen con él — y si lo
-  comprometen, los borran). Envío al SIEM en tiempo casi real.
-- **Señales que la ingeniería de detección explota** (las reglas son de
-  `detection-engineering-standards`): viaje imposible, sesiones concurrentes desde geografías
-  distintas, autenticación desde ASN de hosting/VPN comercial, ráfagas de fallos seguidas de éxito,
-  primer acceso de un usuario a una hora insólita, y volumen de salida anómalo por sesión.
-- **Preparación forense del appliance**: ten documentado de antemano cómo se obtiene una imagen o un
-  volcado de estado del concentrador y qué logs sobreviven a un reinicio —muchos appliances lo
-  ponen difícil, y eso se descubre en mitad del incidente si no se ha probado antes.
+- **What is logged, as a minimum**: authenticated identity, device, public source IP and its
+  geolocation, IP assigned inside the tunnel, start and end timestamps, disconnect
+  reason, bytes, and **the result of the posture evaluation**. Without the association
+  *tunnel-IP ↔ user ↔ time window*, no later investigation can attribute anything.
+- **Retention** at least equal to the organisation's investigation window, with protected integrity
+  and **off the concentrator itself** (if the appliance goes down, its logs go down with it — and if
+  they compromise it, they delete them). Sent to the SIEM in near real time.
+- **Signals that detection engineering exploits** (the rules belong to
+  `detection-engineering-standards`): impossible travel, concurrent sessions from different
+  geographies, authentication from a hosting/commercial-VPN ASN, bursts of failures followed by a
+  success, a user's first access at an unusual hour, and anomalous outbound volume per session.
+- **Forensic readiness of the appliance**: have documented in advance how to obtain an image or a
+  state dump of the concentrator and which logs survive a reboot —many appliances make it
+  hard, and that is discovered in the middle of the incident if it has not been tested before.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Métricas de primera clase** (recogida, umbrales y alertas, en `observability-standards`):
-  - **`latest handshake` por peer** en WireGuard — es la única señal fiable de "el túnel está vivo";
-    la interfaz existe siempre, esté el peer arriba o abajo. Alerta por handshake más viejo de lo
-    esperado, no por estado de interfaz.
-  - Estado de CHILD_SA e IKE_SA en IPsec; sesiones activas y rechazadas en OpenVPN.
-  - Sesiones concurrentes frente a la capacidad licenciada/dimensionada, **con umbral de aviso muy
-    por debajo del límite**: el día que se llena es siempre el peor día.
-  - CPU de cifrado y throughput por túnel (el cifrado satura CPU antes que el enlace en hardware
-    modesto; comprueba si hay aceleración disponible).
-  - Retransmisiones, pérdida y RTT **dentro** del túnel frente a fuera —un túnel que añade pérdida
-    es un túnel mal dimensionado o con MTU mal puesta.
-  - Caducidad de certificados de gateway y de cliente, y vencimiento de licencias.
-- **Prueba sintética extremo a extremo**: un sondeo que atraviese el túnel y toque **una aplicación
-  real** al otro lado, no un `ping` al gateway. La mitad de las averías de VPN son "el túnel está
-  arriba y el servicio no responde".
-- **Capacidad**: dimensiona por percentil de concurrencia real con margen para el escenario de
-  continuidad (todo el mundo en remoto a la vez). Si el concentrador es también el firewall, el
-  cifrado compite con el filtrado por CPU.
-- **Coste y latencia del full-tunnel**: todo el tráfico del usuario pasa por tu enlace. Es una
-  decisión de capacidad y de factura, no sólo de seguridad.
-- **Runbooks con dueño**: caída del concentrador primario, túnel sitio-a-sitio que no levanta tras
-  cambio del tercero, certificado de gateway caducado, cliente que conecta pero no navega (→
-  MTU, `network-troubleshooting-standards`), sospecha de compromiso del concentrador (aislamiento +
-  rotación masiva), pico de concurrencia por evento de continuidad, y **desbloqueo del administrador
-  que se autoexcluyó** cambiando reglas por el propio túnel.
-- **Recuperación**: la config del túnel se restaura desde el repo y las claves desde su custodia, en
-  un equipo limpio, en minutos — y eso se prueba (`bcdr-standards`). El backup del appliance es
-  evidencia, no fuente.
+- **First-class metrics** (collection, thresholds and alerts, in `observability-standards`):
+  - **`latest handshake` per peer** in WireGuard — it is the only reliable signal of "the tunnel is
+    alive"; the interface always exists, whether the peer is up or down. Alert on a handshake older
+    than expected, not on interface state.
+  - CHILD_SA and IKE_SA state in IPsec; active and rejected sessions in OpenVPN.
+  - Concurrent sessions against the licensed/sized capacity, **with a warning threshold well
+    below the limit**: the day it fills up is always the worst day.
+  - Encryption CPU and throughput per tunnel (encryption saturates CPU before the link does on modest
+    hardware; check whether acceleration is available).
+  - Retransmissions, loss and RTT **inside** the tunnel versus outside —a tunnel that adds loss
+    is a badly sized tunnel or one with the MTU set wrong.
+  - Expiry of gateway and client certificates, and licence expiry.
+- **End-to-end synthetic test**: a probe that traverses the tunnel and touches **a real
+  application** on the other side, not a `ping` to the gateway. Half of VPN faults are "the tunnel is
+  up and the service does not respond".
+- **Capacity**: size by the percentile of real concurrency with margin for the continuity
+  scenario (everyone remote at once). If the concentrator is also the firewall, encryption competes
+  with filtering for CPU.
+- **Cost and latency of full-tunnel**: all the user's traffic passes through your link. It is a
+  capacity and a billing decision, not just a security one.
+- **Runbooks with an owner**: primary concentrator outage, site-to-site tunnel that does not come up
+  after a third party's change, expired gateway certificate, a client that connects but cannot browse
+  (→ MTU, `network-troubleshooting-standards`), suspected concentrator compromise (isolation +
+  mass rotation), concurrency spike from a continuity event, and **unblocking the administrator
+  who locked themselves out** changing rules through the tunnel itself.
+- **Recovery**: the tunnel config is restored from the repo and the keys from their custody, on
+  a clean machine, in minutes — and that is tested (`bcdr-standards`). The appliance backup is
+  evidence, not the source.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisión de CVE del concentrador y del cliente **mensual** y ante entrada en KEV
-  (disparo inmediato); revisión de versión de WireGuard/strongSwan/OpenVPN y del agente de malla
-  trimestral; revisión del inventario de túneles y peers trimestral (§4.10); revisión de la decisión
-  full-tunnel vs. split y de la lista de "lo que aún no se puede publicar por aplicación" anual.
-- **Cliente al día**: el agente de malla o el cliente VPN es **software privilegiado en todos los
-  endpoints**. Su parcheo tiene la misma prioridad que el del navegador, no la de una utilidad.
-- **Retirada real**: dar de baja un túnel incluye borrar el peer, revocar el certificado, retirar la
-  ruta, borrar la regla de firewall, quitar la entrada del IPAM y archivar el registro. Un túnel
-  "apagado pero configurado" vuelve a levantarse solo el día menos oportuno.
-- **Sin proyectos abandonados**: cualquier componente sin release de seguridad en 12 meses o con la
-  rama EOL se descarta antes de la discusión técnica.
+- **Cadence**: concentrator and client CVE review **monthly** and on entry into KEV
+  (immediate trigger); review of the WireGuard/strongSwan/OpenVPN version and of the mesh agent
+  quarterly; review of the inventory of tunnels and peers quarterly (§4.10); review of the
+  full-tunnel vs. split decision and of the list of "what cannot yet be published per application"
+  annually.
+- **Client kept current**: the mesh agent or the VPN client is **privileged software on every
+  endpoint**. Its patching has the same priority as the browser's, not that of a utility.
+- **Real decommissioning**: retiring a tunnel includes deleting the peer, revoking the certificate,
+  withdrawing the route, deleting the firewall rule, removing the IPAM entry and archiving the record.
+  A tunnel that is "off but configured" comes back up on its own on the least opportune day.
+- **No abandoned projects**: any component with no security release in 12 months or on an EOL
+  branch is discarded before the technical discussion.
 
-**PROHIBIDO**
-- ❌ Tratar "estar dentro de la VPN" como autorización, o dar acceso a la red entera cuando bastaba
-  una aplicación.
-- ❌ `AllowedIPs` más amplio de lo que el peer legítimamente enruta; `0.0.0.0/0` en el peer cliente
-  del lado servidor.
-- ❌ `wg0` (o cualquier interfaz de túnel) en `forward` sin reglas de filtrado.
-- ❌ PPTP, L2TP sin IPsec, IKEv1, modo agresivo, XAUTH, PSK de grupo compartida.
-- ❌ Acceso remoto de usuario sin MFA, o con MFA por SMS / push sin *number matching*.
-- ❌ Claves o certificados de cliente **permanentes** sin caducidad ni revocación probada.
-- ❌ Clave privada generada en un sitio y distribuida a los dispositivos; clave en el repo, en el
-  ticket o en el chat.
-- ❌ Reutilizar la misma clave o el mismo certificado en varios dispositivos.
-- ❌ Publicar a Internet el plano de gestión del concentrador (portal admin, SSH, API).
-- ❌ Appliance de acceso remoto sin ventana de parcheo de emergencia comprometida por escrito.
-- ❌ Considerar un concentrador comprometido "limpiable": se reconstruye desde imagen limpia.
-- ❌ Split tunneling adoptado por defecto, sin análisis de riesgo escrito, o dejando el DNS fuera del
-  túnel.
-- ❌ Túnel sin ajustar MTU **y** MSS, y luego culpar a la aplicación.
-- ❌ Bloquear ICMP tipo 3 código 4 o ICMPv6 *packet-too-big* (mata PMTUD y el diagnóstico).
-- ❌ Unir dos redes con direccionamiento solapado a base de NAT sin documentarlo en el IPAM y sin
-  plan de renumeración.
-- ❌ Cambiar rutas, reglas o config del túnel en remoto **por el propio túnel** sin ventana de
-  rescate.
-- ❌ Concentrador único sin redundancia, o failover nunca ejercitado.
-- ❌ Dimensionar la concurrencia por plantilla en lugar de por el peor día.
-- ❌ Baja de un usuario que no corta sus **sesiones activas**.
-- ❌ Peers, túneles o cuentas de proveedor sin dueño, sin caducidad y sin revisión.
-- ❌ Adoptar una malla gestionada sin responder por escrito qué pasa si su plano de control cae o se
-  compromete, y sin plan de salida.
-- ❌ Tratar el agente de malla como una app más y no como software privilegiado en todos los nodos.
-- ❌ Vender un despliegue como "quantum-safe" (WireGuard **no** trae PQC de serie).
-- ❌ Logs de sesión que viven **sólo** en el concentrador.
-- ❌ `wireguard-go` en Linux con kernel moderno "porque ya funciona".
-- ❌ Listas largas de propuestas criptográficas "por compatibilidad" en IPsec/TLS.
+**FORBIDDEN**
+- ❌ Treating "being inside the VPN" as authorisation, or giving access to the whole network when one
+  application was enough.
+- ❌ `AllowedIPs` broader than what the peer legitimately routes; `0.0.0.0/0` on the client peer
+  on the server side.
+- ❌ `wg0` (or any tunnel interface) in `forward` with no filtering rules.
+- ❌ PPTP, L2TP without IPsec, IKEv1, aggressive mode, XAUTH, shared group PSK.
+- ❌ User remote access without MFA, or with MFA over SMS / push without *number matching*.
+- ❌ **Permanent** client keys or certificates with no expiry and no proven revocation.
+- ❌ A private key generated in one place and distributed to the devices; a key in the repo, in the
+  ticket or in the chat.
+- ❌ Reusing the same key or the same certificate on several devices.
+- ❌ Publishing the concentrator's management plane to the Internet (admin portal, SSH, API).
+- ❌ A remote-access appliance with no emergency patching window committed in writing.
+- ❌ Considering a compromised concentrator "cleanable": it is rebuilt from a clean image.
+- ❌ Split tunnelling adopted by default, with no written risk analysis, or leaving DNS outside the
+  tunnel.
+- ❌ A tunnel without adjusting MTU **and** MSS, and then blaming the application.
+- ❌ Blocking ICMP type 3 code 4 or ICMPv6 *packet-too-big* (it kills PMTUD and diagnosis).
+- ❌ Joining two networks with overlapping addressing by means of NAT without documenting it in the
+  IPAM and without a renumbering plan.
+- ❌ Changing routes, rules or tunnel config remotely **through the tunnel itself** without a rescue
+  window.
+- ❌ A single concentrator with no redundancy, or a failover never exercised.
+- ❌ Sizing concurrency by headcount instead of by the worst day.
+- ❌ A user leaver process that does not cut their **active sessions**.
+- ❌ Peers, tunnels or provider accounts with no owner, no expiry and no review.
+- ❌ Adopting a managed mesh without answering in writing what happens if its control plane goes down
+  or is compromised, and without an exit plan.
+- ❌ Treating the mesh agent as one more app and not as privileged software on every node.
+- ❌ Selling a deployment as "quantum-safe" (WireGuard does **not** ship PQC).
+- ❌ Session logs that live **only** on the concentrator.
+- ❌ `wireguard-go` on Linux with a modern kernel "because it works already".
+- ❌ Long lists of cryptographic proposals "for compatibility" in IPsec/TLS.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión, fecha, CVE o condición de licencia, **búscalo — no lo recuerdes**.
-**Metodología**: las versiones y fechas de este documento se obtuvieron de `api.github.com/repos/…`,
-del git upstream (`git.zx2c4.com`) y del **JSON oficial del catálogo KEV de CISA**, no de páginas
-HTML resumidas. Repite ese método: el resumen de una página de releases inventa años.
+Before pinning any version, date, CVE or licence condition, **look it up — do not recall it**.
+**Methodology**: the versions and dates in this document were obtained from `api.github.com/repos/…`,
+from the upstream git (`git.zx2c4.com`) and from the **official JSON of CISA's KEV catalogue**, not
+from summarised HTML pages. Repeat that method: the summary of a releases page invents years.
 
-Verificado ago-2026:
+Verified Aug 2026:
 
-- **WireGuard**: `wireguard-tools` **v1.0.20260223** (23-feb-2026), del repositorio oficial
-  `git.zx2c4.com/wireguard-tools` — **GitHub es sólo un espejo y su página de releases está
-  desactualizada** (última etiqueta allí, v1.0.20210914). Implementación en kernel Linux desde 5.6;
-  `wireguard-go` es funcionalmente equivalente en protocolo pero con coste de copia por paquete y
-  context switch: recomendación upstream explícita de usar el módulo del kernel en Linux.
-  Proyecto en modo mantenimiento estable, autoría de Jason A. Donenfeld.
-- **strongSwan**: **6.0.7** (08-jun-2026); 6.0.6 (22-abr-2026) corrigió **siete** CVE
-  (CVE-2026-35328 a CVE-2026-35334, incl. bypass de *name constraints* en el plugin `constraints` y
-  posible RCE en `libsimaka`); 6.0.5 (23-mar-2026) corrigió CVE-2026-25075 (eap-ttls, DoS
-  pre-autenticación). PQC vía **RFC 9370** (`ke1_mlkem768`) desde 6.0.0, con PPK (RFC 8784).
-- **OpenVPN**: **2.7.5** (02-jul-2026) y **2.6.21** (02-jul-2026); 2.7.0 salió en feb-2026.
-  **DCO**: módulo `ovpn` **upstream en Linux 6.16** (sustituye a `ovpn-dco-v2`), `ovpn-backports`
-  para kernels anteriores; en Windows `win-dco` por defecto y **`wintun` eliminado**. Otras
-  novedades de 2.7: multi-socket, mbedTLS 4, `PUSH_UPDATE`.
-- **Mallas** (releases vía `api.github.com`): NetBird **v0.76.1** (31-jul-2026), Netmaker **v1.6.0**
-  (12-jun-2026), Headscale **v0.29.3** (29-jul-2026), Nebula **v1.11.0** (23-jul-2026),
-  ZeroTierOne **1.16.2** (28-may-2026), Rosenpass **v0.2.3** (03-ago-2026, **pre-1.0**).
-- **Boletines de seguridad de Tailscale en 2026** (verbatim de su página de boletines): TS-2026-004
-  y TS-2026-005 (03/04-jun), TS-2026-006 (11-jun), TS-2026-007 (10-jul), TS-2026-008 y TS-2026-009
-  (13-jul) — SSH, Serve/Funnel y filtrado de paquetes entrantes.
-- **KEV de CISA**: catálogo **2026.07.29**, **1.656** entradas, **172 añadidas en 2026** (Cisco 13,
-  Fortinet 6, Ivanti 5 entre los fabricantes de red más frecuentes). La tabla de §5.1 procede de ese
-  JSON. **Re-descárgalo** (`https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json`)
-  antes de usar cualquier dato de explotación: cambia cada semana.
-- **Post-cuántico**: WireGuard **no** tiene PQC nativa; sólo el hueco de `PresharedKey`.
-  Rosenpass sigue **pre-1.0** y usa Classic McEliece + Kyber-512 (pre-FIPS). IKEv2 con RFC 9370 y
-  ML-KEM es la vía estandarizada.
+- **WireGuard**: `wireguard-tools` **v1.0.20260223** (23 Feb 2026), from the official repository
+  `git.zx2c4.com/wireguard-tools` — **GitHub is only a mirror and its releases page is
+  out of date** (last tag there, v1.0.20210914). Kernel implementation in Linux since 5.6;
+  `wireguard-go` is functionally equivalent at the protocol level but with per-packet copy and
+  context-switch cost: explicit upstream recommendation to use the kernel module on Linux.
+  A project in stable maintenance mode, authored by Jason A. Donenfeld.
+- **strongSwan**: **6.0.7** (8 Jun 2026); 6.0.6 (22 Apr 2026) fixed **seven** CVEs
+  (CVE-2026-35328 to CVE-2026-35334, incl. a *name constraints* bypass in the `constraints` plugin and
+  possible RCE in `libsimaka`); 6.0.5 (23 Mar 2026) fixed CVE-2026-25075 (eap-ttls, pre-authentication
+  DoS). PQC via **RFC 9370** (`ke1_mlkem768`) since 6.0.0, with PPK (RFC 8784).
+- **OpenVPN**: **2.7.5** (2 Jul 2026) and **2.6.21** (2 Jul 2026); 2.7.0 came out in Feb 2026.
+  **DCO**: `ovpn` module **upstream in Linux 6.16** (replacing `ovpn-dco-v2`), `ovpn-backports`
+  for earlier kernels; on Windows `win-dco` by default and **`wintun` removed**. Other
+  2.7 news: multi-socket, mbedTLS 4, `PUSH_UPDATE`.
+- **Meshes** (releases via `api.github.com`): NetBird **v0.76.1** (31 Jul 2026), Netmaker **v1.6.0**
+  (12 Jun 2026), Headscale **v0.29.3** (29 Jul 2026), Nebula **v1.11.0** (23 Jul 2026),
+  ZeroTierOne **1.16.2** (28 May 2026), Rosenpass **v0.2.3** (3 Aug 2026, **pre-1.0**).
+- **Tailscale security bulletins in 2026** (verbatim from their bulletins page): TS-2026-004
+  and TS-2026-005 (3/4 Jun), TS-2026-006 (11 Jun), TS-2026-007 (10 Jul), TS-2026-008 and TS-2026-009
+  (13 Jul) — SSH, Serve/Funnel and inbound packet filtering.
+- **CISA KEV**: catalogue **2026.07.29**, **1,656** entries, **172 added in 2026** (Cisco 13,
+  Fortinet 6, Ivanti 5 among the most frequent network vendors). The table in §5.1 comes from that
+  JSON. **Re-download it** (`https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json`)
+  before using any exploitation data: it changes every week.
+- **Post-quantum**: WireGuard has **no** native PQC; only the `PresharedKey` hook.
+  Rosenpass is still **pre-1.0** and uses Classic McEliece + Kyber-512 (pre-FIPS). IKEv2 with RFC 9370
+  and ML-KEM is the standardised route.
 
-**Huecos declarados — NO rellenar de memoria, verificar antes de usar**:
-1. **Condiciones de licencia y precio vigentes** de Tailscale, ZeroTier, NetBird y Netmaker: sólo se
-   obtuvieron señales de fuentes secundarias (movimiento de Tailscale a precio por asiento,
-   endurecimiento del controlador autohospedado de ZeroTier, nivel autohospedado de NetBird). **No
-   verificado contra las páginas oficiales de precios/licencia.** Confírmalo antes de comprometer
-   plataforma.
-2. **CVE con identificador formal en NetBird, Netmaker, Headscale, Nebula y ZeroTier**: no
-   localizados en esta pasada. Sólo constan los boletines propios de Tailscale (TS-2026-00x) y,
-   como antecedente histórico, el aviso de Pulse Security sobre ZeroTier (2021). Consulta la base
-   de avisos de GitHub por repositorio antes de afirmar que un proyecto está limpio.
-3. **CVE-2026-47895 en strongSwan** (doble liberación en clonado de identidades, posible RCE, desde
-   4.3.3): citado por un aviso de distribución; **no verificado** contra el aviso oficial de
-   strongSwan ni contra NVD. Comprobar si 6.0.7 lo incluye antes de fijar versión mínima.
-4. **Versión empaquetada por distro** de `wireguard-tools`, strongSwan y OpenVPN en RHEL 10,
-   Fedora, Debian 13 y Ubuntu LTS: **no verificada**. Lo que importa operativamente es la del
-   paquete, no la upstream.
-5. **Valores concretos de MTU/MSS por tipo de encapsulación**: se delegan en `networking-standards`
-   y **no se han re-verificado** aquí. Recalcúlalos para tu encapsulación real (WireGuard sobre
-   Ethernet, sobre PPPoE, sobre IPv6, IPsec con NAT-T) en vez de copiar un número.
-6. **Estado de MOBIKE, fragmentación IKEv2 y DPD** en implementaciones concretas de terceros
-   (Fortinet, Palo Alto, Cisco): descrito como criterio, **no verificado** contra la documentación
-   vigente de cada fabricante.
-7. **Números de RFC citados** (4555 MOBIKE, 7383 fragmentación IKEv2, 8784 PPK, 9370 múltiples
-   intercambios de clave, 800-207 de NIST): **no contrastados contra rfc-editor** en esta pasada.
-   Verifícalos antes de citarlos como autoridad.
-8. **Capacidad y modelo de los relés/DERP** (si ven o no tráfico, límites de ancho de banda,
-   ubicación): descrito por diseño esperado, **no verificado** contra la documentación de cada
-   proveedor.
+**Declared gaps — do NOT fill from memory, verify before using**:
+1. **Current licence and pricing conditions** of Tailscale, ZeroTier, NetBird and Netmaker: only
+   signals from secondary sources were obtained (Tailscale's move to per-seat pricing,
+   the tightening of ZeroTier's self-hosted controller, NetBird's self-hosted tier). **Not
+   verified against the official pricing/licence pages.** Confirm before committing to a
+   platform.
+2. **CVEs with a formal identifier in NetBird, Netmaker, Headscale, Nebula and ZeroTier**: not
+   located in this pass. Only Tailscale's own bulletins (TS-2026-00x) are on record and,
+   as a historical precedent, the Pulse Security advisory about ZeroTier (2021). Consult GitHub's
+   advisory database per repository before claiming a project is clean.
+3. **CVE-2026-47895 in strongSwan** (double free in identity cloning, possible RCE, since
+   4.3.3): cited by a distribution advisory; **not verified** against strongSwan's official advisory
+   nor against NVD. Check whether 6.0.7 includes it before pinning a minimum version.
+4. **Distro-packaged versions** of `wireguard-tools`, strongSwan and OpenVPN in RHEL 10,
+   Fedora, Debian 13 and Ubuntu LTS: **not verified**. What matters operationally is the
+   package's version, not upstream's.
+5. **Specific MTU/MSS values per encapsulation type**: delegated to `networking-standards`
+   and **not re-verified** here. Recalculate them for your real encapsulation (WireGuard over
+   Ethernet, over PPPoE, over IPv6, IPsec with NAT-T) instead of copying a number.
+6. **Status of MOBIKE, IKEv2 fragmentation and DPD** in specific third-party implementations
+   (Fortinet, Palo Alto, Cisco): described as criteria, **not verified** against each vendor's
+   current documentation.
+7. **The RFC numbers cited** (4555 MOBIKE, 7383 IKEv2 fragmentation, 8784 PPK, 9370 multiple key
+   exchanges, NIST's 800-207): **not cross-checked against rfc-editor** in this pass.
+   Verify them before citing them as authority.
+8. **Capacity and model of the relays/DERP** (whether or not they see traffic, bandwidth limits,
+   location): described by expected design, **not verified** against each provider's
+   documentation.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

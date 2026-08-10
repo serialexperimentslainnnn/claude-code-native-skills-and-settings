@@ -3,202 +3,202 @@ name: gcp-standards
 description: Google Cloud (GCP) architecture, security and FinOps standards. Use when working with GCP services (Cloud Run, GKE, Cloud Functions/Cloud Run functions, Cloud SQL, AlloyDB, Spanner, BigQuery, Pub/Sub, Cloud Storage, Artifact Registry, VPC, IAM, KMS, Secret Manager, Security Command Center, VPC Service Controls), the gcloud/gsutil/bq CLIs, or IaC files targeting GCP (Terraform *.tf with provider google, Infrastructure Manager).
 ---
 
-# Estándares Google Cloud (GCP)
+# Google Cloud (GCP) standards
 
-Este skill fija CRITERIO para diseñar, revisar y operar en Google Cloud: qué usar por defecto, qué
-está prohibido y qué verificar antes de decidir. Marco: Google Cloud Architecture Framework +
-enterprise foundations blueprint + zero-trust + FinOps. Ante conflicto, gana la seguridad; ante
-empate técnico, lo más simple y gestionado.
+This skill sets the CRITERIA for designing, reviewing and operating on Google Cloud: what to use by default, what
+is forbidden and what to verify before deciding. Framework: Google Cloud Architecture Framework +
+enterprise foundations blueprint + zero-trust + FinOps. On conflict, security wins; on a
+technical tie, the simplest and most managed option.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a cualquier tarea que toque GCP: Terraform/Infrastructure Manager, comandos
-`gcloud`/`gsutil`/`bq`, diseño de organización y proyectos, IAM, revisión de seguridad, costes,
-pipelines que despliegan en GCP. En tareas multi-cloud, combinar con `aws-standards` y
-`azure-standards` y decidir por workload.
+Applies to any task that touches GCP: Terraform/Infrastructure Manager,
+`gcloud`/`gsutil`/`bq` commands, organisation and project design, IAM, security review, costs,
+pipelines that deploy to GCP. In multi-cloud tasks, combine with `aws-standards` and
+`azure-standards` and decide per workload.
 
-**No aplica**: ver `iac-standards` (el **cómo** del código Terraform/OpenTofu y Ansible: módulos,
-state, backend, drift — aquí se decide el **qué**: qué servicio y con qué configuración),
-`kubernetes-standards` (manifiestos, charts y workloads que corren **dentro** de GKE; aquí solo el
-control plane, Autopilot y su integración con IAM/VPC), `cicd-standards` (la pipeline y la
-federación OIDC/Workload Identity desde el runner), `identity-access-management-standards` (IdP de
-aplicación: OAuth 2.1/OIDC, SAML, passkeys, SCIM — aquí Cloud IAM como control de acceso a la
-**plataforma**), `cryptography-pki-standards` (elección de algoritmos y ciclo de vida de claves;
-aquí solo Cloud KMS y Secret Manager como servicios),
-`vulnerability-management-standards` (workflow de triaje y SLA; aquí solo Security Command Center
-como fuente de hallazgos), `cloud-security-posture-standards` (**lo transversal a las tres nubes**:
-línea base multi-proyecto, permiso efectivo, caminos de ataque y la elección de CSPM/CNAPP;
-**aquí el servicio de GCP concreto y su configuración**),
-`appsec-standards` (seguridad del código de la aplicación),
-`observability-standards` (OTel y Prometheus vendor-neutral; aquí solo Cloud Observability y su
-coste), `sre-practice-standards` (SLO, error budget, on-call y postmortems — la práctica SRE es
-agnóstica aunque nazca en Google), `grc-compliance-standards` (marco normativo y evidencia de
-auditoría), `networking-standards` (redes físicas, on-prem e híbridas; aquí VPC),
-`data-platform-standards` (modelado, índices y tuning; aquí Cloud SQL/AlloyDB/BigQuery como
-servicios), `finops-standards` (**método frente a servicio**: el modelo de precio de
-cada servicio de GCP, los descuentos por uso comprometido y palancas propias como **el coste por
-byte escaneado en BigQuery** son de aquí; **la unidad económica, la política de etiquetas y su
-gate, la normalización con FOCUS y el reparto de coste compartido son suyos**. *Si la respuesta
-cambia al cambiar de proveedor, es suya; si depende del catálogo de GCP, es de aquí*),
-`platform-engineering-standards` (la abstracción interna ofrecida encima de estos
-servicios).
+**Not applicable**: see `iac-standards` (the **how** of Terraform/OpenTofu and Ansible code: modules,
+state, backend, drift — here the **what** is decided: which service and with what configuration),
+`kubernetes-standards` (manifests, charts and workloads that run **inside** GKE; here only the
+control plane, Autopilot and its integration with IAM/VPC), `cicd-standards` (the pipeline and the
+OIDC/Workload Identity federation from the runner), `identity-access-management-standards` (application
+IdP: OAuth 2.1/OIDC, SAML, passkeys, SCIM — here Cloud IAM as access control to the
+**platform**), `cryptography-pki-standards` (algorithm choice and key lifecycle;
+here only Cloud KMS and Secret Manager as services),
+`vulnerability-management-standards` (triage workflow and SLA; here only Security Command Center
+as a source of findings), `cloud-security-posture-standards` (**what is cross-cutting to the three clouds**:
+multi-project baseline, effective permission, attack paths and the choice of CSPM/CNAPP;
+**here the concrete GCP service and its configuration**),
+`appsec-standards` (security of the application code),
+`observability-standards` (vendor-neutral OTel and Prometheus; here only Cloud Observability and its
+cost), `sre-practice-standards` (SLO, error budget, on-call and postmortems — SRE practice is
+agnostic even though it was born at Google), `grc-compliance-standards` (regulatory framework and audit
+evidence), `networking-standards` (physical, on-prem and hybrid networks; here VPC),
+`data-platform-standards` (modelling, indexes and tuning; here Cloud SQL/AlloyDB/BigQuery as
+services), `finops-standards` (**method versus service**: the pricing model of
+each GCP service, committed use discounts and levers of its own such as **the cost per
+byte scanned in BigQuery** belong here; **the unit economics, the tagging policy and its
+gate, normalisation with FOCUS and shared cost allocation are theirs**. *If the answer
+changes when you change provider, it is theirs; if it depends on the GCP catalogue, it is ours*),
+`platform-engineering-standards` (the internal abstraction offered on top of these
+services).
 
-## 2. Decisiones por defecto (servicio de referencia por caso de uso)
+## 2. Default decisions (reference service per use case)
 
-> **Verificar disponibilidad/estado por web antes de fijar cualquier servicio**: región, que no
-> esté deprecado (Google Cloud deprecations / release notes) y precios vigentes.
+> **Verify availability/status on the web before pinning any service**: region, that it is not
+> deprecated (Google Cloud deprecations / release notes) and current pricing.
 
-| Caso de uso | Default | Alternativa (cuándo) |
+| Use case | Default | Alternative (when) |
 |---|---|---|
-| Contenedores stateless / APIs / web | **Cloud Run** (services; scale-to-zero) | — es el default salvo requisito K8s real |
-| Batch/tareas containerizadas | Cloud Run jobs | Batch para HPC/colas de cómputo grandes |
-| Funciones event-driven | Cloud Run functions (antes Cloud Functions — misma plataforma Cloud Run) | — |
-| Kubernetes estratégico | GKE **Autopilot** (modo recomendado por Google) | GKE Standard solo con necesidad de nodos custom/DaemonSets de nodo/GPU exóticas |
-| Relacional | Cloud SQL for PostgreSQL | AlloyDB si rendimiento Postgres extremo; Spanner si escala global + consistencia fuerte |
-| Analítica | BigQuery | — |
-| Clave-valor/documental | Firestore | Bigtable para series temporales/latencia a escala |
-| Objetos | Cloud Storage (uniform bucket-level access, PAP enforced) | — |
-| Mensajería/eventos | Pub/Sub (+ DLQ y retry policy siempre) | — |
-| Cache | Memorystore (Valkey/Redis — verificar SKU vigente por web) | — |
-| Secretos | Secret Manager (versiones, rotación, expiración) | — |
-| Registro de artefactos | **Artifact Registry** (Container Registry está APAGADO desde mar-2025) | — |
-| IaC | **Terraform/OpenTofu** (provider google) — es la vía canónica; Infrastructure Manager si se quiere ejecución gestionada de Terraform | Deployment Manager está RETIRADO (EOL mar-2026): prohibido |
-| Base organizativa | Enterprise foundations blueprint (terraform-example-foundation) / Fabric FAST | Nunca proyectos sueltos sin folder ni org policies |
-| CI/CD | El del repo (GitHub Actions/GitLab) con Workload Identity Federation; Cloud Build si todo-GCP | Cloud Deploy para progresión de releases a Cloud Run/GKE |
+| Stateless containers / APIs / web | **Cloud Run** (services; scale-to-zero) | — it is the default unless there is a real K8s requirement |
+| Batch/containerised jobs | Cloud Run jobs | Batch for HPC/large compute queues |
+| Event-driven functions | Cloud Run functions (formerly Cloud Functions — same Cloud Run platform) | — |
+| Strategic Kubernetes | GKE **Autopilot** (mode recommended by Google) | GKE Standard only when custom nodes/node DaemonSets/exotic GPUs are needed |
+| Relational | Cloud SQL for PostgreSQL | AlloyDB if extreme Postgres performance; Spanner if global scale + strong consistency |
+| Analytics | BigQuery | — |
+| Key-value/document | Firestore | Bigtable for time series/latency at scale |
+| Objects | Cloud Storage (uniform bucket-level access, PAP enforced) | — |
+| Messaging/events | Pub/Sub (+ DLQ and retry policy always) | — |
+| Cache | Memorystore (Valkey/Redis — verify the current SKU on the web) | — |
+| Secrets | Secret Manager (versions, rotation, expiry) | — |
+| Artifact registry | **Artifact Registry** (Container Registry has been SHUT DOWN since Mar 2025) | — |
+| IaC | **Terraform/OpenTofu** (google provider) — it is the canonical route; Infrastructure Manager if managed Terraform execution is wanted | Deployment Manager is RETIRED (EOL Mar 2026): forbidden |
+| Organisational base | Enterprise foundations blueprint (terraform-example-foundation) / Fabric FAST | Never standalone projects with no folder or org policies |
+| CI/CD | The repo's own (GitHub Actions/GitLab) with Workload Identity Federation; Cloud Build if all-GCP | Cloud Deploy for release progression to Cloud Run/GKE |
 
-**Deprecados/retirados — PROHIBIDO proponerlos**: Deployment Manager (EOL 31-mar-2026 →
-Infrastructure Manager/Terraform), Container Registry gcr.io (apagado mar-2025 → Artifact
-Registry), service account keys como mecanismo por defecto (→ WIF, sección 3), SCC tier
-Enterprise (deprecado, shutdown may-2027 → tier Premium; verificar estado por web). Ante
-cualquier servicio dudoso, consultar sus release notes/deprecations antes de usarlo.
+**Deprecated/retired — FORBIDDEN to propose them**: Deployment Manager (EOL 31-Mar-2026 →
+Infrastructure Manager/Terraform), Container Registry gcr.io (shut down Mar 2025 → Artifact
+Registry), service account keys as the default mechanism (→ WIF, section 3), SCC
+Enterprise tier (deprecated, shutdown May 2027 → Premium tier; verify status on the web). For
+any doubtful service, consult its release notes/deprecations before using it.
 
-## 3. Identidad y accesos — credenciales efímeras SIEMPRE
+## 3. Identity and access — ephemeral credentials ALWAYS
 
-- **Prohibidas las service account keys (JSON) exportadas** — es la postura oficial de Google y
-  la de este skill. Workloads en GCP: attached service account (Cloud Run/GCE) o **Workload
-  Identity Federation for GKE** (pods). CI/CD y sistemas externos: **Workload Identity
-  Federation** (OIDC) con atributos restringidos (repo/rama) y, preferentemente, principal
-  directo sin SA intermedia; impersonación de SA solo cuando haga falta. Humanos: Cloud Identity
-  federado con el IdP + MFA/2SV obligatoria; acceso elevado vía grupos y con caducidad, no
-  bindings individuales permanentes.
-  Enforzar con org policy: `iam.disableServiceAccountKeyCreation` y
-  `iam.disableServiceAccountKeyUpload` a nivel de organización (excepciones por proyecto,
-  documentadas y con expiración).
-- Mínimo privilegio: roles predefinidos concretos al scope mínimo (recurso/proyecto, no
-  folder/org); **prohibidos** `roles/owner`/`roles/editor` en prod (basic roles); condiciones IAM
-  (tiempo, recurso) donde aporten. Policy Intelligence/Recommender para recortar permisos no
-  usados; IAM Recommender aplicado trimestralmente.
-- Jerarquía: Organización → folders por entorno/dominio (según foundations blueprint) → proyectos
-  como unidad de aislamiento (un workload+entorno por proyecto; el proyecto es el blast radius).
-  Org Policies desde el día 1: `iam.allowedPolicyMemberDomains` (restricción de dominio),
+- **Exported service account keys (JSON) are forbidden** — it is Google's official posture and
+  this skill's. Workloads on GCP: attached service account (Cloud Run/GCE) or **Workload
+  Identity Federation for GKE** (pods). CI/CD and external systems: **Workload Identity
+  Federation** (OIDC) with restricted attributes (repo/branch) and, preferably, a direct
+  principal with no intermediate SA; SA impersonation only when needed. Humans: Cloud Identity
+  federated with the IdP + mandatory MFA/2SV; elevated access via groups and with expiry, not
+  permanent individual bindings.
+  Enforce with org policy: `iam.disableServiceAccountKeyCreation` and
+  `iam.disableServiceAccountKeyUpload` at organisation level (per-project exceptions,
+  documented and with an expiry).
+- Least privilege: concrete predefined roles at the minimum scope (resource/project, not
+  folder/org); `roles/owner`/`roles/editor` **forbidden** in prod (basic roles); IAM conditions
+  (time, resource) where they add value. Policy Intelligence/Recommender to trim unused
+  permissions; IAM Recommender applied quarterly.
+- Hierarchy: Organisation → folders per environment/domain (per the foundations blueprint) → projects
+  as the unit of isolation (one workload+environment per project; the project is the blast radius).
+  Org Policies from day 1: `iam.allowedPolicyMemberDomains` (domain restriction),
   `compute.vmExternalIpAccess` deny, `sql.restrictPublicIp`, `storage.publicAccessPrevention`,
-  `compute.requireShieldedVm`, `gcp.resourceLocations` (regiones aprobadas), y las dos de SA keys.
-- Datos regulados/sensibles: **VPC Service Controls** — perímetro alrededor de los proyectos con
-  APIs de datos (Storage, BigQuery, etc.) para cortar exfiltración con credenciales robadas;
-  access levels con Access Context Manager; dry-run antes de enforce.
+  `compute.requireShieldedVm`, `gcp.resourceLocations` (approved regions), and the two for SA keys.
+- Regulated/sensitive data: **VPC Service Controls** — a perimeter around the projects with
+  data APIs (Storage, BigQuery, etc.) to cut off exfiltration with stolen credentials;
+  access levels with Access Context Manager; dry-run before enforce.
 
-## 4. Redes — default-deny, exposición mínima
+## 4. Networking — default-deny, minimum exposure
 
-- **Prohibida la red default** (org policy `compute.skipDefaultNetworkCreation`). Shared VPC por
-  entorno: proyecto host de red gestionado por plataforma, service projects para workloads;
-  subnets regionales con rangos planificados (sin solapamientos RFC1918).
-- Firewall default-deny: usar **network firewall policies** (jerárquicas y de red) sobre reglas
-  clásicas VPC; reglas por service account/tags seguros, no por CIDR amplio; **prohibido
-  `0.0.0.0/0` en ingress sin justificar** — y lo público solo detrás de External Application Load
-  Balancer + **Cloud Armor** (WAF, rate limiting, protección DDoS).
-- Sin IPs públicas en cómputo: Cloud NAT para egress (con logging), **Private Google Access** en
-  toda subnet y Private Service Connect para APIs de Google y servicios publicados; Cloud SQL por
-  IP privada (o conector con IAM auth), nunca IP pública. Cloud Run: ingress interno +
-  balanceador salvo servicio realmente público; egress por Direct VPC egress.
-- Acceso administrativo por **IAP** (TCP forwarding para SSH/RDP) — nunca puertos de gestión
-  públicos ni bastión expuesto. TLS 1.2+ en frontales (SSL policy moderna, no la default), HSTS;
-  mTLS servicio-a-servicio donde el dato lo pida (Cloud Service Mesh en GKE — verificar nombre y
-  estado por web). VPC Flow Logs + Firewall Rules Logging en prod.
+- **The default network is forbidden** (org policy `compute.skipDefaultNetworkCreation`). Shared VPC per
+  environment: network host project managed by the platform, service projects for workloads;
+  regional subnets with planned ranges (no RFC1918 overlaps).
+- Default-deny firewall: use **network firewall policies** (hierarchical and network) over classic
+  VPC rules; rules by service account/secure tags, not by broad CIDR; **`0.0.0.0/0` forbidden
+  on ingress without justification** — and anything public only behind an External Application Load
+  Balancer + **Cloud Armor** (WAF, rate limiting, DDoS protection).
+- No public IPs on compute: Cloud NAT for egress (with logging), **Private Google Access** on
+  every subnet and Private Service Connect for Google APIs and published services; Cloud SQL over
+  private IP (or connector with IAM auth), never public IP. Cloud Run: internal ingress +
+  load balancer unless the service is genuinely public; egress via Direct VPC egress.
+- Administrative access via **IAP** (TCP forwarding for SSH/RDP) — never public management
+  ports nor an exposed bastion. TLS 1.2+ on frontends (modern SSL policy, not the default), HSTS;
+  service-to-service mTLS where the data demands it (Cloud Service Mesh on GKE — verify name and
+  status on the web). VPC Flow Logs + Firewall Rules Logging in prod.
 
-## 5. Datos — cifrado, backups probados, RTO/RPO
+## 5. Data — encryption, tested backups, RTO/RPO
 
-- Cifrado en reposo por defecto en toda la plataforma; **CMEK (Cloud KMS)** para datos
-  sensibles/regulados (Storage, BigQuery, Cloud SQL, discos, Pub/Sub): keyring por
-  entorno/región, rotación automática programada, IAM mínimo sobre claves, org policy
-  `gcp.restrictNonCmekServices` donde el compliance lo exija. Autokey para simplificar a escala
-  (verificar estado por web).
-- RTO/RPO definidos antes de elegir topología: Cloud SQL con HA regional (standby) por defecto en
-  prod; cross-region replicas/Spanner multi-region solo si el RTO/RPO lo exige (coste).
-- Backups: **Backup and DR Service** o backups nativos gestionados (Cloud SQL automated backups +
-  PITR activado; Backup for GKE; bucket con versioning + soft delete + bucket lock para
-  inmutabilidad ransomware). Copia en proyecto/región separados para escenario de compromiso.
-  **Un backup sin restore probado no existe**: ensayo periódico y documentado.
-- Cloud Storage: uniform bucket-level access + public access prevention SIEMPRE; lifecycle a
-  Nearline/Coldline/Archive según acceso real; retención/borrado conforme a GDPR (minimización,
-  derecho al olvido). Sensitive Data Protection (DLP) para descubrimiento/clasificación de PII.
-  Migraciones expand/contract.
+- Encryption at rest by default across the whole platform; **CMEK (Cloud KMS)** for
+  sensitive/regulated data (Storage, BigQuery, Cloud SQL, disks, Pub/Sub): keyring per
+  environment/region, scheduled automatic rotation, minimum IAM on keys, org policy
+  `gcp.restrictNonCmekServices` where compliance demands it. Autokey to simplify at scale
+  (verify status on the web).
+- RTO/RPO defined before choosing topology: Cloud SQL with regional HA (standby) by default in
+  prod; cross-region replicas/Spanner multi-region only if the RTO/RPO demands it (cost).
+- Backups: **Backup and DR Service** or managed native backups (Cloud SQL automated backups +
+  PITR enabled; Backup for GKE; bucket with versioning + soft delete + bucket lock for
+  ransomware immutability). Copy in a separate project/region for a compromise scenario.
+  **A backup without a tested restore does not exist**: periodic and documented drill.
+- Cloud Storage: uniform bucket-level access + public access prevention ALWAYS; lifecycle to
+  Nearline/Coldline/Archive according to real access; retention/deletion in line with GDPR (minimisation,
+  right to erasure). Sensitive Data Protection (DLP) for PII discovery/classification.
+  Expand/contract migrations.
 
-## 6. Observabilidad y operación
+## 6. Observability and operation
 
-- Cloud Logging con **retención explícita** por bucket de logs y sinks agregados a nivel de
-  organización hacia un proyecto de logging central (audit logs inmutables, con lock). **Admin
-  Activity audit logs** siempre; Data Access audit logs activados en proyectos con datos
-  sensibles (coste evaluado, no excusa).
-- Logs estructurados (JSON), Cloud Monitoring con alertas accionables sobre síntomas (golden
-  signals) y **SLOs con error budget** (Cloud Monitoring SLO API — SRE es de la casa: úsalo);
-  trazas con Cloud Trace vía OpenTelemetry (preferido por portabilidad). Alertas → on-call, no a
-  un buzón.
-- **Security Command Center** a nivel de organización: tier Premium (Enterprise deprecado —
-  verificar por web), Security Health Analytics + Event Threat Detection activos; findings
-  triados con SLA, export a SIEM. Assured Workloads si hay requisitos de compliance regional.
-- Todo cambio por pipeline con `terraform plan` revisado; despliegues canary/gradual (Cloud Run
-  revisions con traffic splitting; Cloud Deploy para progresión) y rollback probado; runbooks y
-  postmortems sin culpa. Binary Authorization en GKE/Cloud Run para imágenes firmadas
-  (cosign/attestations) en prod.
+- Cloud Logging with **explicit retention** per log bucket and aggregated sinks at organisation
+  level into a central logging project (immutable audit logs, with lock). **Admin
+  Activity audit logs** always; Data Access audit logs enabled in projects with sensitive
+  data (cost assessed, not an excuse).
+- Structured logs (JSON), Cloud Monitoring with actionable alerts on symptoms (golden
+  signals) and **SLOs with error budget** (Cloud Monitoring SLO API — SRE is home-grown here: use it);
+  traces with Cloud Trace via OpenTelemetry (preferred for portability). Alerts → on-call, not to
+  a mailbox.
+- **Security Command Center** at organisation level: Premium tier (Enterprise deprecated —
+  verify on the web), Security Health Analytics + Event Threat Detection active; findings
+  triaged with an SLA, exported to SIEM. Assured Workloads if there are regional compliance requirements.
+- Every change through a pipeline with a reviewed `terraform plan`; canary/gradual deployments (Cloud Run
+  revisions with traffic splitting; Cloud Deploy for progression) and tested rollback; runbooks and
+  blameless postmortems. Binary Authorization on GKE/Cloud Run for signed images
+  (cosign/attestations) in prod.
 
-## 7. FinOps — coste como atributo de calidad
+## 7. FinOps — cost as a quality attribute
 
-- **Labels obligatorios** en todo recurso: mínimo `owner`, `env`, `project`/`cost-center`,
-  `managed-by`; enforzados vía IaC (módulos con labels requeridos) y auditados — sin labels =
-  huérfano. Proyecto por workload+entorno hace la atribución casi gratis: aprovéchalo.
-- Billing export a **BigQuery** (detailed usage cost) + vista **FOCUS** (verificar por web
-  versión soportada — 1.3 ratificada dic-2025); budgets con alertas por proyecto y umbrales
-  programáticos (Pub/Sub) desde el día 1; anomaly detection activo.
-- Palancas por defecto: scale-to-zero (Cloud Run), CUDs (resource-based o flex — verificar
-  ofertas vigentes, p. ej. Autopilot Flex CUDs) para base estable con ≥30 días de datos, Spot
-  VMs/pods para tolerante a fallo, right-sizing con Recommender, apagado de no-prod fuera de
-  horario. BigQuery: particionado+clustering, cuotas de consulta, slots/editions según patrón —
-  el on-demand sin control es la factura sorpresa clásica.
-- Coste del diseño en la decisión: egress inter-región/Internet, Cloud NAT, logging ingest,
-  Private Service Connect — estimados antes de desplegar.
+- **Mandatory labels** on every resource: at least `owner`, `env`, `project`/`cost-center`,
+  `managed-by`; enforced via IaC (modules with required labels) and audited — no labels =
+  orphan. One project per workload+environment makes attribution almost free: take advantage of it.
+- Billing export to **BigQuery** (detailed usage cost) + **FOCUS** view (verify the supported
+  version on the web — 1.3 ratified Dec 2025); budgets with alerts per project and programmatic
+  thresholds (Pub/Sub) from day 1; anomaly detection active.
+- Default levers: scale-to-zero (Cloud Run), CUDs (resource-based or flex — verify
+  current offerings, e.g. Autopilot Flex CUDs) for a stable baseline with ≥30 days of data, Spot
+  VMs/pods for fault-tolerant workloads, right-sizing with Recommender, shutting non-prod down outside
+  working hours. BigQuery: partitioning+clustering, query quotas, slots/editions according to pattern —
+  uncontrolled on-demand is the classic surprise bill.
+- Cost of the design in the decision: inter-region/Internet egress, Cloud NAT, logging ingest,
+  Private Service Connect — estimated before deploying.
 
-## 8. Sostenibilidad, lock-in y PROHIBICIONES
+## 8. Sustainability, lock-in and PROHIBITIONS
 
-- **Lock-in consciente, no accidental**: servicios propietarios (Spanner, BigQuery, Firestore)
-  solo con beneficio claro; contratos tras interfaces propias; portabilidad barata donde no
-  cueste (Postgres, contenedores OCI en Cloud Run/GKE, OpenTelemetry, Terraform).
-- Política de upgrades: GKE en release channel (Regular por defecto) con maintenance windows —
-  nunca clusters sin canal ni versiones fuera de soporte; runtimes de Cloud Run
-  functions vigentes; provider de Terraform actualizado con cadencia. Revisar deprecations de
-  GCP trimestralmente; el upgrade es trabajo planificado, no emergencia.
-- **LISTA DE PROHIBICIONES** (bloquean una review):
-  - Service account keys JSON creadas/exportadas (org policy debe impedirlo); API keys para
-    servicios que aceptan IAM; `roles/owner`/`roles/editor` en prod; bindings a usuarios
-    individuales en vez de grupos.
-  - Red default en uso; `0.0.0.0/0` en ingress sin justificar; IPs públicas en VMs/Cloud SQL;
-    puertos de gestión expuestos (sin IAP); buckets públicos o sin public access prevention.
-  - Recursos creados por consola en prod (**clickops**) — todo por Terraform; drift sin
-    reconciliar; Deployment Manager; imágenes en gcr.io; `latest` en imágenes de prod.
-  - Recursos sin labels obligatorios; proyectos fuera de la jerarquía de folders/org policies;
-    billing sin export a BigQuery ni budgets.
-  - Secretos en código/env/logs en claro (usar Secret Manager); datos sensibles sin CMEK cuando
-    la clasificación lo exige; audit logs desactivados o sin sink central.
-  - Prod sin HA regional (Cloud SQL single instance, GKE zonal); backup sin restore probado;
-    logs sin retención definida; perímetro VPC-SC ausente en proyectos de datos regulados.
+- **Conscious lock-in, not accidental**: proprietary services (Spanner, BigQuery, Firestore)
+  only with a clear benefit; contracts behind your own interfaces; cheap portability where it
+  costs nothing (Postgres, OCI containers on Cloud Run/GKE, OpenTelemetry, Terraform).
+- Upgrade policy: GKE on a release channel (Regular by default) with maintenance windows —
+  never clusters with no channel or versions out of support; current Cloud Run
+  functions runtimes; Terraform provider updated on a cadence. Review GCP deprecations
+  quarterly; the upgrade is planned work, not an emergency.
+- **LIST OF PROHIBITIONS** (they block a review):
+  - Service account keys (JSON) created/exported (org policy must prevent it); API keys for
+    services that accept IAM; `roles/owner`/`roles/editor` in prod; bindings to individual
+    users instead of groups.
+  - Default network in use; `0.0.0.0/0` on ingress without justification; public IPs on VMs/Cloud SQL;
+    exposed management ports (no IAP); public buckets or buckets without public access prevention.
+  - Resources created through the console in prod (**clickops**) — everything through Terraform; unreconciled
+    drift; Deployment Manager; images on gcr.io; `latest` on prod images.
+  - Resources without mandatory labels; projects outside the folder/org policy hierarchy;
+    billing without BigQuery export or budgets.
+  - Secrets in code/env/logs in clear (use Secret Manager); sensitive data without CMEK when
+    the classification demands it; audit logs disabled or without a central sink.
+  - Prod without regional HA (Cloud SQL single instance, zonal GKE); backup without a tested restore;
+    logs without defined retention; VPC-SC perimeter absent on regulated data projects.
 
-## 9. Verificación web obligatoria
+## 9. Mandatory web verification
 
-Antes de fijar en código o respuesta cualquier dato concreto de GCP, **buscar en la web** (docs
-cloud.google.com / release notes / deprecations primero): estado del servicio y deprecaciones
-(cambian de nombre y de tier con frecuencia: SCC tiers, Memorystore SKUs, Cloud Functions → Cloud
-Run functions…), disponibilidad regional, versiones GKE soportadas por canal, límites/cuotas,
-precios y novedades Cloud Next del último año. La memoria del modelo NO es fuente válida para
-precios, fechas EOL, nombres de features recientes ni disponibilidad regional. Si no se puede
-verificar, decirlo y marcar la decisión como provisional.
+Before pinning any concrete GCP fact in code or in an answer, **search the web** (cloud.google.com
+docs / release notes / deprecations first): service status and deprecations
+(they change name and tier frequently: SCC tiers, Memorystore SKUs, Cloud Functions → Cloud
+Run functions…), regional availability, GKE versions supported per channel, limits/quotas,
+pricing and Cloud Next news from the last year. The model's memory is NOT a valid source for
+pricing, EOL dates, recent feature names or regional availability. If it cannot be
+verified, say so and mark the decision as provisional.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

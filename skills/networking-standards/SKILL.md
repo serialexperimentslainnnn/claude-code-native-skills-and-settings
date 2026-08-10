@@ -3,18 +3,18 @@ name: networking-standards
 description: Network engineering standards. Use when working with IP addressing and VLANs, BGP/OSPF (FRR, BIRD), nftables/firewalld rules, DNS (BIND, Unbound, CoreDNS, Pi-hole), Kea DHCP, HAProxy/nginx/Traefik/Caddy proxies, WireGuard/Tailscale/NetBird overlays, MTU/MSS, tcpdump/Wireshark, NetBox, OPNsense/VyOS/RouterOS.
 ---
 
-# Estándares de redes — diseño, operación y seguridad
+# Network standards — design, operation and security
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al diseñar, configurar, revisar o diagnosticar: direccionamiento IP y subnetting,
-IPAM, VLAN y segmentación, routing (estático, OSPF, BGP, filtrado de prefijos, RPKI, ECMP),
-switching (STP, LACP, MLAG), política de firewall stateful, NAT, arquitectura DNS y DHCP,
-balanceo L4/L7 y reverse proxies, VPN y overlays, ZTNA, IPv6 y dual stack, QoS, MTU/MSS,
-hardening de equipos de red y plano de gestión OOB, 802.1X/NAC, diagnóstico por capas,
-telemetría de flujos y automatización de red.
+Applies when designing, configuring, reviewing or diagnosing: IP addressing and subnetting,
+IPAM, VLANs and segmentation, routing (static, OSPF, BGP, prefix filtering, RPKI, ECMP),
+switching (STP, LACP, MLAG), stateful firewall policy, NAT, DNS and DHCP architecture,
+L4/L7 load balancing and reverse proxies, VPNs and overlays, ZTNA, IPv6 and dual stack, QoS, MTU/MSS,
+hardening of network equipment and the OOB management plane, 802.1X/NAC, layered diagnosis,
+flow telemetry and network automation.
 
 Triggers: `nft`/`nftables.conf`, `firewalld`, `frr.conf`, `bird.conf`, `named.conf`,
 `unbound.conf`, `Corefile`, `kea-dhcp4.conf`, `haproxy.cfg`, `nginx.conf`, `Caddyfile`,
@@ -22,133 +22,133 @@ Triggers: `nft`/`nftables.conf`, `firewalld`, `frr.conf`, `bird.conf`, `named.co
 containerlab (`*.clab.yml`), OPNsense/pfSense/VyOS/RouterOS/UniFi, "VLAN", "BGP", "MTU",
 "DNS", "subnet", "peering", "MSS clamping".
 
-**No aplica**: ver `onprem-standards` (firewall y VLAN a nivel de host/servidor,
-monitorización básica de flota), `aws-standards`/`azure-standards`/`gcp-standards` (VPC,
-Security Groups/NSG, balanceadores y DNS gestionados del proveedor),
+**Not applicable**: see `onprem-standards` (firewall and VLANs at host/server level,
+basic fleet monitoring), `aws-standards`/`azure-standards`/`gcp-standards` (VPC,
+Security Groups/NSG, the provider's managed load balancers and DNS),
 `kubernetes-standards` (CNI, NetworkPolicy, Service/Ingress, service mesh),
-`observability-standards` (métricas, logs, trazas y alertas de la red),
-`sre-practice-standards` (SLO y error budget), `detection-engineering-standards` (telemetría de
-seguridad, SIEM y reglas de detección — las firmas Suricata/Zeek se gobiernan allí, el sensor y su
-colocación en la red, aquí), `incident-response-forensics-standards` (captura y preservación de
-tráfico durante un compromiso), `linux-hardening-standards` (firewall **de host** y baseline del
-SO frente al diseño de red que se fija aquí),
-`firewall-policy-standards` (**qué flujo se permite entre zonas y con qué gobierno**: diseño del
-ruleset nftables/firewalld, dueño, aprobación y caducidad de cada regla, filtrado de egress,
-revisión de reglas sombreadas y huérfanas), `dns-standards` (**el servidor DNS, su zona y sus
-datos**: SOA y TTL, DNSSEC, registros de correo, DoT/DoH, secuestro de dominio), y
-`vpn-standards` y `network-troubleshooting-standards` (túneles y
-diagnóstico). Esta skill conserva **topología, direccionamiento y VLAN, routing y BGP, MTU/MSS de
-diseño, proxies y balanceo, overlays, plano de gestión OOB y elección de plataforma de perímetro**,
-más el gobierno de la red como código.
+`observability-standards` (network metrics, logs, traces and alerts),
+`sre-practice-standards` (SLOs and error budget), `detection-engineering-standards` (security
+telemetry, SIEM and detection rules — Suricata/Zeek signatures are governed there, the sensor and its
+placement in the network, here), `incident-response-forensics-standards` (capture and preservation of
+traffic during a compromise), `linux-hardening-standards` (**host** firewall and OS baseline
+as opposed to the network design fixed here),
+`firewall-policy-standards` (**which flow is allowed between zones and with what governance**: design of the
+nftables/firewalld ruleset, owner, approval and expiry of each rule, egress filtering,
+review of shadowed and orphaned rules), `dns-standards` (**the DNS server, its zone and its
+data**: SOA and TTL, DNSSEC, mail records, DoT/DoH, domain hijacking), and
+`vpn-standards` and `network-troubleshooting-standards` (tunnels and
+diagnosis). This skill keeps **topology, addressing and VLANs, routing and BGP, design-level MTU/MSS,
+proxies and load balancing, overlays, the OOB management plane and the choice of perimeter platform**,
+plus the governance of the network as code.
 
-**Delegación de profundidad** — esta skill es la **troncal**: fija el criterio
-general y **entrega el detalle** a tres skills que sí lo cubren. Si la respuesta exige más que el
-principio, es de ellas:
-- `routing-switching-standards`: **campus y borde en profundidad** — STP y acceso enrutado, MLAG,
-  redundancia de primer salto, y sobre todo **la política BGP completa** (atributos, comunidades,
-  filtrado de salida, **RPKI/ROV e IRR**, BCP 38/84, BFD, CoPP, 802.1X, MACsec).
-- `datacenter-fabric-standards`: **la malla del centro de datos** — Clos hoja-espina, VXLAN con
-  EVPN, IRB simétrico, multihoming por ESI, MTU de encapsulación y Ethernet sin pérdidas.
-- `network-automation-standards`: **la red como código** — fuente de verdad e IPAM operativo,
-  NETCONF/RESTCONF/YANG y gNMI frente a la CLI, laboratorio virtual, validación previa y posterior,
-  despliegue por lotes con reversión probada, y telemetría de flujo continuo frente a sondeo SNMP.
-  **Lo que esta skill dice sobre "red como código" es el principio; el procedimiento es suyo.**
-- `wireless-standards`: **la red inalámbrica corporativa como sistema de radio** — estudio de sitio,
-  espectro y capacidad, plan de canal, itinerancia, WPA3 y 802.1X con validación de certificado en el
-  cliente. **La prohibición de esta skill sobre la PSK compartida sigue valiendo; el diseño que la
-  sustituye es suyo.**
-- `high-speed-interconnect-standards`: **InfiniBand, RoCE v2 y el RDMA de cómputo y almacenamiento**,
-  que es **una red distinta de la de datos** y no se diseña con el mismo criterio.
-- `load-balancing-standards`: **el balanceador y el proxy inverso** — comprobaciones de salud,
-  drenaje, terminación TLS y alta disponibilidad del propio balanceador. **Los productos que esta
-  skill fija en §2 (HAProxy, nginx, Traefik, Caddy) se eligen y se operan allí.**
+**Delegation of depth** — this skill is the **trunk**: it fixes the general
+criteria and **hands the detail** to three skills that do cover it. If the answer requires more than the
+principle, it is theirs:
+- `routing-switching-standards`: **campus and edge in depth** — STP and routed access, MLAG,
+  first-hop redundancy, and above all **the complete BGP policy** (attributes, communities,
+  outbound filtering, **RPKI/ROV and IRR**, BCP 38/84, BFD, CoPP, 802.1X, MACsec).
+- `datacenter-fabric-standards`: **the data centre fabric** — leaf-spine Clos, VXLAN with
+  EVPN, symmetric IRB, ESI multihoming, encapsulation MTU and lossless Ethernet.
+- `network-automation-standards`: **the network as code** — source of truth and operational IPAM,
+  NETCONF/RESTCONF/YANG and gNMI as opposed to the CLI, virtual lab, pre- and post-validation,
+  batched rollout with tested rollback, and continuous streaming telemetry as opposed to SNMP polling.
+  **What this skill says about "network as code" is the principle; the procedure is theirs.**
+- `wireless-standards`: **the corporate wireless network as a radio system** — site survey,
+  spectrum and capacity, channel plan, roaming, WPA3 and 802.1X with certificate validation on the
+  client. **This skill's prohibition on the shared PSK still holds; the design that
+  replaces it is theirs.**
+- `high-speed-interconnect-standards`: **InfiniBand, RoCE v2 and compute and storage RDMA**,
+  which is **a different network from the data one** and is not designed with the same criteria.
+- `load-balancing-standards`: **the load balancer and the reverse proxy** — health checks,
+  draining, TLS termination and high availability of the balancer itself. **The products this
+  skill fixes in §2 (HAProxy, nginx, Traefik, Caddy) are chosen and operated there.**
 
-**Principio rector**: la red es **default-deny y documentada como código**. Todo flujo
-permitido existe porque alguien lo justificó y quedó escrito; lo que no está en el SoT no
-existe, y lo que no se puede diagnosticar por capas no está en producción.
+**Guiding principle**: the network is **default-deny and documented as code**. Every allowed
+flow exists because somebody justified it and it was written down; what is not in the SoT does
+not exist, and what cannot be diagnosed layer by layer is not in production.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Versiones verificadas ago-2026. **Verificar la última estable por web antes de fijarla en
-> un proyecto real** (§8): este stack rota cada trimestre.
+> Versions verified Aug 2026. **Verify the latest stable on the web before pinning it in
+> a real project** (§8): this stack rotates every quarter.
 
-| Ámbito | Por defecto | Prohibido / alternativa |
+| Area | Default | Forbidden / alternative |
 |---|---|---|
-| Firewall en Linux | **nftables** (Fedora 44: nftables 1.1.4, firewalld 2.4.0 con backend nftables desde firewalld 0.6). Una sola tabla `inet` con IPv4+IPv6 | `iptables-legacy`; mezclar reglas nft y comandos `iptables` (la shim `iptables-nft` traduce en silencio). `iptables-nft`/`ipset` deprecados desde RHEL 9 y ya no son opción documentada en RHEL 10 |
-| Router/firewall de perímetro | **OPNsense 26.7 "Xenial Xenops"** (base FreeBSD 15.1; ciclo semestral ene/jul) o **VyOS** para red-como-código | pfSense CE 2.8.1 (última CE, sep-2025; cadencia CE lenta) solo si ya está en casa. MikroTik **RouterOS 7.23** stable / **7.21.5** long-term |
-| Imágenes VyOS | **Stream** (2026.03, trimestral, gratis) para lab/no crítico; **LTS** requiere suscripción de pago o de contribuidor | Rolling/nightly en producción |
-| Routing dinámico | **FRR 10.7.0** (jul-2026) en hosts/routers Linux; **BIRD 3.3.1** (LTS 3.1.x) en route servers e IXP | Rutas estáticas en topologías con más de un camino; redistribución sin filtros |
-| VPN sitio-a-sitio | **WireGuard** in-kernel; IPsec IKEv2 solo por interoperabilidad con terceros | PPTP, L2TP sin IPsec, SSLVPN propietaria sin parcheo |
-| Overlay con control plane | **NetBird ≥ 0.65** (control plane 100% open source y self-hostable, binario unificado) o **Tailscale**; **Headscale 0.29.x** (beta) si se quiere el cliente Tailscale sin su coordinador | Malla WireGuard manual con más de ~10 nodos (no escala la distribución de claves) |
-| DNS recursivo interno | **Unbound 1.24.2** o **Knot Resolver**, con validación DNSSEC activada | `systemd-resolved` y `dnsmasq` como validadores DNSSEC (fallos documentados en evaluación independiente de SIDN) |
-| DNS autoritativo | **Knot DNS 3.5.4** o **BIND 9.20.x ESV** (9.20.26 con parches DNSSEC críticos) | BIND **9.18 (EOL jun-2026)**; ramas 9.21/9.23 de desarrollo en producción |
-| Filtrado DNS lab/hogar | **Pi-hole v6** (FTL 6.7 / Core 6.4.3, jul-2026) o AdGuard Home | Pi-hole como único resolver sin redundancia |
-| DHCP | **Kea** (sucesor oficial de ISC); reservas y opciones desde el SoT | ISC `dhcpd` en despliegues nuevos (sin mantenimiento activo — confirmar estado, §8) |
-| Proxy inverso / LB L7 | **HAProxy 3.2.x LTS** (soporte a 2030-Q2) o 3.4.0 LTS; **nginx 1.30.x stable**; **Traefik v3.7.x** en entornos dinámicos; **Caddy 2.11.x** cuando el valor es ACME automático | nginx mainline en prod; Traefik v2 (solo parches); LB sin health checks activos |
-| IPAM y fuente de verdad | **NetBox 4.6.7** como SoT de **intención** (no de descubrimiento) | Hojas de cálculo; auto-poblar NetBox desde escaneo de la red como si fuera intención |
-| IPv6 | **Dual stack por defecto** en diseños nuevos (IPv6 hacia Google superó el 50% en mar-2026) | Desplegar IPv4-only "porque ya llegará"; NAT66 por costumbre |
-| Diagnóstico | `tcpdump`/Wireshark, `mtr`, `ss`, `ip`, `nft list ruleset` | `netstat`, `ifconfig`, `route` (obsoletos, ocultan estado) |
-| Telemetría de flujos | **IPFIX/NetFlow v9** (sFlow si el hardware solo lo soporta) a colector (Akvorado/pmacct/GoFlow2) | Red sin visibilidad de flujos: no se puede investigar ni dimensionar |
+| Firewall on Linux | **nftables** (Fedora 44: nftables 1.1.4, firewalld 2.4.0 with the nftables backend since firewalld 0.6). A single `inet` table with IPv4+IPv6 | `iptables-legacy`; mixing nft rules and `iptables` commands (the `iptables-nft` shim translates silently). `iptables-nft`/`ipset` deprecated since RHEL 9 and no longer a documented option in RHEL 10 |
+| Perimeter router/firewall | **OPNsense 26.7 "Xenial Xenops"** (FreeBSD 15.1 base; half-yearly cycle Jan/Jul) or **VyOS** for network-as-code | pfSense CE 2.8.1 (latest CE, Sep-2025; slow CE cadence) only if it is already in house. MikroTik **RouterOS 7.23** stable / **7.21.5** long-term |
+| VyOS images | **Stream** (2026.03, quarterly, free) for lab/non-critical; **LTS** requires a paid or contributor subscription | Rolling/nightly in production |
+| Dynamic routing | **FRR 10.7.0** (Jul-2026) on Linux hosts/routers; **BIRD 3.3.1** (LTS 3.1.x) on route servers and IXPs | Static routes in topologies with more than one path; redistribution without filters |
+| Site-to-site VPN | **WireGuard** in-kernel; IPsec IKEv2 only for interoperability with third parties | PPTP, L2TP without IPsec, proprietary SSLVPN without patching |
+| Overlay with a control plane | **NetBird ≥ 0.65** (100% open source, self-hostable control plane, unified binary) or **Tailscale**; **Headscale 0.29.x** (beta) if you want the Tailscale client without its coordinator | Manual WireGuard mesh with more than ~10 nodes (key distribution does not scale) |
+| Internal recursive DNS | **Unbound 1.24.2** or **Knot Resolver**, with DNSSEC validation enabled | `systemd-resolved` and `dnsmasq` as DNSSEC validators (failures documented in SIDN's independent evaluation) |
+| Authoritative DNS | **Knot DNS 3.5.4** or **BIND 9.20.x ESV** (9.20.26 with critical DNSSEC patches) | BIND **9.18 (EOL Jun-2026)**; development branches 9.21/9.23 in production |
+| Lab/home DNS filtering | **Pi-hole v6** (FTL 6.7 / Core 6.4.3, Jul-2026) or AdGuard Home | Pi-hole as the only resolver with no redundancy |
+| DHCP | **Kea** (ISC's official successor); reservations and options from the SoT | ISC `dhcpd` in new deployments (no active maintenance — confirm the status, §8) |
+| Reverse proxy / L7 LB | **HAProxy 3.2.x LTS** (supported to 2030-Q2) or 3.4.0 LTS; **nginx 1.30.x stable**; **Traefik v3.7.x** in dynamic environments; **Caddy 2.11.x** when the value is automatic ACME | nginx mainline in prod; Traefik v2 (patches only); an LB without active health checks |
+| IPAM and source of truth | **NetBox 4.6.7** as the SoT of **intent** (not of discovery) | Spreadsheets; auto-populating NetBox from a network scan as if it were intent |
+| IPv6 | **Dual stack by default** in new designs (IPv6 to Google passed 50% in Mar-2026) | Deploying IPv4-only "because it'll come later"; NAT66 out of habit |
+| Diagnosis | `tcpdump`/Wireshark, `mtr`, `ss`, `ip`, `nft list ruleset` | `netstat`, `ifconfig`, `route` (obsolete, they hide state) |
+| Flow telemetry | **IPFIX/NetFlow v9** (sFlow if the hardware only supports that) to a collector (Akvorado/pmacct/GoFlow2) | A network with no flow visibility: you can neither investigate nor size it |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-**Direccionamiento e IPAM**
-- Plan jerárquico y **agregable** por sitio → zona → rol, con espacio de crecimiento
-  reservado; sin solapamientos entre sedes, VPN y nubes (RFC 1918 se agota rápido en
-  fusiones — asigna bloques grandes y documentados).
-- Enlaces punto a punto: `/31` en IPv4 y `/127` en IPv6. Loopbacks `/32` y `/128` como
-  identidad estable del equipo (router-id, terminación de sesiones BGP, gestión).
-- IPv6: **GUA** para todo lo que rutea, ULA (`fc00::/7`) solo para lo que nunca sale;
-  SLAAC para clientes, direccionamiento estático o DHCPv6 para servidores. Nada de
-  direcciones de interfaz basadas en MAC en servidores (rompen firewall y DNS).
-- **NetBox contiene la intención**; la red debe converger hacia él. Cerrar el bucle en
-  ambos sentidos: tras cada cambio, el SoT queda actualizado o el cambio no está terminado.
+**Addressing and IPAM**
+- Hierarchical and **aggregable** plan by site → zone → role, with reserved room for
+  growth; no overlaps between sites, VPNs and clouds (RFC 1918 runs out fast in
+  mergers — allocate large, documented blocks).
+- Point-to-point links: `/31` in IPv4 and `/127` in IPv6. Loopbacks `/32` and `/128` as the
+  device's stable identity (router-id, BGP session termination, management).
+- IPv6: **GUA** for everything that routes, ULA (`fc00::/7`) only for what never leaves;
+  SLAAC for clients, static addressing or DHCPv6 for servers. No
+  MAC-derived interface addresses on servers (they break firewalling and DNS).
+- **NetBox holds the intent**; the network must converge towards it. Close the loop in
+  both directions: after every change, the SoT is updated or the change is not finished.
 
-**Segmentación**
-- Zonas mínimas: gestión (OOB) / servidores / usuarios / IoT / DMZ / almacenamiento y
-  replicación / invitados. **La zonificación industrial no es una de estas zonas y no se diseña
-  con este criterio**: niveles Purdue, conductos con nivel de seguridad, DMZ de nivel 3.5 y el
-  aislamiento del SIS son de `ot-ics-security-standards`, y allí *Safety* manda sobre
-  disponibilidad. Meter la planta en una VLAN "IoT-OT" de esta lista es el error clásico. Una VLAN = un dominio de broadcast = una subred = una zona de
-  política. **Default-deny entre zonas**, cada flujo permitido con dueño y motivo escrito.
-- Microsegmentación este-oeste donde el dato lo justifique (NIST SP 800-207 y SP 800-215
-  como marco): la ubicación en la red no otorga confianza.
+**Segmentation**
+- Minimum zones: management (OOB) / servers / users / IoT / DMZ / storage and
+  replication / guests. **Industrial zoning is not one of these zones and is not designed
+  with these criteria**: Purdue levels, conduits with a security level, level 3.5 DMZ and
+  the isolation of the SIS belong to `ot-ics-security-standards`, and there *Safety* wins over
+  availability. Putting the plant into an "IoT-OT" VLAN from this list is the classic mistake. One VLAN = one broadcast domain = one subnet = one policy
+  zone. **Default-deny between zones**, every allowed flow with a written owner and reason.
+- East-west microsegmentation where the data justifies it (NIST SP 800-207 and SP 800-215
+  as the framework): location in the network grants no trust.
 
 **Routing**
-- OSPF para el interior (áreas reales, no todo en area 0); BGP para multihoming, DC fabric
-  (eBGP hoja-espina) y overlays. iBGP con route reflectors solo cuando la malla completa
-  deje de ser razonable.
-- **En todo eBGP**: prefix-list o route-map de entrada y salida (deny por defecto),
-  `maximum-prefix` con acción, AS-path filtering, y RPKI **ROV** con validador propio
-  (Routinator/rpki-client) — invalid = reject. Cobertura ROA global 67,4% (jun-2026), pero
-  solo ~12,3% de los AS aplican ROV completo: firmar ROAs no protege a nadie si no se valida.
-- Complementa con **RFC 9234 (Only-to-Customer)** contra route leaks. **ASPA sigue siendo
-  draft IETF** (`draft-ietf-sidrops-aspa-verification`), no producto terminado: útil,
-  no confiable como control único.
-- ECMP con hashing por flujo (no por paquete: reordena y destroza TCP). uRPF y BCP 38
-  antispoofing en el borde.
+- OSPF for the interior (real areas, not everything in area 0); BGP for multihoming, DC fabric
+  (leaf-spine eBGP) and overlays. iBGP with route reflectors only when a full mesh
+  stops being reasonable.
+- **On every eBGP**: inbound and outbound prefix-list or route-map (deny by default),
+  `maximum-prefix` with an action, AS-path filtering, and RPKI **ROV** with your own validator
+  (Routinator/rpki-client) — invalid = reject. Global ROA coverage 67.4% (Jun-2026), but
+  only ~12.3% of ASes apply full ROV: signing ROAs protects nobody if nobody validates.
+- Complement it with **RFC 9234 (Only-to-Customer)** against route leaks. **ASPA is still an
+  IETF draft** (`draft-ietf-sidrops-aspa-verification`), not a finished product: useful,
+  not to be trusted as the only control.
+- ECMP with per-flow hashing (not per-packet: it reorders and wrecks TCP). uRPF and BCP 38
+  antispoofing at the edge.
 
 **Switching**
-- Agregación **LACP** (activo, no `static`) contra stack/MLAG; nunca un solo uplink en
-  algo que importe.
-- STP: RSTP/MSTP con **root bridge fijado explícitamente** y prioridad del secundario;
-  `bpduguard` + `rootguard` + `portfast/edge` en puertos de acceso. STP con root elegido
-  por MAC es una topología que nadie controla.
+- **LACP** aggregation (active, not `static`) against a stack/MLAG; never a single uplink on
+  anything that matters.
+- STP: RSTP/MSTP with the **root bridge explicitly pinned** and a priority for the secondary;
+  `bpduguard` + `rootguard` + `portfast/edge` on access ports. STP with the root elected
+  by MAC is a topology nobody controls.
 
-**MTU, MSS y fragmentación** — causa habitual del "SSH va pero SCP se cuelga":
+**MTU, MSS and fragmentation** — the usual cause of "SSH works but SCP hangs":
 ```
 MSS = MTU − 40 (IPv4)      # 20 IP + 20 TCP;  −60 en IPv6
 WireGuard sobre Ethernet 1500 → MTU 1420 → clamp MSS 1380
 WireGuard sobre PPPoE  (1492) → MTU 1412 → clamp MSS 1372
 ```
-- Ajusta la MTU del túnel **y además** haz MSS clamping; no son alternativas.
-- `--clamp-mss-to-pmtu` cuando el path MTU es desconocido; valor explícito cuando se conoce.
-- **No bloquees ICMP tipo 3 código 4** (fragmentation needed): sin él, PMTUD muere y los
-  paquetes grandes desaparecen en silencio. Esto no es un agujero: es diagnóstico.
-- Revisa el offload (GRO/GSO) en interfaces de túnel: agrega paquetes por encima de la MTU
-  y los descarta con DF activo.
+- Adjust the tunnel MTU **and also** do MSS clamping; they are not alternatives.
+- `--clamp-mss-to-pmtu` when the path MTU is unknown; an explicit value when it is known.
+- **Do not block ICMP type 3 code 4** (fragmentation needed): without it, PMTUD dies and
+  large packets disappear silently. This is not a hole: it is diagnosis.
+- Check offloading (GRO/GSO) on tunnel interfaces: it aggregates packets above the MTU
+  and drops them with DF set.
 
-**Esqueleto nftables (host y router)**
+**nftables skeleton (host and router)**
 ```nft
 table inet filter {
   chain input {
@@ -170,139 +170,139 @@ table inet filter {
 }
 ```
 
-## 4. Gates de calidad obligatorios
+## 4. Mandatory quality gates
 
-- **Validación sintáctica antes de aplicar**, siempre: `nft -c -f ruleset.nft`,
+- **Syntax validation before applying**, always: `nft -c -f ruleset.nft`,
   `named-checkconf`/`named-checkzone`, `unbound-checkconf`, `haproxy -c -f`, `nginx -t`,
-  `vtysh -C`, `kea-dhcp4 -t`. Config que no valida no llega ni a staging.
-- **Red de seguridad en todo cambio remoto de firewall/routing**: `commit-confirm` (VyOS),
-  safe mode (RouterOS), rollback temporizado o consola OOB abierta. Sin ella, no se toca.
-- **Laboratorio antes de producción** para topologías o protocolos nuevos: containerlab o
-  VMs con las mismas versiones de imagen que producción.
-- **Pruebas negativas obligatorias**: verifica que lo permitido funciona **y que lo
-  prohibido está prohibido**. Un firewall solo probado por el camino feliz no está probado.
-- **Test post-cambio por capas**: enlace y errores de interfaz → ARP/ND → ruta →
-  conectividad → MTU con DF (`ping -M do -s`) → DNS → aplicación real (no solo ping).
-- **Detección de drift como gate**: diff periódico entre la config running y el SoT
-  (NetBox + plantillas). Una diferencia es un hallazgo con dueño, no una curiosidad.
-- Cambios de red por PR revisada en el repo (plantillas, playbooks, reglas), nunca por CLI
-  ad hoc en producción; backup de configuración de cada equipo, versionado y restaurable.
+  `vtysh -C`, `kea-dhcp4 -t`. A config that does not validate does not even reach staging.
+- **A safety net on every remote firewall/routing change**: `commit-confirm` (VyOS),
+  safe mode (RouterOS), timed rollback or an open OOB console. Without it, you do not touch it.
+- **Lab before production** for new topologies or protocols: containerlab or
+  VMs with the same image versions as production.
+- **Negative tests mandatory**: verify that what is allowed works **and that what is
+  forbidden is forbidden**. A firewall tested only along the happy path is not tested.
+- **Post-change test by layers**: link and interface errors → ARP/ND → route →
+  connectivity → MTU with DF (`ping -M do -s`) → DNS → the real application (not just ping).
+- **Drift detection as a gate**: periodic diff between the running config and the SoT
+  (NetBox + templates). A difference is a finding with an owner, not a curiosity.
+- Network changes by reviewed PR in the repo (templates, playbooks, rules), never by ad hoc
+  CLI in production; configuration backup of every device, versioned and restorable.
 
-## 5. Seguridad
+## 5. Security
 
-**Política de filtrado**
-- **Default-deny en entrada y en salida**. El egress filtering es lo que frena C2 y
-  exfiltración; un perímetro que solo mira hacia dentro está medio construido.
-- Firewall stateful: cuidado con **rutas asimétricas**, que rompen el seguimiento de estado
-  y producen fallos intermitentes imposibles de diagnosticar desde la aplicación.
-- Rate limiting, protección anti-DDoS y WAF delante de lo expuesto; superficie mínima
-  publicada, y lo publicado, inventariado.
+**Filtering policy**
+- **Default-deny inbound and outbound**. Egress filtering is what stops C2 and
+  exfiltration; a perimeter that only looks inwards is half built.
+- Stateful firewall: beware of **asymmetric routes**, which break state tracking
+  and produce intermittent failures impossible to diagnose from the application.
+- Rate limiting, anti-DDoS protection and a WAF in front of what is exposed; minimum published
+  surface, and what is published, inventoried.
 
-**DNS como control de seguridad y como canal de fuga**
-- Todos los clientes resuelven **solo** contra el resolver corporativo: bloquea `udp/tcp 53`
-  hacia el exterior y `853` (DoT) en el borde.
-- Neutraliza el DoH no controlado: política de navegador (`DnsOverHttpsMode` = off en
-  Chrome, `network.trr.mode` = 5 en Firefox), bloqueo de IPs de resolvers DoH públicos en
-  443, y DoH propio *pinneado* si quieres cifrado en tránsito. DoH de aplicación es el
-  bypass real de todo filtrado DNS.
-- **Registra el 100% de las consultas** del resolver y analiza longitud de etiqueta,
-  entropía, número de subdominios, volumen y tasa de NXDOMAIN: la exfiltración por DNS vive
-  ahí. Asume que la detección puramente de red no cierra el DoH-en-HTTPS: respáldala con EDR.
-- DNSSEC: validación en el recursivo (siempre) y firma de las zonas propias.
-  `HTTPS`/`SVCB` (RFC 9460) y ECH cambian lo que se ve en el cable: tenlo en el modelo.
+**DNS as a security control and as a leak channel**
+- All clients resolve **only** against the corporate resolver: block `udp/tcp 53`
+  outbound and `853` (DoT) at the edge.
+- Neutralise uncontrolled DoH: browser policy (`DnsOverHttpsMode` = off in
+  Chrome, `network.trr.mode` = 5 in Firefox), blocking public DoH resolver IPs on
+  443, and your own *pinned* DoH if you want encryption in transit. Application-level DoH is the
+  real bypass of all DNS filtering.
+- **Log 100% of the resolver's queries** and analyse label length,
+  entropy, number of subdomains, volume and NXDOMAIN rate: DNS exfiltration lives
+  there. Assume that purely network-based detection does not close DoH-inside-HTTPS: back it with EDR.
+- DNSSEC: validation on the recursive resolver (always) and signing of your own zones.
+  `HTTPS`/`SVCB` (RFC 9460) and ECH change what is visible on the wire: keep it in the model.
 
-**Plano de gestión y equipos**
-- Gestión **out-of-band**, en VLAN dedicada sin ruta desde redes de usuario, accesible solo
-  vía bastión/VPN. Es el objetivo número uno tras el primer compromiso.
-- SSH con claves, **SNMPv3** únicamente, AAA centralizado (RADIUS/TACACS+) con cuentas
-  nominales, `enable`/local solo de emergencia en gestor de secretos. Sin telnet, sin HTTP,
-  sin SNMP v1/v2c, sin credenciales de fábrica, servicios innecesarios apagados.
-- Hardening según CIS del fabricante; firmware con revisión trimestral y ante CVE explotable.
+**Management plane and devices**
+- **Out-of-band** management, on a dedicated VLAN with no route from user networks, reachable only
+  via bastion/VPN. It is target number one after the first compromise.
+- SSH with keys, **SNMPv3** only, centralised AAA (RADIUS/TACACS+) with named
+  accounts, `enable`/local for emergencies only, in a secrets manager. No telnet, no HTTP,
+  no SNMP v1/v2c, no factory credentials, unnecessary services off.
+- Hardening per the vendor's CIS benchmark; firmware reviewed quarterly and on an exploitable CVE.
 
-**Acceso y confianza**
-- **ZTNA por aplicación** frente a VPN full-tunnel que da acceso a "la red"; identidad
-  fuerte (OIDC/MFA) y postura de dispositivo antes que ubicación.
-- 802.1X en acceso cableado y WiFi (WPA3-Enterprise), con VLAN dinámica y red de
-  cuarentena; `port-security` donde 802.1X no llegue. MACsec en enlaces entre armarios o
-  campus cuando el medio no sea de confianza.
-- mTLS o IPsec para tráfico este-oeste sensible; TLS 1.2+ / 1.3 en todo lo publicado.
+**Access and trust**
+- **Per-application ZTNA** rather than a full-tunnel VPN that grants access to "the network"; strong
+  identity (OIDC/MFA) and device posture before location.
+- 802.1X on wired access and WiFi (WPA3-Enterprise), with dynamic VLAN and a quarantine
+  network; `port-security` where 802.1X does not reach. MACsec on links between cabinets or
+  campuses when the medium is not trusted.
+- mTLS or IPsec for sensitive east-west traffic; TLS 1.2+ / 1.3 on everything published.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Señales de red que se vigilan siempre**: latencia y jitter (RTT por salto), pérdida de
-  paquetes, errores/descartes por interfaz, utilización y saturación de enlace, tamaño de
-  la tabla de rutas y estado de sesiones BGP/OSPF, expiración de certificados y leases DHCP.
-- **Flujos (IPFIX/NetFlow/sFlow)** para saber quién habla con quién: sin ellos no hay
-  investigación de incidente ni dimensionamiento con datos. Complementa con gNMI/OpenConfig
-  (streaming telemetry) donde el equipo lo soporte, en lugar de polling SNMP masivo.
-- **Diagnóstico por capas, en orden y sin saltos**: física (luz, errores CRC, negociación)
-  → enlace (VLAN, MAC/ARP/ND, STP) → red (ruta, MTU, ICMP) → transporte (`ss`, retransmisiones,
-  handshake en captura) → aplicación (DNS, TLS, HTTP). Saltar capas es cómo se pierden horas.
-- **QoS**: `fq_codel`/CAKE en el borde resuelve el bufferbloat, que es el 90% del "la red va
-  lenta" real. DSCP solo sirve si se marca, se respeta y no se borra extremo a extremo;
-  marcar sin acuerdo entre todos los saltos es decorativo. L4S es emergente: no lo asumas.
-- **Capacidad con datos**: planifica sobre percentiles de utilización real, con umbral de
-  acción en torno al 70% sostenido; no dimensiones por intuición ni por pico anecdótico.
-- **HA sin SPOF**: doble uplink por caminos distintos, VRRP/CARP con failover **probado**,
-  redundancia de resolvers DNS y DHCP, alimentación y switches diversificados. Un failover
-  no ejercitado no cuenta.
-- Runbooks por escenario: pérdida de uplink, caída de un firewall, fuga de rutas, agotamiento
-  de pool DHCP, envenenamiento/caída de DNS, bucle de capa 2. Versionados y con dueño.
+- **Network signals that are always watched**: latency and jitter (RTT per hop), packet
+  loss, per-interface errors/discards, link utilisation and saturation, routing table
+  size and BGP/OSPF session state, certificate expiry and DHCP leases.
+- **Flows (IPFIX/NetFlow/sFlow)** to know who talks to whom: without them there is no
+  incident investigation and no sizing with data. Complement with gNMI/OpenConfig
+  (streaming telemetry) where the device supports it, instead of massive SNMP polling.
+- **Layered diagnosis, in order and with no skipping**: physical (light, CRC errors, negotiation)
+  → link (VLAN, MAC/ARP/ND, STP) → network (route, MTU, ICMP) → transport (`ss`, retransmissions,
+  handshake in a capture) → application (DNS, TLS, HTTP). Skipping layers is how hours get lost.
+- **QoS**: `fq_codel`/CAKE at the edge solves bufferbloat, which is 90% of the real "the network is
+  slow". DSCP is only useful if it is marked, honoured and not wiped end to end;
+  marking without agreement across every hop is decorative. L4S is emerging: do not assume it.
+- **Capacity with data**: plan on percentiles of real utilisation, with an action threshold
+  around 70% sustained; do not size by intuition or by an anecdotal peak.
+- **HA with no SPOF**: dual uplink over different paths, VRRP/CARP with **tested** failover,
+  redundancy of DNS and DHCP resolvers, diversified power and switches. A failover
+  that has not been exercised does not count.
+- Runbooks per scenario: uplink loss, a firewall down, a route leak, DHCP pool
+  exhaustion, DNS poisoning/outage, layer 2 loop. Versioned and with an owner.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Red como código**: topología, direccionamiento, reglas y baselines en repo, revisadas
-  por PR; automatización idempotente (Ansible network collections) alimentada por NetBox;
-  containerlab para validar antes de tocar hierro.
-- **Cadencia**: firmware/IOS/RouterOS y NOS revisados cada trimestre y ante CVE con
-  KEV/EPSS relevante; ramas LTS de HAProxy/BIND/FRR frente a la última minor; ninguna
-  versión EOL en producción sin plan de salida fechado (BIND 9.18 EOL jun-2026 es el
-  recordatorio del trimestre).
-- Deprecación con plan: cada regla, VPN o VLAN retirada se elimina de verdad (config, SoT y
-  documentación), no se queda "por si acaso" acumulando superficie.
+- **Network as code**: topology, addressing, rules and baselines in a repo, reviewed
+  by PR; idempotent automation (Ansible network collections) fed by NetBox;
+  containerlab to validate before touching hardware.
+- **Cadence**: firmware/IOS/RouterOS and the NOS reviewed every quarter and on a CVE with
+  relevant KEV/EPSS; LTS branches of HAProxy/BIND/FRR rather than the latest minor; no
+  EOL version in production without a dated exit plan (BIND 9.18 EOL Jun-2026 is the
+  reminder of the quarter).
+- Deprecation with a plan: every retired rule, VPN or VLAN is really deleted (config, SoT and
+  documentation), it is not left "just in case" accumulating surface.
 
-**PROHIBIDO**
-- ❌ `any/any` permanente, reglas sin comentario de motivo, o `0.0.0.0/0` en entrada sin
-  justificación escrita.
-- ❌ Firewall sin egress filtering; "es red interna, no hace falta filtrar".
-- ❌ Mezclar `iptables` y `nftables` en el mismo host; `iptables-legacy` en sistemas nuevos.
-- ❌ Bloquear ICMP indiscriminadamente (mata PMTUD y el diagnóstico) o ICMPv6 en IPv6 (rompe ND).
-- ❌ Cambiar firewall/routing en remoto sin commit-confirm, rollback temporizado ni consola OOB.
-- ❌ eBGP sin filtros de prefijo, sin `maximum-prefix` y sin RPKI ROV.
-- ❌ Interfaces de gestión (switches, firewalls, BMC, hipervisores) accesibles desde redes de
-  usuario o desde Internet.
-- ❌ Telnet, HTTP de gestión, SNMP v1/v2c, credenciales por defecto, cuentas compartidas.
-- ❌ Permitir DNS saliente a cualquier resolver, o dejar el DoH del navegador sin política.
-- ❌ Resolver, DHCP o firewall único sin redundancia en algo que importe.
-- ❌ VLAN plana "porque es más fácil"; IoT/OT en la misma zona que servidores o usuarios.
-- ❌ Túneles sin ajustar MTU ni MSS y luego culpar a la aplicación.
-- ❌ Configuración manual no reflejada en el SoT/repo (snowflakes) y drift sin corregir.
-- ❌ VPN full-tunnel que concede acceso a toda la red en lugar de acceso por aplicación.
-- ❌ Wi-Fi corporativo con PSK compartida en vez de WPA3/802.1X.
-- ❌ Poblar NetBox por descubrimiento automático y llamarlo "intención".
+**FORBIDDEN**
+- ❌ Permanent `any/any`, rules with no comment giving the reason, or `0.0.0.0/0` inbound without
+  written justification.
+- ❌ A firewall without egress filtering; "it's the internal network, no need to filter".
+- ❌ Mixing `iptables` and `nftables` on the same host; `iptables-legacy` on new systems.
+- ❌ Blocking ICMP indiscriminately (it kills PMTUD and diagnosis) or ICMPv6 in IPv6 (it breaks ND).
+- ❌ Changing firewall/routing remotely without commit-confirm, timed rollback or an OOB console.
+- ❌ eBGP without prefix filters, without `maximum-prefix` and without RPKI ROV.
+- ❌ Management interfaces (switches, firewalls, BMC, hypervisors) reachable from user
+  networks or from the Internet.
+- ❌ Telnet, HTTP management, SNMP v1/v2c, default credentials, shared accounts.
+- ❌ Allowing outbound DNS to any resolver, or leaving the browser's DoH without a policy.
+- ❌ A single resolver, DHCP server or firewall with no redundancy on anything that matters.
+- ❌ A flat VLAN "because it's easier"; IoT/OT in the same zone as servers or users.
+- ❌ Tunnels without adjusting MTU or MSS and then blaming the application.
+- ❌ Manual configuration not reflected in the SoT/repo (snowflakes) and uncorrected drift.
+- ❌ A full-tunnel VPN granting access to the whole network instead of per-application access.
+- ❌ Corporate Wi-Fi with a shared PSK instead of WPA3/802.1X.
+- ❌ Populating NetBox by automatic discovery and calling it "intent".
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión, flag o dato concreto, **búscalo — no lo recuerdes**.
-Verificado ago-2026 (caduca rápido): nftables 1.1.4 / firewalld 2.4.0 en Fedora 44;
+Before pinning any version, flag or concrete datum, **look it up — do not recall it**.
+Verified Aug 2026 (expires fast): nftables 1.1.4 / firewalld 2.4.0 on Fedora 44;
 OPNsense 26.7 (FreeBSD 15.1); pfSense CE 2.8.1; RouterOS 7.23 stable / 7.21.5 long-term;
 VyOS Stream 2026.03; FRR 10.7.0; BIRD 3.3.1 (LTS 3.1.x); BIND 9.20.26 ESV (9.18 EOL
-jun-2026); Unbound 1.24.2; Knot DNS 3.5.4; Pi-hole FTL 6.7 / Core 6.4.3; HAProxy 3.2.x y
+Jun-2026); Unbound 1.24.2; Knot DNS 3.5.4; Pi-hole FTL 6.7 / Core 6.4.3; HAProxy 3.2.x and
 3.4.0 LTS; nginx 1.30.x stable / 1.31.x mainline; Traefik v3.7.10; Caddy 2.11.4;
 NetBox 4.6.7; NetBird 0.65+; Headscale 0.29.x (beta).
 
-1. Última estable y **EOL** de cada componente que vayas a instalar (endoflife.date + notas
-   de la versión del fabricante), muy en especial BIND, nginx, HAProxy y el NOS del equipo.
-2. **CVEs activos con KEV/EPSS** antes de decidir la urgencia de un parche — 2026 ha sido un
-   año denso en nginx y BIND.
-3. Estado de `iptables`/`nftables` en la distro **exacta** del proyecto (RHEL 10, Fedora,
-   Debian) antes de escribir reglas: la capa de compatibilidad cambia entre versiones.
-4. Estado de **Kea** e ISC `dhcpd`, y de containerlab, FreeRADIUS, Wireshark, Akvorado y
-   UniFi Network Application — no verificados en este documento.
-5. Estado de **RPKI/ASPA** (ASPA sigue en draft), adopción de ROV y cifras de IPv6
-   (Google/APNIC): son datos que cambian cada trimestre.
-6. Política de imágenes de VyOS (LTS solo con suscripción o contribución) y ciclo de
-   release de OPNsense/pfSense CE antes de comprometer una plataforma.
-7. RFC exacto antes de citarlo (SVCB/HTTPS, DoQ, OTC, L4S, IPv6-mostly): número y estado.
+1. Latest stable and **EOL** of every component you are going to install (endoflife.date + the
+   vendor's release notes), most especially BIND, nginx, HAProxy and the device's NOS.
+2. **Active CVEs with KEV/EPSS** before deciding the urgency of a patch — 2026 has been a
+   dense year for nginx and BIND.
+3. The state of `iptables`/`nftables` on the project's **exact** distribution (RHEL 10, Fedora,
+   Debian) before writing rules: the compatibility layer changes between versions.
+4. The state of **Kea** and ISC `dhcpd`, and of containerlab, FreeRADIUS, Wireshark, Akvorado and
+   the UniFi Network Application — not verified in this document.
+5. The state of **RPKI/ASPA** (ASPA is still a draft), ROV adoption and IPv6 figures
+   (Google/APNIC): these are data that change every quarter.
+6. VyOS image policy (LTS only with a subscription or contribution) and the release
+   cycle of OPNsense/pfSense CE before committing to a platform.
+7. The exact RFC before citing it (SVCB/HTTPS, DoQ, OTC, L4S, IPv6-mostly): number and status.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

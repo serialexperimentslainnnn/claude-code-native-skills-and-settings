@@ -3,460 +3,460 @@ name: linux-administration-standards
 description: Day-to-day Linux system administration, distribution-agnostic. Use when writing or debugging systemd units and .timer/.mount/.socket/.target files, systemctl edit overrides, Type=/Restart=/After=/Requires= semantics, systemd-analyze blame or critical-chain boot latency, systemd-run transient units, user units and loginctl enable-linger, journald retention (journalctl, journald.conf, SystemMaxUse, Storage=persistent), nsswitch.conf, /etc/fstab versus .mount units, autofs, cgroups v2 resource control (systemd-cgtop, MemoryMax=, CPUQuota=, IOWeight=, systemd-oomd, oomd.conf), NetworkManager/nmcli/nmstate versus systemd-networkd versus netplan renderer choice, resolvectl and /etc/resolv.conf, chrony or systemd-timesyncd clock drift, reboot-required policy after patching, rescue and emergency targets, chroot recovery, or diagnosing a slow or unbootable host with dmesg, iostat and pidstat.
 ---
 
-# Estándares de administración de sistemas Linux
+# Linux system administration standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **día a día del sistema operativo Linux, con independencia de la distribución**:
-el modelo mental de systemd y sus unidades, el arranque y su latencia, logging con journald,
-usuarios/grupos/sesiones, procesos y control de recursos con cgroups v2, montajes cotidianos,
-configuración de red **desde el host**, paquetes y política de reinicio, hora del sistema, y el
-**diagnóstico sistemático de un host** que va lento, no arranca o se quedó sin memoria.
+Applies to the **day-to-day of the Linux operating system, regardless of distribution**:
+the mental model of systemd and its units, boot and its latency, logging with journald,
+users/groups/sessions, processes and resource control with cgroups v2, everyday mounts,
+network configuration **from the host**, packages and reboot policy, system time, and the
+**systematic diagnosis of a host** that is slow, will not boot or has run out of memory.
 
-Triggers: `systemctl`, `systemctl edit`, ficheros `.service`/`.timer`/`.mount`/`.socket`/`.path`/
-`.target`/`.slice`, `Type=`, `Restart=`, `After=`, `Requires=`, `BindsTo=`, `WantedBy=`,
+Triggers: `systemctl`, `systemctl edit`, `.service`/`.timer`/`.mount`/`.socket`/`.path`/
+`.target`/`.slice` files, `Type=`, `Restart=`, `After=`, `Requires=`, `BindsTo=`, `WantedBy=`,
 `systemd-analyze blame`/`critical-chain`/`verify`, `systemd-run`, `loginctl`, `enable-linger`,
 `journalctl`, `journald.conf`, `SystemMaxUse=`, `Storage=persistent`, `systemd-cgtop`,
 `systemd-cgls`, `MemoryMax=`, `MemoryHigh=`, `CPUQuota=`, `IOWeight=`, `systemd-oomd`,
 `oomd.conf`, `/etc/nsswitch.conf`, `/etc/fstab`, `systemd-mount`, `autofs`, `nmcli`, `nmstate`,
 `systemd-networkd`, `netplan`, `resolvectl`, `/etc/resolv.conf`, `chronyc`, `timedatectl`,
-`needrestart`, `dnf needs-restarting`, `rescue.target`, `emergency.target`, `chroot` de
-recuperación, `dmesg`, `iostat`, `pidstat`, "el servidor va lento", "no arranca", "se quedó sin
-memoria", "el disco se llenó de logs".
+`needrestart`, `dnf needs-restarting`, `rescue.target`, `emergency.target`, recovery `chroot`,
+`dmesg`, `iostat`, `pidstat`, "the server is slow", "it will not boot", "it ran out of
+memory", "the disk filled up with logs".
 
-**Principio rector**: **casi nada de lo que se diagnostica como "el sistema" es el sistema.** Un
-host que "se queda sin memoria" es casi siempre **una unidad sin límite**; un arranque lento es
-**una unidad concreta en la cadena crítica**; un `/var` lleno es **retención de journal sin fijar**.
-El trabajo consiste en **atribuir el síntoma a una unidad, un cgroup o un fichero de configuración
-concreto** antes de tocar nada — y en no tocar producción a ciegas.
+**Guiding principle**: **almost nothing diagnosed as "the system" is the system.** A
+host that "runs out of memory" is almost always **a unit with no limit**; a slow boot is
+**one specific unit in the critical chain**; a full `/var` is **journal retention left unpinned**.
+The work consists of **attributing the symptom to a specific unit, cgroup or configuration file**
+before touching anything — and of not touching production blind.
 
-**Frontera con la distribución**: esta skill es **agnóstica**. Todo lo que valga igual en Debian,
-Ubuntu, SUSE y RHEL vive aquí. Lo que sea **particularidad de la familia Red Hat** (`dnf5`, RPM y
+**Boundary with the distribution**: this skill is **agnostic**. Everything that holds equally on Debian,
+Ubuntu, SUSE and RHEL lives here. Whatever is a **Red Hat family particularity** (`dnf5`, RPM and
 repos, `rpm-ostree`/`bootc`, `leapp`, `subscription-manager`, `grubby`, `tuned`, `firewalld`,
-ciclos de vida de RHEL/Fedora/Alma/Rocky) es de `rhel-fedora-standards`, que **desarrolla** lo de
-aquí para esa familia y no lo contradice.
+RHEL/Fedora/Alma/Rocky lifecycles) belongs to `rhel-fedora-standards`, which **develops** what is
+here for that family and does not contradict it.
 
-**No aplica**: ver `onprem-standards` (**paraguas de plataforma**: hardware, plano OOB/BMC,
-hipervisor, topología e inventario de flota, cadencia de parcheo de la flota — sus invariantes de
-§1.3 son inviolables; **esta skill recoge el testigo del bloque de systemd que su §3 marcaba como
-criterio provisional**), `rhel-fedora-standards` (particularidades de la familia Red Hat),
-`linux-hardening-standards` (**todo lo que sea control de seguridad medible**: baselines CIS/STIG/
-ANSSI/CCN-STIC, OpenSCAP/Lynis, `sysctl.d`, `sshd_config`, `auditd`, `sudoers`, `pam_faillock`,
-`login.defs`, opciones de montaje `noexec`/`nosuid`/`nodev`, auditoría de SUID, **el sandboxing de
-la unidad como control** (`ProtectSystem=`, `PrivateTmp=`, `systemd-analyze security`), AIDE,
-Secure Boot/TPM/LUKS, actualizaciones de seguridad desatendidas y livepatching — **aquí el
-`Type=`, el `Restart=`, las dependencias y el diagnóstico; allí el confinamiento y su medida**),
-`selinux-standards` (MAC: denegaciones AVC, `semanage`, `restorecon`, booleanos, política propia;
-si un servicio no arranca **por una denegación**, el diagnóstico es allí — aquí el diagnóstico de
-por qué la unidad falla por dependencias, orden, recursos o configuración),
-`bash-linux-scripting-standards` (higiene del script que automatiza cualquier cosa de aquí:
-`set -Eeuo pipefail`, ShellCheck, `flock`, `mktemp`, bats), `iac-standards` (**la frontera es la
-repetibilidad**: lo que se aplica a más de un host o más de una vez **se automatiza allí** con
-Ansible idempotente y su CI; **aquí se decide qué se configura, con qué criterio y cómo se
-diagnostica cuando falla** — un playbook que no sabe qué `Type=` poner no se arregla con más
-`ansible-lint`), `networking-standards` (**diseño** de red: direccionamiento, VLAN, routing, BGP,
-política de firewall entre zonas, DNS como servicio, VPN, proxies — **aquí solo la configuración de
-red del propio host**: qué gestor se usa, cómo se declara una interfaz y cómo se lee `resolvectl`),
-`observability-standards` (dónde se envían, retienen y correlacionan métricas y logs; **aquí el
-lado local**: journald, su retención y su reenvío), `vulnerability-management-standards` (triaje de
-CVE con CVSS/EPSS/KEV y SLA de remediación — **aquí la política de reinicio tras el parche**),
-`identity-access-management-standards` (IdP, SSO, MFA, bastión y elevación JIT — aquí `nsswitch`,
-`loginctl` y la sesión local), `windows-server-ad-standards` (**decisión explícita**: el bosque, el
-dominio, GPO, Kerberos y el diseño de la identidad corporativa son suyos; **la integración del host
-Linux con AD — `realmd`, `sssd.conf`, `adcli`, `nsswitch`, `pam_sss`, mapeo de UID/GID, `id` de un
-usuario de dominio, caducidad del keytab — cae de este lado**, porque es configuración del sistema
-Linux; el ticket Kerberos que no valida por deriva de reloj también es de aquí, §6),
-`kubernetes-standards` (el host como nodo de un cluster: kubelet, cgroups del pod, drenaje),
-`container-runtime-security-standards` (seccomp, escape de contenedor, detección en runtime),
-`homelab-standards` (laboratorio personal: la frontera es el **rigor exigido**, no el tamaño),
-`incident-management-standards` (la declaración del incidente, el IC y la comunicación mientras tú
-diagnosticas), `incident-response-forensics-standards` (**si el host puede estar comprometido, para
-y cede**: el orden de volatilidad manda sobre el diagnóstico de rendimiento; reiniciar "a ver si se
-arregla" destruye evidencia), `bcdr-standards`, `grc-compliance-standards`, `perl-standards` (el Perl del sistema es
-parte de la distribución y **no se toca**; el Perl de aplicación y su gestión de dependencias son
-suyos), `lua-standards` (la configuración de nginx es de red y plataforma; el Lua
-embebido en él, suyo), `operating-systems-standards` (**el pomo de systemd es de aquí, la
-semántica del kernel que hay detrás es suya**: qué hace de verdad `memory.high` frente a
-`memory.max`, cuándo entra el OOM killer y con qué criterio; aquí cómo se declara en la unidad y
-cómo se diagnostica).
+**Not applicable**: see `onprem-standards` (**platform umbrella**: hardware, OOB/BMC plane,
+hypervisor, fleet topology and inventory, fleet patching cadence — its §1.3 invariants are
+inviolable; **this skill takes over the systemd block that its §3 marked as
+provisional criteria**), `rhel-fedora-standards` (Red Hat family particularities),
+`linux-hardening-standards` (**everything that is a measurable security control**: CIS/STIG/
+ANSSI/CCN-STIC baselines, OpenSCAP/Lynis, `sysctl.d`, `sshd_config`, `auditd`, `sudoers`, `pam_faillock`,
+`login.defs`, `noexec`/`nosuid`/`nodev` mount options, SUID auditing, **unit sandboxing as a
+control** (`ProtectSystem=`, `PrivateTmp=`, `systemd-analyze security`), AIDE,
+Secure Boot/TPM/LUKS, unattended security updates and livepatching — **here the
+`Type=`, the `Restart=`, the dependencies and the diagnosis; there the confinement and its measurement**),
+`selinux-standards` (MAC: AVC denials, `semanage`, `restorecon`, booleans, custom policy;
+if a service does not start **because of a denial**, the diagnosis is there — here the diagnosis of
+why the unit fails through dependencies, ordering, resources or configuration),
+`bash-linux-scripting-standards` (hygiene of the script that automates anything from here:
+`set -Eeuo pipefail`, ShellCheck, `flock`, `mktemp`, bats), `iac-standards` (**the boundary is
+repeatability**: what is applied to more than one host or more than once **is automated there** with
+idempotent Ansible and its CI; **here it is decided what is configured, with what criteria and how it is
+diagnosed when it fails** — a playbook that does not know which `Type=` to set is not fixed with more
+`ansible-lint`), `networking-standards` (network **design**: addressing, VLAN, routing, BGP,
+firewall policy between zones, DNS as a service, VPN, proxies — **here only the
+host's own network configuration**: which manager is used, how an interface is declared and how `resolvectl` is read),
+`observability-standards` (where metrics and logs are sent, retained and correlated; **here the
+local side**: journald, its retention and its forwarding), `vulnerability-management-standards` (CVE
+triage with CVSS/EPSS/KEV and remediation SLA — **here the reboot policy after the patch**),
+`identity-access-management-standards` (IdP, SSO, MFA, bastion and JIT elevation — here `nsswitch`,
+`loginctl` and the local session), `windows-server-ad-standards` (**explicit decision**: the forest, the
+domain, GPO, Kerberos and the design of corporate identity are theirs; **the integration of the Linux
+host with AD — `realmd`, `sssd.conf`, `adcli`, `nsswitch`, `pam_sss`, UID/GID mapping, `id` of a
+domain user, keytab expiry — falls on this side**, because it is Linux system configuration;
+the Kerberos ticket that fails to validate because of clock drift is also from here, §6),
+`kubernetes-standards` (the host as a cluster node: kubelet, pod cgroups, draining),
+`container-runtime-security-standards` (seccomp, container escape, runtime detection),
+`homelab-standards` (personal lab: the boundary is the **rigour required**, not the size),
+`incident-management-standards` (the incident declaration, the IC and the communication while you
+diagnose), `incident-response-forensics-standards` (**if the host may be compromised, stop
+and hand over**: the order of volatility overrides performance diagnosis; rebooting "to see if it
+fixes itself" destroys evidence), `bcdr-standards`, `grc-compliance-standards`, `perl-standards` (the system Perl is
+part of the distribution and **is not touched**; application Perl and its dependency management are
+theirs), `lua-standards` (the nginx configuration is network and platform; the Lua
+embedded in it, theirs), `operating-systems-standards` (**the systemd knob is from here, the
+kernel semantics behind it are theirs**: what `memory.high` really does versus
+`memory.max`, when the OOM killer kicks in and with what criteria; here how it is declared in the unit and
+how it is diagnosed).
 
-Además:
-`linux-storage-standards` (LVM, multipath, NVMe, diseño y tuning de filesystems,
-`fstrim`, RAID software — **aquí solo el montaje del día a día**: `fstab` vs. unidades `.mount`,
-`systemd-mount`, autofs, y "el disco está lleno"; **allí** cómo se dimensiona y se afina),
-`backup-recovery-standards` (mecánica de copia y restore),
-`podman-systemd-containers-standards` (Podman y Quadlet — **frontera precisa**: las
-unidades `.container`/`.pod`/`.volume`/`.image` de Quadlet y su generador son suyas; el
-comportamiento de systemd que las ejecuta —`Type=notify`, orden, `Restart=`, cgroup, journal— es de
-aquí), `zfs-standards`, `ha-clustering-standards` (Pacemaker/Corosync — un recurso
-gestionado por el cluster **no se toca con `systemctl`**, §7), `dns-standards`,
+Also:
+`linux-storage-standards` (LVM, multipath, NVMe, filesystem design and tuning,
+`fstrim`, software RAID — **here only the day-to-day mount**: `fstab` vs. `.mount` units,
+`systemd-mount`, autofs, and "the disk is full"; **there** how it is sized and tuned),
+`backup-recovery-standards` (copy and restore mechanics),
+`podman-systemd-containers-standards` (Podman and Quadlet — **precise boundary**: the
+`.container`/`.pod`/`.volume`/`.image` Quadlet units and their generator are theirs; the
+behaviour of systemd that runs them —`Type=notify`, ordering, `Restart=`, cgroup, journal— is from
+here), `zfs-standards`, `ha-clustering-standards` (Pacemaker/Corosync — a resource
+managed by the cluster **is not touched with `systemctl`**, §7), `dns-standards`,
 `firewall-policy-standards`, `vpn-standards`, `libvirt-kvm-standards`, `proxmox-ve-standards`,
-`network-troubleshooting-standards` (**frontera delicada y explícita**: el diagnóstico
-**del host** es de esta skill —¿la interfaz está `UP`?, ¿el gestor de red correcto la gestiona?,
-¿hay ruta por defecto?, ¿`resolvectl status` resuelve?, ¿el socket está en `LISTEN` con `ss -ltnp`?,
-¿el servicio falla por límite de recursos o por dependencia?—; el diagnóstico **de la red** es suyo
-—captura con `tcpdump`/Wireshark, MTU/MSS y fragmentación, camino y latencia entre hosts, pérdida,
-asimetría de rutas, qué firewall intermedio descarta—. **La regla de corte**: si el problema se
-reproduce con un `ss`, un `ip`, un `journalctl` y un `curl` a `localhost`, es tuyo; si necesitas
-mirar en dos extremos a la vez o poner un sniffer, es suyo).
+`network-troubleshooting-standards` (**delicate and explicit boundary**: the diagnosis
+**of the host** belongs to this skill —is the interface `UP`?, is the correct network manager managing it?,
+is there a default route?, does `resolvectl status` resolve?, is the socket in `LISTEN` with `ss -ltnp`?,
+does the service fail because of a resource limit or because of a dependency?—; the diagnosis **of the network** is theirs
+—capture with `tcpdump`/Wireshark, MTU/MSS and fragmentation, path and latency between hosts, loss,
+route asymmetry, which intermediate firewall drops—. **The cut-off rule**: if the problem reproduces
+with an `ss`, an `ip`, a `journalctl` and a `curl` to `localhost`, it is yours; if you need to
+look at both ends at once or put a sniffer in place, it is theirs).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Ámbito | Por defecto | Motivo / alternativa justificable |
+| Area | Default | Reason / justifiable alternative |
 |---|---|---|
-| Gestor de servicios | **systemd**, rama estable **v261** (v261.2, 23-jul-2026); ramas de mantenimiento vivas: 258.x, 259.x, 260.x | Verificado ago-2026 vía `api.github.com`. **No asumas la versión upstream en tu distro**: comprueba con `systemctl --version` — la distro va por detrás y las directivas nuevas no existirán |
-| Compatibilidad SysV | **Ninguna. Unidad nativa siempre** | Verificado en el `NEWS` de v260: **se eliminó el soporte de scripts System V** (`systemd-sysv-generator`, `systemd-rc-local-generator`/`rc-local.service`, `systemd-sysv-install`). v260 también sube el **baseline de kernel a 5.10** (recomendado 5.14; 6.6 para funcionalidad completa). Un `/etc/init.d/` o un `/etc/rc.local` que hoy "funciona" **desaparece** al llegar v260 a tu distro: audita ahora y migra |
-| Jerarquía de cgroups | **v2 (unified), única** | Verificado en el `NEWS` de v258: **soporte de cgroup v1 (`legacy` e `hybrid`) eliminado**; v2 se monta siempre en arranque y en `systemd-nspawn`. Kernel mínimo subido a 5.4 en v258. Si en `/proc/cmdline` hay `systemd.unified_cgroup_hierarchy=0`, es deuda: quítalo antes de actualizar |
-| Tareas programadas | **Timers de systemd** para todo lo nuevo | Logs en el journal, `Persistent=true` recupera ejecuciones perdidas, `RandomizedDelaySec=` evita el efecto manada, dependencias reales y estado consultable (`systemctl list-timers`). `cron` solo para lo heredado que no se vaya a tocar; **no se mezclan** los dos para la misma tarea |
-| Overrides de unidad | **`systemctl edit <unit>`** → `/etc/systemd/system/<unit>.d/override.conf` | **Nunca** se edita la unidad que instala el paquete: la sobrescribe la siguiente actualización, silenciosamente. `systemctl edit --full` solo si hay que reescribirla entera, y entonces se documenta por qué |
-| Unidad transitoria | **`systemd-run`** (con `--unit=`, `--property=`, `--on-calendar=`, `--scope`) | Una tarea puntual que debe sobrevivir a la sesión SSH, o que necesita límites de recursos, va en una unidad transitoria — **no en `nohup`, `screen` ni `&`**: sin cgroup, sin logs, sin límites y sin trazabilidad |
-| Logging | **journald con almacenamiento persistente** (`Storage=persistent`) y límites explícitos (`SystemMaxUse=`, `SystemMaxFileSize=`, `MaxRetentionSec=`) | El defecto volátil pierde el log del arranque anterior — justo el que hace falta tras un crash. Sin límite explícito, `/var/log/journal` crece hasta el 10% del FS |
-| Agregación de logs | **Reenvío a un agregador central** desde journald (`systemd-journal-upload`, o agente vector/promtail/rsyslog) | El diseño del stack lo fija `observability-standards`. Aquí el invariante: **el log que solo existe en el host que falló no existe** |
-| syslog local | Solo si un consumidor lo exige (`ForwardToSyslog=yes`) | Mantener rsyslog **y** journald escribiendo lo mismo duplica el disco y el trabajo. Elige uno como fuente y el otro como transporte |
-| Gestión de red del host | **La nativa de la distro, una sola**: NetworkManager (`nmcli`/`nmstate`) en RHEL/Fedora y en escritorios; **netplan** en Ubuntu (renderer `networkd` en servidor, `NetworkManager` en escritorio); `systemd-networkd` en servidores Debian/minimalistas y contenedores | Verificado ago-2026. **La regla dura es no mezclar**: dos gestores sobre la misma interfaz produce IP duplicadas, DNS sobrescrito y arranques que cuelgan 2 minutos. NetworkManager es *greedy* (gestiona lo que no se le prohíba); `networkd` solo gestiona lo que se le declara |
-| Resolución DNS del host | **`systemd-resolved`** con `/etc/resolv.conf` → symlink a `/run/systemd/resolve/stub-resolv.conf`, y **`resolvectl status` como fuente de verdad** | `cat /etc/resolv.conf` **no dice qué está resolviendo** cuando hay stub, split-DNS por interfaz o DNS por VPN. Editar `/etc/resolv.conf` a mano en un sistema con `resolved` es un cambio que se pierde en el próximo evento de red |
-| Hora | **chrony** en servidores; `systemd-timesyncd` (SNTP) solo en clientes/VM sin requisito | chrony converge más rápido, aguanta redes malas, soporta NTS y sirve como servidor. `timesyncd` **no es un servidor NTP** ni disciplina bien tras suspensión |
-| Control de memoria | **Límites en la unidad** (`MemoryMax=`, `MemoryHigh=`, `MemoryMin=`) por servicio, más `systemd-oomd` donde la distro lo trae | Verificado: `systemd-oomd` viene **activado por defecto en Fedora** (desde F34, sustituyó a earlyoom) y **empaquetado pero desactivado en RHEL** (`systemctl enable --now systemd-oomd`, `/etc/systemd/oomd.conf`). Actúa por **PSI** antes que el OOM killer del kernel, y mata el **cgroup**, no un proceso suelto |
-| Política de reinicio tras parche | **Explícita y automatizada**: `needrestart` (Debian/Ubuntu) o `dnf needs-restarting -r` (familia RPM), con ventana definida | Un parche de `glibc`/`openssl` aplicado sin reiniciar el proceso **no está aplicado**. Ver §5 para el CVE de `needrestart` |
-| Unidades de usuario | `systemctl --user` para procesos del usuario; **`loginctl enable-linger <user>`** solo si deben sobrevivir al logout | Sin *lingering*, la unidad de usuario muere al cerrar la última sesión — causa habitual de "el contenedor rootless se para solo de noche" |
+| Service manager | **systemd**, stable branch **v261** (v261.2, 23-Jul-2026); live maintenance branches: 258.x, 259.x, 260.x | Verified Aug 2026 via `api.github.com`. **Do not assume the upstream version in your distro**: check with `systemctl --version` — the distro lags behind and the new directives will not exist |
+| SysV compatibility | **None. Native unit always** | Verified in the v260 `NEWS`: **System V script support was removed** (`systemd-sysv-generator`, `systemd-rc-local-generator`/`rc-local.service`, `systemd-sysv-install`). v260 also raises the **kernel baseline to 5.10** (5.14 recommended; 6.6 for full functionality). An `/etc/init.d/` or an `/etc/rc.local` that "works" today **disappears** when v260 reaches your distro: audit now and migrate |
+| cgroup hierarchy | **v2 (unified), only** | Verified in the v258 `NEWS`: **cgroup v1 support (`legacy` and `hybrid`) removed**; v2 is always mounted at boot and in `systemd-nspawn`. Minimum kernel raised to 5.4 in v258. If `/proc/cmdline` has `systemd.unified_cgroup_hierarchy=0`, that is debt: remove it before updating |
+| Scheduled tasks | **systemd timers** for everything new | Logs in the journal, `Persistent=true` recovers missed runs, `RandomizedDelaySec=` avoids the thundering herd, real dependencies and queryable state (`systemctl list-timers`). `cron` only for legacy that will not be touched; the two **are not mixed** for the same task |
+| Unit overrides | **`systemctl edit <unit>`** → `/etc/systemd/system/<unit>.d/override.conf` | The unit installed by the package is **never** edited: the next update overwrites it, silently. `systemctl edit --full` only if it has to be rewritten entirely, and then it is documented why |
+| Transient unit | **`systemd-run`** (with `--unit=`, `--property=`, `--on-calendar=`, `--scope`) | A one-off task that must survive the SSH session, or that needs resource limits, goes in a transient unit — **not in `nohup`, `screen` or `&`**: no cgroup, no logs, no limits and no traceability |
+| Logging | **journald with persistent storage** (`Storage=persistent`) and explicit limits (`SystemMaxUse=`, `SystemMaxFileSize=`, `MaxRetentionSec=`) | The volatile default loses the log of the previous boot — exactly the one needed after a crash. With no explicit limit, `/var/log/journal` grows to 10% of the FS |
+| Log aggregation | **Forwarding to a central aggregator** from journald (`systemd-journal-upload`, or a vector/promtail/rsyslog agent) | The stack design is set by `observability-standards`. Here the invariant: **the log that only exists on the host that failed does not exist** |
+| Local syslog | Only if a consumer requires it (`ForwardToSyslog=yes`) | Keeping rsyslog **and** journald writing the same thing duplicates the disk and the work. Pick one as the source and the other as transport |
+| Host network management | **The distro's native one, only one**: NetworkManager (`nmcli`/`nmstate`) on RHEL/Fedora and on desktops; **netplan** on Ubuntu (renderer `networkd` on server, `NetworkManager` on desktop); `systemd-networkd` on Debian/minimalist servers and containers | Verified Aug 2026. **The hard rule is not to mix**: two managers on the same interface produce duplicate IPs, overwritten DNS and boots that hang for 2 minutes. NetworkManager is *greedy* (it manages whatever it is not forbidden); `networkd` only manages what is declared to it |
+| Host DNS resolution | **`systemd-resolved`** with `/etc/resolv.conf` → symlink to `/run/systemd/resolve/stub-resolv.conf`, and **`resolvectl status` as the source of truth** | `cat /etc/resolv.conf` **does not tell you what is resolving** when there is a stub, per-interface split-DNS or DNS via VPN. Editing `/etc/resolv.conf` by hand on a system with `resolved` is a change that is lost at the next network event |
+| Time | **chrony** on servers; `systemd-timesyncd` (SNTP) only on clients/VMs with no requirement | chrony converges faster, tolerates bad networks, supports NTS and serves as a server. `timesyncd` **is not an NTP server** nor does it discipline well after suspend |
+| Memory control | **Limits in the unit** (`MemoryMax=`, `MemoryHigh=`, `MemoryMin=`) per service, plus `systemd-oomd` where the distro ships it | Verified: `systemd-oomd` comes **enabled by default on Fedora** (since F34, it replaced earlyoom) and **packaged but disabled on RHEL** (`systemctl enable --now systemd-oomd`, `/etc/systemd/oomd.conf`). It acts on **PSI** before the kernel OOM killer, and kills the **cgroup**, not a lone process |
+| Reboot policy after patching | **Explicit and automated**: `needrestart` (Debian/Ubuntu) or `dnf needs-restarting -r` (RPM family), with a defined window | A `glibc`/`openssl` patch applied without restarting the process **is not applied**. See §5 for the `needrestart` CVE |
+| User units | `systemctl --user` for the user's processes; **`loginctl enable-linger <user>`** only if they must survive logout | Without *lingering*, the user unit dies when the last session closes — the usual cause of "the rootless container stops by itself at night" |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Anatomía de una unidad correcta
+### 3.1 Anatomy of a correct unit
 
-Toda unidad de servicio propia cumple, sin excepción:
+Every service unit of your own complies, without exception:
 
-- **`Type=` correcto**, y esto no es cosmético: `notify` si el software habla `sd_notify` (lo
-  mejor: systemd sabe cuándo está *realmente* listo); `exec` si es un proceso normal en primer
-  plano; `oneshot` + `RemainAfterExit=` para tareas de inicialización; `forking` **solo** si el
-  software se demoniza y no se le puede pedir lo contrario (y entonces con `PIDFile=`).
-  `Type=simple` se considera "listo" en cuanto hace `fork/exec`: **miente** sobre la disponibilidad
-  y rompe cualquier `After=` que dependa de ella.
-- **`Restart=on-failure`** con `RestartSec=` y **`StartLimitIntervalSec=`/`StartLimitBurst=`**
-  ajustados. `Restart=always` oculta fallos permanentes en un bucle; sin límite de arranque, un
-  servicio roto castiga la CPU y llena el journal.
-- **Dependencias reales, no decorativas.** Este es el error más común y más caro:
-  - `After=` es **solo orden**, no requisito. `Requires=` es **requisito**, no orden. Se necesitan
-    **los dos** para "empieza después de X y no arranques si X falló".
-  - `Wants=` es dependencia **débil** (arranca X, pero sigue si falla): es el valor por defecto
-    correcto para la mayoría.
-  - `BindsTo=` para "si X se para, yo me paro" (dispositivos, montajes, sockets).
-  - **`After=network.target` casi nunca es lo que quieres**: significa "después de que se haya
-    *configurado* la red", no "con IP y ruta". Si el servicio hace `bind()` a una IP concreta o
-    necesita salir a la red al arrancar, es `Wants=network-online.target` **y**
-    `After=network-online.target`, **y** el servicio de espera correspondiente activado
-    (`NetworkManager-wait-online` o `systemd-networkd-wait-online`). Y aun así: **es mejor un
-    servicio que reintenta que un `network-online.target` que retrasa el arranque un minuto.**
-  - Dependencia de un montaje: `RequiresMountsFor=/ruta` — no `After=` sobre la unidad `.mount`
-    adivinada a mano.
-- **Sandboxing**: es un **control de seguridad y su criterio lo fija `linux-hardening-standards`**
+- **Correct `Type=`**, and this is not cosmetic: `notify` if the software speaks `sd_notify` (the
+  best: systemd knows when it is *really* ready); `exec` if it is a normal foreground
+  process; `oneshot` + `RemainAfterExit=` for initialisation tasks; `forking` **only** if the
+  software daemonises and cannot be asked to do otherwise (and then with `PIDFile=`).
+  `Type=simple` is considered "ready" as soon as it does `fork/exec`: it **lies** about availability
+  and breaks any `After=` that depends on it.
+- **`Restart=on-failure`** with `RestartSec=` and **`StartLimitIntervalSec=`/`StartLimitBurst=`**
+  tuned. `Restart=always` hides permanent failures in a loop; with no start limit, a
+  broken service punishes the CPU and fills the journal.
+- **Real dependencies, not decorative ones.** This is the most common and most expensive mistake:
+  - `After=` is **ordering only**, not a requirement. `Requires=` is a **requirement**, not ordering. You need
+    **both** for "start after X and do not start if X failed".
+  - `Wants=` is a **weak** dependency (it starts X, but carries on if it fails): it is the correct
+    default for most cases.
+  - `BindsTo=` for "if X stops, I stop" (devices, mounts, sockets).
+  - **`After=network.target` is almost never what you want**: it means "after the network has been
+    *configured*", not "with an IP and a route". If the service does `bind()` to a specific IP or
+    needs to reach the network at startup, it is `Wants=network-online.target` **and**
+    `After=network-online.target`, **and** the corresponding wait service enabled
+    (`NetworkManager-wait-online` or `systemd-networkd-wait-online`). And even then: **a service
+    that retries is better than a `network-online.target` that delays boot by a minute.**
+  - Dependency on a mount: `RequiresMountsFor=/path` — not `After=` on the `.mount` unit
+    guessed by hand.
+- **Sandboxing**: it is a **security control and its criteria are set by `linux-hardening-standards`**
   (`ProtectSystem=strict`, `PrivateTmp=`, `NoNewPrivileges=`, `CapabilityBoundingSet=`,
-  `systemd-analyze security`). Aquí solo el invariante operativo: **una unidad propia sin
-  usuario dedicado (`User=` o `DynamicUser=`) es un hallazgo**, y `systemd-analyze security` se
-  ejecuta antes de dar la unidad por buena.
-- **Límites de recursos explícitos** en cualquier servicio que pueda crecer: `MemoryMax=`,
-  `MemoryHigh=`, `CPUQuota=`, `TasksMax=`, `IOWeight=`. Ver §6.
-- **Sin lógica en la unidad**: `ExecStart=` apunta a un binario o a un script versionado del repo,
-  no a una cadena de `sh -c` con tuberías y `&&`. Si hace falta lógica, es un script
+  `systemd-analyze security`). Here only the operational invariant: **a unit of your own without a
+  dedicated user (`User=` or `DynamicUser=`) is a finding**, and `systemd-analyze security` is
+  run before signing the unit off.
+- **Explicit resource limits** on any service that can grow: `MemoryMax=`,
+  `MemoryHigh=`, `CPUQuota=`, `TasksMax=`, `IOWeight=`. See §6.
+- **No logic in the unit**: `ExecStart=` points to a binary or to a versioned script from the repo,
+  not to a chain of `sh -c` with pipes and `&&`. If logic is needed, it is a script
   (`bash-linux-scripting-standards`).
 
-### 3.2 Convenciones de fichero
+### 3.2 File conventions
 
-- Unidades propias en `/etc/systemd/system/`; **nunca** en `/usr/lib/systemd/system/` (territorio
-  del paquete). Overrides en `<unit>.d/override.conf`.
-- `systemctl daemon-reload` después de cualquier cambio de fichero de unidad; `systemctl
-  reenable` si cambian los `WantedBy=`. Un `systemctl restart` sin `daemon-reload` aplica la unidad
-  vieja: causa clásica de "he cambiado el fichero y no hace efecto".
-- Configuración por *drop-in* en todo lo que lo admita (`/etc/systemd/*.conf.d/`,
-  `/etc/sysctl.d/`, `/etc/systemd/journald.conf.d/`, `/etc/NetworkManager/conf.d/`), no editando
-  el fichero principal del paquete. Prefijo numérico para el orden (`50-`).
-- Credenciales de un servicio con **`LoadCredential=`/`systemd-creds`**, no en `Environment=` ni en
-  un `EnvironmentFile` legible por todos (el detalle es de `secrets-management-standards`).
-- Montajes: `/etc/fstab` sigue siendo válido y es el default sensato (systemd lo traduce a unidades
-  `.mount` automáticamente). Se pasa a unidad `.mount` explícita cuando hace falta
-  **orden o dependencia** que `fstab` no expresa. Montajes de red y todo lo que pueda no estar
-  disponible: `noauto,x-systemd.automount` o autofs — **nunca** un montaje de red bloqueante sin
-  `_netdev` y sin timeout, porque convierte un NFS caído en un host que no arranca.
+- Your own units in `/etc/systemd/system/`; **never** in `/usr/lib/systemd/system/` (package
+  territory). Overrides in `<unit>.d/override.conf`.
+- `systemctl daemon-reload` after any unit file change; `systemctl
+  reenable` if the `WantedBy=` change. A `systemctl restart` without `daemon-reload` applies the old
+  unit: the classic cause of "I changed the file and it has no effect".
+- Configuration by *drop-in* in everything that supports it (`/etc/systemd/*.conf.d/`,
+  `/etc/sysctl.d/`, `/etc/systemd/journald.conf.d/`, `/etc/NetworkManager/conf.d/`), not by editing
+  the package's main file. Numeric prefix for ordering (`50-`).
+- A service's credentials with **`LoadCredential=`/`systemd-creds`**, not in `Environment=` nor in
+  an `EnvironmentFile` readable by everyone (the detail belongs to `secrets-management-standards`).
+- Mounts: `/etc/fstab` is still valid and is the sensible default (systemd translates it into `.mount`
+  units automatically). You move to an explicit `.mount` unit when you need
+  **ordering or a dependency** that `fstab` does not express. Network mounts and anything that may not be
+  available: `noauto,x-systemd.automount` or autofs — **never** a blocking network mount without
+  `_netdev` and without a timeout, because it turns a downed NFS into a host that will not boot.
 
-### 3.3 Convenciones de flota (heredadas del paraguas)
+### 3.3 Fleet conventions (inherited from the umbrella)
 
-- Todo host **reconstruible desde código**; el cambio manual en prod es *drift* y es hallazgo.
-  Lo repetible se automatiza en `iac-standards`; **lo que se escribe a mano es la excepción
-  documentada, no la costumbre**.
-- **Ningún dato de host de memoria**: IP, rol, VLAN, dueño y criticidad salen del inventario.
-- Ningún servicio, host o certificado sin dueño y sin fecha de fin de vida.
+- Every host **rebuildable from code**; a manual change in prod is *drift* and is a finding.
+  The repeatable is automated in `iac-standards`; **what is written by hand is the documented
+  exception, not the habit**.
+- **No host data from memory**: IP, role, VLAN, owner and criticality come from the inventory.
+- No service, host or certificate without an owner and without an end-of-life date.
 
-## 4. Calidad: validar antes de recargar, verificar después
+## 4. Quality: validate before reloading, verify afterwards
 
-Orden de coste creciente. **Ninguno es opcional en producción.**
+In increasing order of cost. **None is optional in production.**
 
-1. **Validadores sintácticos antes de aplicar**, siempre que existan:
-   - `systemd-analyze verify /etc/systemd/system/<unit>` — detecta directivas inválidas,
-     dependencias inexistentes y rutas mal puestas **sin arrancar nada**.
-   - `sshd -t` (o `sshd -T` para volcar la config efectiva), `visudo -c` / `visudo -f`,
-     `nginx -t`, `named-checkconf`, `chronyd -Q`, `nft -c -f`, `netplan generate` (no `apply`),
-     `nmcli con show` tras `nmcli con modify`.
-   - `systemd-analyze security <unit>` para el sandboxing (criterio en `linux-hardening-standards`).
-2. **Smoke test post-cambio, siempre**: `systemctl is-active` **no es una prueba**. Un servicio
-   `active (running)` que no escucha en su puerto sigue caído para el usuario. El gate es:
-   puerto en `LISTEN` (`ss -ltnp`), respuesta del health endpoint, y **journal sin errores nuevos**
+1. **Syntax validators before applying**, whenever they exist:
+   - `systemd-analyze verify /etc/systemd/system/<unit>` — detects invalid directives,
+     non-existent dependencies and misplaced paths **without starting anything**.
+   - `sshd -t` (or `sshd -T` to dump the effective config), `visudo -c` / `visudo -f`,
+     `nginx -t`, `named-checkconf`, `chronyd -Q`, `nft -c -f`, `netplan generate` (not `apply`),
+     `nmcli con show` after `nmcli con modify`.
+   - `systemd-analyze security <unit>` for the sandboxing (criteria in `linux-hardening-standards`).
+2. **Post-change smoke test, always**: `systemctl is-active` **is not a test**. A service
+   `active (running)` that does not listen on its port is still down for the user. The gate is:
+   port in `LISTEN` (`ss -ltnp`), health endpoint response, and **journal with no new errors**
    (`journalctl -u <unit> --since "-2 min" -p warning`).
-3. **Sesión de rescate abierta al tocar el acceso remoto.** Antes de recargar `sshd`, firewall de
-   host, red o PAM: una segunda sesión SSH ya autenticada (o la consola OOB/serie) abierta y
-   **verificada**, y el cambio confirmado desde una **tercera** conexión nueva antes de cerrar
-   nada. Complemento barato: un `systemd-run --on-active=5m systemctl restart NetworkManager`
-   (o revertir la config) como red de seguridad, cancelado en cuanto se confirma el acceso.
-4. **Cambio reversible por diseño**: se conoce el comando de revert **antes** de aplicar. Si el
-   revert no cabe en una línea, no es un cambio, es un proyecto — y va por ventana.
-5. **Prueba de arranque real** tras cualquier cambio en `fstab`, unidades de montaje, initramfs,
-   red o gestor de arranque: **reiniciar en ventana**. Un host que lleva 400 días arriba con
-   cambios sin reiniciar es un host cuyo arranque nadie ha probado.
-6. **Ensayo fuera de producción** para todo lo que toque arranque, kernel o almacenamiento. El
-   host de staging existe para esto.
+3. **Rescue session open when touching remote access.** Before reloading `sshd`, host firewall,
+   network or PAM: a second already-authenticated SSH session (or the OOB/serial console) open and
+   **verified**, and the change confirmed from a **third** new connection before closing
+   anything. Cheap complement: a `systemd-run --on-active=5m systemctl restart NetworkManager`
+   (or reverting the config) as a safety net, cancelled as soon as access is confirmed.
+4. **Change reversible by design**: the revert command is known **before** applying. If the
+   revert does not fit on one line, it is not a change, it is a project — and it goes through a window.
+5. **Real boot test** after any change to `fstab`, mount units, initramfs,
+   network or boot manager: **reboot in a window**. A host that has been up for 400 days with
+   changes and no reboot is a host whose boot nobody has tested.
+6. **Rehearsal outside production** for anything touching boot, kernel or storage. The
+   staging host exists for this.
 
-## 5. Seguridad del día a día
+## 5. Day-to-day security
 
-> El baseline (CIS/STIG), `sysctl`, auditd, `sudoers`, PAM y el sandboxing como control son de
-> `linux-hardening-standards`; el MAC es de `selinux-standards`. Aquí solo lo inherente a la
-> operación diaria.
+> The baseline (CIS/STIG), `sysctl`, auditd, `sudoers`, PAM and sandboxing as a control belong to
+> `linux-hardening-standards`; MAC belongs to `selinux-standards`. Here only what is inherent to
+> daily operation.
 
-- **Política de reinicio = parte del parche.** `needrestart` / `dnf needs-restarting -r` decide;
-  el resultado se registra y hay ventana. Un `libssl` actualizado con 40 procesos usando el
-  binario viejo en memoria es un CVE abierto con el ticket cerrado.
-  - **CVE relevante en la herramienta misma**: `needrestart` **< 3.8** arrastró cinco escaladas
-    locales a root descubiertas por Qualys (nov-2024), entre ellas **CVE-2024-48990** (vía
-    `PYTHONPATH` de un proceso de un usuario sin privilegios). Si operas Debian/Ubuntu, verifica
-    la versión instalada y que el parche está aplicado — es el ejemplo perfecto de por qué la
-    herramienta de operación también es superficie de ataque.
-  - **CVE-2025-32463** (`sudo`, opción `-R`/`chroot`): escalada local a root. `sudo` es la
-    herramienta que más se ejecuta en un host administrado: su parcheo no espera a la ventana
-    mensual. El triaje y el SLA los fija `vulnerability-management-standards`.
-- **Journal como evidencia**: `Storage=persistent`, `Seal=yes` (FSS) donde el journal deba ser
-  verificable, y reenvío inmediato a un agregador **fuera del host** — un atacante con root borra
-  el journal local en un segundo. La retención y la correlación son de `observability-standards`;
-  la cadena de custodia, de `incident-response-forensics-standards`.
-- **Sesiones y `nsswitch`**: el orden de `/etc/nsswitch.conf` decide de dónde salen usuarios y
-  grupos. Un `sss` antes de `files` con el directorio caído deja el host sin poder resolver ni
-  `root` para algunas operaciones; un `files` primero con una cuenta local homónima de una de
-  dominio es una puerta trasera silenciosa. **Se revisa explícitamente, no se hereda del
-  instalador.**
-- **`systemd-run` y unidades transitorias no son un atajo de permisos**: heredan el contexto de
-  quien las lanza. Una tarea "temporal" lanzada como root que sigue viva tres meses después es un
-  servicio no declarado — se declara o se mata.
-- **Antes de diagnosticar rendimiento, descarta compromiso.** Consumo de CPU inexplicable, procesos
-  sin unidad padre, conexiones salientes raras: eso no es un problema de capacidad. Se para, se
-  preserva y manda `incident-response-forensics-standards`. **Reiniciar destruye evidencia.**
+- **Reboot policy = part of the patch.** `needrestart` / `dnf needs-restarting -r` decides;
+  the result is recorded and there is a window. An updated `libssl` with 40 processes using the
+  old binary in memory is an open CVE with a closed ticket.
+  - **Relevant CVE in the tool itself**: `needrestart` **< 3.8** carried five local root
+    escalations discovered by Qualys (Nov-2024), among them **CVE-2024-48990** (via
+    the `PYTHONPATH` of a process of an unprivileged user). If you operate Debian/Ubuntu, verify
+    the installed version and that the patch is applied — it is the perfect example of why the
+    operations tool is also attack surface.
+  - **CVE-2025-32463** (`sudo`, `-R`/`chroot` option): local root escalation. `sudo` is the
+    tool that runs most on a managed host: its patching does not wait for the monthly
+    window. The triage and the SLA are set by `vulnerability-management-standards`.
+- **Journal as evidence**: `Storage=persistent`, `Seal=yes` (FSS) where the journal must be
+  verifiable, and immediate forwarding to an aggregator **off the host** — an attacker with root wipes
+  the local journal in a second. Retention and correlation belong to `observability-standards`;
+  the chain of custody, to `incident-response-forensics-standards`.
+- **Sessions and `nsswitch`**: the order in `/etc/nsswitch.conf` decides where users and
+  groups come from. An `sss` before `files` with the directory down leaves the host unable to resolve even
+  `root` for some operations; a `files` first with a local account sharing a name with a domain
+  one is a silent back door. **It is reviewed explicitly, not inherited from the
+  installer.**
+- **`systemd-run` and transient units are not a permissions shortcut**: they inherit the context of
+  whoever launches them. A "temporary" task launched as root that is still alive three months later is an
+  undeclared service — it is declared or it is killed.
+- **Before diagnosing performance, rule out compromise.** Unexplained CPU consumption, processes
+  with no parent unit, odd outbound connections: that is not a capacity problem. You stop, you
+  preserve and `incident-response-forensics-standards` takes over. **Rebooting destroys evidence.**
 
-## 6. Rendimiento, recursos y operabilidad
+## 6. Performance, resources and operability
 
-### 6.1 cgroups v2 es el modelo real
+### 6.1 cgroups v2 is the real model
 
-- **"El servidor se quedó sin memoria" casi siempre significa "una unidad sin `MemoryMax=`".** Sin
-  límites, el OOM killer del kernel elige la víctima por heurística — y suele elegir mal (mata la
-  base de datos, no el proceso que se desbocó). Con límites por unidad, el fallo queda **contenido
-  en el servicio culpable** y es atribuible.
-- Herramientas de atribución, en este orden: `systemd-cgtop` (consumo **por unidad/slice**, que es
-  la vista útil), `systemd-cgls` (jerarquía), `systemctl status <unit>` (memoria y tareas
-  actuales), `systemctl show <unit> -p MemoryCurrent,MemoryMax,CPUQuotaPerSecUSec,TasksCurrent`.
-- Directivas: `MemoryHigh=` (**presión y reclaim**, el freno preferido: degrada en vez de matar),
-  `MemoryMax=` (**muro duro**, provoca OOM del cgroup), `MemoryMin=`/`MemoryLow=` (protección de lo
-  crítico frente al reclaim), `CPUQuota=`/`CPUWeight=`, `IOWeight=`/`IOReadBandwidthMax=`,
-  `TasksMax=` (contención de *fork bombs* y fugas de hilos).
-- **Se aplican en caliente**: las propiedades de cgroup surten efecto sin reiniciar el servicio
-  (`systemctl set-property <unit> MemoryHigh=2G` para probar; el cambio permanente va en el
-  override, §3). Probar en caliente y **luego** persistir es el flujo correcto.
-- **Agrupa por *slice*** cuando hay clases de carga: `system.slice`, `user.slice`, y slices propias
-  (`app.slice`) con reparto explícito. Proteger `system.slice` del `user.slice` evita que una
-  sesión interactiva tire el host.
-- `systemd-oomd` actúa por **PSI** antes del OOM killer y mata el cgroup completo. Útil, pero **no
-  sustituye a los límites**: es la red de seguridad, no la política. Revisa
-  `DefaultMemoryPressureLimit=` y `DefaultMemoryPressureDurationSec=` antes de activarlo en un
-  servidor — los defectos están pensados para escritorio.
+- **"The server ran out of memory" almost always means "a unit with no `MemoryMax=`".** With no
+  limits, the kernel OOM killer picks the victim heuristically — and it usually picks badly (it kills the
+  database, not the process that ran away). With per-unit limits, the failure stays **contained
+  in the guilty service** and is attributable.
+- Attribution tools, in this order: `systemd-cgtop` (consumption **per unit/slice**, which is
+  the useful view), `systemd-cgls` (hierarchy), `systemctl status <unit>` (current memory and
+  tasks), `systemctl show <unit> -p MemoryCurrent,MemoryMax,CPUQuotaPerSecUSec,TasksCurrent`.
+- Directives: `MemoryHigh=` (**pressure and reclaim**, the preferred brake: it degrades instead of killing),
+  `MemoryMax=` (**hard wall**, triggers cgroup OOM), `MemoryMin=`/`MemoryLow=` (protection of what is
+  critical against reclaim), `CPUQuota=`/`CPUWeight=`, `IOWeight=`/`IOReadBandwidthMax=`,
+  `TasksMax=` (containment of *fork bombs* and thread leaks).
+- **They apply live**: cgroup properties take effect without restarting the service
+  (`systemctl set-property <unit> MemoryHigh=2G` to test; the permanent change goes in the
+  override, §3). Testing live and **then** persisting is the correct flow.
+- **Group by *slice*** when there are workload classes: `system.slice`, `user.slice`, and your own slices
+  (`app.slice`) with an explicit share. Protecting `system.slice` from `user.slice` prevents an
+  interactive session from taking the host down.
+- `systemd-oomd` acts on **PSI** before the OOM killer and kills the whole cgroup. Useful, but it **does
+  not replace the limits**: it is the safety net, not the policy. Review
+  `DefaultMemoryPressureLimit=` and `DefaultMemoryPressureDurationSec=` before enabling it on a
+  server — the defaults are designed for the desktop.
 
-### 6.2 Arranque
+### 6.2 Boot
 
-- `systemd-analyze` (tiempo total, firmware/loader/kernel/userspace) → `systemd-analyze blame`
-  (unidades por tiempo, **engaña**: una unidad lenta en paralelo no retrasa nada) →
-  `systemd-analyze critical-chain [unit]` (**la vista que importa**: la cadena que realmente
-  determina el tiempo) → `systemd-analyze plot > boot.svg` para el detalle visual.
-- Sospechosos habituales de un arranque de minutos: `*-wait-online` esperando una interfaz que
-  nunca llega (DHCP en una VLAN sin servidor, bonding a medio configurar), montajes de red sin
-  `_netdev`/timeout, un `Requires=` sobre algo que no existe, resolución DNS bloqueante.
-- Un arranque lento **se mide antes y después**. "Ahora parece más rápido" no es un dato.
+- `systemd-analyze` (total time, firmware/loader/kernel/userspace) → `systemd-analyze blame`
+  (units by time, **misleading**: a slow unit running in parallel delays nothing) →
+  `systemd-analyze critical-chain [unit]` (**the view that matters**: the chain that actually
+  determines the time) → `systemd-analyze plot > boot.svg` for the visual detail.
+- Usual suspects for a boot that takes minutes: `*-wait-online` waiting for an interface that
+  never arrives (DHCP on a VLAN with no server, half-configured bonding), network mounts without
+  `_netdev`/timeout, a `Requires=` on something that does not exist, blocking DNS resolution.
+- A slow boot **is measured before and after**. "It seems faster now" is not data.
 
 ### 6.3 Journald
 
-- **Lo que NO se resuelve rotando ficheros a mano**: journald **no usa logrotate** y su retención
-  se fija en `journald.conf` (`SystemMaxUse=`, `SystemKeepFree=`, `SystemMaxFileSize=`,
-  `MaxRetentionSec=`, `MaxFileSec=`). Borrar ficheros de `/var/log/journal` a mano deja el índice
-  inconsistente; lo correcto es `journalctl --vacuum-size=`/`--vacuum-time=` y **arreglar la
-  política**, no el síntoma.
-- **`/var` lleno de logs es un problema de política, no de disco.** Añadir espacio sin fijar
-  retención garantiza repetir la incidencia con un disco más caro. Y si el volumen viene de un
-  servicio en bucle de reinicio, el arreglo es el servicio (§3.1: `StartLimitBurst=`), no la
-  retención.
-- `journalctl` con criterio: `-u <unit>` (unidad), `-b -1` (**arranque anterior**: el que interesa
-  tras un crash — requiere journal persistente), `-p err..alert` (severidad), `--since/--until`,
-  `-f` (seguimiento), `-k` (kernel), `-o json`/`-o verbose` (campos estructurados, incluido
-  `_SYSTEMD_UNIT` y `_PID` reales), `--disk-usage`, `--verify`.
-- Ratio de rotación y espacio como **métrica monitorizada**, no como sorpresa.
+- **What is NOT solved by rotating files by hand**: journald **does not use logrotate** and its retention
+  is set in `journald.conf` (`SystemMaxUse=`, `SystemKeepFree=`, `SystemMaxFileSize=`,
+  `MaxRetentionSec=`, `MaxFileSec=`). Deleting files from `/var/log/journal` by hand leaves the index
+  inconsistent; the correct way is `journalctl --vacuum-size=`/`--vacuum-time=` and **fixing the
+  policy**, not the symptom.
+- **A `/var` full of logs is a policy problem, not a disk problem.** Adding space without setting
+  retention guarantees repeating the incident with a more expensive disk. And if the volume comes from a
+  service in a restart loop, the fix is the service (§3.1: `StartLimitBurst=`), not the
+  retention.
+- `journalctl` used with judgement: `-u <unit>` (unit), `-b -1` (**previous boot**: the one that matters
+  after a crash — requires a persistent journal), `-p err..alert` (severity), `--since/--until`,
+  `-f` (follow), `-k` (kernel), `-o json`/`-o verbose` (structured fields, including
+  the real `_SYSTEMD_UNIT` and `_PID`), `--disk-usage`, `--verify`.
+- Rotation ratio and space as a **monitored metric**, not as a surprise.
 
-### 6.4 Hora — la causa raíz que nunca se sospecha
+### 6.4 Time — the root cause nobody ever suspects
 
-**La deriva de reloj se presenta disfrazada**: "TLS roto sin causa" (certificado *not yet valid* /
-*expired* según el host), Kerberos que rechaza tickets (tolerancia típica de 5 minutos), logs
-imposibles de correlacionar entre hosts, tokens JWT inválidos, réplicas de base de datos que
-divergen, backups que se solapan.
+**Clock drift shows up in disguise**: "TLS broken for no reason" (certificate *not yet valid* /
+*expired* according to the host), Kerberos rejecting tickets (typical tolerance of 5 minutes), logs
+impossible to correlate across hosts, invalid JWT tokens, database replicas that
+diverge, backups that overlap.
 
-- `timedatectl` y `chronyc tracking` / `chronyc sources -v` en **todo** diagnóstico de "falla la
-  autenticación" o "el certificado no vale". Es la comprobación de 5 segundos que ahorra la tarde.
-- **Métrica de deriva monitorizada con alerta** en toda la flota (el umbral y el stack los fija
-  `observability-standards`). Un host sin NTP funcional es un host que aún no ha fallado.
-- Zona horaria: **UTC en servidores**, siempre. El *localtime* es cosa de la presentación.
+- `timedatectl` and `chronyc tracking` / `chronyc sources -v` in **every** diagnosis of "authentication
+  fails" or "the certificate is not valid". It is the 5-second check that saves the afternoon.
+- **Drift metric monitored with an alert** across the whole fleet (the threshold and the stack are set by
+  `observability-standards`). A host with no working NTP is a host that has not failed yet.
+- Time zone: **UTC on servers**, always. *localtime* is a presentation matter.
 
-### 6.5 Método de diagnóstico por capas
+### 6.5 Layered diagnostic method
 
-Ante "va lento" / "no responde", en este orden y **anotando lo que se descarta**:
+Faced with "it is slow" / "it does not respond", in this order and **noting what is ruled out**:
 
-1. **¿Qué cambió?** Último despliegue, último parche, último cambio de config. `journalctl --since`
-   sobre la ventana del cambio, `rpm -qa --last` / `zgrep` del log del gestor de paquetes,
-   historial del repo de IaC. La mayoría de las incidencias son un cambio reciente.
-2. **Arranque y kernel**: `systemctl --failed`, `systemctl list-jobs` (unidades atascadas),
-   `dmesg -T --level=err,warn` (OOM, reset de disco, errores de NIC, MCE, `blocked for more than
+1. **What changed?** Last deployment, last patch, last config change. `journalctl --since`
+   over the change window, `rpm -qa --last` / `zgrep` of the package manager log,
+   history of the IaC repo. Most incidents are a recent change.
+2. **Boot and kernel**: `systemctl --failed`, `systemctl list-jobs` (stuck units),
+   `dmesg -T --level=err,warn` (OOM, disk reset, NIC errors, MCE, `blocked for more than
    120 seconds`).
-3. **Recursos, atribuidos por cgroup**: `systemd-cgtop`, `uptime`/*load average* leído junto a
-   `vmstat 1` (distinguir CPU de espera de I/O de `D-state`), `free -m` con `available` (no
-   `free`), presión con **PSI** (`/proc/pressure/{cpu,memory,io}` — la señal más directa de "esto
-   está saturado" y la que usa `systemd-oomd`).
-4. **I/O**: `iostat -xz 1` (`%util`, `await`, `aqu-sz`), `pidstat -d 1` (**qué proceso**),
-   `iotop`/`biolatency` si están. Un `await` alto con `%util` bajo apunta al almacenamiento remoto,
-   no al disco.
-5. **Red desde el host**: `ip -br a` / `ip r` (interfaz, ruta), `resolvectl status` (DNS efectivo,
-   **no `/etc/resolv.conf`**), `ss -ltnp` / `ss -s` (sockets, retransmisiones), contadores de
-   error/drop en `ip -s link`. **Si el problema no se cierra aquí, cruza la frontera** hacia
+3. **Resources, attributed by cgroup**: `systemd-cgtop`, `uptime`/*load average* read alongside
+   `vmstat 1` (distinguish CPU from I/O wait in `D-state`), `free -m` with `available` (not
+   `free`), pressure with **PSI** (`/proc/pressure/{cpu,memory,io}` — the most direct signal of "this
+   is saturated" and the one `systemd-oomd` uses).
+4. **I/O**: `iostat -xz 1` (`%util`, `await`, `aqu-sz`), `pidstat -d 1` (**which process**),
+   `iotop`/`biolatency` if available. A high `await` with low `%util` points to remote storage,
+   not to the disk.
+5. **Network from the host**: `ip -br a` / `ip r` (interface, route), `resolvectl status` (effective DNS,
+   **not `/etc/resolv.conf`**), `ss -ltnp` / `ss -s` (sockets, retransmissions), error/drop counters
+   in `ip -s link`. **If the problem does not close here, cross the boundary** towards
    `network-troubleshooting-standards` (§1).
-6. **Espacio y inodos**: `df -h` **y `df -i`** (el segundo se olvida y es la causa del 20% de los
-   "no puedo escribir" con disco aparentemente libre), `du -x --max-depth=1`,
-   `journalctl --disk-usage`, y **ficheros borrados con el descriptor abierto** (`lsof +L1`) — el
-   clásico "he borrado el log y no baja el disco".
-7. **El servicio**: `systemctl status`, `journalctl -u`, config efectiva (`sshd -T`, `nginx -T`),
-   dependencias (`systemctl list-dependencies --before/--after`).
+6. **Space and inodes**: `df -h` **and `df -i`** (the second is forgotten and is the cause of 20% of
+   the "I cannot write" cases with apparently free disk), `du -x --max-depth=1`,
+   `journalctl --disk-usage`, and **deleted files with the descriptor still open** (`lsof +L1`) — the
+   classic "I deleted the log and the disk does not go down".
+7. **The service**: `systemctl status`, `journalctl -u`, effective config (`sshd -T`, `nginx -T`),
+   dependencies (`systemctl list-dependencies --before/--after`).
 
-**Recuperación cuando no arranca**, en orden de invasividad:
+**Recovery when it will not boot**, in order of invasiveness:
 
-- Consola (OOB/serie/hipervisor) **primero**: sin consola no hay diagnóstico de arranque, solo
-  reinicios a ciegas. Esto es exigencia de plataforma (`onprem-standards`).
-- `systemd.unit=rescue.target` (multiusuario mínimo, con FS montados) → `emergency.target`
-  (solo shell, raíz en *read-only*) → `rd.break` (parada en el initramfs) desde la línea de
-  comandos del kernel, editada **para ese arranque**, no persistida.
-- `systemd.log_level=debug` / `systemd.log_target=console` cuando el arranque falla sin decir por
-  qué; `journalctl -b -1 -p err` en cuanto se recupere el acceso.
-- **Chroot de recuperación** (medio de instalación en modo *rescue*): montar la raíz, `mount
-  --bind` de `/dev`, `/proc`, `/sys`, `/run`, entrar, arreglar, **regenerar initramfs y
-  actualizar el gestor de arranque si se tocó algo de arranque**, salir limpiamente. Precaución
-  específica de la familia Red Hat: si SELinux está activo, un cambio hecho en chroot puede dejar
-  ficheros mal etiquetados — se planifica el reetiquetado (`selinux-standards`).
-- **Nunca se toca producción a ciegas.** Si no hay hipótesis, no hay cambio: hay recogida de datos.
-  Y todo cambio en caliente durante un incidente se anota en el canal del incidente
-  (`incident-management-standards`) con hora y autor — el postmortem se escribe con eso.
+- Console (OOB/serial/hypervisor) **first**: with no console there is no boot diagnosis, only
+  blind reboots. This is a platform requirement (`onprem-standards`).
+- `systemd.unit=rescue.target` (minimal multi-user, with FSs mounted) → `emergency.target`
+  (shell only, root in *read-only*) → `rd.break` (stop in the initramfs) from the kernel
+  command line, edited **for that boot**, not persisted.
+- `systemd.log_level=debug` / `systemd.log_target=console` when boot fails without saying why;
+  `journalctl -b -1 -p err` as soon as access is recovered.
+- **Recovery chroot** (install media in *rescue* mode): mount the root, `mount
+  --bind` of `/dev`, `/proc`, `/sys`, `/run`, enter, fix, **regenerate initramfs and
+  update the boot manager if anything boot-related was touched**, exit cleanly. Specific
+  precaution for the Red Hat family: if SELinux is active, a change made in a chroot can leave
+  files mislabelled — the relabelling is planned (`selinux-standards`).
+- **Production is never touched blind.** If there is no hypothesis, there is no change: there is data collection.
+  And every live change during an incident is noted in the incident channel
+  (`incident-management-standards`) with time and author — the postmortem is written from that.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia**
-- Actualización de seguridad del SO: automática en tiers bajos, semanal orquestada en producción,
-  **con política de reinicio** (§5). La cadencia de flota la fija `onprem-standards`; el triaje del
-  CVE concreto, `vulnerability-management-standards`.
-- Salto de versión mayor de la distro: **se ensaya en un host gemelo**, con revert probado y
-  ventana. Nunca en el host que importa primero.
-- Cada versión de systemd que entra con la distro: **leer el `NEWS` de las versiones saltadas**
-  antes de actualizar, buscando "Feature Removals and Incompatible Changes". Ahí es donde
-  desaparecen las cosas que llevabas años usando (SysV en v260, cgroup v1 en v258).
-- Auditoría semestral de deuda: `/etc/init.d/` con contenido, `/etc/rc.local`, `cron` con tareas
-  que deberían ser timers, unidades del paquete editadas a mano, montajes en `fstab` sin dueño,
-  `systemd-analyze verify` sobre todas las unidades propias.
+**Cadence**
+- OS security update: automatic in low tiers, weekly and orchestrated in production,
+  **with a reboot policy** (§5). The fleet cadence is set by `onprem-standards`; the triage of the
+  specific CVE, by `vulnerability-management-standards`.
+- Major distro version jump: **rehearsed on a twin host**, with a tested revert and a
+  window. Never on the host that matters first.
+- Every systemd version that comes in with the distro: **read the `NEWS` of the versions skipped**
+  before updating, looking for "Feature Removals and Incompatible Changes". That is where
+  the things you had been using for years disappear (SysV in v260, cgroup v1 in v258).
+- Half-yearly debt audit: `/etc/init.d/` with content, `/etc/rc.local`, `cron` with tasks
+  that should be timers, package units edited by hand, mounts in `fstab` with no owner,
+  `systemd-analyze verify` over all your own units.
 
-**PROHIBIDO**
-- ❌ Editar la unidad que instala el paquete en vez de un drop-in con `systemctl edit`.
-- ❌ `Type=simple` (o el default) en un servicio del que otros dependen: miente sobre estar listo.
-- ❌ `After=` sin `Requires=`/`Wants=` cuando lo que se quiere es un requisito — o al revés.
-- ❌ `After=network.target` esperando conectividad real. Y `network-online.target` puesto "por si
-  acaso" en todo, que retrasa el arranque del host entero.
-- ❌ `Restart=always` sobre un fallo permanente, o sin `StartLimitBurst=`: bucle infinito que
-  quema CPU y llena el journal.
-- ❌ Servicios propios sin `User=`/`DynamicUser=` y sin límites de recursos.
-- ❌ Procesos de larga vida lanzados con `nohup`, `&`, `screen` o `tmux` en producción: sin cgroup,
-  sin límites, sin logs, sin dueño. Van en unidad (o `systemd-run` si son puntuales).
-- ❌ Añadir tareas nuevas a `cron` habiendo timers; o duplicar la misma tarea en cron **y** timer.
-- ❌ Journal volátil en un servidor, o sin límite de tamaño; borrar ficheros de
-  `/var/log/journal` a mano en vez de `--vacuum-*` y arreglar la retención.
-- ❌ Resolver un `/var` lleno ampliando el disco sin fijar la política de retención.
-- ❌ Editar `/etc/resolv.conf` a mano en un sistema con `systemd-resolved`, o diagnosticar DNS
-  leyendo ese fichero en vez de `resolvectl status`.
-- ❌ Dos gestores de red activos sobre la misma interfaz (NetworkManager + `systemd-networkd`,
-  netplan + NM sin renderer coherente, `ifupdown` conviviendo con cualquiera de ellos).
-- ❌ Tocar `sshd`, PAM, red o firewall **sin sesión de rescate abierta ni consola OOB**.
-- ❌ Recargar un servicio sin pasar su validador (`sshd -t`, `visudo -c`, `nginx -t`,
-  `systemd-analyze verify`) existiendo uno.
-- ❌ Dar por bueno un cambio porque `systemctl is-active` dice `active`.
-- ❌ Montajes de red bloqueantes en `fstab` sin `_netdev`, `nofail` o `x-systemd.automount`: un NFS
-  caído se convierte en un host que no arranca.
-- ❌ Host de producción sin NTP funcional o con zona horaria local.
-- ❌ `systemctl start/stop/restart` sobre un recurso gestionado por un cluster (Pacemaker): se
-  gestiona con las herramientas del cluster o se provoca un fencing.
-- ❌ Reiniciar "a ver si se arregla" antes de recoger datos — y **siempre** si hay sospecha de
-  compromiso (destruye evidencia volátil).
-- ❌ Cambios manuales en producción que no vuelven al código/inventario (*snowflakes*).
-- ❌ Desactivar SELinux/AppArmor, el firewall de host o `systemd-oomd` "para que funcione", sin
-  diagnóstico ni fecha de revert.
-- ❌ Mantener scripts SysV o `/etc/rc.local` como estrategia: desaparecen con systemd v260.
+**FORBIDDEN**
+- ❌ Editing the unit installed by the package instead of a drop-in with `systemctl edit`.
+- ❌ `Type=simple` (or the default) on a service others depend on: it lies about being ready.
+- ❌ `After=` without `Requires=`/`Wants=` when what you want is a requirement — or the other way round.
+- ❌ `After=network.target` expecting real connectivity. And `network-online.target` put in "just in
+  case" everywhere, which delays the boot of the whole host.
+- ❌ `Restart=always` on a permanent failure, or without `StartLimitBurst=`: an infinite loop that
+  burns CPU and fills the journal.
+- ❌ Services of your own without `User=`/`DynamicUser=` and without resource limits.
+- ❌ Long-lived processes launched with `nohup`, `&`, `screen` or `tmux` in production: no cgroup,
+  no limits, no logs, no owner. They go in a unit (or `systemd-run` if they are one-off).
+- ❌ Adding new tasks to `cron` when timers exist; or duplicating the same task in cron **and** a timer.
+- ❌ A volatile journal on a server, or one without a size limit; deleting files from
+  `/var/log/journal` by hand instead of `--vacuum-*` and fixing the retention.
+- ❌ Solving a full `/var` by growing the disk without setting the retention policy.
+- ❌ Editing `/etc/resolv.conf` by hand on a system with `systemd-resolved`, or diagnosing DNS
+  by reading that file instead of `resolvectl status`.
+- ❌ Two network managers active on the same interface (NetworkManager + `systemd-networkd`,
+  netplan + NM without a coherent renderer, `ifupdown` coexisting with any of them).
+- ❌ Touching `sshd`, PAM, network or firewall **without a rescue session open or an OOB console**.
+- ❌ Reloading a service without passing its validator (`sshd -t`, `visudo -c`, `nginx -t`,
+  `systemd-analyze verify`) when one exists.
+- ❌ Signing a change off because `systemctl is-active` says `active`.
+- ❌ Blocking network mounts in `fstab` without `_netdev`, `nofail` or `x-systemd.automount`: a downed NFS
+  turns into a host that will not boot.
+- ❌ A production host with no working NTP or with a local time zone.
+- ❌ `systemctl start/stop/restart` on a resource managed by a cluster (Pacemaker): it is
+  managed with the cluster's tools or you cause a fencing.
+- ❌ Rebooting "to see if it fixes itself" before collecting data — and **always** if compromise is
+  suspected (it destroys volatile evidence).
+- ❌ Manual changes in production that do not make it back to code/inventory (*snowflakes*).
+- ❌ Disabling SELinux/AppArmor, the host firewall or `systemd-oomd` "to make it work", with no
+  diagnosis and no revert date.
+- ❌ Keeping SysV scripts or `/etc/rc.local` as a strategy: they disappear with systemd v260.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión, directiva, comportamiento o fecha, **búscalo — no lo recuerdes**:
+Before pinning any version, directive, behaviour or date, **look it up — do not recall it**:
 
-1. **Versión de systemd en tu distro** (`systemctl --version`) **y** la línea upstream vigente. Una
-   directiva que existe upstream puede no existir en tu host. Verificado ago-2026 vía
-   `api.github.com`: rama estable **v261** (v261.2, 23-jul-2026); mantenimiento en 258.x, 259.x,
-   260.x. **No leas versiones ni fechas del render HTML de GitHub Releases: usa `api.github.com` o
-   los feeds Atom.**
-2. **`NEWS` upstream de cada versión que saltes**, sección "Announcements of Future Feature Removals
-   and Incompatible Changes" — leído directamente desde
-   `raw.githubusercontent.com/systemd/systemd/vNNN/NEWS`, no de blogs.
-3. **Directivas de unidad**: `systemd.exec(5)`, `systemd.resource-control(5)`, `systemd.unit(5)`
-   de **tu** versión. Los defaults cambian entre versiones.
-4. **Gestor de red por defecto** de la distro y versión exactas antes de escribir configuración de
-   red; y qué servicio `*-wait-online` corresponde.
-5. **CVE activos** de las herramientas de operación que usas a diario (`sudo`, `needrestart`,
-   `openssh`, `systemd`, `chrony`, `polkit`) — son superficie de ataque con acceso local
-   privilegiado. Prioriza con KEV/EPSS (`vulnerability-management-standards`).
-6. **EOL de la distro** en `endoflife.date` y en la fuente del vendor antes de planificar cualquier
-   ciclo de parcheo o migración.
+1. **systemd version in your distro** (`systemctl --version`) **and** the current upstream line. A
+   directive that exists upstream may not exist on your host. Verified Aug 2026 via
+   `api.github.com`: stable branch **v261** (v261.2, 23-Jul-2026); maintenance on 258.x, 259.x,
+   260.x. **Do not read versions or dates from the HTML render of GitHub Releases: use `api.github.com` or
+   the Atom feeds.**
+2. **Upstream `NEWS` of every version you skip**, section "Announcements of Future Feature Removals
+   and Incompatible Changes" — read directly from
+   `raw.githubusercontent.com/systemd/systemd/vNNN/NEWS`, not from blogs.
+3. **Unit directives**: `systemd.exec(5)`, `systemd.resource-control(5)`, `systemd.unit(5)`
+   of **your** version. Defaults change between versions.
+4. **The distro's default network manager** and exact versions before writing network
+   configuration; and which `*-wait-online` service corresponds.
+5. **Active CVEs** of the operations tools you use daily (`sudo`, `needrestart`,
+   `openssh`, `systemd`, `chrony`, `polkit`) — they are attack surface with privileged local
+   access. Prioritise with KEV/EPSS (`vulnerability-management-standards`).
+6. **Distro EOL** on `endoflife.date` and in the vendor source before planning any
+   patching or migration cycle.
 
-**Huecos declarados — NO verificados en la redacción de este documento; verifícalos antes de
-apoyarte en ellos:**
+**Declared gaps — NOT verified while writing this document; verify them before
+relying on them:**
 
-- **Retirada de cgroups v1 en las distros concretas** (no en systemd, que ya está: eliminado en
-  v258). En qué versión de Debian/Ubuntu/SUSE deja de arrancarse con
-  `systemd.unified_cgroup_hierarchy=0` — **no verificado**. Existe además una afirmación circulando
-  en blogs de que "v260 deshabilita cgroup v1 por defecto" que **contradice** el `NEWS` de v258
-  (donde ya está eliminado): trata la fuente blog como no fiable y confirma en el `NEWS`.
-- **Debian 13/14 y Ubuntu 26.04: gestor de red por defecto exacto por perfil de instalación** —
-  descrito aquí a partir de fuentes secundarias (`ifupdown` en servidor Debian, netplan+networkd en
-  Ubuntu Server, netplan+NM en Ubuntu Desktop). **No confirmado contra documentación oficial.**
-- **Versión de systemd empaquetada por cada distro viva** (Debian estable, Ubuntu LTS, RHEL 9/10,
-  Fedora 43/44) — **no verificada una por una**. Comprueba en el host antes de usar cualquier
-  directiva reciente.
-- **Estado y defaults de `systemd-oomd` en RHEL 10 y Ubuntu 26.04** — solo verificado que en
-  Fedora viene activado por defecto desde F34 y que en RHEL se empaqueta desactivado; los umbrales
-  por defecto en cada versión **no verificados**.
-- **Fechas y detalles de los CVE citados** (`CVE-2024-48990` en `needrestart` < 3.8,
-  `CVE-2025-32463` en `sudo`): identificados por búsqueda, **CVSS, versiones exactas afectadas y
-  estado en KEV no verificados**. Consúltalos en la fuente antes de fijar un SLA.
-- **`systemd-analyze verify` y su cobertura real** (qué clases de error detecta y cuáles no) — no
-  contrastado contra la documentación de la versión vigente.
+- **Removal of cgroups v1 in the specific distros** (not in systemd, which is already done: removed in
+  v258). In which version of Debian/Ubuntu/SUSE it stops booting with
+  `systemd.unified_cgroup_hierarchy=0` — **not verified**. There is also a claim circulating
+  in blogs that "v260 disables cgroup v1 by default" which **contradicts** the v258 `NEWS`
+  (where it is already removed): treat the blog source as unreliable and confirm in the `NEWS`.
+- **Debian 13/14 and Ubuntu 26.04: exact default network manager per installation profile** —
+  described here from secondary sources (`ifupdown` on Debian server, netplan+networkd on
+  Ubuntu Server, netplan+NM on Ubuntu Desktop). **Not confirmed against official documentation.**
+- **systemd version packaged by each live distro** (Debian stable, Ubuntu LTS, RHEL 9/10,
+  Fedora 43/44) — **not verified one by one**. Check on the host before using any
+  recent directive.
+- **State and defaults of `systemd-oomd` on RHEL 10 and Ubuntu 26.04** — only verified that on
+  Fedora it comes enabled by default since F34 and that on RHEL it is packaged disabled; the default
+  thresholds in each version **not verified**.
+- **Dates and details of the cited CVEs** (`CVE-2024-48990` in `needrestart` < 3.8,
+  `CVE-2025-32463` in `sudo`): identified by search, **CVSS, exact affected versions and
+  KEV status not verified**. Consult them at the source before setting an SLA.
+- **`systemd-analyze verify` and its real coverage** (which classes of error it detects and which not) — not
+  checked against the documentation of the current version.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

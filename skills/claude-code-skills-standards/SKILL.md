@@ -3,77 +3,77 @@ name: claude-code-skills-standards
 description: Use when authoring, reviewing or debugging Claude Code Agent Skills — SKILL.md files, frontmatter fields, description triggers, skill activation problems, catalog organization, or deciding whether something belongs in a skill, CLAUDE.md or a subagent.
 ---
 
-# Estándares de autoría de skills de Claude Code
+# Claude Code skill authoring standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al crear, revisar, depurar o reorganizar skills: ficheros `SKILL.md`, frontmatter,
-diseño de `description`, problemas de activación ("la skill no salta" / "salta la que no
-es"), y la decisión de dónde vive una regla.
+Applies when creating, reviewing, debugging or reorganising skills: `SKILL.md` files, frontmatter,
+`description` design, activation problems ("the skill doesn't fire" / "the wrong one
+fires"), and the decision of where a rule lives.
 
-**No aplica**: `update-config` (configuración del harness en `settings.json`, hooks y
-permisos), `knowledge-management-standards` (documentación para personas: ADR, runbooks, README),
-`ai-agent-workflow-standards` (cómo se usan agentes de forma segura, no cómo se escriben
-sus skills).
+**Not applicable**: `update-config` (harness configuration in `settings.json`, hooks and
+permissions), `knowledge-management-standards` (documentation for humans: ADR, runbooks, README),
+`ai-agent-workflow-standards` (how agents are used safely, not how their skills are
+written).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la especificación vigente por web antes de fijar campos de frontmatter (§8):
-> el estándar Agent Skills y las extensiones de Claude Code divergen y evolucionan.
+> Verify the current specification on the web before pinning frontmatter fields (§8):
+> the Agent Skills standard and the Claude Code extensions diverge and keep evolving.
 
-| Decisión | Por defecto | Motivo |
+| Decision | Default | Reason |
 |---|---|---|
-| Ubicación | `~/.claude/skills/<slug>/SKILL.md` (global) o `.claude/skills/` (proyecto) | Descubrimiento automático por filesystem; el de proyecto gana ante colisión de nombre |
-| Campos de frontmatter | Solo `name` + `description` | Son los únicos imprescindibles; todo lo demás añade superficie y, en algunos casos, fricción de permisos |
-| `allowed-tools` | **No usar salvo necesidad demostrada** | Marcado experimental en el estándar; hay reporte abierto de que se parsea pero **no se aplica**, y su presencia exige aprobación del usuario en el primer uso. No confiar en él como control de seguridad |
-| `disable-model-invocation` | Solo en skills que deban ser exclusivamente manuales (`/nombre`) | Una skill que nunca se autoactiva paga coste de índice sin dar beneficio automático |
-| Idioma | `description` en **inglés**, cuerpo en el idioma de trabajo | El enrutado se hace sobre la descripción; el inglés es el idioma de los triggers técnicos |
-| Longitud del cuerpo | **La dicta el contenido, no una cuota** | El cuerpo no se carga hasta la activación: extenderse no cuesta índice. El límite real es la **densidad** — cada línea fija una decisión, prohibición o verificación. Un dominio denso puede pedir 400+ líneas; uno de nicho, 80 |
-| Ficheros auxiliares | `references/`, `scripts/` junto al `SKILL.md` cuando el contenido no cabe | Se cargan bajo demanda desde el cuerpo, no en el índice |
+| Location | `~/.claude/skills/<slug>/SKILL.md` (global) or `.claude/skills/` (project) | Automatic filesystem discovery; the project one wins on a name collision |
+| Frontmatter fields | Only `name` + `description` | They are the only indispensable ones; everything else adds surface and, in some cases, permission friction |
+| `allowed-tools` | **Do not use without demonstrated need** | Marked experimental in the standard; there is an open report that it is parsed but **not enforced**, and its presence requires user approval on first use. Do not rely on it as a security control |
+| `disable-model-invocation` | Only in skills that must be exclusively manual (`/name`) | A skill that never self-activates pays index cost without giving any automatic benefit |
+| Language | `description` in **English**, body in the working language | Routing is done over the description; English is the language of technical triggers |
+| Body length | **Dictated by the content, not by a quota** | The body is not loaded until activation: going long costs no index. The real limit is **density** — every line pins a decision, a prohibition or a verification. A dense domain can ask for 400+ lines; a niche one, 80 |
+| Auxiliary files | `references/`, `scripts/` next to the `SKILL.md` when the content doesn't fit | They are loaded on demand from the body, not in the index |
 
-**Regla de oro del catálogo**: la `description` se paga en **cada turno**; el cuerpo solo
-cuando la skill se activa. Optimiza la descripción para el enrutado, el cuerpo para el uso.
+**Golden rule of the catalogue**: the `description` is paid on **every turn**; the body only
+when the skill activates. Optimise the description for routing, the body for use.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- **Directorio = slug = `name`**. Sufijo `-standards` para skills de criterio de dominio.
-- No poner plantillas ni ficheros de referencia dentro de `~/.claude/skills/`: cualquier
-  directorio con `SKILL.md` se registra y contamina el índice. Fuera del árbol.
-- Cuerpo con las 8 secciones canónicas (ver `~/.claude/SKILL-TEMPLATE.md`).
-- **Frontera explícita en §1** (`**No aplica**: ver `knowledge-management-standards` (frontera limpia y fácil de confundir:
-**la documentación para personas es suya** —Diátaxis, docs as code, README, runbook, guía de
-incorporación, dueño y fecha de revisión—; **aquí la autoría de skills**, que son instrucciones para
-un modelo con un coste de índice y un criterio de activación propios. Una skill no es documentación
-y no se escribe como tal: no explica, decide), X, Y`) en **ambos lados** de cada par
-  que pueda competir. Sin esto, dos skills vecinas se pisan y el enrutado se vuelve azar.
-- Fecha de referencia en la primera línea del cuerpo.
+- **Directory = slug = `name`**. Suffix `-standards` for domain-criteria skills.
+- Do not put templates or reference files inside `~/.claude/skills/`: any
+  directory with a `SKILL.md` gets registered and pollutes the index. Outside the tree.
+- Body with the 8 canonical sections (see `~/.claude/SKILL-TEMPLATE.md`).
+- **Explicit boundary in §1** (`**Not applicable**: see `knowledge-management-standards` (clean boundary, easy to confuse:
+**documentation for humans is theirs** —Diátaxis, docs as code, README, runbook, onboarding
+guide, owner and review date—; **skill authoring here**, which are instructions for
+a model with an index cost and an activation criterion of their own. A skill is not documentation
+and is not written as such: it does not explain, it decides), X, Y`) on **both sides** of every pair
+  that could compete. Without this, two neighbouring skills tread on each other and routing becomes chance.
+- Reference date on the first line of the body.
 
-### Diseño de `description` (lo más importante del fichero)
+### `description` design (the most important part of the file)
 
-- **Sin límite duro de palabras.** La regla es *cero relleno, cero solape con hermanas*:
-  una descripción larga se justifica si cada término es un disparador distinto (nombres de
-  servicio de un cloud, por ejemplo); una corta pero conceptual es peor que una larga y
-  concreta. Recortar por cuota destruye triggers legítimos.
-- Empezar por `Use when …` y enumerar **artefactos concretos**: extensiones (`.tf`, `.rs`),
-  ficheros (`pyproject.toml`, `Chart.yaml`), binarios (`nft`, `cosign`), frameworks.
-- **Prohibido** describir por concepto abstracto: `for best practices and quality` no
-  dispara nada porque no coincide con ningún token de una tarea real.
-- **Test de colisión obligatorio**: antes de añadir una skill, comparar su descripción con
-  las de su familia. Si comparten más de 2-3 términos disparadores, o se estrechan los
-  triggers o se fusionan las skills.
+- **No hard word limit.** The rule is *zero filler, zero overlap with siblings*:
+  a long description is justified if every term is a distinct trigger (service
+  names of a cloud, for instance); a short but conceptual one is worse than a long and
+  concrete one. Trimming to a quota destroys legitimate triggers.
+- Start with `Use when …` and enumerate **concrete artifacts**: extensions (`.tf`, `.rs`),
+  files (`pyproject.toml`, `Chart.yaml`), binaries (`nft`, `cosign`), frameworks.
+- **Forbidden** to describe by abstract concept: `for best practices and quality` fires
+  nothing because it matches no token of a real task.
+- **Mandatory collision test**: before adding a skill, compare its description with
+  those of its family. If they share more than 2-3 trigger terms, either the
+  triggers get narrowed or the skills get merged.
 
-## 4. Calidad y verificación
+## 4. Quality and verification
 
-Gates antes de dar una skill por buena:
+Gates before calling a skill good:
 
-1. **Frontmatter válido**: `grep -c '^name:'` y que `name` == nombre del directorio.
-2. **Descripción sin relleno**: no hay cuota de palabras (§3) — el gate es que **cada término
-   sea un disparador**. Si una descripción es larga porque enumera servicios o extensiones,
-   está bien; si lo es por prosa conceptual, se recorta esa prosa, nunca los triggers.
-3. **Frontera declarada**: existe la línea `**No aplica**` y todas las skills citadas existen.
-   Test mecánico del catálogo — solape de términos disparadores entre pares de la misma familia:
+1. **Valid frontmatter**: `grep -c '^name:'` and `name` == directory name.
+2. **Description without filler**: there is no word quota (§3) — the gate is that **every term
+   is a trigger**. If a description is long because it enumerates services or extensions,
+   that's fine; if it is long because of conceptual prose, that prose gets trimmed, never the triggers.
+3. **Declared boundary**: the `**Not applicable**` line exists and every skill it cites exists.
+   Mechanical catalogue test — trigger-term overlap between pairs of the same family:
    ```bash
    python3 - <<'EOF'
    import re,glob,itertools

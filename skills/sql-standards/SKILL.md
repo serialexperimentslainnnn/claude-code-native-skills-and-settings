@@ -3,375 +3,375 @@ name: sql-standards
 description: Use when writing or reviewing the SQL language itself — .sql files, SELECT/JOIN/CTE/window function queries, GROUP BY and aggregation, NULL and three-valued logic, MERGE and UPSERT, DDL and CREATE TABLE, ALTER TABLE migrations and expand/contract, transactions, BEGIN/COMMIT, isolation levels, SELECT FOR UPDATE and deadlocks, parameterized queries and SQL injection in query construction, dynamic identifier quoting, SARGable predicates, EXPLAIN and query plans, ANSI SQL versus PostgreSQL/MySQL/MariaDB/SQL Server T-SQL/Oracle PL-SQL/SQLite dialect differences, .sqlfluff and sqlfluff, shandy-sqlfmt, or hand-written SQL versus ORM- and dbt-generated SQL.
 ---
 
-# Estándares del lenguaje SQL
+# SQL language standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **lenguaje SQL escrito**: consultas, DDL, migraciones, transacciones, estilo, linting y test
-del SQL, y a la lectura de planes **para decidir cómo se escribe la consulta**.
-Triggers: ficheros `.sql`, `.sqlfluff`, `SELECT`/`JOIN`/`WITH`/`OVER()`, `GROUP BY`, `MERGE`,
+Applies to **written SQL**: queries, DDL, migrations, transactions, style, linting and testing
+of SQL, and to reading plans **in order to decide how the query is written**.
+Triggers: `.sql` files, `.sqlfluff`, `SELECT`/`JOIN`/`WITH`/`OVER()`, `GROUP BY`, `MERGE`,
 `CREATE TABLE`, `ALTER TABLE`, `BEGIN`/`COMMIT`, `SET TRANSACTION ISOLATION LEVEL`, `FOR UPDATE`,
 `EXPLAIN`/`EXPLAIN ANALYZE`/`SHOW PLAN`, `sqlfluff`, `sqlfmt`.
-Fija **criterio**, no tutoriales.
+It sets **criteria**, not tutorials.
 
-**Regla de arbitraje** (la línea de esta skill, y se escribe aquí sin ambigüedad):
-> **Si la pregunta cambia cómo se escribe la consulta o el DDL, es de `sql-standards`.
-> Si cambia qué motor se elige, cómo se dimensiona, respalda, replica o restaura, es de la skill del motor.
-> Si cambia la forma del modelo de datos, es de la skill de modelado.**
+**Arbitration rule** (this skill's line, and it is written here without ambiguity):
+> **If the question changes how the query or the DDL is written, it belongs to `sql-standards`.
+> If it changes which engine is chosen, how it is sized, backed up, replicated or restored, it belongs to the engine's skill.
+> If it changes the shape of the data model, it belongs to the modelling skill.**
 
-Corolario práctico: *"¿por qué esta consulta no usa el índice?"* es de aquí (se reescribe el predicado);
-*"¿qué índice creo y cuánto cuesta mantenerlo?"* y *"¿por qué el motor eligió ese plan con estas
-estadísticas?"* son de la skill del motor. **Esta skill cede modelado, operación y tuning de motor; se
-queda el lenguaje.**
+Practical corollary: *"why does this query not use the index?"* belongs here (you rewrite the predicate);
+*"which index do I create and what does it cost to maintain?"* and *"why did the engine choose that plan with these
+statistics?"* belong to the engine's skill. **This skill cedes modelling, operation and engine tuning; it
+keeps the language.**
 
-**No aplica**: ver
-- `data-platform-standards` (**skill madre**: PostgreSQL como default relacional, modelado, **índices
-  como objeto** —cuáles crear, coste de escritura, particionado—, réplicas, PITR, cifrado en reposo,
-  retención y clasificación del dato. Aquí sólo **cómo se escribe la consulta para que un índice
-  existente sea usable**).
-- `mysql-mariadb-dba-standards`, `oracle-dba-standards`, `sqlserver-dba-standards` (**operación de cada
-  motor**: parámetros, licenciamiento, HA/réplicas, RMAN/Data Guard, DBCC/Always On/Query Store,
-  binlog, AWR/ASH, *tuning* de instancia). Aquí **las diferencias de dialecto que cambian el código**
-  que escribes contra ellos, y nada más. **Prohibido duplicar aquí criterio de operación.**
-- `data-warehouse-modeling-standards` (**la forma del modelo analítico es suya**: grano, hechos,
-  dimensiones, SCD, capas, definición canónica de métrica). Si la pregunta es *"¿qué representa una
-  fila?"*, es suya; si es *"¿cómo expreso esa SCD2 en SQL sin subconsulta correlacionada?"*, es de aquí.
-- `data-engineering-standards` (ingesta, orquestación, idempotencia del job, *backfill*, Parquet,
-  frescura; **dbt como herramienta de transformación y su proyecto son suyos** — aquí sólo el criterio
-  sobre el **SQL** que ese modelo contiene, ver §7),
-  `lakehouse-standards` (formato de tabla Iceberg/Delta/Hudi, catálogo, snapshots, compactación,
-  `MERGE` como operación de la tabla y su coste copy-on-write / merge-on-read),
-  `analytics-bi-standards` (el cuadro de mando y quién decide con él),
-  `data-governance-quality-standards` (propiedad del dato, contratos, aserciones de calidad).
-- `nosql-standards`, `graph-db-standards` (**incluido SQL/PGQ y `GRAPH_TABLE`: el recorrido de
-  profundidad variable es suyo**), `timeseries-db-standards`, `vector-db-standards`,
-  `search-engines-standards` (otros modelos de dato y sus lenguajes; aquí sólo SQL relacional),
-  `streaming-cdc-standards` (SQL de streaming —Flink SQL, ksqlDB— y semántica de eventos).
-- `appsec-standards` (**el proceso AppSec es suyo**: modelado de amenazas, triaje del hallazgo de SQLi,
-  elección de SAST/DAST, ASVS. **Aquí sólo el criterio de código**: cómo se construye una consulta para
-  que la inyección sea imposible — §5).
-- `api-design-standards` (el contrato hacia el exterior: **una tabla no es una API**), las skills de
-  lenguaje —`python-standards`, `typescript-standards`, `go-standards`, `jvm-spring-standards`,
-  `dotnet-standards`, `php-standards`, `ruby-standards` (Active Record y `strong_migrations`),
-  `elixir-erlang-standards` (Ecto, `changesets` y `Ecto.Multi`), `scala-standards` (Doobie, Slick,
-  Quill), `clojure-standards` (`next.jdbc`, HoneySQL), `r-standards` (`dbplyr`), `julia-standards` (`DBInterface`, `LibPQ`)— (el driver, el
-  ORM/generador y la herramienta de migración concreta; **aquí el SQL que producen o que escribes a
-  mano**. Que el SQL lo genere una librería **no lo exime** de este criterio: si el generador emite
-  una subconsulta correlacionada donde tocaba una función de ventana, el problema es de SQL).
+**Not applicable**: see
+- `data-platform-standards` (**parent skill**: PostgreSQL as the relational default, modelling, **indexes
+  as objects** —which to create, write cost, partitioning—, replicas, PITR, encryption at rest,
+  data retention and classification. Here only **how the query is written so that an existing
+  index is usable**).
+- `mysql-mariadb-dba-standards`, `oracle-dba-standards`, `sqlserver-dba-standards` (**operation of each
+  engine**: parameters, licensing, HA/replicas, RMAN/Data Guard, DBCC/Always On/Query Store,
+  binlog, AWR/ASH, instance *tuning*). Here **the dialect differences that change the code**
+  you write against them, and nothing else. **Forbidden to duplicate operational criteria here.**
+- `data-warehouse-modeling-standards` (**the shape of the analytical model is theirs**: grain, facts,
+  dimensions, SCD, layers, canonical metric definition). If the question is *"what does a
+  row represent?"*, it is theirs; if it is *"how do I express that SCD2 in SQL without a correlated subquery?"*, it belongs here.
+- `data-engineering-standards` (ingestion, orchestration, job idempotency, *backfill*, Parquet,
+  freshness; **dbt as a transformation tool and its project are theirs** — here only the criteria
+  about the **SQL** that model contains, see §7),
+  `lakehouse-standards` (Iceberg/Delta/Hudi table format, catalogue, snapshots, compaction,
+  `MERGE` as a table operation and its copy-on-write / merge-on-read cost),
+  `analytics-bi-standards` (the dashboard and who decides with it),
+  `data-governance-quality-standards` (data ownership, contracts, quality assertions).
+- `nosql-standards`, `graph-db-standards` (**including SQL/PGQ and `GRAPH_TABLE`: variable-depth
+  traversal is theirs**), `timeseries-db-standards`, `vector-db-standards`,
+  `search-engines-standards` (other data models and their languages; here only relational SQL),
+  `streaming-cdc-standards` (streaming SQL —Flink SQL, ksqlDB— and event semantics).
+- `appsec-standards` (**the AppSec process is theirs**: threat modelling, triage of an SQLi finding,
+  choice of SAST/DAST, ASVS. **Here only the code criteria**: how a query is built so
+  that injection is impossible — §5).
+- `api-design-standards` (the outward contract: **a table is not an API**), the language
+  skills —`python-standards`, `typescript-standards`, `go-standards`, `jvm-spring-standards`,
+  `dotnet-standards`, `php-standards`, `ruby-standards` (Active Record and `strong_migrations`),
+  `elixir-erlang-standards` (Ecto, `changesets` and `Ecto.Multi`), `scala-standards` (Doobie, Slick,
+  Quill), `clojure-standards` (`next.jdbc`, HoneySQL), `r-standards` (`dbplyr`), `julia-standards` (`DBInterface`, `LibPQ`)— (the driver, the
+  ORM/generator and the specific migration tool; **here the SQL they produce or that you write by
+  hand**. That the SQL is generated by a library **does not exempt it** from these criteria: if the generator emits
+  a correlated subquery where a window function belonged, the problem is SQL's).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Ámbito | Default | Alternativa justificable / nota |
+| Area | Default | Justifiable alternative / note |
 |---|---|---|
-| Base de referencia | **SQL estándar (ISO/IEC 9075)** como línea de partida; el dialecto se usa **conscientemente** | El estándar vigente es **SQL:2023**, adoptado en **junio de 2023** (novena edición). Ningún motor lo implementa entero: escribir "SQL estándar" y creer que es portable es un error |
-| Portabilidad | **No la persigas por defecto**: elige un motor y usa su dialecto bien | La portabilidad se paga en cada consulta y casi nunca se cobra. Se justifica sólo si el producto se vende sobre varios motores, y entonces se declara y se prueba en CI contra todos |
-| Linter | **SQLFluff 4.2.x** (MIT, mantenimiento activo: cadencia ~2-3 semanas en 2026) con `.sqlfluff` versionado y `dialect` explícito | Único linter serio multi-dialecto y consciente de plantillas Jinja/dbt (`sqlfluff-templater-dbt`, versionado en paralelo). 4.0 introdujo parser/lexer en Rust **opt-in** (`sqlfluff[rs]`); los mantenedores prevén hacerlo default en 5.0 |
-| Formatter | **sqlfmt** — paquete PyPI **`shandy-sqlfmt`** (Apache-2.0), estilo único no configurable | `sqlfmt` a secas en PyPI es **otro paquete, ajeno al autor**: instalar el nombre equivocado es un error de suministro. sqlfmt **no es un linter** (no construye AST); coexiste con SQLFluff, que además formatea (`sqlfluff fix`). Elegir **uno** de los dos como autoridad de formato y desactivar las reglas de layout del otro |
-| Sabor de `MERGE` | Sólo donde existe (ver §3) | `MERGE` está en el estándar desde SQL:2003 y **no existe en MySQL, MariaDB ni SQLite** a 2026-08 |
-| Migraciones | Herramienta con **versionado y migraciones inmutables** (Flyway, Liquibase, Alembic, EF Core, golang-migrate) | La elección concreta es de la skill del lenguaje; **el criterio expand/contract de §6 es de aquí y no es negociable** |
-| Generación | **ORM para CRUD, SQL a mano para lo analítico y lo caliente** | Ver §7 |
+| Baseline | **Standard SQL (ISO/IEC 9075)** as the starting line; the dialect is used **consciously** | The current standard is **SQL:2023**, adopted in **June 2023** (ninth edition). No engine implements it in full: writing "standard SQL" and believing it is portable is an error |
+| Portability | **Do not pursue it by default**: pick an engine and use its dialect well | Portability is paid for on every query and almost never collected. It is justified only if the product is sold on top of several engines, and then it is declared and tested in CI against all of them |
+| Linter | **SQLFluff 4.2.x** (MIT, actively maintained: ~2-3 week cadence in 2026) with a versioned `.sqlfluff` and an explicit `dialect` | The only serious multi-dialect linter that is aware of Jinja/dbt templates (`sqlfluff-templater-dbt`, versioned in parallel). 4.0 introduced an **opt-in** Rust parser/lexer (`sqlfluff[rs]`); the maintainers intend to make it the default in 5.0 |
+| Formatter | **sqlfmt** — PyPI package **`shandy-sqlfmt`** (Apache-2.0), a single non-configurable style | Plain `sqlfmt` on PyPI is **a different package, unrelated to the author**: installing the wrong name is a supply error. sqlfmt **is not a linter** (it builds no AST); it coexists with SQLFluff, which also formats (`sqlfluff fix`). Pick **one** of the two as the formatting authority and disable the other's layout rules |
+| Flavour of `MERGE` | Only where it exists (see §3) | `MERGE` has been in the standard since SQL:2003 and **does not exist in MySQL, MariaDB or SQLite** as of 2026-08 |
+| Migrations | A tool with **versioning and immutable migrations** (Flyway, Liquibase, Alembic, EF Core, golang-migrate) | The specific choice belongs to the language's skill; **the expand/contract criteria of §6 belong here and are not negotiable** |
+| Generation | **ORM for CRUD, hand-written SQL for the analytical and the hot paths** | See §7 |
 
-**Diferencias de dialecto que sí cambian el código** (verificar por versión antes de usar, §8):
+**Dialect differences that really do change the code** (verify per version before using, §8):
 
-| Punto | PostgreSQL | MySQL / MariaDB | SQL Server | Oracle | SQLite |
+| Point | PostgreSQL | MySQL / MariaDB | SQL Server | Oracle | SQLite |
 |---|---|---|---|---|---|
-| `MERGE` | Desde **15**; `RETURNING` desde **17** | **No existe** → `INSERT ... ON DUPLICATE KEY UPDATE` / `REPLACE` | Sí (larga data) | Sí (con restricciones propias: no actualizar columnas del `ON`, sintaxis `then update … delete` no estándar) | **No existe** → `INSERT ... ON CONFLICT` (UPSERT, desde 3.24, sintaxis tomada de PostgreSQL) |
-| `JSON_TABLE` / SQL/JSON | Constructores y `JSON_TABLE` desde **17** | Sí en MySQL 8.0+ | Tipo `JSON` nativo, índices JSON y `JSON_CONTAINS` en **SQL Server 2025** (`JSON_TABLE`: **no verificado**, §8) | Sí | No (`json_each`/`json_tree`) |
-| `GROUP BY ALL` | **No en 18**; *committed* para **19** | No | No | No | No |
-| Comillas de identificador | `"x"` (plegado a minúsculas si no se citan) | `` `x` `` (o `"x"` con `ANSI_QUOTES`) | `[x]` o `"x"` | `"x"` (plegado a **mayúsculas**) | `"x"`, `` `x` ``, `[x]` |
-| Cadenas y concatenación | `\|\|` | `\|\|` es **OR lógico** salvo `PIPES_AS_CONCAT`; usa `CONCAT()` | `+` | `\|\|` | `\|\|` |
-| `''` vs `NULL` | Distintos | Distintos | Distintos | **Oracle trata `''` como `NULL`** — trampa clásica al portar | Distintos |
-| Límite de filas | `LIMIT`/`OFFSET` y `FETCH FIRST` | `LIMIT` | `OFFSET … FETCH` / `TOP` | `FETCH FIRST` (12c+) | `LIMIT` |
-| Aislamiento por defecto | Read Committed | **Repeatable Read** (InnoDB) | Read Committed con **bloqueos** (o RCSI si está activado) | Read Committed sobre *snapshot* | Serializable de facto |
-| Sensibilidad de mayúsculas en datos | Sensible (usa `citext`/`ILIKE`/collation) | Depende de la **collation** (`_ci` por defecto históricamente) | Depende de la collation | Sensible | `NOCASE` por columna |
-| Tipos booleanos | `boolean` nativo | `TINYINT(1)` disfrazado | `BIT` | Hasta 23c no había `BOOLEAN` en tabla | Enteros 0/1 |
+| `MERGE` | Since **15**; `RETURNING` since **17** | **Does not exist** → `INSERT ... ON DUPLICATE KEY UPDATE` / `REPLACE` | Yes (long-standing) | Yes (with its own restrictions: cannot update `ON` columns, non-standard `then update … delete` syntax) | **Does not exist** → `INSERT ... ON CONFLICT` (UPSERT, since 3.24, syntax taken from PostgreSQL) |
+| `JSON_TABLE` / SQL/JSON | Constructors and `JSON_TABLE` since **17** | Yes in MySQL 8.0+ | Native `JSON` type, JSON indexes and `JSON_CONTAINS` in **SQL Server 2025** (`JSON_TABLE`: **not verified**, §8) | Yes | No (`json_each`/`json_tree`) |
+| `GROUP BY ALL` | **Not in 18**; *committed* for **19** | No | No | No | No |
+| Identifier quoting | `"x"` (folded to lowercase if unquoted) | `` `x` `` (or `"x"` with `ANSI_QUOTES`) | `[x]` or `"x"` | `"x"` (folded to **uppercase**) | `"x"`, `` `x` ``, `[x]` |
+| Strings and concatenation | `\|\|` | `\|\|` is **logical OR** unless `PIPES_AS_CONCAT`; use `CONCAT()` | `+` | `\|\|` | `\|\|` |
+| `''` vs `NULL` | Different | Different | Different | **Oracle treats `''` as `NULL`** — a classic trap when porting | Different |
+| Row limiting | `LIMIT`/`OFFSET` and `FETCH FIRST` | `LIMIT` | `OFFSET … FETCH` / `TOP` | `FETCH FIRST` (12c+) | `LIMIT` |
+| Default isolation | Read Committed | **Repeatable Read** (InnoDB) | Read Committed with **locks** (or RCSI if enabled) | Read Committed over a *snapshot* | Serializable in practice |
+| Case sensitivity in data | Sensitive (use `citext`/`ILIKE`/collation) | Depends on the **collation** (`_ci` by default historically) | Depends on the collation | Sensitive | `NOCASE` per column |
+| Boolean types | Native `boolean` | `TINYINT(1)` in disguise | `BIT` | Until 23c there was no `BOOLEAN` in a table | Integers 0/1 |
 
-Nada de esto es exhaustivo: **antes de usar una cláusula reciente, comprobar la versión mínima del motor
-del proyecto**, no la última del producto (§8).
+None of this is exhaustive: **before using a recent clause, check the minimum engine version of the
+project**, not the product's latest (§8).
 
-## 3. Estilo y convenciones
+## 3. Style and conventions
 
-- **Palabras clave en MAYÚSCULAS**, identificadores en `snake_case` minúsculas. Es la única convención que
-  sobrevive al plegado de mayúsculas de Postgres y Oracle sin obligar a citar identificadores.
-- **Nunca cites identificadores** salvo obligación: un `"MiTabla"` obliga a citarla para siempre y en todas
-  partes. Nombres sin espacios, sin acentos y sin palabras reservadas.
-- **Nombres**: tablas en **plural o singular — elige uno y fíjalo en `.sqlfluff`**, nunca ambos; columnas
-  sin prefijo redundante (`users.id`, no `users.user_id` salvo en FK: `orders.user_id` sí); claves
-  primarias `id`, foráneas `<tabla_singular>_id`; booleanos `is_`/`has_`; marcas de tiempo en `_at`
-  (`created_at`) y **siempre con zona horaria** (`timestamptz`), en UTC. Sin abreviaturas crípticas.
-- **Formato**: una cláusula por línea (`SELECT`, `FROM`, `JOIN`, `WHERE`, `GROUP BY`, `ORDER BY`);
-  una columna por línea en listas largas; coma **al principio** o al final, elegida y fijada por el
-  formatter, no por persona. La decisión de estilo la toma la herramienta (§2), no la revisión.
-- **`SELECT *` PROHIBIDO** fuera de exploración interactiva: rompe al añadir columnas, transfiere datos que
-  nadie usa, impide *index-only scans* y hace ilegible el diff. En vistas y en `CREATE TABLE AS`, es un bug
-  latente.
-- **Alias**: alias de tabla cortos pero significativos (`orders o`, no `a`, `b`, `c`); `AS` explícito en
-  alias de columna. Toda columna de una consulta con más de una tabla va **cualificada** (`o.id`).
-- **`JOIN` explícito y obligatorio**. **PROHIBIDO el join implícito por coma** (`FROM a, b WHERE a.id = b.a_id`):
-  mezcla condición de unión con filtro, y un `WHERE` olvidado produce un producto cartesiano silencioso.
-  `CROSS JOIN` se escribe explícito cuando de verdad se quiere. `NATURAL JOIN` y `USING` con muchas
-  columnas: vetados por frágiles ante cambios de esquema (`NATURAL JOIN` se rompe solo al añadir una
-  columna con nombre coincidente).
-- **CTEs (`WITH`) para dar nombre a los pasos**, en lugar de subconsultas anidadas ilegibles. Cuidado:
-  en versiones antiguas de PostgreSQL el CTE era **barrera de optimización** (materializado siempre);
-  desde PG12 se puede *inlinear* y existen `MATERIALIZED`/`NOT MATERIALIZED` — **verificar el
-  comportamiento en el motor y versión concretos antes de asumirlo**. Un CTE no es gratis por definición.
-- **Comentarios que explican el porqué**, no el qué: un `-- se excluye el tenant 0 porque es la plantilla
-  interna` vale por diez líneas de descripción de sintaxis.
-- **DDL declarativo y explícito**: `NOT NULL` por defecto (la nulabilidad se justifica, no al revés),
-  `DEFAULT` explícito, **restricciones con nombre** (`CONSTRAINT ck_orders_total_positive CHECK (...)`) —
-  un nombre autogenerado hace imposible escribir la migración inversa. Claves foráneas **declaradas** con
-  su `ON DELETE` pensado; la integridad referencial vive en la base de datos, no "en la aplicación".
-- Tipos: el **más restrictivo que sirva**. `text`/`varchar` con límite pensado, `numeric`/`decimal` para
-  dinero (**nunca `float`**), `timestamptz` para instantes, `date` para fechas de calendario, enum o tabla
-  de catálogo en vez de strings libres, UUID sólo si aporta (ver criterio de PK en `data-platform-standards`).
+- **Keywords in UPPERCASE**, identifiers in lowercase `snake_case`. It is the only convention that
+  survives Postgres's and Oracle's case folding without forcing you to quote identifiers.
+- **Never quote identifiers** unless obliged: a `"MyTable"` forces you to quote it forever and everywhere.
+  Names with no spaces, no accents and no reserved words.
+- **Names**: tables in **plural or singular — pick one and pin it in `.sqlfluff`**, never both; columns
+  without a redundant prefix (`users.id`, not `users.user_id` except in FKs: `orders.user_id` yes); primary
+  keys `id`, foreign keys `<singular_table>_id`; booleans `is_`/`has_`; timestamps in `_at`
+  (`created_at`) and **always with a time zone** (`timestamptz`), in UTC. No cryptic abbreviations.
+- **Formatting**: one clause per line (`SELECT`, `FROM`, `JOIN`, `WHERE`, `GROUP BY`, `ORDER BY`);
+  one column per line in long lists; comma **leading** or trailing, chosen and pinned by the
+  formatter, not by person. The style decision is taken by the tool (§2), not by review.
+- **`SELECT *` FORBIDDEN** outside interactive exploration: it breaks when columns are added, it transfers data
+  nobody uses, it prevents *index-only scans* and it makes the diff unreadable. In views and in `CREATE TABLE AS`, it is a
+  latent bug.
+- **Aliases**: short but meaningful table aliases (`orders o`, not `a`, `b`, `c`); explicit `AS` in
+  column aliases. Every column in a query with more than one table is **qualified** (`o.id`).
+- **Explicit and mandatory `JOIN`**. **Implicit comma joins are FORBIDDEN** (`FROM a, b WHERE a.id = b.a_id`):
+  they mix the join condition with the filter, and a forgotten `WHERE` produces a silent Cartesian product.
+  `CROSS JOIN` is written explicitly when it is genuinely wanted. `NATURAL JOIN` and `USING` with many
+  columns: vetoed as fragile against schema changes (`NATURAL JOIN` breaks on its own when you add a
+  column with a matching name).
+- **CTEs (`WITH`) to name the steps**, instead of unreadable nested subqueries. Careful:
+  in old PostgreSQL versions the CTE was an **optimisation barrier** (always materialised);
+  since PG12 it can be inlined and `MATERIALIZED`/`NOT MATERIALIZED` exist — **verify the
+  behaviour in the specific engine and version before assuming it**. A CTE is not free by definition.
+- **Comments that explain the why**, not the what: a `-- tenant 0 is excluded because it is the internal
+  template` is worth ten lines describing syntax.
+- **Declarative and explicit DDL**: `NOT NULL` by default (nullability is justified, not the other way round),
+  explicit `DEFAULT`, **named constraints** (`CONSTRAINT ck_orders_total_positive CHECK (...)`) —
+  an autogenerated name makes it impossible to write the reverse migration. Foreign keys **declared** with
+  their `ON DELETE` thought through; referential integrity lives in the database, not "in the application".
+- Types: the **most restrictive that works**. `text`/`varchar` with a considered limit, `numeric`/`decimal` for
+  money (**never `float`**), `timestamptz` for instants, `date` for calendar dates, an enum or a catalogue
+  table instead of free strings, UUID only if it helps (see the PK criteria in `data-platform-standards`).
 
-## 4. Calidad y testing del SQL
+## 4. SQL quality and testing
 
-- **Gates de CI, en orden de coste creciente** (todos rompen el build):
-  1. `sqlfluff lint` con `dialect` y reglas del repo (y `sqlfluff fix`/`sqlfmt` en pre-commit).
-  2. Validación de que **toda migración aplica en limpio y en orden** sobre una base vacía.
-  3. **Migración aplicada sobre una copia con datos representativos**, midiendo tiempo y bloqueos.
-  4. Tests de comportamiento de las consultas contra el **mismo motor y versión que producción**
-     (contenedor efímero, `testcontainers` o servicio de CI). **PROHIBIDO probar contra SQLite si
-     producción es PostgreSQL**: los dialectos difieren justo en lo que rompe.
-  5. Comprobación de plan en las consultas críticas (ver §6).
-- **Qué se testea**: no la sintaxis (eso lo hace el motor) sino el **comportamiento**:
-  - Camino feliz **y bordes**: conjunto vacío, un único elemento, duplicados, `NULL` en cada columna
-    nullable, valores límite, colación y acentos, huso horario en el borde del día.
-  - **Invariantes del modelo como aserciones ejecutables**: unicidad, integridad referencial, grano
-    (una fila por X), rangos válidos. Formulación y propiedad en `data-governance-quality-standards`;
-    aquí, que existan y corran.
-  - **Errores esperados**: violación de restricción, conflicto de concurrencia, deadlock, timeout.
-  - Toda consulta corregida por un bug deja **test de regresión con los datos que lo reproducían**.
-- Datos de prueba **construidos en el test**, no un dump de producción (dato personal + no determinismo).
-  Cero dependencia del orden de filas: sin `ORDER BY`, el orden **no existe** — asertarlo es un test flaky.
-- Revisión: un `ALTER TABLE` y un `DELETE`/`UPDATE` sin `WHERE` acotado se revisan como código de
-  producción, con el plan y el número de filas afectadas en la PR.
+- **CI gates, in increasing order of cost** (all break the build):
+  1. `sqlfluff lint` with the repo's `dialect` and rules (and `sqlfluff fix`/`sqlfmt` in pre-commit).
+  2. Validation that **every migration applies cleanly and in order** on an empty database.
+  3. **Migration applied to a copy with representative data**, measuring time and locks.
+  4. Behaviour tests of the queries against the **same engine and version as production**
+     (ephemeral container, `testcontainers` or a CI service). **FORBIDDEN to test against SQLite if
+     production is PostgreSQL**: the dialects differ in exactly what breaks.
+  5. Plan checks on the critical queries (see §6).
+- **What is tested**: not the syntax (the engine does that) but the **behaviour**:
+  - Happy path **and edges**: empty set, a single element, duplicates, `NULL` in every
+    nullable column, boundary values, collation and accents, time zone at the day boundary.
+  - **Model invariants as executable assertions**: uniqueness, referential integrity, grain
+    (one row per X), valid ranges. Formulation and ownership in `data-governance-quality-standards`;
+    here, that they exist and run.
+  - **Expected errors**: constraint violation, concurrency conflict, deadlock, timeout.
+  - Every query fixed for a bug leaves a **regression test with the data that reproduced it**.
+- Test data **built in the test**, not a production dump (personal data + non-determinism).
+  Zero dependence on row order: without `ORDER BY`, order **does not exist** — asserting it is a flaky test.
+- Review: an `ALTER TABLE` and a `DELETE`/`UPDATE` without a bounded `WHERE` are reviewed as production
+  code, with the plan and the number of affected rows in the PR.
 
-## 5. Seguridad: la inyección SQL es el eje
+## 5. Security: SQL injection is the axis
 
-**Consultas parametrizadas, siempre, sin excepción.** Un *placeholder* (`$1`, `?`, `:nombre`) no es una
-plantilla de texto: el valor viaja **fuera** de la sentencia y el motor nunca lo interpreta como código.
-Todo lo demás es una variante de concatenación.
+**Parameterised queries, always, no exceptions.** A *placeholder* (`$1`, `?`, `:name`) is not a
+text template: the value travels **outside** the statement and the engine never interprets it as code.
+Everything else is a variant of concatenation.
 
-- **PROHIBIDO** construir SQL con concatenación, interpolación (`f"..."`, `${}`, `+`), `printf`/`format`
-  del lenguaje o del motor con datos de entrada. `format()` de PostgreSQL y `sp_executesql` mal usados son
-  **la vía real de inyección en 2026**, no el `' OR 1=1 --` de los tutoriales: el equipo cree que "usa el
-  ORM" y esconde un `raw()`/`.query()` con una parte concatenada.
-- **Escapar manualmente no es una defensa**: depende de la codificación, de la collation, del modo del
-  motor (`NO_BACKSLASH_ESCAPES`) y de que nadie olvide una ruta. La única defensa es que el dato no forme
-  parte de la sentencia.
-- **Los identificadores no se pueden parametrizar**, y ahí está el agujero real. Cuando de verdad necesitas
-  un nombre de tabla, columna u orden dinámicos:
-  1. **Primero, evítalo**: una **lista blanca** que mapea la entrada del usuario a un identificador
-     literal escrito en el código (`{"fecha": "created_at", "importe": "total"}`) resuelve el 95 % de los
-     casos. Si el valor no está en el mapa, es un error, no un identificador.
-  2. Si no hay más remedio, **quoting de identificador por la vía del driver o del motor**, nunca a mano:
-     `quote_ident()`/`format('%I')` en PostgreSQL, `QUOTENAME()` en SQL Server,
-     `DBMS_ASSERT.ENQUOTE_NAME` en Oracle, o el helper de identificadores del driver
+- **FORBIDDEN** to build SQL with concatenation, interpolation (`f"..."`, `${}`, `+`), the language's or the
+  engine's `printf`/`format` with input data. PostgreSQL's `format()` and misused `sp_executesql` are
+  **the real injection route in 2026**, not the tutorials' `' OR 1=1 --`: the team believes it "uses the
+  ORM" and hides a `raw()`/`.query()` with a concatenated part.
+- **Escaping by hand is not a defence**: it depends on the encoding, the collation, the engine's
+  mode (`NO_BACKSLASH_ESCAPES`) and on nobody forgetting a path. The only defence is that the data is not part
+  of the statement.
+- **Identifiers cannot be parameterised**, and that is where the real hole is. When you genuinely need
+  a dynamic table, column or ordering name:
+  1. **First, avoid it**: a **whitelist** mapping the user's input to a literal identifier
+     written in the code (`{"date": "created_at", "amount": "total"}`) solves 95 % of the
+     cases. If the value is not in the map, it is an error, not an identifier.
+  2. If there is no alternative, **identifier quoting via the driver or the engine**, never by hand:
+     `quote_ident()`/`format('%I')` in PostgreSQL, `QUOTENAME()` in SQL Server,
+     `DBMS_ASSERT.ENQUOTE_NAME` in Oracle, or the driver's identifier helper
      (`psycopg.sql.Identifier`, `sqlalchemy.sql.quoted_name`, `Sequelize.escapeIdentifier`…).
-  3. `ORDER BY` dinámico: **sólo por lista blanca**; la dirección (`ASC`/`DESC`) también, nunca desde el
-     parámetro tal cual. `ORDER BY <número>` con entrada de usuario es inyección con otro nombre.
-- **SQL dinámico dentro del motor** (`EXECUTE`, `sp_executesql`, `EXECUTE IMMEDIATE`): mismo criterio —
-  parámetros vinculados (`USING`, `@params` de `sp_executesql`), nunca cadena montada. Vetado
-  `EXEC(@sql)` con `@sql` construido por concatenación.
-- **Mínimo privilegio como segunda capa**: la aplicación se conecta con un rol **sin DDL, sin `SUPERUSER`,
-  sin acceso a esquemas ajenos**, y con permisos por tabla/columna. Rol de sólo lectura para las consultas
-  de lectura. **RLS** (PostgreSQL, SQL Server) cuando el aislamiento por inquilino es un requisito de
-  seguridad y no una convención de `WHERE tenant_id = ...` que alguien acabará olvidando. Un usuario de
-  aplicación que puede `DROP TABLE` convierte una SQLi en una catástrofe en vez de en una fuga.
-- **Ceguera evitable**: errores del motor **nunca** al cliente (revelan esquema y habilitan inyección
-  basada en error); `LIMIT` obligatorio en toda consulta expuesta; `statement_timeout`/timeout de comando
-  siempre configurado (la SQLi ciega basada en tiempo necesita consultas largas).
-- **Dato sensible en la consulta**: nada de secretos ni de datos personales en literales que acaben en el
-  log de sentencias lentas, en `pg_stat_statements` o en un plan guardado. Los parámetros ayudan también aquí.
-- **Auditoría y trazabilidad**: `application_name`/comentario de contexto en la sesión para atribuir una
-  consulta a un servicio; el proceso de gestión del hallazgo, en `appsec-standards`.
+  3. Dynamic `ORDER BY`: **whitelist only**; the direction (`ASC`/`DESC`) too, never straight from the
+     parameter. `ORDER BY <number>` with user input is injection under another name.
+- **Dynamic SQL inside the engine** (`EXECUTE`, `sp_executesql`, `EXECUTE IMMEDIATE`): same criteria —
+  bound parameters (`USING`, `sp_executesql`'s `@params`), never a built-up string. Vetoed:
+  `EXEC(@sql)` with `@sql` built by concatenation.
+- **Least privilege as a second layer**: the application connects with a role **with no DDL, no `SUPERUSER`,
+  no access to other schemas**, and with per-table/per-column permissions. A read-only role for read
+  queries. **RLS** (PostgreSQL, SQL Server) when tenant isolation is a security
+  requirement and not a `WHERE tenant_id = ...` convention that somebody will eventually forget. An
+  application user that can `DROP TABLE` turns an SQLi into a catastrophe instead of a leak.
+- **Avoidable blindness**: engine errors **never** to the client (they reveal the schema and enable error-based
+  injection); mandatory `LIMIT` on every exposed query; `statement_timeout`/command timeout
+  always configured (time-based blind SQLi needs long queries).
+- **Sensitive data in the query**: no secrets and no personal data in literals that end up in the
+  slow statement log, in `pg_stat_statements` or in a saved plan. Parameters help here too.
+- **Auditing and traceability**: `application_name`/context comment on the session to attribute a
+  query to a service; the finding management process, in `appsec-standards`.
 
-## 6. Corrección y rendimiento del SQL
+## 6. SQL correctness and performance
 
-**`NULL` y lógica trivaluada — origen de bugs silenciosos**:
-- `NULL = NULL` es `UNKNOWN`, no `TRUE`. Comparaciones con `IS NULL` / `IS NOT NULL`, o
-  `IS [NOT] DISTINCT FROM` para comparar tratando `NULL` como valor.
-- **`NOT IN (subconsulta)` con un solo `NULL` devuelve cero filas**. Usar `NOT EXISTS`, que además suele
-  optimizar mejor. Es el bug de SQL más caro que existe.
-- Los agregados **ignoran `NULL`** (`COUNT(col)` ≠ `COUNT(*)`; `AVG` divide entre los no nulos).
-- `WHERE` filtra por `TRUE`, no por "no falso": una fila con `UNKNOWN` desaparece; en un `CHECK`, en cambio,
-  `UNKNOWN` **pasa**. La asimetría es real y hay que tenerla presente al escribir restricciones.
-- `LEFT JOIN` + condición sobre la tabla derecha en el `WHERE` **lo convierte en `INNER JOIN`**: la
-  condición va en el `ON`.
-- Diseño: **`NOT NULL` por defecto**; un `NULL` debe significar algo declarado, no "no lo sabíamos".
+**`NULL` and three-valued logic — the source of silent bugs**:
+- `NULL = NULL` is `UNKNOWN`, not `TRUE`. Compare with `IS NULL` / `IS NOT NULL`, or
+  `IS [NOT] DISTINCT FROM` to compare treating `NULL` as a value.
+- **`NOT IN (subquery)` with a single `NULL` returns zero rows**. Use `NOT EXISTS`, which also usually
+  optimises better. It is the most expensive SQL bug there is.
+- Aggregates **ignore `NULL`** (`COUNT(col)` ≠ `COUNT(*)`; `AVG` divides by the non-nulls).
+- `WHERE` filters by `TRUE`, not by "not false": a row with `UNKNOWN` disappears; in a `CHECK`, by contrast,
+  `UNKNOWN` **passes**. The asymmetry is real and must be kept in mind when writing constraints.
+- `LEFT JOIN` + a condition on the right-hand table in the `WHERE` **turns it into an `INNER JOIN`**: the
+  condition goes in the `ON`.
+- Design: **`NOT NULL` by default**; a `NULL` must mean something declared, not "we did not know".
 
-**Conjuntos, no bucles**:
-- **Piensa en conjuntos**: una consulta que resuelve el problema entero le gana casi siempre a N consultas
-  desde el cliente. **El N+1 está vetado** en cualquiera de sus formas (bucle del ORM, `for` que consulta
-  por fila, cursor que hace un `UPDATE` por iteración).
-- **CTEs y funciones de ventana en lugar de subconsultas correlacionadas y de lógica en el cliente**:
-  `ROW_NUMBER()`/`RANK()` con `PARTITION BY` para el "top N por grupo"; `LAG`/`LEAD` para comparar con la
-  fila anterior; `SUM() OVER (ORDER BY ... ROWS BETWEEN ...)` para acumulados; `FILTER (WHERE ...)` o
-  `CASE` dentro del agregado para pivotar. Traerse los datos al cliente para ordenar, agrupar o comparar
-  es el antipatrón por defecto y suele ser dos órdenes de magnitud más caro.
-- **CTE recursiva** (`WITH RECURSIVE`) para jerarquías y explosión de listas de materiales, **con corte de
-  profundidad explícito**. Si el recorrido es de profundidad variable y sin cota razonable, la pregunta ya
-  no es de SQL: ver `graph-db-standards`.
-- `GROUP BY`: agrupar por las columnas **reales**, no por posición ordinal (`GROUP BY 1, 2` es cómodo en
-  exploración y frágil en producción). MySQL con `ONLY_FULL_GROUP_BY` desactivado permite seleccionar
-  columnas no agregadas y devuelve un valor **arbitrario**: activar el modo estricto y tratar cualquier
-  consulta que dependa de ese comportamiento como un bug. `HAVING` filtra sobre agregados; filtrar filas
-  individuales en `HAVING` en vez de `WHERE` procesa de más.
-- `UNION` deduplica (y ordena para hacerlo): usa **`UNION ALL`** salvo que la deduplicación sea el objetivo.
-- `DISTINCT` como parche de un `JOIN` que multiplica filas es una señal de consulta mal construida:
-  arregla el `JOIN` o usa `EXISTS`.
+**Sets, not loops**:
+- **Think in sets**: a query that solves the whole problem almost always beats N queries
+  from the client. **N+1 is vetoed** in all its forms (ORM loop, a `for` that queries
+  per row, a cursor doing one `UPDATE` per iteration).
+- **CTEs and window functions instead of correlated subqueries and client-side logic**:
+  `ROW_NUMBER()`/`RANK()` with `PARTITION BY` for "top N per group"; `LAG`/`LEAD` to compare with the
+  previous row; `SUM() OVER (ORDER BY ... ROWS BETWEEN ...)` for running totals; `FILTER (WHERE ...)` or
+  `CASE` inside the aggregate to pivot. Pulling the data to the client to sort, group or compare
+  is the default antipattern and is usually two orders of magnitude more expensive.
+- **Recursive CTE** (`WITH RECURSIVE`) for hierarchies and bill-of-materials explosion, **with an explicit
+  depth cut-off**. If the traversal is of variable depth with no reasonable bound, the question is no
+  longer SQL: see `graph-db-standards`.
+- `GROUP BY`: group by the **real** columns, not by ordinal position (`GROUP BY 1, 2` is convenient in
+  exploration and fragile in production). MySQL with `ONLY_FULL_GROUP_BY` disabled allows selecting
+  non-aggregated columns and returns an **arbitrary** value: enable strict mode and treat any
+  query that depends on that behaviour as a bug. `HAVING` filters on aggregates; filtering
+  individual rows in `HAVING` instead of `WHERE` processes more than necessary.
+- `UNION` deduplicates (and sorts to do so): use **`UNION ALL`** unless deduplication is the objective.
+- `DISTINCT` as a patch for a `JOIN` that multiplies rows is a sign of a badly built query:
+  fix the `JOIN` or use `EXISTS`.
 
-**SARGability — cómo se escribe la consulta para que el índice sea usable**:
-- **Una función sobre la columna indexada mata el índice**: `WHERE UPPER(email) = $1`,
-  `WHERE date(created_at) = $1`, `WHERE col + 0 = $1`. Reescribir el predicado sobre la columna desnuda
-  (`created_at >= $1 AND created_at < $2`) o crear un índice de expresión — cuál índice, en la skill del motor.
-- `LIKE '%algo'` (comodín inicial) no usa un índice B-tree. Es un problema de búsqueda, no de SQL: ver
+**SARGability — how the query is written so the index is usable**:
+- **A function over the indexed column kills the index**: `WHERE UPPER(email) = $1`,
+  `WHERE date(created_at) = $1`, `WHERE col + 0 = $1`. Rewrite the predicate over the bare column
+  (`created_at >= $1 AND created_at < $2`) or create an expression index — which index, in the engine's skill.
+- `LIKE '%something'` (leading wildcard) does not use a B-tree index. It is a search problem, not an SQL one: see
   `search-engines-standards`.
-- **Discordancia de tipos** (comparar `varchar` con número, `int` con `bigint` en algunos motores) provoca
-  conversión implícita y descarta el índice. Tipar bien el parámetro en el driver.
-- `OR` entre columnas distintas suele impedir un buen plan: `UNION ALL` de dos ramas indexadas gana.
-- Predicados **selectivos primero** conceptualmente (aunque el optimizador reordene): filtra en el motor,
-  no traigas y descartes.
-- **Paginación por *keyset*** (`WHERE (created_at, id) < ($1, $2) ORDER BY created_at DESC, id DESC LIMIT n`),
-  no `OFFSET` grande: `OFFSET 100000` lee y descarta 100 000 filas.
+- **Type mismatch** (comparing `varchar` with a number, `int` with `bigint` in some engines) causes
+  an implicit conversion and discards the index. Type the parameter correctly in the driver.
+- `OR` across different columns usually prevents a good plan: a `UNION ALL` of two indexed branches wins.
+- **Selective** predicates first conceptually (even though the optimiser reorders them): filter in the engine,
+  do not fetch and discard.
+- **Keyset pagination** (`WHERE (created_at, id) < ($1, $2) ORDER BY created_at DESC, id DESC LIMIT n`),
+  not a large `OFFSET`: `OFFSET 100000` reads and discards 100,000 rows.
 
-**Transacciones y concurrencia**:
-- **Transacciones cortas y con alcance explícito**: `BEGIN` … `COMMIT` alrededor de la unidad atómica, y
-  **cero I/O externo dentro** (llamadas HTTP, envío de correo, esperas). Una transacción abierta mientras
-  se espera a un tercero es un bloqueo esperando a ocurrir.
-- **Niveles de aislamiento y qué anomalía permite cada uno** (ANSI, con la salvedad de que cada motor los
-  implementa a su manera — verificar por motor y versión, §8):
+**Transactions and concurrency**:
+- **Short transactions with an explicit scope**: `BEGIN` … `COMMIT` around the atomic unit, and
+  **zero external I/O inside** (HTTP calls, sending mail, waits). A transaction left open while
+  waiting on a third party is a lock waiting to happen.
+- **Isolation levels and which anomaly each one allows** (ANSI, with the caveat that every engine
+  implements them in its own way — verify per engine and version, §8):
 
-  | Nivel | Dirty read | Non-repeatable read | Phantom | Write skew |
+  | Level | Dirty read | Non-repeatable read | Phantom | Write skew |
   |---|---|---|---|---|
-  | Read Uncommitted | posible | posible | posible | posible |
-  | Read Committed | no | posible | posible | posible |
-  | Repeatable Read | no | no | posible según el motor (**InnoDB y el snapshot de PostgreSQL los evitan**) | **posible** |
+  | Read Uncommitted | possible | possible | possible | possible |
+  | Read Committed | no | possible | possible | possible |
+  | Repeatable Read | no | no | possible depending on the engine (**InnoDB and PostgreSQL's snapshot avoid them**) | **possible** |
   | Serializable | no | no | no | no |
 
-  Consecuencias que sí decides tú: el default no es el mismo en todos los motores (tabla de §2); en
-  PostgreSQL, `REPEATABLE READ` y `SERIALIZABLE` **abortan la transacción con error de serialización** y
-  **la aplicación debe reintentar** — código que no maneja ese reintento está roto por diseño. `SERIALIZABLE`
-  no es "más lento" de forma abstracta: es correcto y con coste de reintentos; súbelo cuando la invariante
-  cruza filas (write skew) y bajarlo requiere justificar por qué.
-- **`SELECT ... FOR UPDATE`** para bloquear filas que vas a modificar (y `FOR NO KEY UPDATE`/`FOR SHARE`
-  según el caso); `SKIP LOCKED` para colas y trabajo repartido, `NOWAIT` cuando prefieres fallar rápido a
-  esperar. **No sustituye a un nivel de aislamiento adecuado**: bloquea lo que lees, no lo que no existe aún.
-- **Deadlocks**: se previenen accediendo a los recursos **siempre en el mismo orden** y manteniendo las
-  transacciones cortas; se **gestionan** con reintento con backoff en el cliente, porque el motor mata a
-  una de las dos víctimas y eso es normal, no excepcional. Un deadlock recurrente entre las mismas dos
-  sentencias es un bug de orden de acceso, no un problema de capacidad.
-- Idempotencia: usa restricciones de unicidad + `ON CONFLICT`/`MERGE` en vez de "comprobar y luego
-  insertar" — el hueco entre el `SELECT` y el `INSERT` es una condición de carrera, siempre.
+  Consequences you do decide: the default is not the same in every engine (table in §2); in
+  PostgreSQL, `REPEATABLE READ` and `SERIALIZABLE` **abort the transaction with a serialization error** and
+  **the application must retry** — code that does not handle that retry is broken by design. `SERIALIZABLE`
+  is not "slower" in the abstract: it is correct and costs retries; raise it when the invariant
+  crosses rows (write skew), and lowering it requires justifying why.
+- **`SELECT ... FOR UPDATE`** to lock rows you are going to modify (and `FOR NO KEY UPDATE`/`FOR SHARE`
+  as appropriate); `SKIP LOCKED` for queues and distributed work, `NOWAIT` when you prefer to fail fast rather than
+  wait. **It does not replace an appropriate isolation level**: it locks what you read, not what does not exist yet.
+- **Deadlocks**: they are prevented by accessing resources **always in the same order** and keeping
+  transactions short; they are **handled** with retry-with-backoff in the client, because the engine kills
+  one of the two victims and that is normal, not exceptional. A recurring deadlock between the same two
+  statements is an access-order bug, not a capacity problem.
+- Idempotency: use uniqueness constraints + `ON CONFLICT`/`MERGE` instead of "check and then
+  insert" — the gap between the `SELECT` and the `INSERT` is a race condition, always.
 
-**DDL y migraciones compatibles hacia atrás (expand/contract)** — obligatorio:
-1. **Expand**: añadir lo nuevo de forma compatible (columna nullable o con default, nueva tabla, nuevo
-   índice). La versión N-1 del código sigue funcionando.
-2. **Migrar**: rellenar datos **por lotes acotados y transacciones cortas**, no en un `UPDATE` masivo que
-   bloquea la tabla y hincha el WAL/undo.
-3. **Desplegar** el código que usa lo nuevo y escribe en ambos sitios si hace falta.
-4. **Contract**: en un **release posterior**, eliminar lo viejo.
+**Backwards-compatible DDL and migrations (expand/contract)** — mandatory:
+1. **Expand**: add the new thing in a compatible way (nullable column or one with a default, new table, new
+   index). Version N-1 of the code keeps working.
+2. **Migrate**: fill the data **in bounded batches and short transactions**, not in a mass `UPDATE` that
+   locks the table and bloats the WAL/undo.
+3. **Deploy** the code that uses the new thing and writes to both places if necessary.
+4. **Contract**: in a **later release**, remove the old one.
 
-- **Nunca una migración que rompa la versión N-1** durante un despliegue rolling: renombrar una columna,
-  cambiar su tipo o borrarla en el mismo release que el código es una caída garantizada.
-- **Lo que bloquea, bloquea**: `ALTER TABLE` que reescribe la tabla, añadir una FK o un `CHECK` que valida
-  todo, crear un índice sin la variante concurrente. Usa las variantes online del motor
+- **Never a migration that breaks version N-1** during a rolling deployment: renaming a column,
+  changing its type or dropping it in the same release as the code is a guaranteed outage.
+- **What locks, locks**: an `ALTER TABLE` that rewrites the table, adding an FK or a `CHECK` that validates
+  everything, creating an index without the concurrent variant. Use the engine's online variants
   (`CREATE INDEX CONCURRENTLY`, `NOT VALID` + `VALIDATE CONSTRAINT`, `ALGORITHM=INPLACE`/`LOCK=NONE`,
-  `ONLINE=ON`, herramientas de cambio online) y **fija un `lock_timeout` corto**: una migración que espera
-  un lock encola a todo lo que viene detrás y tumba el servicio antes de tocar un solo byte.
-- Migraciones **inmutables una vez aplicadas** (nueva migración para corregir, nunca editar la aplicada) y
-  **con marcha atrás pensada** —o declarada explícitamente como irreversible—. Toda migración destructiva
-  se revisa con nombre y apellidos.
+  `ONLINE=ON`, online change tools) and **set a short `lock_timeout`**: a migration waiting on
+  a lock queues everything behind it and takes the service down before touching a single byte.
+- Migrations **immutable once applied** (a new migration to correct, never editing the applied one) and
+  **with a thought-through way back** —or explicitly declared as irreversible—. Every destructive migration
+  is reviewed with a name attached.
 
-**Planes de ejecución**:
-- Lee el plan **real**, no el estimado: `EXPLAIN (ANALYZE, BUFFERS)` en PostgreSQL, `EXPLAIN ANALYZE` en
-  MySQL 8+, plan real en SSMS o `SET STATISTICS IO/TIME` en SQL Server, `DBMS_XPLAN.DISPLAY_CURSOR` en Oracle.
-- Qué mirar, en este orden: **divergencia entre filas estimadas y reales** (síntoma de estadísticas o de
-  predicado no estimable), el nodo que domina el tiempo, escaneos secuenciales sobre tablas grandes,
-  *nested loop* con muchas iteraciones, ordenaciones y hashes que se derraman a disco.
-- **Mide con datos representativos**: un plan sobre 100 filas no dice nada del plan sobre 100 millones.
-- Cuando el plan es malo pese a una consulta bien escrita, **el problema deja de ser de esta skill**:
-  estadísticas, parámetros de memoria, *plan cache*, *parameter sniffing* y sugerencias de índice son de la
-  skill del motor. **Los *hints* del optimizador son último recurso y con caducidad**: congelan una
-  decisión que el motor revisaría solo.
+**Execution plans**:
+- Read the **real** plan, not the estimated one: `EXPLAIN (ANALYZE, BUFFERS)` in PostgreSQL, `EXPLAIN ANALYZE` in
+  MySQL 8+, the actual plan in SSMS or `SET STATISTICS IO/TIME` in SQL Server, `DBMS_XPLAN.DISPLAY_CURSOR` in Oracle.
+- What to look at, in this order: **divergence between estimated and actual rows** (a symptom of statistics or of a
+  non-estimable predicate), the node that dominates the time, sequential scans over large tables,
+  *nested loops* with many iterations, sorts and hashes that spill to disk.
+- **Measure with representative data**: a plan over 100 rows says nothing about the plan over 100 million.
+- When the plan is bad despite a well-written query, **the problem stops belonging to this skill**:
+  statistics, memory parameters, *plan cache*, *parameter sniffing* and index suggestions belong to the
+  engine's skill. **Optimiser *hints* are a last resort and come with an expiry date**: they freeze a
+  decision the engine would revisit on its own.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- **SQL escrito a mano vs. generado**:
-  - **ORM**: correcto y preferible para CRUD por clave primaria, unidad de trabajo y mapeo de agregados.
-    Deja de serlo en cuanto la consulta tiene más de dos `JOIN`, agregación o ventanas: ahí se escribe SQL
-    a mano (o con un constructor tipado tipo sqlc/jOOQ/`sqlalchemy.select` explícito). **El SQL generado
-    se revisa y se mide igual que el escrito**: "lo genera el ORM" no es una justificación de plan.
-  - **dbt/SQLMesh**: el modelo es SQL y **está sujeto a esta skill** (estilo, `NULL`, joins, ventanas,
-    SARGability). La orquestación, materialización, incrementalidad y tests del framework son de
-    `data-engineering-standards`. Jinja que construye SQL con interpolación de valores es **la misma
-    inyección de §5** cuando la entrada no es un literal del repo.
-  - Procedimientos almacenados: lógica de negocio en el motor **sólo con motivo declarado** (integridad
-    transaccional imposible fuera, coste de red prohibitivo). Coste asumido: versionado, testing y
-    despliegue peores, y acoplamiento al motor.
-- **Vistas**: útiles para encapsular una consulta canónica; peligrosas apiladas (vista sobre vista sobre
-  vista produce planes imposibles de razonar). Máximo un nivel salvo justificación. Vistas materializadas
-  con su política de refresco **declarada**, no improvisada.
-- El SQL vive en el repo, en ficheros `.sql` o en el modelo, versionado y revisado. SQL guardado sólo en el
-  motor, en una herramienta de BI o en el historial de alguien **no existe**.
-- Cadencia: al subir de versión mayor de motor, releer los *breaking changes* del dialecto y volver a medir
-  las consultas críticas — el optimizador cambia y algún plan empeora, siempre.
+- **Hand-written vs. generated SQL**:
+  - **ORM**: correct and preferable for CRUD by primary key, unit of work and aggregate mapping.
+    It stops being so as soon as the query has more than two `JOIN`s, aggregation or windows: there you write SQL
+    by hand (or with a typed builder like sqlc/jOOQ/explicit `sqlalchemy.select`). **Generated SQL
+    is reviewed and measured just like written SQL**: "the ORM generates it" is not a plan justification.
+  - **dbt/SQLMesh**: the model is SQL and **is subject to this skill** (style, `NULL`, joins, windows,
+    SARGability). The framework's orchestration, materialisation, incrementality and tests belong to
+    `data-engineering-standards`. Jinja that builds SQL by interpolating values is **the same
+    injection as §5** when the input is not a literal from the repo.
+  - Stored procedures: business logic in the engine **only with a declared reason** (transactional
+    integrity impossible outside, prohibitive network cost). Accepted cost: worse versioning, testing and
+    deployment, and coupling to the engine.
+- **Views**: useful for encapsulating a canonical query; dangerous when stacked (a view on a view on a
+  view produces plans impossible to reason about). One level at most unless justified. Materialised views
+  with a **declared** refresh policy, not an improvised one.
+- SQL lives in the repo, in `.sql` files or in the model, versioned and reviewed. SQL saved only in the
+  engine, in a BI tool or in somebody's history **does not exist**.
+- Cadence: on a major engine version upgrade, re-read the dialect's *breaking changes* and re-measure
+  the critical queries — the optimiser changes and some plan gets worse, always.
 
-**Lista de prohibiciones (veto):**
-- ❌ Cualquier SQL construido por concatenación o interpolación con datos de entrada. Sin excepciones.
-- ❌ Identificador dinámico sin lista blanca ni quoting del driver/motor.
-- ❌ `SELECT *` en código de producción, en vistas o en `CREATE TABLE AS`.
-- ❌ **Join implícito por coma** (`FROM a, b WHERE ...`) y `NATURAL JOIN`.
-- ❌ `NOT IN (subconsulta)` sobre una columna nullable (usa `NOT EXISTS`).
-- ❌ `UPDATE`/`DELETE` sin `WHERE` acotado, o ejecutado sin haber visto antes el `SELECT` equivalente.
-- ❌ `DISTINCT` para tapar filas duplicadas por un `JOIN` mal hecho.
-- ❌ `float`/`double` para dinero. Fechas como texto. Zonas horarias implícitas.
-- ❌ Bucle en el cliente que ejecuta una consulta por fila (N+1) o cursor con `UPDATE` por iteración.
-- ❌ `OFFSET` grande como paginación.
-- ❌ Migración que rompe la versión N-1 del código, o `ALTER TABLE` bloqueante sin `lock_timeout` y sin
-  variante online. Editar una migración ya aplicada.
-- ❌ Restricciones y claves foráneas "gestionadas por la aplicación" en vez de declaradas.
-- ❌ Depender del orden de filas sin `ORDER BY`, o de columnas no agregadas con `ONLY_FULL_GROUP_BY`
-  desactivado.
-- ❌ Transacción abierta alrededor de una llamada de red. Transacción larga "porque es más simple".
-- ❌ Conectar la aplicación con un rol con privilegios de DDL o de superusuario.
-- ❌ *Hints* del optimizador como solución permanente y sin fecha de revisión.
-- ❌ Probar contra un motor distinto al de producción (SQLite en CI, PostgreSQL en prod).
+**Prohibition list (veto):**
+- ❌ Any SQL built by concatenation or interpolation with input data. No exceptions.
+- ❌ A dynamic identifier without a whitelist or driver/engine quoting.
+- ❌ `SELECT *` in production code, in views or in `CREATE TABLE AS`.
+- ❌ **Implicit comma joins** (`FROM a, b WHERE ...`) and `NATURAL JOIN`.
+- ❌ `NOT IN (subquery)` over a nullable column (use `NOT EXISTS`).
+- ❌ `UPDATE`/`DELETE` without a bounded `WHERE`, or executed without having first seen the equivalent `SELECT`.
+- ❌ `DISTINCT` to paper over rows duplicated by a badly built `JOIN`.
+- ❌ `float`/`double` for money. Dates as text. Implicit time zones.
+- ❌ A client-side loop executing one query per row (N+1) or a cursor with an `UPDATE` per iteration.
+- ❌ A large `OFFSET` as pagination.
+- ❌ A migration that breaks version N-1 of the code, or a locking `ALTER TABLE` without `lock_timeout` and without
+  an online variant. Editing an already-applied migration.
+- ❌ Constraints and foreign keys "managed by the application" instead of declared.
+- ❌ Depending on row order without `ORDER BY`, or on non-aggregated columns with `ONLY_FULL_GROUP_BY`
+  disabled.
+- ❌ A transaction left open around a network call. A long transaction "because it is simpler".
+- ❌ Connecting the application with a role holding DDL or superuser privileges.
+- ❌ Optimiser *hints* as a permanent solution with no review date.
+- ❌ Testing against a different engine from production's (SQLite in CI, PostgreSQL in prod).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cláusulas, versiones o herramientas, **verifica online** (WebSearch/WebFetch), con las
-**notas de release del motor** como fuente primaria y las tablas de compatibilidad de terceros sólo como
-pista — sus columnas suelen indicar *última versión probada*, no *versión desde la que existe*, y leerlas
-al revés produce afirmaciones falsas (le pasó a este documento durante su redacción con `MERGE`):
-1. **Estándar**: SQL:2023 (ISO/IEC 9075) es la edición vigente; la Parte 16 (SQL/PGQ) figura ya en estado
-   *"to be revised"*, así que hay una revisión en curso. **No hay edición "SQL:2026" confirmada a 2026-08**:
-   comprobar la actividad de ISO/IEC JTC 1/SC 32 WG3 antes de citar una.
-2. **Versión mínima del motor del proyecto** (no la última del producto) para cada cláusula que uses:
-   `MERGE` (PostgreSQL 15+, `RETURNING` desde 17; **inexistente en MySQL, MariaDB y SQLite** a 2026-08),
-   `JSON_TABLE` y constructores SQL/JSON (PostgreSQL 17+), `GROUP BY ALL` (**no en PostgreSQL 18**,
-   *committed* para 19; disponible en DuckDB, Snowflake, Databricks y BigQuery), `FILTER`, `MATCH_RECOGNIZE`,
-   `GRAPH_TABLE`/SQL/PGQ, ventanas con `GROUPS`/`EXCLUDE`.
-3. **Huecos declarados, no verificados a ago-2026**: si `JSON_TABLE` existe en **SQL Server 2025** (sí están
-   verificados el tipo `JSON` nativo, los índices JSON, `JSON_CONTAINS` y las funciones `REGEXP_*`);
-   el estado y las limitaciones conocidas de `MERGE` en SQL Server; el soporte de `MERGE` en MariaDB
-   independiente de MySQL; los defaults de nivel de aislamiento en la **versión concreta** de cada motor
-   (la tabla de §2 refleja el comportamiento clásico y debe confirmarse por versión).
-4. **Herramientas**: SQLFluff (4.2.2 a 2026-06, **MIT**, mantenimiento activo) — comprobar si 5.0 ya hizo
-   default el motor Rust y qué reglas cambian de severidad; **sqlfmt**, instalado como **`shandy-sqlfmt`**
-   (Apache-2.0, 0.31.0 a 2026-08) — confirmar el nombre del paquete antes de instalarlo. Verificar además
-   que ninguna de las dos ha cambiado de licencia ni entrado en modo mantenimiento: el catálogo ya tiene
-   precedentes (Trivy cambió de licencia; gitleaks se declaró *feature complete* y su acción exige licencia
-   comercial para organizaciones desde la v2).
-5. **CVEs y avisos** del motor y del driver antes de fijar una versión (osv.dev / GitHub Advisories).
-6. Antes de un upgrade mayor de motor, los **breaking changes del dialecto** en las notas oficiales — no de
-   memoria ni de un blog de terceros sin contrastar.
+Before pinning clauses, versions or tools, **verify online** (WebSearch/WebFetch), with the
+**engine's release notes** as the primary source and third-party compatibility tables only as a
+hint — their columns usually indicate *last tested version*, not *version since which it exists*, and reading them
+the wrong way round produces false claims (it happened to this document during its drafting with `MERGE`):
+1. **Standard**: SQL:2023 (ISO/IEC 9075) is the current edition; Part 16 (SQL/PGQ) is already listed as
+   *"to be revised"*, so there is a revision under way. **There is no confirmed "SQL:2026" edition as of 2026-08**:
+   check the activity of ISO/IEC JTC 1/SC 32 WG3 before citing one.
+2. **The project's minimum engine version** (not the product's latest) for every clause you use:
+   `MERGE` (PostgreSQL 15+, `RETURNING` since 17; **non-existent in MySQL, MariaDB and SQLite** as of 2026-08),
+   `JSON_TABLE` and SQL/JSON constructors (PostgreSQL 17+), `GROUP BY ALL` (**not in PostgreSQL 18**,
+   *committed* for 19; available in DuckDB, Snowflake, Databricks and BigQuery), `FILTER`, `MATCH_RECOGNIZE`,
+   `GRAPH_TABLE`/SQL/PGQ, windows with `GROUPS`/`EXCLUDE`.
+3. **Declared gaps, not verified as of Aug 2026**: whether `JSON_TABLE` exists in **SQL Server 2025** (the
+   native `JSON` type, JSON indexes, `JSON_CONTAINS` and the `REGEXP_*` functions are verified);
+   the status and known limitations of `MERGE` in SQL Server; `MERGE` support in MariaDB
+   independently of MySQL; the isolation level defaults in the **specific version** of each engine
+   (the §2 table reflects the classic behaviour and must be confirmed per version).
+4. **Tools**: SQLFluff (4.2.2 as of 2026-06, **MIT**, actively maintained) — check whether 5.0 has already made
+   the Rust engine the default and which rules change severity; **sqlfmt**, installed as **`shandy-sqlfmt`**
+   (Apache-2.0, 0.31.0 as of 2026-08) — confirm the package name before installing it. Also verify
+   that neither has changed licence or entered maintenance mode: the catalogue already has
+   precedents (Trivy changed licence; gitleaks declared itself *feature complete* and its action requires a commercial
+   licence for organisations from v2).
+5. **CVEs and advisories** for the engine and the driver before pinning a version (osv.dev / GitHub Advisories).
+6. Before a major engine upgrade, the **dialect's breaking changes** in the official notes — not from
+   memory or from an unverified third-party blog.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

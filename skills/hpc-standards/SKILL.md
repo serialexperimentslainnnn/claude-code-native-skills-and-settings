@@ -3,415 +3,415 @@ name: hpc-standards
 description: High-performance computing clusters as an operated service — batch scheduling, the software environment and the parallel filesystem. Use when writing or debugging a Slurm job with sbatch, srun, salloc, squeue, scancel, sacct, sacctmgr, sinfo and scontrol, editing slurm.conf, slurmdbd.conf, cgroup.conf or a partition/QoS/fairshare/TRES limit definition, turning on job accounting, sizing a login/compute/management node split, a user who compiled on the login node, migrating from PBS Pro, OpenPBS qsub or IBM Spectrum LSF bsub, deciding whether a batch scheduler or a container orchestrator fits the workload, running an MPI job with Open MPI or MPICH and setting rank pinning and CPU affinity, measuring strong versus weak scaling, managing the software stack with environment modules, Lmod module load and module spider, Spack specs and environments, EasyBuild easyconfigs, or Apptainer .sif images and apptainer exec, operating Lustre with lfs setstripe and lfs quota, IBM Storage Scale/GPFS with mmlsfs, BeeGFS or CephFS under a small-file I/O pattern, setting a scratch purge policy against home and archive tiers, node provisioning with xCAT or Warewulf, benchmarking with HPL, HPCG or the Top500 list, or isolating users and sensitive data on a shared cluster.
 ---
 
-# Estándares de HPC — el clúster de cálculo como servicio operado
+# HPC standards — the compute cluster as an operated service
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre **el clúster de cálculo como servicio multiusuario**: su arquitectura de nodos, el
-planificador de trabajos y su contabilidad, el entorno de software que los usuarios consumen,
-el sistema de ficheros paralelo y su política de datos, la medida honesta del rendimiento, y
-el aislamiento entre usuarios que comparten la máquina.
+Covers **the compute cluster as a multi-user service**: its node architecture, the job
+scheduler and its accounting, the software environment users consume,
+the parallel filesystem and its data policy, honest performance measurement, and
+isolation between users sharing the machine.
 
-**Principio rector**: **un clúster de HPC no es "muchos servidores"; es un recurso compartido
-escaso con una cola delante.** Todo lo que decide esta skill —particiones, límites, cuotas,
-purga, contabilidad— existe para repartir escasez con criterio explícito. Un clúster sin
-contabilidad ni límites no se comparte: se lo queda quien más rápido escribe `sbatch`.
+**Guiding principle**: **an HPC cluster is not "lots of servers"; it is a scarce shared
+resource with a queue in front of it.** Everything this skill decides —partitions, limits, quotas,
+purging, accounting— exists to distribute scarcity with explicit criteria. A cluster with no
+accounting and no limits is not shared: it is taken by whoever types `sbatch` fastest.
 
 Triggers: `sbatch`, `srun`, `salloc`, `squeue`, `scancel`, `sacct`, `sacctmgr`, `sinfo`,
-`scontrol`, `slurm.conf`, `slurmdbd.conf`, `cgroup.conf`, `gres.conf`, partición, QoS,
-*fairshare*, TRES, `qsub`/`qstat` (PBS), `bsub` (LSF), "nodo de login", "he compilado en el
-login y va lentísimo", `mpirun`/`mpiexec`, *pinning*, afinidad, escalabilidad fuerte/débil,
+`scontrol`, `slurm.conf`, `slurmdbd.conf`, `cgroup.conf`, `gres.conf`, partition, QoS,
+*fairshare*, TRES, `qsub`/`qstat` (PBS), `bsub` (LSF), "login node", "I compiled on the
+login node and it's crawling", `mpirun`/`mpiexec`, *pinning*, affinity, strong/weak scaling,
 `module load`, `module spider`, Lmod, `spack install`, `spack env`, `eb` / *easyconfig*,
 `apptainer exec`, `.sif`, `lfs setstripe`, `lfs quota`, `mmlsfs`, BeeGFS, CephFS, *scratch*,
-política de purga, cuota por proyecto, cola de GPU, HPL, HPCG, Top500, xCAT, Warewulf,
-"el trabajo se ha quedado en PENDING", "millones de ficheros pequeños".
+purge policy, per-project quota, GPU queue, HPL, HPCG, Top500, xCAT, Warewulf,
+"the job is stuck in PENDING", "millions of small files".
 
-**No aplica**: ver `high-speed-interconnect-standards` (**la red RDMA es suya**: InfiniBand,
-RoCE v2, `opensm`, particiones P_Key, UCX, GPUDirect, topología fat-tree y su
-sobresuscripción — aquí solo se **exige** que exista y que MPI la use, y se mide el efecto),
-`gpu-computing-standards` (**la GPU en sí**: driver, CUDA, MIG/MPS, DCGM, XID, consumo — aquí
-solo la GPU **como recurso planificable y contabilizado**),
-`datacenter-facilities-standards` (**la planta**: energía, kW/rack, refrigeración líquida,
-peso y suelo; el clúster denso vive allí antes que aquí),
-`server-hardware-standards` (el nodo como hierro, BMC y firmware),
-`os-provisioning-standards` (**el mecanismo de instalación masiva**: PXE, Kickstart, imagen —
-aquí xCAT/Warewulf solo como opción específica de HPC y el criterio de nodo sin estado),
-`linux-storage-standards` (bloque local, LVM, NVMe, planificadores de E/S),
-`zfs-standards` y `object-storage-standards` (otras capas de almacenamiento; aquí el
-**paralelo** y el archivo), `kubernetes-standards` (**el orquestador de contenedores y su
-clúster** — ver §2.2: no es sustituto directo de un planificador batch),
-`podman-systemd-containers-standards` (contenedores en un host suelto),
-`mlops-standards` y `deep-learning-standards` (**entrenar un modelo**: pipeline, registro,
-deriva, DDP/FSDP; aquí solo la cola que le da los nodos),
-`local-inference-standards` (servir un modelo), `fortran-standards`, `c-standards`,
-`cpp-standards`, `julia-standards`, `r-standards`, `python-standards` (**el código numérico y
-su calidad son suyos**; aquí cómo se compila, se empaqueta y se lanza),
-`performance-engineering-standards` (**la metodología general de medir**: modelo de carga,
-percentiles, perfilado — aquí la métrica propia del dominio, que es escalabilidad),
-`observability-standards`, `sre-practice-standards`, `ha-clustering-standards` (HA de
-servicio; aquí el clúster es *scale-out*, no *high-availability*),
-`backup-recovery-standards` (**y su criterio se aplica al revés en §3.6: el `scratch` no se
-respalda, y eso se declara**), `identity-access-management-standards` (el IdP que autentica al
-usuario), `linux-hardening-standards`, `selinux-standards`, `privacy-engineering-standards`
-(dato personal en el clúster), `grc-compliance-standards`, `finops-standards` (coste en nube y
-la comparación contra hardware propio), `green-it-standards` (huella del cálculo),
-`onprem-standards` (**paraguas de plataforma y su tabla de enrutado §1.2**: sus invariantes
-mandan), `homelab-standards` (**proporcionalidad**: cuatro máquinas en casa no son un clúster
-HPC y no necesitan Slurm), y `embedded-iot-standards`.
+**Not applicable**: see `high-speed-interconnect-standards` (**the RDMA network is theirs**: InfiniBand,
+RoCE v2, `opensm`, P_Key partitions, UCX, GPUDirect, fat-tree topology and its
+oversubscription — here we only **require** that it exists and that MPI uses it, and we measure the effect),
+`gpu-computing-standards` (**the GPU itself**: driver, CUDA, MIG/MPS, DCGM, XID, power draw — here
+only the GPU **as a schedulable and accounted resource**),
+`datacenter-facilities-standards` (**the facility**: power, kW/rack, liquid cooling,
+weight and floor loading; the dense cluster lives there before it lives here),
+`server-hardware-standards` (the node as hardware, BMC and firmware),
+`os-provisioning-standards` (**the mass installation mechanism**: PXE, Kickstart, image —
+here xCAT/Warewulf only as an HPC-specific option and the stateless node criteria),
+`linux-storage-standards` (local block, LVM, NVMe, I/O schedulers),
+`zfs-standards` and `object-storage-standards` (other storage layers; here the
+**parallel** one and the archive), `kubernetes-standards` (**the container orchestrator and its
+cluster** — see §2.2: it is not a direct substitute for a batch scheduler),
+`podman-systemd-containers-standards` (containers on a standalone host),
+`mlops-standards` and `deep-learning-standards` (**training a model**: pipeline, registry,
+drift, DDP/FSDP; here only the queue that gives it the nodes),
+`local-inference-standards` (serving a model), `fortran-standards`, `c-standards`,
+`cpp-standards`, `julia-standards`, `r-standards`, `python-standards` (**the numerical code and
+its quality are theirs**; here how it is compiled, packaged and launched),
+`performance-engineering-standards` (**the general measurement methodology**: load model,
+percentiles, profiling — here the domain's own metric, which is scalability),
+`observability-standards`, `sre-practice-standards`, `ha-clustering-standards` (service
+HA; here the cluster is *scale-out*, not *high-availability*),
+`backup-recovery-standards` (**and its criteria apply in reverse in §3.6: the `scratch` is not
+backed up, and that is declared**), `identity-access-management-standards` (the IdP that authenticates the
+user), `linux-hardening-standards`, `selinux-standards`, `privacy-engineering-standards`
+(personal data on the cluster), `grc-compliance-standards`, `finops-standards` (cloud cost and
+the comparison against owned hardware), `green-it-standards` (the footprint of the computation),
+`onprem-standards` (**platform umbrella and its routing table §1.2**: its invariants
+win), `homelab-standards` (**proportionality**: four machines at home are not an HPC
+cluster and do not need Slurm), and `embedded-iot-standards`.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión, el estado del proyecto y **la licencia leyendo el fichero en
-> crudo** antes de fijar nada (§8).
+> Verify the latest version, the state of the project and **the licence by reading the file
+> raw** before pinning anything (§8).
 
 ### 2.1 Toolchain
 
-| Pieza | Por defecto | Motivo / alternativa justificable |
+| Piece | Default | Reason / justifiable alternative |
 |---|---|---|
-| Planificador | **Slurm** | Estándar de facto en HPC académico y en buena parte del comercial; GPL (con excepción OpenSSL), soporte comercial de SchedMD disponible. Alternativas justificables abajo |
-| Entorno de módulos | **Lmod** | Jerárquico, con `module spider` y bloqueo de conflictos; sustituye a `environment-modules` clásico sin romper la sintaxis `module load` |
-| Construcción de software | **Spack** para el stack del sitio | Dual **Apache-2.0 / MIT** (verificado en crudo). Modela variantes, compiladores y dependencias como *specs*; genera módulos Lmod. **EasyBuild** (GPL-2.0, verificado en crudo) es alternativa legítima y madura, con *easyconfigs* más prescriptivos |
-| Contenedores | **Apptainer** (`.sif`) | **BSD-3-Clause** y proyecto de la Linux Foundation (verificado en crudo, ver §3.4). Ejecuta como el usuario, sin demonio, y monta el sistema paralelo. **Docker no encaja** por su modelo de privilegios |
-| MPI | **Open MPI** salvo motivo | El vendor MPI del fabricante de la red suele ganar en rendimiento y es alternativa legítima; **MPICH** es la otra base sólida y la que muchos MPI comerciales derivan |
-| Sistema de ficheros paralelo | **Lustre** en instalaciones grandes; **CephFS** si ya hay Ceph | Ver §2.3: la elección la manda tanto la licencia y el soporte como el patrón de E/S |
-| Aprovisionamiento de nodos | **Nodos de cálculo sin estado o reconstruibles** (imagen, no configuración acumulada) | Un nodo de cálculo *snowflake* rompe la reproducibilidad de los resultados, que aquí es el producto. `xCAT` y `Warewulf` son las herramientas propias del nicho; el criterio general es de `os-provisioning-standards` |
-| Contabilidad | **`slurmdbd` desde el día uno** | No es opcional (§3.2) |
+| Scheduler | **Slurm** | De facto standard in academic HPC and in much of the commercial world; GPL (with an OpenSSL exception), commercial support from SchedMD available. Justifiable alternatives below |
+| Module environment | **Lmod** | Hierarchical, with `module spider` and conflict blocking; replaces classic `environment-modules` without breaking the `module load` syntax |
+| Software builds | **Spack** for the site's stack | Dual **Apache-2.0 / MIT** (verified raw). Models variants, compilers and dependencies as *specs*; generates Lmod modules. **EasyBuild** (GPL-2.0, verified raw) is a legitimate and mature alternative, with more prescriptive *easyconfigs* |
+| Containers | **Apptainer** (`.sif`) | **BSD-3-Clause** and a Linux Foundation project (verified raw, see §3.4). Runs as the user, with no daemon, and mounts the parallel filesystem. **Docker does not fit** because of its privilege model |
+| MPI | **Open MPI** unless there is a reason | The network vendor's MPI usually wins on performance and is a legitimate alternative; **MPICH** is the other solid base and the one many commercial MPIs derive from |
+| Parallel filesystem | **Lustre** in large installations; **CephFS** if Ceph is already there | See §2.3: the choice is driven as much by licence and support as by the I/O pattern |
+| Node provisioning | **Stateless or rebuildable compute nodes** (image, not accumulated configuration) | A *snowflake* compute node breaks the reproducibility of results, which here is the product. `xCAT` and `Warewulf` are the niche's own tools; the general criteria belong to `os-provisioning-standards` |
+| Accounting | **`slurmdbd` from day one** | It is not optional (§3.2) |
 
-Versiones observadas en agosto de 2026 — **se verifican, no se copian** (§8): Slurm **26.05.x**
-(cadencia semestral `YY.MM`, soporte 18 meses), Open MPI **5.0.x**, Apptainer **1.5.x**,
-Spack **1.2.x**, Lustre LTS **2.15.x** con rama de características **2.17.x**.
+Versions observed in August 2026 — **they are verified, not copied** (§8): Slurm **26.05.x**
+(half-yearly `YY.MM` cadence, 18 months of support), Open MPI **5.0.x**, Apptainer **1.5.x**,
+Spack **1.2.x**, Lustre LTS **2.15.x** with feature branch **2.17.x**.
 
-### 2.2 Alternativas al planificador, y la comparación que se hace mal
+### 2.2 Alternatives to the scheduler, and the comparison that is made badly
 
-- **PBS Pro / OpenPBS** (Altair). **Aviso de licencia, verificado en crudo**: OpenPBS es
-  **AGPL-3.0-or-later**, no GPL ni permisiva. Se cree lo contrario con frecuencia; si hay
-  cualquier modificación expuesta como servicio, cambia la conversación legal. PBS Professional
-  es la edición comercial de Altair con licencia propietaria.
-- **IBM Spectrum LSF**: propietario, fuerte en entornos industriales y de EDA. Migrar de LSF a
-  Slurm es traducible en lo básico (`bsub` → `sbatch`) y doloroso en lo demás: políticas,
-  contabilidad y scripts de usuario.
-- **Kubernetes**: **no es un sustituto directo de un planificador batch**, y presentarlo como
-  tal es el error de diseño de moda. Diferencias que no se cierran con un plugin:
-  - K8s planifica **pods que deben seguir corriendo**; Slurm planifica **trabajos que deben
-    terminar**, con reserva de nodos completos, *backfill* y tiempo límite como contrato.
-  - Un trabajo MPI necesita **planificación en pandilla** (*gang scheduling*): todos los rangos
-    arrancan a la vez o no arranca ninguno. El planificador por defecto de K8s no lo hace; hay
-    proyectos que lo añaden (Volcano, Kueue, Slinky/Slurm-en-K8s). **El criterio de colas y
-    *gang scheduling* dentro del clúster es de `kubernetes-standards` §6**, que los tiene
-    verificados; **el criterio de cuándo esa carga no debe correr en Kubernetes es de aquí** y
-    manda sobre la elección de herramienta. Slinky sigue sin verificar (§8).
-  - Falta el equivalente nativo de **fairshare y contabilidad de consumo por proyecto**, que es
-    la razón de ser de un clúster compartido.
-  - **Cuándo sí**: cargas de servicio, inferencia, portales, CI y flujos de datos alrededor del
-    clúster. **Convivir es lo normal; sustituir, casi nunca.** La decisión se toma por el modelo
-    de trabajo (terminar vs. seguir corriendo), no por preferencia de plataforma.
+- **PBS Pro / OpenPBS** (Altair). **Licence warning, verified raw**: OpenPBS is
+  **AGPL-3.0-or-later**, not GPL and not permissive. The opposite is frequently believed; if there is
+  any modification exposed as a service, the legal conversation changes. PBS Professional
+  is Altair's commercial edition under a proprietary licence.
+- **IBM Spectrum LSF**: proprietary, strong in industrial and EDA environments. Migrating from LSF to
+  Slurm is translatable in the basics (`bsub` → `sbatch`) and painful in everything else: policies,
+  accounting and user scripts.
+- **Kubernetes**: **it is not a direct substitute for a batch scheduler**, and presenting it as
+  one is the fashionable design error. Differences that a plugin does not close:
+  - K8s schedules **pods that must keep running**; Slurm schedules **jobs that must
+    finish**, with whole-node reservation, *backfill* and a time limit as a contract.
+  - An MPI job needs **gang scheduling**: all ranks
+    start at once or none starts. The default K8s scheduler does not do that; there are
+    projects that add it (Volcano, Kueue, Slinky/Slurm-on-K8s). **The criteria for queues and
+    *gang scheduling* inside the cluster belong to `kubernetes-standards` §6**, which has them
+    verified; **the criteria for when that workload must not run on Kubernetes belong here** and
+    win over the choice of tool. Slinky remains unverified (§8).
+  - The native equivalent of **fairshare and per-project consumption accounting** is missing, and that is
+    the whole reason a shared cluster exists.
+  - **When it does fit**: service workloads, inference, portals, CI and data flows around the
+    cluster. **Coexisting is normal; replacing, almost never.** The decision is made on the work
+    model (finish vs. keep running), not on platform preference.
 
-### 2.3 Sistemas de ficheros paralelos — licencia y patrón de E/S
+### 2.3 Parallel filesystems — licence and I/O pattern
 
-**Ninguna de estas licencias se afirma de memoria; están leídas en crudo o en la fuente del
-fabricante** (§8).
+**None of these licences is asserted from memory; they are read raw or from the vendor's
+source** (§8).
 
-| Sistema | Licencia / modelo | Cuándo, y qué lo mata |
+| System | Licence / model | When, and what kills it |
 |---|---|---|
-| **Lustre** | Módulos de kernel bajo `GPL-2.0 WITH Linux-syscall-note` (verificado en el `COPYING` del repo); resto de componentes con licencias compatibles con GPL-2.0 | El caballo de batalla del HPC grande: caudal secuencial altísimo con *striping*. **Lo mata el metadato**: millones de ficheros pequeños saturan el MDS mucho antes que el ancho de banda |
-| **IBM Storage Scale** (antes **Spectrum Scale**, antes **GPFS**) | **Propietario, de pago**, con ediciones (Data Access / Data Management / Erasure Code) y métrica de licencia por capacidad o por socket | Ecosistema empresarial, gestión del ciclo de vida del dato y niveles integrados. El coste y la métrica de licencia son parte de la decisión, no un detalle |
-| **BeeGFS** | **No es open source.** El cliente kernel es GPL-2.0; **todo lo demás se rige por el *BeeGFS License Agreement*** (fichero en crudo verificado, **"As of February, 2026"**), con uso interno, límites de escala y **claves de licencia técnicas desde la versión 8** | Fácil de desplegar y muy rápido en cargas pequeñas y medianas. **Comprobar los términos y los umbrales antes de dimensionar**: han cambiado en 2026 |
-| **CephFS** | LGPL-2.1/LGPL-3.0 (Ceph); verificar en crudo antes de citar | Coherente si ya se opera Ceph para bloque y objeto. Menos caudal por cliente que Lustre en el caso HPC clásico; a cambio, una sola plataforma que operar |
+| **Lustre** | Kernel modules under `GPL-2.0 WITH Linux-syscall-note` (verified in the repo's `COPYING`); other components under GPL-2.0-compatible licences | The workhorse of big HPC: extremely high sequential throughput with *striping*. **Metadata kills it**: millions of small files saturate the MDS long before the bandwidth |
+| **IBM Storage Scale** (formerly **Spectrum Scale**, formerly **GPFS**) | **Proprietary, paid**, with editions (Data Access / Data Management / Erasure Code) and a licence metric by capacity or by socket | Enterprise ecosystem, data life cycle management and integrated tiers. The cost and the licence metric are part of the decision, not a detail |
+| **BeeGFS** | **It is not open source.** The kernel client is GPL-2.0; **everything else is governed by the *BeeGFS License Agreement*** (raw file verified, **"As of February, 2026"**), with internal use, scale limits and **technical licence keys from version 8 onwards** | Easy to deploy and very fast on small and medium workloads. **Check the terms and thresholds before sizing**: they changed in 2026 |
+| **CephFS** | LGPL-2.1/LGPL-3.0 (Ceph); verify raw before citing | Coherent if Ceph is already operated for block and object. Less throughput per client than Lustre in the classic HPC case; in exchange, a single platform to operate |
 
-**Regla transversal, y es la que más cuesta a los usuarios**: **el enemigo de todo sistema de
-ficheros paralelo es el fichero pequeño.** Está diseñado para pocos ficheros enormes leídos y
-escritos en paralelo. Un trabajo que crea 10 millones de ficheros de 4 KB —típico de mallas,
-de datasets de imágenes y de *checkpoints* por rango— degrada el clúster **entero**, no solo
-su propio trabajo. Mitigación: empaquetar (tar, HDF5, formatos de dataset), E/S colectiva
-(MPI-IO, parallel HDF5), un fichero por trabajo en vez de uno por rango, y usar el disco
-local del nodo cuando exista.
+**Cross-cutting rule, and the one users find hardest**: **the enemy of every parallel
+filesystem is the small file.** It is designed for a few huge files read and
+written in parallel. A job that creates 10 million 4 KB files —typical of meshes,
+image datasets and per-rank *checkpoints*— degrades the **whole** cluster, not just
+its own job. Mitigation: pack them (tar, HDF5, dataset formats), collective I/O
+(MPI-IO, parallel HDF5), one file per job instead of one per rank, and use the node's
+local disk when it exists.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Arquitectura del clúster
+### 3.1 Cluster architecture
 
-Roles separados, sin excepciones:
+Separate roles, no exceptions:
 
-- **Nodo(s) de login**: puerta de entrada. Editar, enviar trabajos, mirar resultados. Nada más.
-- **Nodos de cálculo**: donde ocurre el trabajo. Sin usuarios interactivos salvo por reserva
-  del planificador.
-- **Nodo(s) de gestión**: `slurmctld`, `slurmdbd`, base de datos, servicios de imagen y
-  monitorización. **Separados del login**, porque el login es el nodo que los usuarios tiran.
-- **Servidores del sistema de ficheros paralelo**: dedicados (MDS/OSS o equivalentes).
-- **Nodo(s) de transferencia de datos** cuando hay entrada/salida masiva, para que la
-  transferencia no compita con el login.
+- **Login node(s)**: the front door. Edit, submit jobs, look at results. Nothing else.
+- **Compute nodes**: where the work happens. No interactive users except through a scheduler
+  reservation.
+- **Management node(s)**: `slurmctld`, `slurmdbd`, the database, imaging and
+  monitoring services. **Separate from the login node**, because the login node is the node users bring down.
+- **Parallel filesystem servers**: dedicated (MDS/OSS or equivalents).
+- **Data transfer node(s)** when there is bulk ingress/egress, so that the
+  transfer does not compete with the login node.
 
-**Por qué nadie compila en el nodo de login**: el login está compartido por decenas de usuarios
-sin aislamiento de recursos. Un `make -j$(nproc)` consume toda la CPU y toda la memoria del
-nodo por el que **todo el mundo** entra; el resultado es que nadie puede ni mirar su cola.
-Además, el binario resultante hereda las capacidades del procesador del login, que puede no
-ser el de los nodos de cálculo — un `-march=native` allí produce un ejecutable que revienta
-con instrucción ilegal en el cálculo, o que corre por debajo de sus posibilidades.
-**Se compila en un trabajo interactivo (`salloc`/`srun`) o en un nodo dedicado a construcción.**
-Y se aplica **límite de recursos por usuario en el login** (cgroups vía systemd, `ulimit`,
-`arbiter`-like), porque la norma escrita no basta: se hace cumplir o no existe.
+**Why nobody compiles on the login node**: the login node is shared by dozens of users
+with no resource isolation. A `make -j$(nproc)` consumes all the CPU and all the memory of the
+node **everyone** comes in through; the result is that nobody can even look at their queue.
+Besides, the resulting binary inherits the login node's processor capabilities, which may not
+be those of the compute nodes — a `-march=native` there produces an executable that blows up
+with an illegal instruction on the compute side, or that runs below its potential.
+**You compile in an interactive job (`salloc`/`srun`) or on a node dedicated to builds.**
+And you apply **per-user resource limits on the login node** (cgroups via systemd, `ulimit`,
+`arbiter`-like), because a written rule is not enough: it is enforced or it does not exist.
 
-### 3.2 Slurm — lo que hay que decidir
+### 3.2 Slurm — what has to be decided
 
-- **Particiones por *función*, no por capricho**: cortas e interactivas, largas, de memoria
-  grande, de GPU, de depuración. Cada partición con **tiempo límite explícito**. Una partición
-  sin `MaxTime` es una cola donde los trabajos se quedan a vivir.
-- **Nodo entero o compartido**: decidir y documentarlo. Compartir nodo exige
-  **`cgroup.conf` con contención real de CPU y memoria**, o un trabajo que se pasa de memoria
-  mata al vecino. Sin *cgroups*, el nodo se asigna entero.
-- **Límites por asociación** (cuenta/usuario/partición): trabajos en cola, trabajos en
-  ejecución, nodos, CPU-hora. Existen para que un solo usuario no ocupe el clúster; se ponen
-  **antes** del incidente.
-- **QoS** para expresar prioridad y política: alta prioridad con preferencia (*preemption*),
-  baja prioridad y *preemptible* para relleno oportunista, QoS de depuración con límite corto y
-  poca espera.
-- ***Fairshare***: la prioridad se calcula contra el consumo histórico frente a la cuota
-  asignada. Es lo que hace que un grupo que consumió mucho el mes pasado ceda el paso. **No
-  funciona sin contabilidad.**
-- ***Backfill***: rellena huecos con trabajos cortos, y **solo funciona si los usuarios piden
-  tiempos realistas**. Pedir el máximo "por si acaso" es lo que degrada la eficiencia global
-  del clúster; se combate mostrando al usuario su eficiencia real (`seff`/`sacct`).
-- **Contabilidad (`slurmdbd`) — requisito, no lujo.** Sin ella no hay *fairshare*, no hay
-  informe de uso por proyecto, no hay forma de justificar la compra siguiente, no hay forma de
-  saber si el clúster se usa o se desperdicia, y no hay traza de quién ejecutó qué. Se instala
-  el primer día; retrofitarla no recupera el histórico perdido.
-- **Actualizaciones**: Slurm sostiene actualización en caliente desde las versiones mayores
-  anteriores admitidas, en un orden concreto (`slurmdbd` primero) y **con copia de la base de
-  datos antes**. Verificar la matriz de la versión concreta (§8) — saltarse una versión no
-  admitida obliga a una migración manual.
-- **Prólogo/epílogo**: limpiar procesos huérfanos, borrar temporales del nodo y sanear el
-  estado entre trabajos. Un nodo que arrastra procesos del trabajo anterior es la causa
-  silenciosa del "mi trabajo va la mitad de rápido que ayer".
+- **Partitions by *function*, not by whim**: short and interactive, long, big-memory,
+  GPU, debugging. Every partition with an **explicit time limit**. A partition
+  without `MaxTime` is a queue where jobs move in permanently.
+- **Whole node or shared**: decide it and document it. Sharing a node requires
+  **`cgroup.conf` with real CPU and memory containment**, or a job that overruns its memory
+  kills its neighbour. Without *cgroups*, the node is allocated whole.
+- **Per-association limits** (account/user/partition): queued jobs, running
+  jobs, nodes, CPU-hours. They exist so that a single user cannot occupy the cluster; they are set
+  **before** the incident.
+- **QoS** to express priority and policy: high priority with *preemption*,
+  low priority and *preemptible* for opportunistic backfill, debug QoS with a short limit and
+  little waiting.
+- ***Fairshare***: priority is computed against historical consumption relative to the assigned
+  quota. It is what makes a group that consumed a lot last month give way. **It does
+  not work without accounting.**
+- ***Backfill***: it fills gaps with short jobs, and **it only works if users request
+  realistic times**. Requesting the maximum "just in case" is what degrades the cluster's overall
+  efficiency; it is fought by showing the user their real efficiency (`seff`/`sacct`).
+- **Accounting (`slurmdbd`) — a requirement, not a luxury.** Without it there is no *fairshare*, no
+  per-project usage report, no way to justify the next purchase, no way to
+  know whether the cluster is used or wasted, and no trace of who ran what. It is installed
+  on day one; retrofitting it does not recover the lost history.
+- **Upgrades**: Slurm supports live upgrades from the supported previous major
+  versions, in a specific order (`slurmdbd` first) and **with a copy of the database
+  taken beforehand**. Verify the matrix for the specific version (§8) — skipping an unsupported
+  version forces a manual migration.
+- **Prologue/epilogue**: clean up orphaned processes, delete the node's temporary files and sanitise the
+  state between jobs. A node that drags along processes from the previous job is the
+  silent cause of "my job runs half as fast as yesterday".
 
-### 3.3 MPI, afinidad y escalabilidad
+### 3.3 MPI, affinity and scalability
 
-- **La afinidad se fija siempre.** Sin *pinning*, el planificador del sistema operativo mueve
-  los rangos entre núcleos y entre nodos NUMA; el rendimiento se vuelve no reproducible y cae.
-  Se fija por el lanzador (`srun --cpu-bind`, opciones de *mapping* del MPI) y **se verifica**
-  imprimiendo el mapa de rangos a núcleos antes de creerse una medida.
-- **El error clásico del dominio: medir escalabilidad sin fijar afinidad.** La curva resultante
-  no mide el código, mide la aleatoriedad del planificador. Toda medida de escalabilidad
-  declara: afinidad, versión de MPI y de compilador, distribución de rangos, tamaño del
-  problema, y si el nodo estaba en exclusiva.
-- **Escalabilidad fuerte** (problema fijo, más recursos: ¿baja el tiempo?) frente a **débil**
-  (problema crece con los recursos: ¿se mantiene el tiempo?). Se declara **cuál** se está
-  midiendo. Una curva de escalabilidad fuerte que se aplana no es un fallo: es la ley de
-  Amdahl, y el punto donde se aplana **es** el resultado útil, porque marca el número de nodos
-  a partir del cual pedir más es desperdiciar cuota.
-- **Un solo nodo primero.** Antes de escalar, se comprueba que el código usa bien un nodo:
-  vectorización, memoria, hilos. Escalar código ineficiente multiplica el desperdicio.
-- **Híbrido MPI+OpenMP**: reduce rangos y comunicación, pero exige colocar hilos por nodo NUMA.
-  Se justifica con medida, no por defecto.
+- **Affinity is always pinned.** Without *pinning*, the operating system scheduler moves
+  ranks between cores and between NUMA nodes; performance becomes non-reproducible and drops.
+  It is set by the launcher (`srun --cpu-bind`, the MPI's *mapping* options) and **it is verified**
+  by printing the rank-to-core map before believing a measurement.
+- **The classic error of the domain: measuring scalability without pinning affinity.** The resulting
+  curve does not measure the code, it measures the scheduler's randomness. Every scalability measurement
+  declares: affinity, MPI and compiler versions, rank distribution, problem
+  size, and whether the node was exclusive.
+- **Strong scaling** (fixed problem, more resources: does the time go down?) versus **weak**
+  (problem grows with the resources: does the time hold?). You declare **which one** you are
+  measuring. A strong-scaling curve that flattens is not a failure: it is Amdahl's
+  law, and the point where it flattens **is** the useful result, because it marks the number of nodes
+  beyond which asking for more is wasting quota.
+- **A single node first.** Before scaling, you check that the code uses one node well:
+  vectorisation, memory, threads. Scaling inefficient code multiplies the waste.
+- **Hybrid MPI+OpenMP**: it reduces ranks and communication, but it requires placing threads by NUMA node.
+  It is justified by measurement, not by default.
 
-### 3.4 Entorno de software
+### 3.4 Software environment
 
-- **El usuario no compila sus dependencias a mano.** Se le da un stack construido con Spack o
-  EasyBuild y expuesto por Lmod. Lo contrario es un clúster con doce versiones de la misma
-  biblioteca y ningún resultado reproducible.
-- **Los módulos se versionan explícitamente.** `module load fftw` sin versión hace que el
-  trabajo de la semana que viene use otra biblioteca sin avisar. En un script de trabajo, la
-  versión va escrita.
-- **El entorno del trabajo se declara dentro del script**, no se hereda del intérprete del
-  usuario. Heredar `~/.bashrc` es la causa habitual de "en mi sesión funciona y en la cola no".
-- **Contenedores en HPC: Apptainer**, y la razón es de modelo de privilegios. Docker exige un
-  demonio con privilegios de root y coloca al usuario en un grupo equivalente a root en el
-  nodo; en una máquina multiusuario compartida eso es inaceptable. Apptainer ejecuta la imagen
-  **como el usuario que la lanza**, sin demonio, con el sistema de ficheros paralelo y la red
-  del nodo visibles, y con la imagen como **un único fichero `.sif`** — que además es
-  amable con el sistema de ficheros paralelo, al revés que un árbol de capas.
-  - **Nota de nombre y gobernanza, verificada**: el proyecto se llamaba **Singularity** y pasó a
-    llamarse **Apptainer** al entrar en la **Linux Foundation**; existe en paralelo un producto
-    comercial homónimo de otra empresa. Al citar documentación hay que mirar **cuál** de los dos
-    es. Licencia leída en crudo: **BSD-3-Clause**.
-  - El contenedor **no exime de nada**: la imagen se versiona, se firma o se verifica por
-    resumen, y se declara en el trabajo. Un `.sif` sin procedencia es un binario opaco corriendo
-    con los datos del usuario.
+- **The user does not compile their dependencies by hand.** They are given a stack built with Spack or
+  EasyBuild and exposed through Lmod. The opposite is a cluster with twelve versions of the same
+  library and no reproducible results.
+- **Modules are versioned explicitly.** `module load fftw` without a version makes next
+  week's job use a different library with no warning. In a job script, the
+  version is written down.
+- **The job's environment is declared inside the script**, it is not inherited from the user's
+  shell. Inheriting `~/.bashrc` is the usual cause of "it works in my session and not in the queue".
+- **Containers in HPC: Apptainer**, and the reason is the privilege model. Docker requires a
+  daemon with root privileges and puts the user in a group equivalent to root on the
+  node; on a shared multi-user machine that is unacceptable. Apptainer runs the image
+  **as the user who launches it**, with no daemon, with the parallel filesystem and the node's
+  network visible, and with the image as **a single `.sif` file** — which is also
+  friendly to the parallel filesystem, unlike a tree of layers.
+  - **Naming and governance note, verified**: the project was called **Singularity** and was
+    renamed **Apptainer** when it joined the **Linux Foundation**; in parallel there is a
+    commercial product of the same name from a different company. When citing documentation you have to look at **which** of the two
+    it is. Licence read raw: **BSD-3-Clause**.
+  - The container **exempts you from nothing**: the image is versioned, signed or verified by
+    digest, and declared in the job. A `.sif` with no provenance is an opaque binary running
+    with the user's data.
 
-### 3.5 Almacenamiento: home, scratch y archivo
+### 3.5 Storage: home, scratch and archive
 
-Tres niveles con propósitos distintos, y **confundirlos es el origen de la mayoría de los
-incidentes de datos del dominio**:
+Three tiers with different purposes, and **confusing them is the origin of most of the
+domain's data incidents**:
 
-| Nivel | Para qué | Cuota | Respaldo | Rendimiento |
+| Tier | What for | Quota | Backup | Performance |
 |---|---|---|---|---|
-| `home` | Código, scripts, configuración | Pequeña y estricta | **Sí** | Modesto |
-| `scratch` (paralelo) | Datos de trabajos en ejecución | Grande | **No** | Máximo |
-| `archivo` / objeto / cinta | Resultados que hay que conservar | Grande | Sí, y es su razón de ser | Lento, latencia alta |
+| `home` | Code, scripts, configuration | Small and strict | **Yes** | Modest |
+| `scratch` (parallel) | Data of running jobs | Large | **No** | Maximum |
+| `archive` / object / tape | Results that must be kept | Large | Yes, and that is its reason for existing | Slow, high latency |
 
-- **La política de purga es obligatoria, y se anuncia.** El `scratch` se purga por antigüedad
-  de acceso (típicamente semanas). Sin purga, el `scratch` se llena, y un `scratch` lleno para
-  el clúster entero, no a un usuario.
-- **La purga se comunica antes, se avisa individualmente y se aplica sin excepción.** Las
-  excepciones informales son cómo un sistema de purga deja de funcionar.
-- **El `scratch` no se respalda, y eso se dice por escrito** en la documentación del servicio y
-  en la incorporación de cada usuario. Un usuario que pierde tres meses de resultados porque
-  creía que había copia es un fallo de comunicación del servicio, no del usuario.
-- **Cuotas por proyecto además de por usuario**, en espacio **y en número de inodos**. La cuota
-  de inodos es la que frena de verdad el problema del fichero pequeño (§2.3).
-- ***Checkpointing*** de la aplicación: los trabajos largos escriben estado periódicamente y
-  saben reanudar. Es lo que convierte un fallo de nodo en una hora perdida y no en una semana,
-  y lo que permite tiempos límite de partición cortos y sanos.
+- **The purge policy is mandatory, and it is announced.** The `scratch` is purged by access
+  age (typically weeks). Without purging, the `scratch` fills up, and a full `scratch` stops
+  the whole cluster, not one user.
+- **The purge is communicated in advance, notified individually and applied without exception.**
+  Informal exceptions are how a purge system stops working.
+- **The `scratch` is not backed up, and that is stated in writing** in the service documentation and
+  in every user's onboarding. A user who loses three months of results because
+  they believed there was a copy is a service communication failure, not a user failure.
+- **Per-project quotas as well as per-user ones**, in space **and in number of inodes**. The inode
+  quota is what really curbs the small-file problem (§2.3).
+- ***Checkpointing*** of the application: long jobs write state periodically and
+  know how to resume. It is what turns a node failure into an hour lost instead of a week,
+  and what allows short, healthy partition time limits.
 
-### 3.6 GPU en el clúster
+### 3.6 GPUs in the cluster
 
-- **La GPU es un recurso planificable y contabilizado**, igual que la CPU y la memoria: se
-  pide en el trabajo, se aísla por *cgroup* y **se contabiliza como TRES** para que entre en
-  el *fairshare*. Un clúster que no contabiliza GPU-hora reparte lo más caro que tiene sin
-  ninguna política.
-- **La utilización real se mide.** El patrón dominante es el trabajo que reserva 8 GPU y usa
-  una al 20 %. Se instrumenta y se le devuelve el dato al usuario; si no, la ampliación
-  siguiente compra hardware para desperdiciarlo igual.
-- **Colas de GPU separadas** de las de CPU, con límites propios: son el recurso escaso y el
-  caro. Todo lo demás sobre la GPU (driver, MIG, DCGM, XID, alimentación) es de
+- **The GPU is a schedulable and accounted resource**, just like CPU and memory: it is
+  requested in the job, isolated by *cgroup* and **accounted as a TRES** so that it enters
+  the *fairshare*. A cluster that does not account for GPU-hours distributes the most expensive thing it has with
+  no policy at all.
+- **Real utilisation is measured.** The dominant pattern is the job that reserves 8 GPUs and uses
+  one at 20 %. It is instrumented and the figure is given back to the user; otherwise, the next
+  expansion buys hardware to waste it just the same.
+- **Separate GPU queues** from the CPU ones, with their own limits: they are the scarce and
+  expensive resource. Everything else about the GPU (driver, MIG, DCGM, XID, power) belongs to
   `gpu-computing-standards`.
 
-### 3.7 Medir el clúster con honestidad
+### 3.7 Measuring the cluster honestly
 
-- **HPL** (el *benchmark* del Top500) mide álgebra lineal densa con altísima intensidad
-  aritmética y **casi ninguna** presión de memoria o de red respecto al cómputo. Es una prueba
-  de aceptación válida de que la máquina rinde lo comprado, y **una predicción pésima** del
-  rendimiento de una aplicación real.
-- **HPCG** existe precisamente por esa divergencia: patrones dispersos, limitados por ancho de
-  banda de memoria y por comunicación. Los sistemas suelen alcanzar en HPCG una fracción muy
-  pequeña de su cifra de HPL, y **esa brecha es la información**: dice cuánto de la máquina
-  comprada es alcanzable por código real. Consultar las listas vigentes antes de citar cifras
-  (§8); el Top500 se publica dos veces al año (junio y noviembre).
-- **La medida que decide es la aplicación del sitio**, con sus datos, en un conjunto de casos
-  representativos. Se conserva como línea base y se repite tras cada cambio de compilador,
-  MPI, driver o kernel.
-- **Toda cifra se publica con condiciones**: nodos, exclusividad, versiones, afinidad, tamaño
-  del problema, y si el sistema estaba en producción. Sin eso, no es un número, es una anécdota.
+- **HPL** (the Top500 *benchmark*) measures dense linear algebra with very high arithmetic
+  intensity and **almost no** memory or network pressure relative to the compute. It is a valid
+  acceptance test that the machine performs as purchased, and **a terrible prediction** of the
+  performance of a real application.
+- **HPCG** exists precisely because of that divergence: sparse patterns, limited by memory
+  bandwidth and by communication. Systems typically reach in HPCG a very
+  small fraction of their HPL figure, and **that gap is the information**: it tells you how much of the
+  purchased machine is reachable by real code. Consult the current lists before citing figures
+  (§8); the Top500 is published twice a year (June and November).
+- **The measurement that decides is the site's application**, with its data, on a set of
+  representative cases. It is kept as a baseline and repeated after every change of compiler,
+  MPI, driver or kernel.
+- **Every figure is published with its conditions**: nodes, exclusivity, versions, affinity, problem
+  size, and whether the system was in production. Without that, it is not a number, it is an anecdote.
 
-### 3.8 Multiusuario: aislamiento y dato sensible
+### 3.8 Multi-user: isolation and sensitive data
 
-- **Un clúster compartido es un entorno hostil por defecto.** Los usuarios ven la misma máquina,
-  los mismos sistemas de ficheros y los mismos nodos.
-- **Permisos por proyecto**: directorios de grupo con `setgid` y ACL, `umask` restrictiva por
-  defecto. El `home` legible por todo el mundo es la fuga de datos más común y más aburrida
-  del dominio.
-- **Contención por trabajo con *cgroups***: CPU, memoria y dispositivos. Sin ella, un trabajo
-  se lleva por delante a sus vecinos y no hay política de reparto que valga.
-- **Los nodos de cálculo no salen a Internet** por defecto, y el acceso a un nodo se concede
-  **solo** mientras el usuario tiene un trabajo asignado en él.
-- **Nada de credenciales compartidas ni cuentas de grupo.** La identidad es individual porque
-  la contabilidad y la traza dependen de ella.
-- **Dato sensible (personal, sanitario, clasificado) en un clúster compartido**: no se mete "y
-  ya se verá". Exige decisión previa — partición o clúster segregado, cifrado en reposo,
-  restricción de nodos, control de exportación y registro de acceso — y coordinación con
-  `privacy-engineering-standards` y `grc-compliance-standards`. Un `scratch` compartido y sin
-  respaldo es el peor sitio posible para un dato regulado.
-- **Superficie propia del dominio**: el planificador ejecuta código de usuario en cientos de
-  nodos con su propio demonio privilegiado. Los CVE de Slurm son de riesgo alto por diseño; el
-  parcheo del planificador se trata como el de un servicio expuesto, no como el de una utilidad
-  interna (`vulnerability-management-standards`).
+- **A shared cluster is a hostile environment by default.** Users see the same machine,
+  the same filesystems and the same nodes.
+- **Per-project permissions**: group directories with `setgid` and ACLs, restrictive `umask` by
+  default. A world-readable `home` is the most common and most boring data leak
+  in the domain.
+- **Per-job containment with *cgroups***: CPU, memory and devices. Without it, one job
+  takes its neighbours down and no sharing policy is worth anything.
+- **Compute nodes do not reach the Internet** by default, and access to a node is granted
+  **only** while the user has a job allocated on it.
+- **No shared credentials and no group accounts.** Identity is individual because
+  accounting and traceability depend on it.
+- **Sensitive data (personal, health, classified) on a shared cluster**: it does not get put in "and
+  we'll see". It requires a prior decision — a segregated partition or cluster, encryption at rest,
+  node restriction, export control and access logging — and coordination with
+  `privacy-engineering-standards` and `grc-compliance-standards`. A shared, unbacked-up
+  `scratch` is the worst possible place for regulated data.
+- **Surface specific to the domain**: the scheduler runs user code on hundreds of
+  nodes with its own privileged daemon. Slurm CVEs are high-risk by design; the
+  scheduler's patching is treated like that of an exposed service, not like that of an internal
+  utility (`vulnerability-management-standards`).
 
-## 4. Calidad y operación del servicio
+## 4. Quality and service operation
 
-- **Prueba de aceptación del clúster antes de abrirlo**: HPL o equivalente a plena carga (que
-  además valida energía y refrigeración de la sala), verificación de la red de cómputo extremo a
-  extremo, prueba de caudal y de metadatos del sistema paralelo, y una aplicación real.
-- **Comprobación de salud del nodo** integrada en el planificador: antes y después de cada
-  trabajo se verifica memoria, sistemas de ficheros montados, temperatura y estado de la red
-  y de los aceleradores. **Un nodo que falla se marca `DRAIN` automáticamente**, no se deja
-  devolviendo resultados corruptos o lentos. Este es el control de calidad más rentable del
-  dominio: sin él, un solo nodo enfermo contamina semanas de resultados.
-- **Métricas que importan**: ocupación por partición, tiempo de espera en cola por QoS,
-  trabajos fallidos por causa, eficiencia de CPU y de memoria por trabajo, utilización de GPU,
-  caudal y **operaciones de metadatos** del sistema paralelo, nodos en `DRAIN`.
-- **Portal o informe de uso por proyecto**: el consumo se le enseña a quien lo paga y a quien
-  lo consume. Sin eso, la contabilidad es un fichero que nadie mira.
-- **Documentación del servicio** con lo mínimo: cómo entrar, cómo lanzar, qué particiones hay,
-  qué límites, dónde escribir, **qué se purga y cuándo**, y qué no se respalda. Es parte del
-  producto.
-- **Ventanas de mantenimiento anunciadas y con reserva del planificador**, no apagones a mano:
-  se crea una reserva que drena la cola sin matar trabajos en curso.
+- **Cluster acceptance test before opening it**: HPL or equivalent at full load (which
+  also validates the room's power and cooling), end-to-end verification of the compute
+  network, throughput and metadata testing of the parallel filesystem, and a real application.
+- **Node health check** integrated into the scheduler: before and after every
+  job, memory, mounted filesystems, temperature and the state of the network
+  and the accelerators are checked. **A node that fails is automatically marked `DRAIN`**, it is not left
+  returning corrupt or slow results. This is the most profitable quality control in the
+  domain: without it, a single sick node contaminates weeks of results.
+- **Metrics that matter**: occupancy per partition, queue wait time per QoS,
+  failed jobs by cause, CPU and memory efficiency per job, GPU utilisation,
+  throughput and **metadata operations** of the parallel filesystem, nodes in `DRAIN`.
+- **Per-project usage portal or report**: consumption is shown to whoever pays for it and whoever
+  consumes it. Without that, accounting is a file nobody looks at.
+- **Service documentation** with the minimum: how to log in, how to submit, which partitions exist,
+  which limits apply, where to write, **what gets purged and when**, and what is not backed up. It is part of the
+  product.
+- **Announced maintenance windows with a scheduler reservation**, not manual shutdowns:
+  a reservation is created that drains the queue without killing running jobs.
 
-## 5. Sostenibilidad a largo plazo y prohibiciones
+## 5. Long-term sustainability and prohibitions
 
-**Cadencia**: Slurm sigue versiones `YY.MM` semestrales con ~18 meses de soporte — planificar
-al menos una actualización mayor al año y **no acumular saltos por encima de la ventana de
-actualización directa admitida**. El stack de software (Spack/EasyBuild) se reconstruye por
-generaciones, con la generación anterior conviviendo un tiempo declarado. El sistema de
-ficheros paralelo se actualiza con matriz de compatibilidad cliente/servidor y kernel
-verificada — es la actualización más arriesgada del clúster.
+**Cadence**: Slurm follows half-yearly `YY.MM` versions with ~18 months of support — plan
+at least one major upgrade a year and **do not accumulate jumps beyond the supported direct
+upgrade window**. The software stack (Spack/EasyBuild) is rebuilt in
+generations, with the previous generation coexisting for a declared period. The parallel
+filesystem is upgraded with a verified client/server and kernel compatibility
+matrix — it is the riskiest upgrade in the cluster.
 
-**Deuda propia del dominio**: el clúster acumula módulos que nadie usa, datos que nadie
-reclama y cuentas de gente que se fue hace tres años. Revisión anual de las tres cosas, con
-fecha.
+**Debt specific to the domain**: the cluster accumulates modules nobody uses, data nobody
+claims and accounts of people who left three years ago. Annual review of all three, with a
+date.
 
-Prohibiciones:
+Prohibitions:
 
-- ❌ **Compilar o ejecutar cálculo en el nodo de login.** Y no basta con prohibirlo en la
-  documentación: se limita con *cgroups*.
-- ❌ **Clúster en producción sin `slurmdbd`** ni contabilidad. Sin ella no hay *fairshare*, ni
-  informe, ni traza.
-- ❌ **Particiones sin tiempo límite** o sin límites por asociación.
-- ❌ **Nodos compartidos sin contención de CPU y memoria por *cgroup*.**
-- ❌ **`scratch` sin política de purga**, o con purga anunciada y no aplicada.
-- ❌ **Prometer o insinuar respaldo del `scratch`.** Se dice explícitamente que no lo hay.
-- ❌ **Millones de ficheros pequeños sobre el sistema paralelo** como patrón aceptado; se
-  empaqueta, y la cuota de inodos lo hace cumplir.
-- ❌ **`module load` sin versión** en un script de trabajo.
-- ❌ **Publicar una medida de escalabilidad sin declarar afinidad**, versiones, tamaño de
-  problema y exclusividad del nodo.
-- ❌ **Usar HPL como predicción del rendimiento de una aplicación real**, o citar una cifra de
-  Top500/HPCG sin la lista y la fecha.
-- ❌ **Docker con demonio privilegiado en nodos de cálculo compartidos.**
-- ❌ **`-march=native` compilado en un nodo distinto del de ejecución** sin verificar que la
-  arquitectura coincide.
-- ❌ **Cuentas compartidas o credenciales de grupo.**
-- ❌ **Meter dato personal o regulado en el `scratch` compartido** sin decisión previa de
-  segregación y control.
-- ❌ **Afirmar la licencia de Lustre, BeeGFS, Storage Scale, Slurm, Apptainer, Spack o OpenPBS
-  de memoria.** Cuatro de ellas no son lo que la gente cree, y una cambió en 2026 (§2.3).
-- ❌ **Presentar Kubernetes como sustituto de un planificador batch** sin haber resuelto
-  explícitamente planificación en pandilla, *fairshare* y contabilidad.
+- ❌ **Compiling or running computation on the login node.** And prohibiting it in the
+  documentation is not enough: it is limited with *cgroups*.
+- ❌ **A cluster in production without `slurmdbd`** or accounting. Without it there is no *fairshare*, no
+  report, and no trace.
+- ❌ **Partitions without a time limit** or without per-association limits.
+- ❌ **Shared nodes without CPU and memory containment by *cgroup*.**
+- ❌ **`scratch` without a purge policy**, or with an announced purge that is not applied.
+- ❌ **Promising or implying that the `scratch` is backed up.** It is stated explicitly that it is not.
+- ❌ **Millions of small files on the parallel filesystem** as an accepted pattern; they are
+  packed, and the inode quota enforces it.
+- ❌ **`module load` without a version** in a job script.
+- ❌ **Publishing a scalability measurement without declaring affinity**, versions, problem
+  size and node exclusivity.
+- ❌ **Using HPL as a prediction of a real application's performance**, or citing a
+  Top500/HPCG figure without the list and the date.
+- ❌ **Docker with a privileged daemon on shared compute nodes.**
+- ❌ **`-march=native` compiled on a node different from the execution one** without verifying that the
+  architecture matches.
+- ❌ **Shared accounts or group credentials.**
+- ❌ **Putting personal or regulated data on the shared `scratch`** without a prior decision on
+  segregation and control.
+- ❌ **Asserting the licence of Lustre, BeeGFS, Storage Scale, Slurm, Apptainer, Spack or OpenPBS
+  from memory.** Four of them are not what people believe, and one changed in 2026 (§2.3).
+- ❌ **Presenting Kubernetes as a substitute for a batch scheduler** without having explicitly
+  solved gang scheduling, *fairshare* and accounting.
 
-## 6. Verificación web obligatoria
+## 6. Mandatory web verification
 
-Antes de fijar cualquier dato de este documento:
+Before pinning any datum in this document:
 
-1. **Slurm**: última versión y ventana de actualización directa admitida. Verificado en agosto
-   de 2026: tags `v26.05.2` y `v25.11.7` en el repositorio; cadencia semestral `YY.MM` con
-   soporte de 18 meses (confirmado en la hoja de ruta de SchedMD presentada en SC'25).
-   **`schedmd.com/slurm-support/release-announcements/` redirige a GitHub Releases** — usar el
-   feed Atom de tags, no el feed de releases ni una API sin autenticar.
-2. **Licencias, leídas en crudo — resultado de esta verificación**:
-   - Slurm: `COPYING` del repositorio → **GPL con excepción explícita de enlazado con OpenSSL**.
+1. **Slurm**: latest version and the supported direct upgrade window. Verified in August
+   2026: tags `v26.05.2` and `v25.11.7` in the repository; half-yearly `YY.MM` cadence with
+   18 months of support (confirmed in SchedMD's roadmap presented at SC'25).
+   **`schedmd.com/slurm-support/release-announcements/` redirects to GitHub Releases** — use the
+   tags Atom feed, not the releases feed and not an unauthenticated API.
+2. **Licences, read raw — result of this verification**:
+   - Slurm: the repository's `COPYING` → **GPL with an explicit exception for linking with OpenSSL**.
    - Apptainer: `LICENSE.md` → **BSD-3-Clause**, "Apptainer a Series of LF Projects LLC".
-   - Lustre: `COPYING` → `SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note` para los
-     módulos de kernel; resto de componentes, licencias compatibles con GPL-2.0.
-   - OpenPBS: `LICENSE` → **AGPL-3.0-or-later** (Altair). **No es GPL ni permisiva.**
+   - Lustre: `COPYING` → `SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note` for the
+     kernel modules; other components, GPL-2.0-compatible licences.
+   - OpenPBS: `LICENSE` → **AGPL-3.0-or-later** (Altair). **It is neither GPL nor permissive.**
    - Spack: **Apache-2.0 / MIT** dual. EasyBuild: **GPL-2.0**.
-   - BeeGFS: `LICENSE.txt` remite al *BeeGFS License Agreement*; el texto en crudo se declara
-     **"As of February, 2026"** y limita el uso de la edición Community a uso interno, con
-     claves de licencia técnicas desde la versión 8. **No es software libre.** Re-verificar
-     antes de cualquier despliegue: los términos cambiaron en 2026 y pueden volver a cambiar.
-   - **Hueco declarado**: la licencia de **CephFS** se ha dado por conocida (LGPL) pero **no se
-     ha leído en crudo en esta pasada**; léela antes de citarla.
-   - **Hueco declarado**: **IBM Storage Scale** es propietario y sus métricas de licencia
-     (capacidad frente a socket, ediciones) se han tomado de documentación de IBM, no de un
-     contrato. Cualquier cifra de coste se pide a IBM o al distribuidor.
-3. **Lmod**: **hueco declarado** — el fichero de licencia no se ha localizado en la ruta
-   probada (`COPYRIGHT` en `master` devuelve 404). Léela en el repositorio de TACC antes de
-   afirmarla.
-4. **Nombres y gobernanza**: Apptainer ↔ Singularity (cambio de nombre al entrar en la Linux
-   Foundation, más un producto comercial homónimo de otra empresa) y GPFS ↔ Spectrum Scale ↔
-   **IBM Storage Scale**. Comprobar de cuál habla la documentación que se esté leyendo.
-5. **Kubernetes para HPC**: ~~estado y licencia de Volcano y Kueue~~ — **hueco CERRADO**: están
-   verificados en `kubernetes-standards` §6 (con su versión, API, gobernanza y licencia); usa
-   aquella y re-verifica allí. **Sigue abierto**: las integraciones Slurm–Kubernetes (Slinky y
-   equivalentes), que no se han verificado y se citan como opción a evaluar, no como
-   recomendación.
-6. **Versiones**: Open MPI (5.0.x observado), MPICH, Apptainer (1.5.x), Spack (1.2.x), Lustre
-   (LTS **2.15.x**, rama de características **2.17.x**) — y la **matriz de compatibilidad de
-   kernel y de cliente/servidor** del sistema de ficheros, que es la que rompe una migración.
-7. **CVE del planificador y del sistema de ficheros**: triaje con CVSS + EPSS + **KEV**. Slurm
-   ha tenido vulnerabilidades de escalada de alto impacto; se vigila activamente.
-8. **Cifras**: Top500/HPCG se publican en junio y noviembre; toda cifra citada lleva lista y
-   fecha. **Ninguna estimación de "eficiencia media de un clúster" o de "porcentaje de pico
-   alcanzable" se escribe sin fuente y metodología.**
+   - BeeGFS: `LICENSE.txt` refers to the *BeeGFS License Agreement*; the raw text declares itself
+     **"As of February, 2026"** and limits the use of the Community edition to internal use, with
+     technical licence keys from version 8 onwards. **It is not free software.** Re-verify
+     before any deployment: the terms changed in 2026 and may change again.
+   - **Declared gap**: the licence of **CephFS** has been taken as known (LGPL) but **it has not
+     been read raw in this pass**; read it before citing it.
+   - **Declared gap**: **IBM Storage Scale** is proprietary and its licence metrics
+     (capacity versus socket, editions) have been taken from IBM documentation, not from a
+     contract. Any cost figure is requested from IBM or the reseller.
+3. **Lmod**: **declared gap** — the licence file was not located at the path
+   tried (`COPYRIGHT` on `master` returns 404). Read it in the TACC repository before
+   asserting it.
+4. **Names and governance**: Apptainer ↔ Singularity (renamed when joining the Linux
+   Foundation, plus a commercial product of the same name from a different company) and GPFS ↔ Spectrum Scale ↔
+   **IBM Storage Scale**. Check which one the documentation you are reading is talking about.
+5. **Kubernetes for HPC**: ~~status and licence of Volcano and Kueue~~ — **gap CLOSED**: they are
+   verified in `kubernetes-standards` §6 (with their version, API, governance and licence); use
+   that one and re-verify there. **Still open**: the Slurm–Kubernetes integrations (Slinky and
+   equivalents), which have not been verified and are cited as an option to evaluate, not as a
+   recommendation.
+6. **Versions**: Open MPI (5.0.x observed), MPICH, Apptainer (1.5.x), Spack (1.2.x), Lustre
+   (LTS **2.15.x**, feature branch **2.17.x**) — and the **kernel and client/server compatibility
+   matrix** of the filesystem, which is what breaks a migration.
+7. **Scheduler and filesystem CVEs**: triage with CVSS + EPSS + **KEV**. Slurm
+   has had high-impact escalation vulnerabilities; it is actively watched.
+8. **Figures**: Top500/HPCG are published in June and November; every cited figure carries its list and
+   date. **No estimate of "average cluster efficiency" or of "percentage of peak
+   achievable" is written without a source and a methodology.**
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

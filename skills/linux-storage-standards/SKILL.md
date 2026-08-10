@@ -3,102 +3,102 @@ name: linux-storage-standards
 description: Linux block storage and traditional filesystems, everything except ZFS. Use when working with LVM (pvcreate, vgcreate, lvcreate, lvextend, lvresize, pvmove, lvmthin thin pools, thin_pool_autoextend_threshold, lvm.conf, dmeventd), mdadm software RAID (--consistency-policy ppl/journal, write-intent bitmap, /proc/mdstat, mdadm.conf), ext4/XFS/btrfs (mkfs.ext4, mkfs.xfs, xfs_growfs, xfs_repair, xfs_info, resize2fs, tune2fs, e2fsck, dumpe2fs, btrfs subvolume/scrub/balance), mount options (noatime, discard, nofail, x-systemd.device-timeout), fstrim.timer, blkid, lsblk, partitioning with parted/sgdisk, NVMe and SSD wear (nvme-cli, smartctl, over-provisioning, /sys/block/*/queue/scheduler none vs mq-deadline vs bfq, nr_requests), device-mapper multipath (multipath -ll, multipath.conf, /dev/mapper aliases), iSCSI initiator (iscsiadm, open-iscsi, node.session.timeo), NFS client mounts (hard vs soft, timeo, retrans, nconnect), LUKS/dm-crypt (cryptsetup, crypttab, luksFormat, argon2id), disk quotas, inode exhaustion, df versus du discrepancies, and I/O diagnosis or benchmarking with iostat, iotop, blktrace, biolatency or fio.
 ---
 
-# Estándares de almacenamiento en Linux (capa de bloques y filesystems)
+# Linux storage standards (block layer and filesystems)
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-> **Premisa dura**: el almacenamiento en Linux es **una pila de capas**, y casi todo diagnóstico
-> equivocado nace de tratarla como una sola. "El disco va lento" rara vez es el disco. Antes de
-> tocar nada, **sitúa el problema en su capa**.
+> **Hard premise**: storage in Linux is **a stack of layers**, and almost every wrong diagnosis
+> comes from treating it as one. "The disk is slow" is rarely the disk. Before
+> touching anything, **place the problem in its layer**.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a todo el almacenamiento local y de bloques de un host Linux **que no sea ZFS**: la pila de
-dispositivo a aplicación, LVM, RAID por software, filesystems tradicionales (ext4, XFS, btrfs),
-NVMe/SSD, multipath, iSCSI y NFS **desde el cliente**, cifrado en reposo con LUKS, cuotas,
-capacidad, y el diagnóstico y la medición de I/O.
+Applies to all local and block storage of a Linux host **that is not ZFS**: the stack from
+device to application, LVM, software RAID, traditional filesystems (ext4, XFS, btrfs),
+NVMe/SSD, multipath, iSCSI and NFS **from the client side**, encryption at rest with LUKS, quotas,
+capacity, and I/O diagnosis and measurement.
 
-Disparadores: `lsblk`, `blkid`, `pvs`/`vgs`/`lvs`, `lvm.conf`, `mdadm`, `/proc/mdstat`, `mkfs.*`,
-`xfs_*`, `resize2fs`, `tune2fs`, `btrfs`, `/etc/fstab` (la línea de un filesystem),
+Triggers: `lsblk`, `blkid`, `pvs`/`vgs`/`lvs`, `lvm.conf`, `mdadm`, `/proc/mdstat`, `mkfs.*`,
+`xfs_*`, `resize2fs`, `tune2fs`, `btrfs`, `/etc/fstab` (a filesystem's line),
 `fstrim.timer`, `nvme`, `smartctl`, `multipath.conf`, `iscsiadm`, `cryptsetup`, `/etc/crypttab`,
-`iostat`, `fio`, `blktrace`, "no queda espacio", "inodos agotados", "df y du no coinciden".
+`iostat`, `fio`, `blktrace`, "no space left", "inodes exhausted", "df and du don't match".
 
-**Regla de arbitraje interna**: si la pregunta se responde con `lvs`, `mdadm`, `mkfs` o `mount`, es
-de esta skill. Si se responde con `zpool` o `zfs`, es de `zfs-standards`.
+**Internal arbitration rule**: if the question is answered with `lvs`, `mdadm`, `mkfs` or `mount`, it belongs
+to this skill. If it is answered with `zpool` or `zfs`, it belongs to `zfs-standards`.
 
-**No aplica**: ver `zfs-standards` (**la frontera hermana**: pools, vdevs, `ashift`, `recordsize`,
-`volblocksize`, snapshots, `zfs send`, ARC, scrub, cifrado nativo. **Un sistema con ZFS no lleva
-LVM ni mdadm debajo**: ZFS es a la vez gestor de volúmenes y filesystem y exige los discos crudos
-tras un HBA en modo IT — apilarlo sobre `md` o sobre un LV le quita la información con la que
-repara. Si en un diagrama aparecen `zpool` y `vgcreate` sobre los mismos discos, el diseño está
-mal. La única convivencia legítima es tener ambos mundos en **discos distintos** del mismo host,
-p. ej. raíz en LVM+ext4 y datos en ZFS), `linux-administration-standards` (**la más próxima; la
-frontera es qué se pregunta, no qué fichero se toca**: el **modelo de systemd** —`fstab` frente a
-unidades `.mount`, generadores, `x-systemd.*`, orden de arranque, `autofs`, `emergency.target` y la
-recuperación de un host que no arranca, `systemd-cgtop`, `IOWeight=`, retención de journald— es
-**suyo**; **el contenido de la línea**: qué filesystem, con qué parámetros de creación, sobre qué
-capa de bloques, con qué opciones por rendimiento y cómo se dimensiona y se hace crecer, es
-**de aquí**. En una línea: **"¿por qué no monta en el arranque?" es suyo; "¿por qué va lento y
-cómo lo agrando?" es de aquí.** Y `iostat` aparece en ambas: allí como parte del triaje general de
-un host lento, aquí como herramienta de atribución dentro de la pila de bloques),
-`onprem-standards` (paraguas de plataforma; su §2 fija el criterio de filesystem y su §1.3 los
-invariantes), `homelab-standards` (btrfs con snapshots y su tooling en **laboratorio personal**,
-donde el criterio es coste, ruido y consumo; aquí btrfs se juzga por estabilidad de feature en
-producción, §3.4), `bcdr-standards` (RTO/RPO, orden de recuperación, ejercicios de DR),
-`backup-recovery-standards` (herramienta de copia, repositorio, retención,
-inmutabilidad y procedimiento de restore; **un snapshot de LVM o de btrfs no es un backup**, §3.2 y
-§3.4: aquí se dan como mecanismo de punto de consistencia, nunca como estrategia de respaldo),
-`data-platform-standards` (**el motor de datos encima**: el filesystem, su alineación y el layout
-de LV donde vive PostgreSQL son **de aquí**; `shared_buffers`, `wal_*`, índices, PITR y réplica son
-**suyos**), `linux-hardening-standards` (**`noexec`/`nosuid`/`nodev` y la separación de particiones
-como control CIS son suyas**; aquí las mismas opciones de montaje **por criterio de rendimiento y
-layout** — si la pregunta es "¿qué exige el benchmark?", es allí; si es "¿me penaliza `noatime`?",
-es aquí), `cryptography-pki-standards` (elección de algoritmo, KDF y **custodia de las claves** de
-LUKS; aquí solo el uso operativo del volumen cifrado), `secrets-management-standards` (dónde vive
-la clave de desbloqueo desatendido), `kubernetes-standards` (CSI, PV/PVC, StorageClass y modos de
-acceso — la frontera es el nodo: el disco y el filesystem del nodo son de aquí, el volumen que el
-CSI presenta al pod es suyo), `observability-standards` (diseño de métricas y alertas; aquí **qué**
-hay que vigilar), `incident-response-forensics-standards` (adquisición de imagen forense y cadena
-de custodia: si el objetivo es preservar evidencia, manda allí — aquí el diagnóstico y la
-reparación, que **destruyen evidencia**), `proxmox-ve-standards` y `libvirt-kvm-standards`
-(almacenamiento de VMs — el LV o el fichero de imagen y su alineación son
-de aquí, el modelo de caché del disco virtual y su definición son suyos), `ha-clustering-standards`
-(almacenamiento **compartido** — cluster LVM, GFS2/OCFS2, fencing y quórum;
-aquí el almacenamiento **de un host**), `object-storage-standards` (S3 y su
-modelo de consistencia y durabilidad, radicalmente distinto al de bloques — no se diseña un sistema
-de objetos con criterio de filesystem), `file-servers-standards` (**el protocolo de compartición de
-ficheros y su exposición**: `smb.conf` y `/etc/exports`, dialecto, mapeo de identidad, ACL del
-recurso publicado y su auditoría — **si la respuesta se escribe en `/etc/exports`, es suya**; aquí
-el **lado cliente** del montaje NFS y todo el bloque, incluido el `target` iSCSI de `targetcli`,
-que no es compartición de ficheros sino un disco crudo con un solo dueño),
-`networking-standards` (la red que sostiene iSCSI/NFS:
-VLAN, MTU/jumbo frames, rutas; aquí el lado cliente y sus timeouts).
+**Not applicable**: see `zfs-standards` (**the sister boundary**: pools, vdevs, `ashift`, `recordsize`,
+`volblocksize`, snapshots, `zfs send`, ARC, scrub, native encryption. **A system with ZFS does not carry
+LVM or mdadm underneath**: ZFS is both volume manager and filesystem and it demands the raw disks
+behind an HBA in IT mode — stacking it on `md` or on an LV takes away the information it repairs
+with. If a diagram shows `zpool` and `vgcreate` over the same disks, the design is
+wrong. The only legitimate coexistence is having both worlds on **different disks** of the same host,
+e.g. root on LVM+ext4 and data on ZFS), `linux-administration-standards` (**the closest one; the
+boundary is what is being asked, not which file is touched**: the **systemd model** —`fstab` versus
+`.mount` units, generators, `x-systemd.*`, boot ordering, `autofs`, `emergency.target` and the
+recovery of a host that will not boot, `systemd-cgtop`, `IOWeight=`, journald retention— is
+**theirs**; **the content of the line**: which filesystem, with which creation parameters, on which
+block layer, with which options for performance and how it is sized and grown, is
+**ours**. In one line: **"why doesn't it mount at boot?" is theirs; "why is it slow and
+how do I grow it?" is ours.** And `iostat` appears in both: there as part of the general triage of
+a slow host, here as an attribution tool inside the block stack),
+`onprem-standards` (platform umbrella; its §2 fixes the filesystem criteria and its §1.3 the
+invariants), `homelab-standards` (btrfs with snapshots and its tooling in a **personal lab**,
+where the criteria are cost, noise and power draw; here btrfs is judged by feature stability in
+production, §3.4), `bcdr-standards` (RTO/RPO, recovery order, DR exercises),
+`backup-recovery-standards` (backup tool, repository, retention,
+immutability and restore procedure; **an LVM or btrfs snapshot is not a backup**, §3.2 and
+§3.4: here they are given as a consistency-point mechanism, never as a backup strategy),
+`data-platform-standards` (**the data engine on top**: the filesystem, its alignment and the LV layout
+where PostgreSQL lives are **ours**; `shared_buffers`, `wal_*`, indexes, PITR and replication are
+**theirs**), `linux-hardening-standards` (**`noexec`/`nosuid`/`nodev` and partition separation
+as a CIS control are theirs**; here the same mount options **on performance and layout
+criteria** — if the question is "what does the benchmark require?", it is there; if it is "does `noatime` cost me
+anything?", it is here), `cryptography-pki-standards` (choice of algorithm, KDF and **key custody** for
+LUKS; here only the operational use of the encrypted volume), `secrets-management-standards` (where the
+unattended unlock key lives), `kubernetes-standards` (CSI, PV/PVC, StorageClass and access
+modes — the boundary is the node: the node's disk and filesystem are ours, the volume the
+CSI presents to the pod is theirs), `observability-standards` (metric and alert design; here **what**
+has to be watched), `incident-response-forensics-standards` (forensic image acquisition and chain
+of custody: if the goal is to preserve evidence, that skill wins — here diagnosis and
+repair, which **destroy evidence**), `proxmox-ve-standards` and `libvirt-kvm-standards`
+(VM storage — the LV or the image file and its alignment are
+ours, the virtual disk's cache model and its definition are theirs), `ha-clustering-standards`
+(**shared** storage — cluster LVM, GFS2/OCFS2, fencing and quorum;
+here the storage **of one host**), `object-storage-standards` (S3 and its
+consistency and durability model, radically different from block's — you do not design an object
+system with filesystem criteria), `file-servers-standards` (**the file sharing protocol
+and its exposure**: `smb.conf` and `/etc/exports`, dialect, identity mapping, ACLs of the
+published share and its auditing — **if the answer is written in `/etc/exports`, it is theirs**; here
+the **client side** of the NFS mount and everything block, including the `targetcli` iSCSI `target`,
+which is not file sharing but a raw disk with a single owner),
+`networking-standards` (the network underpinning iSCSI/NFS:
+VLANs, MTU/jumbo frames, routes; here the client side and its timeouts).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión y el estado de cada feature por web antes de fijarla (§8).
+> Verify the latest version and the status of each feature on the web before pinning it (§8).
 
-| Ámbito | Por defecto | Alternativa justificable / Prohibido |
+| Area | Default | Justifiable alternative / Forbidden |
 |---|---|---|
-| Filesystem general | **XFS** (default de la familia RHEL desde RHEL 7 y hasta RHEL 10) | **ext4** si necesitas **reducir** el filesystem, o en cargas de muchos ficheros pequeños. ❌ Elegir "porque siempre uso ext4" sin mirar §3.4 |
-| Filesystem si hay que encoger | **ext4** — **XFS no se puede reducir, punto** (`xfs_growfs` solo crece; no hay shrink online ni en el roadmap upstream a kernel 7.0) | ❌ Planificar un XFS "ya lo encogeremos": el único camino es dump + `mkfs` + restore |
-| btrfs | Solo con **perfiles single/DUP/RAID1/RAID1C3/RAID1C4**; útil si quieres snapshots y checksums sin ZFS | ❌ **btrfs RAID5/RAID6**: la documentación del proyecto lo marca **unstable** y el formato en disco sigue sin finalizar (estado a kernel 7.1). Ver §3.4 |
-| Gestor de volúmenes | **LVM** cuando haya que crecer, mover en caliente o repartir un pool de discos; **sin LVM** si es un disco y un filesystem que nunca cambian | ❌ LVM "por costumbre" en una VM de un disco: capa extra, más piezas, cero beneficio (§3.2) |
-| LVM thin | Solo con `thin_pool_autoextend_threshold` **< 100** (típico 80) y `lvm2-monitor`/`dmeventd` activo y **monitorizado** | ❌ Sobreaprovisionar sin alerta de ocupación del pool: **llenar un thin pool corrompe y puede ser irreparable** (§3.2) |
-| RAID por software | **mdadm RAID10** para datos que importan; **RAID1** para raíz/arranque | **RAID6** si manda la capacidad. ❌ **RAID5 con discos grandes** (coherente con `onprem-standards` §7). ❌ RAID0 en producción |
-| Write hole de RAID5/6 | `--consistency-policy=ppl` (RAID5) o journal en SSD espejadas (RAID4/5/6) | ❌ Creer que el **write-intent bitmap cierra el write hole**: solo acelera el resync. Ver §3.3 |
-| Planificador de I/O | **`none`** en NVMe (y es el default del kernel para NVMe) | **`mq-deadline`** en SATA SSD/HDD con carga mixta, y en NVMe **solo** si mides que la latencia de cola (p99/p999) mejora. `bfq` en escritorio/interactivo. ❌ Cambiarlo sin medir antes y después |
-| TRIM | **`fstrim.timer`** semanal (`systemctl enable --now fstrim.timer`) | ❌ Opción de montaje **`discard`** en XFS (el propio `xfs(5)` lo desaconseja: impacto "quite severe") y en ext4. En **btrfs**, `discard=async` sí es alternativa válida. ❌ TRIM continuo sobre LUN thin de SAN |
-| `atime` | **`noatime`** (o `relatime`, que ya es el default del kernel) | ❌ `atime` por defecto en filesystems con muchos ficheros o sobre almacenamiento remoto |
-| Montaje de volúmenes no críticos | `nofail` + `x-systemd.device-timeout=` | ❌ Entrada de `fstab` sin `nofail` para un disco de datos opcional: **un disco ausente deja el host en `emergency.target`** (el arranque y su recuperación son de `linux-administration-standards`) |
-| Identificación de dispositivos | **`UUID=`** en `fstab`/`crypttab`, o `/dev/disk/by-id`; alias del mapper en multipath | ❌ `/dev/sdX` en cualquier fichero persistente: se reordena entre arranques |
-| NFS cliente | **`hard`** siempre, con `timeo=600,retrans=2` | ❌ **`soft`** en cargas de escritura: causa **corrupción silenciosa** documentada. `softerr`/`softreval` solo con la aplicación consciente de EIO. `nconnect=4–8` **tras medir** y nunca con `sec=krb5*` |
-| Cifrado en reposo | **LUKS2 con `argon2id`** (default upstream de cryptsetup) | `pbkdf2` **solo** en la partición que deba desbloquear GRUB. La política de KDF y la custodia de claves son de `cryptography-pki-standards` |
-| Multipath | Activo siempre que el LUN llegue por más de una ruta; **acceso solo por `/dev/mapper/<alias>`** | ❌ Montar `/dev/sdX` cuando existe un mapa multipath: el fallo clásico, §3.6 |
+| General filesystem | **XFS** (the RHEL family's default since RHEL 7 and through RHEL 10) | **ext4** if you need to **shrink** the filesystem, or on workloads with many small files. ❌ Choosing "because I always use ext4" without looking at §3.4 |
+| Filesystem if you have to shrink | **ext4** — **XFS cannot be reduced, full stop** (`xfs_growfs` only grows; there is no online shrink and none on the upstream roadmap as of kernel 7.0) | ❌ Planning an XFS "we'll shrink it later": the only path is dump + `mkfs` + restore |
+| btrfs | Only with the **single/DUP/RAID1/RAID1C3/RAID1C4** profiles; useful if you want snapshots and checksums without ZFS | ❌ **btrfs RAID5/RAID6**: the project's documentation marks it **unstable** and the on-disk format is still not finalised (status as of kernel 7.1). See §3.4 |
+| Volume manager | **LVM** when you have to grow, move online or share out a pool of disks; **no LVM** if it is one disk and one filesystem that never change | ❌ LVM "out of habit" on a single-disk VM: an extra layer, more pieces, zero benefit (§3.2) |
+| LVM thin | Only with `thin_pool_autoextend_threshold` **< 100** (typically 80) and `lvm2-monitor`/`dmeventd` active and **monitored** | ❌ Overprovisioning with no alert on pool occupancy: **filling a thin pool corrupts it and it may be unrepairable** (§3.2) |
+| Software RAID | **mdadm RAID10** for data that matters; **RAID1** for root/boot | **RAID6** if capacity wins. ❌ **RAID5 with large disks** (consistent with `onprem-standards` §7). ❌ RAID0 in production |
+| RAID5/6 write hole | `--consistency-policy=ppl` (RAID5) or a journal on mirrored SSDs (RAID4/5/6) | ❌ Believing that the **write-intent bitmap closes the write hole**: it only speeds up the resync. See §3.3 |
+| I/O scheduler | **`none`** on NVMe (and it is the kernel's default for NVMe) | **`mq-deadline`** on SATA SSD/HDD with mixed load, and on NVMe **only** if you measure that tail latency (p99/p999) improves. `bfq` on desktop/interactive. ❌ Changing it without measuring before and after |
+| TRIM | **`fstrim.timer`** weekly (`systemctl enable --now fstrim.timer`) | ❌ The **`discard`** mount option on XFS (`xfs(5)` itself advises against it: impact "quite severe") and on ext4. On **btrfs**, `discard=async` is a valid alternative. ❌ Continuous TRIM on a thin SAN LUN |
+| `atime` | **`noatime`** (or `relatime`, which is already the kernel default) | ❌ `atime` by default on filesystems with many files or on remote storage |
+| Mounting non-critical volumes | `nofail` + `x-systemd.device-timeout=` | ❌ An `fstab` entry without `nofail` for an optional data disk: **an absent disk leaves the host in `emergency.target`** (boot and its recovery belong to `linux-administration-standards`) |
+| Device identification | **`UUID=`** in `fstab`/`crypttab`, or `/dev/disk/by-id`; the mapper alias with multipath | ❌ `/dev/sdX` in any persistent file: it gets reordered between boots |
+| NFS client | **`hard`** always, with `timeo=600,retrans=2` | ❌ **`soft`** on write workloads: it causes documented **silent corruption**. `softerr`/`softreval` only with the application aware of EIO. `nconnect=4–8` **after measuring** and never with `sec=krb5*` |
+| Encryption at rest | **LUKS2 with `argon2id`** (cryptsetup's upstream default) | `pbkdf2` **only** on the partition GRUB has to unlock. KDF policy and key custody belong to `cryptography-pki-standards` |
+| Multipath | Active whenever the LUN arrives over more than one path; **access only through `/dev/mapper/<alias>`** | ❌ Mounting `/dev/sdX` when a multipath map exists: the classic failure, §3.6 |
 
-## 3. La pila y sus capas
+## 3. The stack and its layers
 
-### 3.1 El stack de bloques
+### 3.1 The block stack
 
 ```
 aplicación
@@ -110,428 +110,428 @@ aplicación
                       └─ dispositivo (SATA/SAS/NVMe/LUN)  ← SMART, desgaste, cola
 ```
 
-- **El orden importa y no es negociable**: `multipath` va debajo de LVM, **LUKS va encima de
-  LVM o debajo, pero se decide una vez** (LUKS-sobre-LV permite cifrar solo algunos volúmenes;
-  LVM-sobre-LUKS cifra todo con una sola clave y suele ser lo correcto para un portátil o un host
-  entero). Reordenar la pila después implica migrar datos.
-- **Diagnóstico: identifica la capa antes de actuar.** `lsblk -o NAME,KNAME,TYPE,SIZE,FSTYPE,MOUNTPOINT`
-  muestra la pila real. Una latencia alta en `iostat` sobre `dm-3` con los discos físicos ociosos
-  apunta a la capa dm (cifrado, thin, RAID), no al disco.
-- **Cada capa añade un modo de fallo y un punto de mentira**: la que menos capas tenga cumpliendo
-  el requisito es la correcta (KISS). Toda capa presente debe justificar su existencia.
+- **The order matters and is not negotiable**: `multipath` goes below LVM, **LUKS goes above
+  LVM or below, but it is decided once** (LUKS-on-LV lets you encrypt only some volumes;
+  LVM-on-LUKS encrypts everything with a single key and is usually the right thing for a laptop or a whole
+  host). Reordering the stack afterwards means migrating data.
+- **Diagnosis: identify the layer before acting.** `lsblk -o NAME,KNAME,TYPE,SIZE,FSTYPE,MOUNTPOINT`
+  shows the real stack. High latency in `iostat` on `dm-3` with the physical disks idle
+  points to the dm layer (encryption, thin, RAID), not to the disk.
+- **Every layer adds a failure mode and a place where things lie**: the one with the fewest layers that meets
+  the requirement is the correct one (KISS). Every layer present must justify its existence.
 
 ### 3.2 LVM
 
-- **Cuándo aporta**: hay que crecer en caliente, mover datos entre discos sin parar (`pvmove`),
-  agregar varios dispositivos, o separar volúmenes con ciclos de vida distintos.
-- **Cuándo es complejidad gratuita**: una VM con un disco virtual y un filesystem, donde el
-  hipervisor ya sabe crecer el disco. Ahí LVM solo añade un paso a cada operación.
-- **Crecer**: `lvextend -r -L +100G /dev/vg/lv` — el `-r` (`--resizefs`) hace crecer el filesystem
-  en el mismo paso, y es **la forma correcta**: hacerlo en dos pasos es donde la gente olvida el
-  segundo y luego "el disco no creció". Crecer XFS y ext4 es **online**.
-- **Encoger**: **solo ext4 y solo con el filesystem desmontado** (`e2fsck -f`, `resize2fs` al
-  tamaño destino, **luego** `lvreduce` a un tamaño **igual o mayor**). Invertir el orden destruye
-  datos. **XFS no se encoge nunca** (§2, §3.4). Antes de encoger: backup verificado, no snapshot.
-- **Thin provisioning — el riesgo real**: la suma de los LV finos puede exceder el pool; mientras
-  hay espacio libre no pasa nada, y el día que se llena **el thin pool puede quedar dañado y ser
-  difícil o imposible de reparar**. Requisitos no negociables:
-  - `thin_pool_autoextend_threshold` **< 100** (100 lo desactiva; el mínimo aceptado es 50; 80 es
-    el valor práctico) y `thin_pool_autoextend_percent` (p. ej. 20) en `lvm.conf`; **con extents
-    libres reales en el VG**, porque sin ellos `lvextend --use-policies` no puede hacer nada.
-  - `lvm2-monitor` activo y **monitorización habilitada en el pool** (`lvchange --monitor y`): sin
-    dmeventd la política no se aplica.
-  - **Alerta sobre `Data%` y `Meta%` del pool** (`lvs -o +data_percent,metadata_percent`) — los
-    **metadatos se agotan por separado** y su agotamiento devuelve errores de I/O igual que los
-    datos. Es el olvido clásico.
-  - Comportamiento ante pool lleno configurado a conciencia: `--errorwhenfull y|n` (el default `n`
-    encola escrituras ~60 s esperando extensión, y luego devuelve error).
-  - Salida de emergencia documentada: `fstrim`/`discard` en los invitados, destruir snapshots,
-    borrar datos, o extender el VG. Las lecturas siguen funcionando aunque el pool esté sin espacio.
-- **Snapshots de LVM ≠ snapshots de ZFS/btrfs**: los clásicos son **copy-on-write con un volumen de
-  exception fijo** que, si se llena, **invalida el snapshot**; penalizan cada escritura del origen;
-  no son baratos ni infinitos. Los thin snapshots son mucho mejores pero comparten el destino del
-  thin pool. En ambos casos: **punto de consistencia para hacer la copia, nunca la copia**
+- **When it pays off**: you have to grow online, move data between disks without stopping (`pvmove`),
+  aggregate several devices, or separate volumes with different life cycles.
+- **When it is free complexity**: a VM with one virtual disk and one filesystem, where the
+  hypervisor already knows how to grow the disk. There LVM only adds a step to every operation.
+- **Growing**: `lvextend -r -L +100G /dev/vg/lv` — the `-r` (`--resizefs`) grows the filesystem
+  in the same step, and it is **the correct form**: doing it in two steps is where people forget the
+  second one and then "the disk didn't grow". Growing XFS and ext4 is **online**.
+- **Shrinking**: **only ext4 and only with the filesystem unmounted** (`e2fsck -f`, `resize2fs` to the
+  target size, **then** `lvreduce` to a size **equal or larger**). Reversing the order destroys
+  data. **XFS is never shrunk** (§2, §3.4). Before shrinking: a verified backup, not a snapshot.
+- **Thin provisioning — the real risk**: the sum of the thin LVs can exceed the pool; while
+  there is free space nothing happens, and the day it fills up **the thin pool can end up damaged and be
+  hard or impossible to repair**. Non-negotiable requirements:
+  - `thin_pool_autoextend_threshold` **< 100** (100 disables it; the minimum accepted is 50; 80 is
+    the practical value) and `thin_pool_autoextend_percent` (e.g. 20) in `lvm.conf`; **with real free
+    extents in the VG**, because without them `lvextend --use-policies` can do nothing.
+  - `lvm2-monitor` active and **monitoring enabled on the pool** (`lvchange --monitor y`): without
+    dmeventd the policy is not applied.
+  - **An alert on the pool's `Data%` and `Meta%`** (`lvs -o +data_percent,metadata_percent`) — the
+    **metadata runs out separately** and its exhaustion returns I/O errors just like the
+    data does. It is the classic oversight.
+  - Behaviour on a full pool configured deliberately: `--errorwhenfull y|n` (the default `n`
+    queues writes for ~60 s waiting for an extension, and then returns an error).
+  - A documented emergency exit: `fstrim`/`discard` in the guests, destroying snapshots,
+    deleting data, or extending the VG. Reads keep working even with the pool out of space.
+- **LVM snapshots ≠ ZFS/btrfs snapshots**: the classic ones are **copy-on-write with a fixed exception
+  volume** that, if it fills up, **invalidates the snapshot**; they penalise every write to the origin;
+  they are neither cheap nor infinite. Thin snapshots are much better but they share the fate of the
+  thin pool. In both cases: **a consistency point for taking the copy, never the copy itself**
   (`backup-recovery-standards`).
-- **LVM sobre RAID**: `md` debajo y LVM encima es la combinación clásica y predecible. `lvcreate
-  --type raid1/raid5` (dm-raid) existe y usa el mismo motor del kernel, pero deja el diagnóstico
-  repartido entre `lvs` y `/proc/mdstat`: elige uno y sé coherente. ❌ Apilar LVM sobre LVM.
-- **Alineación**: en LUN de SAN y en SSD, `pvcreate --dataalignment` coherente con el stripe del
-  array; desalinear multiplica las escrituras read-modify-write. Verifica con `pvs -o +pe_start`.
-- **Copia de la metadata del VG**: `/etc/lvm/backup` y `/etc/lvm/archive` se respaldan con el host.
-  `vgcfgrestore` ha salvado más sistemas que cualquier herramienta de recuperación.
+- **LVM on RAID**: `md` underneath and LVM on top is the classic and predictable combination. `lvcreate
+  --type raid1/raid5` (dm-raid) exists and uses the same kernel engine, but it leaves diagnosis
+  split between `lvs` and `/proc/mdstat`: pick one and be consistent. ❌ Stacking LVM on LVM.
+- **Alignment**: on SAN LUNs and on SSDs, `pvcreate --dataalignment` consistent with the array's
+  stripe; misalignment multiplies read-modify-write writes. Check with `pvs -o +pe_start`.
+- **Copy of the VG metadata**: `/etc/lvm/backup` and `/etc/lvm/archive` are backed up with the host.
+  `vgcfgrestore` has saved more systems than any recovery tool.
 
-### 3.3 RAID por software (mdadm)
+### 3.3 Software RAID (mdadm)
 
-- **Niveles y criterio**: RAID1 (raíz, arranque), **RAID10 (datos con IOPS)**, RAID6 (capacidad con
-  discos grandes). **RAID5 con discos grandes está prohibido** por la misma razón que RAIDZ1: la
-  ventana de reconstrucción es tan larga que el segundo fallo o un URE deja de ser improbable.
-  RAID0 no es RAID.
-- **Write hole**: tras un apagado sucio la paridad de un stripe puede quedar inconsistente con los
-  datos, y si además el array está degradado no hay forma de recalcularla → **corrupción
-  silenciosa** al reconstruir. Por eso `md` no arranca por defecto un array degradado y sucio.
-  - **`--consistency-policy=ppl`** (Partial Parity Log, **solo RAID5**, metadata 1.x o IMSM):
-    cierra el write hole **sin disco dedicado**, a costa de hasta 30–40 % de rendimiento de
-    escritura. **Es más débil que un journal**: no protege el dato en vuelo, solo la corrupción
-    silenciosa; si se pierde un disco sucio del stripe, no hay recuperación PPL para ese stripe.
-  - **`--write-journal`** (RAID4/5/6): garantía fuerte, exige **SSD dedicada y espejada** — si no,
-    acabas de crear un SPOF que se lleva el array.
-  - **El write-intent bitmap NO cierra el write hole**: solo limita la región a re-sincronizar.
-    Úsalo igualmente (`--bitmap=internal`) porque convierte un resync completo en uno de minutos.
-  - **RAID6 no tiene PPL**: journal o asumir el riesgo.
-  - **Si el filesystem de arriba ya lo resuelve** (ZFS raidz), la protección a nivel `md` sobra —
-    pero entonces no deberías tener `md` debajo de ZFS en absoluto (§1).
-- **Operación**: `mdadm --detail --scan >> /etc/mdadm/mdadm.conf` tras crear (si no, el array puede
-  ensamblarse con otro nombre); `mdadm --monitor` con destino real de correo/alerta; `checkarray`
-  (scrub) periódico y **vigilado** — un array que nunca se verifica no sabe que tiene un disco malo
-  hasta el resync.
-- **Reconstrucción**: `/proc/mdstat` da progreso y velocidad; `/sys/block/mdX/md/sync_speed_max`
-  la acota. **Cronometra un resync real en preproducción**: si tarda más que tu ventana de riesgo
-  aceptable, el nivel de RAID está mal elegido.
-- **mdadm+LVM+XFS frente a ZFS/btrfs — el criterio, no el bando**: `md`+LVM+XFS es predecible,
-  universal, soportado por todas las distros, con herramientas de rescate en cualquier live-CD, y
-  **no detecta corrupción silenciosa** (sin checksums de datos: la paridad detecta un disco que
-  falla, no un bit que miente). ZFS/btrfs dan checksums extremo a extremo, snapshots baratos y
-  reparación desde la copia redundante, a cambio de RAM, de un modelo mental propio y —en ZFS— de
-  un módulo fuera del árbol. **Decide por el requisito**: si necesitas integridad demostrable y
-  snapshots, ZFS (`zfs-standards`); si necesitas simplicidad, portabilidad y encoger volúmenes,
-  `md`+LVM+ext4/XFS. **Lo prohibido es mezclarlos en la misma pila.**
+- **Levels and criteria**: RAID1 (root, boot), **RAID10 (data with IOPS)**, RAID6 (capacity with
+  large disks). **RAID5 with large disks is forbidden** for the same reason as RAIDZ1: the
+  rebuild window is so long that a second failure or a URE stops being improbable.
+  RAID0 is not RAID.
+- **Write hole**: after an unclean shutdown a stripe's parity can be left inconsistent with the
+  data, and if the array is also degraded there is no way to recompute it → **silent
+  corruption** when rebuilding. That is why `md` does not start a degraded and dirty array by default.
+  - **`--consistency-policy=ppl`** (Partial Parity Log, **RAID5 only**, metadata 1.x or IMSM):
+    it closes the write hole **without a dedicated disk**, at a cost of up to 30–40 % of write
+    performance. **It is weaker than a journal**: it does not protect data in flight, only silent
+    corruption; if a dirty disk of the stripe is lost, there is no PPL recovery for that stripe.
+  - **`--write-journal`** (RAID4/5/6): a strong guarantee, it requires a **dedicated and mirrored SSD** — if not,
+    you have just created a SPOF that takes the array with it.
+  - **The write-intent bitmap does NOT close the write hole**: it only limits the region to be resynced.
+    Use it anyway (`--bitmap=internal`) because it turns a full resync into one of minutes.
+  - **RAID6 has no PPL**: a journal, or accept the risk.
+  - **If the filesystem on top already solves it** (ZFS raidz), protection at the `md` level is redundant —
+    but then you should not have `md` underneath ZFS at all (§1).
+- **Operation**: `mdadm --detail --scan >> /etc/mdadm/mdadm.conf` after creating (otherwise the array can
+  be assembled under a different name); `mdadm --monitor` with a real mail/alert destination; periodic and
+  **watched** `checkarray` (scrub) — an array that is never verified does not know it has a bad disk
+  until the resync.
+- **Rebuild**: `/proc/mdstat` gives progress and speed; `/sys/block/mdX/md/sync_speed_max`
+  bounds it. **Time a real resync in preproduction**: if it takes longer than your acceptable risk
+  window, the RAID level is wrongly chosen.
+- **mdadm+LVM+XFS versus ZFS/btrfs — the criteria, not the tribe**: `md`+LVM+XFS is predictable,
+  universal, supported by every distribution, with rescue tools on any live CD, and
+  **it does not detect silent corruption** (no data checksums: parity detects a disk that
+  fails, not a bit that lies). ZFS/btrfs give end-to-end checksums, cheap snapshots and
+  repair from the redundant copy, in exchange for RAM, a mental model of their own and —in ZFS— an
+  out-of-tree module. **Decide on the requirement**: if you need demonstrable integrity and
+  snapshots, ZFS (`zfs-standards`); if you need simplicity, portability and shrinkable volumes,
+  `md`+LVM+ext4/XFS. **What is forbidden is mixing them in the same stack.**
 
 ### 3.4 Filesystems
 
-- **XFS** — default de RHEL desde la 7 (y en RHEL 10). Escala mejor a partir de varios TB y en
-  paralelismo: los allocation groups tienen metadatos independientes y permiten asignar desde
-  varios hilos sin contención. **Solo crece** (`xfs_growfs`, online). En error de metadatos
-  **apaga el filesystem** y devuelve `EFSCORRUPTED` (frente a ext4, que por defecto continúa) —
-  fail-fast, que para un servidor suele ser lo correcto.
-- **ext4** — la elección cuando hace falta **encoger** (`resize2fs` offline), en cargas de muchos
-  ficheros pequeños, y donde la familiaridad de las herramientas de rescate importa.
-- **Parámetros de creación que NO se cambian después** — se deciden en el `mkfs` o se convive con
-  ellos de por vida:
-  - **Tamaño de bloque** (`-b` en ext4, `-b size=` en XFS): fijo para siempre.
-  - **Número de inodos / ratio bytes-por-inodo en ext4** (`-i`, `-N`): **agotar inodos con espacio
-    libre de sobra** es un fallo clásico en filesystems de correo, caché o build (§3.8). XFS asigna
-    inodos dinámicamente y no sufre esto.
-  - **Tamaño del sector/`sunit`/`swidth` en XFS** para alinear con el stripe del RAID.
-  - `-m` (porcentaje reservado a root en ext4): **bajarlo a 0–1 % en volúmenes de datos** grandes;
-    el 5 % por defecto son decenas de GB tirados. **No lo bajes en `/` ni en `/var`**: esa reserva
-    es lo que permite arreglar un sistema lleno.
-  - Features de ext4 (`metadata_csum`, `64bit`) — verifica el default de tu `mke2fs.conf`.
-- **btrfs — estado a kernel 7.1** (documentación oficial del proyecto, ago-2026):
-  - **OK**: subvolúmenes y snapshots, compresión, `send`, `receive`, `scrub`, free space tree,
-    fsverity, perfiles **RAID1, RAID1C3, RAID1C4**.
-  - **"mostly OK"**: cuotas/qgroups (rendimiento se degrada mucho con muchos snapshots),
+- **XFS** — RHEL's default since 7 (and in RHEL 10). It scales better from several TB up and in
+  parallelism: the allocation groups have independent metadata and allow allocation from
+  several threads without contention. **It only grows** (`xfs_growfs`, online). On a metadata error it
+  **shuts the filesystem down** and returns `EFSCORRUPTED` (unlike ext4, which by default continues) —
+  fail-fast, which for a server is usually the right thing.
+- **ext4** — the choice when you need to **shrink** (`resize2fs` offline), on workloads with many
+  small files, and where the familiarity of the rescue tools matters.
+- **Creation parameters that are NOT changed afterwards** — they are decided at `mkfs` or you live
+  with them for life:
+  - **Block size** (`-b` in ext4, `-b size=` in XFS): fixed forever.
+  - **Number of inodes / bytes-per-inode ratio in ext4** (`-i`, `-N`): **running out of inodes with plenty
+    of free space** is a classic failure on mail, cache or build filesystems (§3.8). XFS allocates
+    inodes dynamically and does not suffer from this.
+  - **Sector size/`sunit`/`swidth` in XFS** to align with the RAID stripe.
+  - `-m` (percentage reserved for root in ext4): **lower it to 0–1 % on large data volumes**;
+    the default 5 % is tens of GB thrown away. **Do not lower it on `/` or `/var`**: that reserve
+    is what lets you fix a full system.
+  - ext4 features (`metadata_csum`, `64bit`) — check your `mke2fs.conf` default.
+- **btrfs — status as of kernel 7.1** (the project's official documentation, Aug 2026):
+  - **OK**: subvolumes and snapshots, compression, `send`, `receive`, `scrub`, free space tree,
+    fsverity, the **RAID1, RAID1C3, RAID1C4** profiles.
+  - **"mostly OK"**: quotas/qgroups (performance degrades a lot with many snapshots),
     `device replace`, zoned mode.
-  - **`RAID56`: unstable.** El grupo de bloques RAID5/6 sigue sin implementarse por completo y **el
-    formato en disco no está finalizado**. **Prohibido en producción**, sin matices ni "pero a mí me
-    funciona".
-  - Criterio: btrfs es correcto para raíz con snapshots y rollback, y para datos con RAID1/1C3.
-    Para paridad, o es `md`+RAID6, o es ZFS RAIDZ2.
-  - Sus qgroups en un sistema con snapshots automáticos frecuentes son una fuente conocida de
-    latencia: mídelo antes de activarlos.
-- **Opciones de montaje que importan (por rendimiento y operabilidad)**: `noatime`; `nofail` +
-  `x-systemd.device-timeout=` en volúmenes no críticos; `nodiscard` implícito (usar `fstrim.timer`,
-  §3.5); `defaults` sin pensar es una decisión, y suele ser la equivocada. **`noexec`, `nosuid` y
-  `nodev` son control de seguridad y su criterio lo fija `linux-hardening-standards`.**
-- **`fstab` frente a unidades `.mount`**: **el modelo, la precedencia y el generador son de
-  `linux-administration-standards`**; aquí solo la regla de contenido: **identifica siempre por
-  `UUID=`**, nunca por `/dev/sdX`, y en un volumen que puede no estar presente, `nofail`.
-- **`fsck` y reparación**: `xfs_repair` exige el filesystem **desmontado** y `xfs_repair -L`
-  (descartar el log) es **destructivo, último recurso**. En ext4, `e2fsck -f` fuera de la ventana de
-  producción. Antes de reparar un filesystem con datos que importan y ante sospecha de compromiso:
-  **imagen primero** (`incident-response-forensics-standards`) — reparar destruye evidencia.
+  - **`RAID56`: unstable.** The RAID5/6 block group is still not fully implemented and **the
+    on-disk format is not finalised**. **Forbidden in production**, with no nuance and no "but it works
+    for me".
+  - Criteria: btrfs is right for root with snapshots and rollback, and for data with RAID1/1C3.
+    For parity, it is either `md`+RAID6 or ZFS RAIDZ2.
+  - Its qgroups on a system with frequent automatic snapshots are a known source of
+    latency: measure it before enabling them.
+- **Mount options that matter (for performance and operability)**: `noatime`; `nofail` +
+  `x-systemd.device-timeout=` on non-critical volumes; implicit `nodiscard` (use `fstrim.timer`,
+  §3.5); `defaults` without thinking is a decision, and usually the wrong one. **`noexec`, `nosuid` and
+  `nodev` are security controls and their criteria are fixed by `linux-hardening-standards`.**
+- **`fstab` versus `.mount` units**: **the model, the precedence and the generator belong to
+  `linux-administration-standards`**; here only the content rule: **always identify by
+  `UUID=`**, never by `/dev/sdX`, and on a volume that may not be present, `nofail`.
+- **`fsck` and repair**: `xfs_repair` requires the filesystem **unmounted** and `xfs_repair -L`
+  (discarding the log) is **destructive, a last resort**. On ext4, `e2fsck -f` outside the production
+  window. Before repairing a filesystem with data that matters and where compromise is suspected:
+  **image first** (`incident-response-forensics-standards`) — repairing destroys evidence.
 
-### 3.5 NVMe, SSD y desgaste
+### 3.5 NVMe, SSD and wear
 
-- **Sobreaprovisionamiento (over-provisioning)**: dejar sin particionar un 7–20 % de un SSD (o
-  usar `nvme format`/HPA según el fabricante) alarga la vida y estabiliza la latencia de escritura
-  sostenida. En SSD de datacenter suele venir de fábrica; en modelos de consumo usados como cache o
-  SLOG, hacerlo a mano es la diferencia entre rendimiento estable y colapso.
-- **TRIM**: **`fstrim.timer` semanal**, no `discard` en el montaje. El `xfs(5)` desaconseja
-  explícitamente `discard` por impacto "quite severe" (hay casos documentados de borrados de ~31 s
-  pasando a ~2 min). En **btrfs**, `discard=async` (kernel 5.6+) sí es una alternativa razonable.
-  En LUKS hay que **permitirlo explícitamente** (`discard` en `crypttab`), con la contrapartida
-  conocida de **fuga de información** sobre qué bloques están usados: es una decisión de modelo de
-  amenaza, no de rendimiento. Sobre LUN thin de SAN o disco virtual thin, **fstrim periódico**, no
-  continuo.
-- **Monitorización del desgaste, no de la muerte**: `smartctl -a` / `nvme smart-log` →
-  `percentage_used`, `available_spare` frente a `available_spare_threshold`, `media_errors`,
-  `unsafe_shutdowns`, `data_units_written`. **Métrica exportada y con alerta por tendencia**: un
-  SSD se sustituye cuando la proyección dice que llegará al límite dentro de la ventana de
-  aprovisionamiento, no cuando falla. Vigila los **lotes**: discos idénticos comprados juntos se
-  desgastan juntos.
-- **Planificadores de I/O**: los clásicos (`cfq`, `deadline` de cola única) ya no existen; el
-  kernel es blk-mq. Para **NVMe el default y la recomendación es `none`**: la profundidad de cola y
-  el paralelismo del dispositivo hacen que planificar sea puro overhead de CPU. **`mq-deadline`**
-  se justifica en SATA SSD/HDD con carga mixta y, en NVMe, **solo** si la métrica que te importa es
-  la **latencia de cola** (p99/p999) y lo has medido: `mq-deadline` impone deadlines (500 ms
-  lectura / 5 s escritura) y evita que una petición se quede atrás. `bfq` para interactividad de
-  escritorio. En muchos NVMe **solo `none` está disponible** salvo que cargues los módulos.
-  Se cambia por sysfs sin reinicio (persistente vía regla udev), pero **nunca sin medir antes y
-  después**.
-- **Colas**: `nr_requests`, `queue_depth` y el número de colas hardware determinan más el
-  rendimiento percibido que el planificador. "El disco va lento" con `%util` al 100 % y `aqu-sz`
-  alto es **saturación de cola**, no un disco malo.
+- **Over-provisioning**: leaving 7–20 % of an SSD unpartitioned (or
+  using `nvme format`/HPA depending on the manufacturer) extends its life and stabilises sustained write
+  latency. On datacentre SSDs it usually comes from the factory; on consumer models used as a cache or
+  SLOG, doing it by hand is the difference between stable performance and collapse.
+- **TRIM**: **weekly `fstrim.timer`**, not `discard` on the mount. `xfs(5)` explicitly
+  advises against `discard` because of its "quite severe" impact (there are documented cases of deletions going from ~31 s
+  to ~2 min). On **btrfs**, `discard=async` (kernel 5.6+) is a reasonable alternative.
+  On LUKS it has to be **explicitly allowed** (`discard` in `crypttab`), with the known
+  trade-off of **information leakage** about which blocks are in use: it is a threat-model
+  decision, not a performance one. On thin SAN LUNs or thin virtual disks, **periodic fstrim**, not
+  continuous.
+- **Monitor wear, not death**: `smartctl -a` / `nvme smart-log` →
+  `percentage_used`, `available_spare` against `available_spare_threshold`, `media_errors`,
+  `unsafe_shutdowns`, `data_units_written`. **A metric exported and alerted on by trend**: an
+  SSD is replaced when the projection says it will hit the limit within the
+  provisioning window, not when it fails. Watch the **batches**: identical disks bought together
+  wear out together.
+- **I/O schedulers**: the classic ones (`cfq`, single-queue `deadline`) no longer exist; the
+  kernel is blk-mq. For **NVMe the default and the recommendation is `none`**: the device's queue depth and
+  parallelism make scheduling pure CPU overhead. **`mq-deadline`**
+  is justified on SATA SSD/HDD with mixed load and, on NVMe, **only** if the metric you care about is
+  **tail latency** (p99/p999) and you have measured it: `mq-deadline` imposes deadlines (500 ms
+  read / 5 s write) and prevents a request from being left behind. `bfq` for desktop interactivity.
+  On many NVMe devices **only `none` is available** unless you load the modules.
+  It is changed through sysfs without a reboot (persistent via a udev rule), but **never without measuring before and
+  after**.
+- **Queues**: `nr_requests`, `queue_depth` and the number of hardware queues determine perceived
+  performance more than the scheduler does. "The disk is slow" with `%util` at 100 % and a high `aqu-sz`
+  is **queue saturation**, not a bad disk.
 
-### 3.6 Multipath, iSCSI y NFS (lado cliente)
+### 3.6 Multipath, iSCSI and NFS (client side)
 
-- **Multipath cuando el LUN llega por más de una ruta** (dos HBA, dos controladoras, dos switches
-  FC/iSCSI). Sin él, la pérdida de una ruta es la pérdida del LUN.
-- **El fallo clásico: montar `/dev/sdX` en vez del mapper.** Cuando hay multipath, cada ruta
-  aparece como un `sdX` distinto y **funciona** — hasta que esa ruta cae, o hasta que dos rutas se
-  montan a la vez y corrompen. **Regla dura: si `multipath -ll` lista el WWID, el único acceso
-  legítimo es `/dev/mapper/<alias>`.** Añade los `sdX` subyacentes al `blacklist`/filtro de LVM
-  (`global_filter` en `lvm.conf`) para que LVM no vea el mismo PV cuatro veces.
-- **Alias persistentes** en `multipath.conf` (por WWID, con nombre que diga qué es), `find_multipaths`
-  y política de path acorde al array (`path_grouping_policy`, ALUA). Los parámetros del array se
-  toman **de la guía del fabricante**, no del default genérico.
-- **iSCSI**: `iscsiadm` con `node.startup=automatic` para LUN necesarios en arranque y **la unidad
-  de red arriba antes** (`_netdev` en `fstab`); CHAP mutuo; **VLAN de almacenamiento dedicada**, MTU
-  coherente extremo a extremo (`networking-standards`). Timeouts (`node.session.timeo.replacement_timeout`)
-  ajustados al tiempo de failover del array: demasiado corto convierte un failover normal en errores
-  de I/O; demasiado largo cuelga la aplicación.
-- **NFS cliente — `hard` frente a `soft`**: **`hard` siempre**. `soft` devuelve EIO tras `retrans`
-  reintentos y **puede causar corrupción silenciosa de datos**: la aplicación no sabe qué escrituras
-  se confirmaron. El patrón real documentado es exactamente ese (artefactos corruptos, checksums
-  que no cuadran, herramientas que ignoran el EIO de `write()`). Valores conservadores:
-  **`hard,timeo=600,retrans=2`** (más `_netdev`/`nofail` y ordenación de systemd).
-  - `softerr`/`softreval` son matices para casos concretos (poder desmontar un servidor muerto),
-    no la solución al bloqueo.
-  - `nconnect=4–8` mejora el throughput con varias conexiones TCP (kernel 5.3+), **tras medir** y
-    con el valor de la guía del proveedor; el **primer montaje a una IP fija el `nconnect` para esa
-    IP** en ese cliente. **No combinar con `sec=krb5*`.**
-  - **El impacto de un almacenamiento remoto caído**: con `hard`, los procesos que tocan el montaje
-    quedan en `D` (uninterruptible) y no se pueden matar; el host parece colgado. Eso es
-    **correcto**: la alternativa es corromper. Mitigación real: monitorizar el servidor NFS,
-    montajes con `autofs` o `.mount` para lo no crítico
-    (`linux-administration-standards`), y no colgar servicios críticos de un NFS sin HA.
+- **Multipath when the LUN arrives over more than one path** (two HBAs, two controllers, two
+  FC/iSCSI switches). Without it, losing a path is losing the LUN.
+- **The classic failure: mounting `/dev/sdX` instead of the mapper.** With multipath, each path
+  appears as a different `sdX` and **it works** — until that path goes down, or until two paths get
+  mounted at the same time and corrupt. **Hard rule: if `multipath -ll` lists the WWID, the only legitimate
+  access is `/dev/mapper/<alias>`.** Add the underlying `sdX` devices to LVM's `blacklist`/filter
+  (`global_filter` in `lvm.conf`) so that LVM does not see the same PV four times.
+- **Persistent aliases** in `multipath.conf` (by WWID, with a name that says what it is), `find_multipaths`
+  and a path policy matching the array (`path_grouping_policy`, ALUA). The array's parameters are
+  taken **from the vendor's guide**, not from the generic default.
+- **iSCSI**: `iscsiadm` with `node.startup=automatic` for LUNs needed at boot and **the network
+  unit up first** (`_netdev` in `fstab`); mutual CHAP; **a dedicated storage VLAN**, with a consistent MTU
+  end to end (`networking-standards`). Timeouts (`node.session.timeo.replacement_timeout`)
+  tuned to the array's failover time: too short turns a normal failover into I/O
+  errors; too long hangs the application.
+- **NFS client — `hard` versus `soft`**: **`hard` always**. `soft` returns EIO after `retrans`
+  retries and **can cause silent data corruption**: the application does not know which writes
+  were committed. The documented real pattern is exactly that (corrupt artifacts, checksums
+  that do not match, tools that ignore `write()`'s EIO). Conservative values:
+  **`hard,timeo=600,retrans=2`** (plus `_netdev`/`nofail` and systemd ordering).
+  - `softerr`/`softreval` are nuances for specific cases (being able to unmount a dead server),
+    not the solution to the blocking.
+  - `nconnect=4–8` improves throughput with several TCP connections (kernel 5.3+), **after measuring** and
+    with the vendor guide's value; the **first mount to an IP fixes the `nconnect` for that
+    IP** on that client. **Do not combine it with `sec=krb5*`.**
+  - **The impact of remote storage going down**: with `hard`, processes touching the mount
+    end up in `D` (uninterruptible) and cannot be killed; the host looks hung. That is
+    **correct**: the alternative is corruption. Real mitigation: monitor the NFS server,
+    mounts with `autofs` or `.mount` for the non-critical
+    (`linux-administration-standards`), and do not hang critical services off an NFS with no HA.
 
-### 3.7 Cifrado en reposo (LUKS)
+### 3.7 Encryption at rest (LUKS)
 
-- **LUKS2 con `argon2id`** (default upstream de cryptsetup; memoria mínima del benchmark 64 MiB).
-  **`pbkdf2` solo** en la partición que GRUB deba desbloquear, porque su soporte de LUKS2 es
-  limitado. Un keyslot antiguo se migra con `cryptsetup luksConvertKey --pbkdf argon2id`.
-  **No fijes parámetros de KDF de memoria: los defaults cambian entre versiones** — la elección de
-  algoritmo y sus parámetros son de `cryptography-pki-standards`.
-- **Backup de la cabecera LUKS obligatorio** (`cryptsetup luksHeaderBackup`), guardado **fuera del
-  disco cifrado** y con control de acceso: una cabecera corrupta es pérdida total aunque los datos
-  estén intactos. Es la primera pregunta de cualquier revisión.
-- **Desbloqueo desatendido**: TPM2 (`systemd-cryptenroll --tpm2-device=auto` con PCRs pensados y
-  **política de recuperación**), Clevis/Tang para desbloqueo en red, o `LoadCredential`/agente. **La
-  política, la custodia de la clave de recuperación y su rotación son de
-  `cryptography-pki-standards` y `secrets-management-standards`**; aquí queda fijado que
-  (a) **siempre** hay una passphrase de recuperación custodiada fuera del host, y (b) un cambio de
-  firmware o de kernel puede invalidar el sellado TPM: **prueba el arranque tras cada actualización
-  que toque PCRs, con consola OOB disponible**.
-- **Coste y TRIM**: el impacto de CPU con AES-NI es marginal; el TRIM a través de LUKS hay que
-  habilitarlo explícitamente y filtra metadatos (§3.5). El baseline de cifrado obligatorio por
-  clasificación de dato es de `linux-hardening-standards`.
+- **LUKS2 with `argon2id`** (cryptsetup's upstream default; minimum benchmark memory 64 MiB).
+  **`pbkdf2` only** on the partition GRUB has to unlock, because its LUKS2 support is
+  limited. An old keyslot is migrated with `cryptsetup luksConvertKey --pbkdf argon2id`.
+  **Do not pin KDF parameters from memory: the defaults change between versions** — the choice of
+  algorithm and its parameters belong to `cryptography-pki-standards`.
+- **A LUKS header backup is mandatory** (`cryptsetup luksHeaderBackup`), stored **off the encrypted
+  disk** and with access control: a corrupt header is total loss even if the data
+  is intact. It is the first question in any review.
+- **Unattended unlock**: TPM2 (`systemd-cryptenroll --tpm2-device=auto` with thought-out PCRs and
+  a **recovery policy**), Clevis/Tang for network unlock, or `LoadCredential`/an agent. **The
+  policy, the custody of the recovery key and its rotation belong to
+  `cryptography-pki-standards` and `secrets-management-standards`**; here it is fixed that
+  (a) there is **always** a recovery passphrase held off the host, and (b) a firmware or kernel
+  change can invalidate the TPM sealing: **test the boot after every update that touches
+  PCRs, with an OOB console available**.
+- **Cost and TRIM**: the CPU impact with AES-NI is marginal; TRIM through LUKS has to be
+  explicitly enabled and it leaks metadata (§3.5). The baseline of mandatory encryption by
+  data classification belongs to `linux-hardening-standards`.
 
-### 3.8 Los fallos que parecen otra cosa
+### 3.8 The failures that look like something else
 
-- **`df` dice lleno y `du` no lo encuentra** → casi siempre un **fichero borrado que sigue abierto**
-  por un proceso: `lsof +L1` o `lsof | grep deleted`; el espacio vuelve al reiniciar el proceso, no
-  al borrar de nuevo. Otras causas: un montaje **encima** de un directorio con datos debajo
-  (comprobar con un bind mount del raíz), o el porcentaje reservado a root (`tune2fs -m`).
-- **"No queda espacio" con `df` mostrando espacio libre** → **inodos agotados** (`df -i`). Ocurre en
-  filesystems de caché, correo o build con millones de ficheros pequeños. **No se arregla en
-  caliente en ext4**: hay que recrear el filesystem con más inodos (o migrar a XFS, que los asigna
-  dinámicamente). Es un fallo **de diseño en el `mkfs`**, y por eso `df -i` va en la monitorización.
-- **Filesystem lleno al 100 % que impide arrancar o reparar**: sin espacio no se escriben logs,
-  no arranca journald, algunos servicios fallan de forma inexplicable, y en ext4 sin reserva de
-  root ni siquiera un administrador puede maniobrar. **Alerta al 80 %, no al 95 %**, y con
-  predicción de tiempo hasta el llenado.
-- **Cuotas**: `quota`/`xfs_quota` (XFS incluye cuotas por proyecto, muy útiles para acotar un
-  directorio sin darle un LV propio) cuando varios consumidores comparten un filesystem. Sin
-  cuotas, el primero que se descontrola tumba a todos.
-- **Un `dm` degradado que nadie ve**: `dmsetup status`, `lvs -o +lv_health_status`, `/proc/mdstat`.
-  Un array degradado que no genera alerta es una pérdida de datos programada.
+- **`df` says full and `du` cannot find it** → almost always a **deleted file still held open**
+  by a process: `lsof +L1` or `lsof | grep deleted`; the space comes back when the process restarts, not
+  when you delete it again. Other causes: a mount **on top** of a directory with data underneath
+  (check with a bind mount of the root), or the percentage reserved for root (`tune2fs -m`).
+- **"No space left" with `df` showing free space** → **inodes exhausted** (`df -i`). It happens on
+  cache, mail or build filesystems with millions of small files. **It cannot be fixed
+  online on ext4**: you have to recreate the filesystem with more inodes (or migrate to XFS, which allocates them
+  dynamically). It is a **design failure at `mkfs` time**, and that is why `df -i` goes into monitoring.
+- **A filesystem 100 % full that prevents booting or repairing**: with no space no logs are written,
+  journald does not start, some services fail inexplicably, and on ext4 with no root reserve
+  not even an administrator can manoeuvre. **Alert at 80 %, not at 95 %**, and with
+  a prediction of the time until it fills up.
+- **Quotas**: `quota`/`xfs_quota` (XFS includes project quotas, very useful for bounding a
+  directory without giving it its own LV) when several consumers share a filesystem. Without
+  quotas, the first one to run away takes everyone down.
+- **A degraded `dm` that nobody sees**: `dmsetup status`, `lvs -o +lv_health_status`, `/proc/mdstat`.
+  A degraded array that raises no alert is scheduled data loss.
 
-### 3.9 Rendimiento y medición
+### 3.9 Performance and measurement
 
-- **Latencia frente a throughput**: son objetivos distintos y casi siempre opuestos. Define cuál
-  te importa **antes** de medir. Un número de MB/s sin percentiles de latencia no dice nada de una
-  base de datos.
-- **`iostat -xz 1`**: `r_await`/`w_await` (latencia real por operación), `aqu-sz` (profundidad de
-  cola), `%util` (**engañoso en NVMe**: llega al 100 % sin saturación porque el dispositivo procesa
-  en paralelo). `iotop`/`pidstat -d` para atribuir a proceso; `blktrace`/`biolatency` (bcc/bpftrace)
-  cuando hay que ver la distribución real y dónde se pierde el tiempo dentro de la pila.
-- **Medir con `fio` sin engañarse** — los tres errores que invalidan cualquier benchmark:
-  1. **Medir la caché**: dataset mayor que la RAM, o `direct=1` (O_DIRECT) para saltar la page
-     cache. Un `dd` que da 3 GB/s en una máquina con 64 GB de RAM está midiendo memoria.
-  2. **Medir el patrón equivocado**: usa el `bs`, la mezcla lectura/escritura, `iodepth` y `numjobs`
-     de tu carga real, no `bs=1M` secuencial para una BD que hace 8K aleatorio.
-  3. **No dejar que el SSD entre en estado estacionario**: los primeros minutos de un SSD vacío
-     mienten. `ramp_time` y ejecuciones largas.
-  Además: `fsync`/`end_fsync` si te importa la durabilidad, y **nunca ejecutar `fio` con escritura
-  sobre un dispositivo con datos** (`filename=/dev/sdX` destruye el contenido).
-- **"El disco va lento" — orden de sospecha real**: (1) filesystem por encima del 80–90 % lleno o
-  fragmentado; (2) profundidad de cola / saturación por concurrencia; (3) una capa dm intermedia
-  (thin pool casi lleno, cifrado sin AES-NI, RAID en resync); (4) escrituras síncronas que la
-  aplicación pide y nadie había contado; (5) el disco. **El disco es la última hipótesis, no la
-  primera.**
-- **Crecer en caliente**: disco virtual ampliado → `echo 1 > /sys/class/block/sdX/device/rescan`
-  (o `iscsiadm --rescan`, o `multipathd resize map`) → `growpart`/`parted` → `pvresize` →
-  `lvextend -r`. Cada paso se verifica antes del siguiente; saltarse uno produce el clásico
-  "he ampliado el disco y no se ve".
+- **Latency versus throughput**: they are different goals and almost always opposed. Define which one
+  matters to you **before** measuring. A MB/s number with no latency percentiles says nothing about a
+  database.
+- **`iostat -xz 1`**: `r_await`/`w_await` (real per-operation latency), `aqu-sz` (queue
+  depth), `%util` (**misleading on NVMe**: it reaches 100 % without saturation because the device processes
+  in parallel). `iotop`/`pidstat -d` to attribute to a process; `blktrace`/`biolatency` (bcc/bpftrace)
+  when you need to see the real distribution and where the time is lost inside the stack.
+- **Measuring with `fio` without fooling yourself** — the three errors that invalidate any benchmark:
+  1. **Measuring the cache**: a dataset larger than RAM, or `direct=1` (O_DIRECT) to bypass the page
+     cache. A `dd` giving 3 GB/s on a machine with 64 GB of RAM is measuring memory.
+  2. **Measuring the wrong pattern**: use the `bs`, the read/write mix, the `iodepth` and the `numjobs`
+     of your real workload, not sequential `bs=1M` for a DB that does 8K random.
+  3. **Not letting the SSD reach steady state**: the first minutes of an empty SSD
+     lie. `ramp_time` and long runs.
+  Also: `fsync`/`end_fsync` if durability matters to you, and **never run `fio` in write mode
+  against a device with data** (`filename=/dev/sdX` destroys the contents).
+- **"The disk is slow" — the real order of suspicion**: (1) filesystem above 80–90 % full or
+  fragmented; (2) queue depth / saturation through concurrency; (3) an intermediate dm layer
+  (thin pool nearly full, encryption without AES-NI, RAID resyncing); (4) synchronous writes the
+  application requests and nobody had counted; (5) the disk. **The disk is the last hypothesis, not the
+  first.**
+- **Growing online**: virtual disk enlarged → `echo 1 > /sys/class/block/sdX/device/rescan`
+  (or `iscsiadm --rescan`, or `multipathd resize map`) → `growpart`/`parted` → `pvresize` →
+  `lvextend -r`. Each step is verified before the next; skipping one produces the classic
+  "I enlarged the disk and it doesn't show".
 
-## 4. Gates: lo que hay que demostrar
+## 4. Gates: what has to be demonstrated
 
-Un sistema de almacenamiento no está en producción hasta que estos puntos están demostrados con
-evidencia y fecha:
+A storage system is not in production until these points are demonstrated with
+evidence and a date:
 
-1. **Alerta de capacidad con predicción, en espacio Y en inodos.** `df` y `df -i` exportados, aviso
-   al 80 % con estimación de tiempo hasta el llenado. Un aviso al 95 % llega tarde por definición.
-   En LVM thin, alerta adicional sobre `Data%` **y** `Meta%` del pool.
-2. **Alerta de degradación probada.** `mdadm --monitor` (o el equivalente del dm) y SMART/NVMe con
-   destino que llega a un humano de guardia; **se verifica provocándola** (desconectar un disco en
-   preproducción), no leyendo la configuración.
-3. **Scrub/`checkarray` programado y vigilado** en cualquier array con redundancia; **la alerta es
-   sobre el resultado**, no sobre que el timer se ejecutara.
-4. **Reconstrucción cronometrada.** Un resync real medido en preproducción con la carga puesta. Si
-   supera la ventana de riesgo aceptable, **el nivel de RAID está mal elegido** y se revisa (§3.3).
-5. **Crecimiento en caliente ensayado.** El procedimiento completo (§3.9) ejecutado al menos una
-   vez por alguien distinto del autor del runbook, con la aplicación en marcha.
-6. **Backup de cabecera LUKS y de metadata LVM verificados**, guardados fuera del sistema, y con la
-   restauración probada (`cryptsetup luksHeaderRestore` / `vgcfgrestore`) en un entorno de prueba.
-7. **Ninguna referencia a `/dev/sdX`** en `fstab`, `crypttab`, scripts, unidades ni documentación.
-   Gate mecánico: `grep -rn '/dev/sd' /etc/fstab /etc/crypttab /etc/systemd/system/` vacío.
-8. **Multipath: comprobar que el punto de montaje es el mapper** y que el failover de ruta se ha
-   probado (bajar una ruta y ver que la I/O continúa).
+1. **A capacity alert with prediction, on space AND on inodes.** `df` and `df -i` exported, a warning
+   at 80 % with an estimate of the time until it fills up. A warning at 95 % is late by definition.
+   On LVM thin, an additional alert on the pool's `Data%` **and** `Meta%`.
+2. **A degradation alert that has been tested.** `mdadm --monitor` (or the dm equivalent) and SMART/NVMe with
+   a destination that reaches a human on call; **it is verified by triggering it** (unplugging a disk in
+   preproduction), not by reading the configuration.
+3. **Scrub/`checkarray` scheduled and watched** on any array with redundancy; **the alert is
+   on the result**, not on the timer having run.
+4. **A timed rebuild.** A real resync measured in preproduction with the load applied. If
+   it exceeds the acceptable risk window, **the RAID level is wrongly chosen** and it is revisited (§3.3).
+5. **Online growth rehearsed.** The complete procedure (§3.9) executed at least once
+   by someone other than the runbook's author, with the application running.
+6. **LUKS header and LVM metadata backups verified**, kept off the system, and with the
+   restore tested (`cryptsetup luksHeaderRestore` / `vgcfgrestore`) in a test environment.
+7. **No reference to `/dev/sdX`** in `fstab`, `crypttab`, scripts, units or documentation.
+   Mechanical gate: `grep -rn '/dev/sd' /etc/fstab /etc/crypttab /etc/systemd/system/` empty.
+8. **Multipath: check that the mount point is the mapper** and that path failover has been
+   tested (bring a path down and see that I/O continues).
 
-## 5. Seguridad
+## 5. Security
 
-- **Cifrado en reposo según la clasificación del dato** (§3.7). El baseline de qué debe ir cifrado
-  y la separación de particiones como control CIS son de `linux-hardening-standards`; **las
-  opciones `noexec`/`nosuid`/`nodev` son suyas**, no de aquí.
-- **Retirada de discos**: un disco que sale del datacenter sin borrado criptográfico o destrucción
-  física es una fuga de datos. `nvme format --ses=1`/`blkdiscard`/`cryptsetup luksErase` según el
-  medio — y en SSD, **borrar ficheros no borra nada** por el remapeo interno: el cifrado desde el
-  día uno es lo que hace la retirada trivial (destruye la clave y el disco es ruido).
-- **Filtro de LVM (`global_filter`)**: en un host con multipath, iSCSI o VMs, LVM puede activar
-  volúmenes que no le corresponden — incluidos LV **dentro** de discos de invitados. Es superficie
-  de escape y de corrupción: filtra explícitamente lo que LVM debe mirar.
-- **Montajes de red y confianza**: NFSv3 con `sec=sys` confía en el UID que dice el cliente. En
-  redes no confiables, NFSv4 con Kerberos o nada; el diseño de segmentación es de
+- **Encryption at rest according to the data's classification** (§3.7). The baseline of what must be encrypted
+  and partition separation as a CIS control belong to `linux-hardening-standards`; **the
+  `noexec`/`nosuid`/`nodev` options are theirs**, not ours.
+- **Disk retirement**: a disk that leaves the datacentre without cryptographic erasure or physical
+  destruction is a data breach. `nvme format --ses=1`/`blkdiscard`/`cryptsetup luksErase` depending on the
+  medium — and on SSDs, **deleting files deletes nothing** because of internal remapping: encryption from
+  day one is what makes retirement trivial (destroy the key and the disk is noise).
+- **LVM filter (`global_filter`)**: on a host with multipath, iSCSI or VMs, LVM can activate
+  volumes that are not its own — including LVs **inside** guest disks. It is escape and
+  corruption surface: filter explicitly what LVM should look at.
+- **Network mounts and trust**: NFSv3 with `sec=sys` trusts the UID the client claims. On
+  untrusted networks, NFSv4 with Kerberos or nothing; segmentation design belongs to
   `networking-standards`.
-- **TRIM sobre cifrado filtra metadatos** (qué bloques están usados): decisión consciente (§3.5).
-- **CVEs de la pila de almacenamiento**: los de kernel (`md`, `dm`, drivers NVMe/SCSI, filesystems)
-  se triagan como cualquier otro (`vulnerability-management-standards`); su remediación **implica
-  reinicio**, y esa política es de `linux-administration-standards`. **Hueco declarado (§8)**: no
-  se ha verificado en esta sesión ningún CVE concreto de LVM/mdadm/XFS/ext4/btrfs de 2025-2026.
+- **TRIM over encryption leaks metadata** (which blocks are in use): a conscious decision (§3.5).
+- **CVEs of the storage stack**: kernel ones (`md`, `dm`, NVMe/SCSI drivers, filesystems)
+  are triaged like any other (`vulnerability-management-standards`); their remediation **implies
+  a reboot**, and that policy belongs to `linux-administration-standards`. **Declared gap (§8)**: no
+  specific LVM/mdadm/XFS/ext4/btrfs CVE from 2025-2026 has been verified in this session.
 
-## 6. Observabilidad y operabilidad
+## 6. Observability and operability
 
-- **Métricas mínimas por host**: espacio e inodos por filesystem (`node_filesystem_*`), latencia y
-  cola por dispositivo (`node_disk_*`: `io_time`, `read/write_time`, `io_now`), estado de arrays
+- **Minimum metrics per host**: space and inodes per filesystem (`node_filesystem_*`), latency and
+  queue per device (`node_disk_*`: `io_time`, `read/write_time`, `io_now`), array state
   (`node_md_*`), SMART/NVMe (`smartctl_exporter`: `percentage_used`, `available_spare`,
-  `media_errors`, reasignados y pendientes), ocupación de datos **y metadatos** de thin pools,
-  estado de rutas multipath, estado de montajes de red. El diseño de las alertas y sus umbrales es
-  de `observability-standards`; **qué** exponer es de aquí.
-- **Alertas accionables**: filesystem > 80 % (con predicción), inodos > 80 %, array degradado o en
-  resync, thin pool > 80 % en datos o metadatos, ruta multipath caída, SMART con reasignados o
-  pendientes creciendo, `percentage_used` de NVMe por encima del umbral de aprovisionamiento,
-  latencia p99 por encima del objetivo, montaje NFS/iSCSI no disponible. Sin runbook enlazado, la
-  alerta sobra.
-- **Capacidad como planificación, no como alarma**: revisión trimestral de tendencia por volumen,
-  antigüedad y desgaste por lote de discos, y espacio libre real del VG (los thin pools mienten
-  sobre el espacio disponible por diseño).
-- **Runbooks probados**: sustituir un disco de un array, extender un volumen en caliente, thin pool
-  al 95 %, filesystem al 100 %, ruta de SAN caída, servidor NFS caído. Probados, versionados, con
-  dueño.
+  `media_errors`, reallocated and pending sectors), data **and metadata** occupancy of thin pools,
+  multipath path state, network mount state. The design of the alerts and their thresholds belongs
+  to `observability-standards`; **what** to expose belongs here.
+- **Actionable alerts**: filesystem > 80 % (with prediction), inodes > 80 %, array degraded or
+  resyncing, thin pool > 80 % on data or metadata, multipath path down, SMART with reallocated or
+  pending sectors growing, NVMe `percentage_used` above the provisioning threshold,
+  p99 latency above target, NFS/iSCSI mount unavailable. With no runbook linked, the
+  alert is superfluous.
+- **Capacity as planning, not as an alarm**: quarterly review of the trend per volume,
+  age and wear per disk batch, and the VG's real free space (thin pools lie
+  about available space by design).
+- **Tested runbooks**: replacing a disk in an array, extending a volume online, a thin pool
+  at 95 %, a filesystem at 100 %, a SAN path down, an NFS server down. Tested, versioned, with an
+  owner.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia**
-- Revisión trimestral: firmware de discos, HBA y controladoras (los bugs de firmware de SSD que
-  causan pérdida de datos a las N horas de encendido son un género propio); desgaste por lote;
-  tendencia de capacidad; vigencia de la topología frente a la carga actual.
-- Antes de cualquier upgrade de kernel: comprobar cambios en el subsistema de bloques o en el
-  filesystem que uses si el salto es de versión mayor (`linux-administration-standards` gobierna
-  la política de reinicio).
-- **Documentar en el runbook las decisiones irreversibles del `mkfs`** (tamaño de bloque, inodos,
-  alineación) junto al host: dentro de tres años nadie recordará por qué ese filesystem tiene esos
-  parámetros, y son los que impiden el crecimiento.
+**Cadence**
+- Quarterly review: firmware of disks, HBAs and controllers (SSD firmware bugs that
+  cause data loss after N power-on hours are a genre of their own); wear per batch;
+  capacity trend; validity of the topology against the current load.
+- Before any kernel upgrade: check changes in the block subsystem or in the
+  filesystem you use if the jump is a major version (`linux-administration-standards` governs
+  the reboot policy).
+- **Document in the runbook the irreversible `mkfs` decisions** (block size, inodes,
+  alignment) alongside the host: in three years nobody will remember why that filesystem has those
+  parameters, and they are the ones that prevent growth.
 
-**PROHIBIDO**
-- ❌ **LVM o mdadm por debajo de ZFS.** Si el sistema es ZFS, los discos van crudos tras un HBA en
-  modo IT (`zfs-standards`).
-- ❌ **btrfs RAID5/RAID6** en producción: **unstable** y con formato en disco sin finalizar.
-- ❌ **mdadm RAID5 con discos grandes**; ❌ RAID0 con datos que importen; ❌ array sin `--bitmap`.
-- ❌ Creer que el write-intent bitmap cierra el write hole (no lo hace: solo acelera el resync).
-- ❌ **Thin pool sobreaprovisionado sin `thin_pool_autoextend_threshold < 100`, sin dmeventd activo
-  y sin alerta sobre datos Y metadatos.** Llenar el pool puede ser irreparable.
-- ❌ Snapshots de LVM o de btrfs presentados como backup.
-- ❌ Planificar encoger un XFS: **no se puede**. Elegir XFS donde el requisito es reducir.
-- ❌ `lvreduce` antes de `resize2fs`, o `lvreduce` sin backup verificado.
-- ❌ `/dev/sdX` en `fstab`, `crypttab`, scripts, unidades o documentación.
-- ❌ Montar el `sdX` subyacente cuando existe un mapa multipath.
-- ❌ **NFS con `soft` en cargas de escritura**: corrupción silenciosa documentada.
-- ❌ `nconnect` combinado con `sec=krb5*`; `nconnect` copiado de un blog sin medir.
-- ❌ Opción de montaje **`discard`** en ext4/XFS por defecto (usar `fstrim.timer`); TRIM continuo
-  sobre LUN thin de SAN.
-- ❌ Entrada de `fstab` de un volumen opcional **sin `nofail`**: un disco ausente tira el arranque.
-- ❌ Cambiar el planificador de I/O, `nr_requests` o cualquier tunable **sin medición antes y
-  después**.
-- ❌ Benchmarks con `dd`, sin `direct=1`, con dataset menor que la RAM, o sin `ramp_time` en SSD.
-- ❌ Ejecutar `fio` en modo escritura contra un dispositivo con datos.
-- ❌ LUKS sin **backup de cabecera** custodiado fuera del disco cifrado, o desbloqueo por TPM sin
-  passphrase de recuperación custodiada.
-- ❌ `xfs_repair -L` o cualquier reparación destructiva como primer intento, o antes de tener
-  imagen si hay sospecha de compromiso.
-- ❌ Filesystem de producción sin alerta de espacio **y de inodos**.
-- ❌ Array degradado, thin pool al límite o ruta multipath caída sin alerta que llegue a un humano.
-- ❌ Bajar la reserva de root (`tune2fs -m 0`) en `/` o `/var`.
-- ❌ Retirar un disco sin borrado criptográfico o destrucción física.
+**FORBIDDEN**
+- ❌ **LVM or mdadm underneath ZFS.** If the system is ZFS, the disks go raw behind an HBA in
+  IT mode (`zfs-standards`).
+- ❌ **btrfs RAID5/RAID6** in production: **unstable** and with an unfinalised on-disk format.
+- ❌ **mdadm RAID5 with large disks**; ❌ RAID0 with data that matters; ❌ an array without `--bitmap`.
+- ❌ Believing that the write-intent bitmap closes the write hole (it does not: it only speeds up the resync).
+- ❌ **An overprovisioned thin pool without `thin_pool_autoextend_threshold < 100`, without dmeventd active
+  and without an alert on data AND metadata.** Filling the pool can be unrepairable.
+- ❌ LVM or btrfs snapshots presented as a backup.
+- ❌ Planning to shrink an XFS: **you cannot**. Choosing XFS where the requirement is to shrink.
+- ❌ `lvreduce` before `resize2fs`, or `lvreduce` without a verified backup.
+- ❌ `/dev/sdX` in `fstab`, `crypttab`, scripts, units or documentation.
+- ❌ Mounting the underlying `sdX` when a multipath map exists.
+- ❌ **NFS with `soft` on write workloads**: documented silent corruption.
+- ❌ `nconnect` combined with `sec=krb5*`; `nconnect` copied from a blog without measuring.
+- ❌ The **`discard`** mount option on ext4/XFS by default (use `fstrim.timer`); continuous TRIM
+  on a thin SAN LUN.
+- ❌ An `fstab` entry for an optional volume **without `nofail`**: an absent disk takes the boot down.
+- ❌ Changing the I/O scheduler, `nr_requests` or any tunable **without measuring before and
+  after**.
+- ❌ Benchmarks with `dd`, without `direct=1`, with a dataset smaller than RAM, or without `ramp_time` on an SSD.
+- ❌ Running `fio` in write mode against a device with data.
+- ❌ LUKS without a **header backup** kept off the encrypted disk, or TPM unlock without
+  a recovery passphrase held in custody.
+- ❌ `xfs_repair -L` or any destructive repair as a first attempt, or before having an
+  image if compromise is suspected.
+- ❌ A production filesystem without an alert on space **and on inodes**.
+- ❌ A degraded array, a thin pool at its limit or a multipath path down with no alert reaching a human.
+- ❌ Lowering the root reserve (`tune2fs -m 0`) on `/` or `/var`.
+- ❌ Retiring a disk without cryptographic erasure or physical destruction.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Verificado a **agosto 2026** (y qué hay que re-verificar antes de fijar nada):
-1. **XFS no admite reducción**, ni online ni offline, y no está en el roadmap upstream a kernel 7.0;
-   solo hay trabajo en revisión para encoger **AG vacíos**. `xfs_growfs` solo crece. **XFS sigue
-   siendo el default de la familia RHEL en RHEL 10**, con ext4 plenamente soportado. Re-verificar
-   en la documentación de Red Hat y en `xfs.org` — es el error de memoria más frecuente del dominio.
-   (Nota: XFS ganó auto-reparación de metadatos en kernel 7.0; **hueco**: no verificado su alcance.)
-2. **btrfs — matriz de estabilidad oficial** (`btrfs.readthedocs.io/en/latest/Status.html`, estado a
-   kernel 7.1): `RAID56` = **unstable** con formato en disco no finalizado; `qgroups` y
-   `device replace` = "mostly OK"; snapshots, compresión, send/receive, scrub, free space tree y
-   RAID1/1C3/1C4 = OK. **Re-verificar en esa página, nunca de oídas**: es la fuente canónica y
-   cambia por versión de kernel.
-3. **Planificadores de I/O**: `none` es el default y la recomendación para NVMe; `mq-deadline`
-   justificado por latencia de cola medida o en SATA. Los planificadores de cola única (`cfq`,
-   `deadline`) ya no existen. Confirmar qué ofrece `/sys/block/<dev>/queue/scheduler` en el kernel
-   concreto.
-4. **LVM thin**: `thin_pool_autoextend_threshold` mínimo 50, 100 lo desactiva; dmeventd/`lvm2-monitor`
-   requerido; el agotamiento de **metadatos** es un modo de fallo independiente; llenar el pool
-   puede dañarlo de forma difícil o imposible de reparar. Fuente: `lvmthin(7)`. Re-verificar los
-   defaults de tu distro en `lvm.conf`.
-5. **`fstrim.timer` frente a `discard`**: `xfs(5)` sigue desaconsejando `discard` por impacto
-   severo; ext4 tampoco lo recomienda por defecto; `discard=async` es de **btrfs** (kernel 5.6+) y
-   no existe en ext4/XFS. Re-verificar en el `man` de la versión instalada.
-6. **NFS `hard` frente a `soft`**: `nfs(5)` documenta que un timeout de `soft` **puede causar
-   corrupción silenciosa de datos**. `hard,timeo=600,retrans=2` como base. `nconnect` requiere
-   kernel 5.3+, el valor óptimo depende del proveedor (4 en unos, 8-16 en otros) y **no se combina
-   con Kerberos**. Verificar la guía del proveedor de almacenamiento concreto.
-7. **mdadm write hole**: `--consistency-policy` admite `resync|bitmap|journal|ppl`; **PPL solo
-   RAID5**, máx. 64 discos, coste de escritura hasta 30–40 %, y **no protege el dato en vuelo**;
-   `journal` sirve para RAID4/5/6 y exige SSD dedicada (espejada, o es un SPOF). El **bitmap no
-   cierra el write hole**. Fuente: `mdadm(8)` y `docs.kernel.org/driver-api/md/raid5-ppl.html`.
-8. **cryptsetup/LUKS2**: el default upstream es **argon2id** (era argon2i), con memoria mínima de
-   benchmark de 64 MiB; los parámetros se autoajustan al hardware y **cambian entre versiones** —
-   la propia ArchWiki advierte de no confiar en los defaults. GRUB necesita `pbkdf2`.
-   **Hueco declarado**: no se ha verificado la versión exacta de cryptsetup vigente en ago-2026 ni
-   sus parámetros por defecto actuales. Consultar el GitLab upstream antes de fijarlos.
-9. **CVEs**: **hueco declarado** — no se ha verificado en esta sesión ningún CVE concreto de
-   LVM2, mdadm, cryptsetup, open-iscsi, multipath-tools ni de los filesystems (ext4/XFS/btrfs) en
-   2025-2026. Consultar los avisos de la distro (DSA/USN/RHSA) y NVD antes de afirmar nada sobre
-   la seguridad de estos componentes.
-10. **Hueco declarado — no verificado en esta sesión**: (a) el estado actual de `f2fs` y otros
-    filesystems de nicho (bcachefs incluido: su situación upstream ha sido cambiante y **no se
-    recomienda aquí por defecto** precisamente por no estar verificada); (b) los valores actuales
-    de `nr_requests` y defaults de blk-mq por tipo de dispositivo; (c) límites vigentes de tamaño
-    de volumen y de fichero soportados **por la distro** (no por el filesystem) para ext4 y XFS —
-    Red Hat y SUSE publican límites *soportados* más bajos que los teóricos, y ese es el número que
-    cuenta en un contrato de soporte.
-11. Antes de cualquier `mkfs` en producción: los parámetros irreversibles (§3.4) contra la
-    documentación de la versión de `e2fsprogs`/`xfsprogs` instalada, no contra la memoria.
+Verified as of **August 2026** (and what has to be re-verified before pinning anything):
+1. **XFS does not support shrinking**, neither online nor offline, and it is not on the upstream roadmap as of kernel 7.0;
+   there is only work under review to shrink **empty AGs**. `xfs_growfs` only grows. **XFS is still
+   the RHEL family's default in RHEL 10**, with ext4 fully supported. Re-verify
+   in Red Hat's documentation and on `xfs.org` — it is the most frequent memory error in the domain.
+   (Note: XFS gained metadata self-healing in kernel 7.0; **gap**: its scope not verified.)
+2. **btrfs — the official stability matrix** (`btrfs.readthedocs.io/en/latest/Status.html`, status as of
+   kernel 7.1): `RAID56` = **unstable** with an unfinalised on-disk format; `qgroups` and
+   `device replace` = "mostly OK"; snapshots, compression, send/receive, scrub, free space tree and
+   RAID1/1C3/1C4 = OK. **Re-verify on that page, never by hearsay**: it is the canonical source and it
+   changes per kernel version.
+3. **I/O schedulers**: `none` is the default and the recommendation for NVMe; `mq-deadline`
+   justified by measured tail latency or on SATA. The single-queue schedulers (`cfq`,
+   `deadline`) no longer exist. Confirm what `/sys/block/<dev>/queue/scheduler` offers on the
+   specific kernel.
+4. **LVM thin**: `thin_pool_autoextend_threshold` minimum 50, 100 disables it; dmeventd/`lvm2-monitor`
+   required; **metadata** exhaustion is an independent failure mode; filling the pool
+   can damage it in a way that is hard or impossible to repair. Source: `lvmthin(7)`. Re-verify your
+   distribution's defaults in `lvm.conf`.
+5. **`fstrim.timer` versus `discard`**: `xfs(5)` still advises against `discard` because of its severe
+   impact; ext4 does not recommend it by default either; `discard=async` belongs to **btrfs** (kernel 5.6+) and
+   does not exist in ext4/XFS. Re-verify in the `man` page of the installed version.
+6. **NFS `hard` versus `soft`**: `nfs(5)` documents that a `soft` timeout **can cause
+   silent data corruption**. `hard,timeo=600,retrans=2` as the baseline. `nconnect` requires
+   kernel 5.3+, the optimal value depends on the vendor (4 on some, 8-16 on others) and **it is not combined
+   with Kerberos**. Check the specific storage vendor's guide.
+7. **mdadm write hole**: `--consistency-policy` accepts `resync|bitmap|journal|ppl`; **PPL is RAID5
+   only**, max. 64 disks, a write cost of up to 30–40 %, and **it does not protect data in flight**;
+   `journal` works for RAID4/5/6 and requires a dedicated SSD (mirrored, or it is a SPOF). The **bitmap does not
+   close the write hole**. Source: `mdadm(8)` and `docs.kernel.org/driver-api/md/raid5-ppl.html`.
+8. **cryptsetup/LUKS2**: the upstream default is **argon2id** (it was argon2i), with a minimum benchmark
+   memory of 64 MiB; the parameters self-tune to the hardware and **change between versions** —
+   the ArchWiki itself warns against trusting the defaults. GRUB needs `pbkdf2`.
+   **Declared gap**: the exact cryptsetup version current in Aug 2026 has not been verified, nor
+   its current default parameters. Consult the upstream GitLab before pinning them.
+9. **CVEs**: **declared gap** — no specific CVE for
+   LVM2, mdadm, cryptsetup, open-iscsi, multipath-tools or the filesystems (ext4/XFS/btrfs) in
+   2025-2026 has been verified in this session. Consult the distribution's advisories (DSA/USN/RHSA) and NVD before asserting anything about
+   the security of these components.
+10. **Declared gap — not verified in this session**: (a) the current status of `f2fs` and other
+    niche filesystems (bcachefs included: its upstream situation has been changeable and **it is not
+    recommended here by default** precisely because it has not been verified); (b) the current values
+    of `nr_requests` and blk-mq defaults per device type; (c) the current supported volume and file
+    size limits **of the distribution** (not of the filesystem) for ext4 and XFS —
+    Red Hat and SUSE publish *supported* limits lower than the theoretical ones, and that is the number that
+    counts in a support contract.
+11. Before any `mkfs` in production: the irreversible parameters (§3.4) against the
+    documentation of the installed `e2fsprogs`/`xfsprogs` version, not against memory.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

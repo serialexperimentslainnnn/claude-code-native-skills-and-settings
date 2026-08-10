@@ -3,282 +3,282 @@ name: migration-projects-standards
 description: How a platform or infrastructure migration is actually executed - the cutover, not the strategy. Use when writing a cutover runbook or pre-migration checklist, scheduling a cutover window and its dress rehearsal, defining go/no-go and abort criteria and naming who declares them, planning migration waves versus a single all-at-once switch, running dual writes and reconciling both sides, backfilling and then proving row counts, checksums and control totals match after the move, rehearsing a rollback instead of assuming one, lowering DNS TTL before a switch, declaring a change freeze and pricing what it costs, notifying users of an outage window, running the hypercare or warranty period after the switch, or setting a dated decommissioning plan for the source system that is still powered on just in case.
 ---
 
-# Estándares de ejecución de migraciones
+# Migration execution standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre **cómo se ejecuta el traslado**, sea el origen heredado o no: migración de un datacenter, de
-hipervisor, de proveedor cloud, de motor de base de datos, de sistema de correo o identidad, de una
-aplicación a otra. **El objeto de esta skill es el corte** —la transición del tráfico y del dato del
-sistema origen al destino— y todo lo que lo rodea: inventario de dependencias, ensayo, ventana,
-criterios de abortar, verificación, marcha atrás y descomisionado.
+Covers **how the move is executed**, whether the source is legacy or not: migration of a datacenter, of
+hypervisor, of cloud provider, of database engine, of mail or identity system, of one
+application to another. **The object of this skill is the cutover** —the transition of traffic and data from the
+source system to the target— and everything around it: dependency inventory, rehearsal, window,
+abort criteria, verification, rollback and decommissioning.
 
-**Principio rector**: **una migración no termina cuando el sistema nuevo arranca; termina cuando el
-viejo está apagado y el dato cuadra.** Todo lo que se declara "hecho" antes de eso es un estado
-intermedio con dos sistemas vivos, y ese estado es el modo de fallo más caro y más común del dominio
-(§7). Corolario falsable aplicable a cualquier plan de migración que te enseñen: **si no contiene una
-fecha de apagado del origen con dueño nombrado, no es un plan de migración, es un plan de
-duplicación.**
+**Guiding principle**: **a migration does not end when the new system starts up; it ends when the
+old one is powered off and the data reconciles.** Anything declared "done" before that is an intermediate
+state with two live systems, and that state is the most expensive and most common failure mode of the domain
+(§7). Falsifiable corollary applicable to any migration plan you are shown: **if it does not contain a
+shutdown date for the source with a named owner, it is not a migration plan, it is a
+duplication plan.**
 
-Segundo corolario, de aplicación inmediata: **"arrancó" no es un criterio de éxito.** El criterio es
-que los datos cuadren contra el origen con una comprobación definida antes del corte (§4).
+Second corollary, of immediate application: **"it started up" is not a success criterion.** The criterion is
+that the data reconciles against the source with a check defined before the cutover (§4).
 
-**No aplica**: ver `legacy-modernization-standards` (**frontera dura y recíproca**: **allí la
-estrategia y qué hacer con el sistema** —qué "R", si se congela, si se reescribe, la caracterización
-previa y la arqueología del build—; **aquí la ejecución del corte** una vez decidido. Regla de
-arbitraje: si la pregunta es *"¿qué hacemos con este sistema?"*, es suya; si es *"¿cómo lo movemos
-sin romper nada y cuándo apagamos el viejo?"*, es de aquí); `project-management-standards` (la
-gestión del proyecto: enfoque de entrega, estimación, RAID, informes, interesados, cierre. **Aquí
-solo los artefactos propios del corte**, que no son gestión genérica: el *runbook*, el ensayo y los
-criterios de abortar); `erp-sap-standards` (**recíproca: la migración a un ERP de paquete tiene
-restricciones que no vienen de la técnica sino del contrato** — el calendario de mantenimiento que
-fija la fecha, la licencia que cambia con la arquitectura, el reparto de responsabilidad del modelo
-de despliegue y el gobierno de transportes. Todo eso es suyo y **condiciona la ventana de corte que
-se diseña aquí**; el corte en sí, su ensayo, su cuadre y su marcha atrás son de esta skill. El error
-típico si no se leen juntas: fijar la ventana sin saber que el paisaje de origen está en congelación
-de transportes con dueño y fecha propios); `bcdr-standards` (**RTO/RPO y desastre**: una migración es un cambio
-planificado, no un desastre, y **su ventana no es un RTO**. Recíproca útil: el ensayo de un corte y
-un ejercicio de DR se parecen tanto que conviene reutilizar el mismo runbook, pero el que declara la
-activación y el que declara el aborto no son la misma figura); `data-engineering-standards` (los
-pipelines de extracción, carga y reproceso **en sí**: orquestación, *backfill*, idempotencia. Aquí
-solo lo que decide si el corte se aborta); `data-governance-quality-standards` (las dimensiones de
-calidad del dato y su medición continua; aquí la comprobación puntual del corte);
-`microservices-architecture-standards` (**suyo el mecanismo** de la doble escritura atómica —
-*transactional outbox*, sagas, propiedad del dato—; **aquí la doble escritura como técnica de
-transición y su reconciliación**, §3.4); `enterprise-architecture-standards` (qué se migra y por
-qué, a nivel de cartera); `itsm-itil-standards` (la migración como **cambio** dentro del proceso de
-servicio, la ventana de cambio y el traspaso a operación); `incident-management-standards` (si el
-corte se convierte en incidente, manda su proceso: IC, severidad, comunicación de crisis);
-`dns-standards` (registros, TTL y su mecánica); `cicd-standards` (el despliegue de la aplicación,
-que no es una migración); `backup-recovery-standards` (la copia previa al corte y su restore
-probado); las skills de plataforma de origen y destino, que mandan sobre **cómo** se mueve cada cosa.
+**Not applicable**: see `legacy-modernization-standards` (**hard and reciprocal boundary**: **there the
+strategy and what to do with the system** —which "R", whether it is frozen, whether it is rewritten, the prior
+characterisation and the build archaeology—; **here the execution of the cutover** once decided. Arbitration rule:
+if the question is *"what do we do with this system?"*, it is theirs; if it is *"how do we move it
+without breaking anything and when do we switch off the old one?"*, it belongs here); `project-management-standards` (project
+management: delivery approach, estimation, RAID, reporting, stakeholders, closure. **Here
+only the artifacts proper to the cutover**, which are not generic management: the *runbook*, the rehearsal and the
+abort criteria); `erp-sap-standards` (**reciprocal: migration to a packaged ERP has
+constraints that come not from technology but from the contract** — the maintenance calendar that
+fixes the date, the licence that changes with the architecture, the split of responsibility of the deployment
+model and transport governance. All of that is theirs and **conditions the cutover window
+designed here**; the cutover itself, its rehearsal, its reconciliation and its rollback belong to this skill. The typical
+error if they are not read together: fixing the window without knowing that the source landscape is in a transport
+freeze with its own owner and date); `bcdr-standards` (**RTO/RPO and disaster**: a migration is a
+planned change, not a disaster, and **its window is not an RTO**. Useful reciprocal: the rehearsal of a cutover and
+a DR exercise are so alike that it is worth reusing the same runbook, but whoever declares the
+activation and whoever declares the abort are not the same figure); `data-engineering-standards` (the
+extraction, load and reprocessing pipelines **themselves**: orchestration, *backfill*, idempotency. Here
+only what decides whether the cutover is aborted); `data-governance-quality-standards` (the data quality
+dimensions and their continuous measurement; here the one-off check at the cutover);
+`microservices-architecture-standards` (**theirs the mechanism** of atomic dual writing —
+*transactional outbox*, sagas, data ownership—; **here dual writing as a transition technique
+and its reconciliation**, §3.4); `enterprise-architecture-standards` (what is migrated and why,
+at portfolio level); `itsm-itil-standards` (the migration as a **change** within the service
+process, the change window and the handover to operations); `incident-management-standards` (if the
+cutover turns into an incident, their process rules: IC, severity, crisis communication);
+`dns-standards` (records, TTL and their mechanics); `cicd-standards` (application deployment,
+which is not a migration); `backup-recovery-standards` (the pre-cutover copy and its proven
+restore); the source and target platform skills, which rule over **how** each thing is moved.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Tabla de criterio, no de herramienta. Verificar por web cualquier producto o límite concreto (§8).
+> A table of criteria, not of tools. Verify any specific product or limit on the web (§8).
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Forma del corte | **Por olas**, agrupadas por dependencia, con la primera ola deliberadamente pequeña y reversible | Corte único, **solo** con las condiciones de `legacy-modernization-standards` §3.2 verificadas (estado indivisible, sin costura, fecha contractual) |
-| Ensayo | **Ensayo completo con datos reales enmascarados sobre infraestructura equivalente**, cronometrado | Ensayo parcial + *tabletop* del resto, si el coste del entorno equivalente es prohibitivo — **declarado como riesgo aceptado, no como equivalente** |
-| Marcha atrás | **Rollback ensayado** dentro de la ventana, con su propio cronómetro | ***Fix forward*** declarado **antes** del corte, cuando el rollback es imposible por el dato ya movido. No se improvisa el día del corte |
-| Convivencia de datos | **Un solo sistema de registro en cada instante**; el otro es réplica de solo lectura | **Doble escritura** con reconciliación automática (§3.4), solo si la convivencia es obligatoria y se acepta su coste |
-| Ventana | **Con parada declarada** y comunicada, aunque sea corta: una parada honesta es más barata que una degradación silenciosa | Corte sin parada (*live*), solo con doble escritura probada y capacidad de conmutar tráfico gradualmente |
-| Verificación | **Cuadre de dato definido y automatizado antes del corte** (§4) | Ninguna. No hay alternativa: sin criterio de cuadre no se corta |
-| Congelación | **Congelación de cambios acotada y con fecha de fin publicada** desde el inicio | Congelación parcial (solo lo que toca el alcance) si el negocio no la aguanta — con el riesgo de divergencia explícito |
-| Apagado del origen | **Fecha comprometida en el mismo documento que aprueba el corte** | Ninguna. "Ya lo apagaremos" no es una alternativa (§7) |
+| Cutover shape | **By waves**, grouped by dependency, with the first wave deliberately small and reversible | Single cutover, **only** with the conditions of `legacy-modernization-standards` §3.2 verified (indivisible state, no seam, contractual date) |
+| Rehearsal | **Full rehearsal with masked real data on equivalent infrastructure**, timed | Partial rehearsal + *tabletop* for the rest, if the cost of the equivalent environment is prohibitive — **declared as accepted risk, not as an equivalent** |
+| Rollback | **Rehearsed rollback** within the window, with its own stopwatch | ***Fix forward*** declared **before** the cutover, when rollback is impossible because the data has already moved. It is not improvised on cutover day |
+| Data coexistence | **A single system of record at any instant**; the other is a read-only replica | **Dual writing** with automatic reconciliation (§3.4), only if coexistence is mandatory and its cost is accepted |
+| Window | **With a declared outage** and communicated, however short: an honest outage is cheaper than a silent degradation | Cutover without outage (*live*), only with proven dual writing and the ability to switch traffic gradually |
+| Verification | **Data reconciliation defined and automated before the cutover** (§4) | None. There is no alternative: without a reconciliation criterion there is no cutover |
+| Freeze | **Bounded change freeze with an end date published** from the start | Partial freeze (only what the scope touches) if the business cannot bear it — with the divergence risk made explicit |
+| Source shutdown | **Date committed in the same document that approves the cutover** | None. "We will switch it off eventually" is not an alternative (§7) |
 
-## 3. Anatomía del corte
+## 3. Anatomy of the cutover
 
-### 3.1 Paso cero: inventario y dependencias
+### 3.1 Step zero: inventory and dependencies
 
-**Nada empieza hasta que existe el inventario de lo que se mueve y de lo que le habla.** No es el
-inventario de aplicaciones de la organización (eso es `enterprise-architecture-standards`) ni la
-CMDB (`itsm-itil-standards`): es **el grafo de dependencias del alcance concreto**, y se construye
-con dos fuentes que hay que cruzar porque ninguna basta:
+**Nothing starts until the inventory exists of what is moving and of what talks to it.** It is not the
+organisation's application inventory (that is `enterprise-architecture-standards`) nor the
+CMDB (`itsm-itil-standards`): it is **the dependency graph of the specific scope**, and it is built
+with two sources that must be cross-checked because neither is enough:
 
-- **Lo declarado**: configuración, ficheros de conexión, DNS, reglas de firewall, documentación.
-- **Lo observado**: conexiones reales durante un periodo que incluya **el cierre de mes y el proceso
-  anual**, medido con flujos de red, logs de conexión de la base de datos o el propio balanceador.
+- **The declared**: configuration, connection files, DNS, firewall rules, documentation.
+- **The observed**: real connections over a period that includes **month-end close and the annual
+  process**, measured with network flows, database connection logs or the load balancer itself.
 
-Lo que aparece solo en uno de los dos lados es el hallazgo valioso: **una dependencia declarada que
-nadie usa** (candidata a retirar) o **una dependencia real que nadie había declarado** (la que
-rompe el corte). Salidas obligatorias: quién consume el sistema, qué consume él, **quién tiene
-credenciales o IPs cableadas a mano**, qué trabajos por lote lo tocan y con qué calendario, y qué
-ventana del año es intocable por negocio.
+What appears on only one of the two sides is the valuable finding: **a declared dependency that
+nobody uses** (candidate for retirement) or **a real dependency that nobody had declared** (the one that
+breaks the cutover). Mandatory outputs: who consumes the system, what it consumes, **who has
+credentials or IPs hardwired by hand**, which batch jobs touch it and on what calendar, and which
+window of the year is untouchable for the business.
 
-### 3.2 Ensayo previo
+### 3.2 Prior rehearsal
 
-- **Se ensaya el corte completo, no sus piezas.** Un ensayo válido produce **tres números**: cuánto
-  tardó cada paso, cuánto tardó el rollback, y cuántas diferencias encontró la verificación. Sin los
-  tres, fue una reunión.
-- El *runbook* de corte es un documento vivo con tarea, **secuencia, duración planificada y real,
-  dueño y criterio de éxito por paso**. Referencia pública verificable (AWS Prescriptive Guidance,
+- **The whole cutover is rehearsed, not its pieces.** A valid rehearsal produces **three numbers**: how long
+  each step took, how long the rollback took, and how many differences the verification found. Without the
+  three, it was a meeting.
+- The cutover *runbook* is a living document with task, **sequence, planned and actual duration,
+  owner and success criterion per step**. Verifiable public reference (AWS Prescriptive Guidance,
   *Pre-cutover stage*, **verbatim**): *"we recommend that your cutover plan includes contingency
   plans and risk mitigation strategies for failure in the event of an unsuccessful cutover. Be sure
-  to document a rollback procedure as part of the cutover plan"*, y entre los elementos a analizar
-  antes: *"Impact to the business (for example, on revenue or trust) of an overrun of the allocated
-  downtime window"*, *"Contingency for 'fix forward' activities in the event of unforeseen events"* y
+  to document a rollback procedure as part of the cutover plan"*, and among the elements to analyse
+  beforehand: *"Impact to the business (for example, on revenue or trust) of an overrun of the allocated
+  downtime window"*, *"Contingency for 'fix forward' activities in the event of unforeseen events"* and
   *"Rollback time in the event of a failure"*.
-- **El ensayo descubre lo que el plan no sabía**: credenciales caducadas, un certificado atado al
-  hostname viejo, un lote que solo corre los días 1 y 15, permisos que solo tiene una persona. Por eso
-  se ensaya **con las mismas personas y en la misma franja horaria** que el corte real.
-- **Un paso del runbook que solo sabe ejecutar una persona es un riesgo, no un detalle.** Se ensaya
-  con el suplente.
+- **The rehearsal discovers what the plan did not know**: expired credentials, a certificate tied to the
+  old hostname, a batch that only runs on the 1st and the 15th, permissions only one person has. That is why
+  it is rehearsed **with the same people and in the same time slot** as the real cutover.
+- **A runbook step that only one person knows how to execute is a risk, not a detail.** It is rehearsed
+  with the substitute.
 
-### 3.3 Criterios de éxito y de abortar — antes, y con nombre
+### 3.3 Success and abort criteria — beforehand, and with a name
 
-**Se escriben y se aprueban antes del corte, nunca durante.** Durante el corte, con la ventana
-corriendo y gente cansada, **el sesgo es siempre a continuar**: el coste ya invertido pesa más que la
-evidencia. Los criterios existen precisamente para neutralizar eso.
+**They are written and approved before the cutover, never during.** During the cutover, with the window
+running and people tired, **the bias is always to continue**: the cost already invested weighs more than the
+evidence. The criteria exist precisely to neutralise that.
 
-| Elemento | Regla |
+| Element | Rule |
 |---|---|
-| **Criterio de éxito** | Comprobación concreta y automatizable, no "funciona": cuadre de dato (§4), transacción de negocio extremo a extremo, latencia dentro de umbral, lote nocturno completado |
-| **Punto de no retorno** | **Instante exacto del runbook a partir del cual el rollback deja de ser posible**, marcado en el documento. Antes de cruzarlo hay una decisión explícita go/no-go |
-| **Criterio de aborto** | Condiciones objetivas y medibles: se supera el tiempo asignado a un paso crítico, la verificación falla, aparece un fallo de clase no prevista |
-| **Quién lo declara** | **Una persona nombrada, con nombre y suplente**, con autoridad para abortar sin pedir permiso — y **no es quien ejecuta el corte**, que está dentro del sesgo |
-| **Reloj de decisión** | Hora concreta ("a las 04:00, si X no está, se aborta"). Un criterio sin hora se pospone hasta que es tarde |
+| **Success criterion** | Specific and automatable check, not "it works": data reconciliation (§4), end-to-end business transaction, latency within threshold, nightly batch completed |
+| **Point of no return** | **Exact instant of the runbook from which rollback ceases to be possible**, marked in the document. Before crossing it there is an explicit go/no-go decision |
+| **Abort criterion** | Objective and measurable conditions: the time allocated to a critical step is exceeded, verification fails, a failure of an unforeseen class appears |
+| **Who declares it** | **A named person, with name and substitute**, with authority to abort without asking permission — and **it is not whoever executes the cutover**, who is inside the bias |
+| **Decision clock** | A specific time ("at 04:00, if X is not there, we abort"). A criterion without a time is postponed until it is too late |
 
-**Abortar según el criterio no es un fracaso del proyecto: es el proyecto funcionando.** Si abortar
-se vive como fracaso personal, nadie abortará nunca y el criterio es decorativo. Se dice antes, por
-escrito, y lo dice quien manda.
+**Aborting according to the criterion is not a project failure: it is the project working.** If aborting
+is experienced as personal failure, nobody will ever abort and the criterion is decorative. It is said beforehand, in
+writing, and it is said by whoever is in charge.
 
-### 3.4 Doble escritura y reconciliación
+### 3.4 Dual writing and reconciliation
 
-- **La doble escritura no es una transacción distribuida.** Escribir en dos sistemas sin atomicidad
-  produce divergencia garantizada bajo fallo parcial; el mecanismo correcto (*transactional outbox*,
-  CDC desde el log) es de `microservices-architecture-standards` y `streaming-cdc-standards`. Aquí la
-  consecuencia de ejecución: **la doble escritura obliga a un reconciliador, y el reconciliador es
-  parte del entregable, no una tarea futura.**
-- **Sentido único de la verdad en cada instante**: un sistema es el de registro y el otro sigue. La
-  doble escritura bidireccional simétrica sin resolución de conflictos determinista **no se hace**.
-- **El reconciliador** corre en continuo mientras dure la convivencia, compara por clave natural,
-  **alerta sobre divergencia** y deja registro. Divergencia creciente = criterio de aborto (§3.3).
-- **Toda escritura de migración es idempotente y reintentable**: los reintentos ocurren, y un
-  *backfill* que duplica al reintentarse convierte la verificación en imposible.
-- **La convivencia tiene fecha de fin desde el primer día.** Es la misma regla que el apagado del
-  origen (§7) y se incumple igual de fácil.
+- **Dual writing is not a distributed transaction.** Writing to two systems without atomicity
+  produces guaranteed divergence under partial failure; the correct mechanism (*transactional outbox*,
+  CDC from the log) belongs to `microservices-architecture-standards` and `streaming-cdc-standards`. Here the
+  execution consequence: **dual writing forces a reconciler, and the reconciler is
+  part of the deliverable, not a future task.**
+- **A single direction of truth at any instant**: one system is the system of record and the other follows. Symmetric
+  bidirectional dual writing without deterministic conflict resolution **is not done**.
+- **The reconciler** runs continuously for as long as the coexistence lasts, compares by natural key,
+  **alerts on divergence** and leaves a record. Growing divergence = abort criterion (§3.3).
+- **Every migration write is idempotent and retryable**: retries happen, and a
+  *backfill* that duplicates on retry makes verification impossible.
+- **Coexistence has an end date from day one.** It is the same rule as the shutdown of the
+  source (§7) and it is broken just as easily.
 
-## 4. Verificación de integridad: "cuadra", no "arrancó"
+## 4. Integrity verification: "it reconciles", not "it started up"
 
-**Se define antes del corte, se automatiza y se ejecuta también en el ensayo.** Niveles, en orden de
-fuerza creciente; se elige el más fuerte que sea viable, no el más cómodo:
+**It is defined before the cutover, automated and executed in the rehearsal too.** Levels, in order of
+increasing strength; the strongest that is feasible is chosen, not the most comfortable:
 
-1. **Recuento por entidad**: filas, objetos, buzones, ficheros — origen frente a destino, con la
-   política explícita sobre lo que se decidió **no** migrar (histórico, borrados lógicos, ficheros
-   huérfanos). Un descuadre "esperado" que no estaba escrito antes es un descuadre.
-2. **Sumas de control de negocio**: totales de las magnitudes que importan (saldos, importes,
-   unidades) por periodo. Detecta lo que el recuento no ve: el registro migrado con el valor mal
-   convertido, el decimal truncado, la fecha desplazada por zona horaria.
-3. **Hash por registro o por lote** sobre los campos que deben ser idénticos, normalizando antes lo
-   que legítimamente cambia (identificadores técnicos, marcas de tiempo de carga, codificación).
-   **Normalizar es una decisión que se documenta**: es donde se esconden los errores reales.
-4. **Comparación funcional**: la misma consulta o el mismo informe de negocio ejecutado contra ambos
-   y comparado. Es el que convence al usuario, y el único que valida la semántica.
-5. **Muestreo humano dirigido** sobre los casos raros conocidos: el registro corrupto histórico, el
-   cliente con caracteres no ASCII, el importe negativo, el registro de 1998.
+1. **Count per entity**: rows, objects, mailboxes, files — source against target, with the
+   explicit policy on what was decided **not** to migrate (history, logical deletions, orphan
+   files). An "expected" mismatch that was not written down beforehand is a mismatch.
+2. **Business control totals**: totals of the magnitudes that matter (balances, amounts,
+   units) per period. Detects what the count does not see: the migrated record with the wrongly
+   converted value, the truncated decimal, the date shifted by time zone.
+3. **Hash per record or per batch** over the fields that must be identical, first normalising
+   what legitimately changes (technical identifiers, load timestamps, encoding).
+   **Normalising is a decision that gets documented**: it is where the real errors hide.
+4. **Functional comparison**: the same query or the same business report run against both
+   and compared. It is the one that convinces the user, and the only one that validates the semantics.
+5. **Targeted human sampling** over the known odd cases: the historically corrupt record, the
+   customer with non-ASCII characters, the negative amount, the record from 1998.
 
-Reglas duras:
-- **Conversión de codificación, zonas horarias y precisión numérica**: las tres causas de descuadre
-  silencioso más frecuentes en migraciones entre plataformas distintas. Se verifican explícitamente,
-  no se asumen.
-- **La verificación se ejecuta antes de liberar a los usuarios**, no después. Si solo cabe después,
-  el criterio de aborto se sustituye por un criterio de **retirada** con su propio reloj.
-- **Periodo de garantía (*hypercare*)**: tras el corte, guardia reforzada con dueño y duración
-  declarada, y **la reconciliación sigue corriendo** durante ese periodo. Su final es una decisión
-  explícita, no el día que la gente deja de mirar.
-- **Lo que no se puede verificar automáticamente se declara**: es riesgo residual aceptado con firma,
-  no un hueco silencioso.
+Hard rules:
+- **Encoding conversion, time zones and numeric precision**: the three most frequent causes of silent
+  mismatch in migrations between different platforms. They are verified explicitly,
+  not assumed.
+- **Verification runs before releasing the users**, not after. If it only fits afterwards,
+  the abort criterion is replaced by a **withdrawal** criterion with its own clock.
+- **Warranty period (*hypercare*)**: after the cutover, reinforced on-call with declared owner and duration,
+  and **reconciliation keeps running** during that period. Its end is an
+  explicit decision, not the day people stop looking.
+- **What cannot be verified automatically is declared**: it is residual risk accepted with a signature,
+  not a silent gap.
 
-## 5. Seguridad durante la migración
+## 5. Security during the migration
 
-Una migración es una **ventana de exposición**: hay copias de datos fuera de su sitio, credenciales
-nuevas, reglas de firewall temporales y gente con permisos elevados a las tres de la mañana.
+A migration is an **exposure window**: there are copies of data out of place, new
+credentials, temporary firewall rules and people with elevated permissions at three in the morning.
 
-- **Datos reales fuera de producción** (ensayo, entorno paralelo, extracción intermedia): enmascarado
-  y base jurídica, con **fecha de borrado de las copias temporales** y comprobación de que se
-  borraron. Es el residuo más común de una migración (`privacy-engineering-standards`).
-- **Cifrado en tránsito y en reposo también en lo temporal**: el volcado intermedio, el bucket de
-  paso y el disco USB del traslado son datos de producción.
-- **Credenciales**: las del destino son nuevas y con mínimo privilegio desde el día uno; **no se
-  clonan las del origen**. Los accesos elevados del corte son temporales, nominativos y con fecha de
-  caducidad automática, no "ya lo quitaremos".
-- **Reglas de red temporales** (aperturas para la replicación) se crean con caducidad y se verifica
-  su cierre en el descomisionado (§7). Una migración deja tantas reglas huérfanas como copias.
-- **El origen apagado pero no descomisionado sigue siendo superficie de ataque**, con parches que ya
-  nadie aplica porque "está en migración".
+- **Real data outside production** (rehearsal, parallel environment, intermediate extraction): masking
+  and legal basis, with a **deletion date for the temporary copies** and a check that they
+  were deleted. It is the most common residue of a migration (`privacy-engineering-standards`).
+- **Encryption in transit and at rest also in the temporary**: the intermediate dump, the staging bucket
+  and the USB disk used for the move are production data.
+- **Credentials**: the target's are new and least-privilege from day one; **the source's are not
+  cloned**. The elevated accesses of the cutover are temporary, nominative and with an automatic expiry
+  date, not "we will remove them later".
+- **Temporary network rules** (openings for replication) are created with expiry and their
+  closure is verified at decommissioning (§7). A migration leaves as many orphan rules as copies.
+- **The source powered off but not decommissioned is still attack surface**, with patches that
+  nobody applies any more because "it is being migrated".
 
-## 6. Congelación y comunicación
+## 6. Freeze and communication
 
-- **La congelación de cambios tiene coste y hay que decirlo**: cuanto más dura, más diverge el origen
-  del destino ya probado y más presión de excepciones, hasta que la excepción es la norma y la
-  congelación es ficción. **Se declara acotada, con fecha de fin publicada desde el inicio y con un
-  procedimiento de excepción con dueño único** — y toda excepción concedida **se replica en el
-  destino y se vuelve a verificar** (§4), o se ha roto el ensayo.
-- **La congelación no es gratis aunque nadie la pida**: durante ella el negocio acumula demanda. Ese
-  coste entra en la comparación de opciones, no aparece después como sorpresa.
-- **Comunicación a usuarios**: qué se para, cuándo empieza y cuándo termina la ventana, **qué se
-  espera que noten después** (rutas nuevas, credenciales, rendimiento distinto), a quién avisan si
-  algo falla, y **un aviso de fin real**, no solo de inicio. Se comunica también el **aborto** si
-  ocurre: un silencio tras la ventana genera más tickets que la parada.
-- **Terceros y proveedores integrados se avisan con su propio plazo**, que suele ser mayor que el
-  interno y no siempre se puede acelerar. Aparecen en el inventario de §3.1 o no aparecen en absoluto.
-- **Un canal único de estado durante el corte** (el mismo que se use en incidentes) y una persona
-  dedicada a comunicar que **no** es quien ejecuta.
+- **The change freeze has a cost and it must be said**: the longer it lasts, the more the source diverges
+  from the already-tested target and the more pressure for exceptions, until the exception is the norm and the
+  freeze is fiction. **It is declared bounded, with an end date published from the start and with an
+  exception procedure with a single owner** — and every exception granted **is replicated in the
+  target and re-verified** (§4), or the rehearsal has been broken.
+- **The freeze is not free even if nobody asks for it**: during it the business accumulates demand. That
+  cost goes into the comparison of options, it does not appear afterwards as a surprise.
+- **Communication to users**: what stops, when the window starts and when it ends, **what they are
+  expected to notice afterwards** (new routes, credentials, different performance), whom they notify if
+  something fails, and **a real end notice**, not just a start one. The **abort** is also communicated if
+  it happens: silence after the window generates more tickets than the outage.
+- **Third parties and integrated providers are notified on their own lead time**, which is usually longer than the
+  internal one and cannot always be accelerated. They appear in the §3.1 inventory or they do not appear at all.
+- **A single status channel during the cutover** (the same one used in incidents) and a person
+  dedicated to communicating who is **not** the one executing.
 
-## 7. Descomisionado y prohibiciones
+## 7. Decommissioning and prohibitions
 
-**El sistema viejo encendido "por si acaso" es el fallo más caro y más común de este dominio**, y es
-un fallo silencioso: no produce incidente, produce factura, superficie de ataque y ambigüedad sobre
-cuál es el sistema de registro. Plan mínimo, aprobado **en el mismo documento que aprueba el corte**:
+**The old system left powered on "just in case" is the most expensive and most common failure of this domain**, and it is
+a silent failure: it does not produce an incident, it produces an invoice, attack surface and ambiguity about
+which is the system of record. Minimum plan, approved **in the same document that approves the cutover**:
 
-1. **Fecha de apagado con dueño nombrado**, no "cuando estemos tranquilos".
-2. **Periodo de retención en solo lectura** acotado y justificado, con el origen **degradado a
-   solo lectura de verdad** (no por convención): si sigue admitiendo escrituras, sigue habiendo dos
-   sistemas de registro.
-3. **Apagado lógico antes que físico**: se detiene el servicio, se observa durante un plazo declarado
-   quién se queja y qué se rompe (esa es la última verificación de dependencias), y **solo entonces**
-   se apaga y se libera.
-4. **Archivado del dato** que la normativa exige conservar, **con restauración probada** — un archivo
-   que no se sabe leer dentro de cinco años no es archivado (`backup-recovery-standards`).
-5. **Limpieza del rastro**: reglas de firewall temporales, registros DNS, entradas de monitorización,
-   copias intermedias, cuentas de servicio, licencias y contratos de soporte. **Cancelar el contrato
-   es parte del descomisionado**: es donde está el ahorro que justificó el proyecto.
+1. **Shutdown date with a named owner**, not "when things calm down".
+2. **Read-only retention period** bounded and justified, with the source **degraded to
+   genuinely read-only** (not by convention): if it still accepts writes, there are still two
+   systems of record.
+3. **Logical shutdown before physical**: the service is stopped, it is observed for a declared period
+   who complains and what breaks (that is the last dependency verification), and **only then**
+   is it powered off and released.
+4. **Archival of the data** that regulation requires to be retained, **with proven restore** — an archive
+   that nobody knows how to read in five years is not archival (`backup-recovery-standards`).
+5. **Cleanup of the trail**: temporary firewall rules, DNS records, monitoring entries,
+   intermediate copies, service accounts, licences and support contracts. **Cancelling the contract
+   is part of decommissioning**: it is where the saving that justified the project lives.
 
-**PROHIBIDO**
-- ❌ Cortar **sin criterios de aborto escritos y aprobados antes**, y **sin una persona nombrada** con
-  autoridad para declararlos (§3.3).
-- ❌ Cortar **sin ensayo previo cronometrado**. Un plan no ensayado es una hipótesis con horario.
-- ❌ Dar por buena una migración porque **el sistema arrancó**, sin cuadre de dato definido de
-  antemano (§4).
-- ❌ **Rollback teórico**: documentado y nunca ejecutado. Si no se ha ejecutado en el ensayo, no
-  existe; se declara *fix forward* y se asume, o no se corta.
-- ❌ **Terminar la migración sin fecha de apagado del origen** con dueño (§7).
-- ❌ Dejar el origen encendido **admitiendo escrituras** tras el corte: dos sistemas de registro es
-  corrupción de datos con fecha.
-- ❌ Doble escritura **sin reconciliador automático** y sin fecha de fin de la convivencia (§3.4).
-- ❌ Ensayar o migrar **con datos de producción sin enmascarar** fuera de producción (§5).
-- ❌ Dejar activas credenciales elevadas, reglas de red temporales o copias intermedias tras el corte.
-- ❌ Cambiar el alcance dentro de la ventana ("ya que estamos, actualizamos también…"): duplica las
-  causas posibles de fallo y anula el ensayo.
-- ❌ Congelación de cambios **sin fecha de fin publicada** o con excepciones sin dueño único.
-- ❌ Ejecutar el corte con **una sola persona que sepa un paso crítico**, o sin canal de estado.
-- ❌ Descubrir dependencias **preguntando** en vez de midiendo tráfico real durante un ciclo completo
-  de negocio (§3.1).
+**FORBIDDEN**
+- ❌ Cutting over **without abort criteria written and approved beforehand**, and **without a named person** with
+  authority to declare them (§3.3).
+- ❌ Cutting over **without a timed prior rehearsal**. An unrehearsed plan is a hypothesis with a schedule.
+- ❌ Accepting a migration as good because **the system started up**, without a data reconciliation defined
+  beforehand (§4).
+- ❌ **Theoretical rollback**: documented and never executed. If it has not been executed in the rehearsal, it does not
+  exist; *fix forward* is declared and assumed, or there is no cutover.
+- ❌ **Ending the migration without a shutdown date for the source** with an owner (§7).
+- ❌ Leaving the source powered on **accepting writes** after the cutover: two systems of record is
+  data corruption with a date.
+- ❌ Dual writing **without an automatic reconciler** and without an end date for the coexistence (§3.4).
+- ❌ Rehearsing or migrating **with unmasked production data** outside production (§5).
+- ❌ Leaving elevated credentials, temporary network rules or intermediate copies active after the cutover.
+- ❌ Changing the scope inside the window ("while we are at it, let's also upgrade…"): it doubles the possible
+  causes of failure and voids the rehearsal.
+- ❌ Change freeze **without a published end date** or with exceptions without a single owner.
+- ❌ Executing the cutover with **a single person who knows a critical step**, or without a status channel.
+- ❌ Discovering dependencies **by asking** instead of by measuring real traffic during a complete business
+  cycle (§3.1).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, **búscalo — no lo recuerdes**:
+Before pinning anything in a real project, **look it up — do not recall it**:
 
-1. **Límites y tiempos reales de las herramientas de replicación y traslado** que vayas a usar
-   (servicio de migración del proveedor, replicación del motor de base de datos, sincronización de
-   almacenamiento): ventana máxima, latencia de replicación, tipos de dato no soportados y qué hace
-   ante un fallo a mitad. **La duración del corte se calcula con tu volumen medido en el ensayo, no
-   con la cifra del folleto.**
-2. **Matriz de compatibilidad y rutas de actualización soportadas** entre versión origen y destino:
-   muchas migraciones requieren un salto intermedio y eso cambia la forma del plan.
-3. **Fin de soporte y fecha de fin de contrato** del sistema origen: fija la fecha límite real del
-   descomisionado y, a menudo, el coste que justifica el proyecto.
-4. **Guía de corte del proveedor de destino**, si existe, para verificar que sigue vigente. Citada
-   verbatim en §3.2: AWS Prescriptive Guidance, *Best practices for cutting over network traffic to
-   AWS* — *Pre-cutover stage*. Confirma que la página no ha cambiado antes de apoyarte en ella.
-5. **Cifras de fracaso de migraciones**: **hueco declarado, y es deliberado.** Las que circulan
-   (Bloor Research 2007 y 2011, y sus derivadas del tipo "el 84 % fracasa") **miden retraso o
-   sobrecoste, no fracaso**, proceden de encuesta autoseleccionada de analista comercial patrocinada
-   por fabricante, y están tras formulario: **no pude leer el primario**. Las de gestión de proyectos
-   en general (CHAOS/Standish, "el 70 % de las transformaciones") **ya están desmentidas en
-   `project-management-standards`**. **No se usan para justificar ni para desaconsejar un corte**;
-   se argumenta con el inventario y con los números del ensayo (§3.2).
-6. **Ventanas y calendarios impuestos desde fuera** que no dependen de ti: cierre fiscal, campañas,
-   ventanas de cambio de un tercero, festivos locales del equipo de guardia. Se comprueban, no se
-   suponen.
-7. **Requisitos normativos sobre traslado, residencia y retención del dato** aplicables al alcance
-   antes de mover nada fuera de su jurisdicción (`grc-compliance-standards`,
+1. **Real limits and times of the replication and transfer tools** you are going to use
+   (the provider's migration service, database engine replication, storage
+   synchronisation): maximum window, replication latency, unsupported data types and what it does
+   on a failure halfway through. **The duration of the cutover is calculated with your volume measured in the rehearsal, not
+   with the brochure figure.**
+2. **Compatibility matrix and supported upgrade paths** between source and target version:
+   many migrations require an intermediate hop and that changes the shape of the plan.
+3. **End of support and contract end date** of the source system: it sets the real deadline of the
+   decommissioning and, often, the cost that justifies the project.
+4. **Cutover guide from the target provider**, if it exists, to verify it is still current. Cited
+   verbatim in §3.2: AWS Prescriptive Guidance, *Best practices for cutting over network traffic to
+   AWS* — *Pre-cutover stage*. Confirm the page has not changed before relying on it.
+5. **Migration failure figures**: **declared gap, and it is deliberate.** The ones in circulation
+   (Bloor Research 2007 and 2011, and their derivatives of the "84 % fail" kind) **measure delay or
+   cost overrun, not failure**, come from a self-selected survey by a commercial analyst sponsored
+   by a vendor, and are behind a form: **I could not read the primary source**. Those on project management
+   in general (CHAOS/Standish, "70 % of transformations") **are already debunked in
+   `project-management-standards`**. **They are not used to justify or to advise against a cutover**;
+   the argument is made with the inventory and with the rehearsal numbers (§3.2).
+6. **Windows and calendars imposed from outside** that do not depend on you: fiscal close, campaigns,
+   a third party's change windows, local holidays of the on-call team. They are checked, not
+   assumed.
+7. **Regulatory requirements on data transfer, residency and retention** applicable to the scope
+   before moving anything outside its jurisdiction (`grc-compliance-standards`,
    `privacy-engineering-standards`).
 
-Si no puedes verificar, dilo explícitamente en vez de suponer.
+If you cannot verify, say so explicitly instead of assuming.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

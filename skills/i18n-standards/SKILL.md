@@ -3,545 +3,546 @@ name: i18n-standards
 description: Use when a product must work in more than one language, script, region or time zone — messages.json, .po/.pot, .xliff/.xlf, .arb, .resx, .properties or .ftl catalogs, ICU MessageFormat and MessageFormat 2.0, CLDR plural categories (zero/one/two/few/many/other), Intl.NumberFormat/DateTimeFormat/Collator/PluralRules/Segmenter/ListFormat/RelativeTimeFormat/DisplayNames, Temporal, tzdata/IANA time zone identifiers and UTC storage, Unicode normalization NFC/NFD, locale-dependent case mapping and the Turkish dotless i, collation versus code-point sort, grapheme versus code point versus byte length, libphonenumber and E.164 parsing, ISO 4217 currency minor units, personal name and postal address field design, BCP 47 tags and Accept-Language negotiation, i18next/FormatJS/react-intl/gettext/Fluent/Rails i18n, Weblate/Tolgee/Crowdin/Lokalise/Transifex, pseudolocalization, missing-translation CI gates, RTL and bidi layout, or machine and LLM translation review policy.
 ---
 
-# Estándares de internacionalización (i18n)
+# Internationalisation (i18n) standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**La internacionalización es una decisión de arquitectura que se toma al principio o se paga
-entera después.** No es una capa que se añada: determina el esquema de la base de datos (qué
-campos existen para un nombre y una dirección, qué tipo guarda un instante, qué colación tiene
-una columna), el contrato de la API (formato de fecha e importe), la unidad de texto del código
-(cadena formateada vs. mensaje con parámetros) y el flujo de entrega (quién traduce y cuándo).
-Retrofitarla es reescribir esas cuatro cosas a la vez, con datos ya en producción. **Corolario
-operativo: un producto monolingüe se diseña i18n-ready aunque nunca se traduzca** — el coste
-incremental antes del primer despliegue es bajo; después es una migración de datos.
+**Internationalisation is an architecture decision you take at the start or pay for in full
+afterwards.** It is not a layer you add on: it determines the database schema (which
+fields exist for a name and an address, what type stores an instant, what collation a column
+has), the API contract (date and amount format), the unit of text in the code
+(formatted string vs. message with parameters) and the delivery flow (who translates and when).
+Retrofitting it means rewriting those four things at once, with data already in production. **Operational
+corollary: a monolingual product is designed i18n-ready even if it is never translated** — the
+incremental cost before the first deployment is low; afterwards it is a data migration.
 
-Tres términos, una línea cada uno, y no se vuelve sobre ellos:
-- **i18n**: preparar el sistema para que *pueda* adaptarse a cualquier locale sin tocar código.
-- **l10n**: adaptarlo a un locale concreto (traducir, formatear, ajustar contenido y legales).
-- **g11n**: la decisión de negocio de operar en un mercado — l10n + fiscal, legal, pago, soporte.
+Three terms, one line each, and they are not revisited:
+- **i18n**: preparing the system so that it *can* adapt to any locale without touching code.
+- **l10n**: adapting it to a specific locale (translating, formatting, adjusting content and legals).
+- **g11n**: the business decision to operate in a market — l10n + tax, legal, payment, support.
 
-Triggers: catálogos `messages.json`, `.po`/`.pot`, `.xliff`/`.xlf`, `.arb`, `.resx`,
-`.properties`, `.ftl`, `.strings`/`.xcstrings`; `ICU MessageFormat`, `MessageFormat 2.0`;
-categorías plurales de CLDR; `Intl.*`; `Temporal`; `tzdata`/`zoneinfo`; identificador IANA de
-zona; NFC/NFD; `toLocaleUpperCase`; colación e `ICU`; `libphonenumber`; E.164; ISO 4217;
-BCP 47 y `Accept-Language`; `i18next`, `FormatJS`/`react-intl`, `gettext`, `Fluent`,
-`rails-i18n`; Weblate, Tolgee, Crowdin, Lokalise, Transifex; pseudolocalización; RTL/bidi.
+Triggers: `messages.json`, `.po`/`.pot`, `.xliff`/`.xlf`, `.arb`, `.resx`,
+`.properties`, `.ftl`, `.strings`/`.xcstrings` catalogs; `ICU MessageFormat`, `MessageFormat 2.0`;
+CLDR plural categories; `Intl.*`; `Temporal`; `tzdata`/`zoneinfo`; the IANA
+zone identifier; NFC/NFD; `toLocaleUpperCase`; collation and `ICU`; `libphonenumber`; E.164; ISO 4217;
+BCP 47 and `Accept-Language`; `i18next`, `FormatJS`/`react-intl`, `gettext`, `Fluent`,
+`rails-i18n`; Weblate, Tolgee, Crowdin, Lokalise, Transifex; pseudolocalisation; RTL/bidi.
 
-**No aplica**: ver
-`frontend-web-platform-standards` (**el CSS y las APIs del navegador son suyos**: propiedades
-lógicas `margin-inline`/`padding-block`/`inset-*`, `writing-mode`, `text-wrap`, y el estado
-*Baseline* de cualquier `Intl.*` o de `Temporal`. Aquí **qué exige la i18n de ese CSS y de esa
-API**: que no haya un `margin-left` que rompa en árabe, que el formateo lo haga la plataforma y
-no una concatenación);
-`accessibility-standards` (**cede completo**: el atributo `lang` del documento y de cada
-fragmento, `dir`, el idioma como criterio de conformidad WCAG y **cómo lo consume la tecnología
-asistiva** son criterios *suyos*, no de aquí. Si la pregunta es "¿el lector de pantalla lo
-pronuncia en el idioma correcto?", es suya. Si es "¿existe la traducción y está bien
-formateada?", es de aquí);
-`design-systems-standards` (el componente que debe sobrevivir a RTL y a un
-texto un 40 % más largo se construye y se audita ahí, una sola vez — no en cada pantalla. Aquí
-el criterio que ese componente debe cumplir, no su API ni su versionado);
-`api-design-standards` (**el contrato es suyo**: ISO 8601/RFC 3339 en el campo de fecha,
-importes en unidades mínimas con su código ISO 4217, negociación de idioma en la cabecera. Aquí
-la consecuencia en el cliente y en el catálogo);
-`data-platform-standards` y `sql-standards` (**la colación y la ordenación en el motor son
-suyas**: `COLLATE`, `ICU` como proveedor, `lc_collate`, reindexado tras cambio de versión de
-colación. Aquí solo la consecuencia visible — que una lista ordenada por el motor puede no
-coincidir con la que ordena el cliente, y que hay que elegir dónde se ordena);
-`privacy-engineering-standards` (**datos personales**: un catálogo con nombres o direcciones
-reales de ejemplo es un tratamiento; base legal, minimización y retención son suyas);
-`grc-compliance-standards` (**requisito legal de idioma**: en qué lengua deben estar contrato,
-etiquetado, aviso de privacidad o interfaz en cada jurisdicción — es una obligación normativa,
-no una decisión de producto. Aquí solo la capacidad técnica de cumplirla);
-`mobile-standards` y `dart-standards` (i18n de app nativa y de Flutter: `.arb`, `.xcstrings`,
-recursos por *qualifier*, y el locale del sistema como fuente de verdad);
-`ai-agent-workflow-standards` (**frontera fina**: la traducción automática con LLM aparece en
-las dos. **El flujo de trabajo con el modelo es suyo** — qué tarea se le da, cómo se revisa,
-qué permisos tiene. **El criterio de calidad lingüística y de dónde es inaceptable una
-traducción sin revisar humana es de aquí**);
+**Not applicable**: see
+`frontend-web-platform-standards` (**the CSS and the browser APIs are theirs**: logical
+properties `margin-inline`/`padding-block`/`inset-*`, `writing-mode`, `text-wrap`, and the
+*Baseline* status of any `Intl.*` or of `Temporal`. Here **what i18n demands of that CSS and that
+API**: that there is no `margin-left` that breaks in Arabic, that the formatting is done by the
+platform and not by a concatenation);
+`accessibility-standards` (**cedes completely**: the document's and each fragment's `lang`
+attribute, `dir`, language as a WCAG conformance criterion and **how assistive technology
+consumes it** are *their* criteria, not ours. If the question is "does the screen reader
+pronounce it in the right language?", it is theirs. If it is "does the translation exist and is it
+well formatted?", it belongs here);
+`design-systems-standards` (the component that must survive RTL and a
+text 40 % longer is built and audited there, once only — not on every screen. Here
+the criteria that component must meet, not its API or its versioning);
+`api-design-standards` (**the contract is theirs**: ISO 8601/RFC 3339 in the date field,
+amounts in minor units with their ISO 4217 code, language negotiation in the header. Here
+the consequence in the client and in the catalog);
+`data-platform-standards` and `sql-standards` (**collation and ordering in the engine are
+theirs**: `COLLATE`, `ICU` as the provider, `lc_collate`, reindexing after a collation version
+change. Here only the visible consequence — that a list ordered by the engine may not
+match the one the client orders, and that you have to choose where the ordering happens);
+`privacy-engineering-standards` (**personal data**: a catalog with real example names or addresses
+is a processing activity; legal basis, minimisation and retention are theirs);
+`grc-compliance-standards` (**a legal language requirement**: in which language a contract,
+labelling, privacy notice or interface must be in each jurisdiction — it is a regulatory obligation,
+not a product decision. Here only the technical capability to comply with it);
+`mobile-standards` and `dart-standards` (i18n of a native app and of Flutter: `.arb`, `.xcstrings`,
+resources by *qualifier*, and the system locale as the source of truth);
+`ai-agent-workflow-standards` (**a fine boundary**: machine translation with an LLM appears in
+both. **The workflow with the model is theirs** — what task it is given, how it is reviewed,
+what permissions it has. **The criteria of linguistic quality and of where an unreviewed
+translation is unacceptable belong here**);
 `python-standards`, `typescript-standards`, `dotnet-standards`, `jvm-spring-standards`,
-`ruby-standards`, `php-standards`, `go-standards`, `rust-standards` (**la librería concreta de
-i18n de cada stack es de su skill**; aquí el criterio que esa librería debe satisfacer),
-`frontend-frameworks-standards` (enrutado por locale y carga de datos),
-`web-performance-standards` (el coste en bytes de servir catálogos),
-`cicd-standards` (la pipeline que ejecuta los gates de §4).
+`ruby-standards`, `php-standards`, `go-standards`, `rust-standards` (**the specific i18n library
+of each stack belongs to its skill**; here the criteria that library must satisfy),
+`frontend-frameworks-standards` (routing by locale and data loading),
+`web-performance-standards` (the cost in bytes of serving catalogs),
+`cicd-standards` (the pipeline that runs the gates of §4).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión y el estado de cada componente por web antes de fijarlo (§8).
-> CLDR, ICU y `tzdata` publican varias veces al año y **`tzdata` cambia por decisión política,
-> no por calendario**.
+> Verify the latest version and the status of each component on the web before pinning it (§8).
+> CLDR, ICU and `tzdata` publish several times a year and **`tzdata` changes by political decision,
+> not by calendar**.
 
-| Decisión | Por defecto | Alternativa justificable / motivo |
+| Decision | By default | Justifiable alternative / reason |
 |---|---|---|
-| Fuente de datos de locale | **CLDR** (vía ICU o vía `Intl` de la plataforma) | Nada más. Cualquier tabla propia de meses, monedas o plurales es deuda garantizada |
-| Formateo de número, fecha, lista, unidad | **`Intl.*` de la plataforma** | Librería solo si el runtime no lo trae o si necesitas `skeleton` de ICU no expuesto. `Intl.NumberFormat`/`DateTimeFormat`/`Collator` están en todos los motores desde hace años (§2.1) |
-| Sintaxis de mensaje | **ICU MessageFormat 1** hoy | **MF2 es estable en CLDR desde CLDR 47, pero la API de plataforma no**: `Intl.MessageFormat` sigue en **Stage 1** de TC39 y la adopción en herramientas es marginal (§2.2). MF2 solo con *polyfill* y con decisión consciente |
-| Instantes | **UTC en almacenamiento, zona IANA del usuario en presentación** | Ver §3.5. Nunca *offset* fijo como sustituto de zona |
-| Tipo de fecha | **Distinguir instante / fecha civil / fecha+hora sin zona** | Una fecha de nacimiento **no es un instante**: guardarla como *timestamp* la mueve un día al cruzar zona |
-| API de fecha en JS | `Temporal` **solo tras comprobar el runtime**; si no, librería con soporte de zona | `Temporal` es ES2026 y va sin *flag* en Node 26, pero **no es Baseline**: falta Safari (§2.1) |
-| Zona horaria | **Identificador IANA** (`Europe/Madrid`), nunca abreviatura (`CET`, `IST` es ambigua) | — |
-| Teléfono | **`libphonenumber` (Apache-2.0)**, guardado en **E.164** | Nunca regex propia. En Node, envoltorio de terceros (§2.3) |
-| Moneda | **Entero en unidad mínima + código ISO 4217**, formateo con `Intl.NumberFormat` | Nunca `float`. El número de decimales **depende de la moneda** (JPY 0, TND 3): no asumir 2 |
-| Identificador de locale | **BCP 47** (`es-ES`, `zh-Hans-CN`, `sr-Latn`) | Nunca códigos de dos letras a secas para decidir formato: el script y la región importan |
-| Negociación | `Accept-Language` como **valor por defecto**, preferencia explícita del usuario como ganadora, persistida | Nunca geolocalización por IP como única señal: el país no es el idioma |
-| Normalización Unicode | **NFC al entrar** (borde de validación), comparación sobre la forma normalizada | NFD solo si el dominio lo exige (macOS histórico, algunos corpus). Lo prohibido es *no decidir* |
-| Plataforma de traducción | **Weblate** autoalojado si hay equipo que lo opere; **Tolgee** si el flujo es de desarrollador; SaaS si no se quiere operar nada (§2.4) | — |
-| Pseudolocalización | **Obligatoria**, generada y probada en CI (§4.2) | — |
-| Traducción automática/LLM | Permitida **solo** con revisión humana antes de publicar, y **prohibida** en las clases de §5.3 | — |
+| Locale data source | **CLDR** (via ICU or via the platform's `Intl`) | Nothing else. Any home-made table of months, currencies or plurals is guaranteed debt |
+| Number, date, list and unit formatting | **The platform's `Intl.*`** | A library only if the runtime does not ship it or if you need an ICU `skeleton` that is not exposed. `Intl.NumberFormat`/`DateTimeFormat`/`Collator` have been in every engine for years (§2.1) |
+| Message syntax | **ICU MessageFormat 1** today | **MF2 is stable in CLDR since CLDR 47, but the platform API is not**: `Intl.MessageFormat` is still at **Stage 1** in TC39 and adoption in tooling is marginal (§2.2). MF2 only with a *polyfill* and as a conscious decision |
+| Instants | **UTC in storage, the user's IANA zone in presentation** | See §3.5. Never a fixed *offset* as a substitute for a zone |
+| Date type | **Distinguish instant / civil date / date+time without zone** | A date of birth **is not an instant**: storing it as a *timestamp* moves it a day when crossing zones |
+| Date API in JS | `Temporal` **only after checking the runtime**; otherwise a library with zone support | `Temporal` is ES2026 and ships without a *flag* in Node 26, but **it is not Baseline**: Safari is missing (§2.1) |
+| Time zone | **IANA identifier** (`Europe/Madrid`), never an abbreviation (`CET`; `IST` is ambiguous) | — |
+| Phone | **`libphonenumber` (Apache-2.0)**, stored in **E.164** | Never a home-made regex. In Node, a third-party wrapper (§2.3) |
+| Currency | **An integer in the minor unit + the ISO 4217 code**, formatted with `Intl.NumberFormat` | Never a `float`. The number of decimals **depends on the currency** (JPY 0, TND 3): do not assume 2 |
+| Locale identifier | **BCP 47** (`es-ES`, `zh-Hans-CN`, `sr-Latn`) | Never bare two-letter codes to decide formatting: the script and the region matter |
+| Negotiation | `Accept-Language` as the **default value**, an explicit user preference as the winner, persisted | Never IP geolocation as the sole signal: the country is not the language |
+| Unicode normalisation | **NFC on entry** (validation boundary), comparison over the normalised form | NFD only if the domain requires it (historical macOS, some corpora). What is forbidden is *not deciding* |
+| Translation platform | **Weblate** self-hosted if there is a team to operate it; **Tolgee** if the flow is developer-driven; SaaS if you do not want to operate anything (§2.4) | — |
+| Pseudolocalisation | **Mandatory**, generated and tested in CI (§4.2) | — |
+| Machine/LLM translation | Allowed **only** with human review before publishing, and **forbidden** in the classes of §5.3 | — |
 
-### 2.1 Estado verificado de la plataforma JS (ago-2026)
+### 2.1 Verified state of the JS platform (Aug 2026)
 
-Datos de `@mdn/browser-compat-data` **8.0.9** (`timestamp: 2026-08-03T15:35:50Z`) y de
+Data from `@mdn/browser-compat-data` **8.0.9** (`timestamp: 2026-08-03T15:35:50Z`) and from
 `nodejs.org/dist/index.json`:
 
 | API | Chrome | Firefox | Safari | Safari iOS | Node |
 |---|---|---|---|---|---|
-| `Temporal` | 144 | 139 | **`preview`, tras *runtime flag* `useTemporal`** | **no** | 26.0.0 |
+| `Temporal` | 144 | 139 | **`preview`, behind the `useTemporal` *runtime flag*** | **no** | 26.0.0 |
 | `Intl.Segmenter` | 87 | 125 | 14.1 | 14.5 | 16.0.0 |
 | `Intl.DurationFormat` | 129 | 136 | 16.4 | 16.4 | 23.0.0 |
 | `Intl.ListFormat` | 72 | 78 | 14.1 | 14.5 | 12.0.0 |
 | `Intl.PluralRules` | 63 | 58 | 13 | 13 | 10.0.0 |
 | `Intl.Collator` / `NumberFormat` | 24 | 29 | 10 | 10 | 0.12.0 |
 
-- **`Temporal` no es Baseline.** MDN lo marca *verbatim*: «Limited availability — This feature
-  is not Baseline because it does not work in some of the most widely-used browsers.» Alcanzó
-  Stage 4 (ES2026) y Node 26 lo trae sin *flag*, pero **en web sigue exigiendo polyfill o
-  detección**. Node 26 es *Current*, **no LTS**: en `dist/index.json` `v26.6.0` (2026-08-03)
-  tiene `lts: false`; el LTS activo es la línea 24 (`Krypton`).
-- **Node < 13 traía *small-icu*** (solo datos de `en-US`) — anotado en el propio BCD para
-  `PluralRules`, `ListFormat`, `RelativeTimeFormat`, `Collator` y `NumberFormat`. En cualquier
-  runtime o build minimizado, **verificar que hay ICU completo antes de confiar en `Intl`**: sin
-  datos, `Intl` no falla, *degrada en silencio* a inglés. Ese es el modo de fallo peligroso.
+- **`Temporal` is not Baseline.** MDN marks it *verbatim*: «Limited availability — This feature
+  is not Baseline because it does not work in some of the most widely-used browsers.» It reached
+  Stage 4 (ES2026) and Node 26 ships it without a *flag*, but **on the web it still requires a polyfill
+  or detection**. Node 26 is *Current*, **not LTS**: in `dist/index.json` `v26.6.0` (2026-08-03)
+  has `lts: false`; the active LTS is the 24 line (`Krypton`).
+- **Node < 13 shipped *small-icu*** (only `en-US` data) — noted in the BCD itself for
+  `PluralRules`, `ListFormat`, `RelativeTimeFormat`, `Collator` and `NumberFormat`. In any
+  runtime or minimised build, **verify that full ICU is present before trusting `Intl`**: without
+  data, `Intl` does not fail, it *silently degrades* to English. That is the dangerous failure mode.
 
-### 2.2 MessageFormat 2 — dos estados que no coinciden
+### 2.2 MessageFormat 2 — two states that do not match
 
-- **Especificación**: MF2 pasó a **Stable en CLDR 47** y es parte normativa de UTS #35 (LDML).
-  En CLDR 48, `:currency` y `:percent` pasaron a Stable. Partes del espacio `u:` siguen *Draft*.
-- **Plataforma**: `tc39/proposal-intl-messageformat` declara *verbatim* `Stage: 1`, campeones
-  «Eemeli Aro (Mozilla/OpenJS Foundation), Ujjwal Sharma (Igalia)», con el hilo abierto del
-  propio repositorio titulado **«This proposal is stuck»**.
-- **Regla**: un estándar estable con API de plataforma parada y adopción marginal en TMS y
-  frameworks **no es un default**. Se adopta MF2 cuando la cadena completa (catálogo → TMS →
-  runtime) lo soporte, no cuando lo soporte solo el papel. `messageformat@4.0.0` (Apache-2.0)
-  es el camino con *polyfill*.
+- **Specification**: MF2 became **Stable in CLDR 47** and is a normative part of UTS #35 (LDML).
+  In CLDR 48, `:currency` and `:percent` became Stable. Parts of the `u:` space are still *Draft*.
+- **Platform**: `tc39/proposal-intl-messageformat` declares *verbatim* `Stage: 1`, champions
+  «Eemeli Aro (Mozilla/OpenJS Foundation), Ujjwal Sharma (Igalia)», with the open thread in the
+  repository itself titled **«This proposal is stuck»**.
+- **Rule**: a stable standard with a stalled platform API and marginal adoption in TMSs and
+  frameworks **is not a default**. MF2 is adopted when the full chain (catalog → TMS →
+  runtime) supports it, not when only the paper does. `messageformat@4.0.0` (Apache-2.0)
+  is the route with a *polyfill*.
 
-### 2.3 Teléfonos
+### 2.3 Phones
 
-- `google/libphonenumber` está **vivo y con cadencia quincenal declarada**; última etiqueta en
-  el feed de releases: `v9.0.36`. **Licencia verificada en el `LICENSE` en crudo del repo:
-  Apache-2.0** (no BSD, no MIT).
-- **No hay paquete npm oficial de Google** (el port JS está acoplado a Closure). Dos caminos, y
-  **no son el mismo software**:
-  - `google-libphonenumber` (envoltorio del port oficial; npm declara `(MIT AND Apache-2.0)`,
-    `3.2.46`) — mismo comportamiento, **peso alto**.
-  - `libphonenumber-js` (**reimplementación independiente**, npm declara `MIT`, `1.13.10`) —
-    mucho más ligera, **no es equivalente en cobertura**: si validas números de todo el mundo
-    con requisitos legales, verifica la diferencia antes de elegir.
-- **Guardar E.164** (`+34600000000`) y, si el dominio lo pide, guardar aparte el país de origen.
-  Formatear para mostrar; **nunca guardar el formato bonito**.
+- `google/libphonenumber` is **alive and with a declared fortnightly cadence**; latest tag in
+  the releases feed: `v9.0.36`. **Licence verified in the repo's raw `LICENSE`:
+  Apache-2.0** (not BSD, not MIT).
+- **There is no official Google npm package** (the JS port is coupled to Closure). Two routes, and
+  **they are not the same software**:
+  - `google-libphonenumber` (a wrapper of the official port; npm declares `(MIT AND Apache-2.0)`,
+    `3.2.46`) — same behaviour, **heavy**.
+  - `libphonenumber-js` (**an independent reimplementation**, npm declares `MIT`, `1.13.10`) —
+    much lighter, **not equivalent in coverage**: if you validate numbers from all over the world
+    with legal requirements, verify the difference before choosing.
+- **Store E.164** (`+34600000000`) and, if the domain requires it, store the country of origin
+  separately. Format for display; **never store the pretty format**.
 
-### 2.4 Plataformas de gestión de traducción (verificado en la página oficial, ago-2026)
+### 2.4 Translation management platforms (verified on the official page, Aug 2026)
 
-| Plataforma | Licencia del software | Autoalojable | Plan gratuito (dato de la página oficial) |
+| Platform | Software licence | Self-hostable | Free plan (datum from the official page) |
 |---|---|---|---|
-| **Weblate** | **GPLv3+** (`LICENSE` en crudo: GNU GPL v3; pie de la web: «Licensed GNU GPLv3+») | Sí | **Libre plan gratis** para proyectos libres: «It has the same limits as the 160k plan, and is only for public projects». Cloud desde 47 €/mes (plan 10k). Soporte de autoalojado: 53 €/mes básico, 106 €/mes extendido. Release vigente en el feed: `Weblate 2026.8` |
-| **Tolgee** | **Apache-2.0 con excepción**: el `LICENSE` dice que «All content that resides under the "ee/" and "/webapp/src/ee" directory […] is licensed under the license defined in "ee/LICENSE"» — **el núcleo es Apache-2.0, la parte *enterprise* no**. Llamarlo "Apache-2.0" a secas es incorrecto | Sí | Free 0 €: **500 claves, 3 asientos**. Team 49 €/mes, Business 179 €/mes, Advanced 499 €/mes (anual) |
-| **Crowdin** | Propietario | No | **Gratis para código abierto bajo solicitud**: «If you want to use Crowdin for an Open Source project, sign up for a free account, set up your project and send us a request». Precio general por *hosted words* mediante calculadora; prueba de 14 días del plan Team |
-| **Lokalise** | Propietario | No | **No hay plan gratuito.** Entrada: Explorer 144 $/mes; Growth 375 $/mes; Advanced 999 $/mes; Enterprise a medida. Solo prueba de 14 días |
-| **Transifex** | Propietario | No | Starter / Growth / Enterprise+, precio por *hosted words*. **Gratis para proyectos de código abierto sin modelo de ingresos ni financiación** |
+| **Weblate** | **GPLv3+** (raw `LICENSE`: GNU GPL v3; site footer: «Licensed GNU GPLv3+») | Yes | **Libre plan free** for free projects: «It has the same limits as the 160k plan, and is only for public projects». Cloud from €47/month (10k plan). Self-hosting support: €53/month basic, €106/month extended. Current release in the feed: `Weblate 2026.8` |
+| **Tolgee** | **Apache-2.0 with an exception**: the `LICENSE` says that «All content that resides under the "ee/" and "/webapp/src/ee" directory […] is licensed under the license defined in "ee/LICENSE"» — **the core is Apache-2.0, the *enterprise* part is not**. Calling it plain "Apache-2.0" is incorrect | Yes | Free €0: **500 keys, 3 seats**. Team €49/month, Business €179/month, Advanced €499/month (annual) |
+| **Crowdin** | Proprietary | No | **Free for open source on request**: «If you want to use Crowdin for an Open Source project, sign up for a free account, set up your project and send us a request». General pricing by *hosted words* via a calculator; 14-day trial of the Team plan |
+| **Lokalise** | Proprietary | No | **There is no free plan.** Entry point: Explorer $144/month; Growth $375/month; Advanced $999/month; Enterprise bespoke. Only a 14-day trial |
+| **Transifex** | Proprietary | No | Starter / Growth / Enterprise+, priced by *hosted words*. **Free for open source projects with no revenue model and no funding** |
 
-- **Corrección de suposición frecuente**: los directorios de comparación de software (GetApp,
-  Vendr y agregadores) listan "free version" para Lokalise y precios de entrada fijos para
-  Crowdin y Transifex. **La página oficial contradice ambas cosas**: Lokalise no publica plan
-  gratuito y los otros dos cotizan por volumen de palabras alojadas. Precio de directorio =
-  dato no verificado.
-- **Criterio de elección, en este orden**: (1) ¿el flujo lo conducen desarrolladores o
-  traductores? Weblate y Pontoon están orientados a traductor; Tolgee, a desarrollador.
-  (2) ¿hay quien opere la instancia? Autoalojar añade parches, respaldo y disponibilidad.
-  (3) ¿hay colaboradores externos? Entonces §5.1 es obligatorio. (4) Coste de salida: **exige
-  exportación completa a un formato estándar antes de firmar** — el bloqueo aquí es del catálogo.
+- **Correction of a frequent assumption**: software comparison directories (GetApp,
+  Vendr and aggregators) list a "free version" for Lokalise and fixed entry prices for
+  Crowdin and Transifex. **The official page contradicts both**: Lokalise publishes no free
+  plan and the other two are priced by hosted word volume. A directory price =
+  an unverified datum.
+- **Selection criteria, in this order**: (1) is the flow driven by developers or
+  translators? Weblate and Pontoon are translator-oriented; Tolgee, developer-oriented.
+  (2) is there anyone to operate the instance? Self-hosting adds patching, backup and availability.
+  (3) are there external contributors? Then §5.1 is mandatory. (4) exit cost: **demand full
+  export to a standard format before signing** — the lock-in here is the catalog's.
 
-## 3. El catálogo de suposiciones falsas
+## 3. The catalogue of false assumptions
 
-Cada entrada es una suposición que **rompe sistemas en producción**. La regla general: si el
-modelo de datos codifica una costumbre local, el sistema no es internacionalizable.
+Every entry is an assumption that **breaks systems in production**. The general rule: if the
+data model encodes a local custom, the system is not internationalisable.
 
-### 3.1 Nombres de persona
+### 3.1 Personal names
 
-- ❌ `first_name` + `last_name`. **No hay descomposición universal**: hay culturas con dos
-  apellidos (España), con el apellido delante (Hungría, gran parte de Asia oriental), con
-  patronímico (Islandia, Rusia), con nombre único sin apellido (Indonesia, partes de India) y
-  con partículas que no son parte del apellido a efectos de ordenación.
-- ✅ **Un campo obligatorio `full_name` (nombre completo tal como la persona lo escribe)** y, si
-  el negocio lo exige, un `display_name`/`preferred_name` opcional para el saludo. Cualquier
-  descomposición adicional es **opcional y nunca obligatoria**.
-- ❌ Longitud máxima "segura". No existe. Si hay que poner un límite, que sea **alto y por
-  grafemas** (§3.4), y que esté justificado por el almacenamiento, no por el diseño del formulario.
-- ❌ Restringir a `[A-Za-z ]`, a ASCII, o rechazar apóstrofos, guiones, espacios múltiples,
-  puntos, caracteres no latinos o nombres de una sola letra. Todo eso existe.
-- ❌ Asumir que el nombre no cambia (matrimonio, transición, corrección legal). El nombre es un
-  campo **mutable con historial**, no una clave.
-- ❌ Derivar género, tratamiento o pronombre del nombre. Si hace falta, **se pregunta**, es
-  opcional y admite "prefiero no decirlo".
-- Referencias a contrastar antes de diseñar el formulario: W3C *Personal names around the world*
-  y el clásico *Falsehoods programmers believe about names* (§8).
+- ❌ `first_name` + `last_name`. **There is no universal decomposition**: there are cultures with two
+  surnames (Spain), with the surname first (Hungary, much of East Asia), with a
+  patronymic (Iceland, Russia), with a single name and no surname (Indonesia, parts of India) and
+  with particles that are not part of the surname for sorting purposes.
+- ✅ **One mandatory `full_name` field (the full name as the person writes it)** and, if
+  the business requires it, an optional `display_name`/`preferred_name` for greetings. Any
+  additional decomposition is **optional and never mandatory**.
+- ❌ A "safe" maximum length. There is none. If a limit has to be set, make it **high and by
+  graphemes** (§3.4), and justified by storage, not by the form design.
+- ❌ Restricting to `[A-Za-z ]`, to ASCII, or rejecting apostrophes, hyphens, multiple spaces,
+  full stops, non-Latin characters or single-letter names. All of that exists.
+- ❌ Assuming the name does not change (marriage, transition, legal correction). The name is a
+  **mutable field with history**, not a key.
+- ❌ Deriving gender, title or pronoun from the name. If it is needed, **you ask**, it is
+  optional and it admits "prefer not to say".
+- References to check before designing the form: W3C *Personal names around the world*
+  and the classic *Falsehoods programmers believe about names* (§8).
 
-### 3.2 Direcciones y códigos postales
+### 3.2 Addresses and postcodes
 
-- ❌ Campos fijos `calle` / `número` / `ciudad` / `provincia` / `CP`. El orden, la existencia y la
-  obligatoriedad de cada componente **dependen del país** (Irlanda no tuvo código postal
-  nacional hasta Eircode; Hong Kong no tiene; en Japón el orden va de mayor a menor).
-- ✅ **Formulario cuyo conjunto y orden de campos se deriva del país seleccionado**, con un
-  `address_lines[]` libre como respaldo, y el país como **primer** campo del formulario.
-- ❌ Validar el código postal con una regex universal, o asumir numérico, o asumir longitud fija.
-  Reino Unido, Países Bajos y Canadá son alfanuméricos con espacio significativo.
-- ❌ "Estado/provincia" obligatorio. Muchos países no tienen esa subdivisión.
-- ❌ Deducir el país por la IP y no dejar cambiarlo.
-- Estándar a consultar para el formato postal internacional: **UPU S42** (§8). Para el código de
-  país: **ISO 3166-1 alfa-2**, con la advertencia de que **la lista cambia** y de que algunas
-  entradas son políticamente sensibles; no *hardcodear* la lista, tomarla de CLDR.
+- ❌ Fixed `street` / `number` / `city` / `province` / `postcode` fields. The order, the existence and the
+  obligatoriness of each component **depend on the country** (Ireland had no national
+  postcode until Eircode; Hong Kong has none; in Japan the order goes from largest to smallest).
+- ✅ **A form whose set and order of fields derives from the selected country**, with a free
+  `address_lines[]` as a fallback, and the country as the **first** field of the form.
+- ❌ Validating the postcode with a universal regex, or assuming it is numeric, or assuming a fixed length.
+  The United Kingdom, the Netherlands and Canada are alphanumeric with a significant space.
+- ❌ A mandatory "state/province". Many countries do not have that subdivision.
+- ❌ Deducing the country from the IP and not letting it be changed.
+- The standard to consult for international postal format: **UPU S42** (§8). For the country
+  code: **ISO 3166-1 alpha-2**, with the warning that **the list changes** and that some
+  entries are politically sensitive; do not *hardcode* the list, take it from CLDR.
 
-### 3.3 Teléfonos, monedas y decimales
+### 3.3 Phones, currencies and decimals
 
-- ❌ Regex de teléfono, longitud fija, asumir prefijo nacional o que un número identifica un país
-  de residencia. Ver §2.3.
-- ❌ Asumir dos decimales. **ISO 4217 define las unidades mínimas por moneda**: JPY 0, la mayoría
-  2, TND/KWD/BHD 3. Un importe se guarda como **entero en unidad mínima + código de moneda**.
-- ❌ `float`/`double` para dinero. Nunca.
-- ❌ Asumir el separador decimal, el de millares, su presencia, o que el símbolo va delante.
-  `Intl.NumberFormat` lo resuelve; una plantilla `"$" + x.toFixed(2)` no.
-- ❌ Asumir que el símbolo de moneda identifica la moneda (`$` es al menos veinte monedas
-  distintas). **Mostrar código ISO junto al símbolo cuando haya ambigüedad real.**
-- ❌ Convertir divisa con un tipo cacheado sin fecha ni fuente. El tipo es un dato con marca
-  temporal y con proveedor; un importe convertido **no sustituye** al importe original.
+- ❌ A phone regex, a fixed length, assuming a national prefix or that a number identifies a country
+  of residence. See §2.3.
+- ❌ Assuming two decimals. **ISO 4217 defines the minor units per currency**: JPY 0, most
+  2, TND/KWD/BHD 3. An amount is stored as **an integer in the minor unit + the currency code**.
+- ❌ `float`/`double` for money. Never.
+- ❌ Assuming the decimal separator, the thousands separator, its presence, or that the symbol goes in front.
+  `Intl.NumberFormat` solves it; a `"$" + x.toFixed(2)` template does not.
+- ❌ Assuming the currency symbol identifies the currency (`$` is at least twenty different
+  currencies). **Show the ISO code alongside the symbol when there is real ambiguity.**
+- ❌ Converting currency with a cached rate with no date and no source. The rate is a datum with a
+  timestamp and with a provider; a converted amount **does not replace** the original amount.
 
-### 3.4 Texto: Unicode, normalización, mayúsculas, colación y longitud
+### 3.4 Text: Unicode, normalisation, case, collation and length
 
-- **Normalización**: `"é"` puede ser un punto de código (NFC, U+00E9) o dos (NFD, U+0065 U+0301).
-  Se ven iguales, **no son iguales byte a byte**, y un índice único, un `WHERE`, un
-  comparador de contraseñas y un nombre de fichero los tratan como distintos. **Regla: normalizar
-  a NFC en el borde de entrada, antes de validar, indexar o comparar.** Documentar la elección.
-- **Mayúsculas dependientes del idioma — el caso canónico es el turco `i`**: en `tr`/`az`,
-  `"i".toUpperCase()` es `"İ"` (I con punto) y `"I".toLowerCase()` es `"ı"` (i sin punto). Por
-  eso **`toUpperCase()`/`toLowerCase()` sin locale es un bug latente** y `toUpperCase()` para
-  comparar identificadores rompe la autenticación en un dispositivo con locale turco. Además el
-  cambio de caja **no conserva la longitud**: `"ß".toUpperCase()` da `"SS"`.
-  - ✅ Para **presentación**: `toLocaleUpperCase(locale)` con locale explícito.
-  - ✅ Para **comparar**: *case folding* independiente de locale (`toUpperCase` con locale raíz o
-    la función de *case folding* de la librería ICU del stack), **nunca** el de la interfaz.
-  - ❌ Escribir mayúsculas en el catálogo o forzarlas con `text-transform` como sustituto de
-    tener la cadena correcta: hay idiomas sin distinción de caja y otros donde la mayúscula
-    inicial cambia el significado (alemán) o no se usa igual (español en títulos y meses).
-- **Ordenación**: ordenar por punto de código **no es orden alfabético en ningún idioma**. `"Z"`
-  va antes que `"a"`, `"ñ"` cae tras `"z"`, y en sueco `"ä"` va al final del alfabeto mientras en
-  alemán va junto a `"a"`. ✅ **Colación CLDR/ICU** (`Intl.Collator` en JS, `COLLATE` con
-  proveedor ICU en el motor). **Decidir dónde se ordena** — si pagina el servidor, ordena el
-  servidor; ordenar la página en el cliente produce una lista globalmente incorrecta.
-  - `Intl.Collator` con `sensitivity` explícita para búsqueda y `numeric: true` para listas con
-    números incrustados. La comparación *natural* de cadenas también es una decisión de locale.
-- **Longitud: `.length` miente.** Tres unidades distintas y **ninguna es intercambiable**:
-  - **Bytes** — lo que ocupa (límite de columna, de cabecera, de payload).
-  - **Puntos de código** — lo que cuenta `.length` en Python; en JS `.length` cuenta **unidades
-    UTF-16**, así que un emoji fuera del BMP cuenta 2.
-  - **Grafemas** — lo que una persona percibe como "un carácter". Un emoji con modificador de
-    tono o una familia con ZWJ es **un grafema y muchos puntos de código**.
-  - ✅ Límite de interfaz y truncado: **por grafemas** (`Intl.Segmenter` con
-    `granularity: 'grapheme'`). Límite de almacenamiento: **por bytes**, y validado en el borde.
-    Truncar por índice de unidad de código **parte grafemas y produce texto corrupto**.
-  - Segmentar por palabras con `split(' ')` es incorrecto en chino, japonés y tailandés:
-    `Intl.Segmenter` con `granularity: 'word'`.
+- **Normalisation**: `"é"` can be one code point (NFC, U+00E9) or two (NFD, U+0065 U+0301).
+  They look the same, **they are not equal byte for byte**, and a unique index, a `WHERE`, a
+  password comparator and a file name treat them as different. **Rule: normalise
+  to NFC at the input boundary, before validating, indexing or comparing.** Document the choice.
+- **Language-dependent case mapping — the canonical case is the Turkish `i`**: in `tr`/`az`,
+  `"i".toUpperCase()` is `"İ"` (dotted I) and `"I".toLowerCase()` is `"ı"` (dotless i). That is
+  why **`toUpperCase()`/`toLowerCase()` without a locale is a latent bug** and `toUpperCase()` to
+  compare identifiers breaks authentication on a device with a Turkish locale. Besides, case
+  change **does not preserve length**: `"ß".toUpperCase()` gives `"SS"`.
+  - ✅ For **presentation**: `toLocaleUpperCase(locale)` with an explicit locale.
+  - ✅ For **comparing**: locale-independent *case folding* (`toUpperCase` with the root locale or
+    the *case folding* function of the stack's ICU library), **never** the interface's.
+  - ❌ Writing capitals in the catalog or forcing them with `text-transform` as a substitute for
+    having the right string: there are languages with no case distinction and others where the
+    initial capital changes the meaning (German) or is not used the same way (Spanish in titles and
+    month names).
+- **Ordering**: sorting by code point **is not alphabetical order in any language**. `"Z"`
+  comes before `"a"`, `"ñ"` falls after `"z"`, and in Swedish `"ä"` goes at the end of the alphabet while in
+  German it goes next to `"a"`. ✅ **CLDR/ICU collation** (`Intl.Collator` in JS, `COLLATE` with the
+  ICU provider in the engine). **Decide where the ordering happens** — if the server paginates, the
+  server orders; ordering the page in the client produces a globally incorrect list.
+  - `Intl.Collator` with an explicit `sensitivity` for search and `numeric: true` for lists with
+    embedded numbers. *Natural* string comparison is also a locale decision.
+- **Length: `.length` lies.** Three different units and **none is interchangeable**:
+  - **Bytes** — what it takes up (column, header, payload limit).
+  - **Code points** — what `.length` counts in Python; in JS `.length` counts **UTF-16
+    units**, so an emoji outside the BMP counts as 2.
+  - **Graphemes** — what a person perceives as "one character". An emoji with a skin
+    tone modifier or a family with ZWJ is **one grapheme and many code points**.
+  - ✅ Interface limit and truncation: **by graphemes** (`Intl.Segmenter` with
+    `granularity: 'grapheme'`). Storage limit: **by bytes**, and validated at the boundary.
+    Truncating by code unit index **splits graphemes and produces corrupt text**.
+  - Segmenting by words with `split(' ')` is incorrect in Chinese, Japanese and Thai:
+    `Intl.Segmenter` with `granularity: 'word'`.
 
-### 3.5 Fechas y zonas horarias — el otro gran generador de bugs
+### 3.5 Dates and time zones — the other great bug generator
 
-- **Regla base**: **instante en UTC en el almacenamiento; zona IANA del usuario en la
-  presentación**; la zona se guarda como preferencia del usuario, no se infiere en cada petición.
-- **Un `offset` no es una zona.** `+02:00` no permite calcular la hora de un evento futuro
-  porque no sabe cuándo cambia el horario de verano. Guardar `Europe/Madrid`.
-- **Fechas sin hora no son instantes.** Cumpleaños, fecha de factura, día festivo y fecha de
-  vencimiento son **fechas civiles**. Guardarlas como `timestamp` las desplaza un día al cruzar
-  zona. Tipo `DATE` o cadena `YYYY-MM-DD`, y aritmética civil, no aritmética de instantes.
-- **Eventos futuros recurrentes** (una alarma a las 09:00) se guardan como **hora local + zona +
-  regla de recurrencia**, no como instante UTC precalculado: si cambia la regla de la zona, el
-  instante calculado queda mal.
-- **`tzdata` es una dependencia que se actualiza y que cambia por decisión política**, no por
-  calendario. Verificado en el `NEWS` de IANA, *verbatim*, release **2026c (2026-07-08)**:
-  «Alberta moved to permanent -06 on 2026-06-18.» y «Morocco moves to permanent +00 on
-  2026-09-20.» Consecuencia operativa dura: **un sistema con `tzdata` viejo calcula mal horas
-  futuras y no da ningún error**. Actualizar `tzdata` es tarea de parcheo con la misma urgencia
-  que un CVE de disponibilidad, y afecta a la imagen base del contenedor, al JDK, al runtime, a
-  la base de datos y a la copia embebida de la librería de fechas — **son cinco copias distintas
-  y se desincronizan**.
-- Trampas restantes, todas reales: horas que **no existen** (el salto de primavera) y horas que
-  **ocurren dos veces** (el retroceso de otoño) — toda aritmética local debe decidir qué hace en
-  ambos casos; **días que no tienen 24 horas**; **`tzdata` cambia identificadores y los sustituye
-  por enlaces** (`Europe/Kyiv` vs. `Europe/Kiev`); calendarios no gregorianos en presentación
-  (islámico, hebreo, japonés por eras, budista) — `Intl.DateTimeFormat` con `calendar` explícito;
-  y semanas cuyo **primer día depende del locale** (no siempre lunes, no siempre domingo).
-- ❌ Aritmética de fechas sumando milisegundos. ❌ `new Date("dd/mm/yyyy")`: el parseo de cadenas
-  no ISO **depende de la implementación**. ❌ Confiar en la zona del servidor: fijar `UTC` en el
-  proceso y ser explícito en cada conversión.
+- **Base rule**: **an instant in UTC in storage; the user's IANA zone in
+  presentation**; the zone is stored as a user preference, it is not inferred on every request.
+- **An `offset` is not a zone.** `+02:00` does not let you compute the time of a future event
+  because it does not know when daylight saving changes. Store `Europe/Madrid`.
+- **Dates without a time are not instants.** Birthdays, invoice dates, public holidays and due
+  dates are **civil dates**. Storing them as a `timestamp` shifts them a day when crossing
+  zones. A `DATE` type or a `YYYY-MM-DD` string, and civil arithmetic, not instant arithmetic.
+- **Recurring future events** (an alarm at 09:00) are stored as **local time + zone +
+  recurrence rule**, not as a precomputed UTC instant: if the zone's rule changes, the
+  computed instant is wrong.
+- **`tzdata` is a dependency that gets updated and that changes by political decision**, not by
+  calendar. Verified in IANA's `NEWS`, *verbatim*, release **2026c (2026-07-08)**:
+  «Alberta moved to permanent -06 on 2026-06-18.» and «Morocco moves to permanent +00 on
+  2026-09-20.» Hard operational consequence: **a system with an old `tzdata` computes future times
+  wrongly and gives no error at all**. Updating `tzdata` is a patching task with the same urgency
+  as an availability CVE, and it affects the container base image, the JDK, the runtime,
+  the database and the embedded copy in the date library — **that is five different copies
+  and they get out of sync**.
+- Remaining traps, all real: times that **do not exist** (the spring forward) and times that
+  **happen twice** (the autumn fall back) — all local arithmetic must decide what it does in
+  both cases; **days that do not have 24 hours**; **`tzdata` changes identifiers and replaces them
+  with links** (`Europe/Kyiv` vs. `Europe/Kiev`); non-Gregorian calendars in presentation
+  (Islamic, Hebrew, Japanese by eras, Buddhist) — `Intl.DateTimeFormat` with an explicit `calendar`;
+  and weeks whose **first day depends on the locale** (not always Monday, not always Sunday).
+- ❌ Date arithmetic by adding milliseconds. ❌ `new Date("dd/mm/yyyy")`: parsing non-ISO strings
+  **is implementation-dependent**. ❌ Trusting the server's zone: set `UTC` in the
+  process and be explicit in every conversion.
 
-### 3.6 Pluralización, género y la concatenación como antipatrón central
+### 3.6 Pluralisation, gender and concatenation as the central antipattern
 
-- **La concatenación de cadenas es el antipatrón central de i18n.** `"Tienes " + n + " mensajes"`
-  asume orden de palabras, asume que el plural es una `s`, no deja mover el número dentro de la
-  frase y no permite concordar género. **Cualquier fragmento de frase en el código es un bug de
-  i18n**: la unidad traducible es **la frase completa con parámetros**, nunca sus trozos.
-- **Las categorías plurales de CLDR no son "singular/plural"**: son hasta **seis** —
-  `zero`, `one`, `two`, `few`, `many`, `other` — y **qué números caen en cada una lo decide
-  CLDR por idioma**, no el traductor ni el desarrollador. El inglés usa dos; el árabe usa las
-  seis; el polaco y el ruso usan `one`/`few`/`many`/`other`; el japonés usa solo `other`.
-  Además, **`one` no significa "uno"**: en francés el 0 va en `one`.
-  - ✅ El catálogo declara las categorías que el idioma **destino** necesita; la herramienta las
-    genera a partir de CLDR. ❌ Una clave `_plural` binaria: rompe en cuanto entra un idioma con
-    tres o más formas.
-  - ✅ `Intl.PluralRules` para seleccionar en runtime cuando no se use un motor ICU completo.
-  - **Ordinales son otra regla** (`type: 'ordinal'`): `1st/2nd/3rd/4th` no sigue las cardinales.
-  - **Rangos** ("3–5 elementos") tienen su propia selección (`selectRange`).
-- **Género**: no se resuelve con `select` improvisado en el código. ICU MessageFormat tiene
-  `select` para eso, y **la variable de género debe llegar al mensaje como parámetro**, no
-  decidirse fuera. Hay idiomas donde el verbo, el artículo y el adjetivo concuerdan; una interfaz
-  que dice "Bienvenido" no es traducible sin ese dato.
-- **Expansión de texto**: la traducción del alemán o del finés puede ser bastante más larga que
-  el inglés y la del chino mucho más corta. **Ningún diseño puede depender de la longitud del
-  texto original**; se prueba con pseudolocalización (§4.2), no con estimaciones.
+- **String concatenation is the central antipattern of i18n.** `"You have " + n + " messages"`
+  assumes word order, assumes the plural is an `s`, does not let you move the number within
+  the sentence and does not allow gender agreement. **Any sentence fragment in the code is an i18n
+  bug**: the translatable unit is **the complete sentence with parameters**, never its pieces.
+- **CLDR's plural categories are not "singular/plural"**: there are up to **six** —
+  `zero`, `one`, `two`, `few`, `many`, `other` — and **which numbers fall into each is decided
+  by CLDR per language**, not by the translator or the developer. English uses two; Arabic uses all
+  six; Polish and Russian use `one`/`few`/`many`/`other`; Japanese uses only `other`.
+  Besides, **`one` does not mean "one"**: in French 0 goes in `one`.
+  - ✅ The catalog declares the categories the **target** language needs; the tool generates them
+    from CLDR. ❌ A binary `_plural` key: it breaks as soon as a language with
+    three or more forms comes in.
+  - ✅ `Intl.PluralRules` to select at runtime when a full ICU engine is not used.
+  - **Ordinals are another rule** (`type: 'ordinal'`): `1st/2nd/3rd/4th` does not follow the cardinals.
+  - **Ranges** ("3–5 items") have their own selection (`selectRange`).
+- **Gender**: it is not solved with an improvised `select` in the code. ICU MessageFormat has
+  `select` for that, and **the gender variable must reach the message as a parameter**, not be
+  decided outside. There are languages where the verb, the article and the adjective agree; an interface
+  that says "Bienvenido" is not translatable without that datum.
+- **Text expansion**: the German or Finnish translation can be considerably longer than
+  the English and the Chinese one much shorter. **No design can depend on the length of the
+  original text**; it is tested with pseudolocalisation (§4.2), not with estimates.
 
-## 4. Calidad, testing y gates de CI
+## 4. Quality, testing and CI gates
 
-En orden de coste creciente. Los tres primeros **rompen el build**.
+In increasing order of cost. The first three **break the build**.
 
-### 4.1 Gates estáticos (segundos)
+### 4.1 Static gates (seconds)
 
-1. **Cadena literal sin clave en el código** → *build roto*. Regla de lint del stack
+1. **A literal string with no key in the code** → *broken build*. A lint rule for the stack
    (`i18next/no-literal-string`, `formatjs/no-literal-string-in-jsx`, `rubocop-i18n`,
-   equivalente en cada lenguaje). Sin este gate, el catálogo se degrada solo.
-2. **Clave usada y no declarada** → *build roto*. Es un error en tiempo de ejecución diferido; el
-   extractor lo detecta en segundos.
-3. **Clave declarada y no usada** → aviso, y **borrado** en la limpieza periódica. Un catálogo con
-   claves muertas paga traducción de texto que nadie ve.
-4. **Sintaxis ICU inválida en cualquier idioma** → *build roto*. Un traductor puede romper un
-   `{count, plural, ...}`; se detecta compilando el catálogo, no en producción.
-5. **Placeholders no coincidentes entre origen y traducción** (falta uno, sobra otro, cambia el
-   nombre) → *build roto*. Es la causa más común de excepción en runtime por traducción.
-6. **Cobertura de traducción por idioma**: umbral explícito por idioma. Un idioma **debajo de su
-   umbral no se ofrece en el selector**; mostrar media interfaz en inglés es peor que no ofrecerla.
-7. **Normalización del catálogo**: los ficheros se guardan en **NFC** y con orden estable de
-   claves; si no, cada exportación del TMS produce un diff ilegible.
+   the equivalent in each language). Without this gate, the catalog degrades on its own.
+2. **A key used and not declared** → *broken build*. It is a deferred runtime error; the
+   extractor detects it in seconds.
+3. **A key declared and not used** → a warning, and **deletion** in the periodic cleanup. A catalog with
+   dead keys pays for translating text nobody sees.
+4. **Invalid ICU syntax in any language** → *broken build*. A translator can break a
+   `{count, plural, ...}`; it is detected by compiling the catalog, not in production.
+5. **Placeholders that do not match between source and translation** (one missing, one extra, a name
+   changed) → *broken build*. It is the most common cause of a runtime exception from a translation.
+6. **Translation coverage per language**: an explicit threshold per language. A language **below its
+   threshold is not offered in the selector**; showing half an interface in English is worse than not offering it.
+7. **Catalog normalisation**: the files are stored in **NFC** and with a stable key order;
+   otherwise every export from the TMS produces an unreadable diff.
 
-### 4.2 Pseudolocalización — prueba automática, no juego
+### 4.2 Pseudolocalisation — an automatic test, not a game
 
-Se genera un locale sintético (`en-XA` o equivalente) desde el catálogo origen, aplicando a la
-vez: **expansión** (alargar la cadena un porcentaje fijo), **acentuación** de todos los
-caracteres (para detectar texto no extraído: lo que se lea normal, está *hardcodeado*),
-**delimitadores** en los extremos (para detectar truncado y desbordamiento) y, en una segunda
-variante, **inversión bidi** para el ensayo de RTL.
+A synthetic locale (`en-XA` or equivalent) is generated from the source catalog, applying at
+once: **expansion** (lengthening the string by a fixed percentage), **accenting** of every
+character (to detect unextracted text: whatever reads normally is *hardcoded*),
+**delimiters** at both ends (to detect truncation and overflow) and, in a second
+variant, **bidi inversion** for the RTL rehearsal.
 
-- ✅ Se despliega en un entorno accesible y **se pasan las pruebas E2E existentes sobre él**: si
-  un selector depende del texto visible, el pseudolocale lo rompe — y eso también es un hallazgo.
-- ✅ Captura visual de las pantallas clave en pseudolocale, comparada como regresión visual.
-- Detecta, sin traductor y sin coste: cadena no extraída, contenedor que desborda, texto
-  truncado, concatenación (aparece un trozo sin acentuar en medio) y layout que no sobrevive RTL.
+- ✅ It is deployed to an accessible environment and **the existing E2E tests are run against it**: if
+  a selector depends on the visible text, the pseudolocale breaks it — and that is a finding too.
+- ✅ A visual capture of the key screens in pseudolocale, compared as a visual regression.
+- It detects, with no translator and at no cost: an unextracted string, a container that overflows, truncated
+  text, concatenation (an unaccented chunk appears in the middle) and layout that does not survive RTL.
 
-### 4.3 Pruebas de comportamiento (no de implementación)
+### 4.3 Behaviour tests (not implementation tests)
 
-- **Formateo**: fijar locale y zona **explícitos** en cada test. Un test que pasa en la máquina
-  del desarrollador y falla en CI por locale del entorno es un test mal escrito. ❌ Assertar la
-  cadena exacta que devuelve `Intl` — **CLDR cambia entre versiones de ICU y el test se rompe
-  solo**; assertar propiedades (contiene el número, usa el separador del locale) o fijar la
-  versión de ICU del runtime en la imagen.
-- **Bordes obligatorios**: 0, 1, 2, 5, 11, 21, 100 en un idioma con `few`/`many` (ruso o polaco)
-  y en árabe; nombre con apóstrofo y con caracteres no latinos; texto con emoji ZWJ para el
-  truncado; fecha en el instante del cambio de horario de verano en ambos sentidos; importe en
-  JPY (0 decimales) y en KWD (3); cadena en NFD comparada contra la misma en NFC.
-- **Casos de error**: falta la traducción → *fallback* definido y **registrado**, nunca la clave
-  cruda en pantalla; catálogo corrupto → arranque fallido, no degradación silenciosa.
+- **Formatting**: set an **explicit** locale and zone in every test. A test that passes on the
+  developer's machine and fails in CI because of the environment's locale is a badly written test. ❌ Asserting
+  the exact string `Intl` returns — **CLDR changes between ICU versions and the test breaks
+  on its own**; assert properties (it contains the number, it uses the locale's separator) or pin
+  the runtime's ICU version in the image.
+- **Mandatory edges**: 0, 1, 2, 5, 11, 21, 100 in a language with `few`/`many` (Russian or Polish)
+  and in Arabic; a name with an apostrophe and with non-Latin characters; text with a ZWJ emoji for
+  truncation; a date at the instant of the daylight saving change in both directions; an amount in
+  JPY (0 decimals) and in KWD (3); a string in NFD compared against the same one in NFC.
+- **Error cases**: the translation is missing → a defined and **logged** *fallback*, never the raw
+  key on screen; a corrupt catalog → a failed start-up, not silent degradation.
 
-### 4.4 Flujo de trabajo de traducción
+### 4.4 Translation workflow
 
-- **Clave semántica, jamás el texto inglés como clave.** `checkout.payment.error.card_declined`,
-  no `"Your card was declined"`. Con el texto como clave: cualquier corrección de una coma en el
-  original invalida todas las traducciones, no se puede distinguir dos usos del mismo texto que
-  se traducen distinto (`Open` como verbo y como estado), y la clave se vuelve ilegible en un
-  idioma no inglés.
-- **Contexto obligatorio en cada clave**: descripción de para qué sirve, dónde aparece, límite de
-  longitud si lo hay, y **qué es cada placeholder**. Una cadena sin contexto se traduce mal y el
-  error solo se ve en producción. Si el formato lo soporta (`.po` con comentarios extraídos,
-  XLIFF con `<note>`), el contexto viaja en el fichero, no en un documento aparte.
-- **Captura de pantalla como contexto** cuando la plataforma lo soporte: es lo que más sube la
-  calidad por unidad de esfuerzo.
-- **El original nunca se edita en el TMS**: se edita en el repositorio y fluye hacia la
-  plataforma. El repositorio es la fuente de verdad del texto origen; la plataforma, la de las
-  traducciones.
-- **Congelar el original antes de traducir.** Traducir texto que aún cambia multiplica coste.
-- **Glosario y guía de estilo por idioma** (tratamiento formal/informal, terminología de
-  producto, qué **no** se traduce). Sin esto, cada traductor decide y el producto habla con
-  varias voces.
+- **A semantic key, never the English text as the key.** `checkout.payment.error.card_declined`,
+  not `"Your card was declined"`. With the text as the key: any correction of a comma in the
+  original invalidates all the translations, you cannot distinguish two uses of the same text that
+  are translated differently (`Open` as a verb and as a state), and the key becomes unreadable in a
+  non-English language.
+- **Mandatory context on every key**: a description of what it is for, where it appears, a length
+  limit if there is one, and **what each placeholder is**. A string without context gets translated badly and the
+  error is only seen in production. If the format supports it (`.po` with extracted comments,
+  XLIFF with `<note>`), the context travels in the file, not in a separate document.
+- **A screenshot as context** when the platform supports it: it is what raises
+  quality most per unit of effort.
+- **The original is never edited in the TMS**: it is edited in the repository and flows towards the
+  platform. The repository is the source of truth for the source text; the platform, for the
+  translations.
+- **Freeze the original before translating.** Translating text that is still changing multiplies the cost.
+- **A glossary and a style guide per language** (formal/informal address, product
+  terminology, what is **not** translated). Without this, each translator decides and the product speaks with
+  several voices.
 
-## 5. Seguridad
+## 5. Security
 
-### 5.1 Una traducción es entrada no confiable
+### 5.1 A translation is untrusted input
 
-**Si el catálogo lo pueden editar colaboradores externos, la cadena traducida es entrada
-controlada por un tercero y entra directamente en la interfaz.** Vectores reales:
+**If the catalog can be edited by external contributors, the translated string is input
+controlled by a third party and it goes straight into the interface.** Real vectors:
 
-- **XSS por interpolación en HTML**: la cadena traducida acaba en un `dangerouslySetInnerHTML`,
-  `v-html`, `innerHTML` o `Html.Raw` porque el original llevaba un `<b>`. ✅ **El catálogo no
-  contiene HTML**: el marcado se pasa como *componente/función* al mensaje (`<b>{x}</b>` resuelto
-  por el runtime de i18n, no concatenado), y si es inevitable, **lista blanca de etiquetas y
-  saneado en el borde**, con CSP que impida el `script` en línea.
-- **Inyección de formato**: una traducción que introduce un placeholder inexistente o un
-  `{count, plural}` malformado provoca excepción o fuga del objeto de parámetros. Gate de §4.1.
-- **Redirección abierta y *phishing***: URL dentro de una cadena traducible. ✅ **Las URL no van
-  en el catálogo**: van como parámetro desde el código.
-- **Suplantación por Unicode**: caracteres bidi de control (`U+202E` y familia) y homoglifos en
-  una traducción alteran visualmente lo que se lee sin cambiar el texto lógico. ✅ **Rechazar
-  caracteres de control bidi en el catálogo** salvo justificación explícita, y normalizar.
-- **Control de cambios**: si hay colaboración abierta, **revisión obligatoria antes de fusionar
-  al idioma publicado** y separación entre "sugerido" y "aprobado". El mismo criterio que un PR.
-- **La plataforma de traducción es un tercero con acceso a texto del producto y a las cuentas de
-  quienes traducen**: entra en el inventario de proveedores, con SSO y con revocación.
+- **XSS through interpolation into HTML**: the translated string ends up in a `dangerouslySetInnerHTML`,
+  `v-html`, `innerHTML` or `Html.Raw` because the original carried a `<b>`. ✅ **The catalog does not
+  contain HTML**: the markup is passed as a *component/function* to the message (`<b>{x}</b>` resolved
+  by the i18n runtime, not concatenated), and if it is unavoidable, **an allowlist of tags and
+  sanitisation at the boundary**, with a CSP that prevents inline `script`.
+- **Format injection**: a translation that introduces a non-existent placeholder or a
+  malformed `{count, plural}` causes an exception or leaks the parameter object. Gate of §4.1.
+- **Open redirect and *phishing***: a URL inside a translatable string. ✅ **URLs do not go
+  in the catalog**: they go as a parameter from the code.
+- **Unicode spoofing**: bidi control characters (`U+202E` and family) and homoglyphs in
+  a translation visually alter what is read without changing the logical text. ✅ **Reject
+  bidi control characters in the catalog** unless explicitly justified, and normalise.
+- **Change control**: if there is open collaboration, **mandatory review before merging
+  into the published language** and separation between "suggested" and "approved". The same criteria as a PR.
+- **The translation platform is a third party with access to the product's text and to the accounts of
+  those who translate**: it goes into the supplier inventory, with SSO and with revocation.
 
-### 5.2 Datos personales en las cadenas
+### 5.2 Personal data in the strings
 
-- ❌ Nombres, correos, teléfonos o identificadores reales como **texto de ejemplo** en el
-  catálogo o en las capturas de contexto. Es un tratamiento de datos personales exportado a un
-  tercero (el TMS) y a personas externas. Datos sintéticos, siempre.
-- ❌ Volcar contenido del usuario a la plataforma de traducción "para dar contexto".
-- Los datos personales que sí se tratan (nombre, dirección, teléfono) heredan el criterio de
-  `privacy-engineering-standards`: minimización, base legal, retención. Aquí solo la regla dura:
-  **el catálogo no es un lugar donde puedan acabar datos personales**.
+- ❌ Real names, emails, phones or identifiers as **example text** in the
+  catalog or in the context screenshots. It is processing of personal data exported to a
+  third party (the TMS) and to external people. Synthetic data, always.
+- ❌ Dumping user content into the translation platform "to give context".
+- The personal data that is processed (name, address, phone) inherits the criteria of
+  `privacy-engineering-standards`: minimisation, legal basis, retention. Here only the hard rule:
+  **the catalog is not a place where personal data can end up**.
 
-### 5.3 Traducción automática y LLM en el flujo
+### 5.3 Machine translation and LLMs in the flow
 
-- **Aceptable, con revisión humana antes de publicar**: contenido de gran volumen y bajo riesgo
-  — documentación de ayuda, descripciones de catálogo, contenido generado por usuarios,
-  primer borrador de cadenas de interfaz no crítica.
-- **PROHIBIDO publicar sin revisión de un profesional humano competente en el idioma destino**:
-  - Texto **legal o contractual** (condiciones, aviso de privacidad, consentimiento).
-  - Texto con **consecuencia médica, de seguridad o financiera** (dosis, advertencias, importes,
-    instrucciones de emergencia).
-  - **Interfaz crítica**: confirmación de acción irreversible, mensajes de error que guían una
-    decisión, flujos de pago, autenticación y recuperación de cuenta.
-  - Cualquier texto sujeto a **requisito normativo de idioma** (ver `grc-compliance-standards`).
-- Regla transversal: **la traducción automática sin revisar se marca como tal en el sistema**
-  (estado en el TMS) y **nunca se promueve a "aprobada" por una máquina**. Un LLM puede proponer
-  y puede detectar inconsistencias; no puede firmar.
-- El LLM traduce **el mensaje completo con su contexto y su glosario**, no cadenas sueltas; y se
-  le pasa la restricción de longitud y las categorías plurales del idioma destino como parte del
-  encargo, o devolverá cadenas que rompen §4.1.
+- **Acceptable, with human review before publishing**: high-volume, low-risk content
+  — help documentation, catalog descriptions, user-generated content,
+  a first draft of non-critical interface strings.
+- **FORBIDDEN to publish without review by a human professional competent in the target language**:
+  - **Legal or contractual** text (terms, privacy notice, consent).
+  - Text with a **medical, safety or financial consequence** (dosages, warnings, amounts,
+    emergency instructions).
+  - **Critical interface**: confirmation of an irreversible action, error messages that guide a
+    decision, payment flows, authentication and account recovery.
+  - Any text subject to a **regulatory language requirement** (see `grc-compliance-standards`).
+- Cross-cutting rule: **unreviewed machine translation is marked as such in the system**
+  (a state in the TMS) and **is never promoted to "approved" by a machine**. An LLM can propose
+  and can detect inconsistencies; it cannot sign off.
+- The LLM translates **the complete message with its context and its glossary**, not loose strings; and
+  it is given the length constraint and the target language's plural categories as part of the
+  assignment, or it will return strings that break §4.1.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Un catálogo por idioma, cargado por idioma.** ❌ Servir todos los idiomas al cliente. La
-  división por ruta o por vista solo si el catálogo es grande de verdad; medir antes.
-- **Datos de ICU en el cliente**: si se usa una librería que empaqueta CLDR, **es el mayor coste
-  en bytes de la i18n**. Usar `Intl` de la plataforma elimina ese coste por completo — es la
-  razón operativa por la que `Intl` es el default de §2.
-- **Renderizado en servidor**: el locale debe resolverse **antes** de renderizar; si el servidor
-  renderiza en un idioma y el cliente hidrata en otro, hay desajuste de hidratación y parpadeo.
-  El locale forma parte de la **clave de caché** (y de `Vary`, ver `caching-cdn-standards`).
-- **Observabilidad mínima**: métrica de **claves faltantes por idioma y por versión** (una subida
-  indica despliegue de código sin catálogo), métrica de idiomas realmente usados (para retirar
-  los que nadie usa), y registro de *fallback* aplicado. Sin esto, la degradación es invisible.
-- **Versión de ICU/CLDR del runtime en producción como dato observable**: dos réplicas con ICU
-  distinto formatean distinto y ordenan distinto. Fijarla en la imagen.
-- **Cadencia de actualización**: `tzdata` con cada release de IANA (varias al año, §3.5); ICU y
-  CLDR con la del runtime, verificando que los cambios de colación no invalidan índices en el
-  motor (eso lo gobierna `sql-standards`, pero **se detecta aquí**).
+- **One catalog per language, loaded per language.** ❌ Serving every language to the client. Splitting
+  by route or by view only if the catalog is genuinely large; measure first.
+- **ICU data in the client**: if you use a library that bundles CLDR, **it is the largest cost
+  in bytes of i18n**. Using the platform's `Intl` eliminates that cost entirely — it is the
+  operational reason why `Intl` is the default of §2.
+- **Server-side rendering**: the locale must be resolved **before** rendering; if the server
+  renders in one language and the client hydrates in another, there is a hydration mismatch and flicker.
+  The locale is part of the **cache key** (and of `Vary`, see `caching-cdn-standards`).
+- **Minimum observability**: a metric of **missing keys per language and per version** (a rise
+  indicates a code deployment without the catalog), a metric of languages actually used (to withdraw
+  the ones nobody uses), and a log of the *fallback* applied. Without this, the degradation is invisible.
+- **The runtime's ICU/CLDR version in production as an observable datum**: two replicas with different
+  ICU format differently and sort differently. Pin it in the image.
+- **Update cadence**: `tzdata` with every IANA release (several a year, §3.5); ICU and
+  CLDR with the runtime's, checking that the collation changes do not invalidate indexes in the
+  engine (that is governed by `sql-standards`, but **it is detected here**).
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Diseño i18n-ready desde el primer día aunque el producto sea monolingüe.** Lo caro no es
-  traducir: es descubrir que el esquema, la API y las plantillas asumen un solo idioma.
-- **Deuda declarada**: si se toma un atajo (campo de nombre partido, formateo manual), queda un
-  `TODO` con el motivo y una incidencia, no un comentario.
-- **Revisión periódica del catálogo**: claves muertas fuera, cobertura por idioma revisada, y
-  retirada explícita de un idioma que nadie usa (con aviso, no en silencio).
+- **i18n-ready design from day one even if the product is monolingual.** What is expensive is not
+  translating: it is discovering that the schema, the API and the templates assume a single language.
+- **Declared debt**: if a shortcut is taken (a split name field, manual formatting), a
+  `TODO` with the reason and an issue is left, not a comment.
+- **Periodic catalog review**: dead keys out, coverage per language reviewed, and
+  explicit withdrawal of a language nobody uses (with notice, not in silence).
 
-Prohibido, sin excepción:
+Forbidden, without exception:
 
-- ❌ **Concatenar fragmentos de frase** para construir un mensaje. Incluye construir la frase con
-  plantillas de dos trozos y meter el verbo por variable.
-- ❌ **Usar el texto en inglés como clave** del catálogo.
-- ❌ `toUpperCase()` / `toLowerCase()` **sin locale explícito** para presentación, y usar el de la
-  interfaz para comparar (el turco `i`, §3.4).
-- ❌ **Ordenar cadenas por punto de código** y llamarlo orden alfabético.
-- ❌ Truncar o limitar texto **por unidad de código** en lugar de por grafema.
-- ❌ **Regex propia** para validar teléfono, código postal, nombre o correo internacionalizado.
-- ❌ `float` para importes; asumir **dos decimales** en cualquier moneda.
-- ❌ Guardar un **offset** en lugar de un identificador IANA de zona.
-- ❌ Guardar una **fecha civil como instante** (cumpleaños, vencimiento, festivo).
-- ❌ Enviar una imagen de contenedor o un runtime a producción **sin `tzdata` actualizado**.
-- ❌ **HTML dentro del catálogo** de traducción, y **URL dentro del catálogo**.
-- ❌ Publicar traducción automática **sin revisión humana** en las clases de §5.3.
-- ❌ Aceptar traducción de colaborador externo **sin revisión** en un idioma publicado.
-- ❌ Un plural **binario** (`singular`/`plural`) en el catálogo o en el código.
-- ❌ Asumir que **RTL es el mismo diseño invertido**: los iconos direccionales se espejan
-  (flecha de "siguiente", "deshacer") pero **los que no son direccionales no** (reloj, logotipo,
-  algunos medios); los números y el código embebido siguen leyéndose de izquierda a derecha
-  dentro del párrafo RTL; los gráficos, el progreso y las tablas cambian de origen; y **hay que
-  probarlo en árabe o hebreo reales**, no solo con `dir="rtl"` sobre texto latino. La
-  implementación con propiedades lógicas de CSS la fija `frontend-web-platform-standards`.
-- ❌ Fijar el idioma por **geolocalización de IP** sin permitir cambiarlo y sin persistir la
-  elección.
-- ❌ Assertar en un test la **cadena exacta** producida por `Intl`/ICU sin fijar la versión de ICU.
-- ❌ Desplegar código con claves nuevas **sin el catálogo correspondiente** (rompe §4.1 y llega a
-  producción como clave cruda en pantalla).
+- ❌ **Concatenating sentence fragments** to build a message. This includes building the sentence with
+  two-piece templates and injecting the verb by variable.
+- ❌ **Using the English text as the catalog key**.
+- ❌ `toUpperCase()` / `toLowerCase()` **without an explicit locale** for presentation, and using the
+  interface's for comparison (the Turkish `i`, §3.4).
+- ❌ **Sorting strings by code point** and calling it alphabetical order.
+- ❌ Truncating or limiting text **by code unit** instead of by grapheme.
+- ❌ A **home-made regex** to validate a phone, postcode, name or internationalised email.
+- ❌ `float` for amounts; assuming **two decimals** in any currency.
+- ❌ Storing an **offset** instead of an IANA zone identifier.
+- ❌ Storing a **civil date as an instant** (birthday, due date, public holiday).
+- ❌ Shipping a container image or a runtime to production **without an up-to-date `tzdata`**.
+- ❌ **HTML inside the translation catalog**, and **URLs inside the catalog**.
+- ❌ Publishing machine translation **without human review** in the classes of §5.3.
+- ❌ Accepting a translation from an external contributor **without review** in a published language.
+- ❌ A **binary** plural (`singular`/`plural`) in the catalog or in the code.
+- ❌ Assuming that **RTL is the same layout mirrored**: directional icons are mirrored
+  ("next" arrow, "undo") but **the non-directional ones are not** (a clock, a logo,
+  some media); numbers and embedded code are still read left to right
+  inside the RTL paragraph; charts, progress and tables change origin; and **it has to be
+  tested in real Arabic or Hebrew**, not just with `dir="rtl"` over Latin text. The
+  implementation with CSS logical properties is set by `frontend-web-platform-standards`.
+- ❌ Setting the language by **IP geolocation** without allowing it to be changed and without persisting the
+  choice.
+- ❌ Asserting in a test the **exact string** produced by `Intl`/ICU without pinning the ICU version.
+- ❌ Deploying code with new keys **without the corresponding catalog** (it breaks §4.1 and reaches
+  production as a raw key on screen).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Comprobar **antes de fijar nada** en un proyecto real:
+Check **before pinning anything** in a real project:
 
-1. **CLDR**: versión vigente y fecha. Verificado: CLDR 48 (2025-10-29), 48.1 (2026-01-08), 48.2
-   (2026-03-17), y un parche JSON 48.2.1 por `tzdb` 2026c. **CLDR 49 + ICU 79 estaban anunciados
-   para octubre de 2026.** *Discrepancia declarada*: el directorio
-   `https://www.unicode.org/Public/cldr/49/` **ya existe** en el listado público pero solo
-   contiene `README.html` — **la existencia del directorio no es una release**; comprobar
-   `cldr.unicode.org/index/downloads` y el blog de Unicode antes de afirmar que CLDR 49 salió.
-2. **ICU**: versión vigente de ICU4C/ICU4J y la que trae tu runtime. *Discrepancia declarada*: el
-   feed Atom de `unicode-org/icu` **mezcla etiquetas de ICU4X** (`icu4x/2026-07-01/79.x`) con
-   releases de ICU (`ICU 78.3`, `ICU 78.2`, `ICU 78.1`); **el número más alto del feed no es la
-   versión de ICU**. Contrastar con `icu.unicode.org`.
-3. **Unicode**: 17.0 salió el 2025-09-09; **18.0 estaba planificado para el 2026-09-15** —
-   verificar si ya salió y qué versión de Unicode implementa tu runtime (no siempre la última).
-4. **`tzdata`**: última release en `data.iana.org/time-zones/tzdb/NEWS` (verificado: **2026c,
-   2026-07-08**) y, sobre todo, **qué versión tiene cada copia en tu sistema**: imagen base, JDK,
-   runtime, base de datos y librería de fechas embebida.
-5. **`Temporal`**: estado en `@mdn/browser-compat-data` y en MDN (verificado: **no Baseline**,
-   Safari solo en *preview* tras el flag `useTemporal`, Safari iOS no). Verificar también si Node
-   26 ya entró en LTS (en ago-2026 era *Current*, `lts: false`).
-6. **`Intl`**: soporte real de la API concreta que vayas a usar en tus objetivos de navegador y
-   runtime, y **si el runtime lleva ICU completo o *small-icu***.
-7. **MessageFormat 2**: estado en CLDR/UTS #35 **y por separado** el estado de
-   `tc39/proposal-intl-messageformat` (verificado: `Stage: 1`) y el soporte real en tu TMS y en
-   tu librería. No confundir estándar estable con API disponible.
-8. **`libphonenumber`**: última etiqueta (verificado `v9.0.36`) y **licencia leída del `LICENSE`
-   en crudo** (verificado Apache-2.0). Si usas un envoltorio npm, verificar que sigue mantenido y
-   que su cobertura es la que necesitas.
-9. **Plataformas de traducción**: precio, límites del plan gratuito, condiciones del plan de
-   código abierto y **licencia real leída del `LICENSE` del repositorio**, no del *marketing*.
-   Verificado en ago-2026 (§2.4). **Advertencia**: los directorios de comparación de software
-   dieron datos incorrectos para Lokalise (listaban plan gratuito; la web oficial no lo tiene) y
-   precios de entrada fijos para Crowdin y Transifex, que cotizan por volumen. **Fuente = página
-   oficial y `LICENSE` en crudo.**
-10. **ISO 4217** (unidades mínimas por moneda) e **ISO 3166-1** (lista de países): tomarlos de
-    CLDR, no de una copia; ambos cambian.
-11. **UPU S42** para formato de dirección internacional, y las referencias de nombres del §3.1
+1. **CLDR**: current version and date. Verified: CLDR 48 (2025-10-29), 48.1 (2026-01-08), 48.2
+   (2026-03-17), and a JSON patch 48.2.1 for `tzdb` 2026c. **CLDR 49 + ICU 79 were announced
+   for October 2026.** *Declared discrepancy*: the directory
+   `https://www.unicode.org/Public/cldr/49/` **already exists** in the public listing but it only
+   contains `README.html` — **the existence of the directory is not a release**; check
+   `cldr.unicode.org/index/downloads` and the Unicode blog before asserting that CLDR 49 shipped.
+2. **ICU**: the current version of ICU4C/ICU4J and the one your runtime ships. *Declared discrepancy*: the
+   Atom feed of `unicode-org/icu` **mixes ICU4X tags** (`icu4x/2026-07-01/79.x`) with
+   ICU releases (`ICU 78.3`, `ICU 78.2`, `ICU 78.1`); **the highest number in the feed is not the
+   ICU version**. Cross-check with `icu.unicode.org`.
+3. **Unicode**: 17.0 shipped on 2025-09-09; **18.0 was planned for 2026-09-15** —
+   verify whether it has shipped and which Unicode version your runtime implements (not always the latest).
+4. **`tzdata`**: the latest release at `data.iana.org/time-zones/tzdb/NEWS` (verified: **2026c,
+   2026-07-08**) and, above all, **which version each copy on your system has**: base image, JDK,
+   runtime, database and embedded date library.
+5. **`Temporal`**: the status in `@mdn/browser-compat-data` and on MDN (verified: **not Baseline**,
+   Safari only in *preview* behind the `useTemporal` flag, Safari iOS no). Also verify whether Node
+   26 has entered LTS (in Aug 2026 it was *Current*, `lts: false`).
+6. **`Intl`**: the real support for the specific API you are going to use in your browser and runtime
+   targets, and **whether the runtime carries full ICU or *small-icu***.
+7. **MessageFormat 2**: the status in CLDR/UTS #35 **and separately** the status of
+   `tc39/proposal-intl-messageformat` (verified: `Stage: 1`) and the real support in your TMS and in
+   your library. Do not confuse a stable standard with an available API.
+8. **`libphonenumber`**: the latest tag (verified `v9.0.36`) and **the licence read from the raw
+   `LICENSE`** (verified Apache-2.0). If you use an npm wrapper, verify that it is still maintained and
+   that its coverage is the one you need.
+9. **Translation platforms**: price, free plan limits, open source plan terms and
+   **the real licence read from the repository's `LICENSE`**, not from the *marketing*.
+   Verified in Aug 2026 (§2.4). **Warning**: software comparison directories
+   gave incorrect data for Lokalise (they listed a free plan; the official site has none) and
+   fixed entry prices for Crowdin and Transifex, which are priced by volume. **Source = the official
+   page and the raw `LICENSE`.**
+10. **ISO 4217** (minor units per currency) and **ISO 3166-1** (country list): take them from
+    CLDR, not from a copy; both change.
+11. **UPU S42** for international address format, and the name references of §3.1
     (W3C *Personal names around the world*; *Falsehoods programmers believe about names*) —
-    verificar que siguen accesibles y si hay versión más reciente.
-12. **Hueco declarado (sin presupuesto de verificación en esta pasada)**: no se ha verificado el
-    estado, licencia ni límites de otras plataformas relevantes (**Phrase, Pontoon, Locize,
-    Localazy, Weglot, Smartling**) ni el detalle de los créditos de traducción automática del
-    plan gratuito de Tolgee (la página no lo publica en cifras). **No se rellena por analogía**:
-    si el proyecto las considera, verificarlas en su página oficial y en su `LICENSE`.
-13. **Hueco declarado**: no se ha localizado ningún estudio con metodología publicada sobre el
-    impacto de la pseudolocalización o de la revisión humana en la tasa de defectos de
-    localización. Las cifras que circulan en material comercial de vendedores de TMS
-    («X % menos defectos», «Y % de ahorro») **no tienen metodología publicada y se descartan
-    deliberadamente**: aquí no hay número porque no hay fuente.
+    verify that they are still accessible and whether there is a more recent version.
+12. **Declared gap (no verification budget in this pass)**: the status, licence and limits of other
+    relevant platforms have not been verified (**Phrase, Pontoon, Locize,
+    Localazy, Weglot, Smartling**), nor the detail of the machine translation credits in Tolgee's
+    free plan (the page does not publish them in figures). **It is not filled in by analogy**:
+    if the project considers them, verify them on their official page and in their `LICENSE`.
+13. **Declared gap**: no study with a published methodology has been located on the
+    impact of pseudolocalisation or of human review on the localisation defect rate.
+    The figures circulating in TMS vendors' commercial material
+    («X % fewer defects», «Y % savings») **have no published methodology and are deliberately
+    discarded**: there is no number here because there is no source.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

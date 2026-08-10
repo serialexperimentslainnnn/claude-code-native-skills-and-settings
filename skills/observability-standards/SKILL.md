@@ -3,126 +3,126 @@ name: observability-standards
 description: Observability standards. Use when working with OpenTelemetry SDKs/Collector configs, Prometheus scrape configs and recording/alerting rules, Alertmanager routing, Grafana dashboards as code, Loki, Tempo, Mimir, Pyroscope, structured logging, trace sampling, metric cardinality, or exporters and PromQL.
 ---
 
-# Estándares de observabilidad — telemetría, dashboards y alertas
+# Observability standards — telemetry, dashboards and alerts
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al instrumentar, desplegar o revisar: OpenTelemetry (SDK, auto-instrumentación,
-convenciones semánticas, Collector y diseño de pipeline receivers/processors/exporters),
-logging estructurado y correlación, propagación de contexto W3C, estrategia de muestreo,
-tipos de métrica, naming, diseño de labels y control de cardinalidad, exemplars, RED/USE,
-Prometheus (exporters, scrape, recording rules, retención, remote write), almacenamiento a
-largo plazo, Grafana y dashboards como código, backends de logs y trazas, profiling
-continuo, Alertmanager y el **coste** de la telemetría.
+Applies when instrumenting, deploying or reviewing: OpenTelemetry (SDK, auto-instrumentation,
+semantic conventions, Collector and receivers/processors/exporters pipeline design),
+structured logging and correlation, W3C context propagation, sampling strategy,
+metric types, naming, label design and cardinality control, exemplars, RED/USE,
+Prometheus (exporters, scrape, recording rules, retention, remote write), long-term
+storage, Grafana and dashboards as code, log and trace backends, continuous
+profiling, Alertmanager and the **cost** of telemetry.
 
 Triggers: `prometheus.yml`, `rules/*.yml`, `alertmanager.yml`, `otel-collector-config.yaml`,
 `config.alloy`, `loki-config.yaml`, `tempo.yaml`, `mimir.yaml`, `grafana.ini`,
 `provisioning/`, `dashboard.json`, `OTEL_*` env vars, PromQL/LogQL/TraceQL, `promtool`,
-`amtool`, `otelcol`, `weaver`, "cardinalidad", "exemplar", "tail sampling", "trace_id".
+`amtool`, `otelcol`, `weaver`, "cardinality", "exemplar", "tail sampling", "trace_id".
 
-**No aplica**: ver `sre-practice-standards` (SLO, error budget, on-call, postmortems: aquí
-solo la mecánica de la alerta y su ruteo), `onprem-standards` (node_exporter y
-monitorización básica de flota), `kubernetes-standards` (Prometheus Operator,
-ServiceMonitor y despliegue del stack en el clúster), `networking-standards` (telemetría de
-flujos NetFlow/IPFIX y señales de red), `dataviz` (diseño visual del gráfico: tipo de marca,
-color, ejes, leyendas), `aws-standards`/`azure-standards`/`gcp-standards` (CloudWatch,
-Azure Monitor, Cloud Monitoring), `detection-engineering-standards` (telemetría de seguridad,
-SIEM y reglas de detección; la frontera es el propósito, no la herramienta — el mismo log alimenta
-ambas, aquí para diagnosticar, allí para detectar), `incident-management-standards` (declaración
-del incidente, mando y comunicación, una vez la alerta ha disparado),
-`privacy-engineering-standards` (PII que se cuela en logs, trazas y métricas, y su retención),
-`web-performance-standards` (**la plataforma de telemetría, el pipeline OTel y las
-alertas son de aquí**; **qué métrica de experiencia real de usuario se recoge, en qué percentil se
-decide y con qué umbral** es suya — el RUM entra por esta plataforma pero lo interpreta ella),
-`timeseries-db-standards` (**frontera declarada desde su lado y que esta skill acepta**: la serie
-de **negocio o de proceso** —telemetría de sensor, histórico industrial, medición que alguien
-consulta como dato— es suya, con su motor y su retención; **aquí la telemetría de la plataforma**
-—métricas, trazas y logs del sistema para operarlo—. **No se mezclan en el mismo clúster**, y
-Prometheus no es el destino de un dato de proceso), `finops-standards` (**el coste de la
-telemetría es una unidad económica más y se mide con su método**; aquí qué se emite, con qué
-cardinalidad y cuánto se retiene — la cardinalidad es la palanca de coste, y esta skill la posee),
-`platform-engineering-standards` (el *stack* de telemetría como producto interno del camino
-pavimentado), `performance-engineering-standards` (el perfilado continuo se ingiere y se
-almacena aquí; **qué se perfila y cómo se lee un *flame graph*** es suyo).
+**Not applicable**: see `sre-practice-standards` (SLO, error budget, on-call, postmortems: here
+only the mechanics of the alert and its routing), `onprem-standards` (node_exporter and
+basic fleet monitoring), `kubernetes-standards` (Prometheus Operator,
+ServiceMonitor and deploying the stack in the cluster), `networking-standards` (NetFlow/IPFIX
+flow telemetry and network signals), `dataviz` (visual design of the chart: mark type,
+colour, axes, legends), `aws-standards`/`azure-standards`/`gcp-standards` (CloudWatch,
+Azure Monitor, Cloud Monitoring), `detection-engineering-standards` (security telemetry,
+SIEM and detection rules; the boundary is the purpose, not the tool — the same log feeds
+both, here to diagnose, there to detect), `incident-management-standards` (declaring
+the incident, command and communication, once the alert has fired),
+`privacy-engineering-standards` (PII that leaks into logs, traces and metrics, and its retention),
+`web-performance-standards` (**the telemetry platform, the OTel pipeline and the
+alerts belong here**; **which real user experience metric is collected, at which percentile it is
+decided and with what threshold** is theirs — RUM arrives through this platform but they interpret it),
+`timeseries-db-standards` (**boundary declared from their side and accepted by this skill**: the
+**business or process** series —sensor telemetry, industrial historian, a measurement someone
+queries as data— is theirs, with its own engine and its own retention; **here, platform telemetry**
+—metrics, traces and logs of the system in order to operate it—. **They are not mixed in the same cluster**, and
+Prometheus is not the destination for a process datapoint), `finops-standards` (**the cost of
+telemetry is one more economic unit and is measured with their method**; here, what is emitted, with what
+cardinality and how long it is retained — cardinality is the cost lever, and this skill owns it),
+`platform-engineering-standards` (the telemetry *stack* as an internal product of the paved
+path), `performance-engineering-standards` (continuous profiling is ingested and
+stored here; **what is profiled and how a *flame graph* is read** is theirs).
 
-**Principio rector**: sin telemetría no hay producción, pero **el coste es una restricción
-de diseño de primera clase**, no una sorpresa de facturación. La telemetría que nadie
-consulta se paga igual que la que salva un incidente: se decide qué se emite **antes** de
-emitirlo, y toda señal existe para responder una pregunta concreta.
+**Guiding principle**: without telemetry there is no production, but **cost is a first-class
+design constraint**, not a billing surprise. Telemetry nobody queries is paid for the
+same as the telemetry that saves an incident: decide what is emitted **before**
+emitting it, and every signal exists to answer a concrete question.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Versiones verificadas ago-2026. **Verificar la última estable por web antes de fijarla en
-> un proyecto real** (§8): este stack publica cada pocas semanas.
+> Versions verified Aug 2026. **Verify the latest stable on the web before pinning it in
+> a real project** (§8): this stack ships every few weeks.
 
-| Ámbito | Por defecto | Prohibido / alternativa |
+| Area | Default | Forbidden / alternative |
 |---|---|---|
-| Instrumentación | **OpenTelemetry** (spec 1.59.0): trazas API/SDK/protocolo **estables**, logs estables (Bridge API), métricas API y protocolo estables con **SDK "mixed"**, **profiles en Development** | Depender de *profiles* en producción; instrumentación propietaria del vendor que ate el código al backend |
-| Métricas | **Prometheus 3.13 LTS** (3.13.2, jul-2026, EOL jul-2027) | Prometheus 3.5 LTS (**EOL jul-2026**, ya vencida); minor no-LTS en prod si no vas a actualizar cada 6 semanas |
-| Recolección/pipeline | **OTel Collector v0.157.0** (`v1.63.0/v0.157.0`) en patrón **agent (DaemonSet) → gateway** | Un único Collector para toda la plataforma; componentes `alpha` en el camino crítico |
-| Alternativa de agente | **Grafana Alloy 1.18.0** si ya vives en el ecosistema Grafana | **Promtail: EOL 2-mar-2026** — migración a Alloy obligatoria, no opcional |
-| Logs | **Loki 3.7.4** con schema v13 y `structured_metadata` habilitado | Elastic/OpenSearch sin necesidad real de búsqueda full-text (coste y operación muy superiores) |
-| Trazas | **Tempo 3.0.2** (TraceQL) | Jaeger **v2.20.0** solo si ya está desplegado; Zipkin en proyectos nuevos |
-| Métricas a largo plazo | **Mimir 3.1.4** cuando un Prometheus deje de bastar | Thanos o VictoriaMetrics son alternativas válidas y justificables; **desplegar cualquiera de los tres "por si acaso"** con un solo Prometheus por delante, no (KISS) |
-| Dashboards | **Grafana 13.1.x** (13.1.1, jun-2026); 12.4 (EOL may-2027) si necesitas ciclo más largo | Dashboards creados solo por UI y sin versionar |
-| Dashboards como código | **Git Sync** (GA abr-2026) + **Grafana Foundation SDK** (Go/TS/Python/Java/PHP) | **Grafonnet: no soportado oficialmente** — no empezar nada nuevo ahí. Perses (CNCF Sandbox) solo si quieres una capa de dashboards pura sin alertas ni almacenamiento |
-| Alertas | **Alertmanager 0.33.1** (o Grafana Alerting unificado, uno de los dos, no ambos) | Dos sistemas de alerta en paralelo: nadie sabe cuál despertó a quién |
-| Profiling continuo | **Pyroscope 2.2.0** en servicios con problemas de CPU/memoria recurrentes | Profiling continuo en toda la flota "por completitud" (coste sin pregunta que responder) |
-| Formato de log | **JSON estructurado** con `trace_id`, `span_id`, `service.name`, nivel y timestamp ISO-8601 UTC | Logs de texto libre parseados con regex en el backend |
-| Propagación de contexto | **W3C `traceparent`/`tracestate`** en HTTP, gRPC y cabeceras de mensajes | Cabeceras propietarias (B3, X-Request-ID sueltos) sin puente a W3C |
+| Instrumentation | **OpenTelemetry** (spec 1.59.0): traces API/SDK/protocol **stable**, logs stable (Bridge API), metrics API and protocol stable with a **"mixed" SDK**, **profiles in Development** | Depending on *profiles* in production; vendor-proprietary instrumentation that ties the code to the backend |
+| Metrics | **Prometheus 3.13 LTS** (3.13.2, Jul 2026, EOL Jul 2027) | Prometheus 3.5 LTS (**EOL Jul 2026**, already expired); a non-LTS minor in prod if you are not going to upgrade every 6 weeks |
+| Collection/pipeline | **OTel Collector v0.157.0** (`v1.63.0/v0.157.0`) in an **agent (DaemonSet) → gateway** pattern | A single Collector for the whole platform; `alpha` components on the critical path |
+| Agent alternative | **Grafana Alloy 1.18.0** if you already live in the Grafana ecosystem | **Promtail: EOL 2 Mar 2026** — migrating to Alloy is mandatory, not optional |
+| Logs | **Loki 3.7.4** with schema v13 and `structured_metadata` enabled | Elastic/OpenSearch without a real need for full-text search (far higher cost and operational burden) |
+| Traces | **Tempo 3.0.2** (TraceQL) | Jaeger **v2.20.0** only if already deployed; Zipkin on new projects |
+| Long-term metrics | **Mimir 3.1.4** when one Prometheus stops being enough | Thanos or VictoriaMetrics are valid and defensible alternatives; **deploying any of the three "just in case"** with a single Prometheus in front, no (KISS) |
+| Dashboards | **Grafana 13.1.x** (13.1.1, Jun 2026); 12.4 (EOL May 2027) if you need a longer cycle | Dashboards created only through the UI and not versioned |
+| Dashboards as code | **Git Sync** (GA Apr 2026) + **Grafana Foundation SDK** (Go/TS/Python/Java/PHP) | **Grafonnet: not officially supported** — do not start anything new there. Perses (CNCF Sandbox) only if you want a pure dashboard layer with no alerting or storage |
+| Alerting | **Alertmanager 0.33.1** (or unified Grafana Alerting, one of the two, not both) | Two alerting systems in parallel: nobody knows which one woke whom |
+| Continuous profiling | **Pyroscope 2.2.0** on services with recurring CPU/memory problems | Continuous profiling across the whole fleet "for completeness" (cost with no question to answer) |
+| Log format | **Structured JSON** with `trace_id`, `span_id`, `service.name`, level and ISO-8601 UTC timestamp | Free-text logs parsed with regex in the backend |
+| Context propagation | **W3C `traceparent`/`tracestate`** over HTTP, gRPC and message headers | Proprietary headers (B3, loose X-Request-ID) with no bridge to W3C |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-**Correlación: la propiedad que hace útil al conjunto**
-- Los tres pilares valen por su **correlación**, no por existir: `trace_id` en todos los
-  logs, **exemplars** en histogramas para saltar de la métrica a la traza, enlace de traza
-  a logs y a perfil. Una traza que no se puede alcanzar desde el gráfico donde ves el
-  problema no se usará nunca.
-- Exemplars: habilitar `storage.exemplars.max_exemplars` (Prometheus/Mimir) y el enlace
-  interno al datasource de trazas en Grafana. Los histogramas nativos mapean sin pérdida a
-  los *exponential histograms* de OTLP y conservan exemplars.
+**Correlation: the property that makes the whole thing useful**
+- The three pillars are worth something for their **correlation**, not for existing: `trace_id` in all
+  logs, **exemplars** on histograms to jump from the metric to the trace, linking from trace
+  to logs and to profile. A trace you cannot reach from the chart where you see the
+  problem will never be used.
+- Exemplars: enable `storage.exemplars.max_exemplars` (Prometheus/Mimir) and the internal
+  link to the trace datasource in Grafana. Native histograms map losslessly to
+  OTLP *exponential histograms* and preserve exemplars.
 
-**Convenciones semánticas y naming**
-- Usa las **semantic conventions de OpenTelemetry**; no inventes atributos que ya existen.
-  Si necesitas atributos propios, decláralos en un registry con **Weaver** y valida en CI
-  (`weaver check`): la telemetría es una API pública, con versión y política de cambios.
-- Dos convenciones de naming coexisten y **hay que elegir una por plataforma y escribirla**:
-  Prometheus (unidades base, sufijos `_total`, `_seconds`) frente a OTel (puntos y unidades
-  UCUM). La traducción OTLP→Prometheus se controla con `translation_strategy`, cuyo valor
-  por defecto es `UnderscoreEscapingWithSuffixes`; `NoTranslation` exige UTF-8 habilitado, y
-  **cualquier estrategia sin sufijos permite colisiones** entre métricas del mismo nombre
-  con distinto tipo o unidad.
-- Métrica sin unidad en el nombre, o con unidad distinta de la base, es un bug de contrato.
+**Semantic conventions and naming**
+- Use the **OpenTelemetry semantic conventions**; do not invent attributes that already exist.
+  If you need your own attributes, declare them in a registry with **Weaver** and validate in CI
+  (`weaver check`): telemetry is a public API, with a version and a change policy.
+- Two naming conventions coexist and **you must pick one per platform and write it down**:
+  Prometheus (base units, `_total`, `_seconds` suffixes) versus OTel (dots and UCUM
+  units). The OTLP→Prometheus translation is controlled with `translation_strategy`, whose default
+  value is `UnderscoreEscapingWithSuffixes`; `NoTranslation` requires UTF-8 enabled, and
+  **any strategy without suffixes allows collisions** between metrics of the same name
+  with a different type or unit.
+- A metric without a unit in the name, or with a unit other than the base one, is a contract bug.
 
-**Diseño de labels y control de cardinalidad** (la decisión con más impacto en la factura)
-- **Nunca** como label/atributo de métrica: `user_id`, `request_id`, `trace_id`, email, URL
-  con parámetros de ruta, nombre de pod con hash, IP, timestamp. Son dimensiones ilimitadas.
-- Regla: un label debe tener valores **acotados y conocidos de antemano**, y alguien debe
-  agrupar o filtrar por él en un dashboard o alerta real. Si no, no es un label.
-- Coste: cada serie activa ocupa del orden de **1-8 KiB** en el *head block* (las
-  estimaciones varían mucho por fuente; mide, no supongas) y el RSS real puede duplicar el
-  cálculo. Vigila `prometheus_tsdb_head_series` y planifica antes de la presión de memoria.
-- Diagnóstico: `/api/v1/status/tsdb?limit=50`, `promtool tsdb analyze /prometheus`,
-  `topk(10, count by (__name__)({__name__=~".+"}))` y churn con
-  `topk(20, increase(scrape_series_added[1h]))`. Comprueba también el doble scrape (mismo
-  target vía servicio y vía pods): duplica series sin aportar nada.
-- Contención: `sample_limit` por scrape, `metric_relabel_configs` para tirar lo que no se
-  usa. Ojo: el drop ocurre **antes** del almacenamiento y es irreversible — confirma que
-  nadie lo usa en dashboards ni alertas antes de aplicarlo.
-- **Loki tiene la misma disciplina con otro nombre**: pocos labels estáticos (límite por
-  defecto 15) y todo lo de alta cardinalidad pero buscable a **structured metadata**
-  (requiere `allow_structured_metadata: true` y schema ≥ v13).
+**Label design and cardinality control** (the decision with the biggest impact on the bill)
+- **Never** as a metric label/attribute: `user_id`, `request_id`, `trace_id`, email, URL
+  with path parameters, pod name with a hash, IP, timestamp. They are unbounded dimensions.
+- Rule: a label must have **bounded values known in advance**, and somebody must
+  group or filter by it in a real dashboard or alert. If not, it is not a label.
+- Cost: each active series takes on the order of **1-8 KiB** in the *head block* (the
+  estimates vary a lot by source; measure, do not assume) and real RSS can double the
+  calculation. Watch `prometheus_tsdb_head_series` and plan ahead of memory pressure.
+- Diagnosis: `/api/v1/status/tsdb?limit=50`, `promtool tsdb analyze /prometheus`,
+  `topk(10, count by (__name__)({__name__=~".+"}))` and churn with
+  `topk(20, increase(scrape_series_added[1h]))`. Check for double scraping too (same
+  target via the service and via pods): it doubles series while adding nothing.
+- Containment: `sample_limit` per scrape, `metric_relabel_configs` to drop what is not
+  used. Careful: the drop happens **before** storage and is irreversible — confirm that
+  nobody uses it in dashboards or alerts before applying it.
+- **Loki has the same discipline under another name**: few static labels (default
+  limit 15) and everything high-cardinality but searchable into **structured metadata**
+  (requires `allow_structured_metadata: true` and schema ≥ v13).
 
-**Qué medir: RED y USE, no "todo"**
-- **RED** para servicios y peticiones: *Rate*, *Errors*, *Duration*.
-- **USE** para recursos (CPU, memoria, disco, colas, pools): *Utilization*, *Saturation*,
+**What to measure: RED and USE, not "everything"**
+- **RED** for services and requests: *Rate*, *Errors*, *Duration*.
+- **USE** for resources (CPU, memory, disk, queues, pools): *Utilization*, *Saturation*,
   *Errors*.
-- En sistemas de mensajería, el **lag del consumidor** y la profundidad de la DLQ son SLI de
-  primera clase, no métricas secundarias.
+- In messaging systems, **consumer lag** and DLQ depth are first-class SLIs,
+  not secondary metrics.
 
-**Pipeline del Collector — el orden de los processors no es cosmético**
+**Collector pipeline — the order of the processors is not cosmetic**
 ```yaml
 processors:
   memory_limiter:            # SIEMPRE el primero: aplica backpressure antes del OOM
@@ -136,168 +136,168 @@ processors:
     timeout: 5s
     send_batch_size: 8192
 ```
-- El límite de memoria del contenedor debe ser **mayor** que el del `memory_limiter`, o el
-  orquestador matará el proceso antes de que pueda aplicar backpressure.
-- `sending_queue` grande + batches grandes pueden superar el techo bajo un pico: se
-  dimensionan juntos.
+- The container memory limit must be **higher** than the `memory_limiter` one, or the
+  orchestrator will kill the process before it can apply backpressure.
+- A large `sending_queue` + large batches can exceed the ceiling under a spike: they are
+  sized together.
 
-## 4. Gates de calidad obligatorios
+## 4. Mandatory quality gates
 
-- **Validación en CI**: `promtool check config`, `promtool check rules`, `amtool check-config`,
-  validación del YAML del Collector y `weaver check` del registry de convenciones propio.
-- **Unit tests de reglas de alerta** (`promtool test rules`): toda alerta nueva llega con un
-  test que demuestra que dispara con la serie que debe dispararla y **no** con la que no.
-- **Toda alerta lleva `runbook_url`, dueño y severidad**; sin runbook no se mergea.
-- **Revisión de instrumentación en PR**: nombre, unidad, tipo y **labels acotados**. Un
-  label nuevo de cardinalidad desconocida es un bloqueo, no un comentario.
-- **Gate de cardinalidad** antes de producción: medir series añadidas por el cambio en
-  staging y rechazar lo que crezca sin explicación.
-- **Dashboards y alertas versionados** (Git Sync + Foundation SDK) y desplegados por
-  pipeline; lo creado a mano en la UI se pierde o diverge.
-- **Prueba de propagación extremo a extremo** en el test de integración: una petición genera
-  una traza completa, con `trace_id` presente en los logs de todos los saltos. Si se rompe
-  en el primer salto, la observabilidad distribuida no existe.
+- **Validation in CI**: `promtool check config`, `promtool check rules`, `amtool check-config`,
+  validation of the Collector YAML and `weaver check` of your own conventions registry.
+- **Unit tests for alerting rules** (`promtool test rules`): every new alert arrives with a
+  test proving that it fires with the series that must fire it and **not** with the one that must not.
+- **Every alert carries `runbook_url`, an owner and a severity**; without a runbook it is not merged.
+- **Instrumentation review in the PR**: name, unit, type and **bounded labels**. A
+  new label of unknown cardinality is a block, not a comment.
+- **Cardinality gate** before production: measure the series added by the change in
+  staging and reject anything that grows without explanation.
+- **Versioned dashboards and alerts** (Git Sync + Foundation SDK) deployed by
+  pipeline; anything hand-made in the UI gets lost or diverges.
+- **End-to-end propagation test** in the integration test: one request generates
+  a complete trace, with `trace_id` present in the logs of every hop. If it breaks
+  at the first hop, distributed observability does not exist.
 
-## 5. Seguridad y privacidad
+## 5. Security and privacy
 
-- **Sin PII en telemetría**: ni en labels, ni en atributos de span, ni en mensajes de log.
-  La redacción se hace **en el borde** (processor `transform`/`filter` del agente), no
-  confiando en que el backend lo oculte al pintar.
-- Riesgos habituales que se cuelan solos: URLs con tokens en query string, cabeceras
-  `Authorization`, cuerpos de petición y respuesta, mensajes de error con datos de negocio,
-  y stack traces con rutas y credenciales internas.
-- **Cardinalidad como vector de DoS**: si un label toma su valor de una entrada del usuario
-  (path, user-agent, parámetro), un atacante puede tumbar el TSDB. Acota en el código, no
-  en el backend.
-- OTLP siempre con **TLS y autenticación**; el endpoint del Collector es un punto de entrada
-  a la red interna, no un buzón abierto. Mínimo privilegio en los exportadores y credenciales
-  desde gestor de secretos, jamás en el YAML del repo.
-- **Retención por finalidad y minimización** (GDPR): la telemetría operativa no es un
-  almacén de datos personales. **Defaults de esta skill, para que exista un número y no una
-  intención**: trazas **7 días**, logs de aplicación **30 días**, métricas agregadas **13 meses**
-  (comparación interanual). Todo lo que exceda esos plazos se justifica por escrito con su
-  finalidad, y si la finalidad es normativa **el plazo lo fija `grc-compliance-standards`, no
-  esta skill**. La minimización y el dato personal dentro de la telemetría son de
-  `privacy-engineering-standards`; **el número por defecto y el coste de sostenerlo son de aquí**.
-- Grafana: RBAC por equipo, acceso anónimo desactivado, credenciales de datasource
-  provisionadas por secreto (nunca embebidas en JSON de dashboard exportado).
-- Los **logs de auditoría/seguridad se separan** de la telemetría operativa: integridad,
-  retención y control de acceso distintos (y su destino natural es el SIEM, no Loki).
+- **No PII in telemetry**: not in labels, not in span attributes, not in log messages.
+  Redaction happens **at the edge** (agent `transform`/`filter` processor), not by
+  trusting the backend to hide it at render time.
+- Common risks that sneak in by themselves: URLs with tokens in the query string,
+  `Authorization` headers, request and response bodies, error messages with business data,
+  and stack traces with internal paths and credentials.
+- **Cardinality as a DoS vector**: if a label takes its value from user input
+  (path, user-agent, parameter), an attacker can take down the TSDB. Bound it in the code, not
+  in the backend.
+- OTLP always with **TLS and authentication**; the Collector endpoint is an entry point
+  into the internal network, not an open mailbox. Least privilege on exporters and credentials
+  from a secrets manager, never in the repo's YAML.
+- **Retention by purpose and minimisation** (GDPR): operational telemetry is not a
+  personal-data store. **Defaults from this skill, so that a number exists instead of an
+  intention**: traces **7 days**, application logs **30 days**, aggregated metrics **13 months**
+  (year-on-year comparison). Anything exceeding those periods is justified in writing with its
+  purpose, and if the purpose is regulatory **the period is set by `grc-compliance-standards`, not
+  this skill**. Minimisation and personal data inside telemetry belong to
+  `privacy-engineering-standards`; **the default number and the cost of sustaining it belong here**.
+- Grafana: RBAC per team, anonymous access disabled, datasource credentials
+  provisioned from a secret (never embedded in exported dashboard JSON).
+- **Audit/security logs are kept separate** from operational telemetry: different integrity,
+  retention and access control (and their natural destination is the SIEM, not Loki).
 
-## 6. Rendimiento, coste y operabilidad
+## 6. Performance, cost and operability
 
-**El coste manda en el diseño**
-- Primero entiende **qué unidad te cobran**, porque define qué optimizar: hosts + métricas
-  custom + GB/eventos indexados (Datadog), **series activas** + GB de logs/trazas (Grafana
-  Cloud), eventos (Honeycomb), GB ingeridos + usuarios (New Relic). Autohospedado también se
-  paga: RAM del head block, disco y almacenamiento de objetos.
-- Palancas, **en este orden** (de más a menos efectiva):
-  1. **No generar** lo que nadie consulta (la reducción más barata siempre).
-  2. **Agregar antes de ingerir**: stream aggregation (VictoriaMetrics), Adaptive Metrics
-     (Grafana Cloud), agregación en el Collector. Reducciones típicas del 20-50%.
-  3. **Drop en el scrape** por `metric_relabel_configs`.
-  4. **Recording rules** para consultas caras — pero ojo: se calculan sobre datos ya
-     almacenados, así que **pagas la cardinalidad primero**; no son reducción de ingesta.
-  5. **Retención escalonada** a object storage.
-  6. **Muestreo** de trazas.
-- Antes de agregar o tirar algo, comprueba su uso real (dashboards, alertas, queries). Y
-  asume el precio: agregado es irreversible hacia atrás.
+**Cost drives the design**
+- First understand **which unit you are billed on**, because it defines what to optimise: hosts + custom
+  metrics + indexed GB/events (Datadog), **active series** + GB of logs/traces (Grafana
+  Cloud), events (Honeycomb), GB ingested + users (New Relic). Self-hosting is also
+  paid for: head block RAM, disk and object storage.
+- Levers, **in this order** (from most to least effective):
+  1. **Not generating** what nobody queries (always the cheapest reduction).
+  2. **Aggregate before ingesting**: stream aggregation (VictoriaMetrics), Adaptive Metrics
+     (Grafana Cloud), aggregation in the Collector. Typical reductions of 20-50%.
+  3. **Drop at scrape time** via `metric_relabel_configs`.
+  4. **Recording rules** for expensive queries — but careful: they are computed over data already
+     stored, so **you pay the cardinality first**; they are not an ingestion reduction.
+  5. **Tiered retention** to object storage.
+  6. **Trace sampling**.
+- Before aggregating or dropping something, check its actual usage (dashboards, alerts, queries). And
+  accept the price: aggregation is irreversible backwards.
 
-**Muestreo de trazas**
-- **Head sampling** (`parentbased_traceidratio`): barato, decidido al inicio, escala trivial
-  — pero no puede quedarse con el error raro porque aún no ha ocurrido.
-- **Tail sampling**: decide con la traza completa (quédate errores y colas de latencia),
-  pero exige que **todos los spans de una traza lleguen al mismo Collector**: capa de
-  balanceo con `load_balancing` exporter, `routing_key: traceID`, backends estables
-  (StatefulSet + headless service) y una segunda capa que muestrea. Misma restricción para
-  `spanmetrics` y `servicegraph`.
-- **Sesgo, el error que se paga tarde**: si solo guardas errores y peticiones lentas, todo
-  lo derivado de trazas (percentiles, conteos) miente. Genera las métricas antes de
-  muestrear, no después.
-- En volumen extremo, combina: head sampling ligero en el borde para proteger el pipeline y
-  tail sampling después. Usa *consistent probability sampling* (claves `th`/`rv` en el
-  `tracestate` de OTel) para que la decisión sea coherente entre servicios y re-ponderable.
+**Trace sampling**
+- **Head sampling** (`parentbased_traceidratio`): cheap, decided at the start, trivially scalable
+  — but it cannot keep the rare error because it has not happened yet.
+- **Tail sampling**: decides with the complete trace (keep errors and latency tails),
+  but requires that **all spans of a trace reach the same Collector**: a balancing
+  layer with the `load_balancing` exporter, `routing_key: traceID`, stable backends
+  (StatefulSet + headless service) and a second layer that samples. Same constraint for
+  `spanmetrics` and `servicegraph`.
+- **Bias, the error you pay for late**: if you only keep errors and slow requests, everything
+  derived from traces (percentiles, counts) lies. Generate the metrics before
+  sampling, not after.
+- At extreme volume, combine: light head sampling at the edge to protect the pipeline and
+  tail sampling afterwards. Use *consistent probability sampling* (`th`/`rv` keys in OTel's
+  `tracestate`) so the decision is coherent across services and re-weightable.
 
-**Alertas que no queman a nadie**
-- Alerta sobre **síntomas** (golden signals y SLO), no sobre causas internas. Cada alerta
-  responde a: ¿hay impacto en el usuario y hay algo que hacer **ahora**? Si no, no es página.
-- **Multi-window multi-burn-rate** sobre el error budget (SRE Workbook, cap. 5): ventana
-  corta y larga que deben cumplirse a la vez, con varios niveles (p. ej. 14,4× en 1h+5m para
-  el 2% del presupuesto, y niveles más lentos para el desgaste sostenido). **La ventana del
-  presupuesto la fija `sre-practice-standards` (28 días *rolling* por defecto) y esta skill la
-  toma de allí**: calcular el *burn rate* sobre otra ventana produce una alerta distinta con el
-  mismo nombre, que es el error caro. La
-  ventana larga es lo que evita despertar a alguien por un pico de 5 minutos ya resuelto.
-- Limitación conocida: con **poco tráfico** el burn rate pierde señal (pocas muestras en la
-  ventana). Mitiga agrupando servicios o con tráfico sintético — no fingiendo que la alerta
-  funciona. **Cambiar el objetivo no es una mitigación de esta skill**: el SLO y su
-  renegociación son de `sre-practice-standards`, y un objetivo que se baja para que la alerta
-  calle es un objetivo falseado.
-- Alertmanager: árbol de rutas por equipo/severidad, `group_by` con las etiquetas que
-  definen *un* incidente (no `...`), `inhibit_rules` para que la causa raíz silencie a los
-  derivados, `mute_time_intervals` para ventanas conocidas, y **silencios siempre con
-  caducidad**.
-- **Higiene**: alerta que se ignora sistemáticamente o que no tiene acción posible **se
-  borra**. Revisión periódica de alertas disparadas vs. acciones tomadas.
+**Alerts that do not burn anyone out**
+- Alert on **symptoms** (golden signals and SLO), not on internal causes. Every alert
+  answers: is there user impact and is there something to do **now**? If not, it is not a page.
+- **Multi-window multi-burn-rate** over the error budget (SRE Workbook, ch. 5): a short and a
+  long window that must both hold, with several levels (e.g. 14.4× over 1h+5m for
+  2% of the budget, and slower levels for sustained burn). **The budget window
+  is set by `sre-practice-standards` (28 days *rolling* by default) and this skill
+  takes it from there**: computing the *burn rate* over another window produces a different alert with the
+  same name, which is the expensive mistake. The
+  long window is what stops you waking someone for a 5-minute spike that has already resolved.
+- Known limitation: with **low traffic** the burn rate loses signal (few samples in the
+  window). Mitigate by grouping services or with synthetic traffic — not by pretending the alert
+  works. **Changing the objective is not a mitigation owned by this skill**: the SLO and its
+  renegotiation belong to `sre-practice-standards`, and an objective lowered so the alert
+  goes quiet is a falsified objective.
+- Alertmanager: route tree by team/severity, `group_by` with the labels that
+  define *one* incident (not `...`), `inhibit_rules` so the root cause silences the
+  derived ones, `mute_time_intervals` for known windows, and **silences always with
+  an expiry**.
+- **Hygiene**: an alert that is systematically ignored or that has no possible action **is
+  deleted**. Periodic review of alerts fired vs. actions taken.
 
-**Dashboards por audiencia** (el diseño visual es de `dataviz`; aquí, el contenido)
-- Uno **de servicio** en una pantalla con RED y estado del SLO; uno **de recursos** con USE;
-  uno **de negocio** si hay quien lo mire. Nada de muros de 60 paneles que nadie lee en un
-  incidente. Cada panel responde a una pregunta y su ausencia se nota.
+**Dashboards by audience** (the visual design belongs to `dataviz`; here, the content)
+- One **service** dashboard on a single screen with RED and SLO status; one **resource** one with USE;
+  one **business** one if there is someone to look at it. No walls of 60 panels that nobody reads during an
+  incident. Every panel answers a question and its absence is noticed.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: seguir la línea **LTS** de Prometheus (3.13 hasta jul-2027); Grafana con
-  major cada ~6 meses leyendo breaking changes; el Collector publica muy rápido — **fija la
-  versión por tag/digest** y actualiza de forma planificada.
-- **Migraciones vivas que no admiten aplazamiento**: Promtail EOL (mar-2026) → Alloy;
-  schema de Loki a v13 para structured metadata; plugins Angular retirados en Grafana.
-- La telemetría se **retira** como se añade: una métrica, dashboard o alerta que deja de
-  usarse se elimina con la misma PR que la deja huérfana.
+- **Cadence**: follow the Prometheus **LTS** line (3.13 until Jul 2027); Grafana with a
+  major every ~6 months, reading the breaking changes; the Collector ships very fast — **pin the
+  version by tag/digest** and upgrade in a planned way.
+- **Live migrations that admit no delay**: Promtail EOL (Mar 2026) → Alloy;
+  Loki schema to v13 for structured metadata; Angular plugins removed in Grafana.
+- Telemetry is **retired** the way it is added: a metric, dashboard or alert that stops being
+  used is removed in the same PR that orphans it.
 
-**PROHIBIDO**
-- ❌ Labels o atributos de métrica de cardinalidad ilimitada (`user_id`, `request_id`,
-  `trace_id`, IP, URL con parámetros, nombre de pod con hash).
-- ❌ Emitir telemetría "por si acaso" sin pregunta que responda ni presupuesto asignado.
-- ❌ Logs de texto libre sin estructura, o logs sin `trace_id` en un sistema distribuido.
-- ❌ Alerta sin runbook, sin dueño o que no requiere acción humana inmediata.
-- ❌ Silencios permanentes o sin caducidad; alertas ruidosas mantenidas "por si acaso".
-- ❌ Alertar sobre causas (CPU al 90%) en lugar de síntomas con impacto (SLO quemándose).
-- ❌ Tail sampling sin capa de balanceo por `traceID`: produce trazas fragmentadas y
-  decisiones incorrectas en silencio.
-- ❌ Derivar métricas (percentiles, conteos) **después** de muestrear y presentarlas como
-  exactas.
-- ❌ `memory_limiter` que no sea el primer processor, o `batch` antes del filtrado/muestreo.
-- ❌ Dashboards y alertas que solo existen en la UI, sin versionar ni provisionar.
-- ❌ PII, secretos o cabeceras de autorización en logs, spans o labels.
-- ❌ Exponer OTLP sin TLS ni autenticación.
-- ❌ Empezar dashboards nuevos en Grafonnet (sin soporte oficial) o seguir con Promtail (EOL).
-- ❌ Desplegar Thanos/Mimir/VictoriaMetrics antes de que un Prometheus se quede corto.
-- ❌ Ejecutar versiones EOL del stack (Prometheus 3.5 LTS venció en jul-2026) sin plan fechado.
-- ❌ Dos sistemas de alerta en paralelo (Alertmanager + Grafana Alerting) sobre las mismas reglas.
+**FORBIDDEN**
+- ❌ Metric labels or attributes of unbounded cardinality (`user_id`, `request_id`,
+  `trace_id`, IP, URL with parameters, pod name with a hash).
+- ❌ Emitting telemetry "just in case" with no question to answer and no budget assigned.
+- ❌ Free-text logs with no structure, or logs without `trace_id` in a distributed system.
+- ❌ An alert with no runbook, no owner, or that does not require immediate human action.
+- ❌ Permanent or non-expiring silences; noisy alerts kept "just in case".
+- ❌ Alerting on causes (CPU at 90%) instead of symptoms with impact (SLO burning).
+- ❌ Tail sampling without a balancing layer by `traceID`: it produces fragmented traces and
+  silently incorrect decisions.
+- ❌ Deriving metrics (percentiles, counts) **after** sampling and presenting them as
+  exact.
+- ❌ A `memory_limiter` that is not the first processor, or `batch` before filtering/sampling.
+- ❌ Dashboards and alerts that exist only in the UI, not versioned or provisioned.
+- ❌ PII, secrets or authorization headers in logs, spans or labels.
+- ❌ Exposing OTLP without TLS or authentication.
+- ❌ Starting new dashboards in Grafonnet (no official support) or staying on Promtail (EOL).
+- ❌ Deploying Thanos/Mimir/VictoriaMetrics before one Prometheus falls short.
+- ❌ Running EOL versions of the stack (Prometheus 3.5 LTS expired in Jul 2026) with no dated plan.
+- ❌ Two alerting systems in parallel (Alertmanager + Grafana Alerting) over the same rules.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión o estado de feature, **búscalo — no lo recuerdes**.
-Verificado ago-2026 (caduca rápido): Prometheus **3.13.2 LTS** (jul-2026, EOL jul-2027) y
-3.5 LTS **ya EOL**; Grafana **13.1.1** (13.0.4, y 12.4.x con EOL may-2027); OTel spec
+Before pinning any version or feature status, **look it up — do not recall it**.
+Verified Aug 2026 (expires fast): Prometheus **3.13.2 LTS** (Jul 2026, EOL Jul 2027) and
+3.5 LTS **already EOL**; Grafana **13.1.1** (13.0.4, and 12.4.x with EOL May 2027); OTel spec
 **1.59.0**; OTel Collector **v1.63.0/v0.157.0**; Grafana Alloy **1.18.0**; Loki **3.7.4**;
 Tempo **3.0.2**; Mimir **3.1.4**; Pyroscope **2.2.0**; Alertmanager **0.33.1**;
-Jaeger **v2.20.0**; Git Sync GA desde abr-2026; Promtail EOL 2-mar-2026.
+Jaeger **v2.20.0**; Git Sync GA since Apr 2026; Promtail EOL 2 Mar 2026.
 
-1. **Estado por señal de OpenTelemetry** en `opentelemetry.io/docs/specs/status/`: trazas
-   estables, logs estables (Bridge API), métricas con SDK "mixed", **profiles en
-   Development**. No prometas lo que aún no es estable.
-2. **Estabilidad del componente concreto** del Collector que vayas a usar (el core es
-   "mixed"): está en el README de cada componente, no en la versión del binario.
-3. **Última LTS y EOL** de Prometheus y Grafana (endoflife.date) antes de fijar versión.
-4. Estado de features que cambian de sitio: native histograms, remote write 2.0, receptor
-   OTLP y UTF-8 en Prometheus; bloom filters y schema en Loki; TraceQL en Tempo.
-5. Versiones y estado de VictoriaMetrics, Thanos, Parca, OBI/Beyla y el operador de
-   OpenTelemetry — **no verificados en este documento**.
-6. **Modelo y unidad de cobro vigentes** del backend gestionado antes de comprometer un
-   diseño: la unidad facturable cambia lo que hay que optimizar, y los precios rotan.
-7. Convenciones semánticas: qué grupos están ya estables para tu dominio (HTTP, base de
-   datos, mensajería, gen-ai) antes de inventar atributos propios.
+1. **Status per OpenTelemetry signal** at `opentelemetry.io/docs/specs/status/`: traces
+   stable, logs stable (Bridge API), metrics with a "mixed" SDK, **profiles in
+   Development**. Do not promise what is not stable yet.
+2. **Stability of the specific Collector component** you are going to use (the core is
+   "mixed"): it is in each component's README, not in the binary's version.
+3. **Latest LTS and EOL** for Prometheus and Grafana (endoflife.date) before pinning a version.
+4. Status of features that move around: native histograms, remote write 2.0, the OTLP
+   receiver and UTF-8 in Prometheus; bloom filters and schema in Loki; TraceQL in Tempo.
+5. Versions and status of VictoriaMetrics, Thanos, Parca, OBI/Beyla and the OpenTelemetry
+   operator — **not verified in this document**.
+6. **Current billing model and unit** of the managed backend before committing to a
+   design: the billable unit changes what has to be optimised, and prices rotate.
+7. Semantic conventions: which groups are already stable for your domain (HTTP, database,
+   messaging, gen-ai) before inventing your own attributes.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

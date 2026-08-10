@@ -3,50 +3,50 @@ name: blockchain-web3-standards
 description: Blockchain and web3 as infrastructure, custody and regulation — not as smart-contract code. Use when justifying whether a distributed ledger is needed at all versus a signed append-only database, evaluating permissioned ledgers (Hyperledger Fabric, LF Decentralized Trust, R3 Corda, Besu, Quorum), running or outsourcing nodes and JSON-RPC endpoints (geth, erigon, reth, nethermind, lighthouse, Infura, Alchemy, QuickNode, eth_call rate limits, archive versus full node, state growth, snap sync), choosing L1 versus L2 rollups and reading their trust assumptions (L2Beat stages, sequencer centralisation, 7-day optimistic challenge window, forced inclusion, escape hatch), cross-chain bridges and wrapped assets as a loss vector, key custody and signing process (hardware wallet, HSM, multisig, Safe, threshold MPC, seed phrase handling, signing ceremony, key compromise as the dominant theft cause), oracles and price-feed manipulation, MEV, sandwiching and private order flow at the application level, indexing and reorg-safe event ingestion (The Graph, subgraphs, block confirmations, finality), stablecoin and payment rails operations, wallet UX and address poisoning, or the regulatory constraints MiCA (Regulation (EU) 2023/1114), the Transfer of Funds Regulation (EU) 2023/1113 travel rule, AML/KYC on-ramps, accounting and tax treatment.
 ---
 
-# Estándares de blockchain y web3 (infraestructura, custodia y regulación)
+# Blockchain and web3 standards (infrastructure, custody and regulation)
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-### 1.1 La pregunta previa y obligatoria: ¿necesitas una blockchain?
+### 1.1 The prior, mandatory question: do you need a blockchain?
 
-**Esta sección se responde antes que ninguna otra decisión técnica, y por escrito.** La
-respuesta correcta en la gran mayoría de casos empresariales es **no**.
+**This section is answered before any other technical decision, and in writing.** The
+correct answer in the vast majority of enterprise cases is **no**.
 
-Una blockchain solo aporta algo cuando se cumplen **todas** estas condiciones a la vez:
+A blockchain only contributes something when **all** of these conditions hold at once:
 
-1. **Hay varias partes que escriben**, no una sola organización con departamentos.
-2. **Esas partes no se fían entre sí** — ni de un intermediario que pudiera arbitrar.
-3. **No existe (ni puede existir) una autoridad común aceptada** que opere el registro: ni un
-   notario, ni un regulador, ni un consorcio con un tercero de confianza contratado.
-4. **Se necesita resistencia a la censura o a la reversión**, no solo trazabilidad.
-5. **Los participantes no son conocidos ni permanentes**, o el conjunto cambia sin permiso de
-   nadie.
+1. **Several parties write**, not a single organisation with departments.
+2. **Those parties do not trust each other** — nor an intermediary that could arbitrate.
+3. **No common accepted authority exists (or could exist)** to operate the register: no
+   notary, no regulator, no consortium with a contracted trusted third party.
+4. **Censorship or reversal resistance is needed**, not just traceability.
+5. **The participants are neither known nor permanent**, or the set changes without anyone's
+   permission.
 
-Si falla **cualquiera** de las cinco, la respuesta es: **base de datos relacional con registro
-de auditoría inmutable, firma digital por parte y sellado de tiempo**. Eso da integridad,
-no repudio y trazabilidad verificable a una fracción del coste, con transacciones ACID,
-consultas SQL, borrado por GDPR y un DBA que sabe restaurar el backup.
+If **any** of the five fails, the answer is: **relational database with an immutable audit
+log, a digital signature per party and timestamping**. That gives integrity,
+non-repudiation and verifiable traceability at a fraction of the cost, with ACID transactions,
+SQL queries, GDPR deletion and a DBA who knows how to restore the backup.
 
-Corolario incómodo: **la "blockchain privada o permisionada" casi siempre es una base de
-datos cara.** Si un consorcio decide quién puede escribir, quién valida y quién actualiza el
-software, ya existe la autoridad común cuya ausencia justificaba la cadena — y se ha pagado
-por replicación bizantina que nadie necesita. Hyperledger Fabric y Corda son piezas de
-ingeniería serias (ambas **Apache-2.0**, `LICENSE` en crudo), y su valor real cuando se usan
-bien es el **modelo de datos y de identidad compartido entre organizaciones**, no el
-consenso. Antes de adoptarlas: comprobar el estado real del proyecto y su cadencia (§8), y
-qué pasa con la operación si el consorcio se disuelve.
+Uncomfortable corollary: **the "private or permissioned blockchain" is almost always an
+expensive database.** If a consortium decides who may write, who validates and who updates the
+software, the common authority whose absence justified the chain already exists — and you have paid
+for byzantine replication nobody needs. Hyperledger Fabric and Corda are serious pieces of
+engineering (both **Apache-2.0**, raw `LICENSE`), and their real value when used
+well is the **data and identity model shared between organisations**, not the
+consensus. Before adopting them: check the project's real state and its cadence (§8), and
+what happens to operations if the consortium dissolves.
 
-Segundo corolario: **la cadena no valida el mundo físico.** Anclar en un registro inmutable
-un dato que introduce un humano no lo hace verdadero — lo hace *inmutablemente falso*. El
-problema del "oráculo" no es técnico, es epistemológico, y ninguna cadena lo resuelve.
+Second corollary: **the chain does not validate the physical world.** Anchoring in an immutable
+register a datum entered by a human does not make it true — it makes it *immutably false*. The
+"oracle" problem is not technical, it is epistemological, and no chain solves it.
 
-### 1.2 Qué cubre esta skill
+### 1.2 What this skill covers
 
-Infraestructura (nodos, RPC, L1/L2, puentes, indexación), **custodia de claves y proceso
-humano de firma**, oráculos, MEV a nivel de aplicación, y las restricciones regulatorias,
-contables y fiscales que condicionan el diseño.
+Infrastructure (nodes, RPC, L1/L2, bridges, indexing), **key custody and the human
+signing process**, oracles, MEV at the application level, and the regulatory,
+accounting and tax constraints that condition the design.
 
 Triggers: `geth`, `erigon`, `reth`, `nethermind`, `lighthouse`, `prysm`, `eth_call`,
 `eth_getLogs`, `JSON-RPC`, `Infura`, `Alchemy`, `QuickNode`, `archive node`, `snap sync`,
@@ -55,413 +55,413 @@ Triggers: `geth`, `erigon`, `reth`, `nethermind`, `lighthouse`, `prysm`, `eth_ca
 `HSM`, `oracle`, `price feed`, `MEV`, `mempool`, `The Graph`, `subgraph`, `Fabric`,
 `chaincode`, `Corda`, `Besu`, `MiCA`, `travel rule`, `VASP`, `CASP`.
 
-**No aplica**: ver **`solidity-standards`** (**frontera dura y no negociable**: el **contrato
-inteligente**, el **compilador `solc`**, la **EVM**, `pragma`, `evm_version`, proxies y
-actualizabilidad, reentrada, tests de invariantes, fuzzing, verificación formal, auditoría de
-código y gas. **Todo lo que se escribe en `.sol` y todo lo que se despliega es suyo, sin
-excepción**; aquí solo dónde se ejecuta, quién firma, con qué llave y bajo qué norma),
-`cryptography-pki-standards` (elección de algoritmo, curvas, gestión y ciclo de vida de clave
-en HSM/KMS — aquí solo el **proceso operativo de custodia y firma** aplicado a una clave que
-controla valor directamente), `post-quantum-crypto-standards` (**toda** la migración PQC y su
-calendario; la amenaza cuántica sobre ECDSA no se trata aquí), `secrets-management-standards`
-(Vault/KMS, credenciales efímeras, rotación), `identity-access-management-standards`
-(federación, OIDC, JWT y la gobernanza de identidad corporativa),
-`fintech-payments-standards` (**pagos, cuentas, conciliación, PSD2/SEPA y la operación de una
-entidad financiera**; los criptoactivos como medio de pago se coordinan con ella — **no se
-duplica**), `grc-compliance-standards` (marco de riesgo, SoA, evidencia y auditoría; aquí
-solo la traducción a requisito de diseño), `privacy-engineering-standards` (**el conflicto
-estructural entre inmutabilidad y derecho de supresión**: es suyo el criterio, aquí la
-prohibición de escribir datos personales en cadena), `appsec-standards` (metodología STRIDE,
-OWASP y triaje de hallazgos), `incident-response-forensics-standards` (gestión del incidente,
-trazado de fondos y coordinación con exchanges), `offensive-security-standards` (pruebas
-ofensivas con alcance y autorización; **esta skill es defensiva**), `observability-standards`
-(plataforma de telemetría y SLOs), `data-engineering-standards` y `streaming-cdc-standards`
-(los pipelines que ingieren eventos de cadena a un almacén analítico),
-`vulnerability-management-standards` (triaje de CVE del cliente de nodo),
-`opensource-licensing-standards` (licencias del stack), `rust-standards` / `go-standards` /
-`typescript-standards` (el lenguaje de los servicios que hablan con la cadena),
-`quantum-computing-standards` (nada que ver con "web3 cuántico").
+**Not applicable**: see **`solidity-standards`** (**hard, non-negotiable boundary**: the **smart
+contract**, the **`solc` compiler**, the **EVM**, `pragma`, `evm_version`, proxies and
+upgradeability, reentrancy, invariant tests, fuzzing, formal verification, code and gas
+auditing. **Everything written in `.sol` and everything deployed is theirs, without
+exception**; here only where it runs, who signs, with which key and under which rule),
+`cryptography-pki-standards` (algorithm choice, curves, key management and lifecycle
+in HSM/KMS — here only the **operational custody and signing process** applied to a key that
+directly controls value), `post-quantum-crypto-standards` (**all** PQC migration and its
+timetable; the quantum threat to ECDSA is not covered here), `secrets-management-standards`
+(Vault/KMS, ephemeral credentials, rotation), `identity-access-management-standards`
+(federation, OIDC, JWT and corporate identity governance),
+`fintech-payments-standards` (**payments, accounts, reconciliation, PSD2/SEPA and running a
+financial institution**; crypto-assets as a means of payment are coordinated with it — **not
+duplicated**), `grc-compliance-standards` (risk framework, SoA, evidence and audit; here
+only the translation into a design requirement), `privacy-engineering-standards` (**the structural
+conflict between immutability and the right to erasure**: the criteria are theirs, here the
+prohibition on writing personal data on chain), `appsec-standards` (STRIDE methodology,
+OWASP and finding triage), `incident-response-forensics-standards` (incident handling,
+fund tracing and coordination with exchanges), `offensive-security-standards` (offensive
+testing with scope and authorisation; **this skill is defensive**), `observability-standards`
+(telemetry platform and SLOs), `data-engineering-standards` and `streaming-cdc-standards`
+(the pipelines that ingest chain events into an analytical store),
+`vulnerability-management-standards` (CVE triage for the node client),
+`opensource-licensing-standards` (stack licences), `rust-standards` / `go-standards` /
+`typescript-standards` (the language of the services that talk to the chain),
+`quantum-computing-standards` (nothing to do with "quantum web3").
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web antes de fijar nada (§8). Los datos regulatorios y de versión de este
-> dominio caducan en meses.
+> Verify on the web before committing to anything (§8). The regulatory and version data in this
+> domain expire within months.
 
-| Decisión | Por defecto | Alternativa justificable | Vetado |
+| Decision | Default | Justifiable alternative | Vetoed |
 |---|---|---|---|
-| ¿Blockchain? | **No.** BD relacional + log de auditoría firmado + sellado de tiempo | Cadena pública si se cumplen las cinco condiciones de §1.1 | Adoptarla porque un stakeholder la pidió por nombre |
-| Si hay cadena | **Cadena pública establecida** con historial de disponibilidad y ecosistema de auditores | Permisionada **solo** con consorcio real, gobernanza escrita y plan de salida | Cadena nueva porque tiene comisiones bajas |
-| Nodos | **Nodo propio full** para lectura crítica + proveedor RPC como *fallback* | Solo proveedor si la operación tolera su caída y su censura | **Un único proveedor RPC** como dependencia dura |
-| Confirmaciones | Esperar **finalidad** del protocolo, no "N bloques" copiado de un blog | Menos confirmaciones para UX no financiera, documentado | Considerar una transacción firme al minarse |
-| L2 | Elegir por **supuestos de confianza documentados** (L2Beat stage), no por TPS | L1 directo si el coste lo permite: menos supuestos | Tratar un L2 en *stage 0* como si fuera Ethereum |
-| Puentes | **Evitarlos.** Diseñar para no cruzar cadenas | Puente canónico del propio rollup, nunca uno de terceros, con límites de exposición | Puentes de terceros custodiando valor material (§5.2) |
-| Custodia | **Multifirma con umbral (Safe) o MPC**, firmantes en dispositivos distintos y personas distintas | HSM certificado si la operación es institucional | **Una sola clave caliente** con poder de mover fondos |
-| Datos en cadena | **Solo hashes y compromisos.** El dato vive fuera | Datos públicos por naturaleza y ya publicados | Cualquier dato personal, ni cifrado (§5.5) |
-| Oráculo | **Feed descentralizado y agregado**, con validación de rango, *staleness* y circuit breaker | Oráculo propio firmado si el consumidor eres tú y asumes el riesgo | Precio *spot* de un único DEX (§5.3) |
-| Regulación | Determinar **antes de diseñar** si la actividad cae bajo MiCA y si eres CASP | — | Diseñar primero y consultar a legal después |
+| Blockchain? | **No.** Relational DB + signed audit log + timestamping | Public chain if the five conditions in §1.1 hold | Adopting it because a stakeholder asked for it by name |
+| If there is a chain | **Established public chain** with an availability track record and an ecosystem of auditors | Permissioned **only** with a real consortium, written governance and an exit plan | A new chain because it has low fees |
+| Nodes | **Own full node** for critical reads + RPC provider as *fallback* | Provider only if operations tolerate its outage and its censorship | **A single RPC provider** as a hard dependency |
+| Confirmations | Wait for protocol **finality**, not "N blocks" copied from a blog | Fewer confirmations for non-financial UX, documented | Treating a transaction as final once mined |
+| L2 | Choose by **documented trust assumptions** (L2Beat stage), not by TPS | Direct L1 if cost allows: fewer assumptions | Treating a *stage 0* L2 as if it were Ethereum |
+| Bridges | **Avoid them.** Design so as not to cross chains | The rollup's own canonical bridge, never a third-party one, with exposure limits | Third-party bridges custodying material value (§5.2) |
+| Custody | **Threshold multisig (Safe) or MPC**, signers on different devices and different people | Certified HSM if the operation is institutional | **A single hot key** with power to move funds |
+| On-chain data | **Hashes and commitments only.** The data lives outside | Data public by nature and already published | Any personal data, not even encrypted (§5.5) |
+| Oracle | **Decentralised, aggregated feed**, with range validation, *staleness* and circuit breaker | Own signed oracle if you are the consumer and take the risk | *Spot* price from a single DEX (§5.3) |
+| Regulation | Determine **before designing** whether the activity falls under MiCA and whether you are a CASP | — | Designing first and consulting legal afterwards |
 
-## 3. Infraestructura: lo que cuesta de verdad
+## 3. Infrastructure: what really costs
 
-### 3.1 Nodos
+### 3.1 Nodes
 
-- **Un nodo no es un contenedor que se levanta y ya.** Es una máquina con SSD NVMe grande y
-  creciente, ancho de banda constante, sincronización inicial de horas o días, y **estado que
-  crece de forma monótona**. La capacidad se planifica con la tasa de crecimiento del estado,
-  no con el tamaño de hoy.
-- **Nodo *full* vs *archive***: el *full* responde al estado reciente; el *archive* guarda
-  todos los estados históricos y multiplica el almacenamiento por un orden de magnitud. Casi
-  nadie necesita *archive*: si la respuesta es "para consultas históricas", el sitio correcto
-  es un **índice propio en una base de datos analítica**, no un archive node.
-- **Diversidad de cliente**: la documentación de Ethereum lo dice explícitamente —
+- **A node is not a container you spin up and done.** It is a machine with a large and
+  growing NVMe SSD, constant bandwidth, an initial sync of hours or days, and **state that
+  grows monotonically**. Capacity is planned with the state's growth rate,
+  not with today's size.
+- **Full node vs *archive***: the *full* one answers about recent state; the *archive* one keeps
+  every historical state and multiplies storage by an order of magnitude. Almost
+  nobody needs *archive*: if the answer is "for historical queries", the right place
+  is an **own index in an analytical database**, not an archive node.
+- **Client diversity**: the Ethereum documentation says it explicitly —
   *"Multiple client implementations can make the network stronger by reducing its dependency
   on a single codebase. The ideal goal is to achieve diversity without any client dominating
-  the network, thereby eliminating a potential single point of failure."* Si operas varios
-  nodos, **no todos con el mismo cliente**.
-- **Actualizaciones de protocolo (*hard forks*) son ventanas de indisponibilidad
-  planificadas**: un nodo sin actualizar a tiempo se queda en una cadena minoritaria y sirve
-  datos falsos sin dar error. Suscribirse a los anuncios del cliente y del protocolo es
-  operación, no interés personal.
+  the network, thereby eliminating a potential single point of failure."* If you operate several
+  nodes, **not all with the same client**.
+- **Protocol upgrades (*hard forks*) are planned unavailability
+  windows**: a node not updated in time ends up on a minority chain and serves
+  false data without raising an error. Subscribing to the client's and the protocol's announcements is
+  operations, not a personal interest.
 
-### 3.2 La ironía del proveedor RPC
+### 3.2 The RPC provider irony
 
-La descentralización de la aplicación media termina en **dos o tres proveedores de RPC**. Un
-frontend "descentralizado" que apunta a un único endpoint gestionado tiene exactamente el
-mismo SPOF que cualquier SaaS, más la falsa sensación de no tenerlo. Y además el proveedor
-**ve** todas las direcciones y consultas de tus usuarios: es un punto de correlación y de
-censura, no solo de disponibilidad.
+The decentralisation of the average application ends at **two or three RPC providers**. A
+"decentralised" frontend pointing at a single managed endpoint has exactly the
+same SPOF as any SaaS, plus the false sense of not having one. And on top of that the provider
+**sees** all your users' addresses and queries: it is a correlation and censorship point,
+not just an availability one.
 
-Criterio: al menos **dos proveedores independientes con conmutación automática**, y para
-lectura crítica (saldos, confirmación de pagos, liquidaciones) **un nodo propio como fuente
-de verdad**. Todo lo que devuelve un RPC ajeno es una **afirmación de un tercero**, no una
-verdad criptográfica, salvo que verifiques pruebas.
+Criteria: at least **two independent providers with automatic failover**, and for
+critical reads (balances, payment confirmation, settlements) **an own node as the source
+of truth**. Everything a third-party RPC returns is a **third party's assertion**, not a
+cryptographic truth, unless you verify proofs.
 
-### 3.3 L1, L2 y rollups: leer los supuestos de confianza
+### 3.3 L1, L2 and rollups: read the trust assumptions
 
-- Un rollup **hereda la seguridad del L1 solo en la medida en que sus mecanismos de salida
-  funcionen sin permiso**. Comprobar antes de desplegar: ¿el secuenciador es único y
-  centralizado? ¿existe **inclusión forzada** desde L1? ¿hay **escotilla de salida** si el
-  operador desaparece? ¿quién puede actualizar los contratos del puente canónico y con qué
-  *timelock*? ¿hay pruebas de fraude/validez **activas**, o desactivadas "de momento"?
-- **El periodo de retirada de los rollups optimistas es un riesgo operativo real, no un
-  detalle.** La documentación de OP Stack: *"mainnet messages sent from Layer 2 to Layer 1
-  cannot be relayed for at least 7 days"*. La de Arbitrum menciona *"a 6.4-day challenge
-  period"* para mensajes L2→L1 y *"a seven-day challenge period to safeguard withdrawals"* en
-  el puente canónico. L2Beat exige *"a ≥7 days challenge period for all Optimistic Rollups to
+- A rollup **inherits the L1's security only to the extent that its exit mechanisms
+  work permissionlessly**. Check before deploying: is the sequencer single and
+  centralised? is there **forced inclusion** from L1? is there an **escape hatch** if the
+  operator disappears? who can upgrade the canonical bridge contracts and with what
+  *timelock*? are there **active** fraud/validity proofs, or are they disabled "for now"?
+- **The withdrawal period of optimistic rollups is a real operational risk, not a
+  detail.** The OP Stack documentation: *"mainnet messages sent from Layer 2 to Layer 1
+  cannot be relayed for at least 7 days"*. Arbitrum's mentions *"a 6.4-day challenge
+  period"* for L2→L1 messages and *"a seven-day challenge period to safeguard withdrawals"* in
+  the canonical bridge. L2Beat requires *"a ≥7 days challenge period for all Optimistic Rollups to
   be considered Stage 1"*.
-  **Consecuencia de tesorería**: el capital en el L2 es **ilíquido durante una semana** por la
-  vía canónica. Las alternativas rápidas son puentes de liquidez de terceros — que sustituyen
-  el retraso por **riesgo de contraparte**. Si tu modelo financiero asume liquidez inmediata,
-  está mal. Modelar el peor caso: retirada canónica + congestión del L1.
-- **Clasificación L2Beat como herramienta de decisión**, con su criterio explícito para Stage
+  **Treasury consequence**: capital on the L2 is **illiquid for a week** via
+  the canonical route. The fast alternatives are third-party liquidity bridges — which replace
+  the delay with **counterparty risk**. If your financial model assumes immediate liquidity,
+  it is wrong. Model the worst case: canonical withdrawal + L1 congestion.
+- **L2Beat classification as a decision tool**, with its explicit criterion for Stage
   1: *"The only way (other than bugs) for a rollup to indefinitely block an L2→L1 message
   (e.g. a withdrawal) or push an invalid L2→L1 message (e.g. an invalid withdrawal) is by
-  compromising ≥75% of the Security Council"*, y *"Users are able to exit without the help of
-  the permissioned operators"*. Verificar el *stage* actual de la cadena concreta antes de
-  comprometer fondos (§8).
+  compromising ≥75% of the Security Council"*, and *"Users are able to exit without the help of
+  the permissioned operators"*. Verify the current *stage* of the specific chain before
+  committing funds (§8).
 
-### 3.4 Indexación y reorganizaciones
+### 3.4 Indexing and reorganisations
 
-- **Nunca leer el estado de la aplicación consultando la cadena en caliente.** Se indexa a una
-  base de datos propia y se sirve desde ahí. Consultar `eth_getLogs` en la ruta caliente es
-  lento, caro y frágil.
-- **El indexador debe ser reorg-safe**: los bloques recientes pueden desaparecer. Diseño
-  correcto: marcar los eventos por número de bloque y hash, y **revertir** los eventos de
-  bloques huérfanos; no consumir eventos por debajo del umbral de finalidad como definitivos.
-- **Idempotencia obligatoria** en el consumidor: el mismo evento se reprocesará. Clave de
-  deduplicación = (hash de transacción, índice de log).
-- El *backfill* histórico y el *tail* en vivo son dos caminos de código con fallos distintos:
-  probar ambos, y probar el reinicio a mitad de *backfill*.
+- **Never read application state by querying the chain in the hot path.** You index into an
+  own database and serve from there. Querying `eth_getLogs` on the hot path is
+  slow, expensive and fragile.
+- **The indexer must be reorg-safe**: recent blocks can disappear. Correct
+  design: mark events by block number and hash, and **revert** the events of
+  orphaned blocks; do not consume events below the finality threshold as definitive.
+- **Idempotency is mandatory** in the consumer: the same event will be reprocessed. Deduplication
+  key = (transaction hash, log index).
+- Historical *backfill* and the live *tail* are two code paths with different failures:
+  test both, and test restarting mid-*backfill*.
 
-## 4. Custodia de claves: el eje del dominio
+## 4. Key custody: the axis of the domain
 
-**El dato que ordena las prioridades**: Chainalysis, informe de crimen 2025 (datos de 2024):
+**The datum that orders the priorities**: Chainalysis, 2025 crime report (2024 data):
 *"Private key compromises accounted for the largest share (43.8%) of stolen crypto in 2024"*,
-sobre unos *"$2.2 billion"* robados. En la actualización de mitad de 2025: *"With over $2.17
-billion stolen from cryptocurrency services so far in 2025…"* y *"At $1.5 billion, this
+out of some *"$2.2 billion"* stolen. In the mid-2025 update: *"With over $2.17
+billion stolen from cryptocurrency services so far in 2025…"* and *"At $1.5 billion, this
 single incident not only represents the largest crypto theft in history, but also accounts
-for approximately 69% of all funds stolen from services this year"* (Bybit). Caveat de
-metodología del propio informe: los datos *"include only known stolen fund events… They are
-therefore not a comprehensive view"* — son **cota inferior**.
+for approximately 69% of all funds stolen from services this year"* (Bybit). Methodology caveat
+from the report itself: the data *"include only known stolen fund events… They are
+therefore not a comprehensive view"* — they are a **lower bound**.
 
-Lectura de ingeniería: **el fallo dominante no está en el contrato, está en la clave y en el
-humano que firma.** Un presupuesto que gasta todo en auditoría de código y nada en custodia
-está mal repartido.
+Engineering reading: **the dominant failure is not in the contract, it is in the key and in the
+human who signs.** A budget that spends everything on code auditing and nothing on custody
+is badly allocated.
 
-### 4.1 Reglas duras
+### 4.1 Hard rules
 
-- **Ninguna clave con poder de mover fondos vive en un servidor de aplicación, en una variable
-  de entorno, en un `.env`, en un gestor de secretos genérico ni en el CI.** Si el proceso que
-  atiende peticiones HTTP puede firmar, un RCE es una pérdida total e irreversible.
-- **Multifirma con umbral (m-de-n) por defecto** para tesorería y para cualquier rol
-  privilegiado en cadena. Los firmantes: **personas distintas, dispositivos distintos,
-  ubicaciones distintas, con al menos un firmante fuera del alcance de un compromiso del
-  proveedor cloud**.
-- **MPC/umbral** como alternativa cuando se necesita una única firma en cadena (privacidad,
-  coste, cadenas sin multifirma nativa). No es "mejor" que la multifirma: mueve el riesgo del
-  contrato al proveedor de la biblioteca y a su ceremonia de generación de claves.
-- **HSM** cuando hay requisito institucional o de certificación. Un HSM protege la clave del
-  robo, **no de la firma indebida**: si la aplicación puede pedirle que firme, el atacante que
-  controla la aplicación también. El control es la **política de aprobación**, no el hardware.
-- **Frío ≠ hardware wallet en un cajón.** Frío significa: clave generada offline, respaldo
-  de la semilla en material resistente y en custodia física con control dual, procedimiento de
-  recuperación **ensayado** y registro de quién tiene qué. Una semilla escrita en papel en la
-  caja fuerte del CTO sin ensayo de restauración es una pérdida futura.
-- **El respaldo se prueba.** Recuperar en un dispositivo nuevo, con la ceremonia real, al
-  menos una vez al año. Un respaldo no restaurado no existe.
+- **No key with power to move funds lives on an application server, in an environment
+  variable, in a `.env`, in a generic secrets manager or in CI.** If the process that
+  serves HTTP requests can sign, an RCE is a total and irreversible loss.
+- **Threshold multisig (m-of-n) by default** for treasury and for any privileged
+  on-chain role. The signers: **different people, different devices,
+  different locations, with at least one signer outside the blast radius of a compromise of the
+  cloud provider**.
+- **MPC/threshold** as an alternative when a single on-chain signature is needed (privacy,
+  cost, chains without native multisig). It is not "better" than multisig: it moves the risk from the
+  contract to the library provider and to its key generation ceremony.
+- **HSM** when there is an institutional or certification requirement. An HSM protects the key from
+  theft, **not from improper signing**: if the application can ask it to sign, so can the attacker who
+  controls the application. The control is the **approval policy**, not the hardware.
+- **Cold ≠ hardware wallet in a drawer.** Cold means: key generated offline, seed backup
+  on durable material and in physical custody under dual control, a **rehearsed**
+  recovery procedure and a record of who holds what. A seed written on paper in
+  the CTO's safe with no restore rehearsal is a future loss.
+- **The backup is tested.** Recover on a new device, with the real ceremony, at
+  least once a year. A backup never restored does not exist.
 
-### 4.2 El proceso humano de firma
+### 4.2 The human signing process
 
-El eslabón que se rompe es la **firma a ciegas**. Un firmante que ve un blob hexadecimal y
-pulsa "aprobar" no está aprobando nada: está delegando en el que preparó la transacción.
+The link that breaks is **blind signing**. A signer who sees a hex blob and
+presses "approve" is not approving anything: they are delegating to whoever prepared the transaction.
 
-Procedimiento mínimo para cualquier transacción de valor material:
+Minimum procedure for any transaction of material value:
 
-1. **Preparación** por una persona, **revisión independiente** por otra, con la *intención* de
-   la operación escrita en lenguaje natural.
-2. **Verificación fuera de banda** de la dirección de destino y del importe por un canal
-   distinto del que trajo la petición. El fraude de suplantación de proveedor vive aquí.
-3. **Simulación previa** de la transacción contra un fork del estado actual, comprobando qué
-   saldos cambian realmente — no qué dice el frontend que cambian.
-4. **Verificación en el dispositivo de firma**: lo que se aprueba es lo que muestra la
-   pantalla del hardware, **no la del ordenador**, que puede estar comprometido.
-5. **Aprobaciones independientes** de los firmantes del umbral, sin que uno prepare y firme
-   dos veces con dos dispositivos suyos.
-6. **Registro** de quién aprobó qué y por qué, retenido como evidencia.
+1. **Preparation** by one person, **independent review** by another, with the *intent* of
+   the operation written in natural language.
+2. **Out-of-band verification** of the destination address and the amount through a channel
+   different from the one that brought the request. Supplier impersonation fraud lives here.
+3. **Prior simulation** of the transaction against a fork of the current state, checking which
+   balances actually change — not what the frontend says changes.
+4. **Verification on the signing device**: what is approved is what the hardware screen
+   shows, **not the computer's**, which may be compromised.
+5. **Independent approvals** by the threshold signers, without one person preparing and signing
+   twice with two of their own devices.
+6. **Record** of who approved what and why, retained as evidence.
 
-Las aprobaciones ilimitadas a contratos (`approve` por el máximo) son deuda permanente:
-**aprobar el importe exacto y revocar lo que ya no se usa**, con revisión periódica de
-aprobaciones vivas.
+Unlimited approvals to contracts (`approve` for the maximum) are permanent debt:
+**approve the exact amount and revoke what is no longer used**, with periodic review of live
+approvals.
 
-### 4.3 Envenenamiento de direcciones y errores de destino
+### 4.3 Address poisoning and destination errors
 
-Las direcciones se parecen entre sí y **las transferencias son irreversibles**. Controles:
-lista blanca de destinos con alta en dos pasos y periodo de espera, verificación de los
-caracteres completos (no solo primeros y últimos cuatro), transacción de prueba de importe
-mínimo antes de un envío grande, y detección de direcciones "parecidas" a las del historial —
-el ataque consiste precisamente en sembrar el historial con transferencias de valor cero
-desde una dirección casi idéntica.
+Addresses look alike and **transfers are irreversible**. Controls:
+destination allowlist with two-step registration and a waiting period, verification of the
+full characters (not just the first and last four), a minimum-amount test transaction
+before a large send, and detection of addresses "similar" to those in the history —
+the attack consists precisely of seeding the history with zero-value transfers
+from an almost identical address.
 
-## 5. Riesgos específicos
+## 5. Specific risks
 
-### 5.1 Superficie del stack
+### 5.1 Stack surface
 
-- **Endpoint RPC propio expuesto**: nunca abierto a Internet. Los métodos administrativos
-  (`admin_*`, `personal_*`, `debug_*`) desactivados; `eth_*` solo tras un proxy con
-  autenticación, límite de tasa y de coste por consulta. Un `eth_getLogs` sin rango acotado es
-  un DoS gratis.
-- **Frontend**: el mayor incidente recurrente no es el contrato, es el **secuestro del DNS o
-  del bucket del frontend** para servir una interfaz que hace firmar otra cosa. Controles:
-  registrar el dominio con bloqueo de transferencia y MFA, DNSSEC, despliegue inmutable y
-  firmado, **SRI** en los scripts de terceros y monitorización de integridad del bundle
-  servido.
-- **Dependencias JavaScript de la cadena de firma**: una librería comprometida en `npm` que
-  altere la dirección de destino antes de firmar es el ataque de cadena de suministro más
-  rentable que existe. Fijar por *digest*, revisar cada actualización de la ruta de firma, y
-  minimizar el número de paquetes que tocan la transacción.
+- **Own RPC endpoint exposed**: never open to the Internet. Administrative methods
+  (`admin_*`, `personal_*`, `debug_*`) disabled; `eth_*` only behind a proxy with
+  authentication, rate limiting and per-query cost limits. An `eth_getLogs` without a bounded range is
+  a free DoS.
+- **Frontend**: the biggest recurring incident is not the contract, it is the **hijacking of the DNS or
+  of the frontend bucket** to serve an interface that makes you sign something else. Controls:
+  register the domain with transfer lock and MFA, DNSSEC, immutable and signed
+  deployment, **SRI** on third-party scripts and integrity monitoring of the served
+  bundle.
+- **JavaScript dependencies in the signing path**: a compromised library on `npm` that
+  alters the destination address before signing is the most profitable supply-chain attack
+  that exists. Pin by *digest*, review every update of the signing path, and
+  minimise the number of packages that touch the transaction.
 
-### 5.2 Puentes: el peor historial documentado de pérdidas
+### 5.2 Bridges: the worst documented loss record
 
-Chainalysis, agosto de 2022: *"$2 billion in cryptocurrency has been stolen across 13 separate
-cross-chain bridge hacks"*, y *"Attacks on bridges account for 69% of total funds stolen in
-2022 so far"*. Un puente concentra custodia de activos de varias cadenas bajo un conjunto de
-claves o un contrato de verificación, y no tiene la liquidez ni el escrutinio del L1 que
-imita.
+Chainalysis, August 2022: *"$2 billion in cryptocurrency has been stolen across 13 separate
+cross-chain bridge hacks"*, and *"Attacks on bridges account for 69% of total funds stolen in
+2022 so far"*. A bridge concentrates custody of assets from several chains under one set
+of keys or one verification contract, and has neither the liquidity nor the scrutiny of the L1 it
+imitates.
 
-Criterio: **diseñar para no necesitar puente**. Si es inevitable — puente canónico del propio
-rollup antes que uno de terceros, **límite duro de exposición** (importe máximo en tránsito y
-en el contrato del puente), monitorización de eventos anómalos, y aceptación explícita del
-riesgo por escrito de quien responde del dinero. Los activos "envueltos" son un **pagaré de
-un tercero**, no el activo original: contabilizarlos como tal.
+Criteria: **design so as not to need a bridge**. If it is unavoidable — the rollup's own canonical
+bridge before a third-party one, **hard exposure limit** (maximum amount in transit and
+in the bridge contract), monitoring of anomalous events, and explicit written acceptance of the
+risk by whoever answers for the money. "Wrapped" assets are a **third party's IOU**,
+not the original asset: account for them as such.
 
-### 5.3 Oráculos
+### 5.3 Oracles
 
-Todo precio en cadena es manipulable con capital suficiente si su fuente es superficial. El
-patrón de ataque estándar es mover el precio de un pool poco líquido dentro de la misma
-transacción que consume ese precio. Defensas: **agregación de múltiples fuentes
-independientes**, uso de medias ponderadas en el tiempo cuando el caso lo permita,
-**validación de rango y de antigüedad (*staleness*)** en el consumidor, y **circuit breaker**
-que detenga la operación ante una desviación anómala en lugar de operar con un dato absurdo.
-Un oráculo caído debe **parar el sistema**, no devolver el último valor conocido en silencio.
-La implementación en el contrato es de `solidity-standards`; aquí la exigencia de que el
-diseño la contemple.
+Every on-chain price is manipulable with enough capital if its source is shallow. The
+standard attack pattern is moving the price of a thin pool inside the same
+transaction that consumes that price. Defences: **aggregation of multiple independent
+sources**, use of time-weighted averages when the case allows, **range and
+staleness validation** in the consumer, and a **circuit breaker**
+that halts operation on an anomalous deviation instead of operating on absurd data.
+A downed oracle must **stop the system**, not silently return the last known value.
+The contract implementation belongs to `solidity-standards`; here the requirement that the
+design accounts for it.
 
-### 5.4 MEV a nivel de aplicación
+### 5.4 MEV at the application level
 
-La mempool pública es un **tablón de anuncios de tus intenciones**. Cualquier operación cuyo
-resultado dependa del precio en el momento de ejecución puede ser adelantada o sandwicheada.
-Mitigaciones de diseño (no de contrato): **límites de deslizamiento estrictos y explícitos**
-por defecto en el cliente, **plazos de validez cortos**, envío por **flujo de órdenes privado**
-para operaciones grandes, y trocear la operación. Y una regla de producto: si tu UX pone un
-deslizamiento por defecto alto "para que no falle", estás pagando la diferencia a un tercero.
+The public mempool is a **noticeboard of your intentions**. Any operation whose
+result depends on the price at execution time can be front-run or sandwiched.
+Design mitigations (not contract ones): **strict and explicit slippage limits**
+by default in the client, **short validity deadlines**, submission via **private order flow**
+for large operations, and slicing the operation. And a product rule: if your UX sets a
+high default slippage "so it does not fail", you are paying the difference to a third party.
 
-### 5.5 Inmutabilidad frente a protección de datos
+### 5.5 Immutability versus data protection
 
-**Nada de datos personales en cadena. Ni cifrados, ni con hash.** Una cadena pública es
-inmutable, replicada globalmente e imborrable: incumple por construcción el derecho de
-supresión y de rectificación, y el cifrado de hoy es descifrable mañana. Un hash de un dato
-personal de dominio pequeño (un DNI, un email) es **reversible por fuerza bruta** y por tanto
-sigue siendo dato personal. Patrón correcto: el dato fuera, en un sistema con borrado real; en
-cadena solo un compromiso con sal secreta, y el borrado de la sal como mecanismo de
-*crypto-shredding*. **El criterio, la DPIA y el análisis de reidentificación son de
+**No personal data on chain. Not encrypted, not hashed.** A public chain is
+immutable, globally replicated and unerasable: it breaches by construction the right to
+erasure and rectification, and today's encryption is decryptable tomorrow. A hash of a personal
+datum from a small domain (a national ID, an email) is **brute-forceable** and therefore
+still personal data. Correct pattern: the data outside, in a system with real deletion; on
+chain only a commitment with a secret salt, and deleting the salt as a mechanism for
+*crypto-shredding*. **The criteria, the DPIA and the reidentification analysis belong to
 `privacy-engineering-standards`.**
 
-## 6. Regulación, contabilidad y operación
+## 6. Regulation, accounting and operations
 
-### 6.1 MiCA (UE)
+### 6.1 MiCA (EU)
 
-**Reglamento (UE) 2023/1114** — *"REGULATION (EU) 2023/1114 … of 31 May 2023 on markets in
+**Regulation (EU) 2023/1114** — *"REGULATION (EU) 2023/1114 … of 31 May 2023 on markets in
 crypto-assets, and amending Regulations (EU) No 1093/2010 and (EU) No 1095/2010 and Directives
-2013/36/EU and (EU) 2019/1937"*. Comisión Europea: *"29 June 2023 … The Markets in
-Crypto-assets Regulation (MiCA) came into force."* Resumen oficial de EUR-Lex sobre su
-aplicación: *"It will apply from 30 December 2024. However, rules on asset-referenced tokens
+2013/36/EU and (EU) 2019/1937"*. European Commission: *"29 June 2023 … The Markets in
+Crypto-assets Regulation (MiCA) came into force."* Official EUR-Lex summary on its
+application: *"It will apply from 30 December 2024. However, rules on asset-referenced tokens
 (Title III) and e-money tokens (Title IV) have applied since 30 June 2024."*
 
-Régimen transitorio: ESMA describe la cláusula de *grandfathering* del artículo 143 por la que
-entidades que prestaban servicios de criptoactivos conforme a derecho nacional antes del
-30 de diciembre de 2024 podían continuar **hasta el 1 de julio de 2026 o hasta que se les
-conceda o deniegue la autorización MiCA**, con periodos que varían por Estado miembro.
-**Verificar el estado actual y el plazo del Estado miembro concreto antes de asumir nada
+Transitional regime: ESMA describes the *grandfathering* clause of Article 143 whereby
+entities providing crypto-asset services under national law before
+30 December 2024 could continue **until 1 July 2026 or until they are granted or refused
+MiCA authorisation**, with periods varying by Member State.
+**Verify the current status and the specific Member State's deadline before assuming anything
 (§8).**
 
-Consecuencia de diseño, no de cumplimiento a posteriori: **determinar antes de escribir código
-si la actividad convierte a la entidad en emisor o en proveedor de servicios de criptoactivos
-(CASP)**. Custodiar claves de clientes, cambiar por dinero fiduciario, ejecutar órdenes,
-operar una plataforma de negociación o transferir por cuenta de terceros son actividades
-reguladas. La diferencia entre "custodio las claves de mis usuarios" y "el usuario custodia
-las suyas" no es una decisión de UX: **es la que decide si necesitas una autorización**.
+Design consequence, not after-the-fact compliance: **determine before writing code
+whether the activity makes the entity an issuer or a crypto-asset service provider
+(CASP)**. Custodying clients' keys, exchanging for fiat money, executing orders,
+operating a trading platform or transferring on behalf of third parties are regulated
+activities. The difference between "I custody my users' keys" and "the user custodies
+their own" is not a UX decision: **it is what decides whether you need an authorisation**.
 
 ### 6.2 Travel rule
 
-**Reglamento (UE) 2023/1113** — *"REGULATION (EU) 2023/1113 … of 31 May 2023 on information
+**Regulation (EU) 2023/1113** — *"REGULATION (EU) 2023/1113 … of 31 May 2023 on information
 accompanying transfers of funds and certain crypto-assets and amending Directive (EU)
-2015/849 (recast)"*. Impone acompañar las transferencias de criptoactivos con información de
-ordenante y beneficiario. Requisito **de arquitectura**: si tu sistema mueve criptoactivos por
-cuenta de clientes, necesita transportar, validar y conservar esos datos, y decidir qué hace
-cuando la contraparte no los envía o el destino es una dirección autocustodiada. Eso no se
-añade al final. **Verificar la fecha de aplicación y las guías de la EBA (§8): no la fija este
-documento.**
+2015/849 (recast)"*. It requires crypto-asset transfers to be accompanied by originator
+and beneficiary information. An **architectural** requirement: if your system moves crypto-assets on
+behalf of clients, it needs to carry, validate and retain that data, and to decide what it does
+when the counterparty does not send it or the destination is a self-hosted address. That is not
+bolted on at the end. **Verify the application date and the EBA guidelines (§8): this document
+does not fix them.**
 
-### 6.3 AML/KYC y rampas
+### 6.3 AML/KYC and on-ramps
 
-Las rampas fiat↔cripto son el punto donde entra la regulación con más fuerza: identificación
-del cliente, cribado de sanciones, monitorización de transacciones y comunicación de
-operaciones sospechosas. Diseño: **la rampa se delega en un proveedor autorizado** salvo que
-la entidad quiera ser ella la regulada, con la diligencia debida sobre ese proveedor
-documentada. Cribado de direcciones contra listas de sanciones **antes** de enviar, no
-después.
+Fiat↔crypto ramps are the point where regulation bites hardest: customer
+identification, sanctions screening, transaction monitoring and reporting of
+suspicious activity. Design: **the ramp is delegated to an authorised provider** unless
+the entity wants to be the regulated one itself, with documented due diligence on that
+provider. Screening of addresses against sanctions lists **before** sending, not
+after.
 
-Postura de esta skill: **defensiva y de cumplimiento**. No se documentan técnicas de
-ofuscación de flujos, elusión de controles ni evasión regulatoria.
+This skill's stance: **defensive and compliance-oriented**. No techniques for obfuscating
+flows, circumventing controls or evading regulation are documented.
 
-### 6.4 Contabilidad y fiscalidad como restricción de diseño
+### 6.4 Accounting and taxation as a design constraint
 
-- **Cada transacción es un hecho contable y con frecuencia un hecho imponible.** El sistema
-  debe registrar, por operación: fecha y hora, contraparte, importe en cripto **y su
-  contravalor en moneda funcional en ese momento**, comisiones (incluida la comisión de red,
-  que a menudo es un gasto deducible), y la referencia en cadena.
-- **El tipo de cambio necesita una fuente definida y estable** (qué mercado, qué momento, qué
-  redondeo) y auditable a posteriori. Cambiar de criterio a mitad de ejercicio es un problema.
-- **La conciliación entre el libro contable y el estado en cadena debe ser automática y
-  diaria**, y su descuadre es una alerta operativa. Descubrirlo en la auditoría anual es
-  demasiado tarde.
-- Añadir esto al final es una reescritura: **si el registro contable no se diseñó con el
-  sistema, no se puede reconstruir** — la cadena tiene los importes, pero no el contravalor
-  del momento ni la intención de la operación.
+- **Every transaction is an accounting event and often a taxable event.** The system
+  must record, per operation: date and time, counterparty, crypto amount **and its
+  countervalue in the functional currency at that moment**, fees (including the network fee,
+  which is often a deductible expense), and the on-chain reference.
+- **The exchange rate needs a defined and stable source** (which market, which moment, which
+  rounding) and must be auditable after the fact. Changing the criteria mid-year is a problem.
+- **Reconciliation between the ledger and on-chain state must be automatic and
+  daily**, and a mismatch is an operational alert. Discovering it at the annual audit is
+  too late.
+- Adding this at the end is a rewrite: **if the accounting record was not designed with the
+  system, it cannot be reconstructed** — the chain has the amounts, but not the countervalue
+  at the time nor the intent of the operation.
 
-### 6.5 Operación
+### 6.5 Operations
 
-- **Observabilidad propia del dominio**: saldo de las cuentas operativas y alerta por umbral
-  bajo (una cuenta de gas vacía detiene el servicio), retraso respecto a la cabeza de cadena,
-  transacciones pendientes por antigüedad, coste de comisiones por día, y desviación entre el
-  estado indexado y el de la cadena.
-- **Gestión de comisiones**: precio de gas volátil, transacciones atascadas y necesidad de
-  reemplazo con comisión superior. Un servicio que envía transacciones necesita política de
-  reintento, límite de gasto y detección de transacción atascada — no un `send()` y esperanza.
-- **Nonces**: dos procesos firmando con la misma cuenta se pisan los nonces y se anulan entre
-  sí. Un único emisor serializado por cuenta, o cuentas separadas por proceso.
-- **Runbook de incidente en cadena** escrito **antes** del incidente: quién puede pausar,
-  quién convoca a los firmantes, cómo se comunica, y qué se hace en las primeras dos horas.
-  El plan de respuesta es de `incident-response-forensics-standards`; el mecanismo en cadena,
-  de `solidity-standards`.
+- **Domain-specific observability**: balance of the operating accounts and a low-threshold alert
+  (an empty gas account halts the service), lag behind the chain head,
+  pending transactions by age, daily fee cost, and drift between the
+  indexed state and the chain's.
+- **Fee management**: volatile gas price, stuck transactions and the need for
+  replacement with a higher fee. A service that sends transactions needs a retry policy,
+  a spend limit and stuck-transaction detection — not a `send()` and hope.
+- **Nonces**: two processes signing with the same account clash on nonces and cancel each
+  other. A single serialised sender per account, or separate accounts per process.
+- **On-chain incident runbook** written **before** the incident: who can pause,
+  who summons the signers, how it is communicated, and what is done in the first two hours.
+  The response plan belongs to `incident-response-forensics-standards`; the on-chain mechanism,
+  to `solidity-standards`.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- Actualizar clientes de nodo con la cadencia del protocolo, no con la del equipo: los *hard
-  forks* tienen fecha y no la negocias.
-- Revisar anualmente: firmantes activos del multisig (una salida de la empresa sin revocar
-  firma es un agujero abierto), aprobaciones de contratos vivas, exposición en puentes, y
-  vigencia de la calificación de la L2 usada.
-- Plan de salida documentado por dependencia: proveedor RPC, custodio, puente, L2 y consorcio.
-  "¿Qué hacemos si mañana desaparece?" debe tener respuesta escrita.
+- Update node clients at the protocol's cadence, not the team's: *hard
+  forks* have a date and you do not negotiate it.
+- Review annually: active multisig signers (a departure from the company without revoking a
+  signature is an open hole), live contract approvals, bridge exposure, and
+  the validity of the used L2's rating.
+- Documented exit plan per dependency: RPC provider, custodian, bridge, L2 and consortium.
+  "What do we do if it disappears tomorrow?" must have a written answer.
 
-**Prohibiciones explícitas:**
+**Explicit prohibitions:**
 
-- ❌ **PROHIBIDO** adoptar una blockchain sin haber respondido por escrito, y de forma
-  negativa, a las cinco condiciones de §1.1.
-- ❌ **PROHIBIDO** presentar una cadena permisionada como "descentralizada" cuando existe un
-  consorcio que decide quién escribe, quién valida y quién actualiza.
-- ❌ **PROHIBIDO** que una clave capaz de mover fondos exista en un servidor de aplicación,
-  en el CI, en un `.env` o en un repositorio. Sin excepciones "temporales".
-- ❌ **PROHIBIDO** firmar a ciegas: transacción de valor material sin simulación previa,
-  revisión independiente y verificación en la pantalla del dispositivo de firma.
-- ❌ **PROHIBIDO** depender de un único proveedor RPC para lectura crítica, y tratar su
-  respuesta como verdad verificada.
-- ❌ **PROHIBIDO** modelar tesorería asumiendo retiradas instantáneas desde un rollup
-  optimista: el periodo de disputa es de días, no de minutos.
-- ❌ **PROHIBIDO** escribir datos personales en cadena, ni cifrados ni con hash.
-- ❌ **PROHIBIDO** consumir el precio de un único pool como oráculo, o seguir operando con un
-  precio obsoleto sin *circuit breaker*.
-- ❌ **PROHIBIDO** conceder aprobaciones ilimitadas por comodidad, o dejar aprobaciones vivas
-  sin revisión periódica.
-- ❌ **PROHIBIDO** citar cifras de TPS de fabricante como capacidad operativa (§8).
-- ❌ **PROHIBIDO** diseñar el sistema y consultar después si la actividad cae bajo MiCA o
-  requiere autorización.
-- ❌ **PROHIBIDO** documentar o implementar técnicas de ofuscación de flujos, elusión de
-  sanciones, de KYC o de obligaciones de información. Postura defensiva y de cumplimiento.
-- ❌ **PROHIBIDO** duplicar aquí criterio de código de contrato: eso es de `solidity-standards`.
+- ❌ **FORBIDDEN** to adopt a blockchain without having answered in writing, and in the
+  negative, the five conditions of §1.1.
+- ❌ **FORBIDDEN** to present a permissioned chain as "decentralised" when there is a
+  consortium that decides who writes, who validates and who updates.
+- ❌ **FORBIDDEN** for a key capable of moving funds to exist on an application server,
+  in CI, in a `.env` or in a repository. No "temporary" exceptions.
+- ❌ **FORBIDDEN** to sign blind: a transaction of material value without prior simulation,
+  independent review and verification on the signing device's screen.
+- ❌ **FORBIDDEN** to depend on a single RPC provider for critical reads, and to treat its
+  response as verified truth.
+- ❌ **FORBIDDEN** to model treasury assuming instant withdrawals from an optimistic
+  rollup: the challenge period is days, not minutes.
+- ❌ **FORBIDDEN** to write personal data on chain, neither encrypted nor hashed.
+- ❌ **FORBIDDEN** to consume the price of a single pool as an oracle, or to keep operating with a
+  stale price without a *circuit breaker*.
+- ❌ **FORBIDDEN** to grant unlimited approvals for convenience, or to leave live approvals
+  without periodic review.
+- ❌ **FORBIDDEN** to cite vendor TPS figures as operational capacity (§8).
+- ❌ **FORBIDDEN** to design the system and afterwards ask whether the activity falls under MiCA or
+  requires authorisation.
+- ❌ **FORBIDDEN** to document or implement techniques for obfuscating flows, circumventing
+  sanctions, KYC or reporting obligations. Defensive and compliance-oriented stance.
+- ❌ **FORBIDDEN** to duplicate contract code criteria here: that belongs to `solidity-standards`.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real:
+Before committing to anything in a real project:
 
-1. **MiCA**: estado del régimen transitorio del art. 143 **en el Estado miembro concreto** —
-   ESMA describía la continuidad *"until 1 July 2026 or until they are granted or refused a
-   MiCA authorisation"*, plazo que a ago-2026 ya ha vencido o está venciendo. Consultar ESMA,
-   la lista de CASP autorizados y el supervisor nacional (CNMV/Banco de España en España).
-   **Fuente de las fechas de aplicación**: resumen oficial de EUR-Lex, verbatim; el texto
-   íntegro del art. 149 **no se pudo obtener en crudo** (EUR-Lex truncaba el documento) — su
-   redacción exacta llegó por **WebSearch** y debe confirmarse contra el diario oficial.
-2. **Reglamento (UE) 2023/1113 (travel rule)**: su fecha de aplicación y las directrices de la
-   EBA sobre umbrales y transferencias a direcciones autocustodiadas **no se verificaron
-   verbatim** en esta pasada (EUR-Lex truncó el texto antes del artículo final). **Hueco
-   declarado**: confirmar antes de usarlas.
-3. **Cifras de robos**: reverificar el informe de Chainalysis vigente. Lo verificado aquí:
-   43,8 % por compromiso de clave privada en 2024 sobre 2.200 M$ (informe 2025), 2.170 M$
-   robados a servicios en la primera mitad de 2025 y Bybit 1.500 M$ ≈ 69 % de ese total. Todas
-   son **cotas inferiores** por metodología declarada del propio informe. La afirmación de que
-   el compromiso de clave explica *cuatro de los diez mayores robos* proviene de verificación
-   previa del catálogo y **no se re-verificó aquí**.
-4. **TPS: folclore desmentido.** El famoso número de Solana sale de su propio *white paper*
-   (v0.8.13, Yakovenko), literalmente: *"The protocol is analyzed on a 1 gbps network, and
+1. **MiCA**: status of the Article 143 transitional regime **in the specific Member State** —
+   ESMA described continuity *"until 1 July 2026 or until they are granted or refused a
+   MiCA authorisation"*, a deadline that as of Aug 2026 has already expired or is expiring. Consult ESMA,
+   the list of authorised CASPs and the national supervisor (CNMV/Banco de España in Spain).
+   **Source of the application dates**: official EUR-Lex summary, verbatim; the full
+   text of Article 149 **could not be obtained raw** (EUR-Lex truncated the document) — its
+   exact wording came via **WebSearch** and must be confirmed against the official journal.
+2. **Regulation (EU) 2023/1113 (travel rule)**: its application date and the EBA
+   guidelines on thresholds and transfers to self-hosted addresses **were not verified
+   verbatim** in this pass (EUR-Lex truncated the text before the final article). **Declared
+   gap**: confirm before using them.
+3. **Theft figures**: re-verify the current Chainalysis report. What was verified here:
+   43.8 % from private key compromise in 2024 out of $2.2bn (2025 report), $2.17bn
+   stolen from services in the first half of 2025 and Bybit $1.5bn ≈ 69 % of that total. All
+   are **lower bounds** by the report's own declared methodology. The claim that
+   key compromise explains *four of the ten largest thefts* comes from a previous verification
+   of the catalogue and **was not re-verified here**.
+4. **TPS: debunked folklore.** Solana's famous number comes from its own *white paper*
+   (v0.8.13, Yakovenko), literally: *"The protocol is analyzed on a 1 gbps network, and
    this paper shows that throughput up to 710k transactions per second is possible with todays
-   hardware."* Es un **análisis teórico del fabricante sobre una red de 1 Gbps**, no una
-   medida en producción. Toda cifra de TPS publicada por un proyecto sobre su propia cadena
-   está medida en laboratorio, con transacciones triviales y sin contención de estado: **no
-   sirve para dimensionar**. Si necesitas una cifra, mídela tú con tu carga, o no la uses.
-5. **L2**: el *stage* actual de la cadena en L2Beat, quién controla el secuenciador, si las
-   pruebas están activas, el *timelock* de actualización del puente y la duración exacta del
-   periodo de disputa. Cambian, y la última verificación no vale para el trimestre siguiente.
-6. **Hyperledger Fabric / Corda**: versión estable actual y política LTS —a ago-2026 la rama
-   LTS documentada en el `README` de Fabric era **v2.5.x**, mientras la documentación
-   mencionaba notas de release de **v3.1.5**: **discrepancia sin resolver**, confirmar cuál es
-   la recomendada. Verificar también la gobernanza actual (Hyperledger se integró en LF
-   Decentralized Trust: **no se pudo confirmar la fecha del cambio en fuente primaria**) y la
-   salud real del proyecto: número de mantenedores, cadencia de releases y despliegues vivos.
-   Ambos proyectos **Apache-2.0** según sus `LICENSE` en crudo.
-7. **CVEs y avisos**: del cliente de nodo que operes y de las librerías de firma. Un fallo en
-   la generación de nonces o en la derivación de claves es una pérdida total.
-8. **Fiscalidad y contabilidad**: el tratamiento aplicable en la jurisdicción concreta y el
-   ejercicio en curso. Este documento **no fija ningún criterio fiscal**: exige que exista y
-   que el sistema lo soporte.
+   hardware."* It is a **theoretical vendor analysis on a 1 Gbps network**, not a
+   production measurement. Every TPS figure published by a project about its own chain
+   is measured in a lab, with trivial transactions and without state contention: **it is
+   useless for sizing**. If you need a figure, measure it yourself with your load, or do not use it.
+5. **L2**: the chain's current *stage* on L2Beat, who controls the sequencer, whether the
+   proofs are active, the bridge's upgrade *timelock* and the exact duration of the
+   challenge period. They change, and the last verification is not valid for the next quarter.
+6. **Hyperledger Fabric / Corda**: current stable version and LTS policy — as of Aug 2026 the
+   LTS branch documented in Fabric's `README` was **v2.5.x**, while the documentation
+   mentioned release notes for **v3.1.5**: **unresolved discrepancy**, confirm which one is
+   the recommended one. Also verify the current governance (Hyperledger was folded into LF
+   Decentralized Trust: **the date of the change could not be confirmed in a primary source**) and the
+   project's real health: number of maintainers, release cadence and live deployments.
+   Both projects **Apache-2.0** according to their raw `LICENSE` files.
+7. **CVEs and advisories**: for the node client you operate and for the signing libraries. A flaw in
+   nonce generation or in key derivation is a total loss.
+8. **Taxation and accounting**: the applicable treatment in the specific jurisdiction and the
+   current financial year. This document **fixes no tax criteria**: it requires that they exist and
+   that the system supports them.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

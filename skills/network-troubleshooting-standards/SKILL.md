@@ -3,536 +3,537 @@ name: network-troubleshooting-standards
 description: Reactive network fault diagnosis method — bisecting the path, forming a falsifiable hypothesis and proving root cause. Use when something "doesn't connect", is intermittent, slow or hangs mid-transfer and you are reaching for ping, traceroute, mtr --report, ss -tin, ip route get, ip neigh, arping, ethtool -S, tshark or dumpcap, capturing pcap simultaneously at both endpoints, curl -v --resolve, openssl s_client, nc -zv, socat, iperf3 -R with -P and -u, /proc/net/nf_conntrack and ephemeral port exhaustion, PMTU blackhole with ICMP fragmentation-needed filtered, TIME_WAIT and listen-backlog overflow, keepalive versus middlebox idle timeout, IP address conflict or MAC flapping, broadcast storms and layer-2 loops, ARP/ND caches, IPv6 preferred over working IPv4 and Happy Eyeballs, TLS-inspecting proxies, tail-latency percentiles versus averages, bpftrace, bcc tools, pwru, hubble observe, kubectl debug --image=nicolaka/netshoot across pod and node netns, or VPC flow logs — and when you must record what was tried, what it proved and why the fix was the fix.
 ---
 
-# Estándares de diagnóstico de red — el método, no los comandos
+# Network diagnosis standards — the method, not the commands
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica cuando **algo ya no funciona y hay que averiguar por qué**: método por capas y por
-bisección, formulación de hipótesis falsables, secuencia canónica de comprobación
-(resolución → ida → vuelta → aceptación por la aplicación), elección de herramienta por pregunta y
-**qué mentira cuenta cada una**, catálogo de sospechosos habituales con su síntoma característico,
-medición honesta de latencia/pérdida/jitter, diagnóstico en contenedores, Kubernetes, nubes y
-overlays, y la disciplina de registro y cierre con **causa raíz demostrada**.
+Applies when **something no longer works and you have to find out why**: a method by layers and by
+bisection, formulation of falsifiable hypotheses, canonical checking sequence
+(resolution → outbound → return → acceptance by the application), choosing a tool by question and
+**which lie each one tells**, a catalogue of the usual suspects with their characteristic symptom,
+honest measurement of latency/loss/jitter, diagnosis in containers, Kubernetes, clouds and
+overlays, and the discipline of recording and closing with a **proven root cause**.
 
-Triggers: "no conecta", "va lento", "intermitente", "se cae cada X minutos", "funciona desde aquí
-pero no desde allí", "se cuelga al transferir", "conecta pero no carga", `ping`, `traceroute`,
+Triggers: "it does not connect", "it is slow", "it is intermittent", "it drops every X minutes", "it works from here
+but not from there", "it hangs while transferring", "it connects but does not load", `ping`, `traceroute`,
 `mtr --report`, `ss -tin`/`ss -s`, `ip route get`, `ip neigh`, `ip -s link`, `arping`,
 `ethtool -S`/`ethtool -a`, `tshark`, `dumpcap`, `.pcap`, `curl -v --resolve`, `openssl s_client`,
 `nc -zv`, `socat`, `iperf3 -R -P -u`, `/proc/net/nf_conntrack`, `/proc/net/sockstat`,
 `net.ipv4.ip_local_port_range`, `somaxconn`, `TIME_WAIT`, `bpftrace`, `pwru`, `hubble observe`,
 `kubectl debug`, `nicolaka/netshoot`, `tcp_retries2`, "flow logs".
 
-**Principio rector** (hereda el de `networking-standards`: *la red es default-deny y documentada
-como código; lo que no está en el SoT no existe*): **el diagnóstico termina en una causa raíz
-demostrada, no en "se arregló solo"**. Cada paso responde a una hipótesis falsable escrita antes de
-teclear, cambia **una** variable, y deja evidencia guardada. Un problema que desaparece sin
-explicación no está resuelto: está esperando.
+**Guiding principle** (inherited from `networking-standards`: *the network is default-deny and documented
+as code; what is not in the SoT does not exist*): **diagnosis ends in a proven root
+cause, not in "it fixed itself"**. Every step answers a falsifiable hypothesis written before
+typing, changes **one** variable, and leaves saved evidence. A problem that disappears with no
+explanation is not solved: it is waiting.
 
-**No aplica**: ver `networking-standards` (**madre**: el **diseño** —topología, direccionamiento,
-VLAN, routing/BGP, valores correctos de MTU/MSS, proxies, overlays, plano OOB—; **ella dice cómo
-debería ser la red, tú averiguas por qué hoy no lo es**; la corrección estructural vuelve a ella),
-`observability-standards` (**la telemetría permanente y sus alertas**: métricas, logs, trazas,
-dashboards, SLI/SLO, muestreo, retención y el diseño de qué se instrumenta **antes** de que haya un
-problema — **es suya toda la vigilancia continua; tú eres el diagnóstico reactivo cuando la alerta
-ya saltó**. La línea exacta: si la pregunta es "¿qué se mide y con qué umbral se avisa?", es suya;
-si es "esto está roto ahora, ¿por qué?", es tuya. Y la evidencia que tú necesitas y no existe es un
-hallazgo **para** ella: todo diagnóstico a ciegas termina en un requisito de instrumentación),
-`incident-management-standards` (**el proceso del incidente declarado**: severidad, Incident
-Commander, canal, comunicación, mitigar-antes-de-diagnosticar, postmortem — **el mando y la
-comunicación son suyos; el diagnóstico técnico dentro del incidente es tuyo**. Cuando el IC pide
-mitigar ya, mitigas y **anotas** lo que sacrificas en evidencia),
-`firewall-policy-standards` (**la política**: cuando el diagnóstico concluye "falta una regla" o
-"sobra una regla", el arreglo, su aprobación y su prueba negativa son suyos; **la demostración de
-que el paquete muere en el filtro es tuya**),
-`dns-standards` (**el servicio de nombres y sus datos**: zona, TTL, DNSSEC, resolver legítimo,
-delegación; **tú demuestras que la resolución es la causa y qué responde quién**, ellos deciden
-cuál es la respuesta correcta), `vpn-standards` (**el túnel**: diseño, claves, MTU y keepalive
-correctos, redundancia del concentrador; **"la VPN conecta pero no navego" es tuyo** —es
-PMTU y se prueba con captura en ambos extremos—, igual que "se cae a los 5 minutos" y "resuelve
-mal dentro del túnel"), `linux-administration-standards` (`resolvectl`, `systemd-resolved`,
-`nsswitch.conf`, unidades systemd y la resolución **desde el host**; `dmesg` y el arranque),
-`linux-storage-standards` (cuando "la red va lenta" resulta ser I/O: `iostat`, `fio`),
-`kubernetes-standards` (CNI, `NetworkPolicy`, `Service`/`Ingress`, service mesh: su **diseño**),
-`container-runtime-security-standards` (aislamiento del contenedor y privilegios del agente eBPF —
-un pod de depuración privilegiado es una decisión de seguridad, no un atajo),
-`detection-engineering-standards` (analítica sobre la telemetría de red; **una captura de tráfico
-hecha para investigar un compromiso, no una avería, es de ellos y de**
-`incident-response-forensics-standards` —cadena de custodia y preservación—),
-`sre-practice-standards` (SLO, error budget, gestión del *toil* del diagnóstico repetido),
+**Not applicable**: see `networking-standards` (**parent**: the **design** —topology, addressing,
+VLAN, routing/BGP, correct MTU/MSS values, proxies, overlays, OOB plane—; **it says how the network
+should be, you find out why today it is not**; the structural fix goes back to it),
+`observability-standards` (**permanent telemetry and its alerts**: metrics, logs, traces,
+dashboards, SLI/SLO, sampling, retention and the design of what is instrumented **before** there is a
+problem — **all continuous monitoring is theirs; you are the reactive diagnosis once the alert
+has fired**. The exact line: if the question is "what is measured and at what threshold do we alert?", it is theirs;
+if it is "this is broken now, why?", it is yours. And the evidence you need and that does not exist is a
+finding **for** them: every blind diagnosis ends in an instrumentation requirement),
+`incident-management-standards` (**the process of the declared incident**: severity, Incident
+Commander, channel, communication, mitigate-before-diagnosing, postmortem — **command and
+communication are theirs; technical diagnosis inside the incident is yours**. When the IC asks to
+mitigate now, you mitigate and **note down** what you sacrifice in evidence),
+`firewall-policy-standards` (**the policy**: when the diagnosis concludes "a rule is missing" or
+"there is a rule too many", the fix, its approval and its negative test are theirs; **proving
+that the packet dies in the filter is yours**),
+`dns-standards` (**the name service and its data**: zone, TTL, DNSSEC, legitimate resolver,
+delegation; **you prove that resolution is the cause and who answers what**, they decide
+which is the right answer), `vpn-standards` (**the tunnel**: design, keys, correct MTU and keepalive,
+concentrator redundancy; **"the VPN connects but I cannot browse" is yours** —it is
+PMTU and it is proven with a capture at both ends—, likewise "it drops after 5 minutes" and "it resolves
+badly inside the tunnel"), `linux-administration-standards` (`resolvectl`, `systemd-resolved`,
+`nsswitch.conf`, systemd units and resolution **from the host**; `dmesg` and boot),
+`linux-storage-standards` (when "the network is slow" turns out to be I/O: `iostat`, `fio`),
+`kubernetes-standards` (CNI, `NetworkPolicy`, `Service`/`Ingress`, service mesh: their **design**),
+`container-runtime-security-standards` (container isolation and the eBPF agent's privileges —
+a privileged debugging pod is a security decision, not a shortcut),
+`detection-engineering-standards` (analytics over network telemetry; **a traffic capture
+made to investigate a compromise, not a fault, belongs to them and to**
+`incident-response-forensics-standards` —chain of custody and preservation—),
+`sre-practice-standards` (SLO, error budget, managing the *toil* of repeated diagnosis),
 `aws-standards`/`azure-standards`/`gcp-standards` (flow logs, Reachability Analyzer/Network Watcher
-y equivalentes: la herramienta del proveedor y su configuración),
-`data-platform-standards` (latencia que resulta ser del motor de base de datos, no de la red),
-`microservices-architecture-standards` (timeouts, reintentos y circuit breakers como **diseño** de
-la aplicación; aquí sólo se demuestra que el fallo viene de ahí),
-`appsec-standards` (fallo que resulta ser de la aplicación), `onprem-standards` (paraguas),
-`homelab-standards` (laboratorio propio), `offensive-security-standards` (**escanear una red que no
-es tuya, o el barrido activo sin autorización, no es diagnóstico**), y las tres skills de diseño y
-operación proactiva a las que **vuelve la causa una vez encontrada**: si la avería
-se explica por el diseño de campus o por una política BGP, la corrección estructural es de
-`routing-switching-standards`; si aparece MTU de encapsulación, ECMP asimétrico o EVPN, es de
-`datacenter-fabric-standards`; y **si la respuesta a "¿qué cambió?" es un despliegue de
-configuración, la reversión y el gate que debió impedirlo son de `network-automation-standards`**.
-Aquí termina el trabajo cuando la causa está probada; el arreglo permanente vive allí.
+and equivalents: the provider's tool and its configuration),
+`data-platform-standards` (latency that turns out to be the database engine's, not the network's),
+`microservices-architecture-standards` (timeouts, retries and circuit breakers as the application's
+**design**; here you only prove that the failure comes from there),
+`appsec-standards` (a failure that turns out to be the application's), `onprem-standards` (umbrella),
+`homelab-standards` (your own lab), `offensive-security-standards` (**scanning a network that is not
+yours, or active sweeping without authorisation, is not diagnosis**), and the three design and
+proactive-operations skills the cause **returns to once found**: if the fault
+is explained by the campus design or by a BGP policy, the structural fix belongs to
+`routing-switching-standards`; if encapsulation MTU, asymmetric ECMP or EVPN appears, it belongs to
+`datacenter-fabric-standards`; and **if the answer to "what changed?" is a configuration
+deployment, the rollback and the gate that should have prevented it belong to `network-automation-standards`**.
+Here the work ends when the cause is proven; the permanent fix lives there.
 
-También existen y son frontera: `ha-clustering-standards` (*split brain*, fencing y la red de
-clúster: **el comportamiento esperado del clúster ante partición es suyo; demostrar que hubo
-partición de red y por qué, es tuyo**) y `podman-systemd-containers-standards` (redes rootless con
-`netavark`/`pasta` y su resolución: su **configuración** es suya, el diagnóstico del paquete que se
-pierde entre namespaces es de aquí).
+They also exist and are boundaries: `ha-clustering-standards` (*split brain*, fencing and the cluster
+network: **the expected behaviour of the cluster under partition is theirs; proving that there was a
+network partition and why is yours**) and `podman-systemd-containers-standards` (rootless networks with
+`netavark`/`pasta` and their resolution: their **configuration** is theirs, the diagnosis of the packet
+lost between namespaces belongs here).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión y el estado de mantenimiento por web antes de fijar nada (§8).
-> Fechas obtenidas de `api.github.com` y del sitio del proyecto, no de páginas HTML resumidas.
+> Verify the latest version and maintenance status on the web before committing to anything (§8).
+> Dates obtained from `api.github.com` and the project's site, not from summarised HTML pages.
 
-| Pregunta que respondes | Herramienta por defecto | Alternativa | Vetado |
+| Question you are answering | Default tool | Alternative | Banned |
 |---|---|---|---|
-| ¿Qué hay configurado en esta máquina? | `ip addr`/`ip link`/`ip route`/`ip neigh`/`ip -s link` (**iproute2**) | `nmcli`/`networkctl` según el gestor | `ifconfig`, `route`, `arp`, `netstat` (**net-tools**: sin release desde 2001, sin mantenimiento; **ocultan** namespaces, políticas de enrutado, múltiples tablas y estado moderno de sockets) |
-| ¿Qué ruta usaría **este** paquete? | `ip route get <dst> from <src>` | `ip rule show` para policy routing | Leer la tabla principal y suponer |
-| ¿Qué sockets y en qué estado? | `ss -tanp`, `ss -tin` (RTT, cwnd, retransmisiones), `ss -s` | `/proc/net/sockstat` | `netstat -an` |
-| ¿Llega el paquete y vuelve? | **`tshark`/`dumpcap` capturando en AMBOS extremos a la vez** | Captura en cada salto intermedio si el camino tiene varios | Capturar sólo en un extremo y deducir |
-| ¿Análisis de la captura? | **Wireshark 4.6.x** (GUI) para analizar; `tshark` para filtrar y automatizar | `capinfos`, `editcap`, `mergecap` | Analizar 2 GB de pcap a ojo en vez de filtrar |
-| ¿Dónde se pierde y cuánto? | `mtr --report --report-cycles 100 -w` (**v0.96**; repo con actividad jun-2026) | `traceroute -T -p 443` cuando ICMP/UDP está filtrado | `ping` como única medida de calidad |
-| ¿Capa 1-2 sana? | `ethtool <if>` (negociación), `ethtool -S` (contadores de error/descarte), `ethtool -a` (pausa) | `ip -s link` para errores agregados | Diagnosticar capa 3 sin haber mirado errores de interfaz |
-| ¿Estado del filtrado y del NAT? | `nft list ruleset` con `counter`; `/proc/net/nf_conntrack` y `nf_conntrack_count` vs `nf_conntrack_max` (**conntrack-tools 1.4.9**) | `nft monitor trace` para seguir un paquete por las cadenas | Suponer que "el firewall está abierto" porque alguien lo dijo |
-| ¿La aplicación acepta? | `curl -v` con **`--resolve`** (aísla DNS de conectividad), `openssl s_client -connect -servername` | `nc -zv` para puerto crudo; `socat` para relés y pruebas de protocolo | `telnet host puerto` como prueba de TLS |
-| ¿Cuánto ancho de banda hay de verdad? | **`iperf3 3.21`** (09-abr-2026) con `-P` (paralelo), `-R` (sentido inverso) y series largas | `iperf3 -u -b` para UDP con caudal fijado, midiendo pérdida y jitter | Medir 10 s en un sentido y llamarlo *baseline* |
-| ¿Dónde muere el paquete **dentro** del kernel? | **`pwru` v1.0.12** (13-jul-2026, kernel ≥5.3; `--output-skb` ≥5.9) | `bpftrace 0.26.1` (02-jun-2026) y herramientas de `bcc 0.37.0` (02-jul-2026) para casos a medida | Adivinar entre `nftables`, routing y el driver |
-| ¿Y en Kubernetes? | `hubble observe --verdict DROPPED` (Cilium **1.20.0**, 29-jul-2026); `kubectl debug --image=nicolaka/netshoot` con `--target` | `kubectl debug node/<n>` para el netns del nodo; Retina donde el CNI no sea Cilium | `kubectl exec` a un contenedor *distroless* y rendirse |
-| ¿Y en la nube? | **Flow logs** del proveedor + su analizador de alcanzabilidad | Captura en la instancia si el proveedor no la ofrece gestionada | Concluir "es la nube" sin mirar los flow logs |
+| What is configured on this machine? | `ip addr`/`ip link`/`ip route`/`ip neigh`/`ip -s link` (**iproute2**) | `nmcli`/`networkctl` depending on the manager | `ifconfig`, `route`, `arp`, `netstat` (**net-tools**: no release since 2001, unmaintained; they **hide** namespaces, routing policies, multiple tables and modern socket state) |
+| Which route would **this** packet take? | `ip route get <dst> from <src>` | `ip rule show` for policy routing | Reading the main table and assuming |
+| Which sockets and in which state? | `ss -tanp`, `ss -tin` (RTT, cwnd, retransmissions), `ss -s` | `/proc/net/sockstat` | `netstat -an` |
+| Does the packet arrive and come back? | **`tshark`/`dumpcap` capturing at BOTH ends at the same time** | A capture at each intermediate hop if the path has several | Capturing at only one end and inferring |
+| Analysing the capture? | **Wireshark 4.6.x** (GUI) to analyse; `tshark` to filter and automate | `capinfos`, `editcap`, `mergecap` | Eyeballing 2 GB of pcap instead of filtering |
+| Where is it lost and how much? | `mtr --report --report-cycles 100 -w` (**v0.96**; repo with activity in Jun 2026) | `traceroute -T -p 443` when ICMP/UDP is filtered | `ping` as the only quality measurement |
+| Is layer 1-2 healthy? | `ethtool <if>` (negotiation), `ethtool -S` (error/discard counters), `ethtool -a` (pause) | `ip -s link` for aggregate errors | Diagnosing layer 3 without having looked at interface errors |
+| State of filtering and NAT? | `nft list ruleset` with `counter`; `/proc/net/nf_conntrack` and `nf_conntrack_count` vs `nf_conntrack_max` (**conntrack-tools 1.4.9**) | `nft monitor trace` to follow a packet through the chains | Assuming "the firewall is open" because somebody said so |
+| Does the application accept? | `curl -v` with **`--resolve`** (isolates DNS from connectivity), `openssl s_client -connect -servername` | `nc -zv` for a raw port; `socat` for relays and protocol tests | `telnet host port` as a TLS test |
+| How much bandwidth is there really? | **`iperf3 3.21`** (09 Apr 2026) with `-P` (parallel), `-R` (reverse direction) and long runs | `iperf3 -u -b` for UDP with a fixed rate, measuring loss and jitter | Measuring 10 s in one direction and calling it a *baseline* |
+| Where does the packet die **inside** the kernel? | **`pwru` v1.0.12** (13 Jul 2026, kernel ≥5.3; `--output-skb` ≥5.9) | `bpftrace 0.26.1` (02 Jun 2026) and `bcc 0.37.0` tools (02 Jul 2026) for bespoke cases | Guessing between `nftables`, routing and the driver |
+| And in Kubernetes? | `hubble observe --verdict DROPPED` (Cilium **1.20.0**, 29 Jul 2026); `kubectl debug --image=nicolaka/netshoot` with `--target` | `kubectl debug node/<n>` for the node's netns; Retina where the CNI is not Cilium | `kubectl exec` into a *distroless* container and giving up |
+| And in the cloud? | The provider's **flow logs** + its reachability analyser | A capture on the instance if the provider does not offer a managed one | Concluding "it is the cloud" without looking at the flow logs |
 
-**Sobre eBPF (`pwru`, `bpftrace`, `bcc`, Hubble): recomendables, pero no como primer paso.**
-Son la respuesta a "el paquete entra en la máquina y no sale, y ninguna herramienta clásica me dice
-dónde" — un problema real y frecuente en hosts con contenedores, y donde la captura clásica no
-alcanza porque el descarte ocurre entre puntos de captura. Requisitos y coste que hay que aceptar
-antes: kernel moderno con **BTF** y `CONFIG_KPROBES`/`CONFIG_BPF`, privilegios altos en el host
-(decisión de seguridad, ver `container-runtime-security-standards`), y sobrecarga no nula en
-producción. **Criterio**: capa 1-2, `ss`, captura en ambos extremos y contadores de firewall
-primero; eBPF cuando esos cuatro no cierran el caso.
+**On eBPF (`pwru`, `bpftrace`, `bcc`, Hubble): recommended, but not as the first step.**
+They are the answer to "the packet enters the machine and does not come out, and no classic tool tells me
+where" — a real and frequent problem on hosts with containers, and where classic capture does not
+reach because the drop happens between capture points. Requirements and cost to accept
+beforehand: a modern kernel with **BTF** and `CONFIG_KPROBES`/`CONFIG_BPF`, high privileges on the host
+(a security decision, see `container-runtime-security-standards`), and non-zero overhead in
+production. **Criteria**: layer 1-2, `ss`, capture at both ends and firewall counters
+first; eBPF when those four do not close the case.
 
-## 3. El método
+## 3. The method
 
-### 3.1 Antes de teclear nada: cuatro preguntas
+### 3.1 Before typing anything: four questions
 
-1. **¿Qué cambió?** — La causa es el último cambio hasta que se demuestre lo contrario. El
-   diagnóstico **empieza en el control de cambios**: despliegues, cambios de firewall o de routing,
-   parcheo, renovación de certificado, cambio de proveedor, actualización de firmware, expiración de
-   algo. Si nadie sabe qué cambió, ese es el primer hallazgo (y un problema de gobierno, no de red).
-2. **¿Qué es exactamente "no funciona"?** — Reproduce el síntoma con precisión: qué origen, qué
-   destino, qué puerto, qué protocolo, qué cliente, a qué hora, con qué mensaje de error literal.
-   "La red va mal" no es un síntoma; "desde el host A, `curl` a B:443 se queda colgado tras el
-   handshake TLS, en el 30% de los intentos, desde las 09:14" sí lo es.
-3. **¿Cuál es el alcance?** — ¿Un usuario o todos? ¿Un destino o todos? ¿Un protocolo o todos?
-   ¿Una VLAN, un nodo, una zona de disponibilidad? El alcance **descarta más hipótesis en 30
-   segundos que una hora de capturas**: un fallo que afecta a un solo cliente no está en el
-   servidor, y uno que afecta a todos los destinos no está en el destino.
-4. **¿Funcionó alguna vez?** — "Nunca funcionó" es un problema de **configuración o de diseño**;
-   "funcionaba y dejó de funcionar" es un problema de **cambio o de agotamiento de un recurso**. Son
-   dos investigaciones distintas y confundirlas cuesta horas.
+1. **What changed?** — The cause is the last change until proven otherwise. The
+   diagnosis **starts in change control**: deployments, firewall or routing changes,
+   patching, certificate renewal, change of provider, firmware update, the expiry of
+   something. If nobody knows what changed, that is the first finding (and a governance problem, not a
+   network one).
+2. **What exactly is "it does not work"?** — Reproduce the symptom precisely: which source, which
+   destination, which port, which protocol, which client, at what time, with which literal error message.
+   "The network is bad" is not a symptom; "from host A, `curl` to B:443 hangs after the
+   TLS handshake, in 30% of attempts, since 09:14" is.
+3. **What is the scope?** — One user or all of them? One destination or all of them? One protocol or all of them?
+   One VLAN, one node, one availability zone? Scope **discards more hypotheses in 30
+   seconds than an hour of captures**: a failure that affects a single client is not in the
+   server, and one that affects every destination is not in the destination.
+4. **Did it ever work?** — "It never worked" is a **configuration or design** problem;
+   "it worked and stopped working" is a **change or resource exhaustion** problem. They are
+   two different investigations and confusing them costs hours.
 
-### 3.2 Bisección: dividir el camino, no recorrerlo
+### 3.2 Bisection: divide the path, do not walk it
 
-- **No se recorre el camino salto a salto.** Se **parte por la mitad**: elige un punto intermedio
-  con visibilidad (un router, un balanceador, un nodo) y determina si el problema está antes o
-  después. Repite. Con 8 saltos, la bisección son 3 pruebas; el recorrido lineal, 8 — y con más
-  ocasiones de equivocarse.
-- **La bisección también se aplica a las dimensiones no espaciales**: dos clientes (uno que falla,
-  uno que no) → ¿qué difiere?; dos destinos; dos protocolos; dos momentos; IPv4 vs. IPv6. El corte
-  es por *variable*, no sólo por *lugar*.
-- **Una variable cada vez.** Cambiar dos cosas y que funcione no es un diagnóstico: es una
-  coincidencia con la que tendrás que volver a lidiar. Si la presión obliga a cambiar varias a la
-  vez para mitigar, se **anota** y se revierte una a una después para identificar cuál era.
-- **Hipótesis falsable antes de teclear**: escribe "si la causa es X, entonces al hacer Y veré Z;
-  si veo W, X queda descartado". Una prueba que no puede refutar tu hipótesis no es una prueba, es
-  una ceremonia. Esto es lo que separa el diagnóstico de "lanzar comandos".
-- **El sesgo de confirmación es el enemigo principal**: en cuanto tienes un sospechoso, todas las
-  pruebas parecen confirmarlo. Antídoto: define de antemano **qué resultado te haría abandonar** esa
-  hipótesis, y bísala explícitamente.
+- **You do not walk the path hop by hop.** You **split it in half**: pick an intermediate point
+  with visibility (a router, a load balancer, a node) and determine whether the problem is before or
+  after. Repeat. With 8 hops, bisection is 3 tests; walking it linearly, 8 — and with more
+  opportunities to get it wrong.
+- **Bisection also applies to non-spatial dimensions**: two clients (one that fails,
+  one that does not) → what differs?; two destinations; two protocols; two moments; IPv4 vs. IPv6. The cut
+  is by *variable*, not just by *place*.
+- **One variable at a time.** Changing two things and having it work is not a diagnosis: it is a
+  coincidence you will have to deal with again. If pressure forces changing several at
+  once to mitigate, it is **noted** and reverted one by one afterwards to identify which one it was.
+- **A falsifiable hypothesis before typing**: write down "if the cause is X, then doing Y I will see Z;
+  if I see W, X is ruled out". A test that cannot refute your hypothesis is not a test, it is
+  a ceremony. This is what separates diagnosis from "firing off commands".
+- **Confirmation bias is the main enemy**: as soon as you have a suspect, every
+  test seems to confirm it. Antidote: define in advance **what result would make you abandon** that
+  hypothesis, and look for it explicitly.
 
-### 3.3 La secuencia canónica
+### 3.3 The canonical sequence
 
-Cuatro preguntas, en orden. Cada una tiene una respuesta binaria y elimina medio universo.
+Four questions, in order. Each one has a binary answer and eliminates half the universe.
 
-**1) ¿Resuelve el nombre — y a lo correcto?**
-- Aísla el DNS del resto **desde el primer minuto**: `curl -v --resolve host:443:<ip>` compara
-  directamente "no resuelve" contra "no conecta". Si con `--resolve` funciona, el problema es de
-  resolución y no de red.
-- Pregunta a **cada** resolvedor por separado y compáralos, y **compáralo con lo que usa realmente
-  el proceso**: el sistema puede tener un stub local, un caché, un `search` que completa el nombre,
-  un `/etc/hosts` olvidado o una biblioteca que ni siquiera pasa por el resolvedor del SO. La
-  resolución "desde el shell" y "desde la aplicación" **no son la misma**.
-- Caché negativa y TTL explican el clásico "a mí me funciona y a ti no" y "tardó una hora en
-  arreglarse solo". El diseño de zona, TTL y resolvedores, en `dns-standards`.
+**1) Does the name resolve — and to the right thing?**
+- Isolate DNS from the rest **from the first minute**: `curl -v --resolve host:443:<ip>` directly
+  compares "does not resolve" against "does not connect". If it works with `--resolve`, the problem is
+  resolution and not the network.
+- Ask **each** resolver separately and compare them, and **compare that with what the process
+  actually uses**: the system may have a local stub, a cache, a `search` that completes the name,
+  a forgotten `/etc/hosts` or a library that does not even go through the OS resolver.
+  Resolution "from the shell" and "from the application" **are not the same**.
+- Negative caching and TTL explain the classic "it works for me and not for you" and "it took an hour to
+  fix itself". Zone, TTL and resolver design, in `dns-standards`.
 
-**2) ¿Llega el paquete al destino?**
-- Captura **en el destino**, filtrando por origen y puerto. Si no aparece, el paquete muere en el
-  camino: firewall, ruta, NAT, VLAN, capa 1-2.
-- Comprueba en el origen que **sale** y por qué interfaz: `ip route get <dst> from <src>` responde
-  la pregunta real (incluye policy routing y tabla efectiva), no la tabla principal.
-- Si sale y no llega, bisecciona el camino y revisa los contadores de las reglas de filtrado en cada
-  salto: un `counter` que sube en la regla de descarte es una prueba, no una sospecha.
+**2) Does the packet reach the destination?**
+- Capture **at the destination**, filtering by source and port. If it does not appear, the packet dies on the
+  way: firewall, route, NAT, VLAN, layer 1-2.
+- Check at the source that it **leaves** and through which interface: `ip route get <dst> from <src>` answers
+  the real question (it includes policy routing and the effective table), not the main table.
+- If it leaves and does not arrive, bisect the path and check the counters of the filtering rules at each
+  hop: a `counter` incrementing on the drop rule is a proof, not a suspicion.
 
-**3) ¿Vuelve la respuesta? — la mitad olvidada del problema**
-- **La respuesta se pierde tanto como la ida, y casi nadie la mira.** Si en el destino ves el `SYN`
-  y sale el `SYN/ACK`, pero el origen no lo recibe, el problema es del **camino de vuelta** y todo
-  lo que estabas mirando era irrelevante.
-- Causas típicas del fallo asimétrico: el retorno toma un camino distinto (multihoming, rutas
-  específicas, VPN parcial, VRF); un firewall stateful que sólo ve un sentido y descarta el otro
-  por falta de estado —**síntoma inconfundible: funciona un rato y se corta, o falla de forma
-  intermitente y no reproducible**—; NAT en un sentido y no en el otro; uRPF descartando por
-  camino inverso inválido.
-- **Regla operativa**: en todo caso difícil, captura simultánea en ambos extremos **con reloj
-  sincronizado**, y compara. Esto resuelve el 90% de lo que parece imposible: te dice en qué mitad
-  del camino desaparece el paquete y con eso la investigación se reduce a la mitad de la red. Si
-  además el camino tiene un intermediario (proxy, balanceador, NAT), captura en sus dos lados.
-- La corrección de la asimetría es de diseño (`networking-standards`) o de política
-  (`firewall-policy-standards`): **nunca** se arregla añadiendo un `accept` amplio.
+**3) Does the response come back? — the forgotten half of the problem**
+- **The response gets lost as much as the outbound, and almost nobody looks at it.** If at the destination you see the `SYN`
+  and the `SYN/ACK` leaves, but the source does not receive it, the problem is the **return path** and everything
+  you were looking at was irrelevant.
+- Typical causes of asymmetric failure: the return takes a different path (multihoming, specific
+  routes, partial VPN, VRF); a stateful firewall that only sees one direction and drops the other
+  for lack of state —**an unmistakable symptom: it works for a while and then cuts off, or it fails
+  intermittently and non-reproducibly**—; NAT in one direction and not the other; uRPF dropping because of an
+  invalid reverse path.
+- **Operational rule**: in every hard case, simultaneous capture at both ends **with synchronised
+  clocks**, and compare. This solves 90% of what looks impossible: it tells you in which half
+  of the path the packet disappears and with that the investigation is reduced to half the network. If
+  the path also has an intermediary (proxy, load balancer, NAT), capture on both of its sides.
+- Correcting asymmetry is a design (`networking-standards`) or policy
+  (`firewall-policy-standards`) matter: it is **never** fixed by adding a broad `accept`.
 
-**4) ¿Lo acepta la aplicación?**
-- El paquete llega, el `SYN/ACK` vuelve, y el fallo sigue: mira si el proceso **escucha** (`ss
-  -tanp`), en qué dirección (`0.0.0.0` vs `127.0.0.1` vs `::` — un servicio en loopback es
-  inalcanzable desde fuera y parece un firewall), y si la cola de aceptación está llena
-  (`ss -lt` muestra `Send-Q` como backlog y `Recv-Q` como pendientes: si se satura, el kernel
-  descarta `SYN` y el cliente ve *timeouts* con el servidor "vivo").
-- Fallos que **parecen** de red y son de la aplicación o de su borde: `RST` inmediato (nadie escucha
-  o el proxy rechaza), handshake TLS que falla por SNI, certificado, versión o cadena
-  (`openssl s_client -servername`), redirecciones, autenticación, o *timeouts* propios de la
-  aplicación más cortos que su reintento.
-- **`RST` vs. *timeout* es la distinción más informativa del oficio**: `RST` = algo respondió y
-  rechazó (host vivo, puerto cerrado, proxy o firewall que **rechaza**); silencio = algo descartó
-  (firewall que **descarta**, ruta ausente, host caído). No son el mismo problema y no se
-  diagnostican igual.
+**4) Does the application accept it?**
+- The packet arrives, the `SYN/ACK` comes back, and the failure persists: check whether the process **listens** (`ss
+  -tanp`), on which address (`0.0.0.0` vs `127.0.0.1` vs `::` — a service on loopback is
+  unreachable from outside and looks like a firewall), and whether the accept queue is full
+  (`ss -lt` shows `Send-Q` as the backlog and `Recv-Q` as pending: if it saturates, the kernel
+  drops `SYN`s and the client sees *timeouts* with the server "alive").
+- Failures that **look** like network ones and are the application's or its edge's: an immediate `RST` (nobody listens
+  or the proxy rejects), a TLS handshake failing because of SNI, certificate, version or chain
+  (`openssl s_client -servername`), redirects, authentication, or the application's own *timeouts*
+  shorter than its retry.
+- **`RST` vs. *timeout* is the trade's most informative distinction**: `RST` = something answered and
+  rejected (live host, closed port, a proxy or firewall that **rejects**); silence = something dropped
+  (a firewall that **drops**, a missing route, a downed host). They are not the same problem and they are not
+  diagnosed the same way.
 
-### 3.4 Qué mentira cuenta cada herramienta
+### 3.4 Which lie each tool tells
 
-Ninguna herramienta miente por malicia: todas responden una pregunta más estrecha de la que crees
-estar haciendo.
+No tool lies out of malice: they all answer a narrower question than the one you think you
+are asking.
 
-- **`ping` / ICMP** — mide *que el destino responde a ICMP*, no que el servicio funcione. ICMP suele
-  ir **despriorizado** en el plano de control de routers y switches, o filtrado por política. Un
-  `ping` con 200 ms y pérdida hacia el equipo de red puede ser perfectamente normal mientras el
-  tráfico de datos va impecable; y un `ping` perfecto no dice nada del puerto 443. **Nunca uses
-  `ping` como única medida de calidad ni como prueba de servicio.**
-- **`traceroute`/`mtr`** — la mentira más extendida del oficio: **la pérdida en saltos intermedios
-  no significa nada**. Los routers generan las respuestas `TTL exceeded` en su CPU y las limitan por
-  tasa; ver 40% de pérdida en el salto 5 y 0% en el destino significa **que ese router prioriza su
-  trabajo, no que haya un problema**. Sólo cuenta: (a) la pérdida en el **último salto** (el
-  destino), y (b) la pérdida que **persiste** desde un salto hasta el final. Además, ECMP hace que
-  cada sonda tome un camino distinto (usa modo con flujo fijo si tu herramienta lo soporta), el
-  camino de vuelta es invisible, y MPLS puede ocultar saltos por completo. Cuando ICMP/UDP está
-  filtrado, `traceroute -T` sobre el puerto real de la aplicación es lo que refleja el camino que
-  importa.
-- **`ss`** — dice el estado **local** del socket. `ESTABLISHED` en un extremo no implica que el otro
-  siga ahí: una conexión cuyo peer desapareció sin `FIN` sigue apareciendo establecida hasta que un
-  keepalive o una escritura lo descubra. `ss -tin` sí da oro: RTT, `cwnd`, retransmisiones — que
-  distinguen "la red pierde" de "la aplicación es lenta".
-- **`tcpdump`/`tshark`** — captura donde tú estás y **después** de que el kernel haya decidido
-  algunas cosas y **antes** de otras: un paquete descartado por el filtro puede aparecer o no en la
-  captura según el punto de enganche, y el offload (GRO/GSO/TSO/LRO) muestra "paquetes" gigantes que
-  no existen en el cable (desactívalo si vas a analizar tamaños o MTU). Con muestreo o con filtro
-  mal escrito, tu "no aparece" puede ser tuyo, no de la red. Y la captura sin filtro en un enlace
-  cargado se pierde a sí misma: usa filtro de captura (BPF) para lo que quieres, y filtro de
-  visualización para analizar.
-- **`ip route`** — muestra tablas; **`ip route get`** muestra la decisión. Con reglas de política,
-  VRF o varias tablas, leer la principal y suponer es un error clásico.
-- **`ip neigh`/ARP** — una entrada `STALE` o `FAILED` te dice más que una `REACHABLE`; y una entrada
-  correcta con la **MAC equivocada** (duplicado de IP, proxy ARP inesperado) es un fallo silencioso
-  que ninguna prueba de capa 3 delata. `arping` desde el mismo segmento revela **duplicados de IP**
-  (dos respuestas, dos MAC) en un segundo, que es lo que ninguna otra herramienta hace.
-- **`ethtool`** — la única que ve capa 1-2: negociación (dúplex/velocidad; un *half duplex*
-  negociado mal se manifiesta como "lento e intermitente" bajo carga), errores CRC, descartes por
-  falta de buffer, y contadores por cola. **Contadores acumulativos**: lo que importa es el
-  **delta** durante el fallo, no el total desde el arranque.
-- **`iperf3`** — mide lo que le pidas, y por defecto no es lo que crees. Errores clásicos: medir
-  10 s (todo *slow start*), un solo flujo (limitado por RTT y ventana, no por el enlace), sólo en
-  un sentido (`-R` mide el otro, que puede ser el roto), en UDP sin fijar caudal (`-b`) o fijándolo
-  por encima de la capacidad y llamando "pérdida de red" a tu propia saturación, con el propio
-  `iperf3` como cuello de botella por CPU, o midiendo contra un servidor público compartido.
-  **`iperf3` mide un camino entre dos puntos en un instante; no mide "la red".**
-- **`curl -v`** — sin `--resolve` mezcla DNS, conexión, TLS y HTTP en un solo resultado; con
-  `--resolve` separa el primero. Sus tiempos por fase (`-w`) son un diagnóstico por sí solos: si el
-  tiempo se va en el `connect`, es red; si en el `appconnect`, es TLS; si en el `starttransfer`, es
-  la aplicación.
-- **Los logs de la aplicación** — dicen "connection timeout" para media docena de causas
-  incompatibles entre sí. Útiles para la hora exacta y el alcance; inútiles como diagnóstico.
+- **`ping` / ICMP** — it measures *that the destination answers ICMP*, not that the service works. ICMP is usually
+  **deprioritised** in the control plane of routers and switches, or filtered by policy. A
+  `ping` with 200 ms and loss towards the network device may be perfectly normal while the
+  data traffic runs impeccably; and a perfect `ping` says nothing about port 443. **Never use
+  `ping` as the only quality measurement or as a proof of service.**
+- **`traceroute`/`mtr`** — the trade's most widespread lie: **loss at intermediate hops
+  means nothing**. Routers generate `TTL exceeded` responses in their CPU and rate-limit them;
+  seeing 40% loss at hop 5 and 0% at the destination means **that router prioritises its
+  work, not that there is a problem**. Only two things count: (a) loss at the **last hop** (the
+  destination), and (b) loss that **persists** from one hop to the end. Besides, ECMP makes
+  each probe take a different path (use fixed-flow mode if your tool supports it),
+  the return path is invisible, and MPLS can hide hops entirely. When ICMP/UDP is
+  filtered, `traceroute -T` over the application's real port is what reflects the path that
+  matters.
+- **`ss`** — it tells you the socket's **local** state. `ESTABLISHED` at one end does not imply the other
+  is still there: a connection whose peer disappeared without a `FIN` keeps showing as established until a
+  keepalive or a write discovers it. `ss -tin` does give gold: RTT, `cwnd`, retransmissions — which
+  distinguish "the network is losing" from "the application is slow".
+- **`tcpdump`/`tshark`** — they capture where you are and **after** the kernel has decided
+  some things and **before** others: a packet dropped by the filter may or may not appear in the
+  capture depending on the hook point, and offload (GRO/GSO/TSO/LRO) shows giant "packets" that
+  do not exist on the wire (disable it if you are going to analyse sizes or MTU). With sampling or a badly
+  written filter, your "it does not show up" may be yours, not the network's. And an unfiltered capture on a loaded
+  link loses itself: use a capture filter (BPF) for what you want, and a display
+  filter to analyse.
+- **`ip route`** — it shows tables; **`ip route get`** shows the decision. With policy rules,
+  VRF or several tables, reading the main one and assuming is a classic mistake.
+- **`ip neigh`/ARP** — a `STALE` or `FAILED` entry tells you more than a `REACHABLE` one; and a correct entry
+  with the **wrong MAC** (duplicate IP, unexpected proxy ARP) is a silent failure
+  that no layer 3 test gives away. `arping` from the same segment reveals **duplicate IPs**
+  (two answers, two MACs) in one second, which is what no other tool does.
+- **`ethtool`** — the only one that sees layer 1-2: negotiation (duplex/speed; a badly negotiated
+  *half duplex* shows up as "slow and intermittent" under load), CRC errors, drops due to
+  lack of buffer, and per-queue counters. **Cumulative counters**: what matters is the
+  **delta** during the failure, not the total since boot.
+- **`iperf3`** — it measures what you ask it to, and by default that is not what you think. Classic mistakes: measuring
+  10 s (all *slow start*), a single flow (limited by RTT and window, not by the link), only in
+  one direction (`-R` measures the other, which may be the broken one), in UDP without setting the rate (`-b`) or setting it
+  above capacity and calling your own saturation "network loss", with `iperf3` itself
+  as the CPU bottleneck, or measuring against a shared public server.
+  **`iperf3` measures one path between two points at one instant; it does not measure "the network".**
+- **`curl -v`** — without `--resolve` it mixes DNS, connection, TLS and HTTP into a single result; with
+  `--resolve` it separates the first. Its per-phase timings (`-w`) are a diagnosis in themselves: if the
+  time goes on the `connect`, it is the network; on the `appconnect`, it is TLS; on the `starttransfer`, it is
+  the application.
+- **The application logs** — they say "connection timeout" for half a dozen mutually incompatible
+  causes. Useful for the exact time and the scope; useless as a diagnosis.
 
-### 3.5 Los sospechosos habituales y su síntoma característico
+### 3.5 The usual suspects and their characteristic symptom
 
-Tabla de reconocimiento. El síntoma es lo que te hace sospechar; la prueba es lo que lo demuestra.
+A recognition table. The symptom is what makes you suspect; the proof is what demonstrates it.
 
-| Sospechoso | Síntoma característico | Prueba que lo demuestra |
+| Suspect | Characteristic symptom | Proof that demonstrates it |
 |---|---|---|
-| **MTU / PMTU black hole** | **La conexión abre y se cuelga al transferir**: SSH conecta pero `scp` se para; la web carga el HTML y no las imágenes; "la VPN conecta pero no navego". Típicamente tras un túnel o un cambio de encapsulación | `ping` con paquete grande y bit DF creciente hasta encontrar el corte; captura que muestra retransmisiones del mismo segmento grande sin ACK; ausencia de ICMP *fragmentation needed* de vuelta |
-| **ICMP filtrado que rompe PMTUD** | Idéntico al anterior, y **no se arregla solo nunca** | El intermediario que bloquea ICMP tipo 3 código 4 (o ICMPv6 *packet-too-big*): se ve por ausencia en la captura del lado que debería recibirlo |
-| **DNS** | Intermitencias que parecen de red; "a veces tarda 5 segundos exactos" (timeout de resolvedor); funciona por IP y no por nombre | `curl --resolve` frente a `curl` normal; consulta a cada resolvedor por separado |
-| **Agotamiento de puertos efímeros / NAT** | Fallos que aumentan con la carga, en el lado que **inicia** muchas conexiones (proxy, NAT, cliente de API) | Conteo de sockets frente a `net.ipv4.ip_local_port_range`; en el NAT, sesiones activas frente a su capacidad |
-| **Tabla de conntrack llena** | Descartes **silenciosos** bajo carga, con una línea en `dmesg` que nadie mira | `nf_conntrack_count` frente a `nf_conntrack_max`; `dmesg` con `table full` |
-| **Camino de retorno distinto** | "Va bien un rato y luego se corta"; intermitente e irreproducible; funciona en un sentido | Captura simultánea en ambos extremos: se ve la ida y la respuesta que no llega |
-| **`TIME_WAIT` / backlog agotado** | *Timeouts* de conexión con el servidor vivo y con CPU baja; empeora en picos | `ss -s` (recuento por estado), `ss -lt` con `Recv-Q` creciendo, contador de `SYN` descartados |
-| **Keepalive vs. *idle timeout* de un intermediario** | **"La sesión se cae exactamente a los N minutos"** de inactividad. Firewall, NAT, balanceador o nube con timeout de inactividad más corto que el keepalive del cliente | Reproducir con una sesión ociosa y cronómetro; comparar el timeout del intermediario con el keepalive de TCP/aplicación. Se corrige bajando el keepalive, no subiendo el timeout de todo el mundo |
-| **Duplicado de IP** | Intermitencia inexplicable que cambia con el tiempo de vida de la caché ARP; "a veces entra en un servidor distinto" | `arping` desde el segmento: dos respuestas con MAC distintas |
-| **Duplicado de MAC / *MAC flapping*** | Pérdida masiva en un segmento; el switch registra el aprendizaje de la misma MAC en puertos distintos | Log del switch; tabla de direcciones |
-| **Bucle de capa 2 / tormenta de broadcast** | Toda la VLAN cae o va a rastras; CPU de los switches al 100%; empieza justo tras conectar algo | Contadores de broadcast/multicast por puerto disparados; STP con cambios de topología constantes. Es una emergencia: se aísla el puerto primero |
-| **ARP/ND envejecido o incompleto** | Un host inalcanzable desde su propio segmento mientras el resto va bien | `ip neigh` en estado `FAILED`/`INCOMPLETE` |
-| **IPv6 activo que falla mientras IPv4 funciona** | "Va lento" con retrasos de segundos exactos al inicio; funciona con `-4`; falla sólo en algunos clientes | Comparar `curl -4` y `curl -6`; ruta y ND en IPv6. Causa habitual: `AAAA` publicado sin conectividad IPv6 real, o firewall IPv6 sin paridad con IPv4 |
-| **Happy Eyeballs enmascarando el fallo** | El fallo de IPv6 **casi** no se nota (el cliente reintenta por IPv4 tras un retardo corto), así que nadie lo arregla y la latencia inicial es peor para todos | Captura que muestra el intento IPv6 abandonado. **RFC 8305** es la especificación vigente; la v3 sigue siendo **draft** (§8) |
-| **Proxy o inspección TLS en medio** | Certificado inesperado, versión de TLS forzada, ALPN reescrito, HTTP/3 que no funciona, mTLS que falla, `Server` distinto del esperado | `openssl s_client -servername` y comparar el emisor del certificado con el esperado |
-| **Balanceador con un backend malo** | Falla **una fracción constante** de las peticiones (1 de N) | Repetir la prueba N+ veces registrando a qué backend va cada una |
-| **Certificado caducado o cadena incompleta** | Falla a una hora exacta, para todos a la vez, sin que nadie tocara nada | `openssl s_client` mostrando la cadena y las fechas |
-| **Capa 1** | Errores CRC crecientes, lento sólo bajo carga, dúplex mal negociado, óptica degradada | `ethtool -S` (delta durante el fallo), `ethtool` (negociación), potencia óptica en el equipo |
-| **Saturación / bufferbloat** | Latencia que se dispara **sólo cuando hay tráfico**; el `ping` sube de 10 ms a 300 ms al empezar una descarga | Latencia bajo carga frente a en reposo; utilización del enlace por percentiles |
+| **MTU / PMTU black hole** | **The connection opens and hangs while transferring**: SSH connects but `scp` stalls; the web page loads the HTML and not the images; "the VPN connects but I cannot browse". Typically after a tunnel or a change of encapsulation | `ping` with a large packet and the DF bit, increasing until you find the cut-off; a capture showing retransmissions of the same large segment with no ACK; absence of ICMP *fragmentation needed* coming back |
+| **Filtered ICMP that breaks PMTUD** | Identical to the previous one, and **it never fixes itself** | The intermediary blocking ICMP type 3 code 4 (or ICMPv6 *packet-too-big*): it is seen by its absence in the capture on the side that should receive it |
+| **DNS** | Intermittency that looks like the network's; "sometimes it takes exactly 5 seconds" (resolver timeout); it works by IP and not by name | `curl --resolve` versus a normal `curl`; querying each resolver separately |
+| **Ephemeral port / NAT exhaustion** | Failures that increase with load, on the side that **initiates** many connections (proxy, NAT, API client) | Socket count against `net.ipv4.ip_local_port_range`; on the NAT, active sessions against its capacity |
+| **Full conntrack table** | **Silent** drops under load, with a line in `dmesg` nobody looks at | `nf_conntrack_count` against `nf_conntrack_max`; `dmesg` with `table full` |
+| **Different return path** | "It works for a while and then cuts off"; intermittent and irreproducible; it works in one direction | Simultaneous capture at both ends: you see the outbound and the response that does not arrive |
+| **`TIME_WAIT` / exhausted backlog** | Connection *timeouts* with the server alive and CPU low; it worsens at peaks | `ss -s` (count by state), `ss -lt` with `Recv-Q` growing, the dropped-`SYN` counter |
+| **Keepalive vs. an intermediary's *idle timeout*** | **"The session drops exactly after N minutes"** of inactivity. A firewall, NAT, load balancer or cloud with an idle timeout shorter than the client's keepalive | Reproduce with an idle session and a stopwatch; compare the intermediary's timeout with the TCP/application keepalive. It is fixed by lowering the keepalive, not by raising everybody's timeout |
+| **Duplicate IP** | Unexplained intermittency that changes with the ARP cache lifetime; "sometimes it lands on a different server" | `arping` from the segment: two answers with different MACs |
+| **Duplicate MAC / *MAC flapping*** | Massive loss on a segment; the switch logs learning the same MAC on different ports | Switch log; address table |
+| **Layer 2 loop / broadcast storm** | The whole VLAN goes down or crawls; switch CPU at 100%; it starts right after plugging something in | Broadcast/multicast counters per port shooting up; STP with constant topology changes. It is an emergency: the port is isolated first |
+| **Aged or incomplete ARP/ND** | A host unreachable from its own segment while everything else is fine | `ip neigh` in `FAILED`/`INCOMPLETE` state |
+| **IPv6 enabled and failing while IPv4 works** | "It is slow" with delays of exact seconds at the start; it works with `-4`; it fails only on some clients | Compare `curl -4` and `curl -6`; route and ND on IPv6. Usual cause: `AAAA` published without real IPv6 connectivity, or an IPv6 firewall without parity with IPv4 |
+| **Happy Eyeballs masking the failure** | The IPv6 failure is **almost** unnoticeable (the client retries over IPv4 after a short delay), so nobody fixes it and the initial latency is worse for everyone | A capture showing the abandoned IPv6 attempt. **RFC 8305** is the current specification; v3 is still a **draft** (§8) |
+| **A proxy or TLS inspection in the middle** | An unexpected certificate, a forced TLS version, rewritten ALPN, HTTP/3 that does not work, mTLS that fails, a `Server` different from the expected one | `openssl s_client -servername` and compare the certificate issuer with the expected one |
+| **Load balancer with one bad backend** | A **constant fraction** of requests fails (1 in N) | Repeat the test N+ times recording which backend each one goes to |
+| **Expired certificate or incomplete chain** | It fails at an exact time, for everybody at once, with nobody having touched anything | `openssl s_client` showing the chain and the dates |
+| **Layer 1** | Growing CRC errors, slow only under load, badly negotiated duplex, degraded optics | `ethtool -S` (delta during the failure), `ethtool` (negotiation), optical power on the device |
+| **Saturation / bufferbloat** | Latency that shoots up **only when there is traffic**; the `ping` goes from 10 ms to 300 ms when a download starts | Latency under load versus at rest; link utilisation by percentiles |
 
-### 3.6 Latencia, pérdida y jitter: medirlos de verdad
+### 3.6 Latency, loss and jitter: measuring them properly
 
-- **Percentiles, nunca medias.** La media esconde exactamente lo que rompe la experiencia. Mira
-  p50, p95, p99 y **el máximo**; y compara con el reposo, no con un número absoluto. Un p50 de 20 ms
-  con p99 de 2 s es un sistema roto que promedia bien.
-- **Distingue las tres causas de "va lento"**, porque tienen arreglos opuestos:
-  - **Latencia (RTT)**: limita el caudal de un flujo TCP por ventana. Si el RTT es alto, más ancho
-    de banda no arregla nada; más flujos paralelos o una ventana mayor, sí.
-  - **Pérdida**: hunde el caudal TCP de forma desproporcionada (una pérdida del 1% puede costar la
-    mayor parte del rendimiento en un enlace de RTT alto). Se ve en retransmisiones (`ss -tin`),
-    no en el `ping`.
-  - **Jitter**: irrelevante para una descarga, letal para voz y vídeo. Se mide con UDP a caudal
-    fijo, no con TCP.
-- **La medición ha de reproducir el caso real**: mismo par origen-destino, mismo protocolo, mismo
-  tamaño de transferencia, misma hora del día. Una prueba en reposo no reproduce un problema de
-  saturación, y una prueba de 10 segundos no reproduce un problema de 20 minutos.
-- **Si "va lento" resulta ser I/O, CPU o base de datos, dilo y cierra el caso ahí**: la red es
-  culpada por defecto, y demostrar que **no** es la red es un resultado tan válido como cualquier
-  otro (con evidencia, no con una negación).
+- **Percentiles, never averages.** The average hides exactly what breaks the experience. Look at
+  p50, p95, p99 and **the maximum**; and compare with the at-rest state, not with an absolute number. A p50 of 20 ms
+  with a p99 of 2 s is a broken system that averages well.
+- **Distinguish the three causes of "it is slow"**, because they have opposite fixes:
+  - **Latency (RTT)**: it limits a TCP flow's throughput through the window. If the RTT is high, more
+    bandwidth fixes nothing; more parallel flows or a larger window do.
+  - **Loss**: it sinks TCP throughput disproportionately (1% loss can cost
+    most of the performance on a high-RTT link). It is seen in retransmissions (`ss -tin`),
+    not in the `ping`.
+  - **Jitter**: irrelevant for a download, lethal for voice and video. It is measured with UDP at a fixed
+    rate, not with TCP.
+- **The measurement must reproduce the real case**: same source-destination pair, same protocol, same
+  transfer size, same time of day. A test at rest does not reproduce a saturation problem,
+  and a 10-second test does not reproduce a 20-minute problem.
+- **If "it is slow" turns out to be I/O, CPU or the database, say so and close the case there**: the network is
+  blamed by default, and proving that it is **not** the network is as valid a result as any
+  other (with evidence, not with a denial).
 
-### 3.7 Entornos modernos: contenedores, Kubernetes, nubes y overlays
+### 3.7 Modern environments: containers, Kubernetes, clouds and overlays
 
-- **El paquete cruza varios *network namespaces*.** Antes de capturar, decide **en cuál** estás
-  capturando: dentro del contenedor, en el `veth` del lado del host, en el bridge, en el netns del
-  nodo, en la interfaz física, en la interfaz del overlay. "No aparece en la captura" casi siempre
-  significa "capturaste en el namespace equivocado".
-- **Kubernetes: orden de comprobación por capas del propio clúster** — ¿resuelve el nombre del
-  `Service`? → ¿tiene el `Service` `Endpoints`/`EndpointSlice` (un `Service` sin endpoints por
-  selector mal escrito es el fallo más común y no parece de red)? → ¿hay `NetworkPolicy` que lo
-  deniegue (el descarte ocurre en el datapath, **antes** de llegar al pod)? → ¿el `readinessProbe`
-  saca al pod de rotación? → ¿el CNI o `kube-proxy` tienen la regla? → ¿el nodo enruta?
-  `hubble observe --verdict DROPPED` da el veredicto y el motivo del descarte en un paso; ojo con la
-  **agregación de monitorización**, que puede ocultarte eventos individuales.
-- **Contenedores *distroless* y sin herramientas**: `kubectl debug` con contenedor efímero
-  (**GA desde Kubernetes 1.25**) e imagen de diagnóstico (`nicolaka/netshoot`), compartiendo el
-  namespace del pod, y `kubectl debug node/<nodo>` para el netns del nodo. Dos avisos operativos:
-  un contenedor efímero **no se puede eliminar** hasta que se borre el pod y **no tiene límites de
-  recursos**; y para sacar una captura, **transmítela por la salida estándar** en vez de escribir el
-  fichero dentro (la copia desde un contenedor efímero no funciona).
-- **Nubes**: los **flow logs** de la VPC/VNet son la primera parada —dicen si el paquete fue
-  aceptado o rechazado y por qué regla— seguidos del analizador de alcanzabilidad del proveedor. Sus
-  límites, que hay que conocer: agregación por ventanas (no ves el paquete, ves el flujo), posible
-  muestreo, retardo de minutos, y ausencia de payload. La configuración concreta, en
+- **The packet crosses several *network namespaces*.** Before capturing, decide **which one** you are
+  capturing in: inside the container, on the host side of the `veth`, on the bridge, in the node's netns,
+  on the physical interface, on the overlay interface. "It does not show up in the capture" almost always
+  means "you captured in the wrong namespace".
+- **Kubernetes: a checking order by the cluster's own layers** — does the `Service` name
+  resolve? → does the `Service` have `Endpoints`/`EndpointSlice` (a `Service` with no endpoints from a badly
+  written selector is the most common failure and does not look like a network one)? → is there a `NetworkPolicy` that
+  denies it (the drop happens in the datapath, **before** reaching the pod)? → does the `readinessProbe`
+  take the pod out of rotation? → do the CNI or `kube-proxy` have the rule? → does the node route?
+  `hubble observe --verdict DROPPED` gives the verdict and the reason for the drop in one step; beware of
+  **monitoring aggregation**, which can hide individual events from you.
+- ***Distroless* containers with no tools**: `kubectl debug` with an ephemeral container
+  (**GA since Kubernetes 1.25**) and a diagnostic image (`nicolaka/netshoot`), sharing the
+  pod's namespace, and `kubectl debug node/<node>` for the node's netns. Two operational warnings:
+  an ephemeral container **cannot be removed** until the pod is deleted and **has no resource
+  limits**; and to extract a capture, **stream it over standard output** instead of writing the
+  file inside (copying from an ephemeral container does not work).
+- **Clouds**: the VPC/VNet **flow logs** are the first stop —they say whether the packet was
+  accepted or rejected and by which rule— followed by the provider's reachability analyser. Their
+  limits, which must be known: aggregation into windows (you do not see the packet, you see the flow), possible
+  sampling, a delay of minutes, and no payload. The specific configuration, in
   `aws-standards`/`azure-standards`/`gcp-standards`.
-- **Overlays y túneles** (VXLAN, GENEVE, IPsec, WireGuard): captura **dentro** del túnel y
-  **fuera** —son dos preguntas distintas: "¿el tráfico entra al túnel?" y "¿el túnel llega al otro
-  lado?". Y en cuanto hay encapsulación, **MTU es el primer sospechoso, siempre**.
-- **Service mesh / sidecar**: el proxy puede terminar TLS, reescribir cabeceras, aplicar sus
-  propios timeouts y reintentos y devolver errores que parecen de la aplicación. Sus logs de acceso
-  son la fuente, no la captura.
+- **Overlays and tunnels** (VXLAN, GENEVE, IPsec, WireGuard): capture **inside** the tunnel and
+  **outside** —they are two different questions: "does the traffic enter the tunnel?" and "does the tunnel reach the other
+  side?". And as soon as there is encapsulation, **MTU is the first suspect, always**.
+- **Service mesh / sidecar**: the proxy may terminate TLS, rewrite headers, apply its
+  own timeouts and retries and return errors that look like the application's. Its access logs
+  are the source, not the capture.
 
-## 4. Calidad del diagnóstico (gates)
+## 4. Quality of the diagnosis (gates)
 
-Un diagnóstico se da por bueno cuando cumple **todo** esto. No es burocracia: es lo que impide que
-el mismo incidente vuelva dentro de tres semanas.
+A diagnosis is accepted when it meets **all** of this. It is not bureaucracy: it is what prevents
+the same incident from coming back in three weeks.
 
-1. **Reproducibilidad**: existe un comando o procedimiento exacto que produce el síntoma a voluntad
-   (o, si es intermitente, una condición documentada que lo dispara y una tasa medida). Sin
-   reproducción, no se puede validar el arreglo.
-2. **Hipótesis registradas con su resultado**: qué se probó, qué se esperaba, qué se vio y qué
-   hipótesis quedó descartada. Un registro de descartes vale tanto como el hallazgo, y evita que el
-   siguiente turno repita las mismas pruebas.
-3. **Evidencia guardada, no descrita**: capturas (`.pcap`) de **ambos** extremos con marca temporal,
-   salidas de comando completas, contadores antes/después, capturas de pantalla de gráficas con su
-   rango temporal. "Vimos que se perdían paquetes" no es evidencia. Guarda la evidencia **antes** de
-   mitigar: la mitigación destruye el estado que la prueba.
-4. **Causa raíz demostrada, no inferida** — el gate central. "Demostrada" significa que puedes
-   explicar el mecanismo completo desde el cambio o la condición hasta el síntoma, **y** que puedes
-   reproducir el fallo activando la causa y hacerlo desaparecer desactivándola. Correlación temporal
-   no es causa: "reiniciamos y se arregló" es un dato, no una conclusión.
-5. **Arreglo validado por la prueba que fallaba**, y además con la prueba negativa
-   correspondiente (lo que debía seguir bloqueado sigue bloqueado). Y validado desde el **origen
-   real** afectado, no desde el bastión del ingeniero.
-6. **Ausencia de efectos colaterales comprobada**: lo que se tocó no rompió nada más. Los cambios
-   temporales de diagnóstico (reglas abiertas, offload desactivado, `tcpdump` corriendo, timeouts
-   subidos, logs a debug) **se revierten explícitamente** y se verifica que se revirtieron.
-7. **Hallazgos derivados con dueño**: la deriva de configuración, la regla que faltaba, la métrica
-   que no existía, el runbook que no servía, la alerta que no saltó. Cada uno se abre como trabajo
-   con dueño y fecha — hacia `observability-standards`, `firewall-policy-standards`,
-   `networking-standards` o quien corresponda.
-8. **Si el caso se cierra sin causa raíz** (pasa, y es legítimo), se cierra **diciéndolo**: qué se
-   descartó, qué instrumentación falta para diagnosticarlo la próxima vez, y qué disparador se deja
-   armado para capturar evidencia cuando vuelva. Eso es un resultado; "se arregló solo" no lo es.
+1. **Reproducibility**: there is an exact command or procedure that produces the symptom at will
+   (or, if it is intermittent, a documented condition that triggers it and a measured rate). Without
+   reproduction, the fix cannot be validated.
+2. **Hypotheses recorded with their result**: what was tried, what was expected, what was seen and which
+   hypothesis was ruled out. A record of exclusions is worth as much as the finding, and it prevents the
+   next shift from repeating the same tests.
+3. **Evidence saved, not described**: captures (`.pcap`) from **both** ends with a timestamp,
+   complete command outputs, counters before/after, screenshots of graphs with their
+   time range. "We saw packets being lost" is not evidence. Save the evidence **before**
+   mitigating: mitigation destroys the state that proves it.
+4. **Root cause proven, not inferred** — the central gate. "Proven" means you can
+   explain the complete mechanism from the change or the condition to the symptom, **and** that you can
+   reproduce the failure by activating the cause and make it disappear by deactivating it. Temporal correlation
+   is not causation: "we rebooted and it was fixed" is a data point, not a conclusion.
+5. **Fix validated by the test that was failing**, and additionally with the corresponding
+   negative test (what was supposed to stay blocked is still blocked). And validated from the **real
+   affected source**, not from the engineer's bastion.
+6. **Absence of side effects verified**: what was touched did not break anything else. Temporary
+   diagnostic changes (open rules, offload disabled, `tcpdump` running, raised timeouts,
+   logs at debug) **are explicitly reverted** and the reversion is verified.
+7. **Derived findings with an owner**: the configuration drift, the missing rule, the metric
+   that did not exist, the runbook that was useless, the alert that did not fire. Each one is opened as work
+   with an owner and a date — towards `observability-standards`, `firewall-policy-standards`,
+   `networking-standards` or whoever is relevant.
+8. **If the case is closed without a root cause** (it happens, and it is legitimate), it is closed **saying so**: what was
+   ruled out, what instrumentation is missing to diagnose it next time, and what trigger is left
+   armed to capture evidence when it comes back. That is a result; "it fixed itself" is not.
 
-## 5. Seguridad del diagnóstico
+## 5. Security of the diagnosis
 
-- **Una captura de tráfico contiene datos personales, credenciales y contenido de negocio.** No es
-  un fichero técnico inocuo. Trátala como dato clasificado: almacenamiento controlado, acceso
-  restringido, retención mínima y borrado al cerrar el caso. Si vas a compartirla, anonimízala o
-  recorta a las cabeceras (`-s` para limitar la captura) y quita el payload. Base legal y
-  minimización, en `privacy-engineering-standards`.
-- **Capturar en producción es una acción con impacto**: consume CPU y disco y puede llenar un
-  sistema de ficheros. Usa filtro de captura, límite de tamaño y rotación, y ponle límite temporal
-  desde el principio. Un `tcpdump` olvidado en un servidor es un incidente futuro.
-- **Distingue avería de compromiso desde el primer minuto.** Si hay cualquier indicio de intrusión,
-  el objetivo deja de ser "restaurar el servicio" y pasa a ser "preservar la evidencia": cambia el
-  procedimiento, no reinicies, no borres, y escala a
-  `incident-response-forensics-standards` (orden de volatilidad y cadena de custodia).
-- **Barrer puertos, escanear o inyectar tráfico en redes que no son tuyas —o sin autorización
-  interna— no es diagnóstico**: es actividad ofensiva y se gobierna en
-  `offensive-security-standards`. Dentro de tu red, avisa a quien vigila para que tu prueba no
-  aparezca como un ataque.
-- **Privilegios**: capturar requiere `CAP_NET_RAW`/`CAP_NET_ADMIN` y eBPF requiere más. Concédelos
-  **temporalmente y con nombre**, no como configuración permanente ni con un contenedor privilegiado
-  que se queda ahí (`container-runtime-security-standards`). Retíralos al cerrar el caso.
-- **No debilites controles para diagnosticar y lo dejes así**: abrir una regla "para probar" es la
-  vía más rápida a un `any/any` permanente (`firewall-policy-standards`). Si abres, abres con
-  caducidad automática.
+- **A traffic capture contains personal data, credentials and business content.** It is not
+  an innocuous technical file. Treat it as classified data: controlled storage, restricted
+  access, minimum retention and deletion when the case closes. If you are going to share it, anonymise it or
+  trim to headers (`-s` to limit the capture) and remove the payload. Legal basis and
+  minimisation, in `privacy-engineering-standards`.
+- **Capturing in production is an action with impact**: it consumes CPU and disk and can fill a
+  filesystem. Use a capture filter, a size limit and rotation, and give it a time limit
+  from the start. A forgotten `tcpdump` on a server is a future incident.
+- **Distinguish a fault from a compromise from the first minute.** If there is any sign of intrusion,
+  the objective stops being "restore the service" and becomes "preserve the evidence": the procedure changes,
+  do not reboot, do not delete, and escalate to
+  `incident-response-forensics-standards` (order of volatility and chain of custody).
+- **Port sweeping, scanning or injecting traffic into networks that are not yours —or without internal
+  authorisation— is not diagnosis**: it is offensive activity and it is governed in
+  `offensive-security-standards`. Inside your network, warn whoever is monitoring so that your test does not
+  show up as an attack.
+- **Privileges**: capturing requires `CAP_NET_RAW`/`CAP_NET_ADMIN` and eBPF requires more. Grant them
+  **temporarily and by name**, not as a permanent configuration nor with a privileged container
+  that stays there (`container-runtime-security-standards`). Withdraw them when the case closes.
+- **Do not weaken controls to diagnose and then leave it like that**: opening a rule "to test" is the
+  fastest route to a permanent `any/any` (`firewall-policy-standards`). If you open, you open with
+  an automatic expiry.
 
-## 6. Operabilidad: prepararse antes de que falle
+## 6. Operability: preparing before it fails
 
-- **El diagnóstico se prepara, no se improvisa.** Lo que hay que tener **antes** del incidente:
-  inventario y SoT actualizados (`networking-standards`), diagrama del camino real del tráfico,
-  acceso OOB, telemetría con retención suficiente (`observability-standards`), flujos, y **líneas
-  base**: RTT normal, caudal normal, tasa de error normal. **Sin línea base, "está alto" es una
-  opinión.**
-- **Reloj sincronizado en todo lo que loguea o captura** (NTP/chrony sano). Sin ello, correlacionar
-  dos capturas o dos logs es imposible, y ese es justo el método que resuelve los casos difíciles.
-- **Punto de observación disponible**: SPAN/mirror, TAP, o al menos un host con acceso al segmento y
-  herramientas instaladas. Si el primer paso de tu diagnóstico es "instalar `tcpdump` en el servidor
-  de producción", ya llegas tarde.
-- **Kit mínimo preinstalado o con imagen de diagnóstico lista**: iproute2, captura, `mtr`, `curl`,
-  `nc`/`socat`, `ethtool`, `iperf3`, y una imagen de contenedor de diagnóstico para entornos sin
-  herramientas.
-- **Runbooks por síntoma, no por herramienta**: "no resuelve", "conecta y se cuelga al transferir",
-  "intermitente", "lento sólo bajo carga", "se cae cada N minutos", "falla 1 de cada N", "funciona
-  desde un host y no desde otro". Cada uno con la secuencia canónica adaptada y su criterio de
-  escalado.
-- **Ventana de rescate abierta al tocar acceso remoto, rutas o firewall** — regla heredada y no
-  negociable (`firewall-policy-standards`, `vpn-standards`): consola OOB, segundo camino, o
-  reversión temporizada. El autobloqueo durante un diagnóstico es el incidente más previsible y más
-  evitable que existe.
-- **Cuando el diagnóstico ocurre dentro de un incidente declarado**: el mando y la comunicación son
-  de `incident-management-standards`. Tú das **hipótesis con nivel de confianza y tiempo estimado**,
-  no certezas prematuras; y si el IC decide mitigar antes de entender, mitigas — pero **capturas la
-  evidencia primero** y dejas escrito el diagnóstico pendiente. Mitigar no cierra la causa raíz.
-- **Toil**: el mismo diagnóstico repetido tres veces es un fallo de instrumentación o de diseño, no
-  mala suerte. Se convierte en alerta, en comprobación automática o en corrección estructural
+- **Diagnosis is prepared, not improvised.** What must exist **before** the incident:
+  an up-to-date inventory and SoT (`networking-standards`), a diagram of the traffic's real path,
+  OOB access, telemetry with sufficient retention (`observability-standards`), flows, and **baselines**:
+  normal RTT, normal throughput, normal error rate. **Without a baseline, "it is high" is an
+  opinion.**
+- **A synchronised clock on everything that logs or captures** (healthy NTP/chrony). Without it, correlating
+  two captures or two logs is impossible, and that is precisely the method that solves the hard cases.
+- **An available observation point**: SPAN/mirror, TAP, or at least a host with access to the segment and
+  tools installed. If the first step of your diagnosis is "install `tcpdump` on the production
+  server", you are already too late.
+- **A minimum kit preinstalled or a diagnostic image ready**: iproute2, capture, `mtr`, `curl`,
+  `nc`/`socat`, `ethtool`, `iperf3`, and a diagnostic container image for environments with no
+  tools.
+- **Runbooks by symptom, not by tool**: "it does not resolve", "it connects and hangs while transferring",
+  "intermittent", "slow only under load", "it drops every N minutes", "1 in N fails", "it works
+  from one host and not from another". Each one with the canonical sequence adapted and its escalation
+  criterion.
+- **A rescue window open when touching remote access, routes or the firewall** — an inherited and non-
+  negotiable rule (`firewall-policy-standards`, `vpn-standards`): OOB console, a second path, or
+  a timed rollback. Locking yourself out during a diagnosis is the most predictable and most
+  avoidable incident there is.
+- **When the diagnosis happens inside a declared incident**: command and communication belong
+  to `incident-management-standards`. You give **hypotheses with a confidence level and an estimated time**,
+  not premature certainties; and if the IC decides to mitigate before understanding, you mitigate — but **you capture
+  the evidence first** and leave the pending diagnosis written down. Mitigating does not close the root cause.
+- **Toil**: the same diagnosis repeated three times is an instrumentation or design failure, not
+  bad luck. It becomes an alert, an automatic check or a structural fix
   (`sre-practice-standards`).
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **El postmortem alimenta el método**: cada caso difícil deja o un runbook nuevo, o una métrica
-  nueva, o un cambio de diseño. Si no deja nada, se repetirá.
-- **Migración de herramientas**: `net-tools` (`ifconfig`, `netstat`, `route`, `arp`) sin
-  mantenimiento desde hace años y ausente por defecto en las distribuciones modernas; scripts y
-  runbooks que aún lo usan se migran a **iproute2** con fecha. No es purismo: **oculta** namespaces,
-  policy routing y estado que hoy determina el diagnóstico.
-- **Cadencia**: revisar versión y CVE de las herramientas de captura y análisis (Wireshark/`tshark`,
-  `libpcap`/`tcpdump`) con la del resto del stack — **son parsers que procesan entrada hostil por
-  definición**, y 2026 trae un aluvión de hallazgos asistidos por LLM en esa familia. Analizar una
-  captura no confiable con un Wireshark sin parchear es exponerte tú.
-- **Formación con casos reales**: guardar capturas y cronologías de los casos resueltos como
-  material de entrenamiento del equipo vale más que cualquier curso.
+- **The postmortem feeds the method**: every hard case leaves either a new runbook, or a new
+  metric, or a design change. If it leaves nothing, it will happen again.
+- **Tool migration**: `net-tools` (`ifconfig`, `netstat`, `route`, `arp`) has been
+  unmaintained for years and is absent by default in modern distributions; scripts and
+  runbooks that still use it are migrated to **iproute2** with a date. It is not purism: it **hides** namespaces,
+  policy routing and state that today determines the diagnosis.
+- **Cadence**: review the version and CVEs of the capture and analysis tools (Wireshark/`tshark`,
+  `libpcap`/`tcpdump`) along with the rest of the stack — **they are parsers that process hostile input by
+  definition**, and 2026 brings a flood of LLM-assisted findings in that family. Analysing an
+  untrusted capture with an unpatched Wireshark is exposing yourself.
+- **Training with real cases**: keeping captures and timelines of solved cases as
+  team training material is worth more than any course.
 
-**PROHIBIDO**
-- ❌ **Reiniciar como primer paso.** Destruye el estado que necesitas (sockets, conntrack,
-  contadores, caché ARP, logs en memoria) y convierte el problema en irreproducible. Es lo último,
-  y con la evidencia ya recogida.
-- ❌ Cambiar **varias cosas a la vez** y declarar victoria cuando funciona.
-- ❌ Tocar producción a ciegas: cambios de diagnóstico sin hipótesis, sin registro y sin plan de
-  reversión.
-- ❌ **Culpar a la red sin evidencia** — y también absolverla sin evidencia. Ambas cosas son la misma
-  falta.
-- ❌ **Capturar sólo en un extremo** en un caso difícil, o capturar sin sincronización de reloj.
-- ❌ Concluir a partir de la pérdida en **saltos intermedios** de `traceroute`/`mtr`.
-- ❌ Usar `ping` como prueba de que un servicio funciona, o como única medida de calidad.
-- ❌ `ifconfig`, `netstat`, `route`, `arp` (`net-tools`) en diagnóstico o en runbooks nuevos.
-- ❌ Leer `ip route` y suponer, en vez de preguntar con `ip route get`.
-- ❌ Medir con `iperf3` durante 10 s, un solo flujo, un solo sentido, y llamarlo *baseline*.
-- ❌ Reportar medias de latencia en lugar de percentiles.
-- ❌ Analizar tamaños de paquete o MTU sin desactivar el offload de la interfaz.
-- ❌ Diagnosticar capa 3 sin haber mirado errores y negociación de capa 1-2.
-- ❌ Cerrar el caso con "se arregló solo", "era cosa de la red" o "reiniciamos y ya va".
-- ❌ Dejar puestos los cambios temporales del diagnóstico (reglas abiertas, capturas corriendo,
-  offload desactivado, logs en debug, privilegios elevados, pod de depuración privilegiado).
-- ❌ Abrir una regla de firewall "para probar" sin caducidad automática.
-- ❌ Guardar capturas con datos personales o credenciales fuera de un almacenamiento controlado, o
-  compartirlas sin recortar.
-- ❌ Tratar un posible compromiso como una avería: destruir evidencia por restaurar el servicio.
-- ❌ Escanear o inyectar tráfico en redes ajenas, o sin autorización interna, en nombre del
-  diagnóstico.
-- ❌ Cambiar rutas, reglas o acceso remoto **por el propio camino que estás tocando** sin ventana de
-  rescate.
-- ❌ Empezar por eBPF (o por Wireshark) antes de haber mirado interfaz, sockets, rutas y contadores.
-- ❌ Repetir el mismo diagnóstico manual una y otra vez sin convertirlo en instrumentación.
+**FORBIDDEN**
+- ❌ **Rebooting as the first step.** It destroys the state you need (sockets, conntrack,
+  counters, ARP cache, in-memory logs) and turns the problem into something irreproducible. It is the last resort,
+  and with the evidence already collected.
+- ❌ Changing **several things at once** and declaring victory when it works.
+- ❌ Touching production blind: diagnostic changes with no hypothesis, no record and no rollback
+  plan.
+- ❌ **Blaming the network without evidence** — and also absolving it without evidence. Both are the same
+  failing.
+- ❌ **Capturing at only one end** in a hard case, or capturing without clock synchronisation.
+- ❌ Concluding from loss at **intermediate hops** in `traceroute`/`mtr`.
+- ❌ Using `ping` as proof that a service works, or as the only quality measurement.
+- ❌ `ifconfig`, `netstat`, `route`, `arp` (`net-tools`) in diagnosis or in new runbooks.
+- ❌ Reading `ip route` and assuming, instead of asking with `ip route get`.
+- ❌ Measuring with `iperf3` for 10 s, a single flow, a single direction, and calling it a *baseline*.
+- ❌ Reporting latency averages instead of percentiles.
+- ❌ Analysing packet sizes or MTU without disabling the interface's offload.
+- ❌ Diagnosing layer 3 without having looked at layer 1-2 errors and negotiation.
+- ❌ Closing the case with "it fixed itself", "it was a network thing" or "we rebooted and it works now".
+- ❌ Leaving the diagnosis's temporary changes in place (open rules, captures running,
+  offload disabled, logs at debug, elevated privileges, a privileged debugging pod).
+- ❌ Opening a firewall rule "to test" without an automatic expiry.
+- ❌ Storing captures with personal data or credentials outside controlled storage, or
+  sharing them without trimming.
+- ❌ Treating a possible compromise as a fault: destroying evidence in order to restore the service.
+- ❌ Scanning or injecting traffic into other people's networks, or without internal authorisation, in the name of
+  diagnosis.
+- ❌ Changing routes, rules or remote access **over the very path you are touching** without a rescue
+  window.
+- ❌ Starting with eBPF (or with Wireshark) before having looked at the interface, sockets, routes and counters.
+- ❌ Repeating the same manual diagnosis over and over without turning it into instrumentation.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión, comportamiento o límite, **búscalo — no lo recuerdes**.
-**Metodología**: las versiones y fechas de este documento proceden de `api.github.com/repos/…` y del
-sitio del proyecto, **no** del resumen de una página HTML de releases (que inventa años).
+Before pinning any version, behaviour or limit, **look it up — do not recall it**.
+**Methodology**: the versions and dates in this document come from `api.github.com/repos/…` and from
+the project's site, **not** from the summary of an HTML releases page (which invents years).
 
-Verificado ago-2026:
+Verified Aug 2026:
 
-- **Captura y análisis**: `tcpdump` **4.99.6** y `libpcap` **1.10.6** (ambos 30-dic-2025; libpcap
-  1.10.6 corrige CVE-2025-11961 y CVE-2025-11964, lectura y escritura fuera de límites en
-  `pcap_ether_aton()`); trabajo en curso hacia tcpdump 5.0 y libpcap 1.11. **Wireshark** rama
-  estable **4.6.x** (4.6.7 y 4.4.17 publicadas en 2026, con múltiples vulnerabilidades corregidas,
-  atribuidas por el proyecto al aumento de reportes asistidos por IA); soporte mínimo de 18 meses
-  por release; **4.6 es la última con soporte de Windows 10, RHEL 8 y Qt 5**.
-- **Medición**: **iperf3 3.21** (09-abr-2026; anteriores 3.20 el 14-nov-2025 y 3.19.1 el
-  25-jul-2025). **mtr**: última etiqueta **v0.96**, repositorio con actividad en jun-2026.
-- **Estado**: **conntrack-tools 1.4.9** (empaquetada en Debian feb-2026, sucede a la serie 1.4.8 de
-  mar-2024).
-- **net-tools frente a iproute2**: `net-tools` **sin release oficial desde 2001** y sin
-  mantenimiento activo; ausente por defecto en Debian ≥9, RHEL/CentOS ≥7 (con `ifconfig` fuera por
-  defecto en Ubuntu 18.04+, CentOS 8+, Fedora 22+ y Arch). **Sigue desaconsejado** y el motivo es
-  funcional además de higiénico: no expone el estado moderno del kernel. Mapeo: `ifconfig` →
+- **Capture and analysis**: `tcpdump` **4.99.6** and `libpcap` **1.10.6** (both 30 Dec 2025; libpcap
+  1.10.6 fixes CVE-2025-11961 and CVE-2025-11964, out-of-bounds read and write in
+  `pcap_ether_aton()`); work in progress towards tcpdump 5.0 and libpcap 1.11. **Wireshark** stable
+  branch **4.6.x** (4.6.7 and 4.4.17 released in 2026, with multiple vulnerabilities fixed,
+  attributed by the project to the rise in AI-assisted reports); minimum 18 months of support
+  per release; **4.6 is the last one supporting Windows 10, RHEL 8 and Qt 5**.
+- **Measurement**: **iperf3 3.21** (09 Apr 2026; previously 3.20 on 14 Nov 2025 and 3.19.1 on
+  25 Jul 2025). **mtr**: latest tag **v0.96**, repository with activity in Jun 2026.
+- **State**: **conntrack-tools 1.4.9** (packaged in Debian Feb 2026, succeeding the 1.4.8 series from
+  Mar 2024).
+- **net-tools versus iproute2**: `net-tools` **with no official release since 2001** and with no
+  active maintenance; absent by default in Debian ≥9, RHEL/CentOS ≥7 (with `ifconfig` out by
+  default in Ubuntu 18.04+, CentOS 8+, Fedora 22+ and Arch). **It remains discouraged** and the reason is
+  functional as well as hygienic: it does not expose the modern kernel state. Mapping: `ifconfig` →
   `ip addr`/`ip link`, `route` → `ip route`, `arp` → `ip neigh`, `netstat` → `ss`.
-- **eBPF para diagnóstico**: **`pwru` v1.0.12** (13-jul-2026; kernel ≥5.3, `--output-skb` ≥5.9,
-  `--backend=kprobe-multi` ≥5.18; requiere `CONFIG_DEBUG_INFO_BTF`, `CONFIG_KPROBES`,
-  `CONFIG_PERF_EVENTS`, `CONFIG_BPF`), **`bpftrace` 0.26.1** (02-jun-2026), **`bcc` 0.37.0**
-  (02-jul-2026), **Cilium 1.20.0** (29-jul-2026) con Hubble. **Microsoft Retina alcanzó 1.0/GA** y
-  permite Hubble sin exigir Cilium como CNI, con limitaciones conocidas (mapeo IP→pod en espacio de
-  usuario, sin visibilidad L7). Conclusión: **maduro y recomendable, pero como segunda línea**, no
-  como primer paso.
-- **Kubernetes**: contenedores efímeros y `kubectl debug` **GA desde 1.25**; `nicolaka/netshoot`
-  como imagen habitual; el contenedor efímero **no se puede eliminar** hasta borrar el pod y **no
-  tiene límites de recursos**; `kubectl cp` **no funciona** con contenedores efímeros (transmite la
-  captura por salida estándar).
-- **Happy Eyeballs**: **RFC 8305 (Happy Eyeballs v2, dic-2017) sigue siendo la especificación
-  vigente**. `draft-ietf-happy-happyeyeballs-v3` está en **Internet-Draft** (revisión -03, mar-2026)
-  y **actualiza** la descripción del algoritmo de RFC 8305, **no la obsoleta** todavía. No lo cites
-  como RFC.
+- **eBPF for diagnosis**: **`pwru` v1.0.12** (13 Jul 2026; kernel ≥5.3, `--output-skb` ≥5.9,
+  `--backend=kprobe-multi` ≥5.18; requires `CONFIG_DEBUG_INFO_BTF`, `CONFIG_KPROBES`,
+  `CONFIG_PERF_EVENTS`, `CONFIG_BPF`), **`bpftrace` 0.26.1** (02 Jun 2026), **`bcc` 0.37.0**
+  (02 Jul 2026), **Cilium 1.20.0** (29 Jul 2026) with Hubble. **Microsoft Retina reached 1.0/GA** and
+  allows Hubble without requiring Cilium as the CNI, with known limitations (IP→pod mapping in user
+  space, no L7 visibility). Conclusion: **mature and recommendable, but as a second line**, not
+  as a first step.
+- **Kubernetes**: ephemeral containers and `kubectl debug` **GA since 1.25**; `nicolaka/netshoot`
+  as the usual image; the ephemeral container **cannot be removed** until the pod is deleted and **has no
+  resource limits**; `kubectl cp` **does not work** with ephemeral containers (stream the
+  capture over standard output).
+- **Happy Eyeballs**: **RFC 8305 (Happy Eyeballs v2, Dec 2017) is still the current
+  specification**. `draft-ietf-happy-happyeyeballs-v3` is an **Internet-Draft** (revision -03, Mar 2026)
+  and it **updates** the algorithm description in RFC 8305, it does **not obsolete** it yet. Do not cite it
+  as an RFC.
 
-**Huecos declarados — NO rellenar de memoria, verificar antes de usar**:
-1. **Versión actual de `ethtool`**: **no verificada**. Las fuentes secundarias dan 6.15 (jun-2025) y
-   mencionan 6.20 en repositorios de paquetes; el índice de kernel.org no devolvió las entradas
-   recientes en esta consulta. Comprueba en `kernel.org/pub/software/network/ethtool/` o en tu
-   distro antes de fijar versión mínima.
-2. **Número de versión exacto de Wireshark 4.6.7 y su fecha**, y el estado de la rama 4.7.x de
-   desarrollo: obtenidos de fuentes secundarias, **sin fecha confirmada**. Contrastar en
+**Declared gaps — do NOT fill in from memory, verify before using**:
+1. **Current `ethtool` version**: **not verified**. Secondary sources give 6.15 (Jun 2025) and
+   mention 6.20 in package repositories; the kernel.org index did not return the recent entries
+   in this query. Check at `kernel.org/pub/software/network/ethtool/` or in your
+   distro before pinning a minimum version.
+2. **The exact version number of Wireshark 4.6.7 and its date**, and the status of the 4.7.x development
+   branch: obtained from secondary sources, **with no confirmed date**. Cross-check at
    `wireshark.org/news`.
-3. **CVE recientes de Wireshark/`tshark`** (identificadores y severidad): sólo consta la existencia
-   de un lote corregido en 2026; **no se han enumerado ni verificado**. Consúltalos antes de fijar
-   una versión mínima en un runbook.
-4. **Versión empaquetada por distro** de `iproute2`, `ethtool`, `conntrack-tools`, `tcpdump` y
-   `mtr` en RHEL 10, Fedora, Debian 13 y Ubuntu LTS: **no verificada**. Lo operativo es la del
-   paquete, no la upstream.
-5. **Fecha de release de `mtr` v0.96**: sólo consta la etiqueta en el repositorio (sin *releases*
-   publicadas) y actividad de commits en jun-2026; **fecha de publicación no confirmada**.
-6. **Estado de mantenimiento de `iperf2`** (proyecto separado de iperf3) y de `socat`, `nmap` y
-   `ncat`: **no verificado** en esta pasada.
-7. **Capacidades, retardo y muestreo exactos de los flow logs y analizadores de alcanzabilidad**
-   de AWS, Azure y GCP: descritos como criterio general, **no verificados** contra la documentación
-   vigente de cada proveedor. Contrastar con `aws-standards`/`azure-standards`/`gcp-standards`.
-8. **Detalles de Microsoft Retina 1.0** (versión concreta, fecha de GA, matriz de compatibilidad de
-   CNI): procedentes de un blog corporativo, **sin verificar** contra el repositorio ni sus
+3. **Recent Wireshark/`tshark` CVEs** (identifiers and severity): only the existence of a batch fixed
+   in 2026 is established; **they have not been enumerated or verified**. Look them up before pinning
+   a minimum version in a runbook.
+4. **Distro-packaged versions** of `iproute2`, `ethtool`, `conntrack-tools`, `tcpdump` and
+   `mtr` in RHEL 10, Fedora, Debian 13 and Ubuntu LTS: **not verified**. What is operational is the
+   package's version, not upstream's.
+5. **Release date of `mtr` v0.96**: only the tag in the repository is established (with no published
+   *releases*) plus commit activity in Jun 2026; **publication date not confirmed**.
+6. **Maintenance status of `iperf2`** (a separate project from iperf3) and of `socat`, `nmap` and
+   `ncat`: **not verified** in this pass.
+7. **Exact capabilities, delay and sampling of the flow logs and reachability analysers**
+   of AWS, Azure and GCP: described as general criteria, **not verified** against each provider's
+   current documentation. Cross-check with `aws-standards`/`azure-standards`/`gcp-standards`.
+8. **Details of Microsoft Retina 1.0** (specific version, GA date, CNI compatibility
+   matrix): taken from a corporate blog, **unverified** against the repository or its
    releases.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

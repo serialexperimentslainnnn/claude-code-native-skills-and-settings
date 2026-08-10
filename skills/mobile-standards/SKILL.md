@@ -3,215 +3,215 @@ name: mobile-standards
 description: Native mobile engineering standards for iOS and Android. Use when working with .swift files, SwiftUI, Package.swift, Xcode projects (.xcodeproj/.xcworkspace), Info.plist, or with .kt files, Jetpack Compose, build.gradle.kts, libs.versions.toml, AndroidManifest.xml, or tasks about app signing, distribution, Keychain/Keystore, or mobile testing.
 ---
 
-# Estándares móvil nativo (iOS / Android)
+# Native mobile standards (iOS / Android)
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a desarrollo nativo: **iOS** (ficheros `.swift`, `Package.swift`, `.xcodeproj`/
-`.xcworkspace`, `Info.plist`, `.entitlements`, SwiftUI) y **Android** (`.kt`,
+Applies to native development: **iOS** (`.swift` files, `Package.swift`, `.xcodeproj`/
+`.xcworkspace`, `Info.plist`, `.entitlements`, SwiftUI) and **Android** (`.kt`,
 `build.gradle.kts`, `settings.gradle.kts`, `gradle/libs.versions.toml`, `AndroidManifest.xml`,
-Jetpack Compose). Cubre código, arquitectura, build, firma, distribución, seguridad y testing.
-Cross-platform (Flutter/RN/KMP-UI) queda fuera salvo la parte nativa que toquen. **Frontera con
-`dart-standards`, espejada desde su §1**: **el diseño de la app es de aquí** —arquitectura,
-navegación, ciclo de vida de la plataforma, permisos, publicación en App Store y Play, firma,
-actualizaciones, rendimiento percibido, accesibilidad, almacenamiento seguro en el dispositivo—;
-**el lenguaje Dart y su tooling** —`pubspec.yaml`, `analysis_options.yaml`, `dart format`, los lint
-sets, `build_runner`, isolates, los tests de `package:test`— **son suyos**. Swift y Kotlin nativos
-siguen siendo de aquí; `objective-c-standards` cubre el lado Objective-C de la
-interoperabilidad con Swift en código heredado. **La web instalable es de `pwa-standards`**:
-service worker, manifiesto, caché offline y el modelo de actualización. La comparación
-PWA frente a nativa se decide con dos datos que **ninguna de las dos skills debe suavizar**: en iOS
-la Push API **solo funciona en web apps instaladas**, y **una PWA no instalada no tiene
-almacenamiento duradero** —queda sujeta al borrado de ITP—. Si el requisito exige distribución por
-tienda, capacidades de hardware o presencia garantizada, manda esta skill.
+Jetpack Compose). Covers code, architecture, build, signing, distribution, security and testing.
+Cross-platform (Flutter/RN/KMP-UI) is out of scope except for the native part they touch. **Boundary with
+`dart-standards`, mirrored from its §1**: **the app's design belongs here** —architecture,
+navigation, platform lifecycle, permissions, publishing on the App Store and Play, signing,
+updates, perceived performance, accessibility, secure storage on the device—;
+**the Dart language and its tooling** —`pubspec.yaml`, `analysis_options.yaml`, `dart format`, the lint
+sets, `build_runner`, isolates, the `package:test` tests— **are theirs**. Native Swift and Kotlin
+still belong here; `objective-c-standards` covers the Objective-C side of
+interoperability with Swift in legacy code. **The installable web belongs to `pwa-standards`**:
+service worker, manifest, offline cache and the update model. The comparison
+of PWA versus native is decided with two facts that **neither of the two skills should soften**: on iOS
+the Push API **only works in installed web apps**, and **a non-installed PWA has no
+durable storage** —it is subject to ITP eviction—. If the requirement demands store
+distribution, hardware capabilities or guaranteed presence, this skill wins.
 
-**No aplica**: ver `jvm-spring-standards` (Kotlin de backend con Spring: aquí Kotlin es solo lenguaje
-de app Android), `typescript-standards` (React Native y la web que consume la misma API),
-`api-design-standards` (diseño del contrato que consume la app: recursos, códigos, paginación,
-versionado — aquí solo el cliente HTTP y el manejo de errores en dispositivo), `appsec-standards`
-(modelado de amenazas y clases de vulnerabilidad agnósticas; aquí el equivalente móvil es OWASP MASVS
-y sí es de esta skill), `identity-access-management-standards` (flujos OAuth 2.1/OIDC, PKCE y
-passkeys del lado del IdP; aquí solo su uso desde el dispositivo y el almacenamiento del token en
-Keychain/Keystore), `cryptography-pki-standards` (elección de algoritmos y certificate pinning como
-criterio; aquí su aplicación con las APIs de la plataforma), `cicd-standards` (la pipeline; la
-**firma y distribución** en App Store/Play sí es de esta skill), `observability-standards` (backend
-de telemetría; aquí crash reporting y métricas de cliente), `cross-platform-desktop-standards`
-(**el escritorio multiplataforma es suyo**: empaquetado, firma y notarización, actualización e
-integración con el sistema. **Arbitraje para Flutter, .NET MAUI y Compose Multiplatform: el
-objetivo escritorio se decide allí, el objetivo móvil y su tienda, aquí**).
+**Not applicable**: see `jvm-spring-standards` (backend Kotlin with Spring: here Kotlin is only the language
+of an Android app), `typescript-standards` (React Native and the web consuming the same API),
+`api-design-standards` (design of the contract the app consumes: resources, codes, pagination,
+versioning — here only the HTTP client and error handling on the device), `appsec-standards`
+(threat modelling and agnostic vulnerability classes; here the mobile equivalent is OWASP MASVS
+and it does belong to this skill), `identity-access-management-standards` (OAuth 2.1/OIDC flows, PKCE and
+passkeys on the IdP side; here only their use from the device and the storage of the token in
+Keychain/Keystore), `cryptography-pki-standards` (choice of algorithms and certificate pinning as
+criteria; here their application with the platform APIs), `cicd-standards` (the pipeline; the
+**signing and distribution** on the App Store/Play does belong to this skill), `observability-standards` (telemetry
+backend; here crash reporting and client-side metrics), `cross-platform-desktop-standards`
+(**the cross-platform desktop is theirs**: packaging, signing and notarisation, updates and
+integration with the system. **Arbitration for Flutter, .NET MAUI and Compose Multiplatform: the
+desktop target is decided there, the mobile target and its store, here**).
 
-**Regla cero**: detecta el proyecto real primero (versiones en `Package.swift`/
-`libs.versions.toml`, targets mínimos, arquitectura existente) y respeta sus convenciones;
-este criterio rige lo nuevo y lo que se señala como deuda.
+**Rule zero**: detect the real project first (versions in `Package.swift`/
+`libs.versions.toml`, minimum targets, existing architecture) and respect its conventions;
+this criteria governs what is new and what is flagged as debt.
 
-## 2. Toolchain por defecto
+## 2. Default toolchain
 
-> **Nota de verificación**: comprobado vía web el 2026-08-02 (developer.apple.com,
-> developer.android.com, kotlinlang.org). **Verifica en la web antes de fijar versiones** en un
-> proyecto: Apple y Google mueven requisitos de tienda y toolchain varias veces al año.
-
-**iOS**
-- **Xcode 26.x** (estable actual: 26.6) con **Swift 6.3**; Xcode 27/Swift 6.4 en beta — no para
-  producción hasta estable. App Store exige compilar con SDK iOS 26+ desde 2026-04-28.
-- **Swift 6 language mode** (concurrencia estricta comprobada por el compilador) en targets nuevos.
-- **SwiftUI** por defecto para UI nueva; UIKit solo por interoperabilidad o carencia medida.
-- **Swift Concurrency** (`async/await`, actores, `Sendable`) — no Combine ni GCD para código nuevo.
-- **SPM** como gestor de dependencias único; CocoaPods/Carthage solo en legado, con plan de salida.
-- Formato/lint: **swift-format** o SwiftLint+SwiftFormat, en CI.
-
-**Android**
-- **Kotlin 2.4.x** (K2), **AGP 9.x** (estable actual 9.1.1; requiere **Gradle ≥9.1** y JDK 17;
-  Kotlin viene integrado en AGP 9 — no apliques `org.jetbrains.kotlin.android` aparte).
-- **compileSdk/targetSdk 36** (Android 16): Google Play lo exige para apps nuevas y updates desde
-  2026-08-31. Librerías nativas alineadas a **16 KB page size** (obligatorio en Play desde
-  2026-05-31). `minSdk` por datos de audiencia, no por comodidad.
-- **Jetpack Compose** con **BOM estable** (actual `2026.04.01`, Compose 1.11) para TODA UI nueva;
-  Views/XML solo mantenimiento.
-- **Coroutines + Flow** para asincronía; `StateFlow` para estado observable. Nada de
-  RxJava/AsyncTask/callbacks en código nuevo.
-- **Gradle version catalogs** (`libs.versions.toml`) obligatorio: cero versiones hardcodeadas en
-  `build.gradle.kts`. Convention plugins para multi-módulo.
-- Formato/lint: **ktlint** o ktfmt + **Android Lint** + **detekt**, en CI.
-
-## 3. Estructura y convenciones
-
-**Común**
-- Arquitectura **UDF (flujo de datos unidireccional)**: UI declarativa sin lógica; estado en un
-  holder observable; eventos suben, estado baja. Capas: UI → dominio (opcional) → datos
-  (repositorio como única fuente de verdad).
-- Inmutabilidad por defecto (`let`/`val`, `struct`/`data class`); estado mutable encapsulado.
-- Inyección de dependencias por constructor: Hilt (Android), inyección manual o factories (iOS) —
-  sin service locators globales ni singletons mutables.
-- Errores explícitos: `Result`/`throws` tipados en iOS; excepciones/`Result` + estados de error
-  modelados en el UiState en Android. Prohibido tragar errores (catch vacío, `try?` silencioso
-  sin decisión consciente).
+> **Verified note**: checked via the web on 2026-08-02 (developer.apple.com,
+> developer.android.com, kotlinlang.org). **Verify on the web before pinning versions** in a
+> project: Apple and Google move store and toolchain requirements several times a year.
 
 **iOS**
-- SwiftUI: vistas pequeñas y componibles; estado con `@State`/`@Observable` (macro Observation,
-  no `ObservableObject` en código nuevo); navegación con `NavigationStack` y rutas tipadas.
-- Concurrencia: UI en `@MainActor`; aislamiento con actores; tipos compartidos `Sendable`;
-  prohibido `@unchecked Sendable` sin invariante documentada.
-- Un módulo SPM por feature/capa cuando el proyecto crece; targets de test por módulo.
+- **Xcode 26.x** (current stable: 26.6) with **Swift 6.3**; Xcode 27/Swift 6.4 in beta — not for
+  production until stable. The App Store requires building with SDK iOS 26+ since 2026-04-28.
+- **Swift 6 language mode** (strict concurrency checked by the compiler) in new targets.
+- **SwiftUI** by default for new UI; UIKit only for interoperability or a measured shortcoming.
+- **Swift Concurrency** (`async/await`, actors, `Sendable`) — not Combine nor GCD for new code.
+- **SPM** as the single dependency manager; CocoaPods/Carthage only in legacy, with an exit plan.
+- Formatting/lint: **swift-format** or SwiftLint+SwiftFormat, in CI.
 
 **Android**
-- Compose: composables sin estado (*state hoisting*), `Modifier` como último parámetro con default,
-  previews por estado (loading/error/vacío/contenido), estabilidad vigilada (compose compiler
-  metrics si hay jank).
-- `ViewModel` + `StateFlow` con `collectAsStateWithLifecycle`; nada de lógica en composables.
-- Multi-módulo por feature (`:feature:x`, `:core:designsystem`, `:core:data`) cuando escala;
-  `api`/`implementation` bien usados para no filtrar dependencias.
+- **Kotlin 2.4.x** (K2), **AGP 9.x** (current stable 9.1.1; requires **Gradle ≥9.1** and JDK 17;
+  Kotlin comes integrated in AGP 9 — do not apply `org.jetbrains.kotlin.android` separately).
+- **compileSdk/targetSdk 36** (Android 16): Google Play requires it for new apps and updates from
+  2026-08-31. Native libraries aligned to **16 KB page size** (mandatory on Play since
+  2026-05-31). `minSdk` by audience data, not by convenience.
+- **Jetpack Compose** with a **stable BOM** (currently `2026.04.01`, Compose 1.11) for ALL new UI;
+  Views/XML maintenance only.
+- **Coroutines + Flow** for asynchrony; `StateFlow` for observable state. No
+  RxJava/AsyncTask/callbacks in new code.
+- **Gradle version catalogs** (`libs.versions.toml`) mandatory: zero hardcoded versions in
+  `build.gradle.kts`. Convention plugins for multi-module.
+- Formatting/lint: **ktlint** or ktfmt + **Android Lint** + **detekt**, in CI.
 
-## 4. Calidad: formato, lint, análisis estático, testing
+## 3. Structure and conventions
 
-Gates de CI bloqueantes en ambas plataformas — sin verde no hay merge:
-1. Formato (swift-format / ktlint) en modo check.
-2. Lint/estático: SwiftLint sin violaciones nuevas; Android Lint con `lintOptions.abortOnError`,
-   detekt sin issues; **warnings del compilador tratados como errores** en código propio
-   (incluida la comprobación estricta de concurrencia de Swift 6).
-3. Tests unitarios + de UI en emulador/simulador; build de release firmable.
-4. Baselines (lint/detekt) solo para adopción en legado: congeladas y solo decrecen.
+**Common**
+- **UDF (unidirectional data flow)** architecture: declarative UI with no logic; state in an
+  observable holder; events go up, state comes down. Layers: UI → domain (optional) → data
+  (repository as the single source of truth).
+- Immutability by default (`let`/`val`, `struct`/`data class`); mutable state encapsulated.
+- Constructor dependency injection: Hilt (Android), manual injection or factories (iOS) —
+  no global service locators nor mutable singletons.
+- Explicit errors: typed `Result`/`throws` on iOS; exceptions/`Result` + error states
+  modelled in the UiState on Android. Forbidden to swallow errors (empty catch, silent `try?`
+  without a conscious decision).
 
-Criterio de testing:
-- **Pirámide**: mayoría unitarios sobre dominio/ViewModels/state holders (rápidos, sin
-  emulador); integración los justos; UI/E2E pocos y estables.
-- **iOS**: **Swift Testing** (`@Test`, `#expect`) para unitarios nuevos, XCTest donde ya exista;
-  XCUITest para flujos críticos; snapshot tests para vistas SwiftUI de alto valor.
-- **Android**: JUnit + Turbine (Flows) + MockK; `runTest` con dispatchers inyectados (regla de
-  `TestDispatcher` — nunca `Dispatchers.Main` real en tests); `createComposeTestRule` para UI;
-  screenshot tests (Compose Preview Screenshot Testing/Paparazzi) para el design system;
-  Espresso/instrumentación solo para flujos E2E críticos.
-- Cubre **bordes y errores**: sin red, timeout, respuesta malformada, permiso denegado, proceso
-  muerto/restauración de estado, rotación, dark mode, tamaños de texto accesibles.
-- Cero flakiness: test inestable se arregla o se borra; nada de `sleep`s — usa idling/espera por
-  condición. Todo bugfix deja test de regresión.
+**iOS**
+- SwiftUI: small, composable views; state with `@State`/`@Observable` (Observation macro,
+  not `ObservableObject` in new code); navigation with `NavigationStack` and typed routes.
+- Concurrency: UI on `@MainActor`; isolation with actors; shared types `Sendable`;
+  `@unchecked Sendable` forbidden without a documented invariant.
+- One SPM module per feature/layer when the project grows; test targets per module.
 
-## 5. Seguridad del stack (OWASP MASVS como referencia)
+**Android**
+- Compose: stateless composables (*state hoisting*), `Modifier` as the last parameter with a default,
+  previews per state (loading/error/empty/content), stability watched (compose compiler
+  metrics if there is jank).
+- `ViewModel` + `StateFlow` with `collectAsStateWithLifecycle`; no logic in composables.
+- Multi-module per feature (`:feature:x`, `:core:designsystem`, `:core:data`) when it scales;
+  `api`/`implementation` used properly so as not to leak dependencies.
 
-- **Almacenamiento seguro**: credenciales/tokens SOLO en **Keychain** (iOS;
-  `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` por defecto, sin sincronizar a iCloud lo que no
-  deba) y **Android Keystore** (claves hardware-backed; datos cifrados con esas claves —
-  `EncryptedSharedPreferences` está deprecado: cifra con Keystore + AES-GCM o usa DataStore con
-  cifrado propio). PROHIBIDO: tokens en UserDefaults/SharedPreferences/ficheros en claro, logs
-  con datos sensibles, secretos hardcodeados en el binario (se extraen con `strings`).
-- **Red**: TLS 1.2+ siempre; ATS activo sin excepciones globales (iOS); `networkSecurityConfig`
-  sin cleartext (Android). Certificate pinning solo con plan de rotación (fallo de pin = app
-  muerta). Valida TODO input del servidor: el backend también es frontera.
-- **Firma y distribución**:
-  - iOS: firma automática gestionada por Xcode Cloud/fastlane match con certificados en repo
-    cifrado o en el gestor del CI; claves de distribución NUNCA en el repo ni en el portátil de
-    una sola persona. API keys de App Store Connect con rol mínimo.
-  - Android: **Play App Signing** obligatorio (Google custodia la clave de firma; tú la de
-    upload, rotable si se compromete). Keystore de upload en el gestor de secretos del CI, nunca
-    en el repo; `signingConfig` lee de env vars. AAB para Play; APK firmado solo para
-    distribución directa justificada.
-  - Publicación por canales: internal → closed → producción con rollout gradual y monitorización
-    de crashes antes de ampliar porcentaje.
-- **Permisos y privacidad**: mínimo privilegio, pedidos en contexto con justificación; Privacy
-  Manifest (iOS) y Data Safety (Play) veraces y mantenidos. Datos personales: minimización,
-  cifrado en reposo, borrado real al cerrar cuenta (GDPR).
-- **SCA y cadena de suministro**: dependencias fijadas (`Package.resolved` y catálogo + lockfile
-  de Gradle versionados); Dependabot/Renovate; sin librerías abandonadas. R8 activo en release
-  (Android); no deshabilites el *stripping* de símbolos públicos sin motivo.
-- No implementes cripto casera: CryptoKit (iOS) / Keystore+AES-GCM o Tink (Android).
-  `SecRandomCopyBytes`/`SecureRandom` para aleatoriedad de seguridad.
+## 4. Quality: formatting, lint, static analysis, testing
 
-## 6. Rendimiento y operabilidad
+Blocking CI gates on both platforms — no green, no merge:
+1. Formatting (swift-format / ktlint) in check mode.
+2. Lint/static: SwiftLint with no new violations; Android Lint with `lintOptions.abortOnError`,
+   detekt with no issues; **compiler warnings treated as errors** in our own code
+   (including Swift 6's strict concurrency checking).
+3. Unit + UI tests on emulator/simulator; a signable release build.
+4. Baselines (lint/detekt) only for adoption in legacy: frozen and only ever shrinking.
 
-- **Arranque**: mide cold start (Instruments App Launch / Macrobenchmark + Baseline Profiles en
-  Android — genera y versiona los baseline profiles); nada pesado en `application(_:didFinish…)`
-  / `Application.onCreate` — difiere e inicializa perezoso (App Startup en Android).
-- **UI fluida**: sin trabajo síncrono pesado en main thread/composición; en Compose vigila
-  recomposiciones (claves estables, `derivedStateOf`, lambdas estables); en SwiftUI evita
-  invalidaciones amplias (estado granular con Observation). Listas siempre lazy con ids estables.
-- **Memoria y energía**: Instruments (Leaks/Allocations) y LeakCanary en debug; cuidado con
-  capturas fuertes en closures/lambdas de larga vida; trabajo en background con las APIs del
-  sistema (BackgroundTasks / WorkManager con constraints), nunca timers/polling propios.
-- **Observabilidad**: crash reporting (Crashlytics/Sentry) + MetricKit y Android Vitals como SLI
-  (crash-free rate, ANR rate, arranque); logs estructurados sin PII; monitoriza cada release
-  durante el rollout gradual y aborta si degrada.
-- **Resiliencia offline**: la red SIEMPRE falla — timeouts, retry con backoff+jitter, caché local
-  (SwiftData/GRDB, Room) y UI con estados de error/reintento; operaciones de escritura
-  idempotentes frente a reintentos.
-- Tamaño de app vigilado en CI (app thinning / App Bundle); assets optimizados.
+Testing criteria:
+- **Pyramid**: mostly unit tests over domain/ViewModels/state holders (fast, without an
+  emulator); just enough integration; few and stable UI/E2E.
+- **iOS**: **Swift Testing** (`@Test`, `#expect`) for new unit tests, XCTest where it already exists;
+  XCUITest for critical flows; snapshot tests for high-value SwiftUI views.
+- **Android**: JUnit + Turbine (Flows) + MockK; `runTest` with injected dispatchers (the
+  `TestDispatcher` rule — never the real `Dispatchers.Main` in tests); `createComposeTestRule` for UI;
+  screenshot tests (Compose Preview Screenshot Testing/Paparazzi) for the design system;
+  Espresso/instrumentation only for critical E2E flows.
+- Cover **edges and errors**: no network, timeout, malformed response, denied permission, killed
+  process/state restoration, rotation, dark mode, accessible text sizes.
+- Zero flakiness: an unstable test is fixed or deleted; no `sleep`s — use idling/waiting on a
+  condition. Every bugfix leaves a regression test.
 
-## 7. Sostenibilidad: cadencia de upgrades y prohibiciones
+## 5. Stack security (OWASP MASVS as the reference)
 
-**Cadencia**:
-- **iOS**: adopta el Xcode/SDK nuevo cada otoño en <6 meses (App Store lo convierte en requisito
-  duro cada primavera — en 2026 fue SDK iOS 26 desde el 28 de abril). Sube el deployment target
-  a N-1/N-2 según audiencia real.
-- **Android**: targetSdk al nivel exigido por Play ANTES del deadline anual del 31 de agosto
-  (2026: API 36); AGP/Gradle/Kotlin al ritmo de Android Studio estable; Compose BOM estable
-  trimestral.
-- Dependencias: Renovate/Dependabot semanal; parches de seguridad en <72 h; una versión de
-  toolchain por repo (fijada en catálogo/`.xcode-version`), no "la que tenga cada máquina".
+- **Secure storage**: credentials/tokens ONLY in the **Keychain** (iOS;
+  `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` by default, not syncing to iCloud what should
+  not be) and the **Android Keystore** (hardware-backed keys; data encrypted with those keys —
+  `EncryptedSharedPreferences` is deprecated: encrypt with Keystore + AES-GCM or use DataStore with
+  your own encryption). FORBIDDEN: tokens in UserDefaults/SharedPreferences/cleartext files, logs
+  with sensitive data, secrets hardcoded in the binary (they are extracted with `strings`).
+- **Network**: TLS 1.2+ always; ATS active with no global exceptions (iOS); `networkSecurityConfig`
+  without cleartext (Android). Certificate pinning only with a rotation plan (pin failure = dead
+  app). Validate ALL input from the server: the backend is also a boundary.
+- **Signing and distribution**:
+  - iOS: automatic signing managed by Xcode Cloud/fastlane match with certificates in an encrypted
+    repo or in the CI's manager; distribution keys NEVER in the repo nor on the laptop of
+    a single person. App Store Connect API keys with the minimum role.
+  - Android: **Play App Signing** mandatory (Google holds the signing key; you hold the
+    upload one, rotatable if compromised). Upload keystore in the CI's secrets manager, never
+    in the repo; `signingConfig` reads from env vars. AAB for Play; signed APK only for
+    justified direct distribution.
+  - Publishing through channels: internal → closed → production with gradual rollout and monitoring
+    of crashes before widening the percentage.
+- **Permissions and privacy**: least privilege, requested in context with justification; Privacy
+  Manifest (iOS) and Data Safety (Play) truthful and maintained. Personal data: minimisation,
+  encryption at rest, real deletion on account closure (GDPR).
+- **SCA and supply chain**: pinned dependencies (`Package.resolved` and catalog + Gradle lockfile
+  versioned); Dependabot/Renovate; no abandoned libraries. R8 active in release
+  (Android); do not disable public symbol *stripping* without a reason.
+- Do not implement homemade crypto: CryptoKit (iOS) / Keystore+AES-GCM or Tink (Android).
+  `SecRandomCopyBytes`/`SecureRandom` for security randomness.
 
-**LISTA DE PROHIBICIONES** (bloquean review):
-- Secretos, API keys o keystores en el repo o hardcodeados en el binario.
-- Tokens/credenciales fuera de Keychain/Keystore; logs con PII o secretos.
-- Cleartext HTTP; excepción global de ATS; desactivar validación TLS "para probar".
-- iOS: `@unchecked Sendable` sin invariante documentada; `DispatchSemaphore` para "esperar" async;
-  force unwrap (`!`) y `try!` fuera de tests o invariantes probadas; nuevos `ObservableObject` en
-  targets con Observation disponible.
-- Android: versiones hardcodeadas fuera del catálogo; `GlobalScope`; `runBlocking` en main;
-  `Dispatchers` sin inyectar; acceso a disco/red en main thread; `!!` como estilo;
-  `EncryptedSharedPreferences` en código nuevo (deprecado).
-- UI nueva en UIKit/XML sin justificación de interoperabilidad escrita.
-- Silenciar warnings de concurrencia estricta o lint con supresiones sin comentario de motivo.
-- Publicar sin canal de pruebas ni rollout gradual; deshabilitar crash reporting en release.
-- WebViews con `javaScriptEnabled` + contenido no confiable, o puentes JS expuestos sin allowlist.
-- Detección casera de jailbreak/root como único control de seguridad (es mitigación débil, no
-  frontera).
+## 6. Performance and operability
 
-## 8. Verificación web obligatoria
+- **Startup**: measure cold start (Instruments App Launch / Macrobenchmark + Baseline Profiles on
+  Android — generate and version the baseline profiles); nothing heavy in `application(_:didFinish…)`
+  / `Application.onCreate` — defer and initialise lazily (App Startup on Android).
+- **Smooth UI**: no heavy synchronous work on the main thread/composition; in Compose watch
+  recompositions (stable keys, `derivedStateOf`, stable lambdas); in SwiftUI avoid
+  wide invalidations (granular state with Observation). Lists always lazy with stable ids.
+- **Memory and energy**: Instruments (Leaks/Allocations) and LeakCanary in debug; beware of
+  strong captures in long-lived closures/lambdas; background work with the system's
+  APIs (BackgroundTasks / WorkManager with constraints), never your own timers/polling.
+- **Observability**: crash reporting (Crashlytics/Sentry) + MetricKit and Android Vitals as SLIs
+  (crash-free rate, ANR rate, startup); structured logs without PII; monitor every release
+  during the gradual rollout and abort if it degrades.
+- **Offline resilience**: the network ALWAYS fails — timeouts, retry with backoff+jitter, local cache
+  (SwiftData/GRDB, Room) and UI with error/retry states; write operations
+  idempotent against retries.
+- App size watched in CI (app thinning / App Bundle); assets optimised.
 
-Antes de fijar CUALQUIER versión o requisito en un proyecto real, **verifícalo en la web**:
-- Xcode/Swift estables y requisito de SDK de App Store: developer.apple.com/news y notas de
-  release de Xcode.
-- Requisitos de Google Play (targetSdk, deadlines, 16 KB pages): developer.android.com y Play
+## 7. Sustainability: upgrade cadence and prohibitions
+
+**Cadence**:
+- **iOS**: adopt the new Xcode/SDK every autumn within <6 months (the App Store turns it into a hard
+  requirement every spring — in 2026 it was SDK iOS 26 from 28 April). Raise the deployment target
+  to N-1/N-2 according to the real audience.
+- **Android**: targetSdk at the level Play requires BEFORE the annual deadline of 31 August
+  (2026: API 36); AGP/Gradle/Kotlin at the pace of stable Android Studio; stable Compose BOM
+  quarterly.
+- Dependencies: Renovate/Dependabot weekly; security patches in <72 h; one toolchain
+  version per repo (pinned in the catalog/`.xcode-version`), not "whichever each machine has".
+
+**LIST OF PROHIBITIONS** (they block review):
+- Secrets, API keys or keystores in the repo or hardcoded in the binary.
+- Tokens/credentials outside the Keychain/Keystore; logs with PII or secrets.
+- Cleartext HTTP; a global ATS exception; disabling TLS validation "to test".
+- iOS: `@unchecked Sendable` without a documented invariant; `DispatchSemaphore` to "wait" on async;
+  force unwrap (`!`) and `try!` outside tests or proven invariants; new `ObservableObject` in
+  targets where Observation is available.
+- Android: hardcoded versions outside the catalog; `GlobalScope`; `runBlocking` on main;
+  `Dispatchers` not injected; disk/network access on the main thread; `!!` as a style;
+  `EncryptedSharedPreferences` in new code (deprecated).
+- New UI in UIKit/XML without a written interoperability justification.
+- Silencing strict concurrency warnings or lint with suppressions lacking a comment stating the reason.
+- Publishing without a test channel or gradual rollout; disabling crash reporting in release.
+- WebViews with `javaScriptEnabled` + untrusted content, or JS bridges exposed without an allowlist.
+- Homemade jailbreak/root detection as the only security control (it is weak mitigation, not a
+  boundary).
+
+## 8. Mandatory web verification
+
+Before pinning ANY version or requirement in a real project, **verify it on the web**:
+- Stable Xcode/Swift and the App Store SDK requirement: developer.apple.com/news and Xcode
+  release notes.
+- Google Play requirements (targetSdk, deadlines, 16 KB pages): developer.android.com and Play
   Console Help.
-- Compatibilidad AGP ↔ Gradle ↔ Kotlin ↔ Compose BOM: tabla oficial en
-  developer.android.com/build/releases y kotlinlang.org/docs/releases.html.
-- CVEs de dependencias móviles (GitHub Advisories) antes de recomendar una librería.
+- AGP ↔ Gradle ↔ Kotlin ↔ Compose BOM compatibility: official table at
+  developer.android.com/build/releases and kotlinlang.org/docs/releases.html.
+- CVEs of mobile dependencies (GitHub Advisories) before recommending a library.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

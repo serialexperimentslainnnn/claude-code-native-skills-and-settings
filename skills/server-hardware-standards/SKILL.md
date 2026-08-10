@@ -3,264 +3,264 @@ name: server-hardware-standards
 description: Choosing, sizing, securing and retiring physical servers. Use when specifying or reviewing a server BOM (socket count, DDR5 memory channels and DIMMs per channel, RDIMM versus MRDIMM, NUMA nodes and node-per-socket settings, PCIe Gen5 lanes and x8/x8 or x4/x4/x4/x4 bifurcation, drive bays, SAS expander versus direct-attach backplane, U.2/E3.S form factors, redundant PSUs on separate circuits, OCP NIC 3.0 slots), operating out-of-band management (iDRAC, iLO, XCC, BMC, ipmitool, Redfish ComputerSystem and UpdateService, KVM over IP, virtual media, serial-over-LAN, IPMI cipher zero, default BMC credentials, BMC firmware CVEs such as CVE-2024-54085 in AMI MegaRAC), managing firmware and BIOS as code (fwupd and LVFS, fwupdmgr, UEFI capsule updates, Dell DSU and Repository Manager, HPE SPP and iLO, Lenovo XCC, firmware signing and rollback), deciding RAID controller versus HBA in IT mode for ZFS or Ceph, picking drives by interface and endurance (SATA, SAS, NVMe, TBW, DWPD, SMART attributes and what they actually predict), sizing warranty and support contracts (next-business-day versus 4-hour onsite, post-year-3 renewal cost, spare parts pools), buying refurbished or second-hand enterprise gear, deciding when to refresh hardware on power draw versus on failure rate, or comparing buy versus lease versus cloud on cost.
 ---
 
-# Estándares de hardware de servidor
+# Server hardware standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre **el hierro como decisión de ingeniería**: qué se compra y por qué (§3), cómo se acepta antes
-de ponerlo en producción (§4), cómo se gestiona su plano fuera de banda y su firmware sin abrir un
-agujero (§5), y cuánto tiempo se conserva, con qué contrato y con qué criterio de renovación (§6).
+Covers **the iron as an engineering decision**: what is bought and why (§3), how it is accepted before
+being put into production (§4), how its out-of-band plane and its firmware are managed without opening a
+hole (§5), and how long it is kept, with what contract and with what renewal criterion (§6).
 
-**Principio rector**: **el cuello de botella de un servidor casi nunca es la frecuencia del
-procesador.** Es la memoria mal poblada, el NUMA ignorado, el carril PCIe compartido, el *backplane*
-que no llega a todas las bahías o la fuente única. **Segundo principio, y es el que más incidentes
-evita: el BMC es un ordenador completo con acceso total al servidor, ejecutándose fuera del control
-del sistema operativo. Va en una red de gestión aislada. Sin excepciones.**
+**Guiding principle**: **a server's bottleneck is almost never the processor's
+frequency.** It is badly populated memory, ignored NUMA, the shared PCIe lane, the *backplane*
+that does not reach all the bays or the single power supply. **Second principle, and it is the one that prevents the most
+incidents: the BMC is a complete computer with total access to the server, running outside the control
+of the operating system. It goes on an isolated management network. No exceptions.**
 
-Triggers: pliego o BOM de servidor, "¿cuánta RAM le pongo?", canales de memoria, DIMM por canal
-(1DPC/2DPC), RDIMM/MRDIMM, NUMA / NPS, carriles PCIe Gen5, bifurcación x8/x8 o x4/x4/x4/x4, bahías
-U.2/E3.S, *backplane* con expansor SAS, OCP NIC 3.0, fuentes redundantes y circuitos separados,
-`ipmitool`, `racadm`, `ilorest`, `sum`, Redfish (`/redfish/v1/Systems`, `UpdateService`), KVM sobre
-IP, medio virtual, SOL, `cipher zero`, `fwupdmgr`, LVFS, cápsula UEFI, Dell DSU/Repository Manager,
-HPE SPP/iLO, Lenovo XCC, "¿RAID hardware o HBA?", modo IT, `smartctl`, TBW, DWPD, NBD frente a 4h,
-"renovar el contrato de soporte", "servidor de segunda mano", "¿comprar o nube?".
+Triggers: server tender or BOM, "how much RAM do I put in it?", memory channels, DIMM per channel
+(1DPC/2DPC), RDIMM/MRDIMM, NUMA / NPS, PCIe Gen5 lanes, x8/x8 or x4/x4/x4/x4 bifurcation, U.2/E3.S
+bays, *backplane* with SAS expander, OCP NIC 3.0, redundant power supplies and separate circuits,
+`ipmitool`, `racadm`, `ilorest`, `sum`, Redfish (`/redfish/v1/Systems`, `UpdateService`), KVM over
+IP, virtual media, SOL, `cipher zero`, `fwupdmgr`, LVFS, UEFI capsule, Dell DSU/Repository Manager,
+HPE SPP/iLO, Lenovo XCC, "hardware RAID or HBA?", IT mode, `smartctl`, TBW, DWPD, NBD versus 4h,
+"renew the support contract", "second-hand server", "buy or cloud?".
 
-**No aplica**: ver `onprem-standards` (**paraguas de plataforma y tabla de enrutado §1.2**: la flota
-como conjunto, la elección de hipervisor y sus invariantes; **aquí la máquina individual y su
-componente**), `datacenter-facilities-standards` (**todo lo que está fuera
-del chasis** —rack, PDU, circuitos, UPS, refrigeración, pasillo caliente/frío, densidad por rack,
-recepción y retirada física—. Frontera en una línea: *si va atornillado al rack pero no dentro del
-servidor, es suyo*), `cmdb-inventory-standards` (**el registro del activo**: número de serie como
-identificador estable, garantía, contrato y estado de ciclo de vida se **guardan allí**; aquí qué
-significan), `os-provisioning-standards` (instalar el SO sobre este hierro; **allí Redfish/IPMI como
-disparador de arranque, aquí el BMC como sistema a proteger**), `linux-storage-standards`
-(multipath, LVM, planificadores de E/S, `nvme-cli`, el filesystem) y `zfs-standards` (**topología de
-pool, `ashift`, ARC, scrub**; aquí solo por qué ZFS exige HBA en modo IT y no controladora RAID),
-`ha-clustering-standards` (redundancia de servicio; aquí redundancia dentro del chasis),
-`backup-recovery-standards` y `bcdr-standards` (**el fallo del hierro como escenario de
-recuperación**: RTO real = tiempo de repuesto + tiempo de restauración), `networking-standards` y
-`datacenter-fabric-standards` (**el switch, el enlace y la VLAN de gestión**; aquí solo la NIC y la
-exigencia de que esa VLAN exista), `linux-hardening-standards` (baseline del SO; **el firmware y el
-BMC son de aquí**), `vulnerability-management-standards` (triaje de CVE de firmware con
-CVSS/EPSS/**KEV**), `green-it-standards` (huella y reporte, y el criterio de que **alargar la vida
-útil suele pesar más que optimizar el consumo**), `finops-standards` (coste en nube),
-`homelab-standards` (**economía del material *enterprise* usado**), `gpu-computing-standards` y
-`high-speed-interconnect-standards` (aceleradores e InfiniBand/RoCE), `hpc-standards`
-(nodo de cálculo y densidad), `macos-fleet-standards` y
-`developer-workstation-standards` (el puesto, no el servidor).
+**Not applicable**: see `onprem-standards` (**platform umbrella and routing table §1.2**: the fleet
+as a whole, the choice of hypervisor and its invariants; **here the individual machine and its
+component**), `datacenter-facilities-standards` (**everything outside
+the chassis** —rack, PDU, circuits, UPS, cooling, hot/cold aisle, density per rack,
+physical receiving and disposal—. Boundary in one line: *if it is bolted to the rack but not inside the
+server, it is theirs*), `cmdb-inventory-standards` (**the asset record**: serial number as a
+stable identifier, warranty, contract and lifecycle status are **stored there**; here what they
+mean), `os-provisioning-standards` (installing the OS on this iron; **there Redfish/IPMI as a
+boot trigger, here the BMC as a system to protect**), `linux-storage-standards`
+(multipath, LVM, I/O schedulers, `nvme-cli`, the filesystem) and `zfs-standards` (**pool topology,
+`ashift`, ARC, scrub**; here only why ZFS demands an HBA in IT mode and not a RAID controller),
+`ha-clustering-standards` (service redundancy; here redundancy inside the chassis),
+`backup-recovery-standards` and `bcdr-standards` (**hardware failure as a recovery
+scenario**: real RTO = spare part time + restore time), `networking-standards` and
+`datacenter-fabric-standards` (**the switch, the link and the management VLAN**; here only the NIC and the
+requirement that this VLAN exists), `linux-hardening-standards` (OS baseline; **firmware and the
+BMC belong here**), `vulnerability-management-standards` (triage of firmware CVEs with
+CVSS/EPSS/**KEV**), `green-it-standards` (footprint and reporting, and the criterion that **extending the
+service life usually weighs more than optimising consumption**), `finops-standards` (cloud cost),
+`homelab-standards` (**economics of used *enterprise* gear**), `gpu-computing-standards` and
+`high-speed-interconnect-standards` (accelerators and InfiniBand/RoCE), `hpc-standards`
+(compute node and density), `macos-fleet-standards` and
+`developer-workstation-standards` (the desk, not the server).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web modelo, versión de firmware y matriz de compatibilidad antes de fijar nada (§8).
+> Verify model, firmware version and compatibility matrix on the web before committing to anything (§8).
 
-| Decisión | Por defecto | Motivo / alternativa justificable |
+| Decision | Default | Reason / justifiable alternative |
 |---|---|---|
-| Nº de sockets | **1 socket** salvo justificación medida | Un socket moderno llega a densidades que hace cinco años exigían dos, y **evita todo el problema NUMA de raíz**. Dos sockets solo si necesitas la memoria o los carriles PCIe, no "por si acaso" |
-| Poblado de memoria | **Todos los canales poblados, 1 DIMM por canal** | Es la decisión de memoria que más rendimiento decide, por encima de la frecuencia. Medio poblado = ancho de banda proporcionalmente perdido. **2DPC baja la velocidad negociada**: si necesitas capacidad, DIMM más grandes antes que más DIMM |
-| Gestión fuera de banda | **BMC en VLAN de gestión aislada**, cuenta única por host, **Redfish** para automatizar | `ipmitool` solo para lo que Redfish no cubra. **IPMI/LAN se deshabilita si Redfish basta** (§5) |
-| Almacenamiento local | **NVMe** (U.2/E3.S) para datos calientes; SATA/SAS solo por capacidad o por cabina existente | El coste por IOPS de NVMe ya no justifica SAS en servidores nuevos |
-| Controladora | **HBA en modo IT** (paso directo) si el consumidor es ZFS, Ceph o el propio SO | **RAID hardware** solo con arranque en espejo o cabina heredada. La controladora RAID con caché y batería es un SPOF con firmware propio, y **oculta SMART al SO** |
-| Fuentes | **2 PSU, en circuitos eléctricos distintos**, dimensionadas para que **una sola aguante la carga** | Dos fuentes en la misma regleta no son redundancia: son dos fuentes. El circuito lo fija `datacenter-facilities` |
-| Red | **NIC OCP 3.0 + una PCIe** para separar dominios de fallo | Doble puerto en la misma NIC no protege del fallo de la NIC |
-| Firmware | **Como código**: catálogo del fabricante fijado por versión, aplicado en ventana, con `fwupd`/LVFS donde exista cobertura | **Verifica la cobertura real**: LVFS es fuerte en cliente y estación de trabajo; **el firmware de servidor sigue viniendo mayoritariamente del canal del fabricante** (iLO/SPP, DSU, XCC) |
-| Garantía | **NBD** por defecto; **4h onsite** solo donde el RTO comprometido no se cubra con repuesto propio | La alternativa barata y muchas veces mejor: **stock propio de repuestos + N+1**, que además funciona fuera de horario y sin depender del proveedor |
-| Compra | **Comprar** cuando la carga es estable, predecible y de vida ≥ 4 años | **Nube** para lo elástico e incierto; **alquiler/leasing** cuando el problema es el flujo de caja o el ciclo de renovación forzado, no el coste total |
+| No. of sockets | **1 socket** unless there is measured justification | A modern socket reaches densities that five years ago required two, and **avoids the whole NUMA problem at the root**. Two sockets only if you need the memory or the PCIe lanes, not "just in case" |
+| Memory population | **All channels populated, 1 DIMM per channel** | It is the memory decision that decides the most performance, above frequency. Half populated = proportionally lost bandwidth. **2DPC lowers the negotiated speed**: if you need capacity, larger DIMMs before more DIMMs |
+| Out-of-band management | **BMC on an isolated management VLAN**, unique account per host, **Redfish** to automate | `ipmitool` only for what Redfish does not cover. **IPMI/LAN is disabled if Redfish is enough** (§5) |
+| Local storage | **NVMe** (U.2/E3.S) for hot data; SATA/SAS only for capacity or for an existing array | The cost per IOPS of NVMe no longer justifies SAS in new servers |
+| Controller | **HBA in IT mode** (pass-through) if the consumer is ZFS, Ceph or the OS itself | **Hardware RAID** only with mirrored boot or a legacy array. The RAID controller with cache and battery is a SPOF with its own firmware, and **hides SMART from the OS** |
+| Power supplies | **2 PSUs, on different electrical circuits**, sized so that **a single one can carry the load** | Two power supplies on the same power strip are not redundancy: they are two power supplies. The circuit is set by `datacenter-facilities` |
+| Network | **OCP 3.0 NIC + one PCIe** to separate failure domains | Dual port on the same NIC does not protect against NIC failure |
+| Firmware | **As code**: vendor catalogue pinned by version, applied in a window, with `fwupd`/LVFS where there is coverage | **Verify the real coverage**: LVFS is strong on client and workstation; **server firmware still comes mostly from the vendor channel** (iLO/SPP, DSU, XCC) |
+| Warranty | **NBD** by default; **4h onsite** only where the committed RTO is not covered by your own spare | The cheap and often better alternative: **your own spare parts stock + N+1**, which additionally works out of hours and without depending on the vendor |
+| Purchase | **Buy** when the load is stable, predictable and with a life ≥ 4 years | **Cloud** for the elastic and uncertain; **rental/leasing** when the problem is cash flow or the forced renewal cycle, not the total cost |
 
-## 3. Dimensionado: dónde se pierde el rendimiento
+## 3. Sizing: where performance is lost
 
-- **Memoria y canales**. Las plataformas actuales tienen **muchos canales** (a ago-2026, AMD EPYC
-  9005 "Turin" declara hasta **12 canales DDR5 por socket**; Xeon 6 de línea general usa **8 canales**
-  y compensa con **MRDIMM** a mayor velocidad). El error caro es comprar 4 DIMM grandes en una
-  plataforma de 12 canales: se paga la CPU entera y se usa un tercio de su ancho de banda. **Puebla
-  todos los canales, en 1DPC, con módulos idénticos** y comprueba en la tabla de poblado del
-  fabricante la velocidad negociada resultante, que depende del modelo y del rango del módulo.
-- **NUMA**. Con dos sockets —o con particionado NUMA dentro de un socket (NPS)— **la latencia de
-  memoria depende de dónde se ejecute el proceso**. Consecuencia práctica: dimensiona la VM o el
-  contenedor para que **quepa dentro de un nodo NUMA**, y si no cabe, sabe que estás pagando el
-  cruce. Fijar afinidad es cosa del hipervisor (`libvirt-kvm`, `proxmox-ve`, `vmware`); aquí la
-  decisión de **no crear el problema al comprar**.
-- **PCIe: los carriles son finitos y se reparten**. Antes de firmar un BOM, suma los carriles que
-  piden NIC, HBA, NVMe y aceleradores y compáralos con los que expone el socket. Dos trampas
-  frecuentes: **una ranura físicamente x16 cableada a x8** (o alimentada desde el segundo socket, que
-  desaparece en configuración de un socket) y la **bifurcación**, que debe soportarla la BIOS
-  —x8/x8 o x4/x4/x4/x4— para que una tarjeta portadora de varios NVMe funcione. Se verifica en el
-  manual de la placa, no se supone.
-- **Bahías y *backplane***. El número de bahías no dice nada por sí solo: importa **cómo están
-  cableadas**. Un *backplane* con expansor SAS comparte ancho de banda entre bahías; uno de conexión
-  directa no. Y **las bahías NVMe suelen ser un subconjunto** de las bahías totales: "24 bahías" puede
-  significar 8 NVMe y 16 SAS. Pregunta siempre por el diagrama de cableado.
-- **Discos y resistencia**. Elige por **DWPD/TBW frente a la escritura diaria real medida**, no por
-  categoría comercial. Un SSD de lectura intensiva bajo un journal de base de datos o bajo Ceph se
-  gasta en meses. **Mezclar modelos y lotes a propósito** dentro de un grupo redundante reduce el
-  riesgo de fallo correlacionado por defecto de fabricación.
-- **SMART predice menos de lo que la gente cree, y esto está medido.** Google (Pinheiro, Weber &
-  Barroso, *Failure Trends in a Large Disk Drive Population*, USENIX FAST '07; 100.000 discos, 5
-  años) encontró que **más del 56 % de los discos que fallaron no tenían ningún recuento en las
-  cuatro señales SMART fuertes** (errores de escaneo, reasignaciones, reasignaciones fuera de línea y
-  recuento probatorio), y que **el 36 % no tenía ninguna señal SMART en absoluto**. Lectura correcta:
-  **SMART con contadores es una buena razón para sustituir el disco; SMART limpio no es garantía de
-  nada.** El diseño se hace con redundancia y copias verificadas, no con predicción. (El estudio es
-  de discos mecánicos de 2007; para SSD las señales útiles son otras —resistencia consumida, bloques
-  reservados, errores no corregibles— pero la conclusión estructural se mantiene.)
+- **Memory and channels**. Current platforms have **many channels** (as of Aug 2026, AMD EPYC
+  9005 "Turin" declares up to **12 DDR5 channels per socket**; general-line Xeon 6 uses **8 channels**
+  and compensates with **MRDIMM** at higher speed). The expensive mistake is buying 4 large DIMMs on a
+  12-channel platform: you pay for the whole CPU and use a third of its bandwidth. **Populate
+  all the channels, at 1DPC, with identical modules** and check in the vendor's population table
+  the resulting negotiated speed, which depends on the model and the module's rank.
+- **NUMA**. With two sockets —or with NUMA partitioning inside a socket (NPS)— **memory latency
+  depends on where the process runs**. Practical consequence: size the VM or the
+  container so that it **fits inside one NUMA node**, and if it does not fit, know that you are paying for the
+  crossing. Setting affinity is the hypervisor's business (`libvirt-kvm`, `proxmox-ve`, `vmware`); here the
+  decision **not to create the problem when buying**.
+- **PCIe: lanes are finite and get shared out**. Before signing a BOM, add up the lanes that
+  NIC, HBA, NVMe and accelerators ask for and compare them with those the socket exposes. Two frequent
+  traps: **a physically x16 slot wired to x8** (or fed from the second socket, which
+  disappears in a single-socket configuration) and **bifurcation**, which the BIOS must support
+  —x8/x8 or x4/x4/x4/x4— for a carrier card with several NVMe to work. It is verified in
+  the board manual, it is not assumed.
+- **Bays and *backplane***. The number of bays says nothing on its own: what matters is **how they are
+  cabled**. A *backplane* with a SAS expander shares bandwidth between bays; a direct-attach one
+  does not. And **the NVMe bays are usually a subset** of the total bays: "24 bays" may
+  mean 8 NVMe and 16 SAS. Always ask for the cabling diagram.
+- **Drives and endurance**. Choose by **DWPD/TBW against the real measured daily write**, not by
+  commercial category. A read-intensive SSD under a database journal or under Ceph
+  wears out in months. **Deliberately mixing models and batches** within a redundant group reduces
+  the risk of correlated failure from a manufacturing defect.
+- **SMART predicts less than people think, and this is measured.** Google (Pinheiro, Weber &
+  Barroso, *Failure Trends in a Large Disk Drive Population*, USENIX FAST '07; 100,000 drives, 5
+  years) found that **more than 56 % of the drives that failed had no count in the
+  four strong SMART signals** (scan errors, reallocations, offline reallocations and
+  probational count), and that **36 % had no SMART signal at all**. Correct reading:
+  **SMART with counters is a good reason to replace the drive; clean SMART is no guarantee of
+  anything.** The design is done with redundancy and verified copies, not with prediction. (The study is
+  of mechanical drives from 2007; for SSDs the useful signals are others —endurance consumed, reserved
+  blocks, uncorrectable errors— but the structural conclusion holds.)
 
-## 4. Aceptación del hierro antes de producción
+## 4. Acceptance of the iron before production
 
-> *(Ocupa el lugar de "calidad y testing" del formato: no hay toolchain que fijar, sí un gate.)*
+> *(Takes the place of "quality and testing" in the format: there is no toolchain to pin, but there is a gate.)*
 
-Ningún servidor entra en producción sin pasar, y con evidencia archivada:
+No server enters production without passing, and with archived evidence:
 
-1. **Inventario y firmware**: número de serie registrado (`cmdb-inventory-standards`), firmware de
-   BIOS/BMC/NIC/HBA/discos **llevado al nivel de referencia de la flota** antes de instalar nada.
-   Empezar con firmware de fábrica es empezar con deuda.
-2. **Configuración de BIOS aplicada desde el perfil de la flota**, no a mano por menú: perfil de
-   energía, NPS, SR-IOV, Secure Boot, watchdog, orden de arranque. Exportable y comparable.
-3. **Burn-in de 24–72 h** con carga de memoria, CPU y disco, **con el chasis en el rack definitivo y
-   a temperatura ambiente real**. La mortalidad infantil es real y es mucho más barata de encontrar
-   aquí que en producción.
-4. **Prueba de redundancia física**: se **desenchufa una fuente** con el servidor cargado, y se
-   desconecta un enlace de red. Un camino redundante no probado no se sabe si existe.
-5. **Prueba del plano OOB**: consola remota, medio virtual, encendido/apagado y **arranque forzado
-   por Redfish**, desde el bastión. Es lo que usarás a las 3 de la madrugada.
-6. **Línea base de consumo eléctrico y de temperatura** anotada. Sin ella no podrás decidir la
-   renovación por consumo (§6) ni detectar una degradación de ventilación años después.
+1. **Inventory and firmware**: serial number recorded (`cmdb-inventory-standards`), firmware of
+   BIOS/BMC/NIC/HBA/drives **brought to the fleet's reference level** before installing anything.
+   Starting with factory firmware is starting with debt.
+2. **BIOS configuration applied from the fleet profile**, not by hand through menus: power profile,
+   NPS, SR-IOV, Secure Boot, watchdog, boot order. Exportable and comparable.
+3. **24–72 h burn-in** with memory, CPU and disk load, **with the chassis in its final rack and
+   at real ambient temperature**. Infant mortality is real and is far cheaper to find
+   here than in production.
+4. **Physical redundancy test**: **a power supply is unplugged** with the server loaded, and a
+   network link is disconnected. An untested redundant path is not known to exist.
+5. **OOB plane test**: remote console, virtual media, power on/off and **forced boot
+   via Redfish**, from the bastion. It is what you will use at 3 in the morning.
+6. **Baseline of power draw and temperature** recorded. Without it you will not be able to decide
+   renewal on consumption (§6) nor detect a cooling degradation years later.
 
-## 5. Seguridad: el BMC y el firmware
+## 5. Security: the BMC and the firmware
 
-**Regla dura, la más importante de esta skill: el BMC nunca se expone.** Red de gestión dedicada, sin
-ruta a internet ni a la red de usuarios, alcanzable solo desde un bastión con MFA. El BMC arranca
-antes que el sistema operativo, sobrevive a su reinstalación, ve la memoria y el teclado, y **ningún
-control del SO lo protege**. Comprometerlo es comprometer el servidor de forma persistente e
-invisible.
+**Hard rule, the most important in this skill: the BMC is never exposed.** Dedicated management network, with no
+route to the internet or to the user network, reachable only from a bastion with MFA. The BMC boots
+before the operating system, survives its reinstallation, sees memory and keyboard, and **no
+OS control protects it**. Compromising it is compromising the server persistently and
+invisibly.
 
-- **Caso verificado, y por eso la regla es dura**: **CVE-2024-54085** en AMI **MegaRAC SPx**
-  —firmware de BMC presente en servidores de múltiples fabricantes—, **CVSS 10.0**, elusión completa
-  de autenticación en la interfaz Redfish manipulando cabeceras HTTP; permite control remoto del
-  servidor, despliegue de malware, manipulación de firmware e incluso inutilizar la placa. **CISA lo
-  añadió a su catálogo KEV el 25-jun-2025** (primer fallo de BMC en entrar en KEV), con fecha límite
-  de remediación 16-jul-2025. Fue descubierto por Eclypsium al analizar el arreglo de un fallo
-  anterior de 2023 (CVE-2023-34329): **el segundo intento del fabricante también era elusible**.
-- **Credenciales**: única por host, generada y guardada en el gestor de secretos, **nunca compartida
-  entre hosts ni la de fábrica**. Cuentas por persona/servicio con rol mínimo, no una cuenta `admin`
-  común. Revocación ligada a la baja del activo.
-- **Protocolos**: **deshabilita IPMI sobre LAN si Redfish cubre tu automatización**. IPMI arrastra
-  problemas de diseño conocidos (entre ellos `cipher zero` y la exposición de hashes de contraseña
-  por RAKP) y no va a arreglarse. Si debe quedarse, restringido por origen y con `cipher zero`
-  desactivado.
-- **Firmware firmado y con vuelta atrás**. Solo firmware del fabricante, verificado por firma. Los
-  dispositivos con **doble banco** permiten rollback y son preferibles. Un fallo durante la
-  actualización deja un ladrillo: se actualiza en ventana, con consola OOB abierta y una máquina de
-  la pareja HA fuera de servicio, nunca en masa y nunca a la vez en las dos.
-- **Cadencia de parcheo de firmware, escrita**: revisión **trimestral** del catálogo del fabricante
-  para BIOS/NIC/HBA/discos, y **fuera de ciclo ante cualquier CVE de BMC** —especialmente si entra en
-  **KEV**, que es la señal de explotación real (triaje en `vulnerability-management-standards`).
-- **Herramienta**: `fwupd`/LVFS cuando el fabricante publique ahí (metadatos firmados con JCat,
-  verificación obligatoria en cada refresco, y `ApprovalRequired` para aprobar solo lo probado). Pero
-  **verifica la cobertura para servidores**: el grueso del firmware de servidor sigue distribuyéndose
-  por el canal del fabricante (Dell DSU/Repository Manager, HPE SPP/iLO, Lenovo XCC).
-- **Secure Boot y el calendario de 2026**: las CA de Microsoft de 2011 están venciendo (KEK CA 2011
-  expiró el **27-jun-2026**; Windows Production PCA 2011 vence en **octubre de 2026**). **Comprueba si
-  tu modelo de servidor tiene firmware con las CA de 2023**: si el fabricante ya no lo publica, ese
-  chasis ha entrado de hecho en su fase de retirada, decidas lo que decidas (§6).
-- **Fin de vida del servidor**: **destrucción o borrado certificado de los discos** —y de la memoria
-  no volátil del BMC y de la caché de la controladora RAID, que casi nadie limpia—. Restablecimiento
-  a fábrica del BMC antes de que el chasis salga del edificio.
+- **Verified case, and that is why the rule is hard**: **CVE-2024-54085** in AMI **MegaRAC SPx**
+  —BMC firmware present in servers from multiple vendors—, **CVSS 10.0**, complete bypass
+  of authentication in the Redfish interface by manipulating HTTP headers; it allows remote control of the
+  server, malware deployment, firmware manipulation and even bricking the board. **CISA
+  added it to its KEV catalogue on 25-Jun-2025** (first BMC flaw to enter KEV), with a remediation
+  deadline of 16-Jul-2025. It was discovered by Eclypsium while analysing the fix for an earlier
+  2023 flaw (CVE-2023-34329): **the vendor's second attempt was also bypassable**.
+- **Credentials**: unique per host, generated and stored in the secrets manager, **never shared
+  between hosts nor the factory one**. Accounts per person/service with minimum role, not a common
+  `admin` account. Revocation tied to the asset's decommissioning.
+- **Protocols**: **disable IPMI over LAN if Redfish covers your automation**. IPMI drags along
+  known design problems (among them `cipher zero` and the exposure of password hashes
+  via RAKP) and is not going to be fixed. If it must stay, restricted by source and with `cipher zero`
+  disabled.
+- **Signed firmware with rollback**. Only vendor firmware, verified by signature. Devices
+  with **dual bank** allow rollback and are preferable. A failure during the
+  update leaves a brick: it is updated in a window, with an OOB console open and one machine
+  of the HA pair out of service, never en masse and never on both at once.
+- **Firmware patching cadence, written down**: **quarterly** review of the vendor catalogue
+  for BIOS/NIC/HBA/drives, and **out of cycle on any BMC CVE** —especially if it enters
+  **KEV**, which is the signal of real exploitation (triage in `vulnerability-management-standards`).
+- **Tooling**: `fwupd`/LVFS when the vendor publishes there (metadata signed with JCat,
+  mandatory verification on every refresh, and `ApprovalRequired` to approve only what has been tested). But
+  **verify the coverage for servers**: the bulk of server firmware is still distributed
+  through the vendor channel (Dell DSU/Repository Manager, HPE SPP/iLO, Lenovo XCC).
+- **Secure Boot and the 2026 calendar**: Microsoft's 2011 CAs are expiring (KEK CA 2011
+  expired on **27-Jun-2026**; Windows Production PCA 2011 expires in **October 2026**). **Check whether
+  your server model has firmware with the 2023 CAs**: if the vendor no longer publishes it, that
+  chassis has in effect entered its retirement phase, whatever you decide (§6).
+- **End of life of the server**: **destruction or certified erasure of the drives** —and of the non-volatile
+  memory of the BMC and of the RAID controller cache, which almost nobody wipes—. Factory reset
+  of the BMC before the chassis leaves the building.
 
-## 6. Ciclo de vida: garantía, repuestos y cuándo renovar
+## 6. Lifecycle: warranty, spares and when to renew
 
-- **La garantía es una decisión de RTO, no de tranquilidad.** Calcula el RTO real del fallo de un
-  componente: `tiempo de detección + tiempo de respuesta contractual + tiempo de sustitución +
-  tiempo de restauración`. Un contrato 4h no sirve de nada si el dato tarda seis horas en restaurar,
-  y NBD sobra si tienes N+1 y el servicio se mueve solo. **Lo que casi siempre gana en coste y en
-  tiempo: comprar el repuesto crítico (fuente, disco, ventilador, DIMM) y tenerlo en el armario.**
-- **Los años 4 y 5 son donde el contrato se vuelve caro.** La renovación posterior a la garantía
-  inicial suele costar por año una fracción creciente del valor del equipo, mientras el valor
-  residual cae. Regla: **cada renovación de soporte se compara por escrito contra (a) sustituir el
-  equipo y (b) autoasegurarse con repuestos y N+1.** Si no hay esa comparación con fecha, no se
-  firma. *(Cifras concretas: salen de tu oferta, no de aquí — ningún fabricante publica tarifas.)*
-- **Cuándo renovar: dos relojes distintos y hay que mirar los dos.**
-  - **Por avería**: cuando la tasa de fallos sube, el repuesto ya no se consigue en canal oficial, o
-    el fabricante deja de publicar firmware (incluido el caso de Secure Boot de §5). **Un servidor
-    sin firmware nuevo es un servidor sin parches de seguridad**, aunque encienda perfectamente.
-  - **Por consumo**: el equipo viejo se paga a sí mismo en electricidad y en espacio de rack cuando
-    su rendimiento por vatio queda muy por detrás. **Cálcúlalo, no lo cites**: `(vatios_viejo −
-    vatios_nuevo × equipos_equivalentes) × 8760 h × precio_kWh × factor_PUE` frente al coste del
-    equipo nuevo. Con energía cara y consolidación alta (varias máquinas viejas en una nueva) el
-    retorno puede ser de 2–3 años; con energía barata y un servidor poco cargado, nunca. **La
-    respuesta depende de tu precio del kWh y de tu ratio de consolidación, y por eso no hay una regla
-    de "renovar cada X años" que sea honesta.** Y ojo al contrapeso de `green-it-standards`: la
-    huella ya incorporada del equipo existente empuja en sentido contrario.
-- **Segunda mano**: legítima y a veces excelente —laboratorio, entornos de no producción, capacidad
-  de reserva, repuestos de un modelo que ya operas—. Condiciones para producción: **repuestos
-  disponibles, firmware aún publicado, y que no sostenga nada cuyo RTO sea comprometido**. Verifica
-  antes de comprar: horas de encendido y ciclos de los discos, ausencia de bloqueo de licencias del
-  BMC (iDRAC Enterprise, iLO Advanced **se licencian y no siempre se transfieren**), y estado de
-  garantía transferible.
-- **Comprar frente a alquilar frente a nube**: compárense **coste total a 5 años** —equipo,
-  soporte, energía, espacio, red, personal y coste del capital— contra el coste equivalente en nube
-  **con el mismo perfil de utilización**. Los dos errores simétricos: comparar el precio de compra
-  contra la factura mensual de nube (ignora operación y amortización), y comparar contra una nube
-  dimensionada al pico (ignora la elasticidad, que es justo lo que se paga). **La decisión rara vez
-  es global**: base estable propia + pico en nube gana casi siempre a los extremos puros.
+- **The warranty is an RTO decision, not a peace-of-mind one.** Calculate the real RTO of a component
+  failure: `detection time + contractual response time + replacement time +
+  restore time`. A 4h contract is worth nothing if the data takes six hours to restore,
+  and NBD is more than enough if you have N+1 and the service moves by itself. **What almost always wins on cost and on
+  time: buying the critical spare (power supply, drive, fan, DIMM) and keeping it in the cupboard.**
+- **Years 4 and 5 are where the contract gets expensive.** Renewal after the initial
+  warranty usually costs per year an increasing fraction of the equipment's value, while the residual
+  value falls. Rule: **every support renewal is compared in writing against (a) replacing the
+  equipment and (b) self-insuring with spares and N+1.** If there is no such dated comparison, it is not
+  signed. *(Concrete figures: they come from your quote, not from here — no vendor publishes rates.)*
+- **When to renew: two different clocks and you have to look at both.**
+  - **By failure**: when the failure rate rises, the spare part can no longer be obtained through the official channel, or
+    the vendor stops publishing firmware (including the Secure Boot case in §5). **A server
+    without new firmware is a server without security patches**, even if it powers on perfectly.
+  - **By consumption**: the old equipment pays for itself in electricity and rack space when
+    its performance per watt falls well behind. **Calculate it, do not quote it**: `(watts_old −
+    watts_new × equivalent_units) × 8760 h × price_kWh × PUE_factor` against the cost of the
+    new equipment. With expensive energy and high consolidation (several old machines into one new one) the
+    payback can be 2–3 years; with cheap energy and a lightly loaded server, never. **The
+    answer depends on your kWh price and on your consolidation ratio, and that is why there is no honest
+    "renew every X years" rule.** And watch the counterweight from `green-it-standards`: the
+    already embodied footprint of the existing equipment pushes the other way.
+- **Second-hand**: legitimate and sometimes excellent —lab, non-production environments, reserve
+  capacity, spares for a model you already operate—. Conditions for production: **spares
+  available, firmware still published, and that it holds up nothing whose RTO is committed**. Verify
+  before buying: power-on hours and drive cycles, absence of BMC licence
+  locks (iDRAC Enterprise, iLO Advanced **are licensed and do not always transfer**), and
+  transferable warranty status.
+- **Buy versus rent versus cloud**: compare **total cost over 5 years** —equipment,
+  support, energy, space, network, staff and cost of capital— against the equivalent cost in cloud
+  **with the same utilisation profile**. The two symmetric mistakes: comparing the purchase price
+  against the monthly cloud bill (ignores operations and depreciation), and comparing against a cloud
+  sized for the peak (ignores elasticity, which is precisely what you pay for). **The decision is rarely
+  global**: stable base in-house + peak in cloud almost always beats the pure extremes.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- ❌ **PROHIBIDO** exponer un BMC a internet o a la red de usuarios; **PROHIBIDO** dejar credenciales
-  de fábrica o compartir credenciales de BMC entre hosts (§5).
-- ❌ Dejar IPMI sobre LAN habilitado "por si acaso" cuando Redfish ya cubre la automatización.
-- ❌ Ignorar un CVE de BMC porque "está en red interna". La red interna es exactamente donde llega el
-  atacante que ya entró; **KEV significa explotación real**.
-- ❌ Comprar CPU de muchos canales y poblar la mitad de la memoria (§3).
-- ❌ Dar por buena una ranura x16 sin comprobar su cableado real y la bifurcación soportada.
-- ❌ Controladora RAID por delante de ZFS o Ceph. **Se exige HBA en modo IT.**
-- ❌ Dos fuentes en el mismo circuito y llamarlo redundancia.
-- ❌ Poner en producción un servidor sin burn-in, sin nivelar firmware y **sin haber desenchufado una
-  fuente** (§4).
-- ❌ Actualizar firmware simultáneamente en los dos nodos de una pareja HA, o sin consola OOB abierta.
-- ❌ Confiar en SMART limpio como prueba de salud, o en la predicción SMART como sustituto de
-  redundancia y copias (§3).
-- ❌ Renovar soporte sin la comparación escrita contra sustituir o autoasegurarse (§6).
-- ❌ Citar un "servidor se renueva cada N años" como norma. Se calcula con tu precio de la energía y
-  tu ratio de consolidación.
-- ❌ Meter en producción hardware de segunda mano cuyo fabricante ya no publica firmware.
-- ❌ Retirar un chasis sin borrado certificado de discos, caché de RAID y configuración del BMC.
-- ❌ Comprar por hoja de especificaciones sin el diagrama de cableado del *backplane* y la tabla de
-  poblado de memoria del modelo concreto.
+- ❌ **FORBIDDEN** to expose a BMC to the internet or to the user network; **FORBIDDEN** to leave factory
+  credentials or to share BMC credentials between hosts (§5).
+- ❌ Leaving IPMI over LAN enabled "just in case" when Redfish already covers the automation.
+- ❌ Ignoring a BMC CVE because "it is on the internal network". The internal network is exactly where the
+  attacker who is already in arrives; **KEV means real exploitation**.
+- ❌ Buying a many-channel CPU and populating half the memory (§3).
+- ❌ Accepting an x16 slot as good without checking its real cabling and the supported bifurcation.
+- ❌ A RAID controller in front of ZFS or Ceph. **An HBA in IT mode is required.**
+- ❌ Two power supplies on the same circuit and calling it redundancy.
+- ❌ Putting a server into production without burn-in, without levelling firmware and **without having unplugged a
+  power supply** (§4).
+- ❌ Updating firmware simultaneously on both nodes of an HA pair, or without an OOB console open.
+- ❌ Trusting clean SMART as proof of health, or SMART prediction as a substitute for
+  redundancy and copies (§3).
+- ❌ Renewing support without the written comparison against replacing or self-insuring (§6).
+- ❌ Quoting "a server is renewed every N years" as a rule. It is calculated with your energy price and
+  your consolidation ratio.
+- ❌ Putting into production second-hand hardware whose vendor no longer publishes firmware.
+- ❌ Retiring a chassis without certified erasure of drives, RAID cache and BMC configuration.
+- ❌ Buying from a spec sheet without the *backplane* cabling diagram and the memory
+  population table of the specific model.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada, comprobar por web —y en la documentación del **modelo concreto**, no de la
-familia—, con cita literal:
+Before committing to anything, check on the web —and in the documentation of the **specific model**, not of the
+family—, with a literal citation:
 
-1. **Manual técnico del modelo**: tabla de poblado de memoria (velocidad resultante por
-   configuración y por rango), mapa de carriles PCIe por ranura y por socket, bifurcación soportada,
-   y **diagrama de cableado del *backplane*** (qué bahías son NVMe y cuáles cuelgan de expansor).
-   Ningún dato de estos se escribe de memoria.
-2. **Plataforma de CPU**: número de canales de memoria, velocidad máxima por DPC y carriles PCIe de
-   la generación vigente. A ago-2026: EPYC 9005 "Turin" hasta **12 canales DDR5** por socket; Xeon 6
-   de línea general **8 canales** con opción **MRDIMM** a mayor velocidad. **Hueco declarado: las
-   cifras de ancho de banda medido citadas en prensa técnica (STREAM) no se contrastaron contra el
-   informe original**; no las uses para dimensionar sin repetir la medida.
-3. **Redfish**: versión vigente de la especificación DMTF y del *schema bundle* (a ago-2026,
-   **release 2026.1**, especificación **1.24.0**) y —lo que de verdad importa— **qué subconjunto
-   implementa el BMC de tu fabricante y en qué versión de firmware**. La brecha entre el estándar y
-   la implementación es donde se rompe la automatización.
-4. **Avisos de seguridad de firmware** del fabricante y del proveedor del BMC (AMI, Insyde), y el
-   **catálogo KEV de CISA** para saber si algo se está explotando. Confirma que **CVE-2024-54085**
-   está remediado en tu nivel de firmware (AMI-SA-2025003 y el aviso equivalente de tu fabricante).
-5. **Secure Boot**: disponibilidad de firmware con las CA de 2023 para tu modelo (§5). Si no existe,
-   es dato de renovación.
-6. **`fwupd`/LVFS**: versión vigente (a ago-2026, línea **2.1.x**) y **cobertura real de tu modelo de
-   servidor**. **Hueco declarado: no se verificó qué fabricantes publican firmware de servidor —no de
-   cliente— en LVFS**; las fuentes consultadas indican que HPE ProLiant sigue por iLO/SPP. Compruébalo
-   antes de diseñar tu proceso de parcheo alrededor de `fwupdmgr`.
-7. **Fin de vida del modelo**: fecha de fin de venta, de fin de soporte y de **fin de publicación de
-   firmware** —son tres fechas distintas y la tercera es la que decide la seguridad—. Y
-   disponibilidad real de repuestos, que es un dato de canal, no de catálogo.
-8. **Precios**: ningún fabricante publica tarifas de soporte, ampliación ni renovación. **Ninguna
-   cifra económica de §6 sale de este documento: sale de tu oferta y de tu factura eléctrica.**
-9. **Discos**: TBW/DWPD y garantía del modelo exacto (varían entre capacidades de la misma familia) y
-   si el firmware del disco está en la lista de compatibilidad de tu controladora.
+1. **Technical manual of the model**: memory population table (resulting speed by
+   configuration and by rank), map of PCIe lanes per slot and per socket, supported bifurcation,
+   and **the *backplane* cabling diagram** (which bays are NVMe and which hang off an expander).
+   None of these data are written from memory.
+2. **CPU platform**: number of memory channels, maximum speed per DPC and PCIe lanes of
+   the current generation. As of Aug 2026: EPYC 9005 "Turin" up to **12 DDR5 channels** per socket; general-line
+   Xeon 6 **8 channels** with the **MRDIMM** option at higher speed. **Declared gap: the
+   measured bandwidth figures cited in the technical press (STREAM) were not checked against the
+   original report**; do not use them for sizing without repeating the measurement.
+3. **Redfish**: current version of the DMTF specification and of the *schema bundle* (as of Aug 2026,
+   **release 2026.1**, specification **1.24.0**) and —what really matters— **which subset
+   your vendor's BMC implements and in which firmware version**. The gap between the standard and
+   the implementation is where automation breaks.
+4. **Firmware security advisories** from the vendor and from the BMC supplier (AMI, Insyde), and the
+   **CISA KEV catalogue** to know whether something is being exploited. Confirm that **CVE-2024-54085**
+   is remediated at your firmware level (AMI-SA-2025003 and your vendor's equivalent advisory).
+5. **Secure Boot**: availability of firmware with the 2023 CAs for your model (§5). If it does not exist,
+   it is renewal data.
+6. **`fwupd`/LVFS**: current version (as of Aug 2026, the **2.1.x** line) and **real coverage of your
+   server model**. **Declared gap: it was not verified which vendors publish server firmware —not
+   client— on LVFS**; the sources consulted indicate that HPE ProLiant still goes via iLO/SPP. Check it
+   before designing your patching process around `fwupdmgr`.
+7. **End of life of the model**: end-of-sale date, end-of-support date and **end of firmware
+   publication** —they are three different dates and the third is the one that decides security—. And
+   real availability of spares, which is channel data, not catalogue data.
+8. **Prices**: no vendor publishes rates for support, extension or renewal. **No
+   economic figure in §6 comes from this document: it comes from your quote and from your electricity bill.**
+9. **Drives**: TBW/DWPD and warranty of the exact model (they vary between capacities in the same family) and
+   whether the drive firmware is on your controller's compatibility list.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

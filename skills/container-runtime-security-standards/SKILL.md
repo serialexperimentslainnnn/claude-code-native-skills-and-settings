@@ -3,461 +3,463 @@ name: container-runtime-security-standards
 description: Container runtime security and container escape defense. Use when writing or debugging seccomp profiles (RuntimeDefault, seccomp.json, --security-opt seccomp), choosing or pinning a container runtime (runc, crun, gVisor/runsc, Kata Containers, RuntimeClass), rootless Podman or user namespaces (hostUsers, /etc/subuid), --privileged, capability drops (CAP_SYS_ADMIN, CAP_SYS_MODULE, CAP_BPF), a mounted docker.sock or containerd.sock, hostPath/hostPID/hostNetwork/hostIPC exposure, runtime detection with Falco rules, Tetragon TracingPolicy, Tracee or KubeArmor, eBPF agent privileges, container drift and read-only rootfs, or forensic container checkpointing with CRIU/checkpointctl and node/runtime log capture.
 ---
 
-# Estándares de seguridad del contenedor en ejecución
+# Running-container security standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **la seguridad del contenedor cuando ya está corriendo**: donde el manifiesto ya no
-protege porque el proceso existe, tiene un kernel compartido debajo y un atacante dentro. Cubre el
-modelo de aislamiento y sus límites, la elección y fijación del runtime, rootless y user
-namespaces, seccomp, las rutas de escape de contenedor y su mitigación, la detección en tiempo de
-ejecución (eBPF, Falco, Tetragon, Tracee, KubeArmor), el drift del contenedor inmutable, la
-verificación de firma en el momento de ejecutar, el forense de contenedor y de nodo, y los
-benchmarks aplicables.
+Applies to **the security of the container once it is already running**: where the manifest no longer
+protects because the process exists, has a shared kernel underneath and an attacker inside. Covers the
+isolation model and its limits, the choice and pinning of the runtime, rootless and user
+namespaces, seccomp, container escape paths and their mitigation, runtime detection
+(eBPF, Falco, Tetragon, Tracee, KubeArmor), the drift of the immutable container, signature
+verification at execution time, container and node forensics, and the applicable
+benchmarks.
 
 Triggers: `seccomp`, `RuntimeDefault`, `seccomp.json`, `--security-opt seccomp=`,
 `SeccompDefault`/`--seccomp-default`, `runc`, `crun`, `runsc`/gVisor, `kata-runtime`,
 `containerd-shim-kata-v2`, `RuntimeClass`, `hostUsers`, `/etc/subuid`, `/etc/subgid`, rootless
 Podman, `--privileged`, `no-new-privileges`, `CAP_SYS_ADMIN`, `CAP_SYS_MODULE`,
 `CAP_DAC_READ_SEARCH`, `CAP_BPF`, `docker.sock`, `containerd.sock`, `crio.sock`, `hostPath`,
-`hostPID`, `hostNetwork`, `hostIPC`, `/proc` y `/sys` montados, cgroups v1/v2, `falco`,
+`hostPID`, `hostNetwork`, `hostIPC`, mounted `/proc` and `/sys`, cgroups v1/v2, `falco`,
 `falco_rules.yaml`, `tetragon`, `TracingPolicy`, `tracee`, `kubearmor`, `bpftool`,
-`unprivileged_bpf_disabled`, `readOnlyRootFilesystem`, `criu`, `checkpointctl`, `/checkpoint/` del
-kubelet, `kube-bench`, `docker-bench`, "escape de contenedor", "el contenedor se ha modificado en
-ejecución".
+`unprivileged_bpf_disabled`, `readOnlyRootFilesystem`, `criu`, `checkpointctl`, the kubelet's
+`/checkpoint/`, `kube-bench`, `docker-bench`, "container escape", "the container has been modified at
+runtime".
 
-**Principio rector**: **un contenedor es un proceso del host con namespaces y cgroups, no una
-máquina virtual.** Comparte kernel, y por tanto comparte superficie: cada capability, cada montaje
-del host y cada syscall no filtrada es una vía directa al nodo. Toda la §3 se deriva de ese hecho.
-Corolario operativo: **lo que impide el escape es la configuración del runtime; lo que te entera de
-que ha ocurrido es la detección en runtime. Son controles distintos y hacen falta los dos.**
+**Guiding principle**: **a container is a host process with namespaces and cgroups, not a
+virtual machine.** It shares the kernel, and therefore shares the surface: every capability, every host
+mount and every unfiltered syscall is a direct path to the node. The whole of §3 derives from that fact.
+Operational corollary: **what prevents the escape is the runtime configuration; what tells you it has
+happened is runtime detection. They are different controls and you need both.**
 
-**Postura**: esta skill es **defensiva**. Describe **clase de riesgo, indicador y mitigación**.
-No contiene payloads, cadenas de explotación ni recetario paso a paso; lo ofensivo autorizado vive
-en `offensive-security-standards`.
+**Posture**: this skill is **defensive**. It describes **risk class, indicator and mitigation**.
+It contains no payloads, exploitation chains or step-by-step recipes; authorised offensive work lives
+in `offensive-security-standards`.
 
-**No aplica**: ver `kubernetes-standards` (**división ya pactada por ambos lados**: allí *admisión*,
-políticas Kyverno/Gatekeeper, Pod Security Standards, `securityContext` como **hardening declarativo
-del Pod**, firma en admisión y toda la construcción de la imagen; **aquí** lo que ocurre después de
-que el Pod arranca: runtime, seccomp, escape, detección, drift y forense de nodo);
-`selinux-standards` (**el MAC del contenedor es suyo, sin excepción**: `container_t`,
-`container_file_t`, categorías MCS, `container-selinux`, `:z`/`:Z`, `udica`, `seLinuxOptions`,
-`seLinuxChangePolicy` y la autoría de perfiles AppArmor. **Aquí**: `seccomp` —que es de esta skill—,
-y **detectar que el MAC se ha desactivado, se ha eludido o que un proceso ha escapado pese a él**;
-si el problema es un AVC o una etiqueta, es de allí); `linux-hardening-standards` (**baseline del SO
-del nodo**: CIS/STIG, `sysctl`, auditd, SSH, montajes, arranque medido — el nodo endurecido es su
-frontera; aquí solo los `sysctl` y capabilities específicos del runtime y por qué importan);
-`operating-systems-standards` (**el mecanismo es suyo**: qué es de verdad un namespace, qué aísla
-un cgroup y qué **no** aísla ninguno de los dos; **aquí seccomp, el escape y su detección**);
-`onprem-standards` (paraguas de plataforma: hardware, hipervisor, flota, plano OOB);
-`incident-response-forensics-standards` (**el proceso forense completo**: fases, cadena de custodia,
-orden de volatilidad, imaging, timeline, Velociraptor/Volatility — **aquí solo qué artefacto de
-contenedor y de nodo existe, cuánto dura y cómo se captura antes de evaporarse**);
-`incident-management-standards` (gobierno del incidente: severidad, IC, comunicación);
-`detection-engineering-standards` (**frontera decidida y declarada**: *qué
-señal de runtime importa y qué debe disparar* es de esta skill —ejecución inesperada de shell,
-escritura en binarios, cambio de capabilities, montaje del socket—; *el ciclo de vida de la regla*
-—backlog, cobertura ATT&CK, umbrales, tuning, gestión de falsos positivos, framework de test y
-destino en el SIEM— es suyo. La regla Falco **nace aquí y se gobierna allí**);
-`observability-standards` (recogida, retención y correlación de la telemetría);
-`vulnerability-management-standards` (triaje y SLA de los CVE de runtime que se citan aquí);
-`cicd-standards` (la pipeline que construye, firma y publica); `iac-standards` (aprovisionamiento
-del nodo); `appsec-standards` (el fallo en el código de la aplicación que da la RCE inicial);
-`cryptography-pki-standards` (custodia de claves de firma); `secrets-management-standards`
-(custodia y rotación de los secretos que el contenedor consume);
-`bcdr-standards` (continuidad y recuperación de la plataforma);
-`offensive-security-standards` y `ctf-lab-standards` (verificación ofensiva del aislamiento y
-detonación de muestras, **con alcance y autorización por escrito**; esta skill es defensiva);
-`podman-systemd-containers-standards` (Podman y Quadlet como **forma de
-ejecutar servicios** bajo systemd; **aquí su seguridad**); `linux-administration-standards` y
+**Not applicable**: see `kubernetes-standards` (**a split already agreed on both sides**: there
+*admission*, Kyverno/Gatekeeper policies, Pod Security Standards, `securityContext` as **declarative
+Pod hardening**, signing at admission and all image building; **here** what happens after
+the Pod starts: runtime, seccomp, escape, detection, drift and node forensics);
+`selinux-standards` (**the container's MAC is theirs, without exception**: `container_t`,
+`container_file_t`, MCS categories, `container-selinux`, `:z`/`:Z`, `udica`, `seLinuxOptions`,
+`seLinuxChangePolicy` and the authoring of AppArmor profiles. **Here**: `seccomp` —which belongs to
+this skill—, and **detecting that the MAC has been disabled, bypassed or that a process has escaped
+despite it**; if the problem is an AVC or a label, it belongs there); `linux-hardening-standards`
+(**the node OS baseline**: CIS/STIG, `sysctl`, auditd, SSH, mounts, measured boot — the hardened node
+is their boundary; here only the `sysctl`s and capabilities specific to the runtime and why they
+matter); `operating-systems-standards` (**the mechanism is theirs**: what a namespace really is, what a
+cgroup isolates and what neither of the two isolates; **here seccomp, the escape and its detection**);
+`onprem-standards` (the platform umbrella: hardware, hypervisor, fleet, OOB plane);
+`incident-response-forensics-standards` (**the full forensic process**: phases, chain of custody,
+order of volatility, imaging, timeline, Velociraptor/Volatility — **here only what container and node
+artifact exists, how long it lasts and how it is captured before it evaporates**);
+`incident-management-standards` (incident governance: severity, IC, communication);
+`detection-engineering-standards` (**a boundary decided and declared**: *which
+runtime signal matters and what should fire* belongs to this skill —unexpected shell execution,
+writes to binaries, capability change, socket mount—; *the rule's lifecycle*
+—backlog, ATT&CK coverage, thresholds, tuning, false positive management, test framework and
+destination in the SIEM— is theirs. The Falco rule **is born here and is governed there**);
+`observability-standards` (collection, retention and correlation of the telemetry);
+`vulnerability-management-standards` (triage and SLA for the runtime CVEs cited here);
+`cicd-standards` (the pipeline that builds, signs and publishes); `iac-standards` (node
+provisioning); `appsec-standards` (the flaw in the application code that gives the initial RCE);
+`cryptography-pki-standards` (custody of signing keys); `secrets-management-standards`
+(custody and rotation of the secrets the container consumes);
+`bcdr-standards` (platform continuity and recovery);
+`offensive-security-standards` and `ctf-lab-standards` (offensive verification of the isolation and
+sample detonation, **with scope and authorisation in writing**; this skill is defensive);
+`podman-systemd-containers-standards` (Podman and Quadlet as **a way of
+running services** under systemd; **here their security**); `linux-administration-standards` and
 `ha-clustering-standards`; `azure-standards`/`aws-standards`/
-`gcp-standards` (el runtime del nodo gestionado y sus advisories de imagen de nodo);
-`grc-compliance-standards` (el control exigido y su evidencia); `webassembly-standards`
-(el sandbox de un módulo Wasm y sus importaciones son suyos; **el aislamiento del nodo
-que ejecuta el host de Wasm sigue siendo de aquí** — un host de Wasm es un proceso más, con su
-`seccomp`, sus capacidades y su superficie de escape).
+`gcp-standards` (the managed node's runtime and its node image advisories);
+`grc-compliance-standards` (the required control and its evidence); `webassembly-standards`
+(the sandbox of a Wasm module and its imports are theirs; **the isolation of the node
+that runs the Wasm host is still ours** — a Wasm host is just another process, with its
+`seccomp`, its capabilities and its escape surface).
 
-Nota cruzada: `windows-server-ad-standards` comparte con esta skill el patrón *plataforma cuyo
-compromiso es total* — un nodo comprometido lo es para todos sus contenedores igual que un DC lo es
-para todo el dominio. El criterio de contención por capas es análogo; el dominio técnico, no.
+Cross note: `windows-server-ad-standards` shares with this skill the pattern of *a platform whose
+compromise is total* — a compromised node is compromised for all its containers just as a DC is for
+the whole domain. The layered containment criterion is analogous; the technical domain is not.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8). Este dominio se
-> mueve por CVE de escape: una versión mínima aquí caduca de un día para otro.
+> Verify the latest version on the web before pinning it in a real project (§8). This domain moves
+> by escape CVE: a minimum version here expires overnight.
 
-| Decisión | Por defecto | Motivo / alternativa justificable |
+| Decision | By default | Reason / justifiable alternative |
 |---|---|---|
-| Runtime OCI | **`crun`** en hosts cgroup v2; `runc` donde lo imponga la plataforma | Base de código mucho menor (C frente a Go), menor consumo y sin coste de compatibilidad. Verificado ago-2026: es el **default de Podman en RHEL/Fedora y de OpenShift**; el cambio es transparente para la carga |
-| Versión mínima de runc | **1.2.8 / 1.3.3 / 1.4.0-rc.3 o superior** | Corrige la tríada de escape de nov-2025 (**CVE-2025-31133, CVE-2025-52565, CVE-2025-52881**): bypass de `maskedPaths`, redirección del montaje `/dev/console` y bypass de comprobaciones LSM vía `/proc/self/attr/*` hacia `core_pattern`/`sysrq-trigger`. **containerd 1.6.39+ / 1.7.28-2+** incorpora el fix. Un CVSS 4.0 "medium" **engaña**: refleja el modelo de amenaza de runc, no el de Kubernetes |
-| Aislamiento reforzado | **gVisor (`runsc`)** para código no confiable orientado a red; **Kata Containers** cuando gVisor rompe por compatibilidad de kernel | Se activan por `RuntimeClass`, no globalmente. gVisor interpone un kernel en userspace (compatibilidad parcial, sin módulos ni syscalls exóticas); Kata arranca una microVM por Pod (compatibilidad total, coste de arranque y memoria). Kata **4.0.0** (20-jul-2026); su rama de Confidential Containers (SEV-SNP/TDX) es el escalón siguiente |
-| Cuándo se justifica el coste | **Multi-tenant hostil, ejecución de código de terceros, detonación de muestras, build de código no confiable** | Fuera de esos casos, el sobrecoste no compra riesgo evitado: gasta ese presupuesto en rootless, seccomp y detección. Decisión explícita y documentada, nunca "por si acaso" |
-| Modelo de ejecución | **Rootless siempre que sea posible** (Podman rootless; `hostUsers: false` en Kubernetes) | Un escape en rootful da **root en el nodo**; en rootless da **el usuario sin privilegios**. Verificado ago-2026: **user namespaces GA en Kubernetes v1.36** (beta activada por defecto desde 1.33); **exige kernel ≥6.3 en el nodo** — comprueba `uname -r`, muchos nodos gestionados no llegan |
-| Docker rootless | **Solo como transición**; el destino es Podman rootless o Kubernetes con userns | Es un retrofit opt-in con limitaciones de red y almacenamiento (`fuse-overlayfs` en vez de overlay2, ~25-30 % de sobrecoste de arranque). En Podman rootless es el diseño, no un modo |
-| Capabilities | **`drop: ALL`** y añadir la mínima lista justificada por escrito | Cada capability añadida es una vía de escape potencial. `CAP_SYS_ADMIN` equivale prácticamente a root en el host |
-| Escalada | **`no-new-privileges` / `allowPrivilegeEscalation: false`** siempre | Neutraliza el binario SUID como escalón dentro del contenedor. No tiene contraindicación real |
-| seccomp | **`RuntimeDefault` como suelo universal**; perfil a medida solo para cargas de alto riesgo | Verificado ago-2026: `SeccompDefault` sigue siendo **feature gate del kubelet + flag `--seccomp-default`**, no un default de cluster. **Si no lo activas, tus Pods corren `Unconfined`** salvo que el manifiesto lo diga. En control plane gestionado puede no estar a tu alcance: entonces se impone por admisión (`kubernetes-standards`) |
-| MAC del contenedor | **Activo y en enforcing** (`container_t` + MCS, o perfil AppArmor) | La política y su autoría son de `selinux-standards`. **Aquí la regla es**: su desactivación (`label=disable`, `unconfined`) es un **evento de seguridad** que debe alertar |
-| Detección en runtime | **Falco** como base (CNCF **graduado desde 29-feb-2024**; **v0.44.1**, jun-2026) | Es el default por madurez, gobernanza neutral y ecosistema de reglas. **Tetragon** cuando además quieres *prevención* en kernel (`bpf_send_signal`) o ya tienes Cilium; **Tracee** por su enfoque forense, asumiendo su mayor coste; **KubeArmor** (CNCF *Sandbox*) cuando el objetivo es *hardening* least-privilege vía LSM más que detección, o hay edge/IoT |
-| Filesystem | **`readOnlyRootFilesystem: true`** + `emptyDir` para lo escribible | Sin esto no hay contenedor inmutable ni detección de drift creíble |
-| Verificación de firma | **En admisión y, para lo crítico, también en el nodo al ejecutar** | La admisión valida lo que se pide; el runtime valida lo que realmente se ejecuta (`policy.json` de Podman/CRI-O con `sigstoreSigned`). No son redundantes |
-| Escaneo en la cadena | **Grype + Syft** por defecto | Alineado con `kubernetes-standards` tras el **compromiso de `trivy-action`/`setup-trivy` (marzo 2026)**. Si usas Trivy: pin por digest, verifica firma y sigue sus advisories |
+| OCI runtime | **`crun`** on cgroup v2 hosts; `runc` where the platform imposes it | A far smaller codebase (C rather than Go), lower consumption and no compatibility cost. Verified Aug 2026: it is the **default in Podman on RHEL/Fedora and in OpenShift**; the change is transparent to the workload |
+| Minimum runc version | **1.2.8 / 1.3.3 / 1.4.0-rc.3 or later** | It fixes the Nov 2025 escape triad (**CVE-2025-31133, CVE-2025-52565, CVE-2025-52881**): `maskedPaths` bypass, redirection of the `/dev/console` mount and bypass of LSM checks via `/proc/self/attr/*` towards `core_pattern`/`sysrq-trigger`. **containerd 1.6.39+ / 1.7.28-2+** incorporates the fix. A CVSS 4.0 "medium" **misleads**: it reflects runc's threat model, not Kubernetes' |
+| Reinforced isolation | **gVisor (`runsc`)** for untrusted network-facing code; **Kata Containers** when gVisor breaks on kernel compatibility | They are enabled via `RuntimeClass`, not globally. gVisor interposes a userspace kernel (partial compatibility, no modules or exotic syscalls); Kata starts a microVM per Pod (full compatibility, at a start-up and memory cost). Kata **4.0.0** (20 Jul 2026); its Confidential Containers branch (SEV-SNP/TDX) is the next step up |
+| When the cost is justified | **Hostile multi-tenant, execution of third-party code, sample detonation, building untrusted code** | Outside those cases, the overhead buys no avoided risk: spend that budget on rootless, seccomp and detection. An explicit and documented decision, never "just in case" |
+| Execution model | **Rootless wherever possible** (rootless Podman; `hostUsers: false` in Kubernetes) | An escape in rootful gives **root on the node**; in rootless it gives **the unprivileged user**. Verified Aug 2026: **user namespaces GA in Kubernetes v1.36** (beta enabled by default since 1.33); **it requires kernel ≥6.3 on the node** — check `uname -r`, many managed nodes do not get there |
+| Rootless Docker | **Only as a transition**; the destination is rootless Podman or Kubernetes with userns | It is an opt-in retrofit with networking and storage limitations (`fuse-overlayfs` instead of overlay2, ~25-30 % start-up overhead). In rootless Podman it is the design, not a mode |
+| Capabilities | **`drop: ALL`** and add the minimum list justified in writing | Every added capability is a potential escape path. `CAP_SYS_ADMIN` is practically equivalent to root on the host |
+| Escalation | **`no-new-privileges` / `allowPrivilegeEscalation: false`** always | It neutralises the SUID binary as a stepping stone inside the container. It has no real downside |
+| seccomp | **`RuntimeDefault` as the universal floor**; a bespoke profile only for high-risk workloads | Verified Aug 2026: `SeccompDefault` is still a **kubelet feature gate + the `--seccomp-default` flag**, not a cluster default. **If you do not enable it, your Pods run `Unconfined`** unless the manifest says otherwise. On a managed control plane it may be out of your reach: then it is imposed by admission (`kubernetes-standards`) |
+| Container MAC | **Active and enforcing** (`container_t` + MCS, or an AppArmor profile) | The policy and its authoring belong to `selinux-standards`. **Here the rule is**: disabling it (`label=disable`, `unconfined`) is a **security event** that must alert |
+| Runtime detection | **Falco** as the base (CNCF **graduated since 29 Feb 2024**; **v0.44.1**, Jun 2026) | It is the default on maturity, neutral governance and rule ecosystem. **Tetragon** when you also want in-kernel *prevention* (`bpf_send_signal`) or you already have Cilium; **Tracee** for its forensic focus, accepting its higher cost; **KubeArmor** (CNCF *Sandbox*) when the goal is least-privilege *hardening* via LSM rather than detection, or there is edge/IoT |
+| Filesystem | **`readOnlyRootFilesystem: true`** + `emptyDir` for what must be writable | Without this there is no immutable container and no credible drift detection |
+| Signature verification | **At admission and, for critical workloads, also on the node at execution time** | Admission validates what is requested; the runtime validates what is actually executed (Podman/CRI-O `policy.json` with `sigstoreSigned`). They are not redundant |
+| Scanning in the chain | **Grype + Syft** by default | Aligned with `kubernetes-standards` after the **compromise of `trivy-action`/`setup-trivy` (March 2026)**. If you use Trivy: pin by digest, verify the signature and follow its advisories |
 
-## 3. Modelo de aislamiento, escape y detección
+## 3. Isolation model, escape and detection
 
-### 3.1 Qué comparte un contenedor con el host (y por qué eso lo es todo)
+### 3.1 What a container shares with the host (and why that is everything)
 
-- **Se comparte el kernel**: syscalls, tablas de páginas, drivers, `/proc` y `/sys` del host. Un
-  fallo de kernel es un fallo de *todos* los contenedores del nodo a la vez.
-- **Namespaces** (pid, net, mnt, uts, ipc, user, cgroup) dan *vista* separada, no *privilegio*
-  separado — salvo el **user namespace**, que es el único que separa de verdad la identidad.
-- **cgroups** limitan recursos, no acceso. Un cgroup no contiene a un atacante; evita que tire el
-  nodo por consumo. **cgroups v2 es el requisito**: v1 tiene una superficie de escape conocida
-  (delegación del controlador y `release_agent`) que v2 no reproduce, además de ser el modelo que
-  asumen las herramientas modernas. **Un nodo en cgroups v1 en 2026 es un hallazgo.**
-- Lo que realmente confina: **seccomp** (qué syscalls existen), **capabilities** (qué puede pedir
-  al kernel), **MAC** (qué objetos puede tocar) y **user namespace** (con qué identidad real).
-  Los cuatro a la vez o el modelo es de mentira.
+- **The kernel is shared**: syscalls, page tables, drivers, the host's `/proc` and `/sys`. A
+  kernel flaw is a flaw in *all* the node's containers at once.
+- **Namespaces** (pid, net, mnt, uts, ipc, user, cgroup) give a separate *view*, not separate
+  *privilege* — except the **user namespace**, which is the only one that really separates identity.
+- **cgroups** limit resources, not access. A cgroup does not contain an attacker; it stops them from
+  taking the node down by consumption. **cgroups v2 is the requirement**: v1 has a known escape
+  surface (controller delegation and `release_agent`) that v2 does not reproduce, besides being the
+  model that modern tooling assumes. **A node on cgroups v1 in 2026 is a finding.**
+- What actually confines: **seccomp** (which syscalls exist), **capabilities** (what it can ask
+  the kernel for), **MAC** (which objects it can touch) and **user namespace** (with which real
+  identity). All four at once or the model is a lie.
 
-### 3.2 Rutas de escape: clase de riesgo, indicador y mitigación
+### 3.2 Escape paths: risk class, indicator and mitigation
 
-Se listan como **superficie a cerrar y a vigilar**, no como procedimiento.
+They are listed as **surface to close and to watch**, not as a procedure.
 
-| Clase de riesgo | Por qué es total | Mitigación (obligatoria) | Indicador a detectar |
+| Risk class | Why it is total | Mitigation (mandatory) | Indicator to detect |
 |---|---|---|---|
-| **Socket del runtime montado** (`docker.sock`, `containerd.sock`, `crio.sock`) | Quien habla con el socket **crea contenedores**: crear uno privilegiado con el nodo montado es root en el host. Montarlo **es** conceder root, no "dar acceso a la API" | **Prohibido** (§7). Si un agente necesita datos del runtime, usa su API con RBAC y solo lectura, o un socket-proxy con allowlist de endpoints | Contenedor con el socket en su lista de montajes; llamadas de creación desde una identidad que no es el orquestador |
-| **`--privileged` / `privileged: true`** | Devuelve todas las capabilities, desactiva los filtros por defecto y expone dispositivos: es renunciar al aislamiento en un flag | **Prohibido** salvo excepción firmada, con caducidad, en namespace propio y en nodo dedicado | Cualquier Pod privilegiado que no esté en la lista de excepciones |
-| **`hostPath` a rutas sensibles** (`/`, `/etc`, `/var/run`, `/var/lib/kubelet`, `/root`, `/proc`, `/sys`, dispositivos de bloque) | El filesystem del nodo montado es persistencia, robo de credenciales del kubelet y modificación de binarios del host | Prohibido a rutas sensibles; lo legítimo se resuelve con CSI o subruta dedicada y `readOnly: true` | Montaje nuevo de hostPath; escritura en rutas del host desde un contenedor |
-| **`hostPID` / `hostNetwork` / `hostIPC`** | `hostPID` da visibilidad y señalización a procesos del nodo (y lectura de su `/proc/<pid>/environ`); `hostNetwork` elimina el aislamiento de red y expone servicios locales del nodo; `hostIPC` comparte memoria con el host | Prohibidos salvo agente de infraestructura justificado | Carga de aplicación con cualquiera de los tres |
-| **Capabilities peligrosas**: `CAP_SYS_ADMIN`, `CAP_SYS_MODULE`, `CAP_SYS_PTRACE`, `CAP_DAC_READ_SEARCH`, `CAP_BPF`, `CAP_NET_ADMIN`, `CAP_SYS_RAWIO` | `SYS_ADMIN` es root a efectos prácticos; `SYS_MODULE` carga código en el kernel; `DAC_READ_SEARCH` lee cualquier fichero por handle; `BPF` permite instrumentar el kernel entero | `drop: ALL` + allowlist justificada. `SYS_MODULE` y `SYS_RAWIO`: **nunca** | Cambio del conjunto de capabilities de un proceso ya arrancado; carga de módulo de kernel |
-| **`/proc` y `/sys` expuestos o desenmascarados** (`procMount: Unmasked`, montaje del `/proc` del host) | Los `maskedPaths`/`readonlyPaths` del runtime existen precisamente porque `core_pattern`, `sysrq-trigger`, `uevent_helper` y `kcore` son vías directas al nodo | Nunca `Unmasked`; nunca montar `/proc` del host | Escritura sobre ficheros de `/proc` y `/sys` normalmente enmascarados |
-| **CVE de escape del runtime** (clase, no receta) | Precedente verificado: tríada runc de **nov-2025** (`CVE-2025-31133`, `-52565`, `-52881`), toda ella por manipulación de montajes en la creación del contenedor, alcanzable **desde una imagen o Dockerfile hostil** | Fijar versión mínima parcheada (§2), reconstruir la imagen de nodo, no ejecutar imágenes de origen no verificado. Mitigación upstream si no puedes parchear ya: **user namespaces sin mapear el root del host** | Advisories del proveedor de nodo (EKS/AKS/GKE) y versión de la imagen de nodo en el inventario |
-| **cgroups v1** | Superficie de escape ya conocida y sin razón para existir hoy | Migrar el nodo a cgroups v2 (unificado) | Nodo reportando cgroup v1 en el inventario |
-| **Kernel comprometido por debajo del MAC** | Un fallo de kernel anula SELinux/AppArmor y el aislamiento entero (`selinux-standards` documenta casos verificados de 2026) | Parcheo de kernel con prioridad; aislamiento reforzado para lo no confiable | Versión de kernel del nodo frente al advisory vigente |
+| **Mounted runtime socket** (`docker.sock`, `containerd.sock`, `crio.sock`) | Whoever talks to the socket **creates containers**: creating a privileged one with the node mounted is root on the host. Mounting it **is** granting root, not "giving access to the API" | **Forbidden** (§7). If an agent needs runtime data, use its API with RBAC and read-only, or a socket-proxy with an endpoint allowlist | A container with the socket in its mount list; creation calls from an identity that is not the orchestrator |
+| **`--privileged` / `privileged: true`** | It gives back all the capabilities, disables the default filters and exposes devices: it is renouncing isolation in a single flag | **Forbidden** except by a signed exception, with an expiry, in its own namespace and on a dedicated node | Any privileged Pod not on the exceptions list |
+| **`hostPath` to sensitive paths** (`/`, `/etc`, `/var/run`, `/var/lib/kubelet`, `/root`, `/proc`, `/sys`, block devices) | The node's filesystem mounted is persistence, theft of kubelet credentials and modification of host binaries | Forbidden to sensitive paths; what is legitimate is solved with CSI or a dedicated subpath and `readOnly: true` | A new hostPath mount; writes to host paths from a container |
+| **`hostPID` / `hostNetwork` / `hostIPC`** | `hostPID` gives visibility of and signalling to node processes (and reading of their `/proc/<pid>/environ`); `hostNetwork` removes network isolation and exposes the node's local services; `hostIPC` shares memory with the host | Forbidden except for a justified infrastructure agent | An application workload with any of the three |
+| **Dangerous capabilities**: `CAP_SYS_ADMIN`, `CAP_SYS_MODULE`, `CAP_SYS_PTRACE`, `CAP_DAC_READ_SEARCH`, `CAP_BPF`, `CAP_NET_ADMIN`, `CAP_SYS_RAWIO` | `SYS_ADMIN` is root for practical purposes; `SYS_MODULE` loads code into the kernel; `DAC_READ_SEARCH` reads any file by handle; `BPF` allows instrumenting the entire kernel | `drop: ALL` + a justified allowlist. `SYS_MODULE` and `SYS_RAWIO`: **never** | A change to the capability set of an already started process; kernel module loading |
+| **Exposed or unmasked `/proc` and `/sys`** (`procMount: Unmasked`, mounting the host's `/proc`) | The runtime's `maskedPaths`/`readonlyPaths` exist precisely because `core_pattern`, `sysrq-trigger`, `uevent_helper` and `kcore` are direct paths to the node | Never `Unmasked`; never mount the host's `/proc` | Writes to `/proc` and `/sys` files that are normally masked |
+| **Runtime escape CVE** (class, not recipe) | Verified precedent: the runc triad of **Nov 2025** (`CVE-2025-31133`, `-52565`, `-52881`), all of it through mount manipulation at container creation, reachable **from a hostile image or Dockerfile** | Pin a patched minimum version (§2), rebuild the node image, do not run images from an unverified source. Upstream mitigation if you cannot patch immediately: **user namespaces without mapping the host's root** | Node provider advisories (EKS/AKS/GKE) and the node image version in the inventory |
+| **cgroups v1** | A known escape surface with no reason to exist today | Migrate the node to cgroups v2 (unified) | A node reporting cgroup v1 in the inventory |
+| **Kernel compromised underneath the MAC** | A kernel flaw nullifies SELinux/AppArmor and the whole isolation (`selinux-standards` documents verified 2026 cases) | Kernel patching with priority; reinforced isolation for what is untrusted | The node's kernel version against the current advisory |
 
-### 3.3 seccomp con criterio
+### 3.3 seccomp with judgement
 
-- **`RuntimeDefault` es el suelo, no el objetivo.** Bloquea el grupo de syscalls que nadie legítimo
-  usa (`kexec_load`, `init_module`, `bpf` sin capability, etc.) con una tasa de rotura muy baja.
-  **Verifícalo activado de verdad**: el default de Kubernetes sin `--seccomp-default` es
-  `Unconfined`, y ese es el fallo silencioso más frecuente del dominio.
-- **El perfil por defecto difiere entre runtimes** (containerd vs CRI-O), entre versiones y entre
-  arquitecturas. Un perfil probado en x86_64 no está probado en arm64.
-- **Perfil a medida**: solo para cargas de alto valor o expuestas a entrada no confiable. Se genera
-  a partir de **observación real** (grabación de syscalls de la carga ejercitando su camino
-  completo: arranque, tráfico, rotación de logs, apagado), no de una lista teórica.
-- **Lista de bloqueo, no de permiso, salvo que puedas mantenerla**: un allowlist estricto rompe con
-  cada actualización de runtime, libc o del propio lenguaje. Si lo adoptas, asume el mantenimiento
-  como parte del ciclo de vida de la imagen.
-- **`SCMP_ACT_LOG` antes que `SCMP_ACT_ERRNO`**: el perfil nuevo se despliega primero en modo
-  registro sobre tráfico real, se revisa lo que habría bloqueado, y solo entonces se hace efectivo.
-  Saltarse esta fase es programar una caída.
-- El perfil es **código versionado** junto a la carga, con su prueba (§4). Un perfil que solo
-  existe en un nodo es drift.
+- **`RuntimeDefault` is the floor, not the goal.** It blocks the group of syscalls that no legitimate
+  workload uses (`kexec_load`, `init_module`, `bpf` without the capability, etc.) with a very low
+  breakage rate. **Verify it is actually enabled**: the Kubernetes default without `--seccomp-default`
+  is `Unconfined`, and that is the domain's most frequent silent failure.
+- **The default profile differs between runtimes** (containerd vs CRI-O), between versions and between
+  architectures. A profile tested on x86_64 is not tested on arm64.
+- **A bespoke profile**: only for high-value workloads or ones exposed to untrusted input. It is
+  generated from **real observation** (recording the workload's syscalls while it exercises its full
+  path: start-up, traffic, log rotation, shutdown), not from a theoretical list.
+- **A denylist, not an allowlist, unless you can maintain it**: a strict allowlist breaks with
+  every update of the runtime, libc or the language itself. If you adopt it, take on the maintenance
+  as part of the image's lifecycle.
+- **`SCMP_ACT_LOG` before `SCMP_ACT_ERRNO`**: the new profile is deployed first in logging mode over
+  real traffic, what it would have blocked is reviewed, and only then is it enforced.
+  Skipping this phase is scheduling an outage.
+- The profile is **versioned code** alongside the workload, with its test (§4). A profile that only
+  exists on one node is drift.
 
-### 3.4 Detección en runtime
+### 3.4 Runtime detection
 
-- **eBPF es la tecnología, no el control.** Da visibilidad de syscalls y eventos de kernel con bajo
-  coste y sin módulos. Pero **cargar programas eBPF es una capacidad casi-root**: `CAP_BPF` (más
-  `CAP_PERFMON`/`CAP_NET_ADMIN` según el tipo de programa) permite instrumentar el kernel entero.
-  Reglas duras:
-  - `kernel.unprivileged_bpf_disabled = 1` en todos los nodos, más endurecimiento del JIT
-    (`net.core.bpf_jit_harden`), verificado por el baseline del nodo (`linux-hardening-standards`).
-  - **Inventario explícito de quién tiene `CAP_BPF`/`CAP_SYS_ADMIN`**: casi siempre es un DaemonSet
-    de observabilidad o de seguridad. Cada uno es un objetivo de cadena de suministro de máximo
-    valor: un agente comprometido **puede silenciar selectivamente sus propias alertas y seguir
-    pareciendo sano**.
-  - **La carga de un programa eBPF nuevo es en sí una señal a detectar.** Un rootkit eBPF filtra el
-    flujo de eventos que lee tu agente, que reportará fielmente datos ya manipulados: por eso hace
-    falta una segunda fuente independiente (auditd del nodo, telemetría del runtime, control plane).
-  - CVE reciente verificada como clase de riesgo: **CVE-2026-64036** (OOB en la ruta de
-    `css_rstat_updated()` vía kfunc BPF, 7.8) — patrón repetido de bug de kfunc/verificador
-    alcanzable por quien ya puede cargar programas.
-- **Señales que importan de verdad** (esta skill decide *qué* debe disparar; el ciclo de vida de la
-  regla es de `detection-engineering-standards`):
-  - **Ejecución de shell o intérprete dentro de un contenedor** que no lo tiene como entrypoint —
-    la señal de mayor relación valor/ruido del dominio.
-  - **Escritura sobre binarios o rutas del sistema del contenedor** (`/bin`, `/usr`, `/lib`) y
-    cualquier escritura si el rootfs es read-only (imposible por diseño ⇒ hallazgo).
-  - **Cambio del conjunto de capabilities o del `no_new_privs`** de un proceso ya en marcha; uso de
-    `setuid`/`setgid` inesperado.
-  - **Acceso a `/proc` y `/sys` enmascarados**, a `/var/run/*.sock` del runtime, o al filesystem del
-    nodo desde un contenedor.
-  - **Conexión saliente a destino no previsto** (C2, exfiltración, minado) y resolución DNS anómala.
-  - **Ejecución de binario que no venía en la imagen** (drift, §3.5), descarga y ejecución en
-    memoria, `curl|sh`.
-  - **Lectura de credenciales**: token de ServiceAccount, `/var/lib/kubelet`, IMDS del proveedor.
-  - **Desactivación de controles**: MAC pasado a permisivo, perfil AppArmor `unconfined`, seccomp
-    retirado, agente de detección detenido.
-- **Antes de escribir reglas propias, agota el ruleset mantenido.** Falco trae reglas revisadas por
-  la comunidad; el trabajo real es el *tuning* por entorno, no la creatividad. Toda regla propia
-  nace con su prueba de disparo (§4).
-- **La detección sin respuesta es decoración.** Cada señal de alta confianza tiene destino
-  (`observability-standards`), dueño y acción — aislar el Pod, capturar (§3.6), escalar. Sin eso,
-  el agente solo gasta CPU.
+- **eBPF is the technology, not the control.** It gives visibility of syscalls and kernel events at low
+  cost and with no modules. But **loading eBPF programs is a near-root capability**: `CAP_BPF` (plus
+  `CAP_PERFMON`/`CAP_NET_ADMIN` depending on the program type) allows instrumenting the entire kernel.
+  Hard rules:
+  - `kernel.unprivileged_bpf_disabled = 1` on all nodes, plus JIT hardening
+    (`net.core.bpf_jit_harden`), verified by the node baseline (`linux-hardening-standards`).
+  - **An explicit inventory of who holds `CAP_BPF`/`CAP_SYS_ADMIN`**: it is almost always an
+    observability or security DaemonSet. Each one is a supply chain target of the highest
+    value: a compromised agent **can selectively silence its own alerts and keep looking
+    healthy**.
+  - **Loading a new eBPF program is itself a signal to detect.** An eBPF rootkit filters the
+    event stream your agent reads, which will faithfully report already manipulated data: that is why
+    you need a second independent source (the node's auditd, runtime telemetry, control plane).
+  - A recent CVE verified as a risk class: **CVE-2026-64036** (OOB in the
+    `css_rstat_updated()` path via a BPF kfunc, 7.8) — a repeated pattern of a kfunc/verifier bug
+    reachable by whoever can already load programs.
+- **Signals that really matter** (this skill decides *what* should fire; the rule's lifecycle
+  belongs to `detection-engineering-standards`):
+  - **Execution of a shell or interpreter inside a container** that does not have it as its entrypoint —
+    the domain's highest value/noise ratio signal.
+  - **Writes to the container's binaries or system paths** (`/bin`, `/usr`, `/lib`) and
+    any write at all if the rootfs is read-only (impossible by design ⇒ a finding).
+  - **A change to the capability set or to `no_new_privs`** of an already running process; unexpected
+    use of `setuid`/`setgid`.
+  - **Access to masked `/proc` and `/sys`**, to the runtime's `/var/run/*.sock`, or to the node's
+    filesystem from a container.
+  - **An outbound connection to an unforeseen destination** (C2, exfiltration, mining) and anomalous
+    DNS resolution.
+  - **Execution of a binary that did not come in the image** (drift, §3.5), downloading and executing
+    in memory, `curl|sh`.
+  - **Reading credentials**: the ServiceAccount token, `/var/lib/kubelet`, the provider's IMDS.
+  - **Disabling controls**: MAC moved to permissive, an AppArmor `unconfined` profile, seccomp
+    removed, the detection agent stopped.
+- **Before writing your own rules, exhaust the maintained ruleset.** Falco ships community-reviewed
+  rules; the real work is per-environment *tuning*, not creativity. Every rule of your own
+  is born with its firing test (§4).
+- **Detection without response is decoration.** Every high-confidence signal has a destination
+  (`observability-standards`), an owner and an action — isolate the Pod, capture (§3.6), escalate.
+  Without that, the agent only burns CPU.
 
-### 3.5 Contenedor inmutable y drift
+### 3.5 Immutable container and drift
 
-- El contrato es: **la imagen es el contenedor**. `readOnlyRootFilesystem: true`, escritura solo en
-  volúmenes declarados, cero instalación de paquetes en ejecución, cero `exec` de operador en
-  producción fuera de break-glass.
-- **Un contenedor que se modifica en ejecución es un hallazgo**, no una anomalía operativa: o es
-  compromiso, o es una práctica de despliegue que debe corregirse. Ambas cosas se investigan.
-- La comparación *imagen declarada ↔ proceso en ejecución* (binario ejecutado que no está en las
-  capas, fichero nuevo en rutas del sistema) es una detección de alto valor y bajo ruido.
-- `kubectl exec`/`podman exec` en producción: registrado, atribuido a una persona y alertado. Es a
-  la vez herramienta legítima de emergencia y la técnica más cómoda para un atacante con
-  credenciales del control plane.
+- The contract is: **the image is the container**. `readOnlyRootFilesystem: true`, writes only to
+  declared volumes, zero package installation at runtime, zero operator `exec` in production
+  outside break-glass.
+- **A container that is modified at runtime is a finding**, not an operational anomaly: either it is a
+  compromise, or it is a deployment practice that must be corrected. Both are investigated.
+- The comparison *declared image ↔ running process* (an executed binary that is not in the
+  layers, a new file in system paths) is a high-value, low-noise detection.
+- `kubectl exec`/`podman exec` in production: logged, attributed to a person and alerted. It is at
+  once a legitimate emergency tool and the most convenient technique for an attacker with
+  control plane credentials.
 
-### 3.6 Forense de contenedor y de nodo: la evidencia se evapora por diseño
+### 3.6 Container and node forensics: the evidence evaporates by design
 
-- **El problema**: el orquestador **reprograma o reinicia el Pod**, y con él desaparecen memoria,
-  procesos, ficheros temporales y el propio filesystem escribible. En un incidente, el
-  comportamiento por defecto de la plataforma **destruye la prueba** mientras "se recupera".
-- **Regla de oro**: ante sospecha, **capturar antes de contener**, y contener sin borrar. Aislar la
-  red del Pod y marcar el nodo (`cordon`) preserva más que matar el Pod. El orden de volatilidad y
-  la cadena de custodia son de `incident-response-forensics-standards`; **lo que sigue es qué
-  artefacto existe en este dominio y cuánto dura**.
-- **Checkpoint forense (CRIU)**: la API de checkpoint del kubelet crea una copia con estado
-  (memoria, descriptores, sockets) **sin que el contenedor lo perciba**, para analizarla en un
-  entorno aislado. Verificado ago-2026: **alpha en v1.25, beta y activada por defecto desde v1.30**;
-  se invoca por `POST` al kubelet (`/checkpoint/<ns>/<pod>/<container>`, acceso restringido a
-  administradores del cluster) y se inspecciona con **`checkpointctl`**. El **restore no está en el
-  kubelet a propósito**: ocurre fuera de Kubernetes, en el motor de contenedores. **Un checkpoint
-  contiene secretos y datos personales en memoria: trátalo con el mismo control que una imagen de
-  RAM.**
-- **Artefactos que sí sobreviven y hay que recoger**: logs del runtime (containerd/CRI-O) y del
-  kubelet en el nodo, journal y auditd del host, eventos del control plane y del API server,
-  registros del agente de detección (eBPF), capas de imagen y su digest real ejecutado, montajes y
-  volúmenes persistentes, e imagen de disco/memoria del **nodo** si el compromiso es de nodo.
-- **Si el compromiso es del nodo, el nodo entero es evidencia y ya no es de confianza**: se aísla,
-  se preserva y se **reconstruye desde fuente confiable**; no se "limpia". Toda credencial que
-  pasara por él (tokens de ServiceAccount, credenciales de IMDS, secretos montados) se considera
-  comprometida y se rota.
-- **Ensáyalo**. Un procedimiento de captura que nadie ha ejecutado nunca no funciona el día que
-  hace falta, porque para entonces el Pod ya se reprogramó tres veces.
+- **The problem**: the orchestrator **reschedules or restarts the Pod**, and with it go memory,
+  processes, temporary files and the writable filesystem itself. In an incident, the platform's
+  default behaviour **destroys the evidence** while it "recovers".
+- **Golden rule**: on suspicion, **capture before containing**, and contain without deleting. Isolating
+  the Pod's network and marking the node (`cordon`) preserves more than killing the Pod. The order of
+  volatility and the chain of custody belong to `incident-response-forensics-standards`; **what
+  follows is what artifact exists in this domain and how long it lasts**.
+- **Forensic checkpoint (CRIU)**: the kubelet's checkpoint API creates a stateful copy
+  (memory, descriptors, sockets) **without the container noticing**, to analyse it in an isolated
+  environment. Verified Aug 2026: **alpha in v1.25, beta and enabled by default since v1.30**;
+  it is invoked with a `POST` to the kubelet (`/checkpoint/<ns>/<pod>/<container>`, access restricted to
+  cluster administrators) and inspected with **`checkpointctl`**. The **restore is deliberately not in
+  the kubelet**: it happens outside Kubernetes, in the container engine. **A checkpoint
+  contains secrets and personal data in memory: treat it with the same control as a RAM
+  image.**
+- **Artifacts that do survive and must be collected**: runtime (containerd/CRI-O) and
+  kubelet logs on the node, the host's journal and auditd, control plane and API server events,
+  detection agent (eBPF) records, image layers and the real digest executed, mounts and
+  persistent volumes, and a disk/memory image of the **node** if the compromise is a node compromise.
+- **If the compromise is of the node, the whole node is evidence and it is no longer trusted**: it is
+  isolated, preserved and **rebuilt from a trusted source**; it is not "cleaned". Every credential that
+  passed through it (ServiceAccount tokens, IMDS credentials, mounted secrets) is considered
+  compromised and rotated.
+- **Rehearse it.** A capture procedure nobody has ever executed does not work on the day it is
+  needed, because by then the Pod has been rescheduled three times.
 
-### 3.7 Cadena de suministro en el momento de ejecutar
+### 3.7 Supply chain at execution time
 
-- La admisión valida **lo que se pide**; el nodo ejecuta **lo que finalmente se descarga**.
-  Verificación de firma también en el motor (`policy.json` con `sigstoreSigned` en Podman/CRI-O)
-  para lo crítico, y **pin por digest** en todas partes: un tag es mutable por definición.
-- **Precedente vigente**: el compromiso de `trivy-action`/`setup-trivy` de **marzo de 2026** y la
-  campaña de envenenamiento de tags de 2026 (documentada en `offensive-security-standards`)
-  demuestran que **la herramienta de seguridad es objetivo prioritario** — corre en CI y en los
-  nodos, con privilegios altos, por diseño. Todo agente de runtime se fija por digest, se verifica
-  su firma y se sigue su canal de advisories como si fuera parte del kernel.
-- Registry privado con pull-through; nunca pull directo desde registries públicos en producción.
+- Admission validates **what is requested**; the node runs **what is finally downloaded**.
+  Signature verification also in the engine (`policy.json` with `sigstoreSigned` in Podman/CRI-O)
+  for critical workloads, and **pin by digest** everywhere: a tag is mutable by definition.
+- **Current precedent**: the compromise of `trivy-action`/`setup-trivy` in **March 2026** and the
+  2026 tag poisoning campaign (documented in `offensive-security-standards`)
+  demonstrate that **the security tool is a priority target** — it runs in CI and on the
+  nodes, with high privileges, by design. Every runtime agent is pinned by digest, its signature is
+  verified and its advisory channel is followed as if it were part of the kernel.
+- A private registry with pull-through; never a direct pull from public registries in production.
 
-### 3.8 Hardening del nodo: la frontera
+### 3.8 Node hardening: the boundary
 
-El nodo es de `linux-hardening-standards`, y su baseline (CIS/STIG, `sysctl`, auditd, montajes, MAC
-en enforcing) es requisito previo, no complemento. **De este lado quedan solo** los invariantes que
-existen por el hecho de ejecutar contenedores:
+The node belongs to `linux-hardening-standards`, and its baseline (CIS/STIG, `sysctl`, auditd, mounts,
+MAC enforcing) is a prerequisite, not a complement. **On this side there remain only** the invariants
+that exist because of the fact of running containers:
 
-- cgroups **v2**, kernel ≥6.3 si se usan user namespaces, MAC en enforcing y activo para contenedor.
-- `unprivileged_bpf_disabled=1` + JIT hardening; inventario de portadores de `CAP_BPF`.
-- Socket del runtime con permisos mínimos y **nunca** expuesto por red ni montado en contenedores.
-- Nodos segmentados por confianza: cargas hostiles o multi-tenant en **pool de nodos propio**, con
-  su `RuntimeClass` reforzada. Mezclar tenants hostiles con cargas internas en el mismo nodo anula
-  cualquier política que escribas encima.
-- Imagen de nodo **inmutable y reconstruible**, actualizada por reemplazo, no por parcheo en vivo.
+- cgroups **v2**, kernel ≥6.3 if user namespaces are used, MAC enforcing and active for containers.
+- `unprivileged_bpf_disabled=1` + JIT hardening; an inventory of `CAP_BPF` holders.
+- The runtime socket with minimum permissions and **never** exposed over the network or mounted in
+  containers.
+- Nodes segmented by trust: hostile or multi-tenant workloads on **their own node pool**, with
+  their reinforced `RuntimeClass`. Mixing hostile tenants with internal workloads on the same node
+  nullifies any policy you write on top.
+- A node image that is **immutable and rebuildable**, updated by replacement, not by live patching.
 
-### 3.9 Benchmarks aplicables
+### 3.9 Applicable benchmarks
 
-- **CIS Kubernetes Benchmark v1.11.0**, auditado con `kube-bench` (perfil `cis-1.11`). Verificado
-  ago-2026: ese perfil **cubre Kubernetes 1.29–1.32**; para clusters más nuevos sigue siendo la
-  referencia práctica, pero **la cobertura no es oficial** — decláralo al reportar. **Nunca cites
-  "el CIS de Kubernetes" en genérico: el CIS va por versión de producto.**
-- **CIS Docker Benchmark**, auditado con `docker-bench` (que elige el set según la versión del
-  demonio). **Hueco declarado (§8)**: no se confirmó el número de versión vigente en ago-2026.
-- **NSA/CISA Kubernetes Hardening Guidance**: verificado ago-2026, **la versión vigente sigue siendo
-  la 1.2, de 29-ago-2022**, sin revisión posterior localizada. Es una guía de *criterio* (explica el
-  porqué y la vista del atacante) y **complementa** al CIS, que es de *configuración*. Úsala como
-  argumento de diseño, no como checklist automatizable, y **ten presente su antigüedad**: no cubre
-  user namespaces GA, cgroups v2 ni la generación actual de detección eBPF.
-- El benchmark **mide**, no protege. Un score alto con un `docker.sock` montado sigue siendo un
-  compromiso a un paso.
+- **CIS Kubernetes Benchmark v1.11.0**, audited with `kube-bench` (`cis-1.11` profile). Verified
+  Aug 2026: that profile **covers Kubernetes 1.29–1.32**; for newer clusters it is still the
+  practical reference, but **the coverage is not official** — state that when reporting. **Never quote
+  "the Kubernetes CIS" generically: CIS goes by product version.**
+- **CIS Docker Benchmark**, audited with `docker-bench` (which picks the set according to the daemon
+  version). **Declared gap (§8)**: the current version number was not confirmed in Aug 2026.
+- **NSA/CISA Kubernetes Hardening Guidance**: verified Aug 2026, **the current version is still
+  1.2, of 29 Aug 2022**, with no later revision located. It is a guide of *criteria* (it explains the
+  why and the attacker's view) and it **complements** CIS, which is about *configuration*. Use it as a
+  design argument, not as an automatable checklist, and **bear its age in mind**: it does not cover
+  user namespaces GA, cgroups v2 or the current generation of eBPF detection.
+- The benchmark **measures**, it does not protect. A high score with a mounted `docker.sock` is still a
+  compromise one step away.
 
-## 4. Gates de calidad (rompen el build o el despliegue)
+## 4. Quality gates (they break the build or the deployment)
 
-1. **Perfil seccomp probado, no supuesto.** Gate funcional: la carga ejercita su camino completo
-   (arranque, tráfico real, rotación de logs, apagado, reinicio) con el perfil activo y **sin una
-   sola syscall denegada inesperada**. Que el contenedor arranque no prueba nada — las syscalls que
-   faltan aparecen en el caso raro, en producción, de madrugada. Fase previa obligatoria en modo
-   registro (§3.3).
-2. **Política de runtime verificada en CI y en el nodo.** El pipeline falla ante `--privileged`,
-   socket del runtime montado, `hostPath` a ruta sensible, `hostPID`/`hostNetwork`/`hostIPC`,
-   capability vetada, ausencia de `seccompProfile` o `readOnlyRootFilesystem: false` sin excepción
-   firmada. La misma política corre en admisión (`kubernetes-standards`) y **como verificación del
-   estado real del nodo**, porque lo que se admitió no siempre es lo que corre.
-3. **Test de que la detección dispara — validación adversaria.** Gate propio y no negociable: en un
-   entorno de pruebas se ejecutan acciones benignas equivalentes a las técnicas vigiladas (abrir una
-   shell en un contenedor que no la tiene, escribir en `/usr/bin`, leer un fichero de `/proc`
-   enmascarado, montar un socket, iniciar una conexión saliente inesperada) y **se comprueba que la
-   alerta llega a su destino con el contexto correcto**. Una regla que nunca se ha visto disparar no
-   está desplegada, está escrita. Se re-ejecuta tras cada actualización de agente, kernel o runtime.
-4. **Versión de runtime y de kernel verificadas contra el advisory vigente** en cada nodo del
-   inventario, como gate de despliegue. Un nodo con runc por debajo del mínimo de §2 no admite
-   cargas.
-5. **Prueba de captura forense ensayada**: checkpoint de un Pod de prueba, inspección con
-   `checkpointctl`, y recogida de los artefactos de §3.6 con su tiempo medido. Se ensaya al menos
-   una vez por semestre y tras cada cambio de runtime.
-6. **Inventario de excepciones con dueño y caducidad**: cada Pod privilegiado, cada capability
-   añadida, cada `hostPath`, cada contenedor con MAC desactivado. Sin dueño y sin fecha, la
-   excepción se retira.
-7. **Benchmark ejecutado y con tendencia** (`kube-bench`, `docker-bench`): el valor está en la
-   **serie temporal y en el tratamiento de las excepciones**, no en el número.
+1. **A seccomp profile tested, not assumed.** Functional gate: the workload exercises its full path
+   (start-up, real traffic, log rotation, shutdown, restart) with the profile active and **without a
+   single unexpected denied syscall**. That the container starts proves nothing — the missing syscalls
+   show up in the rare case, in production, at 3 a.m. A mandatory prior phase in logging mode (§3.3).
+2. **Runtime policy verified in CI and on the node.** The pipeline fails on `--privileged`,
+   a mounted runtime socket, a `hostPath` to a sensitive path, `hostPID`/`hostNetwork`/`hostIPC`,
+   a vetoed capability, the absence of `seccompProfile` or `readOnlyRootFilesystem: false` without a
+   signed exception. The same policy runs at admission (`kubernetes-standards`) and **as a verification
+   of the node's real state**, because what was admitted is not always what runs.
+3. **A test that the detection fires — adversarial validation.** A gate of its own and non-negotiable:
+   in a test environment, benign actions equivalent to the watched techniques are executed (opening a
+   shell in a container that does not have one, writing to `/usr/bin`, reading a masked `/proc`
+   file, mounting a socket, initiating an unexpected outbound connection) and **it is verified that the
+   alert reaches its destination with the correct context**. A rule that has never been seen to fire is
+   not deployed, it is written. It is re-run after every update of the agent, the kernel or the runtime.
+4. **Runtime and kernel versions verified against the current advisory** on every node in the
+   inventory, as a deployment gate. A node with runc below the minimum of §2 does not accept
+   workloads.
+5. **A forensic capture test rehearsed**: a checkpoint of a test Pod, inspection with
+   `checkpointctl`, and collection of the §3.6 artifacts with their time measured. It is rehearsed at
+   least once every six months and after every runtime change.
+6. **An inventory of exceptions with an owner and an expiry**: every privileged Pod, every added
+   capability, every `hostPath`, every container with MAC disabled. Without an owner and without a
+   date, the exception is withdrawn.
+7. **A benchmark run and trended** (`kube-bench`, `docker-bench`): the value is in the
+   **time series and in the handling of the exceptions**, not in the number.
 
-## 5. Seguridad: qué protege esto y qué no
+## 5. Security: what this protects and what it does not
 
-- **Lo que aporta**: convierte "RCE en la aplicación" en "RCE dentro de un proceso sin privilegios,
-  sin syscalls peligrosas, sin acceso al nodo y **con alguien mirando**". Es contención más
-  detección; ninguna de las dos sola basta.
-- **Lo que no aporta**: no arregla la vulnerabilidad de la aplicación (`appsec-standards`) ni un
-  fallo de kernel. **Frente a un 0-day de kernel, el único aislamiento real es el que no comparte
-  kernel** (Kata/microVM) o no comparte nodo.
-- **Multi-tenant hostil**: si ejecutas código de terceros, el aislamiento por namespaces **no es
-  suficiente por diseño**. La postura correcta es aislamiento reforzado + nodo dedicado + detección,
-  y asumir el escape como escenario, no como hipótesis.
-- **El agente de seguridad es superficie de ataque de máximo valor**: privilegiado, en todos los
-  nodos, con acceso al kernel. Se fija por digest, se firma, se verifica y se vigila su propia
-  salud — un agente caído o silenciado es una alerta de severidad alta, no una incidencia de
-  observabilidad.
-- **Secretos en runtime**: variables de entorno visibles en `/proc/<pid>/environ` (y por tanto para
-  cualquiera con `hostPID` o `CAP_SYS_PTRACE`), tokens de ServiceAccount montados por defecto,
-  credenciales de IMDS alcanzables desde el Pod. Preferir fichero sobre variable de entorno,
-  `automountServiceAccountToken: false` y bloqueo del acceso a IMDS desde cargas. Custodia y
-  rotación: `secrets-management-standards`.
-- **Desactivar un control "para que funcione" es una decisión de riesgo**, y se toma como tal: con
-  dueño, ticket, caducidad y compensación. Nunca en caliente y nunca como default silencioso.
+- **What it gives you**: it turns "RCE in the application" into "RCE inside an unprivileged process,
+  with no dangerous syscalls, with no access to the node and **with someone watching**". It is
+  containment plus detection; neither of the two alone is enough.
+- **What it does not give you**: it does not fix the application's vulnerability (`appsec-standards`)
+  or a kernel flaw. **Against a kernel 0-day, the only real isolation is the one that does not share a
+  kernel** (Kata/microVM) or does not share a node.
+- **Hostile multi-tenant**: if you run third-party code, namespace isolation **is not
+  sufficient by design**. The correct posture is reinforced isolation + a dedicated node + detection,
+  and treating the escape as a scenario, not as a hypothesis.
+- **The security agent is attack surface of the highest value**: privileged, on all
+  nodes, with kernel access. It is pinned by digest, signed, verified and its own
+  health is watched — a downed or silenced agent is a high-severity alert, not an
+  observability incident.
+- **Secrets at runtime**: environment variables visible in `/proc/<pid>/environ` (and therefore to
+  anyone with `hostPID` or `CAP_SYS_PTRACE`), ServiceAccount tokens mounted by default,
+  IMDS credentials reachable from the Pod. Prefer a file over an environment variable,
+  `automountServiceAccountToken: false` and blocking IMDS access from workloads. Custody and
+  rotation: `secrets-management-standards`.
+- **Disabling a control "to make it work" is a risk decision**, and it is taken as such: with
+  an owner, a ticket, an expiry and compensation. Never on the fly and never as a silent default.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Coste realista**: seccomp `RuntimeDefault` y MAC son prácticamente gratis. gVisor paga en
-  syscalls intensivas y I/O; Kata paga en arranque y memoria por Pod. Rootless paga ~25-30 % de
-  arranque y `fuse-overlayfs`. Ninguno de esos costes justifica correr como root: mídelos en tu
-  carga antes de descartarlos por rumor.
-- **La detección tiene coste y ruido**: dimensiona CPU y volumen de eventos del agente, y trátalo
-  como carga de plataforma con sus propios límites. Un agente sin límites que satura el nodo es un
-  incidente de disponibilidad causado por seguridad. Verificado ago-2026: **Tracee consume
-  notablemente más que Falco o Tetragon** en entornos de alto volumen (2-4× frente a Tetragon según
-  reportes) y su configuración por defecto genera un volumen de eventos abrumador — **se despliega
-  con filtrado desde el primer día, no después**.
-- **Runbook escrito y probado** para: Pod sospechoso (aislar, capturar, escalar), nodo sospechoso
-  (cordon, preservar, reconstruir), agente caído, y rollback de un perfil seccomp que rompe
-  producción. Sin runbook, la incidencia de las 3 de la mañana acaba en `--privileged`.
-- **Rollback**: todo endurecimiento de runtime (perfil nuevo, `RuntimeClass` reforzada, userns) se
-  despliega por anillos con su reversión probada.
-- **Cambios de kernel y de runtime rompen perfiles y agentes**: cada actualización del nodo
-  re-ejecuta los gates 1, 3 y 4 de §4. Es la causa número uno de detección que deja de funcionar en
-  silencio.
+- **Realistic cost**: seccomp `RuntimeDefault` and MAC are practically free. gVisor pays in
+  syscall-intensive work and I/O; Kata pays in start-up and memory per Pod. Rootless pays ~25-30 % of
+  start-up and `fuse-overlayfs`. None of those costs justifies running as root: measure them on your
+  workload before dismissing them on rumour.
+- **Detection has a cost and noise**: size the agent's CPU and event volume, and treat it
+  as a platform workload with its own limits. An unbounded agent that saturates the node is an
+  availability incident caused by security. Verified Aug 2026: **Tracee consumes
+  notably more than Falco or Tetragon** in high-volume environments (2-4× versus Tetragon according to
+  reports) and its default configuration generates an overwhelming event volume — **it is deployed
+  with filtering from day one, not afterwards**.
+- **A written and tested runbook** for: a suspect Pod (isolate, capture, escalate), a suspect node
+  (cordon, preserve, rebuild), a downed agent, and a rollback of a seccomp profile that breaks
+  production. Without a runbook, the 3 a.m. incident ends in `--privileged`.
+- **Rollback**: every runtime hardening step (a new profile, a reinforced `RuntimeClass`, userns) is
+  deployed in rings with its reversal tested.
+- **Kernel and runtime changes break profiles and agents**: every node update
+  re-runs gates 1, 3 and 4 of §4. It is the number one cause of detection that stops working in
+  silence.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia**
-- **Advisories de runtime (runc, crun, containerd, CRI-O, gVisor, Kata) con seguimiento activo**: es
-  el canal por el que llega el escape. Revisión al menos mensual y reacción inmediata a lo crítico.
-- Kernel del nodo: prioridad máxima de parcheo cuando el hallazgo permita escape o bypass de MAC.
-- Falco/Tetragon/Tracee/KubeArmor: versión y ruleset revisados trimestralmente; el ruleset envejece
-  más rápido que el binario.
-- Revisión trimestral del inventario de excepciones (§4.6) y del inventario de portadores de
+**Cadence**
+- **Runtime advisories (runc, crun, containerd, CRI-O, gVisor, Kata) actively tracked**: it is
+  the channel through which the escape arrives. Review at least monthly and immediate reaction to
+  anything critical.
+- Node kernel: top patching priority when the finding allows escape or MAC bypass.
+- Falco/Tetragon/Tracee/KubeArmor: version and ruleset reviewed quarterly; the ruleset ages
+  faster than the binary.
+- Quarterly review of the exceptions inventory (§4.6) and of the inventory of holders of
   `CAP_BPF`/`CAP_SYS_ADMIN`.
-- Reconstrucción programada de la imagen de nodo aunque nada cambie.
+- Scheduled rebuilding of the node image even if nothing changes.
 
-**PROHIBIDO** (gate automático donde sea posible)
-- ❌ **Montar el socket del runtime** (`docker.sock`, `containerd.sock`, `crio.sock`) en un
-  contenedor. Es conceder root en el nodo, con otro nombre.
-- ❌ **`--privileged` / `privileged: true`** sin excepción firmada, acotada, caducada y en nodo
-  dedicado.
-- ❌ **`hostPath` a rutas sensibles** del nodo (`/`, `/etc`, `/proc`, `/sys`, `/var/run`,
-  `/var/lib/kubelet`, dispositivos de bloque), y cualquier `hostPath` escribible sin justificación.
-- ❌ `hostPID`, `hostNetwork` o `hostIPC` en cargas de aplicación.
-- ❌ Correr como **root** (UID 0) sin justificación escrita; y root **con** `hostPath` o capabilities
-  añadidas, nunca.
-- ❌ `CAP_SYS_MODULE`, `CAP_SYS_RAWIO`; `CAP_SYS_ADMIN`, `CAP_BPF`, `CAP_DAC_READ_SEARCH` y
-  `CAP_SYS_PTRACE` fuera de agentes de infraestructura aprobados.
-- ❌ **Desactivar seccomp o el MAC "para que funcione"** (`seccompProfile: Unconfined`,
-  `--security-opt seccomp=unconfined`, `label=disable`, AppArmor `unconfined`). El camino correcto
-  es perfil a medida (seccomp, aquí) o política acotada (MAC, `selinux-standards`).
-- ❌ `procMount: Unmasked` o montar `/proc`/`/sys` del host.
-- ❌ **Contenedor sin detección en runtime en entorno multi-tenant** o que ejecute código no
-  confiable. Sin detección no hay evidencia de que el aislamiento aguanta.
-- ❌ Ejecutar código no confiable con runtime compartido (`runc`/`crun`) sin nodo dedicado.
-- ❌ Nodos en **cgroups v1**, o con runtime por debajo de la versión mínima parcheada de §2.
-- ❌ **Modificar el contenedor en ejecución**: instalar paquetes, parchear en caliente, `exec` de
-  operador como práctica habitual, rootfs escribible sin motivo.
-- ❌ Imagen por tag mutable o sin verificación de firma en el camino a producción.
-- ❌ **Matar o reiniciar un Pod sospechoso antes de capturar evidencia**; borrar el nodo
-  comprometido "para recuperar" sin preservarlo.
-- ❌ Rehabilitar `unprivileged_bpf_disabled=0` o repartir `CAP_BPF` sin inventario.
-- ❌ Agente de detección desplegado sin prueba de disparo (§4.3), o con alertas sin dueño ni destino.
-- ❌ Fijar versiones de runtime, estados de feature gate o versiones de benchmark **de memoria**, sin
-  la verificación de §8.
+**FORBIDDEN** (an automatic gate wherever possible)
+- ❌ **Mounting the runtime socket** (`docker.sock`, `containerd.sock`, `crio.sock`) in a
+  container. It is granting root on the node, under another name.
+- ❌ **`--privileged` / `privileged: true`** without a signed, bounded, expiring exception and on a
+  dedicated node.
+- ❌ **`hostPath` to sensitive paths** on the node (`/`, `/etc`, `/proc`, `/sys`, `/var/run`,
+  `/var/lib/kubelet`, block devices), and any writable `hostPath` without justification.
+- ❌ `hostPID`, `hostNetwork` or `hostIPC` in application workloads.
+- ❌ Running as **root** (UID 0) without written justification; and root **with** `hostPath` or added
+  capabilities, never.
+- ❌ `CAP_SYS_MODULE`, `CAP_SYS_RAWIO`; `CAP_SYS_ADMIN`, `CAP_BPF`, `CAP_DAC_READ_SEARCH` and
+  `CAP_SYS_PTRACE` outside approved infrastructure agents.
+- ❌ **Disabling seccomp or the MAC "to make it work"** (`seccompProfile: Unconfined`,
+  `--security-opt seccomp=unconfined`, `label=disable`, AppArmor `unconfined`). The correct path
+  is a bespoke profile (seccomp, here) or a bounded policy (MAC, `selinux-standards`).
+- ❌ `procMount: Unmasked` or mounting the host's `/proc`/`/sys`.
+- ❌ **A container without runtime detection in a multi-tenant environment** or one that runs untrusted
+  code. Without detection there is no evidence that the isolation holds.
+- ❌ Running untrusted code with a shared runtime (`runc`/`crun`) without a dedicated node.
+- ❌ Nodes on **cgroups v1**, or with a runtime below the patched minimum version of §2.
+- ❌ **Modifying the container at runtime**: installing packages, hot patching, operator `exec` as
+  routine practice, a writable rootfs with no reason.
+- ❌ An image by mutable tag or without signature verification on the path to production.
+- ❌ **Killing or restarting a suspect Pod before capturing evidence**; deleting the compromised
+  node "to recover" without preserving it.
+- ❌ Re-enabling `unprivileged_bpf_disabled=0` or handing out `CAP_BPF` without an inventory.
+- ❌ A detection agent deployed without a firing test (§4.3), or with alerts without an owner or a
+  destination.
+- ❌ Pinning runtime versions, feature gate states or benchmark versions **from memory**, without
+  the verification of §8.
 
-### Checklist de revisión rápida (carga que entra en producción)
+### Quick review checklist (a workload entering production)
 
-- [ ] Runtime en versión parcheada; nodo en cgroups v2; kernel al día y ≥6.3 si hay userns.
-- [ ] Rootless o `hostUsers: false` donde el nodo lo permite; si no, motivo escrito.
-- [ ] `drop: ALL` + allowlist justificada; `allowPrivilegeEscalation: false`; no root o excepción firmada.
-- [ ] `seccompProfile` explícito y **verificado activo en el nodo**; perfil a medida probado si aplica.
-- [ ] MAC activo y en enforcing para el contenedor (política: `selinux-standards`).
-- [ ] Sin socket del runtime, sin `hostPath` sensible, sin `hostPID`/`hostNetwork`/`hostIPC`, sin `privileged`.
-- [ ] `readOnlyRootFilesystem: true` + volúmenes declarados; detección de drift activa.
-- [ ] Imagen por digest y firma verificada; agente de runtime fijado por digest y firmado.
-- [ ] Detección en runtime desplegada, con **prueba de disparo pasada** y alertas con dueño.
-- [ ] Aislamiento reforzado (`RuntimeClass`) si la carga es no confiable o multi-tenant hostil.
-- [ ] Procedimiento de captura forense ensayado y accesible en el runbook.
+- [ ] Runtime on a patched version; node on cgroups v2; kernel up to date and ≥6.3 if there is userns.
+- [ ] Rootless or `hostUsers: false` where the node allows it; if not, a written reason.
+- [ ] `drop: ALL` + a justified allowlist; `allowPrivilegeEscalation: false`; not root or a signed exception.
+- [ ] An explicit `seccompProfile` and **verified active on the node**; a bespoke profile tested if applicable.
+- [ ] MAC active and enforcing for the container (policy: `selinux-standards`).
+- [ ] No runtime socket, no sensitive `hostPath`, no `hostPID`/`hostNetwork`/`hostIPC`, no `privileged`.
+- [ ] `readOnlyRootFilesystem: true` + declared volumes; drift detection active.
+- [ ] Image by digest and signature verified; runtime agent pinned by digest and signed.
+- [ ] Runtime detection deployed, with a **passed firing test** and alerts with an owner.
+- [ ] Reinforced isolation (`RuntimeClass`) if the workload is untrusted or hostile multi-tenant.
+- [ ] A forensic capture procedure rehearsed and accessible in the runbook.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión, estado de feature o número de benchmark, **búscalo — no lo
-recuerdes**:
+Before pinning any version, feature state or benchmark number, **look it up — do not
+remember it**:
 
-1. **CVE de escape de runtime**: es el dato que caduca más rápido de todo el documento. Verificado
-   ago-2026: la tríada **runc de nov-2025** (`CVE-2025-31133`, `CVE-2025-52565`, `CVE-2025-52881`)
-   sigue siendo el conjunto significativo más reciente; parcheada en **runc 1.2.8 / 1.3.3 /
-   1.4.0-rc.3+** y **containerd 1.6.39+ / 1.7.28-2+**. **Huecos declarados**: no se verificó la
-   **versión estable exacta de runc, crun, containerd y CRI-O** en ago-2026, ni se pudo confirmar el
-   reporte aislado de *explotación activa en jun-2026* (una fuente lo afirma, el resto no) — trátalo
-   como no confirmado y consulta el advisory upstream.
-2. **Estado de user namespaces en Kubernetes** (verificado ago-2026: **GA en v1.36**, abr-2026;
-   beta activada por defecto desde 1.33; **requiere kernel ≥6.3**, que muchos nodos gestionados aún
-   no tienen). Comprueba tu versión de cluster y `uname -r` del nodo: esto cambia por release.
-3. **`SeccompDefault`**: verificado ago-2026 que **sigue siendo feature gate del kubelet + flag
-   `--seccomp-default`**, sin default de cluster. **Hueco declarado**: no se confirmó si ha
-   graduado a GA ni si hay fecha para hacerlo default; consulta **KEP-2413** y la referencia de
-   seccomp de tu versión.
-4. **Checkpoint forense**: verificado ago-2026 **beta y activado por defecto desde v1.30**. **Hueco
-   declarado**: **no se pudo confirmar su estado en v1.36** (¿sigue beta, ya es GA?). Léelo en las
-   release notes de tu versión antes de basar un procedimiento de incidente en ello.
-5. **Estado de las herramientas de detección**: verificado ago-2026 — **Falco graduado en CNCF
-   (29-feb-2024)**, **v0.44.1** (jun-2026), con la documentación de sonda eBPF legacy, gVisor y gRPC
-   retirada en may-2026; **Tetragon** activo como subproyecto de Cilium en CNCF; **Tracee** activo
-   (Aqua) con coste notablemente mayor; **KubeArmor** en **CNCF Sandbox**. **Huecos declarados**:
-   **no se verificaron las versiones actuales de Tetragon, Tracee ni KubeArmor**, ni señales duras
-   de salud de mantenimiento (cadencia de commits, número de mantenedores, cambios de nivel CNCF en
-   2026). Compruébalo en sus repos y en el CNCF landscape antes de apostar una plataforma.
-6. **Versiones de aislamiento reforzado**: verificado ago-2026 **Kata Containers 4.0.0**
-   (20-jul-2026), con bump de kernel del guest por **CVE-2026-31431**. **Hueco declarado**: **no se
-   verificó la versión actual de gVisor** (publica releases muy frecuentes) ni la de `crun`.
-7. **Benchmarks**: verificado ago-2026 — **CIS Kubernetes Benchmark v1.11.0** (perfil `kube-bench`
-   `cis-1.11`, cobertura oficial **K8s 1.29-1.32**) y **NSA/CISA Kubernetes Hardening Guidance
-   v1.2 de 29-ago-2022** como versión vigente, sin revisión posterior encontrada. **Huecos
-   declarados**: **la versión vigente del CIS Docker Benchmark no se pudo confirmar** (consúltala en
-   `cisecurity.org/benchmark/docker`, que solo lista las soportadas), y **no se comprobó si existe
-   ya un CIS Kubernetes Benchmark posterior a v1.11.0**.
-8. **Endurecimiento eBPF y sus CVE**: verificado ago-2026 **CVE-2026-64036** (OOB vía kfunc
-   `css_rstat_updated()`, 7.8 CVSS v3.1 según kernel.org). Revisa el tracker de tu distro para el
-   estado de parche y busca CVE posteriores del verificador/kfuncs antes de dar por segura una
-   versión de kernel.
-9. **Compromisos de cadena de suministro en herramientas de seguridad**: precedente verificado del
-   catálogo — **`trivy-action`/`setup-trivy`, marzo de 2026**. Antes de introducir *cualquier* agente
-   o escáner nuevo, busca incidentes recientes del proyecto: en este dominio la herramienta corre
-   privilegiada en todos los nodos.
-10. **Advisories del proveedor de nodo gestionado** (EKS/AKS/GKE) para la versión de imagen de nodo
-    que estés ejecutando: el parche de runtime llega por ahí, no por tu pipeline.
+1. **Runtime escape CVEs**: it is the datum that expires fastest in the whole document. Verified
+   Aug 2026: the **runc triad of Nov 2025** (`CVE-2025-31133`, `CVE-2025-52565`, `CVE-2025-52881`)
+   is still the most recent significant set; patched in **runc 1.2.8 / 1.3.3 /
+   1.4.0-rc.3+** and **containerd 1.6.39+ / 1.7.28-2+**. **Declared gaps**: the
+   **exact stable version of runc, crun, containerd and CRI-O** was not verified in Aug 2026, nor could
+   the isolated report of *active exploitation in Jun 2026* be confirmed (one source asserts it, the
+   rest do not) — treat it as unconfirmed and consult the upstream advisory.
+2. **The state of user namespaces in Kubernetes** (verified Aug 2026: **GA in v1.36**, Apr 2026;
+   beta enabled by default since 1.33; **requires kernel ≥6.3**, which many managed nodes still
+   do not have). Check your cluster version and the node's `uname -r`: this changes per release.
+3. **`SeccompDefault`**: verified Aug 2026 that it **is still a kubelet feature gate + the
+   `--seccomp-default` flag**, with no cluster default. **Declared gap**: it was not confirmed whether it
+   has graduated to GA or whether there is a date to make it the default; consult **KEP-2413** and your
+   version's seccomp reference.
+4. **Forensic checkpoint**: verified Aug 2026 **beta and enabled by default since v1.30**. **Declared
+   gap**: **its state in v1.36 could not be confirmed** (still beta, already GA?). Read it in your
+   version's release notes before basing an incident procedure on it.
+5. **The state of the detection tools**: verified Aug 2026 — **Falco graduated in CNCF
+   (29 Feb 2024)**, **v0.44.1** (Jun 2026), with the legacy eBPF probe, gVisor and gRPC documentation
+   withdrawn in May 2026; **Tetragon** active as a Cilium subproject in CNCF; **Tracee** active
+   (Aqua) with a notably higher cost; **KubeArmor** in **CNCF Sandbox**. **Declared gaps**:
+   **the current versions of Tetragon, Tracee and KubeArmor were not verified**, nor were hard
+   maintenance health signals (commit cadence, number of maintainers, CNCF level changes in
+   2026). Check it in their repos and in the CNCF landscape before betting a platform on it.
+6. **Reinforced isolation versions**: verified Aug 2026 **Kata Containers 4.0.0**
+   (20 Jul 2026), with a guest kernel bump for **CVE-2026-31431**. **Declared gap**: **the
+   current version of gVisor was not verified** (it publishes very frequent releases) nor that of `crun`.
+7. **Benchmarks**: verified Aug 2026 — **CIS Kubernetes Benchmark v1.11.0** (`kube-bench` profile
+   `cis-1.11`, official coverage **K8s 1.29-1.32**) and **NSA/CISA Kubernetes Hardening Guidance
+   v1.2 of 29 Aug 2022** as the current version, with no later revision found. **Declared
+   gaps**: **the current version of the CIS Docker Benchmark could not be confirmed** (look it up at
+   `cisecurity.org/benchmark/docker`, which only lists the supported ones), and **it was not checked
+   whether a CIS Kubernetes Benchmark later than v1.11.0 already exists**.
+8. **eBPF hardening and its CVEs**: verified Aug 2026 **CVE-2026-64036** (OOB via the
+   `css_rstat_updated()` kfunc, 7.8 CVSS v3.1 according to kernel.org). Check your distro's tracker for
+   the patch state and look for later verifier/kfunc CVEs before considering a kernel version safe.
+9. **Supply chain compromises in security tools**: a verified precedent from the
+   catalogue — **`trivy-action`/`setup-trivy`, March 2026**. Before introducing *any* new agent
+   or scanner, look for recent incidents of the project: in this domain the tool runs
+   privileged on every node.
+10. **Managed node provider advisories** (EKS/AKS/GKE) for the node image version
+    you are running: the runtime patch arrives through there, not through your pipeline.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

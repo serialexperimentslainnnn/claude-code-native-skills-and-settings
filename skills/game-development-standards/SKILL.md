@@ -3,134 +3,134 @@ name: game-development-standards
 description: Game development as engineering, governed by the frame budget. Use when working with Unity (.unity scenes, .prefab, .meta files, Assets/ and ProjectSettings/, Packages/manifest.json, MonoBehaviour, FixedUpdate, Burst/Jobs, DOTS/Entities, Addressables, IL2CPP, Unity 6 LTS and Unity Personal/Pro/Enterprise revenue thresholds), Unreal Engine (.uproject, .uasset, .umap, Build.cs and Target.cs, UPROPERTY/UFUNCTION, Blueprints, Nanite, Lumen, Chaos, World Partition, UE royalty and per-seat licensing), Godot (project.godot, .tscn, .tres, GDScript .gd, _process versus _physics_process), a game loop with fixed timestep and interpolation, frame-time percentiles, stutter and hitching, GC spikes and object pooling, asset streaming and level loading, ECS and data-oriented design, deterministic simulation and floating-point desync, netcode with server authority, client-side prediction, rollback and lag compensation, cheating and anti-cheat, lobby and party flow in the client, large binary assets under Git LFS or Perforce P4/Helix Core, console certification and platform TRC/TCR submission, in-game accessibility (remapping, subtitles, motion options), or loot boxes, in-game purchases and PEGI descriptors.
 ---
 
-# Estándares de desarrollo de videojuegos
+# Video game development standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Fija el criterio de ingeniería sobre **construir un juego**: qué motor y bajo qué licencia, cómo se
-organiza el bucle de simulación, cómo se gestiona memoria y carga, cómo se diseña el multijugador
-cuando el cliente es hostil por defecto, cómo se versionan gigabytes de binarios, qué exige una
-consola para dejarte publicar, y qué obligaciones legales trae monetizar con azar y con menores.
+Fixes the engineering criteria for **building a game**: which engine and under which licence, how
+the simulation loop is organised, how memory and loading are managed, how multiplayer is designed
+when the client is hostile by default, how gigabytes of binaries are versioned, what a console
+demands before letting you publish, and what legal obligations come with monetising through chance and with minors.
 
-**Eje del dominio: el presupuesto de fotograma lo domina todo.** No es una métrica de rendimiento
-entre otras — es la restricción de la que se deriva la arquitectura entera. A 60 fps hay **16,6 ms**
-por fotograma para simular, animar, resolver físicas, culling, preparar y emitir *draw calls*, audio,
-red y entrada; a 30 fps, 33,3 ms; a 120 fps, 8,3 ms; a 90 Hz de XR, 11,1 ms (ver `xr-standards`). De
-ese número salen todas las decisiones que en otro dominio serían opinables: por qué se agrupa memoria
-en lugar de reservarla, por qué se evita la asignación en el bucle caliente, por qué los datos se
-disponen por columnas, por qué el nivel se carga por partes. **Un diseño que no cabe en el
-presupuesto no es un diseño lento: es un diseño incorrecto.**
+**The axis of the domain: the frame budget dominates everything.** It is not one performance metric
+among others — it is the constraint from which the entire architecture derives. At 60 fps there are **16.6 ms**
+per frame to simulate, animate, resolve physics, culling, prepare and issue *draw calls*, audio,
+networking and input; at 30 fps, 33.3 ms; at 120 fps, 8.3 ms; at 90 Hz of XR, 11.1 ms (see `xr-standards`). From
+that number come all the decisions that in another domain would be a matter of opinion: why memory is pooled
+instead of allocated, why allocation in the hot loop is avoided, why data is laid out
+in columns, why the level is loaded in parts. **A design that does not fit in the
+budget is not a slow design: it is an incorrect design.**
 
-**Corolario que decide el trabajo diario: manda el percentil, no la media.** 240 fps de media con un
-fotograma de 80 ms cada dos segundos se percibe **peor** que 60 fps estables. La métrica de producto
-es el **tiempo de fotograma** (ms) en **p99 / p99.9** y el número de fotogramas que se salen del
-presupuesto (*hitches*), no los fps medios. Los fps son un promedio recíproco: ocultan exactamente el
-fallo que el jugador nota. **Ningún objetivo de rendimiento se escribe en fps medios.**
+**The corollary that decides the daily work: the percentile wins, not the mean.** 240 fps on average with an
+80 ms frame every two seconds feels **worse** than a stable 60 fps. The product metric
+is **frame time** (ms) at **p99 / p99.9** and the number of frames that go over
+budget (*hitches*), not average fps. Fps are a reciprocal average: they hide exactly the
+failure the player notices. **No performance target is written in average fps.**
 
 Triggers: `.unity`, `.prefab`, `.meta`, `Assets/`, `ProjectSettings/`, `Packages/manifest.json`,
 `MonoBehaviour`, `Update`/`FixedUpdate`/`LateUpdate`, `[BurstCompile]`, `Entities`, `Addressables`,
 IL2CPP; `.uproject`, `.uasset`, `.umap`, `*.Build.cs`, `UPROPERTY`, `UCLASS`, Blueprint, Nanite,
 Lumen, Chaos, World Partition; `project.godot`, `.tscn`, `.tres`, `.gd`, `_physics_process`;
-`.gitattributes` con `filter=lfs`, `p4 sync`, `p4 edit`, `typemap`; "va a tirones", "se congela al
-entrar en la zona", "los jugadores se teletransportan", "no pasa la cert", "desincroniza en la
-partida en red".
+`.gitattributes` with `filter=lfs`, `p4 sync`, `p4 edit`, `typemap`; "it stutters", "it freezes when
+entering the zone", "players are teleporting", "it fails cert", "it desyncs in the
+network match".
 
-**No aplica**: ver `webgl-webgpu-standards` (**el navegador y la API gráfica son suyos, sin
-excepción**: `getContext('webgl2'|'webgpu')`, WGSL/GLSL, three.js/Babylon, pérdida de contexto,
-KTX2/Basis, y **el presupuesto de fotograma dentro de un canvas web**. Frontera operativa: **si el
-destino es el navegador, la capa gráfica es suya y aquí solo queda el diseño del bucle, la
-simulación y la producción de assets**; si el destino es un ejecutable nativo o de consola, la
-gráfica cae bajo el motor y su documentación, no bajo esta skill —esta skill **no** fija criterio de
-API gráfica nativa: no reclama Vulkan, D3D12 ni Metal), `xr-standards` (**lote 22, hermana directa**:
-**confort, cinetosis, latencia movimiento-fotón, OpenXR, interacción con manos y mandos y la
-privacidad biométrica son suyos**; **aquí el motor, el bucle y la producción del contenido**. Un
-juego de VR se construye bajo esta skill y **se valida bajo la suya**: si el presupuesto se justifica
-por el mareo y no por la fluidez, es de allí), `cpp-standards` y `c-standards` (el lenguaje: RAII,
-UB, sanitizers, flags de compilación — aquí solo el uso que le da el motor),
-`dotnet-standards` (**C# como lenguaje**; ojo: **Unity no usa el runtime de .NET moderno ni sus
-convenciones**, y su §1 lo excluye explícitamente — el C# de scripting de Unity es de aquí, el C# de
-servidor es suyo), `rust-standards` (lenguaje; motores en Rust son ecosistema inmaduro: exige ADR),
-`performance-engineering-standards` (**la metodología de perfilado y optimización es suya**:
-método USE, *flame graphs*, medir antes de optimizar, ley de Amdahl. **Aquí solo la restricción
-específica —el presupuesto por fotograma— y las herramientas del motor**), `gaming-infrastructure-standards`
-(**servidores dedicados, orquestación de sesiones, escalado y coste de flota,
-transporte, matchmaking como servicio**. Aquí el **protocolo y el modelo de autoridad** del juego, no
-la infraestructura que lo aloja), `mobile-standards` (tienda, empaquetado, permisos, ciclo de vida de
-app y política de App Store/Play; aquí solo el juego que corre dentro), `accessibility-standards`
-(**el criterio de conformidad WCAG y su alcance legal es suyo**; **un juego no es una página web y
-WCAG no le aplica directamente** — aquí las opciones de accesibilidad de juego), `i18n-standards`
-(localización, formatos, pseudolocalización y proveedor de traducción; aquí el coste que impone al
-motor: texto en atlas, longitud variable, doblaje), `privacy-engineering-standards` (RGPD aplicado,
-DPIA, telemetría y datos de menores como diseño; aquí solo el disparador del dominio),
-`git-workflow-standards` (rama, commits, LFS como herramienta y política de repo),
-`testing-qa-standards` (estrategia de test y QA como función), `cicd-standards` (pipeline y gates),
-`deep-learning-standards` / `local-inference-standards` (IA como modelo entrenado; la "IA" de
-comportamiento de NPC —máquinas de estado, *behavior trees*, GOAP, *pathfinding*— **es de aquí**),
-`opensource-licensing-standards` (licencia de dependencias y de assets), `webassembly-standards`
-(el objetivo Wasm y su runtime).
+**Not applicable**: see `webgl-webgpu-standards` (**the browser and the graphics API are theirs, without
+exception**: `getContext('webgl2'|'webgpu')`, WGSL/GLSL, three.js/Babylon, context loss,
+KTX2/Basis, and **the frame budget inside a web canvas**. Operational boundary: **if the
+target is the browser, the graphics layer is theirs and here only the loop design, the
+simulation and asset production remain**; if the target is a native or console executable, the
+graphics fall under the engine and its documentation, not under this skill —this skill does **not** fix criteria for a
+native graphics API: it does not claim Vulkan, D3D12 or Metal), `xr-standards` (**batch 22, direct sister**:
+**comfort, motion sickness, motion-to-photon latency, OpenXR, hand and controller interaction and
+biometric privacy are theirs**; **here the engine, the loop and content production**. A
+VR game is built under this skill and **validated under theirs**: if the budget is justified
+by nausea and not by smoothness, it belongs there), `cpp-standards` and `c-standards` (the language: RAII,
+UB, sanitizers, compilation flags — here only the use the engine makes of it),
+`dotnet-standards` (**C# as a language**; note: **Unity does not use the modern .NET runtime nor its
+conventions**, and their §1 explicitly excludes it — Unity's scripting C# is ours, server
+C# is theirs), `rust-standards` (language; engines in Rust are an immature ecosystem: demands an ADR),
+`performance-engineering-standards` (**the profiling and optimisation methodology is theirs**:
+the USE method, *flame graphs*, measure before optimising, Amdahl's law. **Here only the
+specific constraint —the per-frame budget— and the engine's tools**), `gaming-infrastructure-standards`
+(**dedicated servers, session orchestration, scaling and fleet cost,
+transport, matchmaking as a service**. Here the game's **protocol and authority model**, not
+the infrastructure hosting it), `mobile-standards` (store, packaging, permissions, app life cycle
+and App Store/Play policy; here only the game running inside), `accessibility-standards`
+(**the WCAG conformance criteria and their legal scope are theirs**; **a game is not a web page and
+WCAG does not apply to it directly** — here in-game accessibility options), `i18n-standards`
+(localisation, formats, pseudolocalisation and translation vendor; here the cost it imposes on the
+engine: text in atlases, variable length, dubbing), `privacy-engineering-standards` (GDPR applied,
+DPIA, telemetry and minors' data as design; here only the domain trigger),
+`git-workflow-standards` (branch, commits, LFS as a tool and repo policy),
+`testing-qa-standards` (test strategy and QA as a function), `cicd-standards` (pipeline and gates),
+`deep-learning-standards` / `local-inference-standards` (AI as a trained model; the "AI" of
+NPC behaviour —state machines, *behavior trees*, GOAP, *pathfinding*— **is ours**),
+`opensource-licensing-standards` (licence of dependencies and of assets), `webassembly-standards`
+(the Wasm target and its runtime).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión y **las condiciones comerciales vigentes** por web antes de fijarlas en
-> un proyecto real (§8). **Los términos de Unity y Unreal han cambiado dos veces en tres años; casi
-> todo lo que circula por foros está caducado.**
+> Verify the latest version and **the current commercial terms** on the web before pinning them in
+> a real project (§8). **Unity's and Unreal's terms have changed twice in three years; almost
+> everything circulating in forums is out of date.**
 
-| Decisión | Por defecto | Alternativa justificable | Motivo |
+| Decision | Default | Justifiable alternative | Reason |
 |---|---|---|---|
-| Motor 3D de equipo pequeño/medio | **Unity 6 LTS** | Unreal | Ecosistema, plataformas, contratación |
-| Fidelidad gráfica alta / AAA | **Unreal Engine 5** | Unity con HDRP | Nanite, Lumen, herramientas de cine |
-| 2D, indie, sin ataduras de licencia | **Godot 4** | Unity | MIT, sin umbrales ni royalties |
-| Riesgo de licencia inaceptable | **Godot** | Motor propio | Único de los tres sin contraparte comercial |
-| Motor propio | **No**, salvo requisito imposible | — | Coste permanente de herramientas y port |
-| Lenguaje de gameplay | El del motor (C#, C++/Blueprint, GDScript) | — | Salirse rompe el *tooling* |
-| Control de versiones de arte | **Perforce (P4/Helix Core)** en producción con artistas | Git + LFS en equipo pequeño | Bloqueo exclusivo de binarios |
-| Objetivo de rendimiento | **ms de p99 por plataforma**, no fps medios | — | El *stutter* es el fallo real |
-| Multijugador competitivo | **Autoridad del servidor** | — | El cliente es hostil por definición |
-| Multijugador cooperativo pequeño | Anfitrión-cliente con autoridad del anfitrión | P2P determinista (*lockstep*) | Coste frente a superficie de trampa |
-| Red de acción rápida | Predicción + reconciliación + compensación de retardo | *Rollback* (juegos de lucha) | Latencia percibida |
+| 3D engine for a small/medium team | **Unity 6 LTS** | Unreal | Ecosystem, platforms, hiring |
+| High graphical fidelity / AAA | **Unreal Engine 5** | Unity with HDRP | Nanite, Lumen, cinematic tools |
+| 2D, indie, no licence strings | **Godot 4** | Unity | MIT, no thresholds and no royalties |
+| Unacceptable licence risk | **Godot** | In-house engine | The only one of the three with no commercial counterparty |
+| In-house engine | **No**, unless the requirement is impossible | — | Permanent cost of tooling and porting |
+| Gameplay language | The engine's (C#, C++/Blueprint, GDScript) | — | Stepping outside breaks the *tooling* |
+| Art version control | **Perforce (P4/Helix Core)** in production with artists | Git + LFS in a small team | Exclusive locking of binaries |
+| Performance target | **p99 ms per platform**, not average fps | — | *Stutter* is the real failure |
+| Competitive multiplayer | **Server authority** | — | The client is hostile by definition |
+| Small co-op multiplayer | Host-client with host authority | Deterministic P2P (*lockstep*) | Cost against cheat surface |
+| Fast-action networking | Prediction + reconciliation + lag compensation | *Rollback* (fighting games) | Perceived latency |
 
-**Estado verificado de las licencias (agosto de 2026)** — es el dato que decide un proyecto:
+**Verified state of the licences (August 2026)** — this is the datum that decides a project:
 
-- **Unity**: la *Runtime Fee* **se canceló**. Verbatim del anuncio (Matt Bromberg, CEO, 12-sep-2024):
+- **Unity**: the *Runtime Fee* **was cancelled**. Verbatim from the announcement (Matt Bromberg, CEO, 12-Sep-2024):
   *«we've made the decision to cancel the Runtime Fee for our games customers, effective immediately.
-  Non-gaming Industry customers are not impacted by this modification»* y *«we're reverting to our
-  existing seat-based subscription model for all gaming customers»*. Modelo vigente según
-  `unity.com/pricing` (consultado ago-2026): **Personal gratis** por debajo de **200 000 USD** de
-  ingresos o financiación en los últimos 12 meses; **Pro obligatorio por encima de 200 000 USD**
-  (**210 USD/mes por puesto**, desde **2 310 USD/año**); **Enterprise obligatorio por encima de
-  25 M USD**; **Unity Industry** para aplicaciones **fuera de juego/entretenimiento** con más de
-  1 M USD. **Verificar los umbrales y el precio antes de presupuestar**: subieron el 1-ene-2025 y han
-  vuelto a moverse.
-- **Unity, versiones**: `unity.com/releases` (ago-2026) — **Unity 6.3 LTS soportada hasta diciembre
-  de 2027**; **Unity 6.0 LTS hasta octubre de 2026** (es decir, **caduca este mes: migrar ya**). LTS
-  anual con **dos años** de soporte; las *Update releases* solo se soportan **hasta que sale la
-  siguiente**. Producción en vivo → LTS; producción a medio ciclo → Update.
-- **Unreal Engine**: modelo de **royalty del 5 % sobre los ingresos brutos de por vida que superen
-  1 000 000 USD por producto**, con exclusión de las ventas en la Epic Games Store, y un **modelo de
-  puestos** (*Unreal Subscription*, introducido con UE 5.4, del orden de **1 850 USD/puesto/año**)
-  para uso **no-juego** en empresas por encima de 1 M USD. **⚠ Este bloque NO está verificado
-  verbatim**: `unrealengine.com/eula/unreal` y `/license` devuelven **403** a cualquier acceso
-  automatizado (ver §8). **Antes de firmar nada, leer el EULA en el navegador y confirmar
-  porcentaje, umbral, base de cálculo (bruto antes de la comisión de tienda) y exclusiones.**
-- **Unreal, versiones**: **UE 5.8 (junio de 2026)** es la última entrega mayor planificada de la
-  línea UE5; **UE6 apunta a Early Access a finales de 2027** (fuente: cobertura de State of Unreal
-  2026 vía búsqueda web; **no verbatim** — confirmar antes de planificar una migración).
-- **Godot**: **MIT**, verbatim de `LICENSE.txt` en `master`: *«Permission is hereby granted, free of
+  Non-gaming Industry customers are not impacted by this modification»* and *«we're reverting to our
+  existing seat-based subscription model for all gaming customers»*. Current model per
+  `unity.com/pricing` (consulted Aug 2026): **Personal free** below **200,000 USD** of
+  revenue or funding in the last 12 months; **Pro mandatory above 200,000 USD**
+  (**210 USD/month per seat**, from **2,310 USD/year**); **Enterprise mandatory above
+  25M USD**; **Unity Industry** for applications **outside games/entertainment** with more than
+  1M USD. **Verify the thresholds and the price before budgeting**: they went up on 1-Jan-2025 and have
+  moved again.
+- **Unity, versions**: `unity.com/releases` (Aug 2026) — **Unity 6.3 LTS supported until December
+  2027**; **Unity 6.0 LTS until October 2026** (that is, **it expires this month: migrate now**). Annual
+  LTS with **two years** of support; *Update releases* are only supported **until the
+  next one ships**. Live production → LTS; mid-cycle production → Update.
+- **Unreal Engine**: a **5 % royalty on lifetime gross revenue above
+  1,000,000 USD per product**, excluding sales on the Epic Games Store, and a **seat
+  model** (*Unreal Subscription*, introduced with UE 5.4, of the order of **1,850 USD/seat/year**)
+  for **non-game** enterprise use above 1M USD. **⚠ This block is NOT verified
+  verbatim**: `unrealengine.com/eula/unreal` and `/license` return **403** to any automated
+  access (see §8). **Before signing anything, read the EULA in a browser and confirm
+  the percentage, the threshold, the calculation base (gross before the store's commission) and the exclusions.**
+- **Unreal, versions**: **UE 5.8 (June 2026)** is the last planned major release of the
+  UE5 line; **UE6 is aiming at Early Access in late 2027** (source: State of Unreal 2026
+  coverage via web search; **not verbatim** — confirm before planning a migration).
+- **Godot**: **MIT**, verbatim from `LICENSE.txt` on `master`: *«Permission is hereby granted, free of
   charge, to any person obtaining a copy of this software … to deal in the Software without
-  restriction»*. **Sin royalties, sin umbrales de ingresos, sin puestos.** Última estable verificada
-  por el feed Atom de releases: **4.7.1-stable**. El precio se paga en madurez de herramientas, 3D
-  de gama alta y soporte de consola (que llega por terceros, no por el proyecto).
-- **Regla de gobierno**: la licencia del motor es una **decisión de puerta de un solo sentido** a
-  mitad de producción. Se documenta en un ADR con **la versión exacta de los términos aceptados** y
-  la cláusula de continuidad (Unity se comprometió a que quien siga en una versión conserva los
-  términos de esa versión: **verificar que sigue vigente**). Guardar copia fechada del EULA.
+  restriction»*. **No royalties, no revenue thresholds, no seats.** Latest stable verified
+  through the releases Atom feed: **4.7.1-stable**. The price is paid in tooling maturity, high-end
+  3D and console support (which comes from third parties, not from the project).
+- **Governance rule**: the engine licence is a **one-way door decision** in the
+  middle of production. It is documented in an ADR with **the exact version of the accepted terms** and
+  the continuity clause (Unity committed to whoever stays on a version keeping the
+  terms of that version: **verify that it still holds**). Keep a dated copy of the EULA.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-**Bucle de juego — el reparto no negociable.** Simulación a **paso fijo**, render a paso variable,
-interpolación entre estados para dibujar:
+**Game loop — the non-negotiable split.** Simulation at a **fixed step**, rendering at a variable step,
+interpolation between states for drawing:
 
 ```
 acumulador += dt_real (acotado: nunca más de N pasos por fotograma → "espiral de la muerte")
@@ -138,265 +138,265 @@ mientras acumulador >= dt_fijo:  simular(dt_fijo); acumulador -= dt_fijo
 render(alpha = acumulador / dt_fijo)   // interpolar estado previo→actual
 ```
 
-- **Física y lógica de gameplay determinista van en el paso fijo** (`FixedUpdate`,
-  `_physics_process`, `Tick` de física). Entrada, cámara, animación y UI van en el variable.
-- **PROHIBIDO** multiplicar por `deltaTime` dentro del paso fijo o meter lógica de física en el paso
-  variable: es la causa de "en un PC rápido el personaje salta más alto".
-- El `dt_real` **se acota siempre** (p. ej. 0,25 s): sin tope, un pico de carga genera más pasos de
-  simulación, que generan más carga, que generan más pasos.
+- **Physics and deterministic gameplay logic go in the fixed step** (`FixedUpdate`,
+  `_physics_process`, the physics `Tick`). Input, camera, animation and UI go in the variable one.
+- **FORBIDDEN** to multiply by `deltaTime` inside the fixed step or to put physics logic in the variable
+  step: it is the cause of "on a fast PC the character jumps higher".
+- The `dt_real` **is always bounded** (e.g. 0.25 s): with no cap, a load spike generates more simulation
+  steps, which generate more load, which generate more steps.
 
-**Memoria.** El recolector de basura y el asignador son la primera fuente de picos de p99.
+**Memory.** The garbage collector and the allocator are the primary source of p99 spikes.
 
-- **Cero asignaciones en el bucle caliente.** En C#: nada de LINQ, `string` concatenado, *boxing*,
-  *lambdas* que capturan, `foreach` sobre colecciones que asignan enumerador, ni `GetComponent` por
-  fotograma. En C++: nada de `new`/`shared_ptr` por fotograma; arenas y *pools*.
-- ***Pooling*** para todo lo que nace y muere en cadena: proyectiles, partículas, enemigos, entradas
-  de UI, efectos de sonido. El *pool* se dimensiona al **peor caso medido**, no al típico, y se
-  precalienta en la carga, no en el primer disparo.
-- Presupuesto de memoria **por plataforma** y fallo de build si se supera. La consola no tiene
-  *swap*: pasarse no degrada, mata el proceso.
+- **Zero allocations in the hot loop.** In C#: no LINQ, no concatenated `string`, no *boxing*, no
+  capturing *lambdas*, no `foreach` over collections that allocate an enumerator, and no `GetComponent` per
+  frame. In C++: no `new`/`shared_ptr` per frame; arenas and *pools*.
+- ***Pooling*** for everything that is born and dies in chains: projectiles, particles, enemies, UI
+  entries, sound effects. The *pool* is sized to the **measured worst case**, not the typical one, and it is
+  pre-warmed at load time, not on the first shot.
+- Memory budget **per platform** and a build failure if it is exceeded. The console has no
+  *swap*: going over does not degrade, it kills the process.
 
-**Datos y ECS.** ECS (Unity Entities/DOTS, `flecs`, `bevy_ecs`) aporta de verdad cuando hay **muchas
-entidades homogéneas actualizándose cada fotograma** —miles de unidades, proyectiles, partículas,
-*boids*— y el cuello es el recorrido de memoria y los fallos de caché. **No aporta** en un juego de
-pocas entidades heterogéneas con lógica de guion: ahí paga complejidad, *tooling* peor, depuración
-peor y contratación peor a cambio de nada. **Regla**: se adopta ECS **sobre el subsistema medido que
-lo necesita**, no sobre el proyecto entero, y se justifica con el perfilado que lo motivó.
+**Data and ECS.** ECS (Unity Entities/DOTS, `flecs`, `bevy_ecs`) genuinely pays off when there are **many
+homogeneous entities updating every frame** —thousands of units, projectiles, particles,
+*boids*— and the bottleneck is memory traversal and cache misses. **It does not pay off** in a game with
+few heterogeneous entities with scripted logic: there it costs complexity, worse *tooling*, worse
+debugging and worse hiring in exchange for nothing. **Rule**: ECS is adopted **on the measured subsystem
+that needs it**, not on the whole project, and it is justified with the profiling that motivated it.
 
-**Carga y *streaming*.** El objetivo es que **nunca se cargue nada síncrono en un fotograma de
-juego**. Todo asset se carga por referencia indirecta y asíncrona (Addressables, *asset registry* y
-*soft references* en Unreal, `ResourceLoader.load_threaded_request` en Godot), con
-*streaming* por celdas/niveles y presupuesto de E/S por fotograma. Cargar por ruta y en caliente es
-el origen clásico del *hitch* al entrar en una zona.
+**Loading and *streaming*.** The goal is that **nothing is ever loaded synchronously in a gameplay
+frame**. Every asset is loaded through an indirect and asynchronous reference (Addressables, the *asset registry* and
+*soft references* in Unreal, `ResourceLoader.load_threaded_request` in Godot), with
+per-cell/per-level *streaming* and an I/O budget per frame. Loading by path and on demand is
+the classic origin of the *hitch* when entering a zone.
 
-**Organización del repo.** Carpetas por *feature*, no por tipo de asset, cuando el equipo crece;
-convención de nombres estable y automatizada (el importador y el *build* dependen de ella); **nada
-generado se commitea** (`Library/`, `Temp/`, `Intermediate/`, `Saved/`, `DerivedDataCache/`,
-`.godot/`). En Unity, **los `.meta` sí se commitean siempre** y `ProjectSettings/` va bajo control
-de versiones y bajo revisión: cambiar ahí es cambiar el build.
+**Repo organisation.** Folders by *feature*, not by asset type, once the team grows;
+a stable, automated naming convention (the importer and the *build* depend on it); **nothing
+generated is committed** (`Library/`, `Temp/`, `Intermediate/`, `Saved/`, `DerivedDataCache/`,
+`.godot/`). In Unity, **the `.meta` files are always committed** and `ProjectSettings/` goes under version
+control and under review: changing there is changing the build.
 
-**Binarios grandes.** Un `.psd`, un `.fbx` o un `.uasset` **no se fusionan**. Dos opciones:
+**Large binaries.** A `.psd`, an `.fbx` or a `.uasset` **do not merge**. Two options:
 
-- **Git + LFS**: viable si el arte es moderado y el equipo es técnico. Exige `.gitattributes`
-  disciplinado desde el commit 1, política de *pruning* y saber que **el historial de LFS crece sin
-  límite**. El bloqueo de fichero de LFS existe pero es frágil frente a un equipo de artistas.
-- **Perforce (P4/Helix Core)**: sigue vivo en la industria por dos razones concretas que Git no
-  cubre bien: **bloqueo exclusivo (*checkout*) de binarios** y **sincronización parcial de un
-  depósito enorme sin clonar el historial**. Verificado en `perforce.com` (ago-2026): *«Perforce P4
-  is free for up to 5 users and 20 workspaces»* — el nivel gratuito cubre a un equipo pequeño; a
-  partir de ahí es coste y administración. Cuidar el `typemap` (binarios como `binary+l`) desde el
-  día 1.
-- **Regla**: la decisión la manda **quién toca los ficheros**, no la preferencia del equipo de
-  programación. Si hay artistas a jornada completa, se elige por ellos.
+- **Git + LFS**: viable if the art is moderate and the team is technical. It demands a disciplined
+  `.gitattributes` from commit 1, a *pruning* policy and knowing that **the LFS history grows without
+  limit**. LFS file locking exists but is fragile against a team of artists.
+- **Perforce (P4/Helix Core)**: still alive in the industry for two concrete reasons Git does not
+  cover well: **exclusive locking (*checkout*) of binaries** and **partial synchronisation of a huge
+  depot without cloning the history**. Verified at `perforce.com` (Aug 2026): *«Perforce P4
+  is free for up to 5 users and 20 workspaces»* — the free tier covers a small team; beyond
+  that it is cost and administration. Take care of the `typemap` (binaries as `binary+l`) from
+  day 1.
+- **Rule**: the decision is driven by **who touches the files**, not by the programming team's
+  preference. If there are full-time artists, you choose for them.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-- **Determinismo primero**: la lógica de simulación se separa de la presentación para poder
-  **probarla sin motor**. Si no se puede ejecutar un paso de simulación en un test unitario, el
-  diseño está acoplado a `MonoBehaviour`/`AActor` y hay que extraerlo.
-- **Tests de reproducción de partida** (*replay*): grabar entradas + semilla, reproducir y comparar
-  el estado final. Es el test de regresión más rentable del dominio: detecta desincronización,
-  dependencia del *frame rate* y aleatoriedad no controlada.
-- **Aleatoriedad**: PRNG propio con semilla explícita y estado por sistema. **PROHIBIDO** usar el
-  aleatorio global del runtime en lógica que deba reproducirse o sincronizarse.
-- **Tests de rendimiento como gate**: escena de referencia + recorrido fijo (*flythrough*) ejecutado
-  en CI sobre hardware representativo, con **umbral en p99 de ms**, no en media. Rompe el build.
-- **Presupuestos automáticos**: número de *draw calls*, triángulos, memoria de texturas, tamaño del
-  paquete y tiempo de carga por nivel, verificados en el pipeline de assets.
-- **Perfilado con la herramienta del motor** (Unity Profiler/Profile Analyzer, Unreal Insights,
-  Godot Profiler) **en build de release sobre el dispositivo objetivo**. Perfilar en el editor, en
-  el PC del programador, mide otra cosa. RenderDoc/PIX para el lado GPU.
-- Orden de coste creciente en CI: análisis estático y reglas de proyecto → tests unitarios de
-  simulación → *replays* deterministas → build por plataforma → escena de rendimiento → *smoke test*
-  automatizado en dispositivo → sesión de QA manual y *playtest*.
-- **QA es una función, no una fase**: bordes obligatorios en el plan de prueba — pérdida de foco,
-  desconexión en mitad de la carga, disco lleno al guardar, mando desconectado, alt-tab, suspensión
-  de consola, cambio de resolución, dos jugadores con el mismo nombre, reloj del sistema alterado.
+- **Determinism first**: simulation logic is separated from presentation so it can be
+  **tested without the engine**. If you cannot run a simulation step in a unit test, the
+  design is coupled to `MonoBehaviour`/`AActor` and it has to be extracted.
+- **Match replay tests** (*replay*): record inputs + seed, replay and compare
+  the final state. It is the most profitable regression test in the domain: it detects desync,
+  *frame rate* dependence and uncontrolled randomness.
+- **Randomness**: your own PRNG with an explicit seed and per-system state. **FORBIDDEN** to use the
+  runtime's global random in logic that must be reproducible or synchronised.
+- **Performance tests as a gate**: reference scene + fixed path (*flythrough*) run
+  in CI on representative hardware, with a **threshold on p99 ms**, not on the mean. It breaks the build.
+- **Automatic budgets**: number of *draw calls*, triangles, texture memory, package size
+  and load time per level, verified in the asset pipeline.
+- **Profiling with the engine's tool** (Unity Profiler/Profile Analyzer, Unreal Insights,
+  Godot Profiler) **on a release build on the target device**. Profiling in the editor, on
+  the programmer's PC, measures something else. RenderDoc/PIX for the GPU side.
+- Order of increasing cost in CI: static analysis and project rules → simulation unit
+  tests → deterministic *replays* → per-platform build → performance scene → automated *smoke test*
+  on device → manual QA session and *playtest*.
+- **QA is a function, not a phase**: mandatory edges in the test plan — loss of focus,
+  disconnection mid-load, disk full when saving, controller disconnected, alt-tab, console
+  suspension, resolution change, two players with the same name, altered system clock.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-**Regla dura del multijugador: nunca confiar en el cliente.** El cliente está en manos del atacante:
-su memoria es editable, su tráfico es interceptable y su binario es desensamblable. De ahí:
+**Hard multiplayer rule: never trust the client.** The client is in the attacker's hands:
+its memory is editable, its traffic is interceptable and its binary is disassemblable. Hence:
 
-- El **servidor es la única autoridad** sobre estado, daño, inventario, moneda, colisión y
-  resultado. El cliente **propone entrada**, no resultados. Cualquier mensaje del tipo "he matado a
-  X" o "tengo Y oro" es un fallo de diseño, no un fallo de validación.
-- **Validar en servidor** todo: rango de movimiento por tick (*speed hack*), línea de visión y
-  distancia al disparar, cadencia, propiedad del objeto que se usa, precio de la transacción.
-- **No enviar lo que el cliente no debe saber**: la posición del enemigo tras la pared es un
-  *wallhack* servido por el propio servidor. *Culling* de interés (AoI) **por seguridad**, no solo
-  por ancho de banda.
-- **Predicción y reconciliación**: el cliente predice para ocultar la latencia, el servidor corrige
-  y el cliente re-simula desde el último estado confirmado. La compensación de retardo (*lag
-  compensation*) rebobina el estado del servidor al instante del disparo del atacante: es correcto
-  competitivamente y **hay que documentarlo**, porque genera el "me han matado detrás de la
-  esquina".
-- **Determinismo en punto flotante**: dos máquinas con distinto compilador, distinta CPU, distintas
-  optimizaciones (`-ffast-math`, FMA, SIMD) o distinto orden de iteración **pueden divergir bit a
-  bit**. Por eso el multijugador determinista (*lockstep*) es difícil: exige aritmética de punto fijo
-  o una biblioteca determinista, orden de iteración estable, misma versión de motor en todos los
-  extremos y prohibición de usar el estado de la presentación en la simulación. Si no se puede
-  garantizar, **no se elige *lockstep***: se elige autoridad de servidor con estado replicado.
-- **Anticheat**: la detección en cliente es una carrera de armamento perdida a plazo largo. Orden
-  correcto: (1) diseño con autoridad de servidor, (2) detección **estadística en servidor** sobre
-  telemetría (precisión imposible, tiempos de reacción, trayectorias), (3) solo después, cliente.
-  El anticheat **en modo núcleo** (kernel) compra detección a un precio alto y explícito: es un
-  driver privilegiado en la máquina del jugador —superficie de ataque, riesgo de pantallazo azul,
-  rechazo de la comunidad, incompatibilidad con Linux/Steam Deck y con máquinas virtuales— y una
-  **cuestión de privacidad que hay que declarar** (`privacy-engineering-standards`). Se decide en un
-  ADR con el coste de soporte contabilizado, nunca por defecto.
-- **Superficie clásica**: deserialización de partidas guardadas y de *mods* (código ejecutable desde
-  fichero de usuario → sandbox o firma), *replays* y niveles de la comunidad como entrada no
-  confiable, servidores de partida expuestos sin límite de tasa (amplificación UDP), y claves de API
-  de servicios (analítica, tiendas, backend) **embebidas en el binario del cliente**: cualquier clave
-  que viaje en el cliente **está publicada**.
-- **Cuentas y tiendas**: la compra la valida el servidor contra la tienda (recibo verificado en
-  servidor); nunca el cliente. Los *webhooks* de tienda se verifican por firma.
-- **Menores**: si el juego es accesible a menores, la telemetría, la publicidad, el chat y los datos
-  personales entran en un régimen distinto (COPPA en EE. UU., RGPD y protección reforzada del menor
-  en la UE, verificación de edad). **No se recoge lo que no se necesita**; el chat abierto exige
-  moderación y denuncia. Diseño y base legal → `privacy-engineering-standards`.
+- The **server is the only authority** over state, damage, inventory, currency, collision and
+  outcome. The client **proposes input**, not results. Any message of the kind "I killed
+  X" or "I have Y gold" is a design failure, not a validation failure.
+- **Validate on the server** everything: movement range per tick (*speed hack*), line of sight and
+  distance when shooting, rate of fire, ownership of the item being used, transaction price.
+- **Do not send what the client must not know**: the position of the enemy behind the wall is a
+  *wallhack* served by the server itself. Area-of-interest *culling* **for security**, not only
+  for bandwidth.
+- **Prediction and reconciliation**: the client predicts to hide latency, the server corrects
+  and the client re-simulates from the last confirmed state. Lag compensation
+  rewinds the server state to the instant of the attacker's shot: it is competitively
+  correct and **it has to be documented**, because it generates the "I got killed behind the
+  corner".
+- **Floating-point determinism**: two machines with different compilers, different CPUs, different
+  optimisations (`-ffast-math`, FMA, SIMD) or a different iteration order **can diverge bit by
+  bit**. That is why deterministic multiplayer (*lockstep*) is hard: it demands fixed-point arithmetic
+  or a deterministic library, a stable iteration order, the same engine version on all
+  ends and a prohibition on using presentation state in the simulation. If it cannot be
+  guaranteed, **you do not choose *lockstep***: you choose server authority with replicated state.
+- **Anticheat**: client-side detection is an arms race lost in the long run. The correct
+  order: (1) design with server authority, (2) **statistical detection on the server** over
+  telemetry (impossible accuracy, reaction times, trajectories), (3) only then, the client.
+  **Kernel-mode** anticheat buys detection at a high and explicit price: it is a
+  privileged driver on the player's machine —attack surface, blue-screen risk,
+  community rejection, incompatibility with Linux/Steam Deck and with virtual machines— and a
+  **privacy matter that must be declared** (`privacy-engineering-standards`). It is decided in an
+  ADR with the support cost accounted for, never by default.
+- **Classic surface**: deserialisation of saved games and of *mods* (executable code from a
+  user file → sandbox or signature), *replays* and community levels as untrusted
+  input, exposed match servers with no rate limiting (UDP amplification), and API keys
+  for services (analytics, stores, backend) **embedded in the client binary**: any key
+  that travels in the client **is published**.
+- **Accounts and stores**: the purchase is validated by the server against the store (receipt verified on the
+  server); never by the client. Store *webhooks* are verified by signature.
+- **Minors**: if the game is accessible to minors, telemetry, advertising, chat and personal
+  data fall under a different regime (COPPA in the USA, GDPR and reinforced protection of minors
+  in the EU, age verification). **You do not collect what you do not need**; open chat demands
+  moderation and reporting. Design and legal basis → `privacy-engineering-standards`.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Métrica de producto**: histograma de tiempo de fotograma con **p50/p95/p99/p99.9** y conteo de
-  fotogramas por encima del presupuesto, **por plataforma y por escena**. Los fps medios solo valen
-  para el marketing.
-- **Telemetría de rendimiento en producción**, con consentimiento y anonimizada: modelo de
-  dispositivo, GPU, distribución de tiempo de fotograma, tiempos de carga, cierres inesperados. Sin
-  esto no se sabe qué está roto en el hardware que no tienes.
-- **Presupuesto por subsistema** publicado (p. ej. a 16,6 ms: X ms de simulación, Y de animación, Z
-  de preparación de render) y vigilado en CI: sin reparto, cada equipo consume el margen del otro.
-- **Causas típicas de *hitch*** en orden de frecuencia real: recolección de basura, carga síncrona de
-  assets, **compilación de shaders en caliente** (precompilar/*warm-up* de PSO obligatorio), primer
-  uso de un sistema no precalentado, E/S de guardado en el hilo principal, y *spike* de instanciación.
-- **Escalabilidad de calidad**: niveles de detalle y opciones de calidad que se puedan degradar por
-  dispositivo, con detección conservadora. Ningún juego rinde igual en todo el catálogo de PC.
-- **Build y plataformas**: *build once* por plataforma en CI, artefacto versionado y firmado, y
-  matriz de plataformas objetivo declarada desde el principio (cambiar de objetivo a mitad es un
-  coste de proyecto, no de sprint). Compilación de assets determinista y caché compartida.
-- **Certificación de consola**: cada fabricante impone requisitos técnicos propios (TRC/TCR/lotcheck
-  y equivalentes) sobre suspensión y reanudación, gestión de usuarios y cierres de sesión, guardado y
-  espacio insuficiente, mandos desconectados, nomenclatura de la UI, tiempos de arranque y trofeos.
-  **Se leen al inicio del proyecto y se prueban durante el desarrollo, no en la semana de la
-  entrega**: fallar cert reinicia un ciclo de días o semanas. Su contenido está bajo NDA del
-  fabricante y **no se reproduce aquí**: se consulta en el portal de desarrollador correspondiente.
-- **Post-lanzamiento**: parches y contenido descargable con compatibilidad de partidas guardadas
-  (versionar el formato de guardado desde la v1 y migrar hacia adelante), *feature flags* de servidor
-  para desactivar contenido roto sin publicar parche, y ventana de mantenimiento comunicada.
+- **Product metric**: frame-time histogram with **p50/p95/p99/p99.9** and a count of
+  frames above budget, **per platform and per scene**. Average fps are only good
+  for marketing.
+- **Performance telemetry in production**, with consent and anonymised: device
+  model, GPU, frame-time distribution, load times, unexpected crashes. Without
+  this you cannot know what is broken on the hardware you do not own.
+- **Per-subsystem budget** published (e.g. at 16.6 ms: X ms of simulation, Y of animation, Z
+  of render preparation) and watched in CI: with no split, each team eats the other's headroom.
+- **Typical *hitch* causes** in order of real frequency: garbage collection, synchronous asset
+  loading, **shader compilation on demand** (PSO precompilation/*warm-up* mandatory), first
+  use of an un-warmed system, save I/O on the main thread, and instantiation *spikes*.
+- **Quality scalability**: levels of detail and quality options that can be degraded per
+  device, with conservative detection. No game performs the same across the whole PC catalogue.
+- **Build and platforms**: *build once* per platform in CI, versioned and signed artifact, and
+  a target platform matrix declared from the start (changing target mid-way is a
+  project cost, not a sprint cost). Deterministic asset compilation and a shared cache.
+- **Console certification**: each manufacturer imposes its own technical requirements (TRC/TCR/lotcheck
+  and equivalents) on suspend and resume, user management and sign-outs, saving and
+  insufficient space, disconnected controllers, UI nomenclature, boot times and trophies.
+  **They are read at the start of the project and tested during development, not in the
+  delivery week**: failing cert restarts a cycle of days or weeks. Their content is under the manufacturer's
+  NDA and **is not reproduced here**: it is consulted in the corresponding developer portal.
+- **Post-launch**: patches and downloadable content with save-game compatibility
+  (version the save format from v1 and migrate forward), server *feature flags*
+  to disable broken content without shipping a patch, and a communicated maintenance window.
 
-**Accesibilidad de juego** — es requisito de producto, no cortesía. Mínimos exigibles:
+**In-game accessibility** — it is a product requirement, not a courtesy. Enforceable minimums:
 
-- **Remapeo completo** de controles (teclado, ratón y mando), incluidos los *quick-time events*;
-  alternativa a mantener pulsado (*toggle* frente a *hold*) y a pulsar repetidamente (*mashing*).
-- **Subtítulos** legibles por defecto: tamaño ajustable, fondo opaco opcional, nombre del hablante y
-  **subtitulado de efectos relevantes** para jugabilidad; separación entre volumen de voz, efectos y
-  música.
-- **Movimiento y visión**: opciones de reducción de sacudida de cámara y de destellos, ajuste de
-  campo de visión, desactivación del *motion blur*; evitar patrones de riesgo fotosensible.
-- **Color y contraste**: nunca información **solo** por color; paletas alternativas y contraste
-  ajustable en la UI; escala de la interfaz.
-- **Dificultad y asistencia** como opciones separadas (puntería asistida, invulnerabilidad, saltar
-  puzles) sin castigo social ni bloqueo de contenido.
-- Etiquetas y *badges* de accesibilidad de tienda: se declaran con lo que realmente existe.
+- **Full remapping** of controls (keyboard, mouse and controller), including *quick-time events*;
+  an alternative to holding down (*toggle* instead of *hold*) and to repeated pressing (*mashing*).
+- **Subtitles** legible by default: adjustable size, optional opaque background, speaker name and
+  **captioning of gameplay-relevant effects**; separation between voice, effects and
+  music volume.
+- **Motion and vision**: options to reduce camera shake and flashes, field-of-view
+  adjustment, disabling *motion blur*; avoid photosensitive-risk patterns.
+- **Colour and contrast**: never information **only** by colour; alternative palettes and adjustable
+  contrast in the UI; interface scaling.
+- **Difficulty and assistance** as separate options (aim assist, invulnerability, skipping
+  puzzles) with no social punishment and no content lock-out.
+- Store accessibility labels and *badges*: declared with what actually exists.
 
-**i18n**: texto fuera del código y de la textura desde el día 1, longitud variable prevista en la UI
-(el alemán y el ruso crecen; el japonés no rompe línea igual), fuentes con cobertura de glifos y
-atlas dimensionado, soporte RTL si aplica, doblaje y sincronía labial como coste de producción, y
-pseudolocalización en QA. Criterio y proveedor → `i18n-standards`.
+**i18n**: text outside the code and outside the texture from day 1, variable length anticipated in the UI
+(German and Russian grow; Japanese does not break lines the same way), fonts with glyph coverage and
+a properly sized atlas, RTL support if applicable, dubbing and lip sync as a production cost, and
+pseudolocalisation in QA. Criteria and vendor → `i18n-standards`.
 
-**Monetización y regulación** — verificar el estado antes de diseñar la economía:
+**Monetisation and regulation** — verify the state before designing the economy:
 
-- **Cajas de botín**: **Bélgica** las considera juego de azar desde 2018 y las prohíbe de facto
-  (**verificar el estado y el alcance actual**). En **España** existe desde 2022 un **anteproyecto de
-  ley de regulación de los mecanismos aleatorios de recompensa** (Ministerio de Consumo/DGOJ) con
-  verificación de identidad para menores y restricciones de publicidad: **a agosto de 2026 no consta
-  que haya llegado a ley** — comprobarlo, no asumirlo (§8). En la **UE**, la **Digital Fairness Act**
-  es la pieza que puede prohibir o restringir cajas de botín, monedas virtuales y diseño adictivo
-  para menores: a agosto de 2026 es **propuesta esperada, no derecho vigente**.
-- **PEGI** ya publica descriptores específicos verificables en `pegi.info`: **«Paid random items»**,
-  **«In-game purchases»**, **«Pressure to play»**, **«Time-limited offers»** y **«Cryptocurrency»**.
-  Diseñar con ellos en mente: el descriptor afecta a la clasificación y a la tienda.
-- Criterios de ingeniería que sobreviven a cualquier regulación: **publicar las probabilidades**,
-  **mostrar el precio en dinero real** junto a la moneda virtual, **no encadenar monedas** para
-  ocultar el coste, **no dirigir ofertas temporales a cuentas de menores**, y guardar registro
-  auditable de cada transacción y de cada tirada (semilla, resultado, saldo) para poder responder a
-  una reclamación o a un regulador.
+- **Loot boxes**: **Belgium** has considered them gambling since 2018 and bans them de facto
+  (**verify the current status and scope**). In **Spain** there has been since 2022 a **draft bill
+  regulating random reward mechanisms** (Ministry of Consumer Affairs/DGOJ) with
+  identity verification for minors and advertising restrictions: **as of August 2026 there is no record
+  that it became law** — check it, do not assume it (§8). In the **EU**, the **Digital Fairness Act**
+  is the piece that may ban or restrict loot boxes, virtual currencies and addictive design
+  for minors: as of August 2026 it is an **expected proposal, not law in force**.
+- **PEGI** already publishes specific descriptors verifiable at `pegi.info`: **«Paid random items»**,
+  **«In-game purchases»**, **«Pressure to play»**, **«Time-limited offers»** and **«Cryptocurrency»**.
+  Design with them in mind: the descriptor affects the rating and the store.
+- Engineering criteria that survive any regulation: **publish the odds**,
+  **show the price in real money** next to the virtual currency, **do not chain currencies** to
+  hide the cost, **do not target time-limited offers at minors' accounts**, and keep an
+  auditable record of every transaction and every draw (seed, result, balance) so you can answer
+  a complaint or a regulator.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- **Cadencia de motor**: se sube de versión **mayor** entre proyectos, no a mitad de producción;
-  dentro de un proyecto solo se aplican parches de la misma LTS, con la versión **fijada** en el
-  repo y en CI. Toda subida se prueba con los *replays* deterministas y con la escena de rendimiento.
-- **Fin de soporte**: seguir en una versión sin soporte es aceptable solo si el juego está cerrado y
-  no recibe contenido; si sigue vivo, la subida se planifica con antelación (ver el caso de Unity 6.0
-  LTS caducando en octubre de 2026).
-- **Dependencias**: cada paquete del *Asset Store*/Marketplace/AssetLib es una dependencia con
-  licencia, mantenimiento y superficie de seguridad. Se auditan igual que cualquier librería
-  (`opensource-licensing-standards`); **PROHIBIDO** integrar assets de terceros sin registrar
-  licencia y versión.
-- **Documentar el "por qué" con ADR**: motor y versión de sus términos, modelo de red, ECS sí/no,
-  anticheat, VCS, plataformas objetivo.
+- **Engine cadence**: you move up a **major** version between projects, not mid-production;
+  within a project only patches of the same LTS are applied, with the version **pinned** in the
+  repo and in CI. Every upgrade is tested with the deterministic *replays* and with the performance scene.
+- **End of support**: staying on an unsupported version is acceptable only if the game is closed and
+  receives no content; if it is still live, the upgrade is planned in advance (see the case of Unity 6.0
+  LTS expiring in October 2026).
+- **Dependencies**: every *Asset Store*/Marketplace/AssetLib package is a dependency with a
+  licence, maintenance and security surface. They are audited like any library
+  (`opensource-licensing-standards`); **FORBIDDEN** to integrate third-party assets without recording
+  the licence and version.
+- **Document the "why" with an ADR**: engine and version of its terms, network model, ECS yes/no,
+  anticheat, VCS, target platforms.
 
-**Prohibiciones explícitas:**
+**Explicit prohibitions:**
 
-- ❌ **Fijar objetivos o celebrar mejoras en fps medios.** El presupuesto se expresa en **ms** y se
-  mide en **percentiles**.
-- ❌ **Confiar en cualquier dato que venga del cliente** en un juego con competición, economía o
-  progresión compartida. Sin excepciones "porque es cooperativo".
-- ❌ Lógica dependiente del *frame rate*: nada de física en `Update`, ni de `deltaTime` dentro del
-  paso fijo, ni de bucles de simulación sin acotar el acumulador.
-- ❌ Asignar memoria, cargar assets, compilar shaders o tocar el disco **en el bucle caliente**.
-- ❌ `GameObject.Find`, `GetComponent`, búsqueda por etiqueta/nombre o `Blueprint tick` con lógica
-  pesada por fotograma. Se resuelve en la carga y se cachea.
-- ❌ `Debug.Log`/`UE_LOG` verboso en el bucle de release: no es gratis.
-- ❌ Aleatoriedad global no sembrada en lógica de juego, y `System.Random`/`rand()` compartido entre
-  hilos.
-- ❌ **Anticheat en modo núcleo por defecto**, sin ADR, sin evaluar el coste en privacidad, soporte y
-  compatibilidad con Linux/Steam Deck.
-- ❌ Claves de API, secretos de backend o credenciales de tienda **en el binario del cliente**.
-- ❌ Commitear artefactos generados (`Library/`, `Intermediate/`, `Saved/`, `.godot/`) o binarios
-  grandes sin LFS/Perforce configurado antes del primer commit. Arreglarlo después implica reescribir
-  historia.
-- ❌ Repositorio sin `.meta` de Unity versionados: rompe referencias para todo el equipo.
-- ❌ Dejar la accesibilidad, la localización y la certificación de consola **para el final**. Las
-  tres son restricciones de arquitectura, no de pulido.
-- ❌ Guardado sin versión de formato y sin ruta de migración.
-- ❌ Diseñar economía con azar de pago **sin publicar probabilidades** ni precio en dinero real, o
-  dirigirla a cuentas de menores.
-- ❌ Motor propio "porque tendremos más control" sin un requisito que ningún motor comercial cubra,
-  contabilizando el coste de editor, pipeline de assets, port a consola y contratación.
-- ❌ Adoptar ECS/DOTS en todo el proyecto por moda, sin perfilado que lo motive.
-- ❌ Copiar de un foro las condiciones de licencia de Unity o Unreal. **Se leen en la fuente y se
-  archivan fechadas.**
+- ❌ **Setting targets or celebrating improvements in average fps.** The budget is expressed in **ms** and is
+  measured in **percentiles**.
+- ❌ **Trusting any data coming from the client** in a game with competition, an economy or
+  shared progression. No exceptions "because it's co-op".
+- ❌ *Frame rate*-dependent logic: no physics in `Update`, no `deltaTime` inside the
+  fixed step, and no simulation loops without bounding the accumulator.
+- ❌ Allocating memory, loading assets, compiling shaders or touching the disk **in the hot loop**.
+- ❌ `GameObject.Find`, `GetComponent`, lookup by tag/name or `Blueprint tick` with heavy
+  logic per frame. It is resolved at load time and cached.
+- ❌ Verbose `Debug.Log`/`UE_LOG` in the release loop: it is not free.
+- ❌ Unseeded global randomness in game logic, and `System.Random`/`rand()` shared between
+  threads.
+- ❌ **Kernel-mode anticheat by default**, with no ADR, without evaluating the cost in privacy, support and
+  compatibility with Linux/Steam Deck.
+- ❌ API keys, backend secrets or store credentials **in the client binary**.
+- ❌ Committing generated artifacts (`Library/`, `Intermediate/`, `Saved/`, `.godot/`) or large
+  binaries without LFS/Perforce configured before the first commit. Fixing it afterwards means rewriting
+  history.
+- ❌ A repository without Unity `.meta` files versioned: it breaks references for the whole team.
+- ❌ Leaving accessibility, localisation and console certification **to the end**. All
+  three are architectural constraints, not polish.
+- ❌ Saving without a format version and without a migration path.
+- ❌ Designing an economy with paid chance **without publishing the odds** or the price in real money, or
+  targeting it at minors' accounts.
+- ❌ An in-house engine "because we'll have more control" without a requirement no commercial engine covers,
+  accounting for the cost of the editor, the asset pipeline, the console port and hiring.
+- ❌ Adopting ECS/DOTS across the whole project as a fashion, with no profiling to motivate it.
+- ❌ Copying Unity's or Unreal's licence terms from a forum. **They are read at the source and
+  archived with a date.**
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de decidir, comprobar en la fuente primaria (y **no** en foros ni en resúmenes de terceros):
+Before deciding, check the primary source (and **not** forums or third-party summaries):
 
-1. **Unity**: `unity.com/pricing` y los *Unity Terms of Service* — umbrales de Personal/Pro/
-   Enterprise/Industry, precio por puesto, y si la cláusula de continuidad por versión sigue vigente.
-   Versiones y soporte en `unity.com/releases` (Unity 6.0 LTS caduca en **octubre de 2026**).
-2. **Unreal**: `unrealengine.com/eula/unreal` y `unrealengine.com/license` **leídos en navegador**.
-   **Hueco declarado**: ambos devuelven **HTTP 403** a acceso automatizado, y el intento de recuperar
-   una copia archivada devolvió **429**; el porcentaje (5 %), el umbral (1 M USD de ingresos brutos
-   de por vida por producto), la exclusión de la Epic Games Store, el 3,5 % de *Launch Everywhere
-   with Epic* y el precio por puesto de *Unreal Subscription* proceden de **búsqueda web, no de
-   texto verbatim del EULA**. Verificarlos antes de firmar o presupuestar.
-3. **Unreal, hoja de ruta**: que UE 5.8 (jun-2026) sea la última mayor de UE5 y que UE6 apunte a
-   Early Access a finales de 2027 procede de cobertura de prensa vía búsqueda; confirmar en el sitio
-   de Epic antes de planificar migración.
-4. **Godot**: `LICENSE.txt` en el repositorio (MIT) y la última estable en el feed de releases
-   (4.7.1-stable a ago-2026); estado del soporte de consola por terceros.
-5. **Perforce/P4**: límites del nivel gratuito (verificado: *«free for up to 5 users and 20
-   workspaces»*) y precio del siguiente escalón.
-6. **Regulación de cajas de botín**: estado del **anteproyecto español** (¿sigue siendo anteproyecto,
-   se aprobó, se retiró?), estado de la **Digital Fairness Act** en la UE (propuesta, trílogos,
-   entrada en vigor) y el alcance real de la prohibición **belga**. **Los tres eran datos en
-   movimiento en la fecha de verificación.** Contrastar con BOE/EUR-Lex, no con prensa.
-7. **PEGI**: lista vigente de descriptores y su efecto en la clasificación (`pegi.info`).
-8. **Plataformas**: requisitos de certificación y SDK vigentes en el portal de cada fabricante (bajo
-   NDA), y política de tienda de móvil (`mobile-standards`).
-9. **CVEs y avisos** del motor y de los paquetes de terceros integrados; cadencia de parches.
+1. **Unity**: `unity.com/pricing` and the *Unity Terms of Service* — Personal/Pro/
+   Enterprise/Industry thresholds, price per seat, and whether the per-version continuity clause still holds.
+   Versions and support at `unity.com/releases` (Unity 6.0 LTS expires in **October 2026**).
+2. **Unreal**: `unrealengine.com/eula/unreal` and `unrealengine.com/license` **read in a browser**.
+   **Declared gap**: both return **HTTP 403** to automated access, and the attempt to fetch
+   an archived copy returned **429**; the percentage (5 %), the threshold (1M USD of lifetime gross
+   revenue per product), the Epic Games Store exclusion, the 3.5 % of *Launch Everywhere
+   with Epic* and the per-seat price of *Unreal Subscription* come from **web search, not from
+   verbatim EULA text**. Verify them before signing or budgeting.
+3. **Unreal, roadmap**: that UE 5.8 (Jun-2026) is the last major of UE5 and that UE6 is aiming at
+   Early Access in late 2027 comes from press coverage via search; confirm on Epic's
+   site before planning a migration.
+4. **Godot**: `LICENSE.txt` in the repository (MIT) and the latest stable in the releases feed
+   (4.7.1-stable as of Aug 2026); status of third-party console support.
+5. **Perforce/P4**: free tier limits (verified: *«free for up to 5 users and 20
+   workspaces»*) and the price of the next tier.
+6. **Loot box regulation**: status of the **Spanish draft bill** (is it still a draft,
+   was it approved, was it withdrawn?), status of the **Digital Fairness Act** in the EU (proposal, trilogues,
+   entry into force) and the real scope of the **Belgian** ban. **All three were moving
+   data at the verification date.** Check against BOE/EUR-Lex, not against the press.
+7. **PEGI**: current list of descriptors and their effect on the rating (`pegi.info`).
+8. **Platforms**: current certification requirements and SDKs in each manufacturer's portal (under
+   NDA), and mobile store policy (`mobile-standards`).
+9. **CVEs and advisories** for the engine and for the integrated third-party packages; patch cadence.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

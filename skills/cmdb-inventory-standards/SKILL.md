@@ -3,262 +3,262 @@ name: cmdb-inventory-standards
 description: Knowing what you actually own — asset inventory and CMDB as engineering artifacts, not audit paperwork. Use when choosing or operating NetBox (DCIM racks/devices/interfaces, IPAM prefixes/IP ranges, cables, virtual machines, custom fields, Diode ingestion, Orb discovery agent, NetBox Assurance drift), Nautobot, GLPI and the GLPI Agent, Snipe-IT, Ralph, i-doit, OCS Inventory or a ServiceNow CMDB aligned to CSDM, populating records by automated discovery (Nmap sweeps, LLDP/CDP neighbours, SNMP, osquery, cloud provider APIs, hypervisor and Kubernetes APIs, agent check-ins) versus manual entry, reconciling conflicting data from several sources and deciding which wins per attribute, picking a stable unique asset identifier that is not the hostname or the IP, modelling service dependency and CI relationships so an incident can answer "what breaks if this dies", tracking hardware and software asset lifecycle from purchase to disposal, finding the running server nobody can explain or switch off, stale record detection and inventory coverage metrics, software license entitlement and true-up audits, or asserting that Terraform state, a monitoring target list or a spreadsheet is the inventory.
 ---
 
-# Estándares de inventario y CMDB
+# Inventory and CMDB standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre **saber qué tienes**: el modelo de datos del activo, cómo se puebla (descubrimiento frente a
-declaración), cómo se reconcilian fuentes que se contradicen, qué identificador lo hace estable en el
-tiempo, qué relaciones se modelan para que el dato sirva en un incidente, y el ciclo de vida del
-activo hasta su retirada. Cubre tanto el **inventario de hardware/software** (qué máquinas y qué
-licencias) como la **CMDB** (qué elementos de configuración existen y cómo se relacionan).
+Covers **knowing what you have**: the asset data model, how it is populated (discovery versus
+declaration), how contradictory sources are reconciled, which identifier keeps it stable over
+time, which relationships are modelled so the data is useful during an incident, and the asset
+lifecycle through to disposal. It covers both the **hardware/software inventory** (which machines and which
+licences) and the **CMDB** (which configuration items exist and how they relate).
 
-**La distinción que decide todo el diseño**: una **CMDB registra intención** —lo que debería existir,
-con su dueño, su criticidad, su contrato y sus relaciones— mientras que un **inventario descubierto
-registra realidad** —lo que hoy responde en la red. **No son la misma base de datos y no se pueblan
-igual.** Fusionarlas produce el fallo clásico: una CMDB mantenida a mano que **está caducada a los
-tres meses**, que nadie consulta porque no se fía, y que se sigue rellenando solo para el auditor. La
-arquitectura correcta es explícita: **el descubrimiento puebla la realidad; la intención se declara;
-la diferencia entre ambas es un hallazgo**, no un error de datos.
+**The distinction that decides the whole design**: a **CMDB records intent** —what should exist,
+with its owner, its criticality, its contract and its relationships— whereas a **discovered inventory
+records reality** —what answers on the network today. **They are not the same database and they are not
+populated the same way.** Merging them produces the classic failure: a hand-maintained CMDB that **is stale within
+three months**, that nobody consults because they do not trust it, and that keeps being filled in only for the auditor. The
+correct architecture is explicit: **discovery populates reality; intent is declared;
+the difference between the two is a finding**, not a data error.
 
-Triggers: "inventario", "CMDB", "CI", "activo", "¿qué es esta máquina?", "¿esto se puede apagar?",
-"¿qué se cae si apago esto?", NetBox (`dcim`, `ipam`, `tenancy`, `virtualization`, `custom_fields`,
+Triggers: "inventory", "CMDB", "CI", "asset", "what is this machine?", "can this be switched off?",
+"what goes down if I switch this off?", NetBox (`dcim`, `ipam`, `tenancy`, `virtualization`, `custom_fields`,
 Diode, Orb agent, Assurance), Nautobot, GLPI / `glpi-agent`, Snipe-IT, Ralph, i-doit, OCS Inventory,
-`cmdb_ci`, CSDM, `osquery`/`osqueryd`, `lldpctl`, `snmpwalk`, barrido `nmap -sn`,
-`aws ec2 describe-instances` como fuente de inventario, número de serie / UUID de DMI, `dmidecode -s
-system-serial-number`, "true-up de licencias", "activo huérfano", "servidor que nadie apaga".
+`cmdb_ci`, CSDM, `osquery`/`osqueryd`, `lldpctl`, `snmpwalk`, an `nmap -sn` sweep,
+`aws ec2 describe-instances` as an inventory source, serial number / DMI UUID, `dmidecode -s
+system-serial-number`, "licence true-up", "orphaned asset", "the server nobody switches off".
 
-**No aplica**: ver `itsm-itil-standards` (**frontera dura y recíproca**: allí la **CMDB como práctica
-ITIL** —el proceso, quién la gobierna, su relación con cambio, incidente y problema, y el criterio de
-"si no responde preguntas que se hacen de verdad, no se construye"—; **aquí la ingeniería del dato**:
-modelo, identificador, descubrimiento, reconciliación, métricas de frescura y automatización. Regla
-de arbitraje: *"¿qué proceso la mantiene y para qué decisión de servicio?"* es de allí; *"¿de dónde
-sale cada atributo, quién gana cuando dos fuentes discrepan y cómo sé que está fresco?"* es de aquí),
-`iac-standards` (**el estado de Terraform/OpenTofu NO es una CMDB** — §3.5 —; allí el código y su
-estado, aquí el inventario que lo consume y lo contrasta; Ansible **lee** el inventario, no lo
-sustituye), `onprem-standards` (**paraguas**: su invariante *ningún dato de host de memoria — se
-consulta el inventario* es precisamente lo que esta skill hace posible; y su §1.2 debería enrutar
-aquí), `os-provisioning-standards` (**el alta automática del host recién instalado**: allí el gancho,
-aquí el modelo donde aterriza), `server-hardware-standards` (garantía, contrato, número de serie y
-ciclo de vida del **hierro**; aquí el registro de todo eso y su caducidad),
-`networking-standards` (**el diseño** de direccionamiento; **el IPAM como registro** es de aquí),
-`network-automation-standards` (**la red como código**: si NetBox alimenta plantillas de
-configuración, generarlas y desplegarlas es suyo), `vulnerability-management-standards` (**el
-inventario es su precondición**: no se prioriza lo que no se sabe que existe),
-`grc-compliance-standards` (el inventario como **control** exigido por ISO 27001/ENS),
-`bcdr-standards` (**el grafo de dependencias para la secuencia de recuperación** es suyo; aquí el
-grafo como dato mantenido), `opensource-licensing-standards` (licencias **de dependencias** y SBOM;
-aquí licencias **compradas** frente a lo instalado), `finops-standards` (coste y etiquetado en nube),
-`data-governance-quality-standards` (calidad del dato como disciplina general),
-`macos-fleet-standards` y `developer-workstation-standards` (**el MDM es la fuente de inventario del
-endpoint**), `datacenter-facilities-standards` (rack, energía y espacio
-físico — aquí solo su representación en DCIM).
+**Not applicable**: see `itsm-itil-standards` (**hard, reciprocal boundary**: there the **CMDB as an ITIL
+practice** —the process, who governs it, its relationship with change, incident and problem, and the criteria of
+"if it does not answer questions people actually ask, it is not built"—; **here the data engineering**:
+model, identifier, discovery, reconciliation, freshness metrics and automation. Arbitration
+rule: *"which process maintains it and for which service decision?"* belongs there; *"where does
+each attribute come from, who wins when two sources disagree and how do I know it is fresh?"* belongs here),
+`iac-standards` (**Terraform/OpenTofu state is NOT a CMDB** — §3.5 —; there the code and its
+state, here the inventory that consumes and cross-checks it; Ansible **reads** the inventory, it does not
+replace it), `onprem-standards` (**umbrella**: its invariant *no host data from memory — you
+query the inventory* is exactly what this skill makes possible; and its §1.2 should route
+here), `os-provisioning-standards` (**automatic registration of the freshly installed host**: there the hook,
+here the model it lands in), `server-hardware-standards` (warranty, contract, serial number and
+lifecycle of the **iron**; here the record of all that and its expiry),
+`networking-standards` (**the design** of addressing; **IPAM as a record** belongs here),
+`network-automation-standards` (**the network as code**: if NetBox feeds configuration
+templates, generating and deploying them is theirs), `vulnerability-management-standards` (**the
+inventory is its precondition**: you cannot prioritise what you do not know exists),
+`grc-compliance-standards` (the inventory as a **control** required by ISO 27001/ENS),
+`bcdr-standards` (**the dependency graph for the recovery sequence** is theirs; here the
+graph as maintained data), `opensource-licensing-standards` (licences **of dependencies** and SBOM;
+here **purchased** licences versus what is installed), `finops-standards` (cloud cost and tagging),
+`data-governance-quality-standards` (data quality as a general discipline),
+`macos-fleet-standards` and `developer-workstation-standards` (**MDM is the inventory source for the
+endpoint**), `datacenter-facilities-standards` (rack, power and physical
+space — here only their representation in DCIM).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión, licencia y estado del proyecto por web antes de fijarlo (§8).
-> Licencias comprobadas leyendo el fichero en crudo (§8 declara los huecos).
+> Verify the latest version, licence and project status on the web before pinning it (§8).
+> Licences checked by reading the raw file (§8 declares the gaps).
 
-| Necesidad | Por defecto | Versión / licencia verificada (ago-2026) | Alternativa justificable |
+| Need | Default | Verified version / licence (Aug 2026) | Justifiable alternative |
 |---|---|---|---|
-| Fuente de verdad de **red, IPAM y rack** | **NetBox** | v4.6.7 (30-jul-2026); **Apache-2.0** (`LICENSE.txt` en crudo) | **Nautobot** (v3.2.2, 3-ago-2026; **Apache-2.0**) si necesitas *jobs* y extensibilidad tipo plataforma de automatización |
-| Inventario de **activos de TI y helpdesk** | **GLPI** + `glpi-agent` | **GPL-3.0** (`LICENSE` en crudo) | **i-doit** si el modelo de CI relacional es el eje; **Ralph** (Apache-2.0) en parques grandes de DC |
-| **Gestión de activos** pura (compra, garantía, asignación a personas) | **Snipe-IT** | **AGPL-3.0** (`LICENSE` en crudo) | Módulo de activos de GLPI si ya lo tienes: **una herramienta menos vale más que la herramienta perfecta** |
-| **Descubrimiento en el host** | **osquery** | **Apache-2.0 OR GPL-2.0-only** (dual, declarado en `LICENSE`) | Agente de GLPI/OCS si ya está desplegado |
-| CMDB corporativa con proceso ITSM encima | **ServiceNow alineado a CSDM** | **CSDM 5.0** (may-2025): 7 dominios, *Foundation* primero | Solo si ya hay ServiceNow. **CSDM no se compra: se implanta alineando datos** |
-| Descubrimiento y detección de deriva sobre NetBox | **Orb agent** (open source, *public preview*) → **Diode** → **NetBox Assurance** | Backends `network_discovery`, `device_discovery`, `snmp_discovery`, `gnmi_discovery` (beta) | Scripts propios contra APIs de hipervisor/nube: perfectamente válido y a menudo suficiente |
-| Fuente para nube y virtualización | **La API del proveedor / del hipervisor**, sondeada periódicamente | — | Nunca un CSV exportado a mano |
+| Source of truth for **network, IPAM and rack** | **NetBox** | v4.6.7 (30 Jul 2026); **Apache-2.0** (`LICENSE.txt` in raw) | **Nautobot** (v3.2.2, 3 Aug 2026; **Apache-2.0**) if you need *jobs* and automation-platform-style extensibility |
+| Inventory of **IT assets and helpdesk** | **GLPI** + `glpi-agent` | **GPL-3.0** (`LICENSE` in raw) | **i-doit** if the relational CI model is the axis; **Ralph** (Apache-2.0) in large DC estates |
+| Pure **asset management** (purchase, warranty, assignment to people) | **Snipe-IT** | **AGPL-3.0** (`LICENSE` in raw) | GLPI's asset module if you already have it: **one tool fewer is worth more than the perfect tool** |
+| **Discovery on the host** | **osquery** | **Apache-2.0 OR GPL-2.0-only** (dual, declared in `LICENSE`) | The GLPI/OCS agent if it is already deployed |
+| Corporate CMDB with an ITSM process on top | **ServiceNow aligned to CSDM** | **CSDM 5.0** (May 2025): 7 domains, *Foundation* first | Only if ServiceNow is already there. **CSDM is not bought: it is implemented by aligning data** |
+| Discovery and drift detection on top of NetBox | **Orb agent** (open source, *public preview*) → **Diode** → **NetBox Assurance** | `network_discovery`, `device_discovery`, `snmp_discovery`, `gnmi_discovery` (beta) backends | Your own scripts against hypervisor/cloud APIs: perfectly valid and often sufficient |
+| Source for cloud and virtualisation | **The provider's / hypervisor's API**, polled periodically | — | Never a hand-exported CSV |
 
-**Regla de selección por encima de la tabla**: elige **la herramienta que puedas poblar
-automáticamente el lunes siguiente**. Una CMDB con el mejor modelo de datos y sin descubrimiento
-pierde contra un NetBox feo poblado por API.
+**Selection rule that overrides the table**: choose **the tool you can populate
+automatically next Monday**. A CMDB with the best data model and no discovery
+loses to an ugly NetBox populated by API.
 
-## 3. Modelo de datos: lo que decide si sirve o no
+## 3. Data model: what decides whether it is useful
 
-### 3.1 El identificador estable
+### 3.1 The stable identifier
 
-**Ni el hostname ni la IP identifican un activo.** Ambos cambian, se reutilizan y colisionan; un
-inventario indexado por hostname produce activos duplicados y activos fusionados por error, que es
-peor. Regla:
+**Neither the hostname nor the IP identifies an asset.** Both change, get reused and collide; an
+inventory indexed by hostname produces duplicate assets and assets merged by mistake, which is
+worse. Rule:
 
-- **Hardware físico**: **número de serie del fabricante** (y, si el modelo lo permite, UUID de DMI).
-  Es el único identificador que sobrevive al reinstall, al cambio de nombre y al traslado de rack, y
-  el único que casa con la garantía y el contrato de soporte.
-- **Máquina virtual / instancia**: el **UUID o ID de la plataforma** (`instance-id`, `vm.uuid`).
-- **Identificador propio del inventario**: clave sintética inmutable propia (nunca reutilizada tras
-  la baja), porque el serial de un chasis reemplazado en garantía **cambia**.
-- El hostname, la IP y la MAC son **atributos**, buscables y con historia. Nunca claves primarias.
+- **Physical hardware**: **manufacturer serial number** (and, if the model allows it, DMI UUID).
+  It is the only identifier that survives a reinstall, a rename and a rack move, and
+  the only one that matches the warranty and the support contract.
+- **Virtual machine / instance**: the platform's **UUID or ID** (`instance-id`, `vm.uuid`).
+- **The inventory's own identifier**: an immutable synthetic key of your own (never reused after
+  decommissioning), because the serial of a chassis replaced under warranty **changes**.
+- The hostname, the IP and the MAC are **attributes**, searchable and with history. Never primary keys.
 
-### 3.2 Intención frente a descubrimiento, por atributo
+### 3.2 Intent versus discovery, per attribute
 
-Cada atributo tiene **una** fuente autoritativa declarada, y el resto son observaciones. Lo
-descubrible se descubre; lo que ninguna herramienta puede saber se declara y **caduca**:
+Every attribute has **one** declared authoritative source, and the rest are observations. What
+is discoverable is discovered; what no tool can know is declared and **expires**:
 
-| Tipo de atributo | Fuente autoritativa | Ejemplos |
+| Type of attribute | Authoritative source | Examples |
 |---|---|---|
-| Descubrible en el sistema | Agente / API | modelo, CPU, RAM, discos, SO y versión, paquetes, servicios, IP en uso, vecinos LLDP |
-| Descubrible en la plataforma | API del hipervisor/nube/K8s | estado, host físico, red, etiquetas, fecha de creación |
-| **Solo declarable** | Persona, con **fecha de revisión** | **dueño**, criticidad de negocio, entorno, contrato y garantía, propósito, clasificación del dato, servicio al que pertenece |
+| Discoverable on the system | Agent / API | model, CPU, RAM, disks, OS and version, packages, services, IP in use, LLDP neighbours |
+| Discoverable on the platform | Hypervisor/cloud/K8s API | state, physical host, network, tags, creation date |
+| **Declarable only** | A person, with a **review date** | **owner**, business criticality, environment, contract and warranty, purpose, data classification, service it belongs to |
 
-**La fila de abajo es la que da valor y la que se pudre.** Un atributo declarado sin fecha de
-revisión es un atributo falso con antigüedad desconocida: se le pone caducidad (12 meses como
-máximo) y se revisa, o se elimina del modelo.
+**The bottom row is the one that provides the value and the one that rots.** A declared attribute without a
+review date is a false attribute of unknown age: give it an expiry (12 months at
+most) and review it, or remove it from the model.
 
-### 3.3 Reconciliación: quién gana cuando dos fuentes discrepan
+### 3.3 Reconciliation: who wins when two sources disagree
 
-- **Precedencia declarada por atributo, no por fuente global.** El hipervisor gana en "cuánta RAM
-  tiene"; el agente gana en "qué SO corre"; el humano gana en "quién es el dueño". Escrito, en el
-  repositorio, no en la cabeza del que montó la integración.
-- **Emparejamiento en cascada**: serial → UUID → MAC → (último recurso) hostname+dominio. Un
-  emparejamiento por hostname **se marca como de baja confianza** y se revisa a mano.
-- **La discrepancia no se resuelve pisando el dato: se registra.** Una máquina descubierta que no
-  está declarada es *shadow IT* o un despliegue fuera de proceso; una declarada que no se descubre
-  es un activo muerto o un fallo de cobertura. **Ambas son hallazgos con dueño y plazo**, y ese flujo
-  —no el informe— es lo que mantiene viva la base de datos.
-- **NetBox es deliberadamente intención**, y esto se cita literal de su documentación porque decide
-  la arquitectura: *"NetBox intends to represent the desired state of a network versus its
-  operational state"* y *"All data created in NetBox should first be vetted by a human to ensure its
-  integrity"*. Su documentación excluye explícitamente *"Network monitoring"*, *"DNS server"*,
-  *"RADIUS server"*, *"Configuration management"* y *"Facilities management"*. Conclusión operativa:
-  **volcar descubrimiento crudo dentro de NetBox rompe su modelo**; el descubrimiento entra por un
-  canal de ingesta con revisión (Diode/Assurance o el tuyo) y produce *diffs*, no escrituras.
+- **Precedence declared per attribute, not per global source.** The hypervisor wins on "how much RAM
+  it has"; the agent wins on "which OS it runs"; the human wins on "who owns it". Written down, in the
+  repository, not in the head of whoever built the integration.
+- **Cascading matching**: serial → UUID → MAC → (last resort) hostname+domain. A
+  match by hostname **is flagged as low confidence** and reviewed by hand.
+- **A discrepancy is not resolved by overwriting the data: it is recorded.** A discovered machine that is
+  not declared is *shadow IT* or an out-of-process deployment; a declared one that is not discovered
+  is a dead asset or a coverage failure. **Both are findings with an owner and a deadline**, and that flow
+  —not the report— is what keeps the database alive.
+- **NetBox is deliberately intent**, and this is quoted verbatim from its documentation because it decides
+  the architecture: *"NetBox intends to represent the desired state of a network versus its
+  operational state"* and *"All data created in NetBox should first be vetted by a human to ensure its
+  integrity"*. Its documentation explicitly excludes *"Network monitoring"*, *"DNS server"*,
+  *"RADIUS server"*, *"Configuration management"* and *"Facilities management"*. Operational conclusion:
+  **dumping raw discovery into NetBox breaks its model**; discovery comes in through an
+  ingestion channel with review (Diode/Assurance or your own) and produces *diffs*, not writes.
 
-### 3.4 Relaciones: lo único que hace útil una CMDB en un incidente
+### 3.4 Relationships: the only thing that makes a CMDB useful in an incident
 
-Un inventario plano de 4.000 filas no responde la única pregunta que se hace de madrugada: **"si esto
-se cae, ¿qué deja de funcionar, y a quién aviso?"**. Modela, como mínimo y en este orden de valor:
+A flat inventory of 4,000 rows does not answer the one question asked in the small hours: **"if this
+goes down, what stops working, and who do I notify?"**. Model, at minimum and in this order of value:
 
-1. **Servicio de negocio → sistemas que lo implementan → CI de infraestructura** (la cadena que
-   convierte un host caído en un impacto explicable).
-2. **Dependencias entre servicios** (llama a / depende de), incluidas las **externas y SaaS**.
-3. **Ubicación física y alimentación** (rack, unidad, PDU, circuito): un mantenimiento eléctrico
-   necesita esta relación y no la tiene casi nadie.
-4. **Dueño técnico y dueño de negocio**, nominales. Un CI sin dueño es un CI que nadie revisará.
+1. **Business service → systems that implement it → infrastructure CIs** (the chain that
+   turns a downed host into an explainable impact).
+2. **Dependencies between services** (calls / depends on), including **external and SaaS** ones.
+3. **Physical location and power** (rack, unit, PDU, circuit): an electrical
+   maintenance needs this relationship and almost nobody has it.
+4. **Technical owner and business owner**, by name. A CI with no owner is a CI nobody will review.
 
-**Profundidad mínima viable**: modela solo las relaciones que alguien va a consultar. Un grafo
-completo y sin mantener miente más que un grafo parcial y fresco.
+**Minimum viable depth**: model only the relationships somebody is going to query. A complete
+and unmaintained graph lies more than a partial, fresh one.
 
-### 3.5 Por qué el estado de Terraform no es una CMDB
+### 3.5 Why Terraform state is not a CMDB
 
-Razones estructurales, no de madurez: **(1)** solo contiene lo que ese código creó —el hierro, lo
-manual y lo heredado no existen—; **(2)** está **fragmentado** en decenas de ficheros de estado sin
-identificador común ni vista global; **(3)** no modela servicios, dueños ni criticidad; **(4)**
-**contiene secretos en claro**, luego no puede tener los permisos de lectura amplios que un
-inventario necesita; **(5)** su ciclo de vida es el del `apply`: un recurso destruido desaparece,
-mientras el inventario debe **conservar el activo retirado con su historia**. Uso correcto: el estado
-es una **fuente que alimenta** el inventario, igual que el hipervisor.
+Structural reasons, not maturity ones: **(1)** it only contains what that code created —the iron, the
+manual and the inherited do not exist—; **(2)** it is **fragmented** across dozens of state files with no
+common identifier and no global view; **(3)** it does not model services, owners or criticality; **(4)**
+**it contains secrets in the clear**, so it cannot have the broad read permissions an
+inventory needs; **(5)** its lifecycle is that of `apply`: a destroyed resource disappears,
+whereas the inventory must **keep the retired asset with its history**. Correct use: state
+is a **source that feeds** the inventory, just like the hypervisor.
 
-## 4. Calidad del dato: las métricas que deciden si sigue viva
+## 4. Data quality: the metrics that decide whether it stays alive
 
-> *(Se omite §6 "Rendimiento y operabilidad" del formato: en este dominio se reduce a operar una
-> aplicación web y su base de datos, que no es criterio propio de la skill.)*
+> *(§6 "Performance and operability" of the format is deliberately omitted: in this domain it reduces to operating a
+> web application and its database, which is not criteria owned by this skill.)*
 
-Publicadas en un panel visible, no en un informe trimestral:
+Published on a visible dashboard, not in a quarterly report:
 
-- **Cobertura**: % de activos descubiertos que existen en el inventario, y su inverso —**activos
-  declarados que llevan N días sin verse**—. La cobertura se mide contra una fuente independiente
-  (barrido de red, tabla ARP/MAC del switch, facturación de nube), nunca contra sí misma.
-- **Frescura**: % de CI con descubrimiento en las últimas 24 h; edad del atributo declarado más
-  antiguo. **Un CI sin ver en 30 días se marca `stale` y sale de los informes**, no se borra.
-- **Completitud de lo que no se descubre**: % de activos con dueño nominal, criticidad y contrato.
-  Suele ser la métrica más baja y la más cara de subir; es también la que da todo el valor.
-- **Uso**: consultas y llamadas a la API por semana, y **desde qué sistemas**. Es la métrica de
-  supervivencia: *una CMDB que nadie consulta se apaga, no se mejora* (criterio compartido con
+- **Coverage**: % of discovered assets that exist in the inventory, and its inverse —**declared
+  assets not seen for N days**—. Coverage is measured against an independent source
+  (network sweep, the switch's ARP/MAC table, cloud billing), never against itself.
+- **Freshness**: % of CIs with discovery in the last 24 h; age of the oldest declared
+  attribute. **A CI unseen for 30 days is flagged `stale` and drops out of the reports**, it is not deleted.
+- **Completeness of what is not discovered**: % of assets with a named owner, criticality and contract.
+  It is usually the lowest metric and the most expensive to raise; it is also the one that provides all the value.
+- **Usage**: queries and API calls per week, and **from which systems**. It is the survival
+  metric: *a CMDB nobody consults gets switched off, not improved* (criteria shared with
   `itsm-itil-standards`).
-- **Gate de CI recomendado**: la automatización que consume el inventario **falla** si el registro
-  del host que va a tocar está `stale` o carece de dueño. Es lo que convierte la calidad del dato en
-  un problema de quien la degrada, y no del que la mantiene.
+- **Recommended CI gate**: the automation that consumes the inventory **fails** if the record
+  of the host it is about to touch is `stale` or has no owner. That is what turns data quality into
+  a problem for whoever degrades it, and not for whoever maintains it.
 
-## 5. Seguridad del inventario
+## 5. Inventory security
 
-- **Un inventario completo es un mapa de ataque**: topología, versiones de SO, servicios y a veces
-  credenciales de gestión. Sistema **de alto valor**: SSO con MFA, RBAC por ámbito, tokens de API con
-  permisos mínimos y caducidad, y **auditoría de lectura**, no solo de escritura.
-- **PROHIBIDO guardar secretos en el inventario** (contraseñas de BMC, comunidades SNMP, claves): van
-  al gestor de secretos, aquí solo **la referencia**.
-- **Las credenciales del descubrimiento son el eslabón débil**: cuenta dedicada, **solo lectura**,
-  por segmento, rotada, y **jamás la misma que usa la automatización para cambiar cosas**.
-- **Un barrido es tráfico que el IDS debe conocer**: acordado, con ventana y origen fijo. `nmap`
-  agresivo contra OT/ICS o cabinas antiguas puede tirarlas — en esos segmentos, descubrimiento
-  pasivo (LLDP, ARP, flujos) antes que activo.
-- **La herramienta también tiene CVEs**: a ago-2026 NetBox corrigió **CVE-2026-29514** (ejecución
-  arbitraria de código vía `environment_params` de `ExportTemplate`).
-- **Baja del activo = baja de sus accesos**: la retirada dispara la revocación de credenciales,
-  certificados y reglas de firewall. Sin ese enlace, documentas que el hierro se fue y dejas viva su
-  identidad.
+- **A complete inventory is an attack map**: topology, OS versions, services and sometimes
+  management credentials. A **high-value** system: SSO with MFA, scoped RBAC, API tokens with
+  minimum permissions and an expiry, and **read auditing**, not just write auditing.
+- **FORBIDDEN to store secrets in the inventory** (BMC passwords, SNMP communities, keys): they go
+  to the secrets manager, here only **the reference**.
+- **Discovery credentials are the weak link**: a dedicated account, **read-only**,
+  per segment, rotated, and **never the same one automation uses to change things**.
+- **A sweep is traffic the IDS must know about**: agreed, with a window and a fixed origin. Aggressive
+  `nmap` against OT/ICS or old storage arrays can knock them over — on those segments, passive
+  discovery (LLDP, ARP, flows) before active.
+- **The tool has CVEs too**: as of Aug 2026 NetBox fixed **CVE-2026-29514** (arbitrary code
+  execution via `ExportTemplate`'s `environment_params`).
+- **Asset decommissioning = decommissioning its access**: retirement triggers revocation of credentials,
+  certificates and firewall rules. Without that link, you document that the iron is gone and leave its
+  identity alive.
 
-## 6. Ciclo de vida y el activo que nadie sabe qué hace
+## 6. Lifecycle and the asset nobody can explain
 
-Estados mínimos y explícitos: `planificado → en aprovisionamiento → en producción → obsoleto (fin de
-soporte fechado) → retirado → destruido (con certificado de borrado)`. Cada transición tiene dueño y
-fecha; **"obsoleto" con fecha de fin de soporte es el dato que alimenta el plan de renovación** y el
-único que evita descubrir un EOL el día que hay que parchear.
+Minimum, explicit states: `planned → being provisioned → in production → obsolete (dated end of
+support) → retired → destroyed (with a wipe certificate)`. Every transition has an owner and a
+date; **"obsolete" with an end-of-support date is the data that feeds the renewal plan** and the
+only thing that avoids discovering an EOL on the day you have to patch.
 
-**El caso duro y universal: la máquina encendida que nadie sabe explicar.** No se apaga a ciegas y
-tampoco se deja para siempre. Procedimiento con dueño y plazo:
+**The hard, universal case: the powered-on machine nobody can explain.** It is not switched off blindly and
+it is not left forever either. Procedure with an owner and a deadline:
 
-1. **Observar antes de tocar**: durante **un ciclo completo de negocio, cierre anual incluido** —qué
-   conexiones entra y salen, qué procesos, qué trabajos programados, quién se autentica—. La
-   integración que nadie recuerda aparece en el cierre de ejercicio, no en abril.
-2. **Buscar el dueño por evidencia, no por memoria**: quién entra por SSH, a qué correo escriben sus
-   `cron`, qué certificado presenta, qué factura o contrato lo referencia, quién lo creó según la
-   auditoría del hipervisor.
-3. Si sigue sin dueño: **apagado reversible con aviso** —anuncio con plazo, apagado en ventana con
-   plan de reversión inmediata y **el sistema conservado, no destruido**, un periodo definido (60–90
-   días es lo habitual; fíjalo tú)—. Es la única forma honesta de descubrir para qué servía.
-4. **Destruir solo tras el periodo de cuarentena**, con copia restaurable verificada y borrado
-   certificado. Y con el registro conservado en el inventario: **el activo retirado no se borra de la
-   base de datos, se archiva**.
+1. **Observe before touching**: for **a full business cycle, year-end close included** —what
+   connections come in and out, what processes, what scheduled jobs, who authenticates—. The
+   integration nobody remembers shows up at year-end close, not in April.
+2. **Look for the owner by evidence, not by memory**: who logs in over SSH, which address its
+   `cron` jobs mail, which certificate it presents, which invoice or contract references it, who created it according to
+   the hypervisor audit log.
+3. If it still has no owner: **reversible shutdown with notice** —announcement with a deadline, shutdown in a window with
+   an immediate reversal plan and **the system preserved, not destroyed**, for a defined period (60–90
+   days is usual; you set it)—. It is the only honest way to find out what it was for.
+4. **Destroy only after the quarantine period**, with a verified restorable copy and certified
+   wiping. And with the record kept in the inventory: **a retired asset is not deleted from the
+   database, it is archived**.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- ❌ **PROHIBIDO** un identificador de activo basado en hostname o IP (§3.1).
-- ❌ **PROHIBIDO** poblar la CMDB a mano lo que una API puede descubrir. Es la causa directa de que
-  caduque en tres meses.
-- ❌ Atributo declarado (dueño, criticidad, contrato) **sin fecha de revisión**.
-- ❌ Volcar descubrimiento crudo sobre NetBox: rompe su modelo de intención (§3.3).
-- ❌ Presentar el **estado de Terraform**, la lista de *targets* de Prometheus, el DNS o una hoja de
-  cálculo como "el inventario" (§3.5).
-- ❌ Dos fuentes escribiendo el mismo atributo sin precedencia declarada.
-- ❌ Secretos dentro del inventario, o credenciales de descubrimiento con permisos de escritura (§5).
-- ❌ Borrar el registro del activo al retirarlo: se archiva con su historia.
-- ❌ Modelar un grafo de relaciones exhaustivo que nadie va a mantener (§3.4).
-- ❌ Mantener una CMDB cuyo único consumidor es el auditor. **Si no responde preguntas reales, se
-  apaga** — criterio compartido y no negociable con `itsm-itil-standards`.
-- ❌ Apagar un servidor desconocido sin el ciclo de observación de §6 — y también dejarlo encendido
-  indefinidamente "por si acaso": ambas son la misma renuncia a decidir.
-- ❌ Comprar una herramienta de CMDB antes de haber decidido **qué preguntas debe responder** y
-  **de qué fuente sale cada atributo**.
+- ❌ **FORBIDDEN** an asset identifier based on hostname or IP (§3.1).
+- ❌ **FORBIDDEN** to populate the CMDB by hand with what an API can discover. It is the direct cause of it
+  going stale within three months.
+- ❌ A declared attribute (owner, criticality, contract) **without a review date**.
+- ❌ Dumping raw discovery into NetBox: it breaks its intent model (§3.3).
+- ❌ Presenting **Terraform state**, the Prometheus *targets* list, DNS or a spreadsheet
+  as "the inventory" (§3.5).
+- ❌ Two sources writing the same attribute with no declared precedence.
+- ❌ Secrets inside the inventory, or discovery credentials with write permissions (§5).
+- ❌ Deleting the asset record on retirement: it is archived with its history.
+- ❌ Modelling an exhaustive relationship graph nobody is going to maintain (§3.4).
+- ❌ Maintaining a CMDB whose only consumer is the auditor. **If it does not answer real questions, it is
+  switched off** — criteria shared and non-negotiable with `itsm-itil-standards`.
+- ❌ Switching off an unknown server without the observation cycle of §6 — and equally leaving it powered on
+  indefinitely "just in case": both are the same refusal to decide.
+- ❌ Buying a CMDB tool before having decided **which questions it must answer** and
+  **which source each attribute comes from**.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada, comprobar por web —con cita literal, no con resumen automático:
+Before pinning anything, check on the web —with a verbatim quote, not an automatic summary:
 
-1. **NetBox**: versión vigente (a ago-2026, **v4.6.7**, 30-jul-2026) y CVEs abiertos. **Licencia
-   verificada leyendo `LICENSE.txt` en crudo: Apache-2.0** — nótese que el fichero **no** se llama
-   `LICENSE`, que devuelve 404. **Hueco declarado: no se verificó el reparto exacto de funciones
-   entre NetBox Community, NetBox Enterprise y NetBox Cloud de NetBox Labs**, ni si Assurance/Diode
-   requieren licencia comercial. Antes de diseñar sobre Assurance, confírmalo con el fabricante.
-2. **Nautobot**: v3.2.2 (3-ago-2026), **Apache-2.0** verificado en crudo. Mantiene además una rama
-   2.4.x viva: comprueba cuál es la soportada para ti.
-3. **GLPI (GPL-3.0)**, **Snipe-IT (AGPL-3.0)** y **Ralph (Apache-2.0)**: licencias verificadas en
-   crudo. **AGPL en Snipe-IT importa** si piensas ofrecerlo como servicio a terceros o modificarlo.
-   **Hueco declarado: no se verificó la versión vigente de ninguna de las tres**, ni la licencia real
-   de **i-doit Open** (la comunidad la cita como AGPLv3 y el fabricante mantiene el producto —hay
-   noticia de reorganización interna en ene-2026—, pero **no se leyó el fichero en crudo** y existe
-   debate público sobre qué queda fuera de la edición Open). Léela antes de citarla.
-4. **osquery**: **doble licencia `Apache-2.0 OR GPL-2.0-only`**, declarada en su `LICENSE`. La
-   elección es tuya y tiene consecuencias si redistribuyes: no lo cites como "Apache" a secas.
-5. **ServiceNow CSDM**: versión vigente del modelo (**5.0**, may-2025, 7 dominios) y su mapeo con la
-   release de plataforma que tengas. **Hueco declarado: los nombres de los 7 dominios proceden de
-   fuentes de partner, no del portal oficial de ServiceNow**; confírmalos ahí antes de usarlos en un
-   diseño.
-6. **Orb agent / Diode / Assurance**: siguen etiquetados como *public preview* en la documentación
-   consultada. Verifica su madurez y su modelo de licencia antes de hacerlos dependencia.
-7. **Normativa**: si el inventario es evidencia de cumplimiento (ISO 27001 A.5.9, ENS, NIS2),
-   comprueba el texto vigente del control — el alcance exigido (¿incluye software? ¿SaaS? ¿datos?)
-   cambia entre revisiones y es lo que fija qué debes modelar.
+1. **NetBox**: current version (as of Aug 2026, **v4.6.7**, 30 Jul 2026) and open CVEs. **Licence
+   verified by reading `LICENSE.txt` in raw: Apache-2.0** — note that the file is **not** called
+   `LICENSE`, which returns 404. **Declared gap: the exact split of features
+   between NetBox Community, NetBox Enterprise and NetBox Labs' NetBox Cloud was not verified**, nor whether Assurance/Diode
+   require a commercial licence. Before designing on Assurance, confirm it with the vendor.
+2. **Nautobot**: v3.2.2 (3 Aug 2026), **Apache-2.0** verified in raw. It also keeps a live
+   2.4.x branch: check which one is supported for you.
+3. **GLPI (GPL-3.0)**, **Snipe-IT (AGPL-3.0)** and **Ralph (Apache-2.0)**: licences verified in
+   raw. **AGPL in Snipe-IT matters** if you plan to offer it as a service to third parties or modify it.
+   **Declared gap: the current version of none of the three was verified**, nor the actual licence
+   of **i-doit Open** (the community cites it as AGPLv3 and the vendor maintains the product —there is
+   news of an internal reorganisation in Jan 2026—, but **the raw file was not read** and there is
+   public debate about what is left out of the Open edition). Read it before citing it.
+4. **osquery**: **dual licence `Apache-2.0 OR GPL-2.0-only`**, declared in its `LICENSE`. The
+   choice is yours and has consequences if you redistribute: do not cite it as plain "Apache".
+5. **ServiceNow CSDM**: current version of the model (**5.0**, May 2025, 7 domains) and its mapping to the
+   platform release you have. **Declared gap: the names of the 7 domains come from
+   partner sources, not from ServiceNow's official portal**; confirm them there before using them in a
+   design.
+6. **Orb agent / Diode / Assurance**: still labelled *public preview* in the documentation
+   consulted. Verify their maturity and their licensing model before making them a dependency.
+7. **Regulation**: if the inventory is compliance evidence (ISO 27001 A.5.9, ENS, NIS2),
+   check the current text of the control — the required scope (does it include software? SaaS? data?)
+   changes between revisions and is what determines what you must model.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,612 +3,610 @@ name: lakehouse-standards
 description: Use when analytical data lives as an open table format on object storage — deciding whether a lakehouse is warranted at all versus PostgreSQL or a managed columnar warehouse, choosing between Apache Iceberg, Delta Lake, Apache Hudi and Apache Paimon, Iceberg spec v2 versus v3 (deletion vectors, row lineage, VARIANT type), reading the metadata tree of metadata.json, manifest lists, manifest files and snapshots, picking the catalog as the real architecture decision (Iceberg REST Catalog API, Apache Polaris, Unity Catalog, AWS Glue Data Catalog, Project Nessie, Apache Gravitino, Lakekeeper, legacy Hive Metastore/Thrift) and its credential vending, hidden partitioning and partition-spec evolution, expire_snapshots, remove_orphan_files, rewrite_data_files and rewrite_manifests as scheduled maintenance, copy-on-write versus merge-on-read and the real cost of MERGE and DELETE, optimistic concurrency and commit conflicts between two writers, reading one table from Spark, Trino, DuckDB, ClickHouse or Flink, pyiceberg or delta-rs, time travel and snapshot retention, table registration and catalog migration, or table/row/column access control and legally mandated deletion inside an immutable format.
 ---
 
-# Estándares de lakehouse (formato de tabla abierto)
+# Lakehouse standards (open table format)
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-> **Premisa dura**: un lakehouse **no es un directorio de Parquet con nombre de marketing**. Es un
-> **formato de tabla** —un árbol de metadatos versionado sobre un bucket— que compra ACID, evolución
-> de esquema, *time travel* y lectura/escritura concurrente, y **se paga en catálogo, compactación y
-> mantenimiento permanente**. Si no vas a operar ese mantenimiento, no tienes un lakehouse: tienes
-> un pantano con snapshots.
+> **Hard premise**: a lakehouse **is not a Parquet directory with a marketing name**. It is a
+> **table format** —a versioned metadata tree on top of a bucket— that buys you ACID, schema
+> evolution, *time travel* and concurrent read/write, and **is paid for in catalog, compaction and
+> permanent maintenance**. If you are not going to run that maintenance, you do not have a lakehouse:
+> you have a swamp with snapshots.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **formato de tabla** y a todo lo que se decide desde él: elección de formato, catálogo,
-anatomía de metadatos, particionado y su evolución, mantenimiento de tabla, concurrencia de
-escritura, motores de consulta sobre el mismo dato, estrategia de actualización y borrado, y
-gobierno/seguridad a nivel de tabla.
+Applies to the **table format** and to everything decided from it: format choice, catalog,
+metadata anatomy, partitioning and its evolution, table maintenance, write concurrency,
+query engines over the same data, update and delete strategy, and table-level governance/security.
 
-Disparadores: `metadata.json`, `snap-*.avro`, `manifest-list`, `.metadata/`, `_delta_log/`,
+Triggers: `metadata.json`, `snap-*.avro`, `manifest-list`, `.metadata/`, `_delta_log/`,
 `.hoodie/`, `format-version`, `iceberg.catalog.type`, `catalog-impl`, `warehouse=`,
 `spark.sql.catalog.*`, `USING iceberg` / `USING delta`, `CALL ... system.rewrite_data_files`,
 `expire_snapshots`, `remove_orphan_files`, `rewrite_manifests`, `VACUUM`, `OPTIMIZE`, `ZORDER`,
 `MERGE INTO`, `FOR SYSTEM_TIME AS OF` / `VERSION AS OF`, `pyiceberg`, `delta-rs`/`deltalake`,
 `iceberg-rest`, `polaris`, `nessie`, `gravitino`, `lakekeeper`, `unitycatalog`, `glue_catalog`,
-`hive metastore`, `thrift://`, `s3tables`, y las frases que delatan el dominio: "la consulta lee
-50.000 ficheros", "el bucket no para de crecer", "dos jobs se pisan al escribir la tabla",
-"necesito ver la tabla como estaba el martes", "cambiamos el particionado y hay que reescribirlo
-todo", "el borrado de un usuario no se aplica en el histórico".
+`hive metastore`, `thrift://`, `s3tables`, and the phrases that give the domain away: "the query
+reads 50,000 files", "the bucket keeps growing", "two jobs collide when writing the table",
+"I need to see the table as it was on Tuesday", "we changed the partitioning and now everything has
+to be rewritten", "deleting a user does not apply to the history".
 
-**No aplica**: ver
-- `data-engineering-standards` (**hermana; regla de corte ya escrita allí y espejada aquí sin
-  cambios**): el **formato de fichero** —Parquet, tamaño de fichero, compresión, tipado del
-  fichero— es **suyo**; el **formato de tabla** —Iceberg/Delta/Hudi, catálogo, snapshots,
-  compactación, particionado oculto— es **de aquí**. **Si la decisión la toma el formato de tabla,
-  es de aquí; si la toma el proceso que escribe, es suya.** Corolario: la ingesta, la orquestación,
-  la idempotencia del job, el *backfill* y el problema de los ficheros pequeños **en origen** son
-  suyos; la **compactación como operación de la tabla** es de aquí.
-- `data-warehouse-modeling-standards` (**frontera fina, declarada en ambos lados**): el *time
-  travel* de un formato de tabla te devuelve **la tabla como estaba**; una **SCD tipo 2** te dice
-  **cómo estaba la entidad de negocio**. Son cosas distintas: el primero es una capacidad de
-  infraestructura para recuperación y auditoría técnica, con retención de días o semanas; la
-  segunda es una decisión de modelado que el negocio consulta indefinidamente. **Sustituir una SCD2
-  por *time travel* está prohibido allí y lo está aquí** (§7). Grano, hechos, dimensiones y
-  métricas son suyos; esta skill no modela nada.
-- `data-platform-standards` (**madre**): **PostgreSQL, Redis/Valkey, Kafka como motor** (particiones
-  del topic, retención, *schema registry*), backups y PITR del motor, cifrado en reposo. Su
-  principio rector —**un almacén por necesidad, no por moda**— se hereda aquí sin excepción y es
-  precisamente el filtro de §2.1: **esta skill no autoriza un lakehouse, decide cómo se hace bien
-  uno ya justificado.**
-- `object-storage-standards`: **el sustrato es suyo** — buckets, política de bucket, clases de
-  almacenamiento y su latencia de rescate, Object Lock y *legal hold*, versionado de objetos, ciclo
-  de vida, multipart, `AbortIncompleteMultipartUpload`, checksums, **coste por petición y por
-  salida**, y el antipatrón de montar S3 como disco. Aquí, qué **estructura de claves y qué patrón
-  de peticiones** produce un formato de tabla encima, y qué exige del bucket. Regla de arbitraje:
-  si la pregunta es sobre el **bucket**, es suya; si es sobre la **tabla**, es de aquí. Aviso
-  cruzado: **Object Lock en modo *compliance* y una tabla con `expire_snapshots` son incompatibles
-  en la práctica** — el mantenimiento no podrá borrar nada (§5).
-- `streaming-cdc-standards` (**hermana; frontera declarada en ambos lados**): **cómo se capturan los
-  cambios y cómo se procesan en movimiento** es suyo —log de transacciones, Debezium, *snapshot*
-  inicial, slots de replicación, semántica de entrega, orden por partición, ventanas y marcas de
-  agua—. Aquí, **qué le pasa a la tabla cuando esos cambios aterrizan**: *copy-on-write* frente a
-  *merge-on-read*, coste de `MERGE`/`DELETE`, ficheros de borrado y vectores de borrado,
-  compactación inducida por el flujo. **El CDC es una fuente típica del lakehouse, no la única**: el
-  lakehouse se alimenta igual por lotes; y el CDC alimenta igual a otros destinos (una réplica, una
-  caché, un índice de búsqueda). Ninguna de las dos skills presupone a la otra.
-- `microservices-architecture-standards`: **outbox, sagas, eventos de dominio y propiedad del dato
-  por servicio son suyos**. Un evento de dominio no es una fila de una tabla analítica.
-- `privacy-engineering-standards`: **retención, minimización, seudonimización, *crypto-shredding* y
-  los derechos del interesado son suyos**. Aquí solo la **restricción técnica** que impone un
-  formato inmutable con historia y cómo se ejecuta el borrado dentro de él (§5.3).
-- `data-governance-quality-standards` (**ya en disco**): catálogo **de negocio y de metadatos**
-  (DataHub, OpenMetadata, Collibra, Atlan…), propiedad y *stewardship*, glosario, contratos de datos,
-  linaje como programa y calidad como disciplina. **Frontera obligatoria por el homónimo "catálogo"**:
-  el catálogo de este documento (Polaris, Glue, Unity, Nessie, Gravitino) es un **componente de
-  tiempo de ejecución** que resuelve el puntero de la tabla, secuencia los *commits* y entrega
-  credenciales; el suyo es un **inventario documental y de gobierno**. Regla de corte: **si el
-  componente está en la ruta de una consulta, es de aquí; si está en la ruta de una persona que
-  busca o gobierna un dataset, es suyo.** Unity Catalog aparece en ambas listas justamente porque
-  intenta ser las dos cosas — su faceta de catálogo Iceberg es de aquí.
-- `analytics-bi-standards`: la herramienta de BI y el consumo.
-- `message-brokers-standards`: el broker como pieza.
+**Not applicable**: see
+- `data-engineering-standards` (**sister; cut rule already written there and mirrored here without
+  changes**): the **file format** —Parquet, file size, compression, file typing— is
+  **theirs**; the **table format** —Iceberg/Delta/Hudi, catalog, snapshots,
+  compaction, hidden partitioning— **belongs here**. **If the decision is made by the table format,
+  it belongs here; if it is made by the process that writes, it is theirs.** Corollary: ingestion, orchestration,
+  job idempotency, the *backfill* and the small-files problem **at source** are
+  theirs; **compaction as a table operation** belongs here.
+- `data-warehouse-modeling-standards` (**thin boundary, declared on both sides**): the *time
+  travel* of a table format gives you back **the table as it was**; an **SCD type 2** tells you
+  **how the business entity was**. They are different things: the former is an infrastructure
+  capability for recovery and technical audit, with retention of days or weeks; the
+  latter is a modelling decision the business queries indefinitely. **Replacing an SCD2
+  with *time travel* is forbidden there and it is forbidden here** (§7). Grain, facts, dimensions and
+  metrics are theirs; this skill models nothing.
+- `data-platform-standards` (**mother**): **PostgreSQL, Redis/Valkey, Kafka as an engine** (topic
+  partitions, retention, *schema registry*), engine backups and PITR, encryption at rest. Its
+  guiding principle —**one store per need, not per fashion**— is inherited here without exception and is
+  precisely the filter of §2.1: **this skill does not authorise a lakehouse, it decides how to do
+  a already-justified one well.**
+- `object-storage-standards`: **the substrate is theirs** — buckets, bucket policy, storage
+  classes and their retrieval latency, Object Lock and *legal hold*, object versioning, lifecycle,
+  multipart, `AbortIncompleteMultipartUpload`, checksums, **cost per request and per
+  egress**, and the antipattern of mounting S3 as a disk. Here, what **key structure and what request
+  pattern** a table format produces on top, and what it demands from the bucket. Arbitration rule:
+  if the question is about the **bucket**, it is theirs; if it is about the **table**, it belongs here. Cross
+  warning: **Object Lock in *compliance* mode and a table with `expire_snapshots` are incompatible
+  in practice** — maintenance will not be able to delete anything (§5).
+- `streaming-cdc-standards` (**sister; boundary declared on both sides**): **how changes are captured
+  and how they are processed in motion** is theirs —transaction log, Debezium, initial *snapshot*,
+  replication slots, delivery semantics, per-partition ordering, windows and watermarks—.
+  Here, **what happens to the table when those changes land**: *copy-on-write* versus
+  *merge-on-read*, cost of `MERGE`/`DELETE`, delete files and deletion vectors,
+  flow-induced compaction. **CDC is a typical lakehouse source, not the only one**: the
+  lakehouse is fed just as well in batch; and CDC feeds other destinations just as well (a replica, a
+  cache, a search index). Neither skill presupposes the other.
+- `microservices-architecture-standards`: **outbox, sagas, domain events and per-service data
+  ownership are theirs**. A domain event is not a row of an analytical table.
+- `privacy-engineering-standards`: **retention, minimisation, pseudonymisation, *crypto-shredding* and
+  data subject rights are theirs**. Here only the **technical constraint** imposed by an
+  immutable format with history and how deletion is executed inside it (§5.3).
+- `data-governance-quality-standards` (**already on disk**): **business and metadata** catalog
+  (DataHub, OpenMetadata, Collibra, Atlan…), ownership and *stewardship*, glossary, data contracts,
+  lineage as a programme and quality as a discipline. **Mandatory boundary because of the "catalog" homonym**:
+  the catalog in this document (Polaris, Glue, Unity, Nessie, Gravitino) is a **runtime
+  component** that resolves the table pointer, sequences the *commits* and issues
+  credentials; theirs is a **documentary and governance inventory**. Cut rule: **if the
+  component is on the path of a query, it belongs here; if it is on the path of a person who
+  searches for or governs a dataset, it is theirs.** Unity Catalog appears in both lists precisely because
+  it tries to be both things — its Iceberg catalog facet belongs here.
+- `analytics-bi-standards`: the BI tool and consumption.
+- `message-brokers-standards`: the broker as a component.
 - `nosql-standards`, `graph-db-standards`, `vector-db-standards`, `search-engines-standards`,
   `timeseries-db-standards`, `oracle-dba-standards`, `sqlserver-dba-standards`,
-  `mysql-mariadb-dba-standards`: otros almacenes, con su propio criterio.
+  `mysql-mariadb-dba-standards`: other stores, with their own criteria.
 - `aws-standards`/`azure-standards`/`gcp-standards`: **Glue, S3 Tables, Databricks, BigQuery,
-  Fabric/OneLake como servicios gestionados** —aprovisionamiento, IAM, red, facturación—; aquí el
-  criterio de formato y catálogo que aplica igual en los tres.
-- `backup-recovery-standards` y `bcdr-standards`: **el *time travel* no es una copia de seguridad**
-  (§7). Qué se copia, con qué cadena y cómo se prueba el restore es suyo.
-- `identity-access-management-standards` (la identidad que el catálogo autentica),
-  `secrets-management-standards` (las credenciales que el catálogo *vende*),
+  Fabric/OneLake as managed services** —provisioning, IAM, network, billing—; here the
+  format and catalog criteria that apply equally in all three.
+- `backup-recovery-standards` and `bcdr-standards`: **time travel is not a backup**
+  (§7). What is copied, with what chain and how the restore is proven is theirs.
+- `identity-access-management-standards` (the identity the catalog authenticates),
+  `secrets-management-standards` (the credentials the catalog *vends*),
   `observability-standards`, `sre-practice-standards`, `iac-standards`, `cicd-standards`,
   `kubernetes-standards`, `grc-compliance-standards`, `mlops-standards`, `rag-standards`,
-  `python-standards` (`pyiceberg`, `delta-rs`), `jvm-spring-standards` (la JVM y su tuning bajo los
-  motores), `scala-standards` (**el Scala que se escribe dentro de un job de Spark o de Flink**:
-  aquí el formato de tabla, el catálogo y la mantenimiento; allí el código).
-- `sql-standards` (**el lenguaje SQL**). Frontera nombrada porque **`MERGE` aparece en las dos**:
-  aquí es una **operación sobre la tabla** —coste copy-on-write frente a merge-on-read, ficheros
-  de borrado, compactación, snapshots que deja atrás—; allí es una **cláusula que se escribe**
-  —condiciones de coincidencia, no determinismo cuando la fuente duplica filas, alternativas por
-  dialecto cuando el motor no la tiene—. Ninguna de las dos duplica a la otra.
+  `python-standards` (`pyiceberg`, `delta-rs`), `jvm-spring-standards` (the JVM and its tuning under the
+  engines), `scala-standards` (**the Scala written inside a Spark or Flink job**:
+  here the table format, the catalog and maintenance; there the code).
+- `sql-standards` (**the SQL language**). Boundary named because **`MERGE` appears in both**:
+  here it is an **operation on the table** —copy-on-write versus merge-on-read cost, delete
+  files, compaction, snapshots it leaves behind—; there it is a **clause that is written**
+  —match conditions, non-determinism when the source duplicates rows, per-dialect alternatives
+  when the engine does not have it—. Neither duplicates the other.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web versión, licencia, gobernanza y estado real de adopción antes de fijar nada en
-> un proyecto real (§8). Este subsector se movió mucho en 2025-2026 y una foto vieja aquí cuesta una
-> migración.
+> Verify version, licence, governance and real adoption status on the web before committing to anything in
+> a real project (§8). This subsector moved a lot in 2025-2026 and a stale snapshot here costs a
+> migration.
 
-### 2.1 La decisión de partida: ¿de verdad hace falta un lakehouse?
+### 2.1 The starting decision: do you really need a lakehouse?
 
-**"Lakehouse" es una de las dos etiquetas más vendidas del sector** (la otra la trata
-`streaming-cdc-standards`). Antes de adoptarlo, agota esta escalera. Cada escalón evitado es
-infraestructura que no operas:
+**"Lakehouse" is one of the two most over-sold labels in the sector** (the other is handled by
+`streaming-cdc-standards`). Before adopting it, exhaust this ladder. Every rung avoided is
+infrastructure you do not operate:
 
-| Situación real | Solución más simple | Cuándo deja de servir |
+| Real situation | Simplest solution | When it stops working |
 |---|---|---|
-| El dato analítico cabe holgadamente en el motor operacional | **PostgreSQL** con particionado por rango y una réplica de lectura (ver `data-platform-standards`) | Cuando el escaneo analítico compite con la carga transaccional y la réplica ya no absorbe |
-| Volumen medio, un equipo pequeño, consultas ad hoc | **Ficheros Parquet + DuckDB** o un motor columnar embebido, sin catálogo ni transacciones | Cuando hay varios escritores, borrados/actualizaciones frecuentes o necesidad de esquema evolutivo |
-| Analítica seria sin equipo de plataforma | **Almacén columnar gestionado** (BigQuery, Snowflake, ClickHouse Cloud, Redshift) | Cuando el coste, el *lock-in* o la necesidad de que varios motores lean el mismo dato lo hacen inviable |
-| Varios motores deben leer y escribir **el mismo** dato, con ACID, borrados y esquema que evoluciona | **Lakehouse** con formato de tabla y catálogo | — |
+| The analytical data fits comfortably in the operational engine | **PostgreSQL** with range partitioning and a read replica (see `data-platform-standards`) | When the analytical scan competes with the transactional load and the replica no longer absorbs it |
+| Medium volume, a small team, ad hoc queries | **Parquet files + DuckDB** or an embedded columnar engine, with no catalog and no transactions | When there are several writers, frequent deletes/updates or a need for an evolving schema |
+| Serious analytics without a platform team | **Managed columnar warehouse** (BigQuery, Snowflake, ClickHouse Cloud, Redshift) | When cost, *lock-in* or the need for several engines to read the same data make it unviable |
+| Several engines must read and write **the same** data, with ACID, deletes and an evolving schema | **Lakehouse** with a table format and catalog | — |
 
-**Lo que un directorio de Parquet realmente no te da** —y es la única lista que justifica el salto—:
+**What a Parquet directory really does not give you** —and it is the only list that justifies the jump—:
 
-1. **Atomicidad y aislamiento**: un lector nunca ve una escritura a medias; un `INSERT OVERWRITE`
-   fallido no deja la tabla en un estado intermedio.
-2. **Borrados y actualizaciones por fila** sin reescribir la partición entera a mano.
-3. **Evolución de esquema segura** (añadir, renombrar, reordenar, cambiar tipo dentro de reglas) por
-   **ID de columna**, no por posición ni por nombre de fichero.
-4. **Time travel y *rollback*** a un snapshot anterior tras una escritura mala.
-5. **Escritura concurrente** con control optimista, en lugar de "el último que escribió gana".
-6. **Planificación sin listar el bucket**: los metadatos saben qué ficheros hay y qué rangos
-   contienen; el listado de S3 deja de ser la operación crítica.
-7. **Particionado desacoplado de la ruta**: se puede cambiar sin reescribir el histórico.
+1. **Atomicity and isolation**: a reader never sees a half-finished write; a failed
+   `INSERT OVERWRITE` does not leave the table in an intermediate state.
+2. **Row-level deletes and updates** without rewriting the whole partition by hand.
+3. **Safe schema evolution** (add, rename, reorder, change type within rules) by
+   **column ID**, not by position nor by file name.
+4. **Time travel and *rollback*** to an earlier snapshot after a bad write.
+5. **Concurrent writing** with optimistic control, instead of "last writer wins".
+6. **Planning without listing the bucket**: the metadata knows which files exist and what ranges
+   they contain; listing S3 stops being the critical operation.
+7. **Partitioning decoupled from the path**: it can be changed without rewriting the history.
 
-**Lo que cuesta, y hay que firmarlo antes**: un **catálogo** que hay que desplegar, autenticar,
-respaldar y hacer HA; un **trabajo de mantenimiento periódico** (compactación, expiración,
-huérfanos) con su cómputo y su factura; un **modo de fallo nuevo** (la tabla se corrompe si borras
-ficheros por debajo del catálogo); y **una pieza más que actualizar y explicar a quien te sustituya**.
+**What it costs, and this has to be signed off up front**: a **catalog** that has to be deployed, authenticated,
+backed up and made HA; a **periodic maintenance job** (compaction, expiration,
+orphans) with its compute and its bill; a **new failure mode** (the table corrupts if you delete
+files underneath the catalog); and **one more piece to update and explain to whoever replaces you**.
 
-Regla: **si nadie del equipo puede nombrar quién ejecuta la compactación y con qué cadencia, todavía
-no estás listo para un lakehouse.**
+Rule: **if nobody on the team can name who runs compaction and at what cadence, you are not yet
+ready for a lakehouse.**
 
-### 2.2 Los tres (cuatro) formatos — estado verificado a agosto 2026
+### 2.2 The three (four) formats — status verified as of August 2026
 
-| Formato | Versión verificada | Estado real | Veredicto |
+| Format | Verified version | Real status | Verdict |
 |---|---|---|---|
-| **Apache Iceberg** | **1.11.0** (implementación Java, may-2026); **spec v3** en producción | **Es la *lingua franca***: los tres grandes proveedores de nube lo ofrecen gestionado, Snowflake y Databricks lo leen y escriben nativamente, DuckDB tiene escritura, Trino/Flink/Spark/ClickHouse lo soportan. La spec v3 está GA en Snowflake (7-may-2026) y en Databricks Runtime 18.0+ | **Default para cualquier lakehouse nuevo que deba ser multi-motor** |
-| **Delta Lake** | **4.3.1** (jul-2026) | Vivo y con el mayor ecosistema de un solo proveedor. Sigue siendo el formato nativo y más optimizado **dentro de Databricks**. UniForm permite exponer una tabla Delta como Iceberg | **Default solo si el centro de gravedad es Databricks**; fuera de ahí, Iceberg |
-| **Apache Hudi** | **1.2.0** (jun-2026); rama 0.14.x aún con releases | Maduro, con su diseño centrado en *upserts*, borrados e incremental *pull*. **Su diferenciación histórica se ha erosionado**: Iceberg v3 y Delta incorporaron vectores de borrado y linaje de fila | **No lo elijas para un proyecto nuevo salvo requisito concreto** de su modelo de índices/upserts que hayas probado |
-| **Apache Paimon** | 1.x | Nicho **streaming-nativo** (LSM, *upsert* de alto caudal, origen en el ecosistema Flink de Alibaba). Legítimo si tu carga es CDC continuo de altísimo caudal | Excepción justificada, no default |
-| **DuckLake** | — | Metadatos en una base de datos relacional en vez de ficheros. **Experimental**: interesante, sin adopción de producción demostrada | **Piloto, nunca producción** |
+| **Apache Iceberg** | **1.11.0** (Java implementation, May 2026); **spec v3** in production | **It is the *lingua franca***: the three big cloud providers offer it managed, Snowflake and Databricks read and write it natively, DuckDB has write support, Trino/Flink/Spark/ClickHouse support it. Spec v3 is GA in Snowflake (7 May 2026) and in Databricks Runtime 18.0+ | **Default for any new lakehouse that must be multi-engine** |
+| **Delta Lake** | **4.3.1** (Jul 2026) | Alive and with the largest single-vendor ecosystem. It is still the native and most optimised format **inside Databricks**. UniForm allows exposing a Delta table as Iceberg | **Default only if the centre of gravity is Databricks**; outside that, Iceberg |
+| **Apache Hudi** | **1.2.0** (Jun 2026); 0.14.x branch still with releases | Mature, with its design centred on *upserts*, deletes and incremental *pull*. **Its historical differentiation has eroded**: Iceberg v3 and Delta incorporated deletion vectors and row lineage | **Do not choose it for a new project unless there is a concrete requirement** of its index/upsert model that you have tested |
+| **Apache Paimon** | 1.x | **Streaming-native** niche (LSM, high-throughput *upsert*, originating in Alibaba's Flink ecosystem). Legitimate if your workload is continuous, very high-throughput CDC | Justified exception, not a default |
+| **DuckLake** | — | Metadata in a relational database instead of files. **Experimental**: interesting, with no demonstrated production adoption | **Pilot, never production** |
 
-**Lo que hay que entender de la convergencia (es el dato que decide la elección, y donde más fácil
-es quedarse con una foto de 2024)**: **la guerra de formatos terminó en tablas, no por exterminio**.
-Iceberg ganó como estándar de interoperabilidad; Delta sobrevive como formato nativo optimizado de
-Databricks; y la **spec v3 de Iceberg** absorbió justamente las capacidades que diferenciaban a
-Delta —**vectores de borrado, linaje de fila (`_row_id`, `_last_updated_sequence_number`), tipo
-`VARIANT`, valores por defecto de columna, tipos geoespaciales, timestamps de nanosegundos y
-transformaciones de partición multi-argumento**—, con lo que la disyuntiva "rendimiento o
-compatibilidad" dejó de existir. Databricks ha propuesto además converger el **árbol de metadatos**
-de Iceberg v4 y Delta 5.0 en una única estructura: **es una propuesta, no un hecho** — vigílala, no
-la des por cerrada (§8).
+**What has to be understood about the convergence (it is the fact that decides the choice, and where it is
+easiest to stay with a 2024 snapshot)**: **the format war ended in a draw, not by extermination**.
+Iceberg won as the interoperability standard; Delta survives as Databricks' native optimised
+format; and **Iceberg's spec v3** absorbed exactly the capabilities that differentiated
+Delta —**deletion vectors, row lineage (`_row_id`, `_last_updated_sequence_number`), `VARIANT`
+type, column default values, geospatial types, nanosecond timestamps and multi-argument partition
+transforms**—, so the "performance or compatibility" dilemma stopped existing. Databricks has also proposed
+converging the **metadata tree** of Iceberg v4 and Delta 5.0 into a single structure: **it is a proposal, not a fact** — watch it, do not
+take it as settled (§8).
 
-Consecuencia práctica: **la elección de formato es hoy una decisión reversible (*two-way door*) y
-barata en comparación con la del catálogo.** Lo que se pierde al cambiar de formato es la historia:
-la migración mueve metadatos y a veces reescribe ficheros, pero **los snapshots antiguos y el *time
-travel* previo no viajan**. Planifica la migración con un periodo de convivencia y no prometas
-histórico consultable a través del corte.
+Practical consequence: **the format choice is today a reversible (*two-way door*) decision and
+cheap compared with the catalog one.** What is lost when changing format is the history:
+the migration moves metadata and sometimes rewrites files, but **the old snapshots and the earlier *time
+travel* do not travel**. Plan the migration with a coexistence period and do not promise
+queryable history across the cut.
 
-**Sobre `format-version` de Iceberg**: v3 no es retrocompatible hacia atrás — **un lector v2 no
-puede leer una tabla v3**, aunque un lector v3 lee tablas v2. Subir `format-version` es un cambio
-que **rompe consumidores viejos**: inventaría los motores que leen la tabla **antes** de subirla, no
-después. En v3 los ficheros de borrado posicionales dejan de escribirse a favor de **vectores de
-borrado** (uno como máximo por fichero de datos y snapshot).
+**On Iceberg's `format-version`**: v3 is not backwards compatible — **a v2 reader cannot
+read a v3 table**, although a v3 reader reads v2 tables. Raising `format-version` is a change
+that **breaks old consumers**: inventory the engines that read the table **before** raising it, not
+after. In v3, positional delete files stop being written in favour of **deletion
+vectors** (at most one per data file and snapshot).
 
-### 2.3 El catálogo: **esta sí es la decisión de arquitectura**
+### 2.3 The catalog: **this one really is the architecture decision**
 
-El formato dice cómo se guardan los metadatos; **el catálogo dice cuál es el puntero actual de la
-tabla, quién puede leerla y con qué credencial**. Es el punto de serialización de los *commits*, el
-límite de la API entre todos los motores y tu dato, y **el sitio donde se produce realmente el
-bloqueo de proveedor**. Un formato abierto con un catálogo cerrado no es un lakehouse abierto: es un
-producto con un formato de fichero público.
+The format says how the metadata is stored; **the catalog says which is the table's current
+pointer, who can read it and with what credential**. It is the serialisation point of the *commits*, the
+API boundary between all the engines and your data, and **the place where vendor lock-in actually
+happens**. An open format with a closed catalog is not an open lakehouse: it is a
+product with a public file format.
 
-| Catálogo | Estado verificado (ago 2026) | Apertura real | Cuándo |
+| Catalog | Verified status (Aug 2026) | Real openness | When |
 |---|---|---|---|
-| **Apache Polaris** | **1.7.0** (ago-2026); **TLP de la ASF desde el 18-feb-2026**. Servidor REST sin estado sobre PostgreSQL/otros | **Abierto de verdad**: Apache 2.0, gobernanza de fundación, *credential vending* con modelo zero-trust. **Solo Iceberg** | **Default cuando quieres neutralidad de proveedor** y el equipo puede operar un servicio con su base de datos |
-| **Catálogo REST gestionado del proveedor** (AWS Glue / S3 Tables, BigLake REST, etc.) | Vivos y con soporte de v3 en AWS desde nov-2025 | Hablan la **API REST de Iceberg**, que es lo que importa; la implementación es del proveedor | **Default pragmático si ya vives en esa nube** y aceptas la dependencia |
-| **Unity Catalog** | **OSS 0.5.1** (jul-2026), Apache 2.0, bajo LF AI & Data; expone API REST de Iceberg y de Hive Metastore | **Apertura parcial y esa es la letra pequeña**: la versión OSS va muy por detrás de la gestionada — **linaje, federación y control de acceso fino (RLS, enmascaramiento de columnas, ABAC) son de la versión de Databricks**, no del OSS. Databricks ha declarado intención de cerrar la brecha; **la paridad no está fechada** | Si tu plataforma **es** Databricks, es la elección natural y casi obligada. **No lo adoptes "porque es open source" esperando la funcionalidad del producto** |
-| **Project Nessie** | **0.108.4** (jul-2026), activo | Abierto. Su valor propio son **ramas y etiquetas tipo Git** sobre el catálogo (entornos de desarrollo aislados, publicación atómica multi-tabla) | Cuando necesitas ramificación de datos. **Vigila**: se comenta una convergencia con Polaris — verifícalo antes de apostar a cinco años (§8) |
-| **Apache Gravitino** | **1.3.0** (jun-2026); TLP de la ASF desde jun-2025 | Abierto. Se posiciona como **"catálogo de catálogos"**: federación de metadatos heterogéneos en su sitio | Cuando el problema es **federar** varios catálogos existentes, no sustituirlos |
-| **Lakekeeper** | Implementación REST en Rust, binario único | Abierto | Alternativa ligera a Polaris. **Verifica versión, licencia y madurez antes de producción** |
-| **Hive Metastore (Thrift)** | Sin deprecación formal por el proyecto Iceberg, pero **empujado fuera comercial y arquitectónicamente** (p. ej. Starburst retira su imagen empaquetada de HMS en su LTS de ago-2026) | Abierto pero obsoleto en diseño: **sin *credential vending*, sin ramas, SPOF salvo HA cuidadosa, protocolo Thrift** | **Solo para convivir con lo que ya existe. PROHIBIDO en despliegues nuevos** (§7) |
+| **Apache Polaris** | **1.7.0** (Aug 2026); **ASF TLP since 18 Feb 2026**. Stateless REST server on PostgreSQL/others | **Genuinely open**: Apache 2.0, foundation governance, *credential vending* with a zero-trust model. **Iceberg only** | **Default when you want vendor neutrality** and the team can operate a service with its database |
+| **Vendor-managed REST catalog** (AWS Glue / S3 Tables, BigLake REST, etc.) | Alive and with v3 support in AWS since Nov 2025 | They speak the **Iceberg REST API**, which is what matters; the implementation is the vendor's | **Pragmatic default if you already live in that cloud** and you accept the dependency |
+| **Unity Catalog** | **OSS 0.5.1** (Jul 2026), Apache 2.0, under LF AI & Data; exposes the Iceberg REST API and the Hive Metastore one | **Partial openness and that is the small print**: the OSS version lags far behind the managed one — **lineage, federation and fine-grained access control (RLS, column masking, ABAC) belong to the Databricks version**, not to the OSS. Databricks has declared an intention to close the gap; **parity has no date** | If your platform **is** Databricks, it is the natural and almost obligatory choice. **Do not adopt it "because it is open source" expecting the product's functionality** |
+| **Project Nessie** | **0.108.4** (Jul 2026), active | Open. Its own value is **Git-like branches and tags** on top of the catalog (isolated development environments, atomic multi-table publication) | When you need data branching. **Watch out**: a convergence with Polaris is being discussed — verify it before betting on five years (§8) |
+| **Apache Gravitino** | **1.3.0** (Jun 2026); ASF TLP since Jun 2025 | Open. It positions itself as a **"catalog of catalogs"**: federation of heterogeneous metadata in place | When the problem is to **federate** several existing catalogs, not to replace them |
+| **Lakekeeper** | REST implementation in Rust, single binary | Open | Lightweight alternative to Polaris. **Verify version, licence and maturity before production** |
+| **Hive Metastore (Thrift)** | No formal deprecation by the Iceberg project, but **pushed out commercially and architecturally** (e.g. Starburst retires its packaged HMS image in its Aug 2026 LTS) | Open but obsolete by design: **no *credential vending*, no branches, SPOF unless carefully made HA, Thrift protocol** | **Only to coexist with what already exists. FORBIDDEN in new deployments** (§7) |
 
-**Reglas del catálogo, en orden de importancia**:
+**Catalog rules, in order of importance**:
 
-1. **Elige una implementación que hable la API REST de Iceberg.** Es lo que te permite cambiar de
-   backend sin tocar la configuración de cada motor. Empezar con Thrift/HMS es firmar una migración
-   futura.
-2. **Migrar de catálogo es una operación de metadatos**: los ficheros de datos no se mueven, se
-   re-registra la tabla. Eso hace la decisión menos irreversible de lo que parece — **pero el riesgo
-   real es el *split-brain***: dos catálogos apuntando a la misma tabla durante la transición, con
-   dos punteros de snapshot divergentes. Corta escrituras en el origen antes de registrar en el
-   destino, sin excepción.
-3. **El catálogo es infraestructura crítica de estado**: su base de datos necesita HA, backup y
-   restore probado (ver `backup-recovery-standards`). **Si pierdes el catálogo, los ficheros del
-   bucket siguen ahí pero no hay tabla.** Ten escrito el procedimiento de reconstrucción desde el
-   `metadata.json` más reciente.
-4. **Coexistencia planificada, no perpetua**: es legítimo tener Glue para lo heredado y Polaris para
-   lo multi-motor. Ponle fecha de fin a la coexistencia o se vuelve permanente.
-5. **ADR obligatorio** con el plan de salida escrito: qué motores dependen de él, cómo se re-registran
-   las tablas y cuánto se tarda.
+1. **Choose an implementation that speaks the Iceberg REST API.** It is what lets you change
+   backend without touching each engine's configuration. Starting with Thrift/HMS is signing up for a future
+   migration.
+2. **Migrating catalog is a metadata operation**: the data files do not move, the table is
+   re-registered. That makes the decision less irreversible than it looks — **but the real risk
+   is *split-brain***: two catalogs pointing at the same table during the transition, with
+   two divergent snapshot pointers. Cut writes at the source before registering at the
+   destination, without exception.
+3. **The catalog is critical stateful infrastructure**: its database needs HA, backup and
+   a proven restore (see `backup-recovery-standards`). **If you lose the catalog, the files in the
+   bucket are still there but there is no table.** Have the reconstruction procedure from the
+   most recent `metadata.json` written down.
+4. **Planned coexistence, not perpetual**: it is legitimate to have Glue for the legacy and Polaris for
+   the multi-engine part. Put an end date on the coexistence or it becomes permanent.
+5. **Mandatory ADR** with the exit plan written down: which engines depend on it, how the tables are
+   re-registered and how long it takes.
 
-### 2.4 Motores de consulta sobre el mismo dato
+### 2.4 Query engines over the same data
 
-| Motor | Versión verificada (ago 2026) | Uso |
+| Engine | Verified version (Aug 2026) | Use |
 |---|---|---|
-| **Trino** | 483 (jul-2026) | Consulta interactiva federada sobre el lakehouse. Buen default de consulta |
-| **DuckDB** | 1.5.5 (jul-2026) | Consulta local y trabajos que caben en una máquina grande. **Considera esto antes que Spark** |
-| **Apache Spark** | 4.2.0 (jul-2026); 4.0.4 y 3.5.9 con mantenimiento | Escritura pesada, mantenimiento de tablas, procesos que no caben en una máquina |
-| **Apache Flink** | **2.3.0** (jun-2026); 1.20.x aún con parches | Escritura continua desde flujo (ver `streaming-cdc-standards`) |
-| **ClickHouse** | — (**no verificado en esta revisión**) | Lectura de Iceberg/Delta; su fuerte es su propio almacenamiento, no el lakehouse |
-| Gestionados (Snowflake, Databricks, BigQuery, Athena, EMR, Dremio, StarRocks) | — | Correctos; el criterio es qué **catálogo** exigen |
+| **Trino** | 483 (Jul 2026) | Federated interactive querying over the lakehouse. Good query default |
+| **DuckDB** | 1.5.5 (Jul 2026) | Local querying and jobs that fit on one big machine. **Consider this before Spark** |
+| **Apache Spark** | 4.2.0 (Jul 2026); 4.0.4 and 3.5.9 in maintenance | Heavy writing, table maintenance, processes that do not fit on one machine |
+| **Apache Flink** | **2.3.0** (Jun 2026); 1.20.x still patched | Continuous writing from a stream (see `streaming-cdc-standards`) |
+| **ClickHouse** | — (**not verified in this review**) | Reading Iceberg/Delta; its strength is its own storage, not the lakehouse |
+| Managed (Snowflake, Databricks, BigQuery, Athena, EMR, Dremio, StarRocks) | — | Fine; the criterion is which **catalog** they require |
 
-**Qué significa "abierto" de verdad**: el dato en Parquet + un formato de tabla abierto es condición
-**necesaria y no suficiente**. Comprueba las tres, y si falla una no digas que es abierto:
-(a) ¿puede **otro** motor **leer** la tabla sin exportarla?; (b) ¿puede otro motor **escribir** en
-ella?; (c) ¿el **catálogo** habla un protocolo que implementa alguien más? El escenario más común de
-falsa apertura en 2026 no es el formato: es un catálogo propietario que vende credenciales solo a
-su propio motor, o una tabla gestionada donde solo el proveedor puede escribir.
+**What "open" really means**: data in Parquet + an open table format is a **necessary and not
+sufficient** condition. Check all three, and if one fails do not say it is open:
+(a) can **another** engine **read** the table without exporting it?; (b) can another engine **write** to
+it?; (c) does the **catalog** speak a protocol that someone else implements? The most common scenario of
+false openness in 2026 is not the format: it is a proprietary catalog that vends credentials only to
+its own engine, or a managed table where only the vendor can write.
 
-## 3. Anatomía, particionado y mantenimiento
+## 3. Anatomy, partitioning and maintenance
 
-### 3.1 El árbol de metadatos — **entenderlo explica el 90 % de los problemas de rendimiento y coste**
+### 3.1 The metadata tree — **understanding it explains 90 % of the performance and cost problems**
 
-Un formato de tabla es una **pila de punteros inmutables**. En Iceberg, de arriba abajo:
+A table format is a **stack of immutable pointers**. In Iceberg, top down:
 
 ```
-catálogo  →  metadata.json            (esquema, particionado, propiedades, lista de snapshots)
-             └─ snapshot              (un estado completo de la tabla en un instante)
-                └─ manifest list      (los manifiestos de ese snapshot, con rangos de partición)
-                   └─ manifest file   (los ficheros de datos, con métricas por columna: min/max/nulos)
+catalog   →  metadata.json            (schema, partitioning, properties, snapshot list)
+             └─ snapshot              (a complete state of the table at an instant)
+                └─ manifest list      (that snapshot's manifests, with partition ranges)
+                   └─ manifest file   (the data files, with per-column metrics: min/max/nulls)
                       └─ data files   (.parquet) + delete files / deletion vectors
 ```
 
-Delta usa un **log de transacciones** (`_delta_log/` con JSON incrementales y *checkpoints*
-periódicos) y Hudi una **línea de tiempo** (`.hoodie/`), pero las tres consecuencias son las mismas:
+Delta uses a **transaction log** (`_delta_log/` with incremental JSON and periodic *checkpoints*)
+and Hudi a **timeline** (`.hoodie/`), but the three consequences are the same:
 
-- **Una escritura no modifica nada: añade.** Un `commit` es publicar un puntero nuevo. Por eso hay
-  ACID, y por eso **el bucket crece por diseño** hasta que alguien limpia.
-- **La planificación de la consulta se hace leyendo metadatos, no listando el bucket.** El *pruning*
-  ocurre en dos niveles: por rango de partición (en la lista de manifiestos) y por **estadísticas
-  min/max por columna** (en el manifiesto). Un motor lento suele estar leyendo demasiados
-  manifiestos, no demasiados datos.
-- **Los síntomas de "va lento" y "cuesta mucho" son casi siempre metadatos**, no cómputo:
-  demasiados snapshots vivos, demasiados manifiestos, demasiados ficheros pequeños, o ficheros de
-  borrado sin fusionar. Diagnostica **contando ficheros y manifiestos por partición** antes de tocar
-  el clúster.
-- **Métricas por columna cuestan espacio de metadatos**: en tablas muy anchas, escribir estadísticas
-  de las 500 columnas infla el manifiesto y ralentiza la planificación. Limita las columnas con
-  estadísticas a las que se filtran.
+- **A write modifies nothing: it adds.** A `commit` is publishing a new pointer. That is why there is
+  ACID, and that is why **the bucket grows by design** until somebody cleans up.
+- **Query planning is done by reading metadata, not by listing the bucket.** *Pruning*
+  happens at two levels: by partition range (in the manifest list) and by **per-column
+  min/max statistics** (in the manifest). A slow engine is usually reading too many
+  manifests, not too much data.
+- **The symptoms of "it is slow" and "it costs a lot" are almost always metadata**, not compute:
+  too many live snapshots, too many manifests, too many small files, or delete
+  files not merged. Diagnose by **counting files and manifests per partition** before touching
+  the cluster.
+- **Per-column metrics cost metadata space**: on very wide tables, writing statistics
+  for all 500 columns inflates the manifest and slows down planning. Limit the columns with
+  statistics to the ones that get filtered.
 
-### 3.2 Particionado
+### 3.2 Partitioning
 
-- **Particionado oculto (Iceberg)**: la partición se declara como una **transformación sobre una
-  columna** (`days(event_ts)`, `bucket(16, user_id)`) y el motor la aplica al filtrar por la columna
-  original. Frente al particionado por directorios (estilo Hive), elimina la clase de error más
-  frecuente del dominio: **la consulta que filtra por `event_ts` pero no por la columna sintética
-  `dt`, y escanea la tabla entera sin que nadie lo note hasta la factura**. Con particionado oculto
-  esa consulta poda bien; sin él, no.
-- **Evolución de particionado**: se puede cambiar la especificación **sin reescribir el histórico**;
-  los datos viejos conservan su spec y los nuevos usan la nueva. Es una de las mejores razones para
-  adoptar el formato. Dos avisos: (a) el motor tiene que planificar sobre **dos specs a la vez**,
-  con su coste; (b) **no es una excusa para no pensar el particionado inicial**, es una salida de
-  emergencia.
-- **Error clásico y vetado: particionar por columna de alta cardinalidad** (`user_id`, `order_id`,
-  `uuid`). Genera millones de particiones minúsculas, hunde la planificación y multiplica las
-  peticiones al bucket. Si necesitas agrupar por esa columna, usa **`bucket(N, col)`** (número
-  acotado de particiones) o **ordenación/clustering dentro de la partición**, no partición directa.
-- **Regla de dimensionado**: apunta a particiones de **cientos de MB a unos pocos GB**. Una
-  partición por día que produce 3 MB significa que la partición correcta era el mes.
-- **Particiona por la columna por la que filtras** —casi siempre fecha **del evento**, no de
-  ingesta— y verifica la poda leyendo el plan, no suponiéndola.
+- **Hidden partitioning (Iceberg)**: the partition is declared as a **transformation over a
+  column** (`days(event_ts)`, `bucket(16, user_id)`) and the engine applies it when filtering by the original
+  column. Compared with directory partitioning (Hive style), it eliminates the most frequent
+  class of error in the domain: **the query that filters by `event_ts` but not by the synthetic column
+  `dt`, and scans the whole table without anyone noticing until the bill arrives**. With hidden partitioning
+  that query prunes properly; without it, it does not.
+- **Partitioning evolution**: the specification can be changed **without rewriting the history**;
+  old data keeps its spec and new data uses the new one. It is one of the best reasons to
+  adopt the format. Two warnings: (a) the engine has to plan over **two specs at once**,
+  with its cost; (b) **it is not an excuse for not thinking about the initial partitioning**, it is an
+  emergency exit.
+- **Classic and vetoed error: partitioning by a high-cardinality column** (`user_id`, `order_id`,
+  `uuid`). It generates millions of tiny partitions, sinks planning and multiplies the
+  requests to the bucket. If you need to group by that column, use **`bucket(N, col)`** (bounded number
+  of partitions) or **ordering/clustering within the partition**, not direct partitioning.
+- **Sizing rule**: aim for partitions of **hundreds of MB to a few GB**. A
+  daily partition producing 3 MB means the right partition was the month.
+- **Partition by the column you filter by** —almost always the **event** date, not the ingestion
+  one— and verify the pruning by reading the plan, not by assuming it.
 
-### 3.3 Mantenimiento — **la sección que nadie planifica y la que decide si el proyecto sobrevive**
+### 3.3 Maintenance — **the section nobody plans and the one that decides whether the project survives**
 
-Los formatos **traen las primitivas; ninguna se ejecuta sola**. Programarlas, dimensionarlas y
-vigilarlas es trabajo de plataforma con coste de cómputo real, y va en el presupuesto desde el día
-uno.
+The formats **bring the primitives; none of them runs by itself**. Scheduling them, sizing them and
+watching them is platform work with real compute cost, and it goes into the budget from day
+one.
 
-| Operación | Qué arregla | Si no se hace |
+| Operation | What it fixes | If it is not done |
 |---|---|---|
-| **Compactación** (`rewrite_data_files` / `OPTIMIZE`) | Fusiona ficheros pequeños; opcionalmente ordena o agrupa (Z-order) | Miles de ficheros por partición: planificación lenta, peticiones caras, consultas que degradan cada semana |
-| **Expiración de snapshots** (`expire_snapshots` / `VACUUM`) | Elimina snapshots viejos **y los ficheros que solo ellos referenciaban** | **El bucket crece para siempre**, el `metadata.json` acumula snapshots, el listado y la planificación se degradan y la factura sube sin que nadie relacione la causa. **Este es el fallo económico más común del dominio** |
-| **Limpieza de huérfanos** (`remove_orphan_files`) | Borra ficheros que están en el bucket pero **ningún** snapshot referencia (restos de jobs que murieron a medias) | La expiración **no** los toca: se acumulan indefinidamente y pagas almacenamiento por basura invisible |
-| **Reescritura de manifiestos** (`rewrite_manifests`) | Consolida manifiestos fragmentados | Planificación lenta pese a tener pocos ficheros de datos |
-| **Fusión de borrados** (compactación de *delete files* / vectores) | Reduce el trabajo de aplicar borrados en lectura | Tablas *merge-on-read* que se vuelven cada vez más lentas de leer |
+| **Compaction** (`rewrite_data_files` / `OPTIMIZE`) | Merges small files; optionally sorts or clusters (Z-order) | Thousands of files per partition: slow planning, expensive requests, queries that degrade every week |
+| **Snapshot expiration** (`expire_snapshots` / `VACUUM`) | Removes old snapshots **and the files only they referenced** | **The bucket grows forever**, the `metadata.json` accumulates snapshots, listing and planning degrade and the bill goes up without anyone connecting the cause. **This is the most common economic failure in the domain** |
+| **Orphan cleanup** (`remove_orphan_files`) | Deletes files that are in the bucket but **no** snapshot references (leftovers from jobs that died halfway) | Expiration does **not** touch them: they accumulate indefinitely and you pay storage for invisible rubbish |
+| **Manifest rewriting** (`rewrite_manifests`) | Consolidates fragmented manifests | Slow planning despite having few data files |
+| **Delete merging** (compaction of *delete files* / vectors) | Reduces the work of applying deletes on read | *Merge-on-read* tables that become slower and slower to read |
 
-Reglas duras:
+Hard rules:
 
-- **Orden**: compacta primero, **luego** expira snapshots (así la expiración puede liberar los
-  ficheros que la compactación dejó obsoletos), después limpia huérfanos y consolida manifiestos.
-  Saltarse un paso debilita a los demás.
-- **`remove_orphan_files` con ventana de seguridad amplia** (por defecto 3 días; **nunca menor que
-  la duración máxima de una escritura en curso**). Una ventana corta borra ficheros de un job en
-  vuelo y **corrompe la tabla**. Este es el comando más peligroso del dominio: trátalo como tal.
-- **La expiración de snapshots fija tu ventana real de *time travel* y de *rollback***. Decídela
-  explícitamente (típico: 7 días), publícala y no la descubras el día que hace falta revertir.
-- **Cadencia**: tablas alimentadas por flujo, cada 1-3 horas; tablas por lotes, diaria; huérfanos y
-  manifiestos, semanal. Ajusta con la métrica, no con la costumbre.
-- **La compactación cuesta cómputo y peticiones**: reescribe datos. En tablas grandes es una partida
-  presupuestaria propia y compite con las consultas. Prográmala fuera de la ventana crítica y
-  **limita su concurrencia**, o se convierte en el proceso que tumba la plataforma.
-- **A escala, el mantenimiento se dispara por señal, no por cron ciego**: número de ficheros, tamaño
-  medio, ratio de ficheros de borrado, número de manifiestos y profundidad de snapshots por tabla,
-  con el cron como red de seguridad.
-- **Nunca borres ficheros del bucket "para limpiar"** ni pongas una regla de ciclo de vida de S3 que
-  expire objetos dentro de la ruta de una tabla viva. **Es la forma más rápida y más definitiva de
-  destruir una tabla**: el catálogo seguirá apuntando a ficheros que ya no existen. La limpieza se
-  hace **siempre** con las primitivas del formato (§7). Ver `object-storage-standards` para la
-  regla de ciclo de vida, que aquí queda **vetada sobre rutas de tablas activas**.
+- **Order**: compact first, **then** expire snapshots (so expiration can free the
+  files that compaction made obsolete), then clean orphans and consolidate manifests.
+  Skipping a step weakens the others.
+- **`remove_orphan_files` with a wide safety window** (3 days by default; **never smaller than
+  the maximum duration of an in-flight write**). A short window deletes files from an in-flight
+  job and **corrupts the table**. This is the most dangerous command in the domain: treat it as such.
+- **Snapshot expiration sets your real *time travel* and *rollback* window**. Decide it
+  explicitly (typical: 7 days), publish it and do not discover it the day you need to revert.
+- **Cadence**: stream-fed tables, every 1-3 hours; batch tables, daily; orphans and
+  manifests, weekly. Adjust with the metric, not with habit.
+- **Compaction costs compute and requests**: it rewrites data. On large tables it is a budget
+  line of its own and it competes with the queries. Schedule it outside the critical window and
+  **limit its concurrency**, or it becomes the process that takes the platform down.
+- **At scale, maintenance is triggered by signal, not by blind cron**: number of files, average
+  size, delete-file ratio, number of manifests and snapshot depth per table,
+  with cron as a safety net.
+- **Never delete files from the bucket "to clean up"** nor set an S3 lifecycle rule that
+  expires objects inside the path of a live table. **It is the fastest and most definitive way
+  to destroy a table**: the catalog will keep pointing at files that no longer exist. Cleanup is
+  done **always** with the format's primitives (§7). See `object-storage-standards` for the
+  lifecycle rule, which here is **vetoed over active table paths**.
 
-### 3.4 Escrituras concurrentes y control optimista
+### 3.4 Concurrent writes and optimistic control
 
-- El modelo es **concurrencia optimista**: cada escritor lee el snapshot actual, prepara sus
-  ficheros y **intenta publicar** el puntero nuevo. Si otro publicó mientras tanto, el *commit*
-  falla y el escritor **reintenta re-basando su cambio** sobre el snapshot nuevo, si el conflicto lo
-  permite.
-- **Qué pasa realmente cuando dos jobs escriben la misma tabla**: dos `INSERT` a particiones
-  distintas casi siempre conviven (se reintenta y pasa). **Dos operaciones que reescriben los mismos
-  ficheros —dos `MERGE`, o un `MERGE` y una compactación sobre la misma partición— entran en
-  conflicto de verdad**, y uno de los dos pierde su trabajo entero tras haber gastado el cómputo.
-  A caudal alto, el reintento se convierte en *livelock*: nunca consigue publicar.
-- Reglas: **un escritor lógico por tabla y partición**; el mantenimiento **no** se solapa con las
-  escrituras pesadas sobre las mismas particiones; configura reintentos con *backoff* y **un tope**;
-  y si el conflicto es crónico, el problema es el diseño de particionado o la concurrencia del
-  pipeline, no el número de reintentos.
-- **El aislamiento es a nivel de tabla.** Un cambio que debe ser atómico **entre varias tablas** no
-  lo es, salvo que el catálogo lo ofrezca explícitamente (es el argumento propio de las ramas de
-  Nessie). No asumas atomicidad multi-tabla.
-- **Ramas y etiquetas** (Iceberg branches/tags, Nessie): publicación atómica, entornos de desarrollo
-  aislados y auditoría por etiqueta. Útil y correcto; **cada rama viva retiene snapshots y por tanto
-  ficheros**: entra en el presupuesto de mantenimiento.
+- The model is **optimistic concurrency**: each writer reads the current snapshot, prepares its
+  files and **tries to publish** the new pointer. If someone else published in the meantime, the *commit*
+  fails and the writer **retries, re-basing its change** on the new snapshot, if the conflict
+  allows it.
+- **What actually happens when two jobs write the same table**: two `INSERT`s to different
+  partitions almost always coexist (it retries and goes through). **Two operations that rewrite the same
+  files —two `MERGE`s, or a `MERGE` and a compaction over the same partition— genuinely
+  conflict**, and one of the two loses its entire work after having spent the compute.
+  At high throughput, the retry turns into *livelock*: it never manages to publish.
+- Rules: **one logical writer per table and partition**; maintenance does **not** overlap with the
+  heavy writes on the same partitions; configure retries with *backoff* and **a cap**;
+  and if the conflict is chronic, the problem is the partitioning design or the pipeline
+  concurrency, not the number of retries.
+- **Isolation is at table level.** A change that must be atomic **across several tables** is
+  not, unless the catalog offers it explicitly (it is Nessie's own branching
+  argument). Do not assume multi-table atomicity.
+- **Branches and tags** (Iceberg branches/tags, Nessie): atomic publication, isolated development
+  environments and audit by tag. Useful and correct; **each live branch retains snapshots and therefore
+  files**: it goes into the maintenance budget.
 
-### 3.5 Actualizaciones y borrados: *copy-on-write* frente a *merge-on-read*
+### 3.5 Updates and deletes: *copy-on-write* versus *merge-on-read*
 
-El mecanismo de captura de cambios es de `streaming-cdc-standards`; **qué le hace a la tabla es de
-aquí**. Es una decisión por tabla, escrita, no un default heredado del ejemplo que copiaste.
+The change capture mechanism belongs to `streaming-cdc-standards`; **what it does to the table belongs
+here**. It is a per-table decision, written down, not a default inherited from the example you copied.
 
-| Estrategia | Cómo funciona | Coste de escritura | Coste de lectura | Cuándo |
+| Strategy | How it works | Write cost | Read cost | When |
 |---|---|---|---|---|
-| **Copy-on-write (CoW)** | Reescribe los ficheros de datos afectados en el *commit* | **Alto**: cambiar una fila reescribe su fichero entero | **Mínimo**: los lectores leen datos limpios | Tablas con actualizaciones poco frecuentes y muchas lecturas. **Default para la capa de consumo** |
-| **Merge-on-read (MoR)** | Escribe ficheros de borrado / vectores de borrado y fusiona en la lectura | **Bajo**: el *commit* es rápido | **Creciente**: cada lectura aplica los borrados pendientes | Ingesta continua o CDC de alto caudal. **Obliga a compactación agresiva** |
+| **Copy-on-write (CoW)** | Rewrites the affected data files in the *commit* | **High**: changing one row rewrites its whole file | **Minimal**: readers read clean data | Tables with infrequent updates and many reads. **Default for the consumption layer** |
+| **Merge-on-read (MoR)** | Writes delete files / deletion vectors and merges on read | **Low**: the *commit* is fast | **Growing**: each read applies the pending deletes | Continuous ingestion or high-throughput CDC. **Forces aggressive compaction** |
 
-- **MoR sin compactación programada es una bomba de relojería**: la tabla es rápida de escribir y
-  cada día más lenta de leer, con una degradación que nadie atribuye a la decisión que la causó.
-- **El coste real de `DELETE` y `UPDATE`**: en CoW, borrar 10 filas repartidas por 10 ficheros
-  reescribe los 10 ficheros completos. **Un borrado por cumplimiento normativo que afecte a una fila
-  por partición puede reescribir la tabla entera.** Agrupa los borrados en **lotes periódicos** en
-  lugar de aplicarlos fila a fila.
-- **Iceberg v3 sustituye los ficheros de borrado posicionales por vectores de borrado** (mapa de
-  bits, uno como máximo por fichero de datos y snapshot): menos ficheros, lectura más eficiente y
-  comparación de borrados entre commits más simple. Es una razón sólida para subir a v3 en tablas
-  MoR, **una vez inventariados los lectores** (§2.2).
-- **La ingesta continua produce ficheros pequeños por construcción.** No lo trates como un defecto
-  del flujo: es el precio de la latencia, y se paga con compactación. Si nadie quiere pagarlo, la
-  latencia que querías no era necesaria.
+- **MoR without scheduled compaction is a time bomb**: the table is fast to write and
+  slower to read every day, with a degradation nobody attributes to the decision that caused it.
+- **The real cost of `DELETE` and `UPDATE`**: in CoW, deleting 10 rows spread across 10 files
+  rewrites all 10 files completely. **A compliance-mandated deletion affecting one row
+  per partition can rewrite the whole table.** Group the deletes into **periodic batches** instead
+  of applying them row by row.
+- **Iceberg v3 replaces positional delete files with deletion vectors** (bitmap,
+  at most one per data file and snapshot): fewer files, more efficient reading and
+  simpler comparison of deletes between commits. It is a solid reason to move to v3 on MoR
+  tables, **once the readers have been inventoried** (§2.2).
+- **Continuous ingestion produces small files by construction.** Do not treat it as a defect
+  of the stream: it is the price of latency, and it is paid with compaction. If nobody wants to pay it, the
+  latency you wanted was not necessary.
 
-## 4. Calidad y testing — gates
+## 4. Quality and testing — gates
 
-En orden de coste creciente. **Los marcados como gate rompen el build o bloquean la publicación.**
+In increasing order of cost. **Those marked as a gate break the build or block publication.**
 
-1. **Definición de tabla y propiedades como código**, versionadas y revisadas: esquema,
-   `format-version`, especificación de partición, estrategia CoW/MoR, propiedades de compactación y
-   de expiración. Una tabla creada a mano desde una consola es una tabla sin dueño. *Gate de CI.*
-2. **Toda tabla se registra en el catálogo y se accede por el catálogo.** Prohibido el acceso por
-   ruta (`s3://.../table/`) saltándose el catálogo: es la vía directa a la corrupción y a saltarse
-   el control de acceso. *Gate de revisión.*
-3. **Test de evolución de esquema**: el cambio propuesto se aplica sobre una copia y **se lee con la
-   versión de cada motor que consume la tabla**. Renombrar, reordenar y cambiar tipo son legales por
-   spec; **eliminar o cambiar de tipo de forma incompatible rompe consumidores**. Un cambio de
-   `format-version` es un cambio incompatible mientras exista un lector viejo. *Gate de CI.*
-4. **Contrato de la tabla publicada**: eliminar o renombrar una columna consumida, cambiar el grano
-   o cambiar la spec de partición **rompe el build** salvo aprobación registrada. La tabla publicada
-   es una API (coherente con `data-warehouse-modeling-standards` §4). *Gate.*
-5. **Aserciones sobre el dato** (unicidad de clave, no nulos, referencial, rangos): son de
-   `data-engineering-standards` §4 y de `data-warehouse-modeling-standards` §4. Aquí solo se exige
-   que **bloqueen la publicación del snapshot**, aprovechando que el formato permite escribir en una
-   rama y fusionar solo si pasan.
-6. **Test de idempotencia de la escritura**: ejecutar la misma carga dos veces produce el mismo
-   estado de tabla (mismo recuento, misma suma de control). *Gate de CI en pipelines que escriben.*
-7. **Prueba de concurrencia**: dos escritores simultáneos sobre la misma tabla en el entorno de
-   pruebas; se verifica que uno reintenta y **ninguno pierde datos en silencio**. Esta prueba no se
-   hace nunca y es donde aparecen los fallos de producción.
-8. **Salud de tabla como test programado, con umbrales** (no solo panel): número de ficheros por
-   partición, tamaño medio de fichero, número de snapshots, número de manifiestos, ratio de ficheros
-   de borrado. Superar el umbral **abre un aviso accionable**, no una entrada en un dashboard que
-   nadie mira.
-9. **Ensayo de *rollback*** documentado y ejecutado en calendario: revertir una tabla a un snapshot
-   anterior, medir cuánto se tarda y comprobar que los consumidores lo toleran. Un *rollback* que
-   nunca se ha probado no existe.
-10. **Ensayo de pérdida de catálogo**: reconstruir el registro de una tabla desde su `metadata.json`
-    en un entorno de pruebas. Es el escenario de desastre específico de este dominio.
-11. **Dependencias fijadas por hash/digest** en todo proceso con credenciales del *warehouse*
-    (`pyiceberg`, `delta-rs`, conectores, imágenes de Spark/Trino). *Gate de CI* (§5).
+1. **Table definition and properties as code**, versioned and reviewed: schema,
+   `format-version`, partition specification, CoW/MoR strategy, compaction and
+   expiration properties. A table created by hand from a console is a table with no owner. *CI gate.*
+2. **Every table is registered in the catalog and accessed through the catalog.** Path access
+   (`s3://.../table/`) bypassing the catalog is forbidden: it is the direct route to corruption and to bypassing
+   access control. *Review gate.*
+3. **Schema evolution test**: the proposed change is applied to a copy and **read with the
+   version of every engine that consumes the table**. Renaming, reordering and changing type are legal by
+   spec; **removing or changing type incompatibly breaks consumers**. A `format-version` change
+   is an incompatible change as long as an old reader exists. *CI gate.*
+4. **Published table contract**: removing or renaming a consumed column, changing the grain
+   or changing the partition spec **breaks the build** unless there is registered approval. The published table
+   is an API (consistent with `data-warehouse-modeling-standards` §4). *Gate.*
+5. **Assertions on the data** (key uniqueness, non-nulls, referential, ranges): they belong to
+   `data-engineering-standards` §4 and `data-warehouse-modeling-standards` §4. Here it is only required
+   that they **block snapshot publication**, taking advantage of the fact that the format allows writing to a
+   branch and merging only if they pass.
+6. **Write idempotency test**: running the same load twice produces the same
+   table state (same count, same checksum). *CI gate on pipelines that write.*
+7. **Concurrency test**: two simultaneous writers on the same table in the test
+   environment; it is verified that one retries and **neither loses data silently**. This test is never
+   done and it is where production failures appear.
+8. **Table health as a scheduled test, with thresholds** (not just a dashboard): number of files per
+   partition, average file size, number of snapshots, number of manifests, delete-file
+   ratio. Exceeding the threshold **opens an actionable alert**, not an entry in a dashboard
+   nobody looks at.
+9. ***Rollback* drill** documented and executed on a schedule: reverting a table to an earlier
+   snapshot, measuring how long it takes and checking that the consumers tolerate it. A *rollback* that
+   has never been tested does not exist.
+10. **Catalog loss drill**: rebuilding a table's registration from its `metadata.json`
+    in a test environment. It is this domain's specific disaster scenario.
+11. **Dependencies pinned by hash/digest** in every process with *warehouse* credentials
+    (`pyiceberg`, `delta-rs`, connectors, Spark/Trino images). *CI gate* (§5).
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-### 5.1 Control de acceso: quién lo aplica de verdad
+### 5.1 Access control: who actually enforces it
 
-El reparto, verificado y con su punto ciego:
+The split, verified and with its blind spot:
 
-| Control | Quién lo aplica |
+| Control | Who enforces it |
 |---|---|
-| Permisos de espacio de nombres, tabla y columna; alcance de la credencial | **El catálogo** (RBAC del catálogo REST) |
-| Restricción de rutas de almacenamiento | **El catálogo**, mediante *credential vending* de credenciales temporales y acotadas |
-| **Filtrado de filas y enmascaramiento de columnas** | **El motor**, salvo que tu catálogo implemente control fino — Polaris, por ejemplo, **no** lo hace nativamente |
-| Auditoría independiente del motor | **El catálogo** |
+| Namespace, table and column permissions; credential scope | **The catalog** (REST catalog RBAC) |
+| Storage path restriction | **The catalog**, through *credential vending* of temporary, scoped credentials |
+| **Row filtering and column masking** | **The engine**, unless your catalog implements fine-grained control — Polaris, for example, does **not** do it natively |
+| Engine-independent audit | **The catalog** |
 
-**Regla de diseño que se deriva, y es la trampa del dominio**: **nunca dependas de un control fino
-aplicado solo en el motor si varios motores pueden obtener credenciales de almacenamiento**. Una
-política de filas de Trino no la conoce Spark; y una credencial acotada que da acceso de lectura a
-los ficheros entregará las filas sin enmascarar a cualquier cliente que no pase por el motor con
-política. Si necesitas RLS/enmascaramiento de verdad: o lo aplica el catálogo, o **restringes el
-conjunto de motores que pueden obtener credenciales**, o publicas una tabla derivada ya filtrada.
+**Derived design rule, and it is the domain's trap**: **never rely on fine-grained control
+applied only in the engine if several engines can obtain storage credentials**. A
+Trino row policy is unknown to Spark; and a scoped credential granting read access to
+the files will hand over the unmasked rows to any client that does not go through the engine with the
+policy. If you need real RLS/masking: either the catalog enforces it, or **you restrict
+the set of engines that can obtain credentials**, or you publish a derived, already-filtered table.
 
-- ***Credential vending* obligatorio**: los usuarios y los motores **no** deben tener credenciales
-  directas del bucket. El catálogo autentica y entrega credenciales temporales de mínimo privilegio.
-  Un usuario con claves de S3 del *warehouse* invalida el control de acceso del catálogo entero.
-- El catálogo es un **objetivo de alto valor**: autenticación fuerte, TLS, sin credenciales
-  estáticas de larga vida, identidades federadas (ver `identity-access-management-standards` y
-  `secrets-management-standards`), y auditoría retenida.
-- **Separación de escritura y mantenimiento**: la identidad del pipeline escribe; la identidad del
-  mantenimiento borra. Que un solo rol pueda borrar ficheros de datos es la superficie con la que se
-  destruye una tabla, por error o por ataque.
+- ***Credential vending* mandatory**: users and engines must **not** have direct
+  bucket credentials. The catalog authenticates and issues temporary least-privilege credentials.
+  A user with S3 keys for the *warehouse* invalidates the whole catalog's access control.
+- The catalog is a **high-value target**: strong authentication, TLS, no long-lived static
+  credentials, federated identities (see `identity-access-management-standards` and
+  `secrets-management-standards`), and retained audit.
+- **Separation of writing and maintenance**: the pipeline identity writes; the maintenance
+  identity deletes. A single role being able to delete data files is the surface with which
+  a table gets destroyed, by mistake or by attack.
 
-### 5.2 Sustrato y cadena de suministro
+### 5.2 Substrate and supply chain
 
-- **Cifrado en reposo** del bucket y **TLS obligatorio** en el acceso; el detalle es de
-  `object-storage-standards` y `cryptography-pki-standards`.
-- **Object Lock en modo *compliance* sobre rutas de tablas vivas es incompatible con el
-  mantenimiento**: `expire_snapshots` y `remove_orphan_files` no podrán borrar nada y el
-  almacenamiento crecerá sin límite. Si hay obligación de inmutabilidad normativa, se resuelve con
-  **una copia derivada** en un bucket bloqueado, no bloqueando la tabla operativa.
-- **Cadena de suministro — no es hipótesis**: el ecosistema de datos lleva desde 2025 bajo una
-  campaña sostenida. Precedentes verificados: **Trivy** (mar-2026), **LiteLLM** en PyPI (1.82.7 y
-  1.82.8, 24-mar-2026), **Telnyx** (mar-2026), **`durabletask` de Microsoft** (1.4.1-1.4.3,
-  may-2026) y **`elementary-data` 0.23.3** (abr-2026, patrón `.pth` que se ejecuta al arrancar el
-  intérprete). La generación actual, **"Mini Shai-Hulud" (CVE-2026-45321)**, activa desde finales de
-  abr-2026, es un gusano que se propaga entre npm y PyPI, **extrae tokens OIDC de la memoria del
-  runner de GitHub Actions** y ha llegado a **falsificar atestaciones de procedencia SLSA nivel 3**.
-  Derivas obligatorias aquí:
-  - **Fija por hash/digest** todo lo que se instala en un proceso que tiene credenciales del
-    *warehouse* o del catálogo; nada de rangos abiertos.
-  - **Ventana de cuarentena** de días antes de adoptar una versión recién publicada en entornos con
-    credenciales de producción.
-  - **La atestación de procedencia ya no es prueba suficiente** por sí sola: combínala con
-    cuarentena y con mínimo privilegio del *runner*.
-  - Un *runner* de mantenimiento de tablas **no debe tener credenciales de más de un entorno**.
-- **A ago-2026 no consta compromiso de `pyiceberg` ni de `deltalake`/`delta-rs`** — verifícalo de
-  nuevo antes de fijarlo (§8).
+- **Encryption at rest** for the bucket and **mandatory TLS** on access; the detail belongs to
+  `object-storage-standards` and `cryptography-pki-standards`.
+- **Object Lock in *compliance* mode over live table paths is incompatible with
+  maintenance**: `expire_snapshots` and `remove_orphan_files` will not be able to delete anything and
+  storage will grow without limit. If there is a regulatory immutability obligation, it is solved with
+  **a derived copy** in a locked bucket, not by locking the operational table.
+- **Supply chain — this is not hypothetical**: the data ecosystem has been under a sustained
+  campaign since 2025. Verified precedents: **Trivy** (Mar 2026), **LiteLLM** on PyPI (1.82.7 and
+  1.82.8, 24 Mar 2026), **Telnyx** (Mar 2026), **Microsoft's `durabletask`** (1.4.1-1.4.3,
+  May 2026) and **`elementary-data` 0.23.3** (Apr 2026, `.pth` pattern that runs when the
+  interpreter starts). The current generation, **"Mini Shai-Hulud" (CVE-2026-45321)**, active since the end of
+  Apr 2026, is a worm that propagates between npm and PyPI, **extracts OIDC tokens from the memory of the
+  GitHub Actions runner** and has managed to **forge SLSA level 3 provenance attestations**.
+  Mandatory derivations here:
+  - **Pin by hash/digest** everything installed in a process that has *warehouse* or catalog
+    credentials; no open ranges.
+  - **Quarantine window** of days before adopting a freshly published version in environments with
+    production credentials.
+  - **Provenance attestation is no longer sufficient proof** on its own: combine it with
+    quarantine and with *runner* least privilege.
+  - A table maintenance *runner* **must not have credentials for more than one environment**.
+- **As of Aug 2026 there is no record of a compromise of `pyiceberg` or `deltalake`/`delta-rs`** — verify it
+  again before committing to it (§8).
 
-### 5.3 Dato personal y borrado en un formato inmutable
+### 5.3 Personal data and deletion in an immutable format
 
-**La restricción técnica, que es lo único que decide esta skill** (la política es de
+**The technical constraint, which is the only thing this skill decides** (the policy belongs to
 `privacy-engineering-standards`):
 
-- Un `DELETE` sobre la tabla **no borra el dato**: crea un snapshot nuevo en el que la fila no
-  aparece. **El dato sigue en los ficheros anteriores y sigue siendo recuperable por *time travel*
-  hasta que expiran los snapshots y se limpian los huérfanos.**
-- Por tanto, un borrado por obligación legal solo está **completo** cuando: (1) se ejecuta el
-  `DELETE`; (2) **se compactan o reescriben** los ficheros afectados; (3) **expiran** todos los
-  snapshots que los referenciaban; (4) **se limpian los huérfanos**; y (5) se comprueba que ninguna
-  **rama, etiqueta, réplica, copia de seguridad o tabla derivada** conserva la fila.
-- **Consecuencia de diseño obligatoria**: la **ventana de expiración de snapshots pasa a ser un
-  parámetro de cumplimiento**, no solo de operación. Si el compromiso de borrado es de 30 días, la
-  retención de snapshots **debe** ser menor, y hay que decirlo por escrito.
-- Cuando lo anterior no sea viable (histórico enorme, borrados frecuentes, obligación de
-  inmutabilidad simultánea), la salida es **crypto-shredding** o seudonimización desde el diseño:
-  la decisión es de `privacy-engineering-standards`; **la estructura que la hace posible se decide
-  aquí y ahora, porque después es una reescritura completa de la tabla**.
-- **Minimización**: la columna de PII que no aterriza en la tabla es la que no hay que borrar
-  después de un histórico entero.
+- A `DELETE` on the table **does not delete the data**: it creates a new snapshot in which the row does not
+  appear. **The data is still in the previous files and is still recoverable by *time travel*
+  until the snapshots expire and the orphans are cleaned up.**
+- Therefore, a legally mandated deletion is only **complete** when: (1) the
+  `DELETE` is executed; (2) the affected files are **compacted or rewritten**; (3) all the
+  snapshots that referenced them **expire**; (4) **the orphans are cleaned up**; and (5) it is checked that no
+  **branch, tag, replica, backup or derived table** keeps the row.
+- **Mandatory design consequence**: the **snapshot expiration window becomes a
+  compliance parameter**, not just an operational one. If the deletion commitment is 30 days, snapshot
+  retention **must** be shorter, and that has to be stated in writing.
+- When the above is not viable (huge history, frequent deletes, a simultaneous
+  immutability obligation), the way out is **crypto-shredding** or pseudonymisation by design:
+  the decision belongs to `privacy-engineering-standards`; **the structure that makes it possible is decided
+  here and now, because afterwards it is a complete rewrite of the table**.
+- **Minimisation**: the PII column that never lands in the table is the one you do not have to delete
+  across an entire history afterwards.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Diagnostica por metadatos, no por clúster.** Ante "va lento", mide en este orden: número de
-  ficheros de datos leídos, tamaño medio, número de manifiestos, snapshots vivos, ratio de ficheros
-  de borrado, y solo entonces CPU y memoria. Añadir *workers* a una tabla fragmentada es pagar más
-  por el mismo problema.
-- **Métricas mínimas por tabla**, con umbral y alerta: ficheros por partición, tamaño medio de
-  fichero, número de snapshots, número de manifiestos, antigüedad de la última compactación,
-  antigüedad de la última expiración, bytes totales de la tabla frente a bytes vivos, y **coste de
-  peticiones al bucket** (ver `object-storage-standards`).
-- **Coste**: en este modelo se paga por **almacenamiento + peticiones + cómputo de consulta +
-  cómputo de mantenimiento**. Las dos partidas que la gente olvida son las dos últimas. Presupuesta
-  el mantenimiento explícitamente; si no cabe, la tabla está mal dimensionada o el lakehouse era
-  innecesario (§2.1).
-- **Divergencia entre bytes almacenados y bytes vivos**: es el indicador temprano y directo de que
-  la expiración o la limpieza de huérfanos no se está ejecutando. Vigílalo desde el primer día.
-- **Ordenación y clustering** dentro de la partición (orden por columna de filtro, Z-order para
-  filtros multidimensionales) valen más que añadir particiones. Se aplican en la compactación.
-- **Estadísticas de columna acotadas** en tablas anchas: escribirlas todas infla los manifiestos.
-- **Propietario por tabla**, publicado, con su SLA de frescura (de
-  `data-engineering-standards` §6.2) **y su plan de mantenimiento**. Una tabla sin propietario no
-  tiene quien ejecute la compactación, que es como acaban degradadas todas.
-- **Runbooks escritos y ensayados**: revertir una tabla a un snapshot; recuperar de una expiración
-  demasiado agresiva; reconstruir el registro tras perder el catálogo; parar y drenar escritores
-  antes de una migración de catálogo.
-- **Un *rollback* es visible para los consumidores**: cambia lo que ya leyeron. Comunícalo; el
-  silencio destruye la confianza más rápido que el error.
+- **Diagnose by metadata, not by cluster.** Faced with "it is slow", measure in this order: number of
+  data files read, average size, number of manifests, live snapshots, delete-file
+  ratio, and only then CPU and memory. Adding *workers* to a fragmented table is paying more
+  for the same problem.
+- **Minimum per-table metrics**, with a threshold and an alert: files per partition, average file
+  size, number of snapshots, number of manifests, age of the last compaction,
+  age of the last expiration, total table bytes versus live bytes, and **cost of
+  bucket requests** (see `object-storage-standards`).
+- **Cost**: in this model you pay for **storage + requests + query compute +
+  maintenance compute**. The two line items people forget are the last two. Budget
+  maintenance explicitly; if it does not fit, the table is badly sized or the lakehouse was
+  unnecessary (§2.1).
+- **Divergence between stored bytes and live bytes**: it is the early and direct indicator that
+  expiration or orphan cleanup is not running. Watch it from day one.
+- **Ordering and clustering** within the partition (order by the filter column, Z-order for
+  multidimensional filters) are worth more than adding partitions. They are applied during compaction.
+- **Bounded column statistics** on wide tables: writing them all inflates the manifests.
+- **Owner per table**, published, with its freshness SLA (from
+  `data-engineering-standards` §6.2) **and its maintenance plan**. A table with no owner has
+  nobody to run compaction, which is how they all end up degraded.
+- **Runbooks written and rehearsed**: reverting a table to a snapshot; recovering from an
+  over-aggressive expiration; rebuilding the registration after losing the catalog; stopping and draining writers
+  before a catalog migration.
+- **A *rollback* is visible to consumers**: it changes what they already read. Communicate it; the
+  silence destroys trust faster than the error.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisa trimestralmente versión de formato, catálogo y motores; y **la convergencia
-  Iceberg v4 / Delta 5.0**, que es la propuesta con más capacidad de mover el suelo de este dominio
-  a medio plazo. Los saltos de `format-version` se planifican con inventario de lectores.
-- **Retirada activa**: tabla sin consumo medido durante un trimestre se marca y se retira, con sus
-  ficheros. Un lakehouse acumula por diseño; podar es parte del trabajo.
-- **ADR obligatorio** para: adoptar lakehouse (frente a las alternativas de §2.1), elegir formato,
-  **elegir catálogo con plan de salida escrito**, estrategia CoW/MoR por tabla, política de
-  particionado, ventana de retención de snapshots (**que es también un parámetro de cumplimiento**)
-  y plan de mantenimiento con su presupuesto.
-- **Cuenta con la convivencia**: durante años vas a tener tablas en dos formatos o dos catálogos.
-  Ponle fecha, propietario y criterio de finalización, o se vuelve el estado permanente.
+- **Cadence**: review format, catalog and engine versions quarterly; and **the
+  Iceberg v4 / Delta 5.0 convergence**, which is the proposal with the most capacity to shift the ground of this domain
+  in the medium term. `format-version` jumps are planned with a reader inventory.
+- **Active retirement**: a table with no measured consumption for a quarter is flagged and retired, with its
+  files. A lakehouse accumulates by design; pruning is part of the work.
+- **Mandatory ADR** for: adopting a lakehouse (versus the alternatives in §2.1), choosing a format,
+  **choosing a catalog with a written exit plan**, CoW/MoR strategy per table, partitioning
+  policy, snapshot retention window (**which is also a compliance parameter**)
+  and maintenance plan with its budget.
+- **Count on coexistence**: for years you will have tables in two formats or two catalogs.
+  Put a date, an owner and a finishing criterion on it, or it becomes the permanent state.
 
-**PROHIBIDO**
-- ❌ Adoptar un lakehouse sin descartar antes PostgreSQL, Parquet+DuckDB o un almacén columnar
-  gestionado (§2.1).
-- ❌ Poner un lakehouse en producción **sin trabajo de mantenimiento programado y con presupuesto**:
-  compactación, expiración de snapshots y limpieza de huérfanos.
-- ❌ **Borrar ficheros del bucket a mano**, o aplicar una regla de ciclo de vida de S3 que expire
-  objetos dentro de la ruta de una tabla viva. Destruye la tabla.
-- ❌ `remove_orphan_files` con ventana menor que la duración máxima de una escritura en vuelo.
-- ❌ Acceder a la tabla por ruta saltándose el catálogo, o registrar la misma tabla en dos catálogos
-  con escritura activa en ambos (*split-brain*).
-- ❌ **Hive Metastore/Thrift en un despliegue nuevo.**
-- ❌ Adoptar un catálogo sin ADR con **plan de salida** — es donde vive el bloqueo de proveedor, no
-  en el formato.
-- ❌ Llamar "abierto" a un stack cuyo catálogo solo habla con el motor de su propio proveedor, o
-  cuya tabla gestionada solo puede escribir el proveedor.
-- ❌ Adoptar Unity Catalog OSS esperando la funcionalidad de la versión gestionada de Databricks
-  (linaje, federación, RLS y enmascaramiento **no** están en el OSS).
-- ❌ Particionar por columna de alta cardinalidad (usa `bucket(N, col)` o clustering).
-- ❌ Confiar en la evolución de particionado para no pensar el particionado inicial.
-- ❌ Subir `format-version` (p. ej. a Iceberg v3) sin inventariar los motores lectores: **v2 no lee
+**FORBIDDEN**
+- ❌ Adopting a lakehouse without first ruling out PostgreSQL, Parquet+DuckDB or a managed columnar
+  warehouse (§2.1).
+- ❌ Putting a lakehouse in production **without scheduled and budgeted maintenance work**:
+  compaction, snapshot expiration and orphan cleanup.
+- ❌ **Deleting files from the bucket by hand**, or applying an S3 lifecycle rule that expires
+  objects inside the path of a live table. It destroys the table.
+- ❌ `remove_orphan_files` with a window smaller than the maximum duration of an in-flight write.
+- ❌ Accessing the table by path bypassing the catalog, or registering the same table in two catalogs
+  with active writing in both (*split-brain*).
+- ❌ **Hive Metastore/Thrift in a new deployment.**
+- ❌ Adopting a catalog without an ADR with an **exit plan** — that is where vendor lock-in lives, not
+  in the format.
+- ❌ Calling a stack "open" when its catalog only talks to its own vendor's engine, or
+  whose managed table only the vendor can write to.
+- ❌ Adopting Unity Catalog OSS expecting the functionality of the managed Databricks version
+  (lineage, federation, RLS and masking are **not** in the OSS).
+- ❌ Partitioning by a high-cardinality column (use `bucket(N, col)` or clustering).
+- ❌ Relying on partitioning evolution to avoid thinking about the initial partitioning.
+- ❌ Raising `format-version` (e.g. to Iceberg v3) without inventorying the reading engines: **v2 does not read
   v3**.
-- ❌ *Merge-on-read* sin compactación agresiva programada.
-- ❌ Aplicar borrados por cumplimiento fila a fila en tablas *copy-on-write*.
-- ❌ **Sustituir una SCD tipo 2 por *time travel*** (prohibición espejo de
+- ❌ *Merge-on-read* without scheduled aggressive compaction.
+- ❌ Applying compliance deletions row by row on *copy-on-write* tables.
+- ❌ **Replacing an SCD type 2 with *time travel*** (mirror prohibition of
   `data-warehouse-modeling-standards`).
-- ❌ **Usar el *time travel* como copia de seguridad.** Tiene retención de días, vive en el mismo
-  bucket, comparte el mismo radio de destrucción y desaparece con la expiración. Ver
+- ❌ **Using *time travel* as a backup.** It has days of retention, lives in the same
+  bucket, shares the same blast radius and disappears with expiration. See
   `backup-recovery-standards`.
-- ❌ Dar por borrado un dato personal tras un `DELETE`, sin expiración de snapshots ni limpieza de
-  huérfanos (§5.3).
-- ❌ Object Lock en modo *compliance* sobre la ruta de una tabla activa.
-- ❌ Credenciales directas del bucket para usuarios o motores, en vez de *credential vending*.
-- ❌ Depender de RLS/enmascaramiento aplicado solo en un motor cuando varios motores pueden obtener
-  credenciales.
-- ❌ Un solo rol con permiso de escritura y de borrado de ficheros para todo.
-- ❌ Varios escritores concurrentes sobre la misma tabla y partición sin diseño de conflicto, o
-  mantenimiento solapado con la escritura pesada.
-- ❌ Asumir atomicidad entre varias tablas.
-- ❌ Dependencias sin fijar por hash/digest en procesos con credenciales del *warehouse* (§5.2).
-- ❌ Catálogo sin HA, sin backup y sin ensayo de restauración.
-- ❌ DuckLake u otros formatos experimentales en producción.
-- ❌ Fijar versiones, licencias, gobernanza o estado de adopción de memoria (§8).
+- ❌ Considering personal data deleted after a `DELETE`, without snapshot expiration or orphan
+  cleanup (§5.3).
+- ❌ Object Lock in *compliance* mode over the path of an active table.
+- ❌ Direct bucket credentials for users or engines, instead of *credential vending*.
+- ❌ Relying on RLS/masking applied only in one engine when several engines can obtain
+  credentials.
+- ❌ A single role with file write and delete permission for everything.
+- ❌ Several concurrent writers on the same table and partition without conflict design, or
+  maintenance overlapping with heavy writing.
+- ❌ Assuming atomicity across several tables.
+- ❌ Dependencies not pinned by hash/digest in processes with *warehouse* credentials (§5.2).
+- ❌ A catalog without HA, without backup and without a restore drill.
+- ❌ DuckLake or other experimental formats in production.
+- ❌ Pinning versions, licences, governance or adoption status from memory (§8).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Los datos de §2, §3 y §5 son de **agosto de 2026**. Antes de fijar nada en un entregable, verifica:
+The data in §2, §3 and §5 is from **August 2026**. Before committing to anything in a deliverable, verify:
 
-1. **Iceberg**: versión de implementación (**1.11.0**, may-2026 — confirmado por el feed de
-   releases) y estado de la **spec v3** (en producción; GA en Snowflake el 7-may-2026 y en
-   Databricks Runtime 18.0+; AWS con vectores de borrado y linaje de fila desde nov-2025). Verifica
-   qué motores de **tu** stack leen v3 antes de subir `format-version`.
-2. **Delta Lake** (4.3.1, jul-2026) y **Hudi** (1.2.0, jun-2026): versión y actividad reales.
-3. **La convergencia**: estado de la propuesta de **árbol de metadatos común entre Iceberg v4 y
-   Delta 5.0**. A ago-2026 es una **propuesta de Databricks, no una decisión de la comunidad
-   Iceberg**. No la cites como hecho.
-4. **Catálogos**: Polaris (1.7.0 ago-2026, TLP de la ASF desde 18-feb-2026), Nessie (0.108.4) **y en
-   particular si la comentada convergencia Nessie→Polaris se ha materializado**; Gravitino (1.3.0,
-   TLP desde jun-2025); **Unity Catalog OSS** (0.5.1, jul-2026) y **qué funcionalidad concreta sigue
-   siendo exclusiva de Databricks** — es el dato que decide si "abierto" significa algo; Glue y S3
-   Tables; y el grado real de retirada del **Hive Metastore** en tu distribución.
-5. **Motores**: Trino (483), DuckDB (1.5.5), Spark (4.2.0), Flink (2.3.0) y su soporte concreto de
-   la versión de spec que uses.
-6. **Licencias**: de todo motor y catálogo que recomiendes, y de la capa comercial sobre la que te
-   apoyes (Databricks, Snowflake, Dremio, Starburst, Confluent). En este sector cambian sin cambiar
-   el nombre del producto.
-7. **Cadena de suministro**: advisories recientes de `pyiceberg`, `deltalake`/`delta-rs`, imágenes
-   de Spark/Trino y del catálogo, y evolución de **Mini Shai-Hulud (CVE-2026-45321)**.
-8. **Object Lock, clases de almacenamiento y coste por petición**: contrástalo con
-   `object-storage-standards` §5 y con la tarifa vigente del proveedor.
+1. **Iceberg**: implementation version (**1.11.0**, May 2026 — confirmed by the releases
+   feed) and status of **spec v3** (in production; GA in Snowflake on 7 May 2026 and in
+   Databricks Runtime 18.0+; AWS with deletion vectors and row lineage since Nov 2025). Verify
+   which engines in **your** stack read v3 before raising `format-version`.
+2. **Delta Lake** (4.3.1, Jul 2026) and **Hudi** (1.2.0, Jun 2026): real version and activity.
+3. **The convergence**: status of the proposal for a **common metadata tree between Iceberg v4 and
+   Delta 5.0**. As of Aug 2026 it is a **Databricks proposal, not an Iceberg community
+   decision**. Do not cite it as a fact.
+4. **Catalogs**: Polaris (1.7.0 Aug 2026, ASF TLP since 18 Feb 2026), Nessie (0.108.4) **and in
+   particular whether the discussed Nessie→Polaris convergence has materialised**; Gravitino (1.3.0,
+   TLP since Jun 2025); **Unity Catalog OSS** (0.5.1, Jul 2026) and **what concrete functionality remains
+   exclusive to Databricks** — it is the fact that decides whether "open" means anything; Glue and S3
+   Tables; and the real degree of **Hive Metastore** retirement in your distribution.
+5. **Engines**: Trino (483), DuckDB (1.5.5), Spark (4.2.0), Flink (2.3.0) and their concrete support for
+   the spec version you use.
+6. **Licences**: of every engine and catalog you recommend, and of the commercial layer you lean
+   on (Databricks, Snowflake, Dremio, Starburst, Confluent). In this sector they change without changing
+   the product name.
+7. **Supply chain**: recent advisories for `pyiceberg`, `deltalake`/`delta-rs`, Spark/Trino
+   and catalog images, and the evolution of **Mini Shai-Hulud (CVE-2026-45321)**.
+8. **Object Lock, storage classes and cost per request**: cross-check it with
+   `object-storage-standards` §5 and with the vendor's current price list.
 
-**Huecos declarados de esta revisión** (no rellenar de memoria):
-- **ClickHouse**: no verificados versión, licencia ni estado de su soporte de Iceberg/Delta.
-- **Lakekeeper**: no verificados versión, licencia ni madurez de producción. No lo recomiendes sin
-  comprobarlo.
-- **Apache Paimon**: no verificada la versión exacta ni su cadencia de releases; solo su
-  posicionamiento streaming-nativo.
-- **Hudi**: no verificada la relación entre la rama 1.2.x y la 0.14.x (ambas con releases en
-  jun-2026), ni cuál es la recomendada por el proyecto.
-- **Convergencia Nessie/Polaris**: recogida como comentario del ecosistema, **no verificada** en
-  fuente del proyecto.
-- **Cifras de coste de mantenimiento**: no hay dato verificado; mide en tu plataforma antes de
-  presupuestar.
-- **Iceberg v4**: no verificado ningún calendario ni acuerdo de comunidad.
+**Declared gaps of this review** (do not fill in from memory):
+- **ClickHouse**: version, licence and status of its Iceberg/Delta support not verified.
+- **Lakekeeper**: version, licence and production maturity not verified. Do not recommend it without
+  checking.
+- **Apache Paimon**: exact version and release cadence not verified; only its
+  streaming-native positioning.
+- **Hudi**: the relationship between the 1.2.x and 0.14.x branches (both with releases in
+  Jun 2026) not verified, nor which one the project recommends.
+- **Nessie/Polaris convergence**: picked up as an ecosystem comment, **not verified** in the
+  project's own source.
+- **Maintenance cost figures**: there is no verified data; measure on your platform before
+  budgeting.
+- **Iceberg v4**: no schedule or community agreement verified.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

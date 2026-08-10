@@ -3,256 +3,256 @@ name: load-balancing-standards
 description: Load balancing as a failure-handling decision, not just traffic sharing — health checks, draining and TLS termination are where the value is. Use when designing or reviewing a load balancer or reverse proxy, haproxy.cfg with backend/server/option httpchk/http-check/observe/agent-check, nginx.conf upstream blocks with proxy_pass, keepalive and max_fails, an Envoy bootstrap or xDS cluster with outlier detection and panic threshold, Traefik static and dynamic configuration with healthCheck and serversTransport, a Caddyfile reverse_proxy with lb_policy and health_uri, an AWS ALB/NLB target group, Azure Application Gateway or Front Door, GCP backend service, choosing between layer 4 and layer 7, round-robin versus least-connections versus consistent hashing and maglev, session affinity and sticky cookies, shallow versus deep health check endpoints and a health check that queries the database, rise and fall thresholds, connection draining and graceful shutdown during a rolling deploy, TLS termination, re-encryption, mTLS to backends or TCP passthrough with SNI routing, HTTP/2 and HTTP/3 (RFC 9114) on the proxy and its effect on balancing, keepalive versus idle timeouts, listen backlog and ephemeral port exhaustion, X-Forwarded-For and Forwarded (RFC 7239) trust and spoofing, PROXY protocol, rate limiting and SYN flood protection, VRRP (RFC 9568) or keepalived for the balancer itself, or stateless balancing with ECMP and anycast.
 ---
 
-# Estándares de balanceo de carga — repartir es fácil; fallar bien, no
+# Load balancing standards — sharing traffic is easy; failing well is not
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **diseñar, configurar y operar un balanceador o proxy inverso**: elección de capa,
-algoritmo de reparto, comprobación de salud, drenaje y despliegue sin caída, terminación TLS,
-protocolos HTTP, alta disponibilidad del propio balanceador, balanceo sin estado, y protección del
-borde de servicio.
+Applies to **designing, configuring and operating a load balancer or reverse proxy**: choice of layer,
+balancing algorithm, health checking, draining and zero-downtime deployment, TLS termination,
+HTTP protocols, high availability of the balancer itself, stateless balancing, and protection of the
+service edge.
 
-Triggers: `haproxy.cfg`, `nginx.conf` (`upstream`, `proxy_pass`), bootstrap/xDS de Envoy,
+Triggers: `haproxy.cfg`, `nginx.conf` (`upstream`, `proxy_pass`), Envoy bootstrap/xDS,
 `traefik.yml`, `Caddyfile` (`reverse_proxy`), `keepalived.conf`, `ipvsadm`, "target group", "backend
 service", "health check", "readiness", "drain", "sticky session", "consistent hashing", "maglev",
 "PROXY protocol", "X-Forwarded-For", "SNI passthrough", "ECMP", "anycast", "outlier detection".
 
-**No aplica** — el catálogo ya reparte esto: `networking-standards` es la **troncal** (proxies y
-balanceo como principio, VLAN, MTU, direccionamiento) y **ya delega la profundidad**, mientras
-`routing-switching-standards` posee el campus, la política BGP y la seguridad del plano de control
-—**incluido el anuncio BGP que hace posible el anycast**—, `datacenter-fabric-standards` posee la
-malla, VXLAN/EVPN y la Ethernet sin pérdidas, y `network-automation-standards` la configuración como
-código. Hacia fuera: **la caché y el CDN son de `caching-cdn-standards`**, **la malla de servicios y
-el descubrimiento de `microservices-architecture-standards`**, **Service, Ingress y Gateway API de
-`kubernetes-standards`**, el filtrado de `firewall-policy-standards`, la identidad y el OIDC de
-`identity-access-management-standards`, TLS y PKI de `cryptography-pki-standards`, métricas y paneles
-de `observability-standards`, el SLO de `sre-practice-standards`, **la metodología de medir y el
-modelo de carga de `performance-engineering-standards`**, el método reactivo de
-`network-troubleshooting-standards`, **la asignación de sesiones de servidores de partida de
-`gaming-infrastructure-standards`** (un servidor de juego es con estado y no interrumpible:
-**asignar una sesión no es balancear**, y aplicarle drenaje o salud por petición lo rompe),
-y el paraguas de `onprem-standards` (junto a
-`datacenter-facilities-standards` y `hpc-standards`). Entre las tres
-hermanas de esta tanda: `wireless-standards` es la **red de acceso**, ésta la **red de servicio** y
-`high-speed-interconnect-standards` la **red de cómputo**; **el error del dominio es aplicarles el
-mismo criterio**.
+**Not applicable** — the catalogue already splits this up: `networking-standards` is the **trunk** (proxies and
+balancing as a principle, VLAN, MTU, addressing) and **already delegates the depth**, while
+`routing-switching-standards` owns the campus, BGP policy and control-plane security
+—**including the BGP announcement that makes anycast possible**—, `datacenter-fabric-standards` owns the
+fabric, VXLAN/EVPN and lossless Ethernet, and `network-automation-standards` configuration as
+code. Outwards: **caching and CDN belong to `caching-cdn-standards`**, **the service mesh and
+discovery to `microservices-architecture-standards`**, **Service, Ingress and Gateway API to
+`kubernetes-standards`**, filtering to `firewall-policy-standards`, identity and OIDC to
+`identity-access-management-standards`, TLS and PKI to `cryptography-pki-standards`, metrics and dashboards
+to `observability-standards`, the SLO to `sre-practice-standards`, **the measurement methodology and the
+load model to `performance-engineering-standards`**, the reactive method to
+`network-troubleshooting-standards`, **match-server session assignment to
+`gaming-infrastructure-standards`** (a game server is stateful and non-interruptible:
+**assigning a session is not balancing**, and applying draining or per-request health to it breaks it),
+and the umbrella of `onprem-standards` (alongside
+`datacenter-facilities-standards` and `hpc-standards`). Among the three
+sibling skills of this batch: `wireless-standards` is the **access network**, this one the **service network** and
+`high-speed-interconnect-standards` the **compute network**; **the domain's mistake is applying the
+same criteria to all three**.
 
-**Principio rector**: **balancear es decidir qué pasa cuando algo falla.** El reparto es la parte
-trivial; **casi todo el valor está en la comprobación de salud y en el drenaje**. Un balanceador con
-un buen algoritmo y una mala comprobación de salud reparte tráfico hacia servidores rotos con
-precisión ejemplar.
+**Guiding principle**: **balancing is deciding what happens when something fails.** Sharing traffic is the
+trivial part; **almost all the value is in the health check and in the draining**. A balancer with
+a good algorithm and a bad health check sends traffic towards broken servers with
+exemplary precision.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar versión, mantenimiento y **licencia en crudo** antes de fijar cualquiera (§8).
+> Verify version, maintenance and **raw licence** before pinning any of these (§8).
 
-| Decisión | Por defecto | Alternativa justificable / vetado |
+| Decision | Default | Justifiable alternative / vetoed |
 |---|---|---|
-| Capa | **L7 (HTTP)** cuando se necesita enrutar por ruta/cabecera, reintentar, terminar TLS u observar peticiones | **L4** cuando manda el caudal, el protocolo no es HTTP o el cifrado debe llegar intacto al backend |
-| Algoritmo | **Menos conexiones** (o menos peticiones) como default sensato en L7 | Round-robin sólo con backends homogéneos y peticiones uniformes; **hash consistente** cuando hay estado o caché por backend |
-| Persistencia | **Ninguna**: servicios sin estado y sesión externalizada | Cookie de afinidad sólo como parche con fecha de retirada; ❌ afinidad por IP de origen (NAT y móviles la rompen) |
-| Comprobación de salud | **Endpoint propio, superficial y barato**, separado de la salud de negocio | Comprobación profunda **sólo** con umbral distinto y sin tumbar todo el pool; ❌ TCP connect como única señal en HTTP |
-| Drenaje | **Obligatorio**: sacar del reparto, esperar a que terminen las peticiones en curso, luego parar | ❌ Matar el proceso y confiar en el reintento del cliente |
-| TLS | **Terminar en el balanceador y recifrar hacia el backend** | Passthrough cuando el backend debe ver el certificado de cliente o el cumplimiento lo exige; mTLS interno si la malla no lo cubre |
-| Proxy L7 autogestionado | **HAProxy** (núcleo GPL-2.0, cabeceras LGPL) por observabilidad y control de tráfico; **Envoy** (Apache-2.0) cuando se necesita xDS dinámico | **nginx**/**Angie** (ambos BSD-2-Clause) por familiaridad; **Traefik** (MIT) en entornos dinámicos; **Caddy** (Apache-2.0) cuando el valor es ACME automático |
-| L4 de alto caudal | **IPVS** en el núcleo para lo clásico; **Cilium/XDP** con hash tipo Maglev y DSR para escala grande | **Katran** sólo si asumes que es un espejo de bajo ritmo del código interno de Meta; ❌ proxy L7 como cortafuegos de caudal |
-| HA del balanceador | **VRRP (RFC 9568) / keepalived** con failover **probado**; **ECMP + anycast** cuando el volumen lo justifica | ❌ Un balanceador sin par, o un par cuyo failover nunca se ejercitó |
-| HTTP hacia el cliente | **HTTP/2 activado; HTTP/3 sólo tras verificar el estado exacto en tu proxy y versión** | ❌ Asumir que HTTP/3 está listo porque existe la directiva |
-| HTTP hacia el backend | **HTTP/1.1 con keepalive** salvo motivo; H2 hacia backends **cambia el reparto** (§3) | ❌ Sin `keepalive` hacia el backend y luego culpar a la red |
+| Layer | **L7 (HTTP)** when you need to route by path/header, retry, terminate TLS or observe requests | **L4** when throughput rules, the protocol is not HTTP or the encryption must reach the backend intact |
+| Algorithm | **Least connections** (or least requests) as a sensible default at L7 | Round-robin only with homogeneous backends and uniform requests; **consistent hashing** when there is state or per-backend caching |
+| Persistence | **None**: stateless services and externalised sessions | Affinity cookie only as a patch with a retirement date; ❌ source-IP affinity (NAT and mobiles break it) |
+| Health check | **Your own endpoint, shallow and cheap**, separate from business health | Deep check **only** with a different threshold and without taking down the whole pool; ❌ TCP connect as the only signal for HTTP |
+| Draining | **Mandatory**: remove from the pool, wait for in-flight requests to finish, then stop | ❌ Kill the process and trust the client's retry |
+| TLS | **Terminate at the balancer and re-encrypt towards the backend** | Passthrough when the backend must see the client certificate or compliance demands it; internal mTLS if the mesh does not cover it |
+| Self-managed L7 proxy | **HAProxy** (core GPL-2.0, headers LGPL) for observability and traffic control; **Envoy** (Apache-2.0) when dynamic xDS is needed | **nginx**/**Angie** (both BSD-2-Clause) for familiarity; **Traefik** (MIT) in dynamic environments; **Caddy** (Apache-2.0) when the value is automatic ACME |
+| High-throughput L4 | **IPVS** in the kernel for the classic case; **Cilium/XDP** with Maglev-style hashing and DSR for large scale | **Katran** only if you accept it is a low-cadence mirror of Meta's internal code; ❌ an L7 proxy as a throughput firewall |
+| Balancer HA | **VRRP (RFC 9568) / keepalived** with **tested** failover; **ECMP + anycast** when the volume justifies it | ❌ A balancer with no peer, or a pair whose failover was never exercised |
+| HTTP towards the client | **HTTP/2 enabled; HTTP/3 only after verifying the exact state in your proxy and version** | ❌ Assuming HTTP/3 is ready because the directive exists |
+| HTTP towards the backend | **HTTP/1.1 with keepalive** unless there is a reason; H2 towards backends **changes the balancing** (§3) | ❌ No `keepalive` towards the backend and then blaming the network |
 
-## 3. Criterio de diseño
+## 3. Design criteria
 
-**L4 frente a L7 — qué se gana y qué se pierde**
-- **L4** reparte conexiones sin entenderlas: coste por byte mínimo, cualquier protocolo, cifrado
-  intacto. **Pierdes** enrutado por ruta o cabecera, reintento por petición, salud con semántica de
-  aplicación y **toda la observabilidad de HTTP**. **L7** te da todo eso, pero **pagas** CPU, latencia
-  y un componente que forma parte de la semántica de tu aplicación (y de su superficie de ataque).
-- **Regla**: L4 para tráfico no HTTP y caudal bruto; L7 en cuanto la decisión dependa del contenido.
-  Mezclar capas en cascada (L4 delante, L7 detrás) es legítimo y a menudo lo correcto.
+**L4 versus L7 — what you gain and what you lose**
+- **L4** shares connections without understanding them: minimal cost per byte, any protocol, encryption
+  intact. **You lose** routing by path or header, per-request retry, health with application
+  semantics and **all HTTP observability**. **L7** gives you all of that, but **you pay** CPU, latency
+  and a component that is part of your application's semantics (and of its attack surface).
+- **Rule**: L4 for non-HTTP traffic and raw throughput; L7 as soon as the decision depends on the content.
+  Mixing layers in cascade (L4 in front, L7 behind) is legitimate and often the right thing.
 
-**Algoritmos**
-- **Round-robin**: sólo con backends idénticos y peticiones de coste similar; si no, concentra las
-  caras en el mismo sitio. **Menos conexiones**: default razonable porque aproxima "quién está menos
-  ocupado", con **arranque lento** obligatorio (el backend recién reiniciado tiene cero conexiones y
-  se lleva una avalancha). **Aleatorio de dos opciones** es barato y muy bueno con listas grandes.
-- **Hash consistente (Maglev, ketama)**: **obligatorio** cuando el backend tiene estado útil por
-  clave —caché local, particiones, sesiones largas, conexiones por inquilino— y **cuando el conjunto
-  cambia con frecuencia**: un hash módulo-N reasigna *todas* las claves al añadir o quitar un nodo; el
-  consistente sólo su fracción. Es lo que permite repartir igual desde varios balanceadores.
+**Algorithms**
+- **Round-robin**: only with identical backends and requests of similar cost; otherwise it concentrates the
+  expensive ones in the same place. **Least connections**: a reasonable default because it approximates "who is least
+  busy", with mandatory **slow start** (a freshly restarted backend has zero connections and
+  takes an avalanche). **Two random choices** is cheap and very good with large lists.
+- **Consistent hashing (Maglev, ketama)**: **mandatory** when the backend holds useful state per
+  key —local cache, partitions, long sessions, per-tenant connections— and **when the set
+  changes frequently**: a modulo-N hash reassigns *all* keys when a node is added or removed; the
+  consistent one only its fraction. It is what allows several balancers to share the same way.
 
-**Persistencia de sesión: es un olor**
-- La afinidad ata a un usuario a un servidor: rompe el drenaje, sesga el reparto, convierte cada
-  despliegue en pérdida de sesión y esconde el bug real, que es **estado en memoria del proceso**. Si
-  existe, es deuda con dueño y fecha; la solución es sacar la sesión fuera. Excepción legítima:
-  conexiones largas (WebSocket, SSE), donde la afinidad es de la conexión, no una cookie.
+**Session persistence: it is a smell**
+- Affinity ties a user to a server: it breaks draining, skews the sharing, turns every
+  deployment into session loss and hides the real bug, which is **state in the process's memory**. If
+  it exists, it is debt with an owner and a date; the solution is to move the session out. Legitimate exception:
+  long-lived connections (WebSocket, SSE), where the affinity is of the connection, not a cookie.
 
-**Comprobaciones de salud — la sección que decide todo**
-- **Superficial** (`/healthz`, sin dependencias externas) frente a **profunda** (¿mis dependencias
-  responden?): útil, pero **con consecuencias distintas**.
-- **El peligro capital**: una comprobación que consulta la base de datos hace que, cuando ésta hipa,
-  **todo el pool se marque enfermo a la vez** y el balanceador retire el 100% del servicio por un
-  problema que sólo degradaba una parte —la caída total la provoca la comprobación, no el fallo—.
-  Mitigaciones: **separar liveness de readiness**, no meter dependencias compartidas en la
-  comprobación que gobierna el reparto, y **umbral de pánico** (si más del X% del pool está enfermo,
-  ignorar la salud y repartir a todos: degradado es mejor que apagado).
-- **Asimetría de umbrales**: bajar rápido (pocos fallos), subir despacio (varios éxitos), para no
-  oscilar. Intervalos, timeouts y umbrales se declaran, no se heredan del default; el **timeout debe
-  ser menor que el intervalo** o se solapan y falsean el estado; y la comprobación va **por el mismo
-  camino** que el tráfico real (mismo puerto, mismo TLS).
-- **La aplicación decide cuándo está lista**: `/readyz` debe pasar a fallar **antes** de que el
-  proceso empiece a cerrarse. Ése es el mecanismo real del drenaje.
+**Health checks — the section that decides everything**
+- **Shallow** (`/healthz`, no external dependencies) versus **deep** (are my dependencies
+  responding?): useful, but **with different consequences**.
+- **The capital danger**: a check that queries the database means that, when the database hiccups,
+  **the whole pool is marked unhealthy at once** and the balancer withdraws 100% of the service for a
+  problem that only degraded a part —the total outage is caused by the check, not the failure—.
+  Mitigations: **separate liveness from readiness**, do not put shared dependencies into the
+  check that governs the sharing, and a **panic threshold** (if more than X% of the pool is unhealthy,
+  ignore health and share to all: degraded is better than switched off).
+- **Threshold asymmetry**: go down fast (few failures), come back up slowly (several successes), so as not to
+  oscillate. Intervals, timeouts and thresholds are declared, not inherited from the default; the **timeout must
+  be smaller than the interval** or they overlap and falsify the state; and the check goes **by the same
+  path** as the real traffic (same port, same TLS).
+- **The application decides when it is ready**: `/readyz` must start failing **before** the
+  process begins shutting down. That is the real mechanism of draining.
 
-**Drenaje y despliegue sin caída**
-- Secuencia obligatoria: marcar como no disponible → **esperar a que el balanceador lo note** (≥ un
-  ciclo completo de comprobación) → dejar de aceptar conexiones nuevas → terminar las en curso con
-  plazo → cerrar. Saltarse la espera es la causa habitual de los 502 durante los despliegues. El
-  plazo de gracia supera la petición más larga legítima; las conexiones largas se cierran con señal
-  ordenada (GOAWAY en H2). **Reintentos sólo sobre lo idempotente** y con presupuesto: reintentar
-  todo bajo carga convierte una degradación en una tormenta.
+**Draining and zero-downtime deployment**
+- Mandatory sequence: mark as unavailable → **wait for the balancer to notice** (≥ one
+  full check cycle) → stop accepting new connections → finish the in-flight ones within a
+  deadline → close. Skipping the wait is the usual cause of 502s during deployments. The
+  grace period exceeds the longest legitimate request; long-lived connections are closed with an
+  orderly signal (GOAWAY in H2). **Retries only on idempotent things** and with a budget: retrying
+  everything under load turns a degradation into a storm.
 
 **TLS**
-- **Terminar en el balanceador** simplifica certificados y da visibilidad; **recifrar hacia el
-  backend** es el default cuando el tramo interno no es de confianza física —"es la red interna" no
-  es un argumento—, y **mTLS** cuando el balanceador debe demostrar quién es.
-- **Passthrough** cuando el backend necesita el certificado de cliente o el cumplimiento prohíbe
-  desencriptar: se enruta por **SNI** y se pierde todo lo demás. Es una decisión, no un default. Al
-  terminar se pierde la IP real: **PROXY protocol** en L4, cabeceras en L7 (§5).
+- **Terminating at the balancer** simplifies certificates and gives visibility; **re-encrypting towards the
+  backend** is the default when the internal leg is not physically trusted —"it's the internal network" is not
+  an argument—, and **mTLS** when the balancer must prove who it is.
+- **Passthrough** when the backend needs the client certificate or compliance forbids
+  decrypting: it is routed by **SNI** and everything else is lost. It is a decision, not a default. On
+  terminating you lose the real IP: **PROXY protocol** at L4, headers at L7 (§5).
 
-**HTTP/2 y HTTP/3 en el balanceador**
-- **H2 hacia el cliente** es el default. **H2 hacia el backend cambia el reparto**: multiplexa muchas
-  peticiones en pocas conexiones, así que balancear por conexión deja de repartir —hace falta
-  balanceo **por petición**, y aun así unas pocas conexiones persistentes concentran carga—. Es la
-  causa clásica del "balanceo desigual" tras activar H2 interno.
-- **H3/QUIC va sobre UDP**: cambia el firewall, el ECMP (hash sobre UDP y **Connection ID**), la
-  contabilidad de conexiones y la migración entre redes. **Verifica el estado exacto por proxy y
-  versión** (§8): la madurez difiere entre el sentido cliente-proxy y el proxy-backend.
+**HTTP/2 and HTTP/3 on the balancer**
+- **H2 towards the client** is the default. **H2 towards the backend changes the balancing**: it multiplexes many
+  requests onto few connections, so balancing per connection stops sharing —you need
+  **per-request** balancing, and even then a few persistent connections concentrate load—. It is the
+  classic cause of "uneven balancing" after enabling internal H2.
+- **H3/QUIC runs over UDP**: it changes the firewall, ECMP (hashing over UDP and the **Connection ID**),
+  connection accounting and migration between networks. **Verify the exact state per proxy and
+  version** (§8): maturity differs between the client-proxy and the proxy-backend direction.
 
-**HA del propio balanceador**
-- **El balanceador es el punto único de fallo por excelencia**: concentra todo el tráfico y todo el
-  estado de conexión. Par con VRRP (**RFC 9568**, que obsoleta la 5798) o equivalente, con failover
-  **ejercitado**, sabiendo que **corta las conexiones en curso** salvo con sincronización de estado.
-- **ECMP + anycast escala mejor**: N balanceadores idénticos anunciando la misma VIP, sin par
-  activo-pasivo, sin estado compartido y con capacidad que crece añadiendo nodos. El precio: **un
-  cambio en el conjunto rebaraja el hash ECMP** y rompe conexiones, salvo que los nodos usen hash
-  consistente hacia los backends. Es lo que hay que conocer antes de comprar un aparato más grande.
+**HA of the balancer itself**
+- **The balancer is the single point of failure par excellence**: it concentrates all traffic and all
+  connection state. A pair with VRRP (**RFC 9568**, which obsoletes 5798) or equivalent, with **exercised**
+  failover, knowing that it **cuts in-flight connections** unless there is state synchronisation.
+- **ECMP + anycast scales better**: N identical balancers announcing the same VIP, with no active-passive
+  pair, no shared state and capacity that grows by adding nodes. The price: **a
+  change in the set reshuffles the ECMP hash** and breaks connections, unless the nodes use consistent
+  hashing towards the backends. It is what you need to know before buying a bigger appliance.
 
-## 4. Gates de calidad
+## 4. Quality gates
 
-- **Validar la configuración antes de aplicar** (`haproxy -c -f`, `nginx -t`, `envoy --mode validate`
-  o el equivalente del producto). Config que no valida no llega ni a staging.
-- **Prueba de fallo de backend con tráfico real**: matar un backend y **medir** cuántas peticiones se
-  pierden y en cuánto se retira. Si nadie lo ha medido, el número es desconocido, no cero.
-- **Prueba de despliegue sin caída** bajo carga con **cero 5xx** como criterio de aceptación (detecta
-  un drenaje mal hecho), y **prueba negativa de salud**: degradar la dependencia compartida y
-  verificar que **no** se retira todo el pool — el gate que evita la caída total.
-- **Prueba de failover del balanceador**, incluida la **vuelta** (falla más que la ida), y **prueba
-  de cabeceras de reenvío**: `X-Forwarded-For` falsificado desde fuera y la aplicación no lo cree.
-  Config en repo y por automatización; un balanceador distinto de su par es un hallazgo.
+- **Validate the configuration before applying it** (`haproxy -c -f`, `nginx -t`, `envoy --mode validate`
+  or the product's equivalent). A config that does not validate does not even reach staging.
+- **Backend failure test with real traffic**: kill a backend and **measure** how many requests are
+  lost and how long it takes to be withdrawn. If nobody has measured it, the number is unknown, not zero.
+- **Zero-downtime deployment test** under load with **zero 5xx** as the acceptance criterion (it detects
+  badly done draining), and a **negative health test**: degrade the shared dependency and
+  verify that the whole pool is **not** withdrawn — the gate that prevents the total outage.
+- **Balancer failover test**, including the **return** (it fails more than the outbound leg), and a **forwarding
+  header test**: a spoofed `X-Forwarded-For` from outside and the application does not believe it.
+  Config in the repo and applied by automation; a balancer that differs from its peer is a finding.
 
-## 5. Seguridad
+## 5. Security
 
-- **`X-Forwarded-For` sin recortar es una vulnerabilidad.** Es una lista que **cualquiera puede
-  prefijar**: si la aplicación toma el primer valor, el atacante elige su propia IP y evade listas
-  negras, límites de tasa, geolocalización y auditoría. Regla: el balanceador de borde
-  **sobrescribe** (no añade), o se cuenta un número **fijo y conocido** de proxies de confianza desde
-  la derecha. Igual con `Forwarded` (**RFC 7239**), `X-Forwarded-Proto/-Host` y `X-Real-IP`.
-- **Elimina en el borde toda cabecera interna** que la aplicación use para decidir (roles, "es
-  interno", identidad ya autenticada): un `X-Authenticated-User` que sobrevive desde fuera es un
-  bypass de autenticación completo.
-- **Límite de tasa en el balanceador** por IP real y por credencial/ruta, con 429 y cabeceras de
-  límite: protege incluso con la aplicación saturada. Los límites por IP se saltan tras NAT o CGNAT;
-  combínalos con límites por identidad.
-- **Protección de inundación**: SYN cookies, límites de conexiones por origen, timeouts agresivos de
-  handshake y de cabeceras (Slowloris se mata con timeout de lectura de cabeceras), tamaño máximo de
-  cuerpo y cabecera, y límites de tramas/streams en H2 (*rapid reset* es agotamiento, no caudal).
-- **Superficie del propio balanceador**: estadísticas y API de administración **nunca** expuestas;
-  certificados con renovación automática y **alerta de expiración** (cifras y TLS, en
-  `cryptography-pki-standards`). Y contra la **desincronización de peticiones** (*request
-  smuggling*), que nace de que proxy y backend interpretan distinto
-  `Content-Length`/`Transfer-Encoding`: rechaza peticiones ambiguas, normaliza en el proxy y **mantén
-  versiones al día en ambos extremos**.
+- **`X-Forwarded-For` without trimming is a vulnerability.** It is a list that **anyone can
+  prepend to**: if the application takes the first value, the attacker chooses their own IP and evades block
+  lists, rate limits, geolocation and auditing. Rule: the edge balancer
+  **overwrites** (does not append), or a **fixed and known** number of trusted proxies is counted from
+  the right. The same goes for `Forwarded` (**RFC 7239**), `X-Forwarded-Proto/-Host` and `X-Real-IP`.
+- **Strip at the edge every internal header** the application uses to decide (roles, "is
+  internal", already-authenticated identity): an `X-Authenticated-User` that survives from outside is a
+  complete authentication bypass.
+- **Rate limiting at the balancer** by real IP and by credential/path, with 429 and limit headers:
+  it protects even with the application saturated. Per-IP limits are bypassed behind NAT or CGNAT;
+  combine them with per-identity limits.
+- **Flood protection**: SYN cookies, per-source connection limits, aggressive handshake and header
+  timeouts (Slowloris is killed with a header read timeout), maximum body and header
+  size, and frame/stream limits in H2 (*rapid reset* is exhaustion, not throughput).
+- **The balancer's own surface**: statistics and admin API **never** exposed;
+  certificates with automatic renewal and an **expiry alert** (ciphers and TLS, in
+  `cryptography-pki-standards`). And against **request desynchronisation** (*request
+  smuggling*), which arises from proxy and backend interpreting
+  `Content-Length`/`Transfer-Encoding` differently: reject ambiguous requests, normalise at the proxy and **keep
+  versions up to date at both ends**.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Señales que se vigilan siempre**: peticiones por segundo y por código, latencia en **percentiles
-  altos** separando cola del balanceador y tiempo del backend, backends sanos frente a configurados,
-  conexiones activas y su **reparto real** por backend, reintentos y 502/503/504 por causa.
-- **Desbordamiento y colas**: la cola de aceptación (`backlog`) y su límite del núcleo convierten una
-  ráfaga en pérdida de conexiones; se dimensiona y se **monitoriza el desbordamiento**. Un `backlog`
-  grande sin capacidad detrás sólo cambia errores por latencia.
-- **Agotamiento de puertos efímeros**: abrir una conexión nueva por petición hacia pocos backends
-  agota el rango de puertos de origen y falla de forma intermitente. Solución: **keepalive hacia el
-  backend** con pool dimensionado, varias IP de origen si hace falta, y vigilar `TIME_WAIT`.
-- **Coherencia de timeouts**: el de inactividad del balanceador debe ser **menor** que el keepalive
-  del backend; si el backend cierra primero, se reutiliza una conexión muerta y salen 502
-  esporádicos —el fallo más difícil de reproducir del dominio. Escríbelos en una tabla (cliente,
-  balanceador, backend, base de datos) y verifica que decrecen. **Capacidad**: dimensiona por
-  percentiles reales y por **conexiones concurrentes**; TLS y H2 consumen memoria por conexión.
+- **Signals that are always watched**: requests per second and per code, latency at **high
+  percentiles** separating balancer queue from backend time, healthy versus configured backends,
+  active connections and their **real distribution** per backend, retries and 502/503/504 by cause.
+- **Overflow and queues**: the accept queue (`backlog`) and its kernel limit turn a
+  burst into lost connections; it is sized and its **overflow is monitored**. A large `backlog`
+  with no capacity behind it only swaps errors for latency.
+- **Ephemeral port exhaustion**: opening a new connection per request towards few backends
+  exhausts the source port range and fails intermittently. Solution: **keepalive towards the
+  backend** with a sized pool, several source IPs if needed, and watch `TIME_WAIT`.
+- **Timeout coherence**: the balancer's idle timeout must be **smaller** than the backend's keepalive;
+  if the backend closes first, a dead connection gets reused and sporadic 502s appear
+  —the hardest failure in the domain to reproduce. Write them in a table (client,
+  balancer, backend, database) and verify they decrease. **Capacity**: size by
+  real percentiles and by **concurrent connections**; TLS and H2 consume memory per connection.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: ramas **LTS/estables** frente a la última minor; revisión trimestral y ante CVE con
-  KEV/EPSS relevante. El balanceador está expuesto: es de los primeros en parchear.
-- **Ecosistema nginx** (dato que decide): nginx es de **F5** desde 2019; en 2024 su desarrollador
-  principal lo bifurcó en **freenginx** por desacuerdos de gobernanza, y desde 2022 existe **Angie**,
-  de antiguos desarrolladores del núcleo. **Los tres comparten configuración y ambos forks son
-  BSD-2-Clause**; nginx sigue activo (copyright hasta 2026), así que no es una emergencia, pero si
-  eliges nginx **decide también a quién sigues** y verifica el ritmo de publicación de cada uno.
-- **Deprecación**: cada backend, regla y certificado retirado desaparece de la configuración y del
-  inventario. Un `server` comentado no es documentación.
+- **Cadence**: **LTS/stable** branches versus the latest minor; quarterly review and on any CVE with
+  relevant KEV/EPSS. The balancer is exposed: it is among the first to patch.
+- **nginx ecosystem** (a datum that decides): nginx has belonged to **F5** since 2019; in 2024 its lead
+  developer forked it into **freenginx** over governance disagreements, and since 2022 there is **Angie**,
+  from former core developers. **All three share configuration and both forks are
+  BSD-2-Clause**; nginx remains active (copyright through 2026), so it is not an emergency, but if
+  you choose nginx **also decide whom you follow** and verify each one's release cadence.
+- **Deprecation**: every retired backend, rule and certificate disappears from the configuration and from the
+  inventory. A commented-out `server` is not documentation.
 
-**PROHIBIDO**
-- ❌ Balanceador sin comprobación de salud activa, o con TCP connect como única señal para HTTP.
-- ❌ Comprobación de salud que consulta la base de datos u otra dependencia compartida y puede
-  marcar enfermo todo el pool a la vez, sin umbral de pánico.
-- ❌ Desplegar sin drenaje: retirar del reparto y matar el proceso sin esperar un ciclo de salud.
-- ❌ Afinidad de sesión permanente sin dueño ni fecha de retirada; afinidad por IP de origen.
-- ❌ Confiar en `X-Forwarded-For` o `Forwarded` recibido del cliente sin sobrescribir ni recortar.
-- ❌ Dejar pasar hacia el backend cabeceras internas de confianza o de identidad.
-- ❌ Un solo balanceador para algo que importa; o un par cuyo failover nunca se ha probado.
-- ❌ Reintentar peticiones no idempotentes, o reintentar sin presupuesto máximo.
-- ❌ Activar HTTP/3 sin verificar su estado en la versión concreta ni ajustar firewall y ECMP a UDP.
-- ❌ Backends sin `keepalive` (y luego culpar a la red del agotamiento de puertos efímeros), o
-  timeout de inactividad del balanceador mayor que el keepalive del backend (502 fantasma).
-- ❌ Exponer la página de estadísticas o la API de administración del balanceador.
-- ❌ Hash módulo-N sobre un conjunto de backends que cambia; consistente o nada.
-- ❌ Terminar TLS y hablar en claro con el backend "porque es red interna", sin decisión escrita.
-- ❌ Poner en producción sin haber **medido** cuántas peticiones se pierden al caer un backend.
+**FORBIDDEN**
+- ❌ A balancer with no active health check, or with TCP connect as the only signal for HTTP.
+- ❌ A health check that queries the database or another shared dependency and can
+  mark the whole pool unhealthy at once, with no panic threshold.
+- ❌ Deploying without draining: withdrawing from the pool and killing the process without waiting a health cycle.
+- ❌ Permanent session affinity with no owner or retirement date; source-IP affinity.
+- ❌ Trusting `X-Forwarded-For` or `Forwarded` received from the client without overwriting or trimming.
+- ❌ Letting internal trust or identity headers through to the backend.
+- ❌ A single balancer for something that matters; or a pair whose failover has never been tested.
+- ❌ Retrying non-idempotent requests, or retrying with no maximum budget.
+- ❌ Enabling HTTP/3 without verifying its state in the specific version or adjusting firewall and ECMP for UDP.
+- ❌ Backends without `keepalive` (and then blaming the network for ephemeral port exhaustion), or
+  a balancer idle timeout greater than the backend keepalive (phantom 502s).
+- ❌ Exposing the balancer's statistics page or admin API.
+- ❌ Modulo-N hashing over a backend set that changes; consistent or nothing.
+- ❌ Terminating TLS and speaking in the clear to the backend "because it's the internal network", with no written decision.
+- ❌ Going to production without having **measured** how many requests are lost when a backend goes down.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-**Metodología**: los RFC, **uno a uno** contra el JSON de `rfc-editor.org`; las licencias, **leyendo
-el fichero en crudo** del repositorio, no la etiqueta de GitHub.
+**Methodology**: the RFCs, **one by one** against the `rfc-editor.org` JSON; the licences, **reading
+the raw file** from the repository, not the GitHub label.
 
-**RFC verificados ago-2026**: **HTTP/3 = RFC 9114** (jun-2022, Proposed Standard, sin obsoletos);
-**HTTP/2 = RFC 9113** (jun-2022, Proposed Standard, **obsoleta 7540 y 8740** — citar RFC 7540 hoy es
-un error de hecho); **cabecera `Forwarded` = RFC 7239** (jun-2014, Proposed Standard); **VRRPv3 =
-RFC 9568** (may-2024, Proposed Standard, **obsoleta RFC 5798**).
+**RFCs verified Aug 2026**: **HTTP/3 = RFC 9114** (Jun 2022, Proposed Standard, nothing obsoleted);
+**HTTP/2 = RFC 9113** (Jun 2022, Proposed Standard, **obsoletes 7540 and 8740** — citing RFC 7540 today is
+a factual error); **the `Forwarded` header = RFC 7239** (Jun 2014, Proposed Standard); **VRRPv3 =
+RFC 9568** (May 2024, Proposed Standard, **obsoletes RFC 5798**).
 
-**Licencias verificadas en crudo ago-2026**: **HAProxy** — su `LICENSE` declara núcleo **GPL v2** con
-la intención explícita de permitir módulos externos, y desarrolla el esquema de cabeceras bajo LGPL:
-**no es "GPL a secas" ni MIT**. **nginx** — BSD de **2 cláusulas**, aviso "Copyright (C) 2011-2026
-Nginx, Inc." (repositorio activo). **Angie** — el mismo texto BSD-2 más "Copyright (C) 2022-2026 Web
-Server LLC": **fork con licencia idéntica**, y su `LICENSE` está en la rama **`master`, no `main`**
-(la ruta habitual da 404 y aparenta falta de licencia). **Envoy** y **Caddy** — **Apache-2.0**.
-**Traefik** — **MIT**, en `LICENSE.md`, no `LICENSE`.
+**Licences verified raw Aug 2026**: **HAProxy** — its `LICENSE` declares the core **GPL v2** with
+the explicit intent of allowing external modules, and develops the headers scheme under LGPL:
+**it is neither "plain GPL" nor MIT**. **nginx** — **2-clause** BSD, notice "Copyright (C) 2011-2026
+Nginx, Inc." (active repository). **Angie** — the same BSD-2 text plus "Copyright (C) 2022-2026 Web
+Server LLC": **a fork with an identical licence**, and its `LICENSE` is on the **`master` branch, not `main`**
+(the usual path 404s and looks like a missing licence). **Envoy** and **Caddy** — **Apache-2.0**.
+**Traefik** — **MIT**, in `LICENSE.md`, not `LICENSE`.
 
-**Discrepancia declarada**: las fuentes divergen sobre la madurez de HTTP/3 en Envoy — el sentido
-descendente (cliente→proxy) se describe como listo y el ascendente (proxy→backend) como alfa.
-Trátalo como no resuelto y verifica la documentación de **tu** versión exacta.
+**Declared discrepancy**: sources diverge on HTTP/3 maturity in Envoy — the
+downstream direction (client→proxy) is described as ready and the upstream one (proxy→backend) as alpha.
+Treat it as unresolved and verify the documentation of **your** exact version.
 
-**Huecos declarados — NO rellenar de memoria**:
-1. **Versiones estables vigentes y ventanas de soporte** de HAProxy, nginx, Angie, freenginx, Envoy,
-   Traefik y Caddy: **no fijadas aquí a propósito**; en particular, el **ritmo de publicación y la
-   salud de freenginx** no están verificados.
-2. **Estado exacto de HTTP/3 por proxy y versión**, con sus dependencias de biblioteca TLS con QUIC y
-   la migración de conexión: **no verificado producto a producto**.
-3. **Balanceadores gestionados de nube** (ALB/NLB, Application Gateway/Front Door, backend services):
-   límites, drenaje, semántica de salud y HTTP/3 **no verificados aquí**; son de `aws/azure/gcp`.
-4. **Katran** es activo pero de bajo ritmo y espejo de código interno de Meta; **Cilium/XDP e IPVS no
-   fijados por versión**. Y los **valores concretos** de `backlog`, umbrales de salud, plazos de
-   gracia y tamaños de pool son criterio de ingeniería, **no medidas**: se derivan midiendo.
+**Declared gaps — DO NOT fill from memory**:
+1. **Current stable versions and support windows** of HAProxy, nginx, Angie, freenginx, Envoy,
+   Traefik and Caddy: **deliberately not pinned here**; in particular, **freenginx's release cadence and
+   health** are not verified.
+2. **Exact HTTP/3 state per proxy and version**, with its TLS-with-QUIC library dependencies and
+   connection migration: **not verified product by product**.
+3. **Managed cloud balancers** (ALB/NLB, Application Gateway/Front Door, backend services):
+   limits, draining, health semantics and HTTP/3 **not verified here**; they belong to `aws/azure/gcp`.
+4. **Katran** is active but low-cadence and a mirror of Meta's internal code; **Cilium/XDP and IPVS are not
+   pinned by version**. And the **concrete values** of `backlog`, health thresholds, grace
+   periods and pool sizes are engineering criteria, **not measurements**: they are derived by measuring.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

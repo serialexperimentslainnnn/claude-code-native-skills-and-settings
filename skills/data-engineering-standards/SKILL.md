@@ -3,449 +3,449 @@ name: data-engineering-standards
 description: Use when moving or transforming data on a schedule — deciding whether a pipeline is needed at all versus a read replica, a federated query or a nightly COPY, ELT versus ETL, batch/incremental/streaming ingestion, managed connectors versus custom code (Airbyte, Fivetran, Meltano, dlt, Singer taps), SQL transformation with dbt (dbt_project.yml, models/, dbt build, dbt test, dbt Fusion) or SQLMesh (audits, virtual data environments), data-pipeline orchestration with Airflow (DAGs, @task, assets), Dagster, Prefect, Kestra or Mage, watermarks, partitions, idempotent backfill and reprocessing, Parquet layout, compression and the small-file problem, partition pruning as a cost decision, freshness SLA versus availability SLA, pipeline retries, silent pipeline failure, data lineage or the data on-call rotation.
 ---
 
-# Estándares de ingeniería de datos
+# Data engineering standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica cuando el dato **se mueve o se transforma de forma repetida**: la decisión de si hace falta
-un pipeline, la ingesta, la transformación, la orquestación, el reprocesado, los formatos de
-fichero, el coste de escaneo, la observabilidad del dato y la operación de todo ello.
+Applies when data **is moved or transformed repeatedly**: the decision of whether a pipeline is
+needed at all, ingestion, transformation, orchestration, reprocessing, file formats,
+scan cost, data observability and the operation of all of it.
 
-Disparadores: `dbt_project.yml`, `profiles.yml`, `models/`, `dbt run|build|test|source freshness`,
+Triggers: `dbt_project.yml`, `profiles.yml`, `models/`, `dbt run|build|test|source freshness`,
 `dbt deps`, `sqlmesh plan`, `audits/`, `dag.py`, `@dag`/`@task`, `airflow dags`, `@asset`,
-`dg`/`dagster dev`, `prefect deploy`, `flows/*.yml` de Kestra, `meltano.yml`, `tap-`/`target-`,
+`dg`/`dagster dev`, `prefect deploy`, Kestra `flows/*.yml`, `meltano.yml`, `tap-`/`target-`,
 `dlt.pipeline(...)`, `airbyte`, `fivetran`, `COPY`/`UNLOAD`, `MERGE`, `INSERT OVERWRITE`,
-`.parquet`, `_SUCCESS`, `part-00000-*`, `watermark`, `backfill`, `reprocesar`, "el pipeline
-falló", "faltan datos de ayer", "los datos están viejos", "el informe se ejecutó antes que el
-ETL", "duplicados tras el reintento", "la query cuesta 40 € cada vez".
+`.parquet`, `_SUCCESS`, `part-00000-*`, `watermark`, `backfill`, `reprocess`, "the pipeline
+failed", "yesterday's data is missing", "the data is stale", "the report ran before the
+ETL", "duplicates after the retry", "the query costs €40 every time".
 
-**No aplica**: ver
-- `data-warehouse-modeling-standards` (**hermana; frontera declarada en ambos lados**): ella
-  decide **la forma del destino** —grano, hechos y dimensiones, SCD, capas, métricas—; esta
-  decide **cómo el dato llega hasta ahí y se recalcula sin romperse**. Un pipeline sin modelo
-  produce un pantano; un modelo sin pipeline es un diagrama. Si la pregunta es "¿qué columnas y
-  a qué grano?", es de ella; si es "¿cómo se recarga marzo sin duplicar?", es de aquí.
-- `data-platform-standards` (**madre**): PostgreSQL como motor operacional, Redis/Valkey, Kafka
-  como motor (particiones, retención, registry), backups y PITR, cifrado en reposo. Su principio
-  rector —**un almacén por necesidad, no por moda**— se hereda aquí sin excepción: esta skill no
-  autoriza almacenes nuevos, solo el movimiento entre los que ya se justificaron.
-- `lakehouse-standards`: el **formato de tabla** —Iceberg, Delta Lake,
-  Hudi—, catálogo REST, snapshots, *time travel*, compactación y mantenimiento de tabla,
-  particionado oculto y evolución de partición. Aquí solo el **formato de fichero** (Parquet), el
-  tamaño de fichero y la escritura idempotente. Regla de corte: **si la decisión la toma el
-  formato de tabla, es de `lakehouse-standards`; si la toma el proceso que escribe, es de aquí**.
-- `streaming-cdc-standards`: Debezium, conectores de log, *snapshot*
-  inicial, tratamiento de `DELETE` y *tombstones*, orden y *exactly-once* en streaming. Aquí solo
-  el **criterio de cuándo la captura de cambios es la respuesta** y qué obliga aguas abajo.
-- `data-governance-quality-standards`: contratos de datos como programa,
-  catálogo, propiedad, *stewardship*, política de calidad. Aquí su **ejecución en el pipeline**:
-  las aserciones que rompen la ejecución y el gate de frescura.
-- `analytics-bi-standards`: la herramienta de BI y el consumo. La
-  **definición de métrica** cae en `data-warehouse-modeling-standards`, no aquí.
-- `microservices-architecture-standards`: **outbox, eventos de dominio y propiedad del dato por
-  servicio son suyos**; aquí solo el consumo analítico de esos eventos.
-- `privacy-engineering-standards`: **retención, borrado, minimización y dato personal son suyos**;
-  aquí se **ejecutan** (columnas que no se copian, particiones que se dropean, entornos sin PII).
-- `object-storage-standards`: **S3 como sustrato** —buckets, claves, clases de almacenamiento,
-  Object Lock, ciclo de vida, multipart—; aquí qué ficheros se escriben dentro.
-- `observability-standards`: telemetría **del sistema** (OTel, Prometheus, cardinalidad). La
-  **observabilidad del dato** —frescura, volumen, esquema, distribución, linaje— es de aquí; la
-  línea es: si la señal describe el proceso (CPU, latencia, errores HTTP), es suya; si describe el
-  dato (llegó tarde, llegaron 0 filas, cambió el esquema), es de aquí.
-- `sre-practice-standards` (SLO, error budget, on-call como práctica), `incident-management-standards`
-  (el proceso del incidente), `cicd-standards` (el pipeline de CI que despliega el pipeline de
-  datos), `iac-standards`, `kubernetes-standards`, `python-standards` (calidad del código Python
-  del job), `secrets-management-standards` (las credenciales del almacén),
+**Not applicable**: see
+- `data-warehouse-modeling-standards` (**sister; boundary declared on both sides**): it
+  decides **the shape of the destination** —grain, facts and dimensions, SCD, layers, metrics—; this one
+  decides **how the data gets there and is recomputed without breaking**. A pipeline without a model
+  produces a swamp; a model without a pipeline is a diagram. If the question is "which columns and
+  at what grain?", it is theirs; if it is "how do I reload March without duplicating?", it is from here.
+- `data-platform-standards` (**mother**): PostgreSQL as the operational engine, Redis/Valkey, Kafka
+  as an engine (partitions, retention, registry), backups and PITR, encryption at rest. Its guiding
+  principle —**one store per need, not per fashion**— is inherited here without exception: this skill does not
+  authorise new stores, only movement between the ones already justified.
+- `lakehouse-standards`: the **table format** —Iceberg, Delta Lake,
+  Hudi—, REST catalog, snapshots, *time travel*, compaction and table maintenance,
+  hidden partitioning and partition evolution. Here only the **file format** (Parquet), the
+  file size and idempotent writing. Cut-off rule: **if the decision is made by the
+  table format, it belongs to `lakehouse-standards`; if it is made by the writing process, it is from here**.
+- `streaming-cdc-standards`: Debezium, log connectors, initial *snapshot*,
+  handling of `DELETE` and *tombstones*, ordering and *exactly-once* in streaming. Here only
+  the **criteria for when change capture is the answer** and what it forces downstream.
+- `data-governance-quality-standards`: data contracts as a programme,
+  catalogue, ownership, *stewardship*, quality policy. Here their **execution in the pipeline**:
+  the assertions that break the run and the freshness gate.
+- `analytics-bi-standards`: the BI tool and consumption. The
+  **metric definition** falls to `data-warehouse-modeling-standards`, not here.
+- `microservices-architecture-standards`: **outbox, domain events and data ownership per
+  service are theirs**; here only the analytical consumption of those events.
+- `privacy-engineering-standards`: **retention, deletion, minimisation and personal data are theirs**;
+  here they are **executed** (columns that are not copied, partitions that are dropped, environments without PII).
+- `object-storage-standards`: **S3 as the substrate** —buckets, keys, storage classes,
+  Object Lock, lifecycle, multipart—; here which files are written inside.
+- `observability-standards`: telemetry **of the system** (OTel, Prometheus, cardinality). The
+  **observability of the data** —freshness, volume, schema, distribution, lineage— is from here; the
+  line is: if the signal describes the process (CPU, latency, HTTP errors), it is theirs; if it describes the
+  data (it arrived late, 0 rows arrived, the schema changed), it is from here.
+- `sre-practice-standards` (SLO, error budget, on-call as a practice), `incident-management-standards`
+  (the incident process), `cicd-standards` (the CI pipeline that deploys the data
+  pipeline), `iac-standards`, `kubernetes-standards`, `python-standards` (quality of the Python code
+  of the job), `secrets-management-standards` (the store credentials),
   `identity-access-management-standards`, `backup-recovery-standards`, `bcdr-standards`,
   `grc-compliance-standards`, `aws-standards`/`azure-standards`/`gcp-standards` (Glue, Data
-  Factory, Dataflow, MWAA, BigQuery/Redshift/Synapse **como servicios gestionados**),
-  `mlops-standards` (**feature store, train/serve skew y pipeline de entrenamiento son suyos**),
-  `rag-standards` y `llm-app-engineering-standards`, `ai-governance-standards`.
-- Motores concretos: `nosql-standards`, `timeseries-db-standards`, `search-engines-standards`,
+  Factory, Dataflow, MWAA, BigQuery/Redshift/Synapse **as managed services**),
+  `mlops-standards` (**feature store, train/serve skew and the training pipeline are theirs**),
+  `rag-standards` and `llm-app-engineering-standards`, `ai-governance-standards`.
+- Specific engines: `nosql-standards`, `timeseries-db-standards`, `search-engines-standards`,
   `message-brokers-standards`, `graph-db-standards`, `vector-db-standards`, `oracle-dba-standards`,
   `sqlserver-dba-standards`, `mysql-mariadb-dba-standards`.
-- `r-standards` y `julia-standards`: la **plataforma** —ingesta, orquestación,
-  idempotencia, *backfill*, Parquet, frescura— es de aquí; el **código de análisis** que corre en un
-  paso del pipeline es suyo. Si un script de R o de Julia se ha convertido de facto en el
-  orquestador, el problema es de esta skill.
-- `scala-standards` y `python-standards` (**Spark es la confusión más probable**: la plataforma
-  —dimensionado del clúster, particiones, *shuffle*, formato de salida, orquestación del job y su
-  idempotencia— **es de aquí**; el **Scala o el Python que se escribe dentro del job** —estilo,
-  efectos, tests, build con sbt o con `uv`— es de la skill del lenguaje).
-- `sql-standards` (**el lenguaje SQL**). **dbt/SQLMesh como herramienta y la estructura del
-  proyecto son de aquí** —materializaciones, orquestación, tests de datos, *backfill*,
-  idempotencia—; el **SQL que ese modelo contiene** está sujeto a `sql-standards`: joins, CTEs y
-  funciones de ventana, `NULL`, predicados SARGables, estilo y linting con `sqlfluff`. Generar el
-  SQL con una plantilla **no lo exime** de ese criterio.
+- `r-standards` and `julia-standards`: the **platform** —ingestion, orchestration,
+  idempotence, *backfill*, Parquet, freshness— is from here; the **analysis code** that runs in a
+  pipeline step is theirs. If an R or Julia script has de facto become the
+  orchestrator, the problem belongs to this skill.
+- `scala-standards` and `python-standards` (**Spark is the most likely confusion**: the platform
+  —cluster sizing, partitions, *shuffle*, output format, job orchestration and its
+  idempotence— **is from here**; the **Scala or the Python written inside the job** —style,
+  effects, tests, build with sbt or with `uv`— belongs to the language skill).
+- `sql-standards` (**the SQL language**). **dbt/SQLMesh as a tool and the structure of the
+  project are from here** —materialisations, orchestration, data tests, *backfill*,
+  idempotence—; the **SQL that model contains** is subject to `sql-standards`: joins, CTEs and
+  window functions, `NULL`, SARGable predicates, style and linting with `sqlfluff`. Generating the
+  SQL with a template **does not exempt it** from that criterion.
 
-**Principio rector**: **todo pipeline se ejecutará dos veces.** Por reintento, por *backfill*, por
-un despliegue duplicado o por un humano nervioso a las 3 a.m. Un proceso que no puede repetirse
-sin cambiar el resultado no es un pipeline: es un script con suerte. La idempotencia no es una
-optimización, es la condición de entrada.
+**Guiding principle**: **every pipeline will run twice.** Because of a retry, a *backfill*, a
+duplicated deployment or a nervous human at 3 a.m. A process that cannot be repeated
+without changing the result is not a pipeline: it is a script with luck. Idempotence is not an
+optimisation, it is the entry condition.
 
-**Corolario de escepticismo**: este sector vende herramienta a un ritmo que ninguna organización
-puede operar. Cada pieza nueva del *stack* es un componente más que actualizar, monitorizar,
-asegurar y explicar a quien te sustituya. Antes de añadirla, exige la necesidad medida.
+**Scepticism corollary**: this sector sells tooling at a rate no organisation
+can operate. Every new piece of the *stack* is one more component to update, monitor,
+secure and explain to whoever replaces you. Before adding it, demand the measured need.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión, licencia y **propietario** por web antes de fijarlo en un proyecto
-> real (§8). Este sector consolidó fuerte en 2025-2026: varias herramientas cambiaron de dueño o
-> de licencia sin cambiar de nombre.
+> Verify the latest version, licence and **owner** on the web before pinning it in a real
+> project (§8). This sector consolidated heavily in 2025-2026: several tools changed owner or
+> licence without changing name.
 
-### 2.1 La decisión de partida: ¿hace falta un pipeline?
+### 2.1 The starting decision: is a pipeline needed?
 
-Antes de elegir herramienta, agota por este orden. Cada escalón que evites es infraestructura que
-no operas:
+Before choosing a tool, exhaust this order. Every rung you avoid is infrastructure you
+do not operate:
 
-| Necesidad real | Solución más simple | Cuándo deja de servir |
+| Real need | Simplest solution | When it stops working |
 |---|---|---|
-| Consultar datos operacionales sin castigar la BD | **Réplica de lectura** del motor (ver `data-platform-standards`) | Consultas analíticas que barren tablas enteras y compiten con la replicación |
-| Cruzar dos fuentes ocasionalmente | **Consulta federada** (FDW de PostgreSQL, `read_parquet`/`ATTACH` de DuckDB, external tables) | Volumen que hace la federación lenta o cara; necesidad de histórico |
-| Un informe diario sobre datos de ayer | **`COPY`/`UNLOAD`/export nocturno** a ficheros + consulta sobre ellos | Más de un puñado de fuentes, o transformaciones con dependencias entre sí |
-| Un dashboard de una tabla | **Vista materializada** en el propio motor | Cruce entre sistemas distintos |
-| Todo lo anterior insuficiente | **Pipeline** con orquestador | — |
+| Query operational data without punishing the DB | **Read replica** of the engine (see `data-platform-standards`) | Analytical queries that sweep whole tables and compete with replication |
+| Occasionally cross two sources | **Federated query** (PostgreSQL FDW, DuckDB `read_parquet`/`ATTACH`, external tables) | Volume that makes federation slow or expensive; need for history |
+| A daily report on yesterday's data | **Nightly `COPY`/`UNLOAD`/export** to files + queries over them | More than a handful of sources, or transformations with dependencies between them |
+| A dashboard over one table | **Materialised view** in the engine itself | Crossing between different systems |
+| All of the above insufficient | **Pipeline** with an orchestrator | — |
 
-Una consulta federada, una réplica de lectura o un `COPY` nocturno resuelven **más casos de los
-que la industria admite**. El coste de un pipeline no es escribirlo: es mantenerlo vivo durante
-cinco años mientras las fuentes cambian sin avisar.
+A federated query, a read replica or a nightly `COPY` solve **more cases than
+the industry admits**. The cost of a pipeline is not writing it: it is keeping it alive for
+five years while the sources change without warning.
 
-### 2.2 ELT frente a ETL
+### 2.2 ELT versus ETL
 
-**ELT por defecto**: extrae, carga en crudo, transforma **dentro** del almacén con SQL. El almacén
-moderno invirtió el orden por tres razones concretas, no por moda:
+**ELT by default**: extract, load raw, transform **inside** the warehouse with SQL. The modern
+warehouse inverted the order for three concrete reasons, not out of fashion:
 
-1. El cómputo del almacén es elástico y escala mejor que un servidor de ETL propio.
-2. La **capa cruda inmutable** permite reprocesar sin volver a la fuente — y la fuente casi nunca
-   te deja volver (APIs con retención corta, sistemas que sobrescriben).
-3. La transformación en SQL es revisable, testeable y comprensible por más gente que un grafo de
-   una herramienta gráfica.
+1. Warehouse compute is elastic and scales better than your own ETL server.
+2. The **immutable raw layer** allows reprocessing without going back to the source — and the source almost never
+   lets you go back (APIs with short retention, systems that overwrite).
+3. Transformation in SQL is reviewable, testable and understandable by more people than a graph in
+   a graphical tool.
 
-**ETL sigue siendo correcto** cuando: la ley prohíbe que el dato crudo aterrice (PII que debe
-seudonimizarse **antes** de la carga — coordinar con `privacy-engineering-standards`), el volumen
-crudo es absurdo frente al útil, la fuente exige transformación en el mismo proceso de lectura, o
-el destino no tiene cómputo (un fichero, un SFTP). Decisión por ADR, no por defecto invertido.
+**ETL is still correct** when: the law forbids raw data landing (PII that must be
+pseudonymised **before** loading — coordinate with `privacy-engineering-standards`), the raw
+volume is absurd compared to the useful one, the source requires transformation in the same read process, or
+the destination has no compute (a file, an SFTP). Decision by ADR, not by inverting the default.
 
 ### 2.3 Toolchain
 
-| Ámbito | Default | Estado verificado (ago 2026) | Alternativa justificable |
+| Area | Default | Verified state (Aug 2026) | Justifiable alternative |
 |---|---|---|---|
-| Transformación SQL | **dbt Core** | dbt Labs **completó la fusión con Fivetran el 1-jun-2026**. dbt Core sigue **Apache 2.0**; dbt Core v2.0 (basado en el motor Fusion) publicado en el repo `dbt-core` bajo Apache 2.0, en alpha. El binario **dbt Fusion es propietario**, bajo *dbt Product Licensing Agreement* | **SQLMesh**: donado por Fivetran a la **Linux Foundation (mar-2026)**, gobernanza abierta. Es hoy la alternativa con mejor posición de gobernanza, no un experimento |
-| Orquestación (pesada, estándar de mercado) | **Airflow 3.3.x** | 3.3.0 (jul-2026). **Airflow 2 llegó a EOL el 22-abr-2026**: cualquier 2.x en producción es software sin parches | Astronomer/MWAA/Composer si no quieres operarlo |
-| Orquestación (declarativa, orientada a activos) | **Dagster 1.13.x** | **Prefect anunció la adquisición de Dagster Labs el 13-jul-2026**; la compañía combinada opera bajo el nombre Prefect desde ago-2026. Dagster y Dagster+ siguen mantenidos y el OSS continúa bajo su licencia actual | Prefect 3.x si ya lo usas |
-| Orquestación ligera / declarativa en YAML | **Kestra 1.x** | Releases activas (rama 1.3.x y LTS 1.0.x) | — |
-| Ingesta con código, en tu proceso | **dlt** (1.29.x) | Librería Python, sin servidor que operar. **Default cuando el conector no existe** | Singer taps si ya hay uno bueno |
-| Ingesta con conectores gestionados | **Fivetran** (SaaS) si el presupuesto lo cubre | Airbyte: plataforma y conectores estratégicos bajo **Elastic License 2.0** — *source-available*, **no OSI open source**; restringe ofrecerlo como servicio gestionado | **Meltano** (4.x) para orquestar taps Singer con configuración versionada |
-| Formato de fichero columnar | **Parquet** | Sigue siendo el default indiscutido del ecosistema. Formatos nuevos (Vortex —incubación en LF AI & Data—, Lance, Nimble) resuelven cargas de IA/acceso aleatorio: **piloto, no producción** para analítica general | ORC solo si el ecosistema existente lo impone; **nunca CSV/JSON como formato de destino** |
-| Motor de consulta local / pipelines pequeños | **DuckDB 1.5.x** | Reemplaza legítimamente a Spark en el rango de "cabe en una máquina grande", que es la mayoría | — |
-| Compresión | **zstd** por defecto; snappy si el motor lo prefiere y la CPU es el cuello | — | gzip solo por compatibilidad heredada |
-| Motor distribuido | **Ninguno por defecto** | Spark/Flink solo cuando el volumen no cabe en una máquina grande, **medido** | — |
+| SQL transformation | **dbt Core** | dbt Labs **completed the merger with Fivetran on 1-Jun-2026**. dbt Core is still **Apache 2.0**; dbt Core v2.0 (based on the Fusion engine) published in the `dbt-core` repo under Apache 2.0, in alpha. The **dbt Fusion binary is proprietary**, under the *dbt Product Licensing Agreement* | **SQLMesh**: donated by Fivetran to the **Linux Foundation (Mar-2026)**, open governance. It is today the alternative with the best governance position, not an experiment |
+| Orchestration (heavy, market standard) | **Airflow 3.3.x** | 3.3.0 (Jul-2026). **Airflow 2 reached EOL on 22-Apr-2026**: any 2.x in production is unpatched software | Astronomer/MWAA/Composer if you do not want to operate it |
+| Orchestration (declarative, asset-oriented) | **Dagster 1.13.x** | **Prefect announced the acquisition of Dagster Labs on 13-Jul-2026**; the combined company operates under the Prefect name from Aug-2026. Dagster and Dagster+ remain maintained and the OSS continues under its current licence | Prefect 3.x if you already use it |
+| Lightweight / declarative YAML orchestration | **Kestra 1.x** | Active releases (1.3.x branch and LTS 1.0.x) | — |
+| Ingestion with code, in your process | **dlt** (1.29.x) | Python library, no server to operate. **Default when the connector does not exist** | Singer taps if there is already a good one |
+| Ingestion with managed connectors | **Fivetran** (SaaS) if the budget covers it | Airbyte: platform and strategic connectors under **Elastic License 2.0** — *source-available*, **not OSI open source**; restricts offering it as a managed service | **Meltano** (4.x) to orchestrate Singer taps with versioned configuration |
+| Columnar file format | **Parquet** | Still the undisputed default of the ecosystem. New formats (Vortex —incubating at LF AI & Data—, Lance, Nimble) address AI/random-access workloads: **pilot, not production** for general analytics | ORC only if the existing ecosystem imposes it; **never CSV/JSON as a destination format** |
+| Local query engine / small pipelines | **DuckDB 1.5.x** | Legitimately replaces Spark in the "fits in a big machine" range, which is most of them | — |
+| Compression | **zstd** by default; snappy if the engine prefers it and CPU is the bottleneck | — | gzip only for legacy compatibility |
+| Distributed engine | **None by default** | Spark/Flink only when the volume does not fit in a big machine, **measured** | — |
 
-**Sobre los orquestadores, con honestidad**: la mayoría de las organizaciones que instalan Airflow
-no lo necesitaban. Un `systemd` timer, un cron con bloqueo (`flock`) y un log decente cubren un
-pipeline lineal de tres pasos. El orquestador se gana su coste cuando hay **dependencias reales
-entre tareas, reintentos por tarea, backfill parametrizado y visibilidad compartida** — no cuando
-hay tres jobs que se ejecutan en orden. Instalar Airflow para eso es pagar un clúster para
-sustituir a `&&`.
+**On orchestrators, honestly**: most organisations that install Airflow
+did not need it. A `systemd` timer, a cron with locking (`flock`) and a decent log cover a
+linear three-step pipeline. The orchestrator earns its cost when there are **real dependencies
+between tasks, per-task retries, parameterised backfill and shared visibility** — not when
+there are three jobs that run in order. Installing Airflow for that is paying for a cluster to
+replace `&&`.
 
-**Sobre el riesgo de continuidad tras la consolidación**: dbt, SQLMesh, Census y Fivetran están
-hoy bajo el mismo techo; Dagster y Prefect también. Eso no invalida ninguna herramienta, pero sí
-obliga a: (a) preferir el proyecto con gobernanza de fundación cuando el resto empata —SQLMesh
-está en Linux Foundation, dbt Core no—, (b) registrar en el ADR **cuál es el plan de salida** de
-la pieza propietaria, y (c) no construir sobre funcionalidad exclusiva de la capa comercial sin
-decidirlo.
+**On continuity risk after the consolidation**: dbt, SQLMesh, Census and Fivetran are
+today under the same roof; Dagster and Prefect too. That does not invalidate any tool, but it does
+force you to: (a) prefer the project with foundation governance when everything else ties —SQLMesh
+is in the Linux Foundation, dbt Core is not—, (b) record in the ADR **what the exit plan is** for
+the proprietary piece, and (c) not build on functionality exclusive to the commercial layer without
+deciding it.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Capas de un pipeline
+### 3.1 Pipeline layers
 
-Tres zonas, con reglas distintas. (**La forma de la capa de consumo la decide
-`data-warehouse-modeling-standards`; aquí solo el contrato de movimiento entre zonas.**)
+Three zones, with different rules. (**The shape of the consumption layer is decided by
+`data-warehouse-modeling-standards`; here only the movement contract between zones.**)
 
-1. **Cruda / aterrizaje**: copia fiel de la fuente, **inmutable**, particionada por fecha de
-   ingesta, con metadatos de procedencia (`_ingested_at`, `_source`, `_batch_id`, `_source_file`).
-   No se limpia, no se renombra, no se corrige. Su valor entero está en que puedes reconstruir
-   todo lo demás desde ella.
-2. **Intermedia / preparada**: tipado, deduplicación, normalización de nombres, aplicación de
-   reglas de calidad. Es la capa donde vive la lógica fea.
-3. **Consumo**: la que ven las personas y las herramientas de BI. **Debe ser aburrida**: nombres
-   estables, tipos estables, sin lógica sorprendente.
+1. **Raw / landing**: faithful copy of the source, **immutable**, partitioned by ingestion
+   date, with provenance metadata (`_ingested_at`, `_source`, `_batch_id`, `_source_file`).
+   It is not cleaned, not renamed, not corrected. Its entire value is that you can rebuild
+   everything else from it.
+2. **Intermediate / prepared**: typing, deduplication, name normalisation, application of
+   quality rules. It is the layer where the ugly logic lives.
+3. **Consumption**: the one people and BI tools see. **It must be boring**: stable
+   names, stable types, no surprising logic.
 
-### 3.2 Ingesta: elige el modo más barato que cumpla
+### 3.2 Ingestion: choose the cheapest mode that works
 
-| Modo | Cuándo | Trampa |
+| Mode | When | Trap |
 |---|---|---|
-| **Completo (*full refresh*)** | Tablas pequeñas, dimensiones, fuentes sin marca de cambio | Escala pésimamente y borra el histórico si la fuente sobrescribe |
-| **Incremental por marca de agua** | Tabla con `updated_at` fiable e índice | **`updated_at` casi nunca es fiable**: relojes desalineados, actualizaciones en masa que no lo tocan, borrados que no dejan rastro |
-| **Captura de cambios (CDC)** | Necesitas borrados, orden y baja latencia sobre una BD | Acoplamiento al log del motor; carga operativa real (ver `streaming-cdc-standards`) |
-| **Streaming** | La latencia de negocio se mide en segundos **y alguien actúa en esos segundos** | Casi nadie necesita segundos; casi todos los piden |
+| **Full (*full refresh*)** | Small tables, dimensions, sources without a change marker | Scales terribly and erases history if the source overwrites |
+| **Incremental by watermark** | Table with a reliable `updated_at` and an index | **`updated_at` is almost never reliable**: misaligned clocks, bulk updates that do not touch it, deletes that leave no trace |
+| **Change data capture (CDC)** | You need deletes, ordering and low latency over a DB | Coupling to the engine log; real operational load (see `streaming-cdc-standards`) |
+| **Streaming** | Business latency is measured in seconds **and someone acts within those seconds** | Almost nobody needs seconds; almost everybody asks for them |
 
-Reglas duras de ingesta:
-- **Solapa la ventana**: lee desde `max(watermark) - Δ`, con Δ ≥ el desfase de reloj y la latencia
-  de escritura de la fuente. Después deduplica por clave. Una ventana sin solape pierde filas en
-  silencio, que es el peor fallo posible.
-- **Los borrados no se propagan solos.** Si la fuente borra físicamente y tú ingieres por marca de
-  agua, tu copia acumula fantasmas para siempre. Decide explícitamente: CDC, *full refresh*
-  periódico de reconciliación, o borrado lógico acordado con la fuente.
-- **Escribe la marca de agua después de confirmar la escritura**, nunca antes. Al revés se pierden
-  datos; así solo se reprocesan.
-- Guarda el fichero/lote crudo antes de parsearlo. Cuando el parseo falle a los seis meses, será
-  lo único que te salve.
+Hard ingestion rules:
+- **Overlap the window**: read from `max(watermark) - Δ`, with Δ ≥ the clock skew and the write
+  latency of the source. Then deduplicate by key. A window without overlap loses rows
+  silently, which is the worst possible failure.
+- **Deletes do not propagate by themselves.** If the source deletes physically and you ingest by
+  watermark, your copy accumulates ghosts forever. Decide explicitly: CDC, periodic
+  reconciliation *full refresh*, or logical deletion agreed with the source.
+- **Write the watermark after confirming the write**, never before. The other way round loses
+  data; this way you only reprocess.
+- Store the raw file/batch before parsing it. When the parsing fails six months later, it will be
+  the only thing that saves you.
 
-### 3.3 Idempotencia y reprocesado — la sección que separa un pipeline de un script
+### 3.3 Idempotence and reprocessing — the section that separates a pipeline from a script
 
-- **Unidad de trabajo = partición**, no "la ejecución de hoy". Una tarea recibe un intervalo
-  explícito y produce **exactamente** la partición de ese intervalo.
-- **Escritura por reemplazo de partición**, no por acumulación: `INSERT OVERWRITE` / `DELETE`
-  del rango + `INSERT` en la misma transacción / `MERGE` por clave. Nunca `INSERT` a secas en una
-  tarea que puede reintentarse.
-- **Nada de `now()`, `CURRENT_DATE` ni "el último fichero" dentro de la lógica.** El tiempo entra
-  como **parámetro** de la ejecución. Un pipeline que consulta el reloj no puede reprocesar el
-  pasado, y por tanto no puede corregirse.
-- **Backfill = la misma tarea, otro parámetro.** Si hace falta un script distinto para recargar
-  marzo, el diseño está mal. El backfill se ejecuta acotado (rango a rango, con límite de
-  concurrencia) para no tumbar la fuente ni el almacén.
-- **Clave de negocio y deduplicación explícitas**: toda tabla tiene una clave declarada y un
-  criterio de "cuál gana" ante duplicados (típicamente el más reciente por `_ingested_at`).
-- **Efectos laterales no idempotentes** (enviar un correo, llamar a una API que cobra, publicar un
-  evento) fuera del pipeline de datos, o protegidos por clave de idempotencia y registro de
-  ejecución. Un reintento no debe facturar dos veces.
-- **Ficheros: escribe a temporal y renombra/publica al final** (o usa el commit atómico del formato
-  de tabla, ver `lakehouse-standards`). Un consumidor no debe ver nunca una partición a medias.
+- **Unit of work = partition**, not "today's run". A task receives an explicit
+  interval and produces **exactly** the partition of that interval.
+- **Write by partition replacement**, not by accumulation: `INSERT OVERWRITE` / `DELETE`
+  of the range + `INSERT` in the same transaction / `MERGE` by key. Never a plain `INSERT` in a
+  task that can be retried.
+- **No `now()`, `CURRENT_DATE` or "the last file" inside the logic.** Time enters
+  as a **parameter** of the run. A pipeline that queries the clock cannot reprocess the
+  past, and therefore cannot be corrected.
+- **Backfill = the same task, a different parameter.** If a different script is needed to reload
+  March, the design is wrong. The backfill runs bounded (range by range, with a concurrency
+  limit) so as not to take down the source or the warehouse.
+- **Explicit business key and deduplication**: every table has a declared key and a
+  criterion for "which one wins" when there are duplicates (typically the most recent by `_ingested_at`).
+- **Non-idempotent side effects** (sending an email, calling an API that charges, publishing an
+  event) outside the data pipeline, or protected by an idempotency key and a run
+  log. A retry must not bill twice.
+- **Files: write to a temporary location and rename/publish at the end** (or use the atomic commit of the table
+  format, see `lakehouse-standards`). A consumer must never see a half-written partition.
 
-### 3.4 Formatos y ficheros
+### 3.4 Formats and files
 
-- **Parquet como default columnar** para todo dato analítico persistido. CSV solo como formato de
-  intercambio con terceros; JSON solo como aterrizaje crudo de una API.
-- **Tamaño de fichero objetivo: ~128 MB - 1 GB** por fichero (ajustar al motor). El **problema de
-  los ficheros pequeños** es real y caro: miles de ficheros de 2 MB multiplican las peticiones a
-  S3, hinchan los metadatos y hunden el planificador. Compacta como tarea programada.
-- Particiona por la columna por la que **filtras**, normalmente fecha del evento (no de ingesta) —
-  y con **cardinalidad baja**. Particionar por `user_id` genera un millón de directorios y es un
-  incidente, no un diseño.
-- Tipos correctos en el fichero: fechas como fecha, decimales como decimal (**dinero jamás en
-  float**), *timestamps* con zona. Un Parquet con todo en `string` desperdicia el formato entero.
-- Escribe el esquema, no lo infieras en cada lectura. La inferencia de esquema es la causa número
-  uno de que "el pipeline funcionaba ayer".
+- **Parquet as the columnar default** for all persisted analytical data. CSV only as an exchange
+  format with third parties; JSON only as the raw landing of an API.
+- **Target file size: ~128 MB - 1 GB** per file (adjust to the engine). The **small-file
+  problem** is real and expensive: thousands of 2 MB files multiply the requests to
+  S3, bloat the metadata and sink the planner. Compact as a scheduled task.
+- Partition by the column you **filter** on, normally the event date (not the ingestion one) —
+  and with **low cardinality**. Partitioning by `user_id` generates a million directories and is an
+  incident, not a design.
+- Correct types in the file: dates as date, decimals as decimal (**money never in
+  float**), *timestamps* with zone. A Parquet with everything as `string` wastes the whole format.
+- Write the schema, do not infer it on every read. Schema inference is the number one
+  cause of "the pipeline worked yesterday".
 
-### 3.5 Coste: el particionado es una decisión de dinero
+### 3.5 Cost: partitioning is a money decision
 
-En BigQuery, Athena, Snowflake, Redshift Spectrum y cualquier motor sobre object storage **se paga
-por dato escaneado**. Por tanto:
+In BigQuery, Athena, Snowflake, Redshift Spectrum and any engine over object storage **you pay
+per data scanned**. Therefore:
 
-- **Poda de particiones verificada, no supuesta**: revisa el plan (`EXPLAIN`, bytes estimados) de
-  las consultas caras. Una función sobre la columna de partición en el `WHERE` anula la poda
-  entera y multiplica la factura sin avisar.
-- `SELECT *` en una tabla ancha columnar es un error de coste, no de estilo.
-- **Materializa lo que se consulta muchas veces**; deja como vista lo que se consulta poco. La
-  tabla intermedia que nadie consulta se paga en cada ejecución y no la lee nadie.
-- Presupuesto por consulta y por proyecto, con alerta. El coste es un SLI (§6), no una sorpresa de
-  fin de mes.
-- El *full refresh* nocturno de una tabla de miles de millones de filas es correcto exactamente
-  hasta que ves lo que cuesta al año. Entonces se vuelve incremental, con reconciliación completa
-  periódica.
+- **Partition pruning verified, not assumed**: review the plan (`EXPLAIN`, estimated bytes) of
+  the expensive queries. A function over the partition column in the `WHERE` cancels the whole
+  pruning and multiplies the bill without warning.
+- `SELECT *` on a wide columnar table is a cost error, not a style one.
+- **Materialise what is queried many times**; leave as a view what is queried rarely. The
+  intermediate table nobody queries is paid for on every run and nobody reads it.
+- Budget per query and per project, with an alert. Cost is an SLI (§6), not a surprise at the
+  end of the month.
+- The nightly *full refresh* of a table with billions of rows is correct exactly
+  until you see what it costs per year. Then it becomes incremental, with periodic full
+  reconciliation.
 
-## 4. Calidad y testing — gates
+## 4. Quality and testing — gates
 
-En orden de coste creciente. **Los marcados como gate rompen el build o la ejecución.**
+In order of increasing cost. **The ones marked as a gate break the build or the run.**
 
-1. **Lint y formato de SQL y de Python** (`sqlfluff`/formateador del ecosistema, `ruff` — ver
-   `python-standards`). *Gate de CI.*
-2. **El proyecto compila sin ejecutar nada**: `dbt parse`/`dbt compile`, `sqlmesh plan` en entorno
-   virtual, `airflow dags list`/import de todos los DAGs sin error. Un DAG que no importa rompe el
-   *scheduler* entero. *Gate de CI.*
-3. **Nada de credenciales ni de referencias a producción en el repo**: los perfiles y las
-   conexiones vienen de gestor de secretos (ver `secrets-management-standards`). *Gate de CI.*
-4. **Tests unitarios de la lógica de transformación** con datos fijos de entrada y salida esperada
-   (`dbt` unit tests, `sqlmesh` unit tests, o SQL sobre fixtures). Cubre el caso feliz **y los
-   bordes**: nulos, duplicados, fila que llega dos veces, cadena vacía frente a nulo, valor fuera
-   de catálogo, fecha en el futuro. *Gate de CI.*
-5. **Aserciones de datos en la ejecución** (no en CI): unicidad de la clave, no nulos en las
-   columnas críticas, integridad referencial contra la dimensión, rango/valores aceptados, y
-   **volumen dentro de banda esperada**. La detalle del programa de calidad es de
-   `data-governance-quality-standards`; aquí la regla es de ejecución:
-   - Una aserción **bloqueante** detiene la publicación de la capa de consumo. Publicar datos
-     malos es peor que no publicar.
-   - Una aserción **de aviso** no detiene nada pero se contabiliza y se revisa; si nadie la mira,
-     bórrala — el ruido de calidad entrena al equipo a ignorar las alertas de calidad.
-6. **Frescura de fuentes** (`dbt source freshness` o equivalente) **antes** de transformar: si la
-   fuente no ha llegado, no se transforma sobre datos viejos en silencio.
-7. **Idempotencia probada explícitamente**: un test que ejecuta la misma partición **dos veces** y
-   comprueba que el resultado es idéntico (mismo recuento, misma suma de control). Sin este test,
-   la idempotencia es una intención. *Gate de CI en pipelines que escriben.*
-8. **Entorno de desarrollo aislado** por rama/usuario (esquema propio, entorno virtual de SQLMesh,
-   `target` de dbt): nadie desarrolla contra las tablas de producción.
-9. **Ejecución diferencial en PR**: construir solo lo modificado y lo aguas abajo, sobre una
-   muestra acotada, y comparar contra producción cuando el motor lo permita. Un PR que no se ha
-   ejecutado nunca no está revisado.
-10. **Sin PII real en entornos no productivos** (ver `privacy-engineering-standards`). *Gate.*
+1. **SQL and Python lint and formatting** (`sqlfluff`/the ecosystem's formatter, `ruff` — see
+   `python-standards`). *CI gate.*
+2. **The project compiles without running anything**: `dbt parse`/`dbt compile`, `sqlmesh plan` in a virtual
+   environment, `airflow dags list`/import of all DAGs without error. A DAG that does not import breaks the
+   whole *scheduler*. *CI gate.*
+3. **No credentials or references to production in the repo**: profiles and
+   connections come from a secrets manager (see `secrets-management-standards`). *CI gate.*
+4. **Unit tests of the transformation logic** with fixed input data and expected output
+   (`dbt` unit tests, `sqlmesh` unit tests, or SQL over fixtures). Cover the happy path **and the
+   edges**: nulls, duplicates, a row arriving twice, empty string versus null, value outside
+   the catalogue, date in the future. *CI gate.*
+5. **Data assertions at run time** (not in CI): key uniqueness, no nulls in the
+   critical columns, referential integrity against the dimension, accepted range/values, and
+   **volume within the expected band**. The detail of the quality programme belongs to
+   `data-governance-quality-standards`; here the rule is about execution:
+   - A **blocking** assertion stops the publication of the consumption layer. Publishing bad
+     data is worse than not publishing.
+   - A **warning** assertion stops nothing but is counted and reviewed; if nobody looks at it,
+     delete it — quality noise trains the team to ignore quality alerts.
+6. **Source freshness** (`dbt source freshness` or equivalent) **before** transforming: if the
+   source has not arrived, you do not silently transform over stale data.
+7. **Idempotence tested explicitly**: a test that runs the same partition **twice** and
+   checks that the result is identical (same count, same checksum). Without this test,
+   idempotence is an intention. *CI gate in pipelines that write.*
+8. **Isolated development environment** per branch/user (own schema, SQLMesh virtual environment,
+   dbt `target`): nobody develops against production tables.
+9. **Differential run on PR**: build only what changed and what is downstream, over a
+   bounded sample, and compare against production when the engine allows it. A PR that has never been
+   run is not reviewed.
+10. **No real PII in non-production environments** (see `privacy-engineering-standards`). *Gate.*
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **Cadena de suministro — precedente vivo, no hipótesis**: el paquete **`elementary-data` 0.23.3`**
-  (herramienta de calidad del ecosistema dbt, >1M descargas/mes) fue publicado con **infostealer**
-  el 24-abr-2026, vía inyección de script en un workflow de GitHub Actions disparado por comentario
-  de PR; el *payload* iba en un fichero `.pth` que Python ejecuta **al arrancar el intérprete**, y
-  robaba perfiles de dbt, credenciales de Snowflake/BigQuery/Redshift, claves de AWS/GCP/Azure,
-  secretos de Kubernetes, tokens de API, claves SSH y ficheros `.env`. Corregido en 0.23.4. En el
-  mismo periodo: **LiteLLM** (mar-2026) y **Microsoft `durabletask`** (may-2026) en PyPI. Deriva
-  obligatoria:
-  - **Fija dependencias por hash** (`uv.lock`/`requirements.txt` con hashes, imágenes por
-    *digest*). Rango abierto de versiones en una herramienta de datos = credenciales del almacén
-    expuestas a la próxima publicación maliciosa.
-  - **Retrasa la adopción** de versiones recién publicadas en los entornos que tienen credenciales
-    de producción (ventana de cuarentena de días, no de minutos).
-  - El *runner* que ejecuta el pipeline **no debe tener credenciales de más de un entorno**.
-  - Publica con OIDC y tokens efímeros; nunca tokens estáticos de larga vida (ver `cicd-standards`).
-- **Credenciales del almacén**: una identidad por pipeline, con permisos por esquema/dataset, no
-  una cuenta de servicio omnipotente compartida. Escritura solo donde escribe; lectura solo donde
-  lee. Rotación gestionada (ver `secrets-management-standards`).
-- **Mínimo privilegio en la fuente**: el usuario de extracción es de **solo lectura**, sobre las
-  tablas o vistas concretas acordadas, con `statement_timeout` para no tumbar el sistema
-  operacional. Extraer de una réplica, no del primario, salvo motivo.
-- **Minimización en la extracción**: no copies columnas que no vas a usar. Cada columna de PII que
-  no ingieres es un problema de retención, de borrado y de brecha que no tendrás
-  (ver `privacy-engineering-standards`).
-- **Retención en la capa cruda también**: "guardamos el crudo para siempre" es una decisión de
-  privacidad y de coste que alguien tiene que firmar. Particiona por fecha para poder `DROP`.
-- **Cifrado en tránsito y en reposo** en todos los saltos, incluidos los buckets intermedios y las
-  zonas de aterrizaje (SFTP, `/tmp`, el disco del *worker*).
-- **PII fuera de logs y de mensajes de error**: un log de pipeline que imprime la fila que falló es
-  una fuga. Registra la clave o el desplazamiento, no el contenido.
-- **Nunca SQL por concatenación** de parámetros de ejecución (fechas, nombres de tabla) en jobs
-  que reciben entrada externa: parametriza o valida contra una lista blanca.
+- **Supply chain — a live precedent, not a hypothesis**: the package **`elementary-data` 0.23.3`**
+  (a quality tool of the dbt ecosystem, >1M downloads/month) was published with an **infostealer**
+  on 24-Apr-2026, via script injection in a GitHub Actions workflow triggered by a PR
+  comment; the *payload* travelled in a `.pth` file that Python executes **when the interpreter starts**, and
+  it stole dbt profiles, Snowflake/BigQuery/Redshift credentials, AWS/GCP/Azure keys,
+  Kubernetes secrets, API tokens, SSH keys and `.env` files. Fixed in 0.23.4. In the
+  same period: **LiteLLM** (Mar-2026) and **Microsoft `durabletask`** (May-2026) on PyPI. Mandatory
+  consequences:
+  - **Pin dependencies by hash** (`uv.lock`/`requirements.txt` with hashes, images by
+    *digest*). An open version range in a data tool = warehouse credentials
+    exposed to the next malicious release.
+  - **Delay the adoption** of newly published versions in the environments that hold production
+    credentials (a quarantine window of days, not minutes).
+  - The *runner* that executes the pipeline **must not hold credentials for more than one environment**.
+  - Publish with OIDC and ephemeral tokens; never static long-lived tokens (see `cicd-standards`).
+- **Warehouse credentials**: one identity per pipeline, with permissions per schema/dataset, not
+  one omnipotent shared service account. Write only where it writes; read only where it
+  reads. Managed rotation (see `secrets-management-standards`).
+- **Least privilege at the source**: the extraction user is **read-only**, over the specific
+  agreed tables or views, with a `statement_timeout` so as not to take down the operational
+  system. Extract from a replica, not from the primary, unless there is a reason.
+- **Minimisation at extraction**: do not copy columns you are not going to use. Every PII column you
+  do not ingest is a retention, deletion and breach problem you will not have
+  (see `privacy-engineering-standards`).
+- **Retention in the raw layer too**: "we keep the raw data forever" is a privacy and
+  cost decision that someone has to sign off. Partition by date so you can `DROP`.
+- **Encryption in transit and at rest** in every hop, including the intermediate buckets and the
+  landing zones (SFTP, `/tmp`, the *worker*'s disk).
+- **PII out of logs and error messages**: a pipeline log that prints the failing row is
+  a leak. Log the key or the offset, not the content.
+- **Never SQL by concatenation** of run parameters (dates, table names) in jobs
+  that receive external input: parameterise or validate against an allowlist.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-### 6.1 Observabilidad del dato (distinta de la del sistema)
+### 6.1 Data observability (distinct from system observability)
 
-El proceso puede terminar en verde y el dato estar mal. **El fallo silencioso es peor que la
-caída**: una caída se ve; una tabla que lleva tres semanas con datos de hace tres semanas se
-descubre en un consejo de dirección. Instrumenta cuatro señales por dataset:
+The process can finish green and the data be wrong. **Silent failure is worse than an
+outage**: an outage is visible; a table that has been three weeks stale is
+discovered in a board meeting. Instrument four signals per dataset:
 
-| Señal | Qué mide | Alerta típica |
+| Signal | What it measures | Typical alert |
 |---|---|---|
-| **Frescura** | Antigüedad del dato más reciente | Supera el SLA de frescura acordado |
-| **Volumen** | Filas/bytes de la última partición | Fuera de banda respecto al histórico (incluye **0 filas**, el fallo más común y menos alertado) |
-| **Esquema** | Columnas, tipos, nulabilidad | Cambio no anunciado en la fuente |
-| **Distribución** | Nulos, cardinalidad, rangos de columnas críticas | Deriva brusca |
+| **Freshness** | Age of the most recent data | Exceeds the agreed freshness SLA |
+| **Volume** | Rows/bytes of the last partition | Outside the band relative to history (includes **0 rows**, the most common and least alerted failure) |
+| **Schema** | Columns, types, nullability | Unannounced change at the source |
+| **Distribution** | Nulls, cardinality, ranges of critical columns | Abrupt drift |
 
-Además: **linaje** de columna a columna cuando el motor lo permita, o al menos de tabla a tabla.
-El linaje no es documentación: es lo que contesta las dos únicas preguntas de una incidencia de
-datos —**"¿qué se rompió?"** y **"¿qué depende de ello?"**— y lo que permite avisar a los
-afectados antes de que decidan sobre datos falsos.
+In addition: column-to-column **lineage** when the engine allows it, or at least table to table.
+Lineage is not documentation: it is what answers the only two questions of a data
+incident —**"what broke?"** and **"what depends on it?"**— and what allows warning the
+affected before they decide on false data.
 
-### 6.2 SLA de frescura frente a SLA de disponibilidad
+### 6.2 Freshness SLA versus availability SLA
 
-Son **distintos** y se confunden constantemente. La tabla puede estar disponible al 100 % y
-contener datos de anteayer. Publica, por dataset de consumo:
+They are **different** and are constantly confused. The table can be 100 % available and
+contain data from the day before yesterday. Publish, per consumption dataset:
 
-- **Frescura comprometida** ("los pedidos están al día a las 07:00 en día laborable").
-- **Ventana de corrección** ("las correcciones de los últimos 3 días se reprocesan; más atrás,
-  bajo petición").
-- **Propietario** y canal de contacto.
+- **Committed freshness** ("orders are up to date at 07:00 on a working day").
+- **Correction window** ("corrections from the last 3 days are reprocessed; further back,
+  on request").
+- **Owner** and contact channel.
 
-Sin ese compromiso publicado, cada consumidor inventa el suyo y todos se equivocan.
+Without that published commitment, every consumer invents their own and they are all wrong.
 
-### 6.3 Operación
+### 6.3 Operation
 
-- **Reintentos con backoff y jitter**, con tope. Un reintento infinito contra una fuente caída es
-  un ataque de denegación de servicio contra tu propio proveedor.
-- **Timeouts en todo**: consulta, tarea y DAG completo. Una tarea sin timeout puede bloquear el
-  *slot* y hacer que nada más se ejecute mientras la frescura se degrada en silencio.
-- **Concurrencia acotada** por fuente (*pools*): el pipeline no debe poder tumbar el sistema
-  operacional del que extrae. Esto es especialmente cierto en *backfills*.
-- **Alertas accionables**: alerta por **síntoma con impacto** (dataset X incumple su SLA de
-  frescura), no por "tarea Y falló" cuando el reintento la va a resolver. Cada alerta lleva
-  runbook: qué se rompió, qué depende, cómo se reprocesa.
-- **Turno de guardia de datos**: si hay compromisos de frescura, hay alguien que responde. Si nadie
-  responde fuera de horario, **no prometas frescura fuera de horario** — un SLA que no tiene
-  guardia detrás es una mentira documentada. Coordina con `sre-practice-standards`.
-- **Runbook de reprocesado** escrito y **ensayado**: cómo recargar un día, cómo recargar un mes,
-  cuánto tarda, cuánto cuesta y a quién hay que avisar. Se ensaya en calendario; el día del
-  incidente no se improvisa un `MERGE`.
-- **Comunicación al consumidor**: cuando un dato publicado era incorrecto, no basta con corregirlo.
-  Hay que decirlo. La confianza en la plataforma de datos se pierde por silencio, no por errores.
-- Capacidad y coste revisados con cadencia: crecimiento de volumen, duración de las ejecuciones
-  críticas (¿la ventana nocturna sigue cabiendo en la noche?), coste por dataset.
+- **Retries with backoff and jitter**, with a cap. An infinite retry against a downed source is
+  a denial-of-service attack against your own provider.
+- **Timeouts on everything**: query, task and the whole DAG. A task without a timeout can block the
+  *slot* and stop everything else from running while freshness degrades silently.
+- **Bounded concurrency** per source (*pools*): the pipeline must not be able to take down the
+  operational system it extracts from. This is especially true in *backfills*.
+- **Actionable alerts**: alert on a **symptom with impact** (dataset X breaches its freshness
+  SLA), not on "task Y failed" when the retry is going to solve it. Every alert carries a
+  runbook: what broke, what depends on it, how it is reprocessed.
+- **Data on-call rotation**: if there are freshness commitments, there is someone who answers. If nobody
+  answers out of hours, **do not promise freshness out of hours** — an SLA with no
+  on-call behind it is a documented lie. Coordinate with `sre-practice-standards`.
+- **Reprocessing runbook** written and **rehearsed**: how to reload a day, how to reload a month,
+  how long it takes, how much it costs and who has to be notified. It is rehearsed on a schedule; on the day of the
+  incident you do not improvise a `MERGE`.
+- **Communication to the consumer**: when published data was incorrect, correcting it is not enough.
+  It has to be said. Trust in the data platform is lost through silence, not through errors.
+- Capacity and cost reviewed on a cadence: volume growth, duration of the critical
+  runs (does the nightly window still fit in the night?), cost per dataset.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia de actualización**: mayores del orquestador y del motor de transformación con
-  ensayo en un entorno espejo; los EOL se planifican con antelación (precedente: Airflow 2 murió
-  el 22-abr-2026 y arrastró a quien no lo miró). Revisa **trimestralmente** licencias y propiedad
-  de las piezas: en este sector cambian sin que cambie el nombre del producto.
-- **Retirada activa**: todo dataset y todo DAG sin consumo medido durante un trimestre se marca
-  para retirada y se retira. Un almacén de datos crece por acumulación por defecto; podar es parte
-  del trabajo, no una limpieza opcional.
-- **ADR obligatorio** para: adoptar un orquestador, cambiar de motor de transformación, elegir
-  estrategia de particionado, introducir streaming, y contratar una pieza SaaS con datos dentro.
-- Evita construir sobre funcionalidad exclusiva de la capa comercial de una herramienta sin
-  registrar el coste de salida.
+- **Update cadence**: majors of the orchestrator and of the transformation engine with a
+  rehearsal in a mirror environment; EOLs are planned ahead (precedent: Airflow 2 died
+  on 22-Apr-2026 and dragged down whoever did not look). Review licences and ownership
+  of the pieces **quarterly**: in this sector they change without the product name changing.
+- **Active retirement**: every dataset and every DAG with no measured consumption for a quarter is marked
+  for retirement and retired. A data warehouse grows by accumulation by default; pruning is part
+  of the work, not an optional clean-up.
+- **Mandatory ADR** for: adopting an orchestrator, changing the transformation engine, choosing a
+  partitioning strategy, introducing streaming, and contracting a SaaS piece with data inside.
+- Avoid building on functionality exclusive to the commercial layer of a tool without
+  recording the exit cost.
 
-**PROHIBIDO**
-- ❌ Un pipeline sin haber descartado antes réplica de lectura, consulta federada o export nocturno.
-- ❌ Un proceso que no puede ejecutarse dos veces con el mismo resultado.
-- ❌ `now()`/`CURRENT_DATE`/"el último fichero" dentro de la lógica de transformación: el tiempo es
-  un parámetro.
-- ❌ Un script de *backfill* distinto del pipeline normal.
-- ❌ Escribir la marca de agua antes de confirmar la escritura del dato.
-- ❌ Ventana incremental sin solape, o incremental sin plan explícito para los borrados de la fuente.
-- ❌ Transformar la capa cruda: es inmutable. Corregir el crudo destruye la capacidad de reprocesar.
-- ❌ Escribir a una ruta que los consumidores leen mientras se escribe (sin publicación atómica).
-- ❌ Publicar la capa de consumo con las aserciones bloqueantes en rojo.
-- ❌ Alerta de datos sin runbook, o alerta que nadie atiende.
-- ❌ Prometer SLA de frescura sin guardia que lo sostenga.
-- ❌ Fallo silencioso tolerado: "0 filas" no es éxito.
-- ❌ CSV o JSON como formato de destino analítico; Parquet con todo tipado como `string`.
-- ❌ Miles de ficheros pequeños sin tarea de compactación.
-- ❌ Particionar por columna de alta cardinalidad.
-- ❌ `SELECT *` en tablas anchas columnares en producción.
-- ❌ Escribir un conector para una fuente que ya tiene uno mantenido y aceptable — y su recíproco:
-  adoptar una plataforma de ingesta entera para dos fuentes que `dlt` resuelve en 40 líneas.
-- ❌ Streaming porque suena mejor, sin nadie que actúe en la latencia que se compra.
-- ❌ Spark porque el dato "es grande", sin haber medido que no cabe en una máquina.
-- ❌ Dependencias sin fijar por hash/digest en cualquier proceso con credenciales del almacén (§5).
-- ❌ Una cuenta de servicio compartida con permisos totales para todos los pipelines.
-- ❌ Copiar columnas de PII "por si acaso"; PII en logs de pipeline.
-- ❌ Capa cruda sin política de retención declarada.
-- ❌ Fijar versiones, licencias o propiedad de una herramienta de memoria (§8).
+**FORBIDDEN**
+- ❌ A pipeline without having first ruled out a read replica, a federated query or a nightly export.
+- ❌ A process that cannot be run twice with the same result.
+- ❌ `now()`/`CURRENT_DATE`/"the last file" inside the transformation logic: time is
+  a parameter.
+- ❌ A *backfill* script different from the normal pipeline.
+- ❌ Writing the watermark before confirming the data write.
+- ❌ An incremental window without overlap, or incremental without an explicit plan for source deletes.
+- ❌ Transforming the raw layer: it is immutable. Correcting the raw destroys the ability to reprocess.
+- ❌ Writing to a path that consumers read while it is being written (without atomic publication).
+- ❌ Publishing the consumption layer with the blocking assertions red.
+- ❌ A data alert without a runbook, or an alert nobody attends to.
+- ❌ Promising a freshness SLA with no on-call to sustain it.
+- ❌ Tolerated silent failure: "0 rows" is not success.
+- ❌ CSV or JSON as an analytical destination format; Parquet with everything typed as `string`.
+- ❌ Thousands of small files without a compaction task.
+- ❌ Partitioning by a high-cardinality column.
+- ❌ `SELECT *` on wide columnar tables in production.
+- ❌ Writing a connector for a source that already has a maintained and acceptable one — and its converse:
+  adopting a whole ingestion platform for two sources that `dlt` solves in 40 lines.
+- ❌ Streaming because it sounds better, with nobody acting within the latency being bought.
+- ❌ Spark because the data "is big", without having measured that it does not fit in one machine.
+- ❌ Dependencies not pinned by hash/digest in any process with warehouse credentials (§5).
+- ❌ A shared service account with full permissions for all pipelines.
+- ❌ Copying PII columns "just in case"; PII in pipeline logs.
+- ❌ A raw layer with no declared retention policy.
+- ❌ Pinning versions, licences or ownership of a tool from memory (§8).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Los datos de §2 y §5 son de **agosto de 2026** y este sector consolida constantemente. Antes de
-fijar nada en un entregable, verifica:
+The data in §2 and §5 is from **August 2026** and this sector consolidates constantly. Before
+pinning anything in a deliverable, verify:
 
-1. **dbt**: licencia vigente de dbt Core (Apache 2.0 a fecha de hoy), estado de dbt Core v2.0
-   (estaba en **alpha**) y del binario Fusion (propietario, *dbt Product Licensing Agreement*), y
-   qué ha cambiado en la gobernanza tras la fusión con Fivetran (completada 1-jun-2026).
-2. **SQLMesh**: estado en la Linux Foundation tras la donación de mar-2026 y actividad real del
-   proyecto.
-3. **Orquestadores**: versión vigente de Airflow (3.3.0 en jul-2026) y su calendario de soporte;
-   **evolución de Dagster tras la adquisición por Prefect (anunciada 13-jul-2026)** — la
-   integración de producto y la licencia del OSS son el riesgo a vigilar, no la versión;
-   estado de Kestra y de Mage (verificar si Mage sigue mantenido antes de recomendarlo:
-   **no verificado en esta revisión**).
-4. **Ingesta**: licencia actual de Airbyte (ELv2, *source-available*), modelo de Fivetran tras la
-   fusión, y actividad de Meltano y dlt.
-5. **Formatos**: si Parquet sigue siendo el default de facto y si algún sucesor (Vortex, Lance,
-   Nimble, F3) ha pasado de piloto a producción; estado de la *File Format API* de Iceberg
-   (frontera con `lakehouse-standards`).
-6. **Cadena de suministro**: CVEs y compromisos recientes de **cualquier** paquete que vayas a
-   añadir al entorno con credenciales del almacén (precedentes: `elementary-data` abr-2026,
-   `durabletask` may-2026, LiteLLM mar-2026).
-7. Versiones y EOL del motor de almacén (BigQuery/Snowflake/Redshift/Databricks/DuckDB) y de los
-   *runtimes* Python del pipeline.
+1. **dbt**: current licence of dbt Core (Apache 2.0 as of today), state of dbt Core v2.0
+   (it was in **alpha**) and of the Fusion binary (proprietary, *dbt Product Licensing Agreement*), and
+   what has changed in governance after the merger with Fivetran (completed 1-Jun-2026).
+2. **SQLMesh**: state in the Linux Foundation after the Mar-2026 donation and the project's real
+   activity.
+3. **Orchestrators**: current Airflow version (3.3.0 in Jul-2026) and its support calendar;
+   **evolution of Dagster after the acquisition by Prefect (announced 13-Jul-2026)** — the
+   product integration and the OSS licence are the risk to watch, not the version;
+   state of Kestra and of Mage (verify whether Mage is still maintained before recommending it:
+   **not verified in this revision**).
+4. **Ingestion**: current Airbyte licence (ELv2, *source-available*), Fivetran's model after the
+   merger, and the activity of Meltano and dlt.
+5. **Formats**: whether Parquet is still the de facto default and whether any successor (Vortex, Lance,
+   Nimble, F3) has moved from pilot to production; state of Iceberg's *File Format API*
+   (boundary with `lakehouse-standards`).
+6. **Supply chain**: CVEs and recent compromises of **any** package you are going to
+   add to the environment with warehouse credentials (precedents: `elementary-data` Apr-2026,
+   `durabletask` May-2026, LiteLLM Mar-2026).
+7. Versions and EOL of the warehouse engine (BigQuery/Snowflake/Redshift/Databricks/DuckDB) and of the
+   pipeline's Python *runtimes*.
 
-**Huecos declarados de esta revisión** (no rellenar de memoria):
-- **Mage**: no verificado su estado de mantenimiento. No recomendarlo sin comprobarlo.
-- **Prefect/Dagster**: no verificado si existe compromiso público de licencia OSS a largo plazo más
-  allá de "the open source project continues under its existing license"; la nota de prensa no lo
-  detalla. Verificar antes de apostar la orquestación a Dagster a cinco años.
-- **Parquet v3**: existe discusión en la lista de correo de Apache, sin estado verificado. No
-  afirmar nada sobre una v3.
-- **Fivetran**: precios y condiciones tras la fusión no verificados.
+**Declared gaps of this revision** (do not fill from memory):
+- **Mage**: its maintenance state not verified. Do not recommend it without checking.
+- **Prefect/Dagster**: not verified whether there is a public long-term OSS licence commitment beyond
+  "the open source project continues under its existing license"; the press release does not
+  detail it. Verify before betting orchestration on Dagster for five years.
+- **Parquet v3**: there is discussion on the Apache mailing list, with no verified state. Do not
+  claim anything about a v3.
+- **Fivetran**: pricing and terms after the merger not verified.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

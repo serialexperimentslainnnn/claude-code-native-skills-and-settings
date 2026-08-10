@@ -3,405 +3,405 @@ name: offensive-security-standards
 description: Use when scoping or running an authorized offensive engagement — Rules of Engagement and scoping documents, penetration test, red team, purple team or adversary emulation with MITRE ATT&CK, Caldera or Atomic Red Team, PTES / OSSTMM / NIST SP 800-115 / OWASP WSTG / MASTG methodology, DORA TLPT and TIBER-EU exercises, PCI DSS 11.4 testing, bug bounty and VDP safe harbor, deconfliction with the SOC, or writing the engagement report, evidence chain, severity rating and retest.
 ---
 
-# Estándares de seguridad ofensiva (pentest, red team, purple team)
+# Offensive security standards (pentest, red team, purple team)
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **preparar, gobernar, ejecutar y cerrar un ejercicio ofensivo autorizado** contra
-sistemas de la organización o de un tercero que ha contratado la prueba: elección del tipo de
-ejercicio, Rules of Engagement y contrato, metodología de referencia, reconocimiento con
-criterio, operación segura del equipo ofensivo, deconfliction con defensa, informe con
-evidencia, severidad, retest y métricas del programa. Triggers: "Rules of Engagement", "RoE",
-"alcance del pentest", "red team", "purple team", "adversary emulation", "TLPT", "TIBER-EU",
+Applies to **preparing, governing, running and closing an authorised offensive exercise** against
+systems of the organisation or of a third party that has contracted the test: choice of exercise
+type, Rules of Engagement and contract, reference methodology, reconnaissance with judgement,
+secure operation of the offensive team, deconfliction with defence, report with evidence,
+severity, retest and programme metrics. Triggers: "Rules of Engagement", "RoE",
+"pentest scope", "red team", "purple team", "adversary emulation", "TLPT", "TIBER-EU",
 "PTES", "NIST SP 800-115", "OWASP WSTG/MASTG", "ATT&CK Navigator", "Caldera", "Atomic Red
-Team", "PCI DSS 11.4", "bug bounty", "VDP", "safe harbor", "informe de pentest", "retest",
+Team", "PCI DSS 11.4", "bug bounty", "VDP", "safe harbor", "pentest report", "retest",
 "deconfliction", "stop condition".
 
-### Precondición dura — no negociable
+### Hard precondition — non-negotiable
 
-**Sin autorización escrita del titular del sistema no se procede. No hay excepción técnica,
-ni de urgencia, ni de "es obvio que querrían que lo probáramos".** Antes de la primera
-petición de red debe existir **una** de estas dos cosas:
+**Without written authorisation from the system owner, you do not proceed. There is no technical
+exception, no urgency exception, and no "it is obvious they would want us to test it".** Before the
+first network request there must exist **one** of these two things:
 
-1. **Autorización por escrito y firmada** por quien tiene potestad sobre los activos:
-   RoE firmadas con alcance explícito, exclusiones, ventana temporal, contactos de emergencia
-   24×7, condiciones de parada y cláusula de no-daño (§3). Si el activo lo opera un tercero
-   (nube, hosting, SaaS, MSP), la autorización del cliente **no basta**: hace falta también la
-   del operador o el cumplimiento de su procedimiento de notificación de pruebas.
-2. **Entorno de laboratorio propio, CTF o plataforma de entrenamiento** cuyos términos de
-   servicio autoricen expresamente la actividad → eso es el dominio de `ctf-lab-standards`,
-   no de esta skill.
+1. **Written and signed authorisation** by whoever holds authority over the assets:
+   signed RoE with explicit scope, exclusions, time window, 24×7 emergency contacts,
+   stop conditions and a no-harm clause (§3). If the asset is operated by a third party
+   (cloud, hosting, SaaS, MSP), the client's authorisation **is not enough**: the operator's is
+   also required, or compliance with its testing notification procedure.
+2. **Your own lab environment, CTF or training platform** whose terms of service expressly
+   authorise the activity → that is the domain of `ctf-lab-standards`,
+   not of this skill.
 
-Encuadre legal (España/UE, **orientativo, no asesoramiento jurídico**): el acceso no
-autorizado a un sistema de información y la interceptación de comunicaciones están
-tipificados en el Código Penal español (arts. 197 bis y 197 ter, introducidos por la LO
-1/2015 en trasposición de la Directiva 2013/40/UE); los daños informáticos, en el art. 264.
-**El consentimiento libre, específico e informado del titular es lo que hace lícita la
-prueba** — la buena intención no es una defensa, y la ley no reconoce una figura de "hacking
-ético" como eximente autónoma. La técnica empleada por un profesional y por un delincuente es
-la misma; la diferencia es el papel firmado. **Toda RoE, y en particular cualquier duda sobre
-alcance, jurisdicción o datos personales, se valida con el departamento legal de ambas
-partes.** No improvises la interpretación de la norma.
+Legal framing (Spain/EU, **indicative, not legal advice**): unauthorised access to an
+information system and the interception of communications are
+criminalised in the Spanish Criminal Code (arts. 197 bis and 197 ter, introduced by LO
+1/2015 transposing Directive 2013/40/EU); computer damage, in art. 264.
+**The owner's free, specific and informed consent is what makes the test lawful** — good
+intentions are not a defence, and the law recognises no standalone "ethical hacking"
+exemption. The technique used by a professional and by a criminal is
+the same; the difference is the signed paper. **Every RoE, and in particular any doubt about
+scope, jurisdiction or personal data, is validated with the legal department of both
+parties.** Do not improvise the interpretation of the law.
 
-**No aplica**: ver `ctf-lab-standards` (entrenamiento en laboratorio propio o plataforma con
-ToS permisivos, donde la autorización es intrínseca al entorno y el objetivo es aprender, no
-entregar riesgo a un cliente), `appsec-standards` (metodología **defensiva**: modelado de
-amenazas, clases de vulnerabilidad y sus controles — el ofensivo las explota, el defensivo
-las previene y las evita en diseño), `vulnerability-management-standards` (ciclo de vida de
-CVEs de terceros, CVSS/EPSS/KEV, SSVC, SLA de remediación y VEX — **es el destinatario de tus
-hallazgos**, no el productor), `grc-compliance-standards` (marco normativo, aceptación formal
-de riesgo, evidencia de auditoría, obligación contractual de testear),
-`identity-access-management-standards` (diseño del IdP, flujos OAuth/OIDC, PAM),
-`cryptography-pki-standards` (evaluación de algoritmos y TLS), `networking-standards`
-(segmentación y firewalling que se pone a prueba), `kubernetes-standards` (hardening de
-imágenes y admisión), `bash-linux-scripting-standards` (herramienta propia y automatización),
-`homelab-standards` (laboratorio personal general: hardware, coste, self-hosting), las skills
-de nube y de lenguaje —entre ellas `powershell-standards`, que **deriva aquí** las técnicas
-ofensivas que prohíbe en su §7 (evasión de AMSI y del *ScriptBlock Logging*, ofuscación,
-descargadores en memoria) y se queda el criterio defensivo: firma de scripts, JEA, *Constrained
-Language Mode*, transcripción y registro—, y `c-standards`/`cpp-standards` (explican categorías
-de vulnerabilidad de memoria **para prevenirlas**; la explotación es de aquí), `assembly-standards`
-(es una skill **defensiva y de ingeniería** — fija cuándo se justifica escribir
-ensamblador y cómo se mantiene, y **declara explícitamente que no incluye recetario de explotación**
-—shellcode, gadgets ROP, evasión—: eso es de aquí, con alcance y autorización por escrito),
-`solidity-standards` (describe las clases de vulnerabilidad de contratos **para
-prevenirlas**; probar un protocolo de terceros exige alcance y permiso explícitos y se rige por
-esta skill). Además: `detection-engineering-standards` (reglas de
-detección, SIEM y contenido analítico — **frontera compartida en purple team**: aquí se genera
-la telemetría de ataque y se documenta la técnica; allí se escribe y valida la detección),
-`incident-response-forensics-standards` (gestión del incidente real y forense —
-si durante el ejercicio detectas un compromiso preexistente, paras y escalas allí),
+**Not applicable**: see `ctf-lab-standards` (training in your own lab or on a platform with
+permissive ToS, where authorisation is intrinsic to the environment and the goal is to learn, not
+to deliver risk to a client), `appsec-standards` (**defensive** methodology: threat
+modelling, vulnerability classes and their controls — the offensive side exploits them, the defensive side
+prevents them and designs them out), `vulnerability-management-standards` (lifecycle of
+third-party CVEs, CVSS/EPSS/KEV, SSVC, remediation SLAs and VEX — **it is the recipient of your
+findings**, not the producer), `grc-compliance-standards` (regulatory framework, formal risk
+acceptance, audit evidence, contractual obligation to test),
+`identity-access-management-standards` (IdP design, OAuth/OIDC flows, PAM),
+`cryptography-pki-standards` (algorithm and TLS assessment), `networking-standards`
+(segmentation and firewalling that gets put to the test), `kubernetes-standards` (image
+and admission hardening), `bash-linux-scripting-standards` (own tooling and automation),
+`homelab-standards` (general personal lab: hardware, cost, self-hosting), the cloud and
+language skills —among them `powershell-standards`, which **defers here** the offensive
+techniques it forbids in its §7 (AMSI and *ScriptBlock Logging* evasion, obfuscation,
+in-memory downloaders) and keeps the defensive criteria: script signing, JEA, *Constrained
+Language Mode*, transcription and logging—, and `c-standards`/`cpp-standards` (they explain memory
+vulnerability categories **in order to prevent them**; exploitation belongs here), `assembly-standards`
+(it is a **defensive and engineering** skill — it sets when writing
+assembly is justified and how it is maintained, and **explicitly declares that it includes no exploitation cookbook**
+—shellcode, ROP gadgets, evasion—: that belongs here, with written scope and authorisation),
+`solidity-standards` (it describes contract vulnerability classes **in order to
+prevent them**; testing a third-party protocol requires explicit scope and permission and is governed by
+this skill). Additionally: `detection-engineering-standards` (detection
+rules, SIEM and analytic content — **shared boundary in purple team**: here the attack
+telemetry is generated and the technique documented; there the detection is written and validated),
+`incident-response-forensics-standards` (management of the real incident and forensics —
+if during the exercise you detect a pre-existing compromise, you stop and escalate there),
 `linux-hardening-standards`, `container-runtime-security-standards`.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web el estado de cada marco antes de citarlo en una propuesta o contrato (§8).
-> Los datos siguientes son de agosto 2026 y caducan.
+> Verify on the web the status of each framework before citing it in a proposal or contract (§8).
+> The following data is from August 2026 and expires.
 
-| Ámbito | Default | Motivo / alternativa justificable |
+| Area | Default | Reason / justifiable alternative |
 |---|---|---|
-| Metodología base del informe | **NIST SP 800-115** como esqueleto de proceso (planificación → descubrimiento → análisis → explotación → post-testing) | Es la referencia que exigen o aceptan los auditores. **Ojo: sigue siendo la edición de 2008, sin revisión publicada** — cubre mal nube, CI/CD e identidad moderna: complétala, no la uses sola |
-| Metodología técnica web | **OWASP WSTG** (estable **v4.2**, dic 2020; **v5.0 en desarrollo** en el repo) | Casos de prueba referenciables por ID (`WSTG-v42-<cat>-<n>`) en el informe. Enlaza siempre a la URL **versionada**, nunca a `latest` o `stable` |
-| Metodología técnica móvil | **OWASP MASTG v2.0.0** (2026, primer estable del refactor v2) + **MASVS v2.1.0** (ene 2024, 8 categorías) | Los niveles "L1/L2/R" ya **no** están en MASVS: el riesgo se tiera por **perfiles del MASTG** (MAS-L1/L2/R). Un informe que cite MASVS L2 usa el modelo v1, retirado |
-| Marco de procedimiento comercial | **PTES** solo como vocabulario de fases | Sin gobernanza formal activa y con partes técnicas envejecidas (referencias a plataformas ya irrelevantes, cobertura pobre de nube y contenedores). Cítalo por sus 7 fases, no como estándar técnico vigente |
-| OSSTMM | **No por defecto** | Sigue en **v3 (2010)**; la v4 lleva años en borrador y el material nuevo está tras membresía de ISECOM. Útil si necesitas su métrica **rav** o su cobertura multicanal (humano, físico, wireless); si no, no aporta |
-| Taxonomía de técnicas | **MITRE ATT&CK Enterprise v19.1** (v19 publicada 28 abr 2026) | Idioma común con defensa. Cambio estructural de v19: **la táctica Defense Evasion se parte en Stealth y Defense Impairment** — todo mapeo, informe o heatmap anterior necesita migración |
-| Visualización de cobertura | **ATT&CK Navigator** con capas versionadas y guardadas en el repo del ejercicio | Una capa sin versión de ATT&CK anotada es inservible a los 6 meses |
-| Emulación automatizada | **Atomic Red Team** (Red Canary) para pruebas atómicas de detección; **MITRE Caldera** para campañas encadenadas | Atomic para purple team continuo (biblioteca amplia y mapeada); Caldera cuando hace falta agente y cadena completa. **Verificar release y salud del proyecto antes de usar** (§8) |
-| Emulación de adversario concreto | **Threat intelligence primero, TTPs después** | Emular un actor que no amenaza al cliente es teatro. En TLPT el proveedor de inteligencia es obligatoriamente externo |
-| Severidad | **CVSS v4.0 como entrada, nunca como salida**, ajustada por explotabilidad demostrada + exposición + impacto de negocio | Ver `vulnerability-management-standards` para el modelo completo (CVSS-B vs CVSS-BTE, EPSS, KEV, SSVC). Un informe que ordena por CVSS base sin contexto no prioriza: ordena alfabéticamente el pánico |
-| Sector financiero UE | **TIBER-EU** (actualizado 11 feb 2025 para alinearse con DORA) como vía para el **TLPT** de DORA arts. 26-27 | El RTS de TLPT se publicó el **18 jun 2025** y aplica desde el **8 jul 2025**. Los plazos los dispara la **carta de notificación de la autoridad** (3 meses para documentos de inicio, 6 para el scope), no una fecha universal. **Purple teaming es obligatorio** en TIBER-EU alineado |
-| Pagos | **PCI DSS v4.0.1 req. 11.4** | Interno y externo **anuales y tras cambio significativo**, ambos, no intercambiables; validación de la **segmentación** al menos anual (más frecuente para *service providers*); metodología documentada e industry-accepted; testers con independencia organizativa. Confirmar la letra exacta con el QSA |
-| Divulgación sin contrato | **VDP con safe harbor estilo disclose.io**; nunca testeo unilateral | Un programa público de bug bounty **es** la autorización, pero solo dentro de su alcance y sus reglas. Sin programa ni contrato, no hay autorización: se reporta el hallazgo, no se profundiza |
+| Base report methodology | **NIST SP 800-115** as the process skeleton (planning → discovery → analysis → exploitation → post-testing) | It is the reference auditors require or accept. **Careful: it is still the 2008 edition, with no published revision** — it covers cloud, CI/CD and modern identity poorly: complement it, do not use it alone |
+| Web technical methodology | **OWASP WSTG** (stable **v4.2**, Dec 2020; **v5.0 in development** in the repo) | Test cases referenceable by ID (`WSTG-v42-<cat>-<n>`) in the report. Always link to the **versioned** URL, never to `latest` or `stable` |
+| Mobile technical methodology | **OWASP MASTG v2.0.0** (2026, first stable of the v2 refactor) + **MASVS v2.1.0** (Jan 2024, 8 categories) | The "L1/L2/R" levels are **no** longer in MASVS: risk is tiered by **MASTG profiles** (MAS-L1/L2/R). A report citing MASVS L2 is using the v1 model, withdrawn |
+| Commercial procedure framework | **PTES** only as phase vocabulary | Without active formal governance and with aged technical parts (references to platforms that are already irrelevant, poor cloud and container coverage). Cite it for its 7 phases, not as a current technical standard |
+| OSSTMM | **Not by default** | Still at **v3 (2010)**; v4 has been in draft for years and the new material is behind ISECOM membership. Useful if you need its **rav** metric or its multi-channel coverage (human, physical, wireless); otherwise it adds nothing |
+| Technique taxonomy | **MITRE ATT&CK Enterprise v19.1** (v19 published 28 Apr 2026) | Common language with defence. Structural change in v19: **the Defense Evasion tactic splits into Stealth and Defense Impairment** — every earlier mapping, report or heatmap needs migration |
+| Coverage visualisation | **ATT&CK Navigator** with layers versioned and stored in the exercise repo | A layer without the ATT&CK version annotated is useless within 6 months |
+| Automated emulation | **Atomic Red Team** (Red Canary) for atomic detection tests; **MITRE Caldera** for chained campaigns | Atomic for continuous purple team (broad, mapped library); Caldera when an agent and a full chain are needed. **Verify release and project health before use** (§8) |
+| Emulation of a specific adversary | **Threat intelligence first, TTPs after** | Emulating an actor that does not threaten the client is theatre. In TLPT the intelligence provider is mandatorily external |
+| Severity | **CVSS v4.0 as input, never as output**, adjusted by demonstrated exploitability + exposure + business impact | See `vulnerability-management-standards` for the full model (CVSS-B vs CVSS-BTE, EPSS, KEV, SSVC). A report that sorts by base CVSS without context does not prioritise: it sorts panic alphabetically |
+| EU financial sector | **TIBER-EU** (updated 11 Feb 2025 to align with DORA) as the route for the **TLPT** of DORA arts. 26-27 | The TLPT RTS was published on **18 Jun 2025** and applies from **8 Jul 2025**. The deadlines are triggered by the **authority's notification letter** (3 months for start-up documents, 6 for the scope), not by a universal date. **Purple teaming is mandatory** in DORA-aligned TIBER-EU |
+| Payments | **PCI DSS v4.0.1 req. 11.4** | Internal and external **annually and after significant change**, both, not interchangeable; **segmentation** validation at least annually (more frequently for *service providers*); documented and industry-accepted methodology; testers with organisational independence. Confirm the exact wording with the QSA |
+| Disclosure without a contract | **VDP with disclose.io-style safe harbor**; never unilateral testing | A public bug bounty programme **is** the authorisation, but only within its scope and its rules. With no programme and no contract there is no authorisation: the finding is reported, not pursued further |
 
-### Qué ejercicio, y cuándo
+### Which exercise, and when
 
-| Ejercicio | Pregunta que responde | Cuándo elegirlo | Cuándo es un error |
+| Exercise | Question it answers | When to choose it | When it is a mistake |
 |---|---|---|---|
-| **Vulnerability assessment** | ¿Qué debilidades conocidas tengo? | Cobertura amplia, barata, repetible; base de un programa naciente | Venderlo como pentest. No hay explotación ni encadenamiento |
-| **Penetration test** | ¿Se puede explotar y hasta dónde llega? | Alcance acotado (app, red, nube, móvil, ICS), profundidad técnica, cumplimiento (PCI 11.4) | Esperar que mida la capacidad de **detección**: no la mide, y el pentester ruidoso no lo intenta |
-| **Red team** | ¿Detectan y responden ante un adversario realista con objetivos concretos? | Programa maduro, con SOC operativo y detección ya existente | Con detección inmadura: gastas presupuesto para descubrir lo que un assessment te decía por 1/10 del coste |
-| **Purple team** | ¿Qué vemos, qué no vemos, y qué regla falta? | Máximo retorno por euro en madurez de detección; obligatorio en TIBER-EU alineado a DORA | Confundirlo con un red team "con pistas": es colaborativo por diseño y se mide en detecciones creadas |
-| **Adversary emulation** | ¿Aguantamos las TTPs del actor que realmente nos amenaza? | Hay inteligencia específica del sector; se emula un actor, no "un hacker" | Sin threat intel: emulas un actor irrelevante y validas nada |
-| **TLPT (TIBER-EU / DORA)** | ¿Resiste la entidad financiera un ataque dirigido a funciones críticas? | Entidad significativa notificada por su autoridad | Tratarlo como un red team normal: hay Control Team, inteligencia externa obligatoria, y la autoridad puede rechazar el ejercicio |
-| **Bug bounty / VDP** | ¿Qué encuentra la multitud de forma continua? | Complemento continuo tras alcanzar madurez | Como sustituto del pentest: cobertura sesgada a lo que paga y a lo fácil de demostrar |
+| **Vulnerability assessment** | Which known weaknesses do I have? | Broad, cheap, repeatable coverage; the base of a nascent programme | Selling it as a pentest. There is no exploitation and no chaining |
+| **Penetration test** | Can it be exploited, and how far does it go? | Bounded scope (app, network, cloud, mobile, ICS), technical depth, compliance (PCI 11.4) | Expecting it to measure **detection** capability: it does not measure it, and the noisy pentester does not even try |
+| **Red team** | Do they detect and respond to a realistic adversary with concrete objectives? | Mature programme, with an operating SOC and detection already in place | With immature detection: you spend budget to discover what an assessment told you for 1/10 of the cost |
+| **Purple team** | What do we see, what do we not see, and which rule is missing? | Maximum return per euro in detection maturity; mandatory in DORA-aligned TIBER-EU | Confusing it with a red team "with hints": it is collaborative by design and is measured in detections created |
+| **Adversary emulation** | Do we withstand the TTPs of the actor that actually threatens us? | There is sector-specific intelligence; an actor is emulated, not "a hacker" | Without threat intel: you emulate an irrelevant actor and validate nothing |
+| **TLPT (TIBER-EU / DORA)** | Does the financial entity withstand an attack aimed at critical functions? | Significant entity notified by its authority | Treating it as a normal red team: there is a Control Team, mandatory external intelligence, and the authority can reject the exercise |
+| **Bug bounty / VDP** | What does the crowd find continuously? | Continuous complement once maturity is reached | As a substitute for the pentest: coverage biased towards what pays and what is easy to demonstrate |
 
-## 3. Rules of Engagement: el contrato como artefacto de ingeniería
+## 3. Rules of Engagement: the contract as an engineering artefact
 
-Las RoE no son papeleo previo: son **el documento de control del ejercicio**. Si algo no está
-escrito ahí, no está autorizado. Contenido mínimo, todo explícito:
+The RoE are not preliminary paperwork: they are **the control document of the exercise**. If
+something is not written there, it is not authorised. Minimum content, all explicit:
 
-- **Partes y potestad**: quién firma y por qué tiene autoridad sobre esos activos. Firma de
-  alguien sin potestad = ausencia de autorización.
-- **Alcance positivo**: rangos IP, dominios, aplicaciones, cuentas de nube, identidades, apps
-  móviles, ubicaciones físicas, personal en alcance para ingeniería social. **Enumerado**, no
-  descrito ("todo lo del dominio" no es un alcance).
-- **Exclusiones explícitas**: sistemas frágiles, legacy sin soporte, dispositivos médicos o
-  industriales, terceros, ventanas de negocio críticas (cierre contable, campañas).
-- **Terceros y proveedores**: qué activos son de un tercero, quién le pide permiso, y qué
-  procedimiento de notificación previa exige cada proveedor de nube u hosting. Un activo de
-  un tercero **sin su autorización queda fuera de alcance**, aunque el cliente lo use.
-- **Ventana temporal**: fechas y **franjas horarias**. Fuera de ventana no se toca nada.
-- **Técnicas autorizadas y prohibidas**: ingeniería social sí/no; phishing con qué límites;
-  acceso físico; wireless; ataques a credenciales y su límite de bloqueo de cuentas; **DoS y
-  pruebas de agotamiento de recursos: prohibidas salvo autorización explícita y aislada**.
-- **Testing en producción**: si se prueba en producción (lo normal, porque preproducción no
-  representa el riesgo), fijar límites de tasa, prohibición de modificar/borrar datos, y
-  procedimiento de reversión de cualquier cambio.
-- **Datos personales y datos reales**: qué se hace si se accede a PII, historia clínica,
-  datos de pago o secretos. Regla por defecto: **se demuestra el acceso, no se extrae el
-  dato**. Captura del mínimo imprescindible, redactada, y notificación inmediata.
-- **Stop conditions** — el ejercicio se detiene y se escala de inmediato ante:
-  indisponibilidad de un servicio productivo causada o sospechada; corrupción o pérdida de
-  datos; evidencia de **compromiso previo por un tercero real**; acceso involuntario a un
-  sistema fuera de alcance; hallazgo crítico con explotación trivial y exposición a internet;
-  impacto sobre seguridad física o de personas; petición de parada del cliente.
-- **Escalado y contactos**: nombres, teléfonos y suplentes 24×7 en ambos lados; canal de
-  emergencia **fuera de banda** (no el correo corporativo del cliente, que puede ser
-  precisamente lo que estás comprometiendo o lo que el atacante real vigila).
-- **Cláusula de no-daño y de mínima intrusión**: la prueba demuestra el riesgo con el menor
-  impacto posible; se elige siempre la PoC menos destructiva que evidencia el hallazgo.
-- **Deconfliction**: procedimiento y palabra clave para que el SOC distinga tu actividad de
-  un ataque real, y a la inversa (§6).
-- **Propiedad, custodia y destrucción de datos**: quién es dueño de los hallazgos y evidencias,
-  cifrado, retención máxima y **fecha de destrucción certificada**.
-- **Confidencialidad y publicación**: NDA, y si se puede publicar un caso anonimizado.
-- **Seguro de responsabilidad civil** del proveedor y límites de responsabilidad.
+- **Parties and authority**: who signs and why they have authority over those assets. A signature
+  from someone without authority = absence of authorisation.
+- **Positive scope**: IP ranges, domains, applications, cloud accounts, identities, mobile
+  apps, physical locations, personnel in scope for social engineering. **Enumerated**, not
+  described ("everything in the domain" is not a scope).
+- **Explicit exclusions**: fragile systems, unsupported legacy, medical or
+  industrial devices, third parties, critical business windows (financial close, campaigns).
+- **Third parties and providers**: which assets belong to a third party, who asks them for permission, and what
+  prior notification procedure each cloud or hosting provider requires. A third-party asset
+  **without its authorisation is out of scope**, even if the client uses it.
+- **Time window**: dates and **time slots**. Outside the window nothing is touched.
+- **Authorised and forbidden techniques**: social engineering yes/no; phishing within what limits;
+  physical access; wireless; credential attacks and their account-lockout limit; **DoS and
+  resource exhaustion testing: forbidden unless explicitly and separately authorised**.
+- **Testing in production**: if testing happens in production (the norm, because preproduction does not
+  represent the risk), set rate limits, prohibition on modifying/deleting data, and a
+  rollback procedure for any change.
+- **Personal data and real data**: what to do if PII, medical records,
+  payment data or secrets are accessed. Default rule: **access is demonstrated, the data is not
+  extracted**. Capture the bare minimum, redacted, and notify immediately.
+- **Stop conditions** — the exercise halts and is escalated immediately upon:
+  unavailability of a production service caused or suspected; corruption or loss of
+  data; evidence of **prior compromise by a real third party**; unintended access to a
+  system out of scope; critical finding with trivial exploitation and internet exposure;
+  impact on physical or personal safety; a stop request from the client.
+- **Escalation and contacts**: names, phone numbers and 24×7 backups on both sides; emergency
+  channel **out of band** (not the client's corporate email, which may be
+  precisely what you are compromising or what the real attacker is watching).
+- **No-harm and minimum-intrusion clause**: the test demonstrates the risk with the least
+  possible impact; always choose the least destructive PoC that evidences the finding.
+- **Deconfliction**: procedure and keyword so the SOC can distinguish your activity from
+  a real attack, and vice versa (§6).
+- **Ownership, custody and destruction of data**: who owns the findings and evidence,
+  encryption, maximum retention and **certified destruction date**.
+- **Confidentiality and publication**: NDA, and whether an anonymised case may be published.
+- **Professional liability insurance** of the provider and limits of liability.
 
-**Regla de oro**: ante cualquier ambigüedad sobre si algo está en alcance, **está fuera**
-hasta que se aclare por escrito. La ampliación de alcance se documenta como adenda firmada,
-nunca por mensaje de chat ni "de palabra con el técnico".
+**Golden rule**: faced with any ambiguity about whether something is in scope, **it is out**
+until it is clarified in writing. A scope extension is documented as a signed addendum,
+never by chat message nor "verbally with the technician".
 
-## 4. Calidad del trabajo ofensivo
+## 4. Quality of the offensive work
 
-Lo que separa un ejercicio profesional de un juego con herramientas.
+What separates a professional exercise from playing with tools.
 
-### Reproducibilidad
-- Cada hallazgo se documenta con **pasos exactos, precondiciones, cuenta usada, hora UTC y
-  resultado esperado**. Si el defensor no puede reproducirlo, no puede verificar el cierre y
-  el hallazgo se disputa.
-- **Registro de toda la actividad**: log de comandos con marca temporal e IP de origen. Es lo
-  que permite responder "¿fuiste tú a las 03:14?" durante y después del ejercicio, y lo que te
-  exonera si algo se rompe por otra causa.
-- Herramienta que se ejecuta contra producción, **se entiende primero**: qué peticiones lanza,
-  a qué ritmo, qué escribe y qué puede romper. Correr un escáner con perfil agresivo contra un
-  sistema frágil sin conocerlo es negligencia, no mala suerte.
+### Reproducibility
+- Each finding is documented with **exact steps, preconditions, account used, UTC time and
+  expected result**. If the defender cannot reproduce it, they cannot verify the closure and
+  the finding gets disputed.
+- **Log all activity**: command log with timestamp and source IP. It is what
+  lets you answer "was that you at 03:14?" during and after the exercise, and what
+  exonerates you if something breaks for another reason.
+- A tool that is run against production **is understood first**: what requests it sends,
+  at what rate, what it writes and what it can break. Running a scanner with an aggressive profile against a
+  fragile system without knowing it is negligence, not bad luck.
 
-### Cadena de custodia de la evidencia
-- Evidencia mínima suficiente: captura recortada y **redactada**, hash del artefacto, no el
-  volcado completo de una base de datos.
-- Almacenamiento **cifrado en reposo**, acceso limitado al equipo del ejercicio, inventario de
-  qué se recogió y dónde vive.
-- **Destrucción certificada** en la fecha pactada, incluidas copias en portátiles, buckets
-  temporales, infraestructura de operación y herramientas SaaS.
+### Evidence chain of custody
+- Minimum sufficient evidence: cropped and **redacted** screenshot, hash of the artefact, not the
+  full dump of a database.
+- **Encrypted at rest** storage, access limited to the exercise team, inventory of
+  what was collected and where it lives.
+- **Certified destruction** on the agreed date, including copies on laptops, temporary
+  buckets, operating infrastructure and SaaS tools.
 
-### Falsos positivos
-- **Nada entra en el informe sin verificación manual.** La salida cruda de un escáner no es un
-  hallazgo: es una hipótesis.
-- Criterio de descarte: no reproducible en dos intentos, mitigado por un control que sí
-  existe, o inaplicable por configuración → se descarta y **se documenta el descarte** (evita
-  que reaparezca en el siguiente ejercicio como novedad).
-- Cuando no se puede explotar por límite de alcance o de RoE pero la debilidad es real: se
-  reporta como **hallazgo no confirmado**, con esa etiqueta y el motivo. Honestidad sobre
-  espectáculo.
+### False positives
+- **Nothing goes into the report without manual verification.** The raw output of a scanner is not a
+  finding: it is a hypothesis.
+- Discard criteria: not reproducible in two attempts, mitigated by a control that does
+  exist, or not applicable given the configuration → it is discarded and **the discard is documented** (it prevents
+  it reappearing in the next exercise as something new).
+- When it cannot be exploited due to a scope or RoE limit but the weakness is real: it is
+  reported as an **unconfirmed finding**, with that label and the reason. Honesty over
+  spectacle.
 
-### Revisión por pares
-- **Ningún informe se entrega sin revisión de un segundo operador**: severidad, reproducción,
-  redacción, y comprobación de que no queda PII ni credenciales reales en el documento.
-- Revisión específica de la **justificación de severidad**: cada crítica y alta debe soportar
-  la pregunta "¿por qué no es una media?" con impacto de negocio, no con adjetivos.
-- QA de cobertura: qué del alcance **no** se probó y por qué (tiempo, bloqueo, RoE). Un informe
-  que no declara lo que no miró está afirmando implícitamente algo falso.
+### Peer review
+- **No report is delivered without review by a second operator**: severity, reproduction,
+  wording, and a check that no PII or real credentials remain in the document.
+- Specific review of the **severity justification**: every critical and high must withstand
+  the question "why is it not a medium?" with business impact, not with adjectives.
+- Coverage QA: what of the scope was **not** tested and why (time, blocker, RoE). A report
+  that does not declare what it did not look at is implicitly asserting something false.
 
-## 5. Seguridad de la operación ofensiva
+## 5. Security of the offensive operation
 
-El equipo ofensivo es, durante el ejercicio, **el mayor riesgo concentrado del cliente**:
-tiene accesos, credenciales y datos que nadie más reúne. Se protege en consecuencia.
+During the exercise the offensive team is **the client's largest concentrated risk**:
+it holds accesses, credentials and data that nobody else brings together. It is protected accordingly.
 
-- **Infraestructura de operación aislada y con ciclo de vida definido**: dedicada por
-  ejercicio y por cliente, **nunca compartida entre clientes**, levantada y destruida con IaC,
-  con inventario de todo lo desplegado. Endurecida y parcheada: una infraestructura ofensiva
-  comprometida convierte el ejercicio en una brecha real.
-- **Datos del cliente**: cifrados en tránsito y en reposo, en almacenamiento controlado por el
-  proveedor del servicio (nunca en portátiles sin cifrado de disco, nunca en SaaS personal ni
-  en un LLM público), con MFA y mínimo privilegio. Retención mínima y borrado certificado.
-- **PII hallada**: se para de recolectar, se notifica al contacto acordado y se documenta la
-  exposición sin copiar el dato. Si hay indicios de brecha con obligación de notificación
-  (GDPR), **es del cliente la obligación de notificar**; tu deber es informarle sin demora.
-- **Hallazgo crítico**: se notifica **inmediatamente y fuera de banda**, sin esperar al
-  informe final. Un crítico explotable en internet guardado tres semanas "para el entregable"
-  es una decisión indefendible.
-- **Compromiso previo detectado**: parada inmediata, notificación al contacto de emergencia,
-  preservación de la evidencia sin tocar el sistema, y traspaso a respuesta a incidentes
-  (`incident-response-forensics-standards`). No investigues tú el incidente ajeno
-  salvo que te contraten para eso: contaminas la evidencia.
-- **Cadena de suministro de tu propio toolchain**: 2026 ha demostrado que las herramientas de
-  seguridad son el objetivo predilecto — la campaña **TeamPCP** (marzo 2026) comprometió por
-  envenenamiento de tags y credenciales residuales varias piezas de tooling de CI/seguridad
-  ampliamente desplegadas, con robo de secretos, backdoors persistentes y propagación tipo
-  gusano. Consecuencia operativa: fija dependencias y acciones **por digest**, verifica firma
-  y procedencia, ejecuta el tooling en entorno efímero sin credenciales de larga vida, y
-  **comprueba por web si alguna herramienta que vas a usar tiene incidente reciente** (§8).
-- **Cuentas y credenciales obtenidas** durante el ejercicio: tratadas como material clasificado
-  del cliente. No se reutilizan fuera del ejercicio, no se guardan tras el cierre, y las que
-  se crearon (usuarios, claves, tokens) se **inventarían y se retiran** en la fase de limpieza.
-- **Higiene del operador**: equipo dedicado o VM del ejercicio, sin mezclar con navegación
-  personal ni con datos de otros clientes; VPN y salida de red identificable y acordada con el
-  cliente para permitir la atribución.
+- **Isolated operating infrastructure with a defined lifecycle**: dedicated per
+  exercise and per client, **never shared between clients**, stood up and destroyed with IaC,
+  with an inventory of everything deployed. Hardened and patched: a compromised offensive
+  infrastructure turns the exercise into a real breach.
+- **Client data**: encrypted in transit and at rest, in storage controlled by the
+  service provider (never on laptops without disk encryption, never in personal SaaS nor
+  in a public LLM), with MFA and least privilege. Minimum retention and certified deletion.
+- **PII found**: stop collecting, notify the agreed contact and document the
+  exposure without copying the data. If there are indications of a breach with a notification obligation
+  (GDPR), **the obligation to notify is the client's**; your duty is to inform them without delay.
+- **Critical finding**: notified **immediately and out of band**, without waiting for the
+  final report. An internet-exploitable critical held for three weeks "for the deliverable"
+  is an indefensible decision.
+- **Prior compromise detected**: immediate stop, notification of the emergency contact,
+  preservation of the evidence without touching the system, and handover to incident response
+  (`incident-response-forensics-standards`). Do not investigate someone else's incident yourself
+  unless you are contracted for it: you contaminate the evidence.
+- **Supply chain of your own toolchain**: 2026 has shown that security
+  tools are the favoured target — the **TeamPCP** campaign (March 2026) compromised, through
+  tag poisoning and residual credentials, several widely deployed CI/security tooling pieces,
+  with secret theft, persistent backdoors and worm-like propagation. Operational
+  consequence: pin dependencies and actions **by digest**, verify signature
+  and provenance, run the tooling in an ephemeral environment without long-lived credentials, and
+  **check on the web whether any tool you are going to use has a recent incident** (§8).
+- **Accounts and credentials obtained** during the exercise: treated as classified client
+  material. They are not reused outside the exercise, not kept after closure, and those
+  created (users, keys, tokens) are **inventoried and withdrawn** in the cleanup phase.
+- **Operator hygiene**: dedicated machine or exercise VM, not mixed with personal
+  browsing nor with other clients' data; VPN and network egress identifiable and agreed with the
+  client to allow attribution.
 
-## 6. Operabilidad del ejercicio
+## 6. Operability of the exercise
 
-### Planificación
-- Kick-off con las **tres partes**: negocio (autoriza y define objetivos), TI/operación (sabe
-  qué se rompe), y seguridad/SOC (decide el grado de conocimiento previo). Sin TI en la sala,
-  la primera caída de servicio será una crisis contractual.
-- **Objetivos en lenguaje de negocio**, no de técnica: "¿puede alguien desde internet llegar a
-  los datos de nómina?" en vez de "probar la DMZ". Los objetivos determinan el alcance, no al
-  revés.
-- Dimensionado honesto: si el tiempo asignado no cubre el alcance, se recorta el alcance o se
-  declara la cobertura parcial **antes** de firmar. Vender cobertura imposible es fraude.
+### Planning
+- Kick-off with the **three parties**: business (authorises and defines objectives), IT/operations (knows
+  what breaks), and security/SOC (decides the degree of prior knowledge). Without IT in the room,
+  the first service outage will be a contractual crisis.
+- **Objectives in business language**, not technical: "can someone from the internet reach
+  the payroll data?" instead of "test the DMZ". The objectives determine the scope, not the
+  other way round.
+- Honest sizing: if the assigned time does not cover the scope, the scope is cut or
+  partial coverage is declared **before** signing. Selling impossible coverage is fraud.
 
-### Comunicación durante el ejercicio
-- **Canal permanente** con el Control Team / punto de contacto, y cadencia acordada (diaria en
-  pentest, hitos en red team).
-- **Notificación inmediata** de: crítico explotable, indisponibilidad, cambio hecho en un
-  sistema, y cada activación de una stop condition.
-- **Registro de decisiones**: toda ampliación, excepción o autorización puntual se refleja por
-  escrito en el log del ejercicio y se confirma por la persona que la concede.
+### Communication during the exercise
+- **Permanent channel** with the Control Team / point of contact, and an agreed cadence (daily in a
+  pentest, milestones in a red team).
+- **Immediate notification** of: exploitable critical, unavailability, a change made to a
+  system, and each activation of a stop condition.
+- **Decision log**: every extension, exception or one-off authorisation is recorded in
+  writing in the exercise log and confirmed by the person granting it.
 
-### Deconfliction con el SOC
-- **Antes de empezar**: entregar al Control Team las **IPs de origen, rangos, dominios y
-  agentes** utilizados, más una palabra clave del ejercicio y un procedimiento de consulta
-  rápida. En red team esta información la custodia el Control Team, no el SOC, hasta el final.
-- **Durante**: cuando el SOC detecta algo, puede preguntar por el canal de deconfliction si es
-  actividad del equipo. La respuesta es sí/no en minutos. **Nunca se responde "no" a una
-  actividad que sí es tuya**: eso convierte un ejercicio en un incidente falso con coste real.
-- **La actividad no atribuible es un hallazgo, no ruido**: si el SOC detecta algo que no eres
-  tú, eso es lo más importante que ha producido el ejercicio (ver §5, compromiso previo).
-- **Cierre de deconfliction**: al terminar, sesión conjunta de reconstrucción de la línea
-  temporal — qué hiciste, qué vieron, qué no vieron y por qué. **Ese cruce es el entregable
-  de valor real de un red team**, más que la lista de fallos.
+### Deconfliction with the SOC
+- **Before starting**: hand the Control Team the **source IPs, ranges, domains and
+  agents** used, plus an exercise keyword and a quick-query procedure. In a red team this
+  information is held by the Control Team, not by the SOC, until the end.
+- **During**: when the SOC detects something, it can ask over the deconfliction channel whether it is
+  team activity. The answer is yes/no within minutes. **You never answer "no" to an
+  activity that is in fact yours**: that turns an exercise into a false incident with a real cost.
+- **Non-attributable activity is a finding, not noise**: if the SOC detects something that is not you,
+  that is the most important thing the exercise has produced (see §5, prior compromise).
+- **Deconfliction closure**: at the end, a joint session reconstructing the
+  timeline — what you did, what they saw, what they did not see and why. **That cross-check is the deliverable
+  of real value of a red team**, more than the list of flaws.
 
-### Purple team y traducción a detección
-- Cada técnica ejecutada se registra con: **ID de ATT&CK (con versión de la matriz)**, hora
-  UTC, host, cuenta, y la telemetría que *debería* haber generado (fuente de log, campo).
-- La salida del ejercicio hacia defensa es una tabla **técnica → ¿prevenida? / ¿detectada? /
-  ¿alertada? / ¿respondida?**. Las cuatro columnas son distintas: detectar sin alertar es no
-  detectar en la práctica.
-- Las brechas de detección se entregan como **requisitos de regla**, no como reglas escritas:
-  el contenido de detección lo escribe y valida quien opera el SIEM
-  (`detection-engineering-standards`). Escribir tú la regla sin conocer la telemetría
-  del cliente genera falsos positivos que se desactivan a la semana.
-- Reejecutar la técnica **tras desplegar la detección** para validarla. Un purple team que no
-  reejecuta no ha cerrado el bucle.
+### Purple team and translation into detection
+- Each technique executed is recorded with: **ATT&CK ID (with the matrix version)**, UTC
+  time, host, account, and the telemetry it *should* have generated (log source, field).
+- The exercise's output towards defence is a table **technique → prevented? / detected? /
+  alerted? / responded to?**. The four columns are distinct: detecting without alerting is not
+  detecting in practice.
+- Detection gaps are delivered as **rule requirements**, not as written rules:
+  the detection content is written and validated by whoever operates the SIEM
+  (`detection-engineering-standards`). Writing the rule yourself without knowing the client's
+  telemetry generates false positives that get disabled within a week.
+- Re-run the technique **after deploying the detection** to validate it. A purple team that does not
+  re-run has not closed the loop.
 
-### Entregable
-- **Resumen ejecutivo** en lenguaje de negocio: qué riesgo real existe, en qué escenario y qué
-  hay que decidir. Sin jerga, sin CVSS, sin nombres de herramienta. Una página.
-- **Narrativa del ataque**: la cadena, no la lista. Cinco medias encadenadas que llevan a
-  dominio son una crítica; la lista suelta de cinco medias no comunica nada.
-- **Hallazgos**: descripción, evidencia reproducible, **severidad justificada** (CVSS v4.0 +
-  explotabilidad demostrada + exposición + impacto de negocio; EPSS/KEV cuando el hallazgo sea
-  un CVE conocido), y **recomendación accionable** — causa raíz y remedio concreto, no
-  "aplicar buenas prácticas".
-- **Cobertura y limitaciones**: qué se probó, qué no y por qué. Explícito.
-- **Retest**: incluido en el contrato desde el principio, con ventana definida. Se verifica el
-  **cierre real**, no la declaración de cierre. El resultado del retest se anexa al informe
-  original; un hallazgo se cierra cuando el retest lo confirma, nunca antes.
-- **Limpieza y cierre**: inventario de **todo** lo desplegado (cuentas, tareas programadas,
-  claves, ficheros, implantes, reglas, hosts) con su retirada confirmada y firmada por ambas
-  partes. Lo que no se pueda retirar se documenta y se entrega al cliente para que lo elimine.
-- **Traspaso a gestión de vulnerabilidades**: los hallazgos entran en la cola de
-  `vulnerability-management-standards` con dueño y SLA; el informe no es el final del proceso,
-  es su entrada.
+### Deliverable
+- **Executive summary** in business language: what real risk exists, in which scenario and what
+  has to be decided. No jargon, no CVSS, no tool names. One page.
+- **Attack narrative**: the chain, not the list. Five chained mediums that lead to
+  domain are a critical; the loose list of five mediums communicates nothing.
+- **Findings**: description, reproducible evidence, **justified severity** (CVSS v4.0 +
+  demonstrated exploitability + exposure + business impact; EPSS/KEV when the finding is
+  a known CVE), and an **actionable recommendation** — root cause and concrete remedy, not
+  "apply good practices".
+- **Coverage and limitations**: what was tested, what was not and why. Explicit.
+- **Retest**: included in the contract from the start, with a defined window. What is verified is
+  **real closure**, not the declaration of closure. The retest result is annexed to the original
+  report; a finding is closed when the retest confirms it, never before.
+- **Cleanup and closure**: inventory of **everything** deployed (accounts, scheduled tasks,
+  keys, files, implants, rules, hosts) with its withdrawal confirmed and signed by both
+  parties. Whatever cannot be withdrawn is documented and handed to the client to remove.
+- **Handover to vulnerability management**: the findings enter the queue of
+  `vulnerability-management-standards` with an owner and an SLA; the report is not the end of the process,
+  it is its input.
 
-### Métricas honestas del programa
-- Miden **mejora defensiva**, no producción ofensiva: cobertura de técnicas ATT&CK detectadas,
-  tiempo hasta detección y hasta contención por ejercicio, detecciones nuevas desplegadas y
-  validadas, % de hallazgos cerrados dentro de SLA, y recurrencia de la misma causa raíz entre
-  ejercicios.
-- **Vetadas**: número de vulnerabilidades encontradas, número de "dominios comprometidos",
-  y cualquier métrica que premie ruido o penalice al cliente por dejarte encontrar cosas.
-  La recurrencia de causa raíz es la métrica que más duele y más sirve.
+### Honest programme metrics
+- They measure **defensive improvement**, not offensive output: coverage of ATT&CK techniques detected,
+  time to detection and to containment per exercise, new detections deployed and
+  validated, % of findings closed within SLA, and recurrence of the same root cause across
+  exercises.
+- **Vetoed**: number of vulnerabilities found, number of "domains compromised",
+  and any metric that rewards noise or penalises the client for letting you find things.
+  Root-cause recurrence is the metric that hurts most and serves most.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-### Cadencia
-- **RoE y plantilla contractual**: revisión anual y tras cualquier incidente durante un
-  ejercicio; validación legal cuando cambie la normativa aplicable.
-- **Mapeos de ATT&CK**: revisión en cada release mayor de la matriz. La v19 (abr 2026) partió
-  Defense Evasion en **Stealth** y **Defense Impairment**: todo heatmap, capa de Navigator o
-  informe anterior necesita migración explícita, no reetiquetado automático.
-- **Metodologías**: verificar por web al inicio de cada ejercicio la versión vigente de WSTG,
-  MASTG/MASVS y ATT&CK que se citará en el informe (§8).
-- **Toolchain**: revisión trimestral de salud, licencia y **incidentes de cadena de
-  suministro** de cada herramienta del arsenal.
-- **Frecuencia de ejercicio**: anual y tras cambio significativo como suelo (exigencia PCI DSS
-  11.4); trienal para TLPT bajo DORA; continuo para purple team y bug bounty. La frecuencia la
-  fija el ritmo de cambio del sistema, no el calendario de auditoría.
+### Cadence
+- **RoE and contract template**: annual review and after any incident during an
+  exercise; legal validation whenever the applicable regulation changes.
+- **ATT&CK mappings**: review at each major release of the matrix. v19 (Apr 2026) split
+  Defense Evasion into **Stealth** and **Defense Impairment**: every earlier heatmap, Navigator layer or
+  report needs explicit migration, not automatic relabelling.
+- **Methodologies**: verify on the web at the start of each exercise the current version of WSTG,
+  MASTG/MASVS and ATT&CK that will be cited in the report (§8).
+- **Toolchain**: quarterly review of health, licence and **supply chain
+  incidents** of every tool in the arsenal.
+- **Exercise frequency**: annually and after significant change as the floor (PCI DSS
+  11.4 requirement); triennial for TLPT under DORA; continuous for purple team and bug bounty. The frequency is
+  set by the system's rate of change, not by the audit calendar.
 
-### PROHIBIDO
+### FORBIDDEN
 
-**De esta skill como documento** (criterio editorial, no nota al pie):
-- ❌ Incluir **payloads listos para usar**, cadenas de explotación armadas o código de exploit.
-- ❌ Documentar **bypasses concretos** de un producto de seguridad (EDR, WAF, MFA) nombrado.
-- ❌ Listar **credenciales por defecto** de terceros o dónde encontrarlas.
-- ❌ Recoger **técnicas de evasión de detección** para uso real fuera de un ejercicio
-  autorizado y documentado.
-- ❌ Convertir esto en recetario. **Metodología y gobernanza**: el "cómo se hace" técnico vive
-  en las metodologías citadas y en la formación, bajo autorización.
+**Of this skill as a document** (editorial criteria, not a footnote):
+- ❌ Including **ready-to-use payloads**, weaponised exploitation chains or exploit code.
+- ❌ Documenting **concrete bypasses** of a named security product (EDR, WAF, MFA).
+- ❌ Listing third parties' **default credentials** or where to find them.
+- ❌ Collecting **detection evasion techniques** for real use outside an authorised
+  and documented exercise.
+- ❌ Turning this into a cookbook. **Methodology and governance**: the technical "how it is done" lives
+  in the methodologies cited and in training, under authorisation.
 
-**De la operación**:
-- ❌ Tocar cualquier cosa **sin autorización escrita** o fuera de la ventana o del alcance
-  pactados. Sin excepción, sin urgencia que lo justifique.
-- ❌ Aceptar una ampliación de alcance verbal, por chat, o de alguien sin potestad.
-- ❌ **Ejecutar una herramienta contra producción sin entender qué hace**: qué peticiones
-  lanza, a qué ritmo, qué escribe, qué puede romper.
-- ❌ DoS, pruebas de agotamiento de recursos o ataques destructivos sin autorización explícita,
-  aislada y por escrito.
-- ❌ **Exfiltrar datos reales del cliente "como prueba"**. Se demuestra el acceso, no se extrae
-  el dato. Nunca volcados masivos, nunca PII completa, nunca a infraestructura propia.
-- ❌ Dejar **artefactos, cuentas, tareas, claves o implantes sin retirar y sin documentar**.
-  Cada uno es una puerta trasera que dejaste tú.
-- ❌ Reutilizar infraestructura de operación o credenciales entre clientes.
-- ❌ Guardar datos, evidencias o credenciales del cliente pasada la fecha de destrucción
-  pactada, o en almacenamiento personal, portátil sin cifrar o SaaS/LLM público.
-- ❌ Ocultar o retrasar un hallazgo crítico, una indisponibilidad causada o un compromiso
-  preexistente detectado.
-- ❌ Negar ante deconfliction una actividad que sí es tuya.
-- ❌ Continuar el ejercicio tras activarse una stop condition.
-- ❌ Meter en el informe salida cruda de escáner sin verificación manual, o severidades
-  infladas para justificar el precio.
-- ❌ Testear activos de terceros (nube, SaaS, proveedor) sin su autorización o sin seguir su
-  procedimiento de notificación, aunque el cliente los use y los pague.
-- ❌ Usar en un cliente lo aprendido en un CTF sin comprobar que la técnica es aplicable, no
-  destructiva y está dentro de las RoE (ver `ctf-lab-standards`).
-- ❌ Presentar un vulnerability assessment como pentest, o un pentest como red team.
-- ❌ Fijar versiones de matrices, guías o normativas de memoria sin la verificación de §8.
+**Of the operation**:
+- ❌ Touching anything **without written authorisation** or outside the agreed window or
+  scope. No exception, no urgency that justifies it.
+- ❌ Accepting a scope extension verbally, by chat, or from someone without authority.
+- ❌ **Running a tool against production without understanding what it does**: what requests
+  it sends, at what rate, what it writes, what it can break.
+- ❌ DoS, resource exhaustion testing or destructive attacks without explicit, separate
+  and written authorisation.
+- ❌ **Exfiltrating real client data "as proof"**. Access is demonstrated, the data is not
+  extracted. Never mass dumps, never full PII, never to your own infrastructure.
+- ❌ Leaving **artefacts, accounts, tasks, keys or implants unwithdrawn and undocumented**.
+  Each one is a back door that you left behind.
+- ❌ Reusing operating infrastructure or credentials between clients.
+- ❌ Keeping client data, evidence or credentials past the agreed destruction
+  date, or in personal storage, an unencrypted laptop or public SaaS/LLM.
+- ❌ Hiding or delaying a critical finding, an unavailability you caused or a pre-existing
+  compromise detected.
+- ❌ Denying, under deconfliction, an activity that is in fact yours.
+- ❌ Continuing the exercise after a stop condition has triggered.
+- ❌ Putting raw scanner output into the report without manual verification, or severities
+  inflated to justify the price.
+- ❌ Testing third-party assets (cloud, SaaS, provider) without their authorisation or without following their
+  notification procedure, even if the client uses and pays for them.
+- ❌ Using at a client what was learned in a CTF without checking that the technique is applicable, non-
+  destructive and within the RoE (see `ctf-lab-standards`).
+- ❌ Presenting a vulnerability assessment as a pentest, or a pentest as a red team.
+- ❌ Pinning versions of matrices, guides or regulations from memory without the verification of §8.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de citar cualquier marco, versión o plazo en una propuesta, RoE o informe:
+Before citing any framework, version or deadline in a proposal, RoE or report:
 
-1. **ATT&CK**: versión vigente de la matriz Enterprise y del Navigator, y changelog de la
-   última release mayor (a agosto 2026: **v19.1**, tras v19 del 28 abr 2026 con el split de
-   Defense Evasion). Anota siempre la versión usada en el informe.
-2. **OWASP**: si **WSTG v5.0** ya salió de desarrollo (estable a agosto 2026: **v4.2**), y
-   versiones vigentes de **MASTG** (**v2.0.0**) y **MASVS** (**v2.1.0**).
-3. **NIST SP 800-115**: comprobar en csrc.nist.gov si existe revisión o borrador posterior a
-   la edición de **2008** — a agosto 2026 no consta ninguna, y ese es un dato que conviene
-   reconfirmar antes de apoyar un informe solo en ella.
-4. **PTES y OSSTMM**: estado real de mantenimiento. A agosto 2026, PTES sin gobernanza formal
-   activa y OSSTMM en **v3 (2010)** con v4 en borrador desde hace años. **Pendiente de
-   verificar**: si ISECOM ha publicado OSSTMM 4 (el material nuevo está tras membresía y no se
-   pudo confirmar desde fuentes públicas).
-5. **DORA / TIBER-EU**: RTS de TLPT aplicable desde el **8 jul 2025**; TIBER-EU alineado desde
-   **11 feb 2025**. Verificar qué autoridad nacional aplica al cliente, si ya ha adoptado el
-   marco alineado, y los plazos que dispara su carta de notificación. Las fechas de "primer
-   ciclo" que circulan en blogs sectoriales (p. ej. antes del 17 ene 2028) **no están
-   confirmadas en fuente oficial**: contrástalas con la NCA.
-6. **PCI DSS**: versión vigente y letra exacta del req. 11.4 en el documento oficial del PCI
-   SSC o vía QSA; los blogs numeran mal las sub-requisitos.
-7. **CVSS / EPSS / KEV**: versión y estado vigentes — **el dueño de ese criterio es
-   `vulnerability-management-standards`**, que lo mantiene verificado; consúltalo allí en vez
-   de duplicarlo aquí, y re-verifica por web si vas a fijar una decisión sobre ello.
-8. **Herramientas del arsenal** (incluidos **Caldera** y **Atomic Red Team**): release actual,
-   licencia, gobernanza y, **obligatorio**, si hay incidente de cadena de suministro reciente
-   — precedente 2026: la campaña **TeamPCP** de marzo de 2026 sobre tooling de seguridad y CI.
-   Ninguna herramienta entra en un ejercicio sin esa comprobación. **Pendiente de verificar**:
-   la última release de Caldera (la referencia disponible, v5.3.0 de abril 2025, procede de
-   fuente secundaria y no se contrastó contra el repositorio).
-9. **Frameworks de C2 y herramientas de post-explotación**: **no verificados en este
-   documento** y deliberadamente no recomendados por producto — su elección se decide por
-   ejercicio, contra fuente primaria, y comprobando licencia, procedencia y actividad de
-   soporte del proyecto.
-10. **Marco legal**: cualquier afirmación jurídica de §1 se valida con el departamento legal
-    de ambas partes y con el texto vigente del Código Penal y de la normativa sectorial. Esta
-    skill **no es asesoramiento jurídico** y su encuadre puede haber quedado desactualizado.
-11. **Safe harbor / VDP**: términos vigentes del programa concreto antes de tocar nada, y
-    estado actual de las referencias de disclose.io y de los términos de la plataforma
-    (HackerOne/Bugcrowd). El alcance de un programa cambia sin aviso.
+1. **ATT&CK**: current version of the Enterprise matrix and of the Navigator, and changelog of the
+   latest major release (as of August 2026: **v19.1**, after v19 of 28 Apr 2026 with the split of
+   Defense Evasion). Always note the version used in the report.
+2. **OWASP**: whether **WSTG v5.0** has left development (stable as of August 2026: **v4.2**), and
+   current versions of **MASTG** (**v2.0.0**) and **MASVS** (**v2.1.0**).
+3. **NIST SP 800-115**: check on csrc.nist.gov whether a revision or draft later than
+   the **2008** edition exists — as of August 2026 none is on record, and that is a data point worth
+   reconfirming before basing a report on it alone.
+4. **PTES and OSSTMM**: real maintenance status. As of August 2026, PTES without active formal governance
+   and OSSTMM at **v3 (2010)** with v4 in draft for years. **Pending
+   verification**: whether ISECOM has published OSSTMM 4 (the new material is behind membership and could
+   not be confirmed from public sources).
+5. **DORA / TIBER-EU**: TLPT RTS applicable from **8 Jul 2025**; TIBER-EU aligned since
+   **11 Feb 2025**. Verify which national authority applies to the client, whether it has already adopted the
+   aligned framework, and the deadlines triggered by its notification letter. The "first
+   cycle" dates circulating in sector blogs (e.g. before 17 Jan 2028) **are not
+   confirmed in an official source**: cross-check them with the NCA.
+6. **PCI DSS**: current version and exact wording of req. 11.4 in the official document of the PCI
+   SSC or via a QSA; blogs number the sub-requirements wrongly.
+7. **CVSS / EPSS / KEV**: current version and status — **the owner of that criteria is
+   `vulnerability-management-standards`**, which keeps it verified; consult it there instead
+   of duplicating it here, and re-verify on the web if you are going to pin a decision on it.
+8. **Arsenal tools** (including **Caldera** and **Atomic Red Team**): current release,
+   licence, governance and, **mandatorily**, whether there is a recent supply chain incident
+   — 2026 precedent: the **TeamPCP** campaign of March 2026 against security and CI tooling.
+   No tool enters an exercise without that check. **Pending verification**:
+   the latest Caldera release (the available reference, v5.3.0 of April 2025, comes from
+   a secondary source and was not cross-checked against the repository).
+9. **C2 frameworks and post-exploitation tools**: **not verified in this
+   document** and deliberately not recommended by product — their choice is decided per
+   exercise, against primary sources, and by checking licence, provenance and the project's
+   support activity.
+10. **Legal framework**: any legal assertion in §1 is validated with the legal department
+    of both parties and against the current text of the Criminal Code and the sectoral regulation. This
+    skill **is not legal advice** and its framing may have become outdated.
+11. **Safe harbor / VDP**: current terms of the specific programme before touching anything, and
+    current status of the disclose.io references and of the platform's terms
+    (HackerOne/Bugcrowd). A programme's scope changes without notice.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

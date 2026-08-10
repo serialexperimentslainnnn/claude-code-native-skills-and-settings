@@ -3,247 +3,247 @@ name: vmware-standards
 description: VMware vSphere / VCF as a production platform under Broadcom, and the stay-or-exit decision. Use when running esxcli, vim-cmd, vsish, govc, PowerCLI cmdlets (Connect-VIServer, Get-VMHost, Get-VM, New-VM, Set-VMHostAdvancedConfiguration), the vSphere REST/vSphere Automation API or the terraform-provider-vsphere, operating vCenter Server Appliance (VCSA), vpxd, hostd, /var/log/vmkernel.log, .vmx, .vmdk, .nvram, .vswp or VMFS datastores, sizing a cluster with vSphere HA admission control, DRS, EVC baselines, vMotion and Storage vMotion, vSAN ESA/OSA disk groups and storage policies (SPBM), vSphere Distributed Switch, port groups, NSX segments or Tanzu/vSphere Supervisor, patching with vSphere Lifecycle Manager cluster images and baselines, VMware Tools and VM hardware version compatibility, VADP-based backup, VMSA advisories and ESXi/ESX CVE response, or costing VCF/VVF per-core subscriptions, the 16-core-per-CPU minimum, vSAN TiB entitlements, free ESXi, and whether to migrate off VMware.
 ---
 
-# Estándares de VMware vSphere / VMware Cloud Foundation
+# VMware vSphere / VMware Cloud Foundation standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-> **Premisa dura**: en 2026 la decisión sobre VMware que hay encima de la mesa en casi toda
-> organización no es técnica, es **económica**: quedarse o salir. La plataforma sigue siendo
-> técnicamente competente; lo que cambió es el contrato. Cualquier respuesta que ignore el modelo
-> de licencia vigente (§2) es una respuesta incompleta, por buena que sea la arquitectura.
+> **Hard premise**: in 2026 the VMware decision on the table in almost every organisation is not
+> technical, it is **economic**: stay or exit. The platform is still technically competent; what
+> changed is the contract. Any answer that ignores the current licence model (§2) is an incomplete
+> answer, however good the architecture is.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **vSphere/VCF como plataforma de producción** y a la **decisión económica** sobre ella:
-versión y calendario de soporte, modelo de licenciamiento y sus mínimos, diseño de clúster (HA,
-DRS, vMotion, EVC), almacenamiento (VMFS, NFS, vSAN, SPBM), red del hipervisor (vSS/vDS, y NSX solo
-para acotarlo), parcheo con vLCM, automatización (PowerCLI, API, Terraform), hardening del plano de
-gestión, y **el criterio de salida** hacia otra plataforma.
+Applies to **vSphere/VCF as a production platform** and to the **economic decision** about it:
+version and support calendar, licensing model and its minimums, cluster design (HA, DRS, vMotion,
+EVC), storage (VMFS, NFS, vSAN, SPBM), hypervisor networking (vSS/vDS, and NSX only to bound it),
+patching with vLCM, automation (PowerCLI, API, Terraform), hardening of the management plane, and
+**the exit criteria** towards another platform.
 
-Disparadores: `esxcli`, `vim-cmd`, `vsish`, `govc`, `Connect-VIServer` y demás cmdlets de PowerCLI,
+Triggers: `esxcli`, `vim-cmd`, `vsish`, `govc`, `Connect-VIServer` and other PowerCLI cmdlets,
 `terraform-provider-vsphere`, VCSA, `vpxd`, `hostd`, `/var/log/vmkernel.log`, `.vmx`, `.vmdk`,
 `.nvram`, VMFS, `vmware-tools`/`open-vm-tools`, "admission control", "EVC baseline", "storage
 policy", "vSphere Lifecycle Manager", "cluster image", "VADP", "VMSA-", "VCF", "VVF", "core
-minimum", "renovación de VMware".
+minimum", "VMware renewal".
 
-**Nomenclatura**: con VCF 9.0 el hipervisor pasa a llamarse **ESX** (antes ESXi); los avisos de
-seguridad de 2026 ya usan "VMware ESX" (VMSA-2026-0006). Aquí se usan indistintamente.
+**Naming**: with VCF 9.0 the hypervisor is renamed **ESX** (previously ESXi); the 2026 security
+advisories already use "VMware ESX" (VMSA-2026-0006). Here they are used interchangeably.
 
-**No aplica**:
-- `proxmox-ve-standards` — **destino de migración nº1** y skill hermana: **todo lo que se decide
-  con `pvecm`/`qm`/`pvesm` o en `/etc/pve/` es suyo**, incluido su asistente de importación desde
-  ESXi. Aquí se decide **si** se sale y **qué se mide antes**; allí, cómo se aterriza.
-- `libvirt-kvm-standards` — el sustrato KVM/QEMU sin plataforma (`virsh`, XML de dominio). Destino
-  válido solo para hosts sueltos: **salir de vCenter a libvirt puro es perder plataforma**, no
-  cambiarla.
-- `onprem-standards` — **paraguas de plataforma on-premise, con la tabla de enrutado (§1.2)**: su
-  §2 ya fija la elección por defecto de hipervisor; esta skill desarrolla el caso VMware sin
-  contradecirla.
-- `ha-clustering-standards` — Pacemaker/Corosync, quórum y fencing **genéricos** de servicios
-  Linux. Aquí el clúster **nativo** del hipervisor: vSphere HA, admission control y aislamiento.
-- `linux-storage-standards` y `zfs-standards` — LUN, multipath, filesystem y ZFS del lado del SO;
-  aquí VMFS/NFS/vSAN como objetos de vSphere. `object-storage-standards` — S3 y repositorios.
-- `networking-standards` — red física, VLAN, MTU y fabric; aquí solo vSwitch/vDS y port groups.
-- `backup-recovery-standards` — **mecánica del respaldo, retención, inmutabilidad y restore
-  probado son suyas**; aquí solo la API de respaldo (VADP) y la consistencia de aplicación.
-- `bcdr-standards` — RTO/RPO, plan y ejercicios de DR; aquí no se fijan objetivos de negocio.
-- `incident-response-forensics-standards` e `incident-management-standards` — **cuando el
-  hipervisor es la víctima y no el soporte**: cifrado del datastore desde el propio host con SSH
-  o ESXi Shell habilitados, vCenter comprometido, credenciales de la plataforma rotadas. El
-  proceso y la preservación de evidencia son suyos; **aquí el dato que decide la respuesta**:
-  vCenter y los hosts son **Tier 0** —los gestiona quien gestiona el dominio—, y un host que se
-  sospecha comprometido **se reconstruye desde medio confiable, no se limpia**. La restauración
-  no empieza hasta que la erradicación está verificada (criterio de `bcdr-standards`).
-- `iac-standards` — Terraform/Ansible como práctica; `powershell-standards` — calidad del script
-  PowerCLI. Aquí solo qué se automatiza y qué queda acoplado a vCenter.
-- `kubernetes-standards` — contenedores por encima (incluido lo que corre sobre Supervisor);
-  `gpu-computing-standards` — passthrough y reparto de GPU (driver y particionado son suyos).
-- `linux-hardening-standards` y `vulnerability-management-standards` — baseline del SO invitado y
-  triaje/SLA de CVE; `observability-standards` — telemetría como práctica.
-- `finops-standards` — **el coste por VM como unidad económica y el método de comparación son
-  suyos**; aquí el **modelo de licencia** del producto que alimenta ese cálculo.
-- `enterprise-architecture-standards` — portfolio y ADR; `migration-projects-standards` — ejecución de la migración; `windows-server-ad-standards` — el invitado Windows;
-  `hyper-v-standards` y `xen-standards` — hipervisores alternativos, cada uno el suyo.
+**Not applicable**:
+- `proxmox-ve-standards` — **migration destination no. 1** and sister skill: **everything decided
+  with `pvecm`/`qm`/`pvesm` or in `/etc/pve/` is theirs**, including its import wizard from
+  ESXi. Here it is decided **whether** to exit and **what is measured first**; there, how to land it.
+- `libvirt-kvm-standards` — the KVM/QEMU substrate with no platform (`virsh`, domain XML). A valid
+  destination only for standalone hosts: **exiting vCenter to bare libvirt is losing a platform**, not
+  changing it.
+- `onprem-standards` — **on-premise platform umbrella, with the routing table (§1.2)**: its
+  §2 already fixes the default hypervisor choice; this skill develops the VMware case without
+  contradicting it.
+- `ha-clustering-standards` — Pacemaker/Corosync, quorum and fencing **generic** to Linux
+  services. Here the hypervisor's **native** cluster: vSphere HA, admission control and isolation.
+- `linux-storage-standards` and `zfs-standards` — LUN, multipath, filesystem and ZFS on the OS side;
+  here VMFS/NFS/vSAN as vSphere objects. `object-storage-standards` — S3 and repositories.
+- `networking-standards` — physical network, VLAN, MTU and fabric; here only vSwitch/vDS and port groups.
+- `backup-recovery-standards` — **backup mechanics, retention, immutability and proven restore
+  are theirs**; here only the backup API (VADP) and application consistency.
+- `bcdr-standards` — RTO/RPO, DR plan and drills; business objectives are not set here.
+- `incident-response-forensics-standards` and `incident-management-standards` — **when the
+  hypervisor is the victim and not the support**: datastore encrypted from the host itself with SSH
+  or ESXi Shell enabled, vCenter compromised, platform credentials rotated. The process and
+  evidence preservation are theirs; **here the fact that decides the response**:
+  vCenter and the hosts are **Tier 0** —managed by whoever manages the domain—, and a host
+  suspected of being compromised **is rebuilt from trusted media, it is not cleaned**. Restoration
+  does not start until eradication is verified (criteria from `bcdr-standards`).
+- `iac-standards` — Terraform/Ansible as a practice; `powershell-standards` — PowerCLI script
+  quality. Here only what gets automated and what stays coupled to vCenter.
+- `kubernetes-standards` — containers on top (including whatever runs on Supervisor);
+  `gpu-computing-standards` — GPU passthrough and partitioning (driver and partitioning are theirs).
+- `linux-hardening-standards` and `vulnerability-management-standards` — guest OS baseline and
+  CVE triage/SLA; `observability-standards` — telemetry as a practice.
+- `finops-standards` — **cost per VM as an economic unit and the comparison method are
+  theirs**; here the product's **licence model** that feeds that calculation.
+- `enterprise-architecture-standards` — portfolio and ADR; `migration-projects-standards` — migration execution; `windows-server-ad-standards` — the Windows guest;
+  `hyper-v-standards` and `xen-standards` — alternative hypervisors, each its own.
 
-## 2. Versión, calendario y modelo de licencia (la sección cara)
+## 2. Version, calendar and licence model (the expensive section)
 
-> Verificar la última versión y **todo precio o mínimo** por web antes de fijarlo (§8).
+> Verify the latest version and **every price or minimum** on the web before pinning it (§8).
 
-| Dato | Estado verificado ago-2026 | Fuente |
+| Fact | Status verified Aug 2026 | Source |
 |---|---|---|
-| Generación vigente | **VCF/VVF 9.1**; VCF 9.0 GA **17-jun-2025** | TechDocs/blog VCF |
-| Cadencia | Mayor ≈3 años; menor ≈9 meses; mantenimiento ≈3 meses en la primera fase de soporte | KB 410435, verbatim |
-| EoGS vSphere 7.0 | **2-oct-2025** (ya pasado) | KB 415405, verbatim |
-| EoGS vSphere 8 | Ampliamente citado **11-oct-2027** — **no confirmado en fuente primaria**: ver §8 | — |
-| Unidad de licencia | **Por núcleo físico**, suscripción a plazo. **No hay perpetuas nuevas** | KB 313548 / TechDocs |
-| Mínimo por CPU | *"You must license a minimum of 16 physical cores for each CPU (physical processor) in your ESXi hosts, even if a CPU has fewer than 16 cores."* | KB 313548, **verbatim** |
-| vSAN incluido | VCF: *"1 TiB of vSAN entitlement for each VCF core purchased"*. VVF: *"0.25 TiB … (rounded up to the next TiB)"* | KB 313548, **verbatim** |
-| Mecanismo 9.x | *"Subscription-based license files replace the use of the 25-character license keys."* Se licencia desde VCF Operations + consola **vcf.broadcom.com** | TechDocs Licensing Overview, **verbatim** |
-| Telemetría obligatoria | *"License usage reports are required at least once every 180 days to maintain your licenses"* | idem, **verbatim** |
-| ESXi/ESX gratis | **Vuelve** con 8.0U3e: *"fully production-ready release"*, pero *"No official Broadcom support"*, *"Cannot be managed by vCenter Server"*, 2 CPU físicas/host, 8 vCPU/VM, sin vMotion/DRS/HA/VADP, *"Usage of APIs to manage hosts is not supported"* | KB 399823, **verbatim** |
+| Current generation | **VCF/VVF 9.1**; VCF 9.0 GA **17 Jun 2025** | VCF TechDocs/blog |
+| Cadence | Major ≈3 years; minor ≈9 months; maintenance ≈3 months in the first support phase | KB 410435, verbatim |
+| vSphere 7.0 EoGS | **2 Oct 2025** (already passed) | KB 415405, verbatim |
+| vSphere 8 EoGS | Widely cited as **11 Oct 2027** — **not confirmed in a primary source**: see §8 | — |
+| Licence unit | **Per physical core**, term subscription. **No new perpetual licences** | KB 313548 / TechDocs |
+| Minimum per CPU | *"You must license a minimum of 16 physical cores for each CPU (physical processor) in your ESXi hosts, even if a CPU has fewer than 16 cores."* | KB 313548, **verbatim** |
+| vSAN included | VCF: *"1 TiB of vSAN entitlement for each VCF core purchased"*. VVF: *"0.25 TiB … (rounded up to the next TiB)"* | KB 313548, **verbatim** |
+| 9.x mechanism | *"Subscription-based license files replace the use of the 25-character license keys."* Licensed from VCF Operations + the **vcf.broadcom.com** console | TechDocs Licensing Overview, **verbatim** |
+| Mandatory telemetry | *"License usage reports are required at least once every 180 days to maintain your licenses"* | idem, **verbatim** |
+| Free ESXi/ESX | **It is back** with 8.0U3e: *"fully production-ready release"*, but *"No official Broadcom support"*, *"Cannot be managed by vCenter Server"*, 2 physical CPUs/host, 8 vCPU/VM, no vMotion/DRS/HA/VADP, *"Usage of APIs to manage hosts is not supported"* | KB 399823, **verbatim** |
 
-**Reglas que se derivan y no se negocian:**
+**Rules that follow and are not negotiable:**
 
-- **Se licencia todo el core físico de todo host que ejecute el producto**: no hay licencia por VM ni
-  por capacidad, ni exención de test/dev, y apagar cores en BIOS no reduce el conteo. Como el mínimo
-  de 16/CPU castiga los hosts pequeños, **la única palanca real de coste es consolidar en menos hosts
-  más densos**, no comprar menos.
-- **VVF vs VCF**: VVF es la base (vSphere + vSAN limitado + operación); VCF añade NSX y automatización.
-  Comprar VCF "porque venía en el paquete" y no usar NSX es el sobrecoste más común.
-- **Renovar tarde se penaliza**: prensa de canal (memo de Arrow vía CRN, *The Register* 28-mar-2025)
-  reporta *"penalties for end customers who have not renewed their subscription licenses … on the
-  anniversary date"*, del 20 % sobre el primer año. **No publicado por Broadcom**: riesgo de
-  calendario, no cifra cerrada.
-- **Discrepancia declarada — mínimo de 72 cores**: la misma fuente reporta *"the minimum number of
+- **Every physical core of every host running the product is licensed**: there is no per-VM nor
+  per-capacity licence, no test/dev exemption, and switching cores off in BIOS does not reduce the count. Since the
+  16/CPU minimum punishes small hosts, **the only real cost lever is consolidating onto fewer, denser
+  hosts**, not buying less.
+- **VVF vs VCF**: VVF is the base (vSphere + limited vSAN + operations); VCF adds NSX and automation.
+  Buying VCF "because it came in the bundle" and not using NSX is the most common overspend.
+- **Renewing late is penalised**: channel press (Arrow memo via CRN, *The Register* 28 Mar 2025)
+  reports *"penalties for end customers who have not renewed their subscription licenses … on the
+  anniversary date"*, of 20 % on the first year. **Not published by Broadcom**: a calendar risk,
+  not a settled figure.
+- **Declared discrepancy — 72-core minimum**: the same source reports *"the minimum number of
   cores required for VMware licenses will increase substantially, from 16 to 72 cores per command
-  line"*, *"as of April 10th"* (2025). Fuentes posteriores lo dan por **aclarado a 72 por
-  producto/pedido** o **retirado**, mientras el mínimo primario de **16 por CPU** sigue publicado sin
-  cambios. **No hay fuente primaria de Broadcom para el 72.** Planifica con 16/CPU y **exige por
-  escrito al partner el mínimo aplicable a tu pedido**.
-- **Canal**: el programa VMware Advantage terminó el **31-oct-2025** y pasó a **invitación
-  (Pinnacle)**; el modelo **White Label desapareció** y los VCSP no invitados dejaron de renovarse
-  (avisos escalonados hasta ene-mar 2026). Fuente: prensa de canal, **no primaria**. Consecuencia:
-  **verifica que tu proveedor sigue autorizado antes de contar con él para la renovación.**
-- **Precio**: Broadcom **no publica precios de lista**; todo pasa por partner. **Ninguna cifra de
-  €/core se escribe sin oferta firmada** (§8).
+  line"*, *"as of April 10th"* (2025). Later sources treat it as **clarified to 72 per
+  product/order** or **withdrawn**, while the primary minimum of **16 per CPU** remains published
+  unchanged. **There is no primary Broadcom source for the 72.** Plan with 16/CPU and **require the
+  partner to state in writing the minimum applicable to your order**.
+- **Channel**: the VMware Advantage programme ended on **31 Oct 2025** and moved to **invitation
+  (Pinnacle)**; the **White Label model disappeared** and non-invited VCSPs stopped being renewed
+  (staggered notices through Jan-Mar 2026). Source: channel press, **not primary**. Consequence:
+  **verify your provider is still authorised before counting on it for the renewal.**
+- **Price**: Broadcom **does not publish list prices**; everything goes through a partner. **No
+  €/core figure is written without a signed quote** (§8).
 
-## 3. Arquitectura y operación
+## 3. Architecture and operations
 
-**Clúster y cómputo**
-- Clúster homogéneo en CPU y firmware. **Baseline EVC fijada desde el día 1**: activarla después
-  obliga a apagar VMs. EVC por VM solo para movilidad puntual.
-- **vSphere HA con admission control explícito** y reserva dimensionada al fallo tolerado (N+1
-  mínimo). HA sin reserva es HA que no arranca las VMs cuando hace falta.
-- **DRS en `fullyAutomated`** salvo motivo escrito, con reglas de afinidad/antiafinidad para lo que
-  debe quedar separado. **DRS predictivo** solo con la suite de operaciones alimentándolo y con
-  histórico suficiente; sin eso es ruido.
-- vMotion y Storage vMotion en **red dedicada** (VLAN propia, MTU coherente) y con vmknics
-  redundantes. Storage vMotion se planifica: consume cabina.
+**Cluster and compute**
+- Cluster homogeneous in CPU and firmware. **EVC baseline set from day 1**: enabling it later
+  forces VMs to be powered off. Per-VM EVC only for one-off mobility.
+- **vSphere HA with explicit admission control** and reservation sized to the tolerated failure (N+1
+  minimum). HA without a reservation is HA that does not start the VMs when it matters.
+- **DRS in `fullyAutomated`** unless there is a written reason, with affinity/anti-affinity rules for what
+  must stay apart. **Predictive DRS** only with the operations suite feeding it and with
+  enough history; without that it is noise.
+- vMotion and Storage vMotion on a **dedicated network** (its own VLAN, consistent MTU) and with
+  redundant vmknics. Storage vMotion is planned: it consumes the array.
 
-**Almacenamiento**
-- **VMFS** para bloque, **NFS** cuando la cabina lo hace mejor, **vSAN** cuando se acepta que el
-  almacenamiento pasa a ser parte del clúster. **vSAN se licencia aparte por TiB** más allá del
-  derecho incluido: es la fuga de coste que aparece a los dos años.
-- **SPBM siempre**: política por clase de servicio, nunca por datastore a mano. **vSAN ESA** para
-  hardware nuevo; OSA solo por hardware heredado. **vVols están deprecados en VCF/VVF 9.0**
-  (KB 401070): no se diseña nada nuevo sobre ellos.
+**Storage**
+- **VMFS** for block, **NFS** when the array does it better, **vSAN** when it is accepted that
+  storage becomes part of the cluster. **vSAN is licensed separately per TiB** beyond the
+  included entitlement: it is the cost leak that shows up after two years.
+- **SPBM always**: policy per service class, never per datastore by hand. **vSAN ESA** for
+  new hardware; OSA only for legacy hardware. **vVols are deprecated in VCF/VVF 9.0**
+  (KB 401070): nothing new is designed on them.
 
-**Red**
-- **vDS por defecto** en producción: la config vive en vCenter, consistente y auditable. vSwitch
-  estándar solo para arranque del host y rescate.
-- **NSX solo si hay requisito de microsegmentación o de red superpuesta que la física no cubre.** Es
-  un producto entero con su plano de control y su curva: adoptarlo **encarece la salida** más que
-  ninguna otra decisión de esta lista.
+**Network**
+- **vDS by default** in production: the config lives in vCenter, consistent and auditable. Standard
+  vSwitch only for host bootstrap and rescue.
+- **NSX only if there is a microsegmentation or overlay-network requirement the physical network does not cover.** It is
+  a whole product with its own control plane and its own curve: adopting it **makes the exit more expensive** than
+  any other decision on this list.
 
-**Operación, respaldo y automatización**
-- **vLCM con imagen de clúster** (base + vendor addon + firmware), no baselines: es lo único que hace
-  todos los hosts idénticos y reproducibles. Parcheo rolling con DRS evacuando.
-- **VMware Tools / open-vm-tools es dependencia de primera clase**: sin él no hay quiesce, apagado
-  ordenado, IP en inventario ni consistencia de respaldo. Se parchea y se monitoriza como el
-  hipervisor. La **versión de hardware de VM** se sube por olas: vuelta atrás cara.
-- Respaldo por **VADP** (snapshot + CBT desde el producto de backup), nunca copiando `.vmdk` en
-  caliente; quiesce con VSS/scripts. Retención, inmutabilidad y restore: `backup-recovery-standards`.
-- **PowerCLI** para operación, **API REST/Automation** para integración, **proveedor de Terraform**
-  para lo reproducible (`powershell-standards`, `iac-standards`). **Todo automatismo acoplado a
-  vCenter es deuda de salida**: inventaríalo (§7).
+**Operations, backup and automation**
+- **vLCM with a cluster image** (base + vendor addon + firmware), not baselines: it is the only thing that makes
+  every host identical and reproducible. Rolling patching with DRS evacuating.
+- **VMware Tools / open-vm-tools is a first-class dependency**: without it there is no quiesce, no orderly
+  shutdown, no IP in inventory and no backup consistency. It is patched and monitored like the
+  hypervisor. The **VM hardware version** is raised in waves: rolling back is expensive.
+- Backup via **VADP** (snapshot + CBT from the backup product), never copying `.vmdk` while
+  running; quiesce with VSS/scripts. Retention, immutability and restore: `backup-recovery-standards`.
+- **PowerCLI** for operations, **REST/Automation API** for integration, **Terraform provider**
+  for what must be reproducible (`powershell-standards`, `iac-standards`). **Every automation coupled to
+  vCenter is exit debt**: inventory it (§7).
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-**Omitida por artificial**: no hay build ni suite de tests. Equivalente exigible: cada cambio de
-clúster se valida en preproducción con la misma imagen, y el failover de HA se prueba anualmente.
+**Omitted as artificial**: there is no build and no test suite. Enforceable equivalent: every cluster
+change is validated in preproduction with the same image, and HA failover is tested annually.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **vCenter comprometido es el centro de datos comprometido.** Da control sobre todas las VMs, sus
-  discos y sus consolas: es **Tier 0**, no "una aplicación de gestión más". Estación administrativa
-  dedicada, MFA, cuentas nominales, sin SSO compartido con el parque ofimático y
-  `administrator@vsphere.local` reservado y auditado.
-- **Plano de gestión aislado**: vCenter, gestión de ESX, iDRAC/iLO y vMotion en VLAN propias, **sin
-  ruta desde la red de usuarios**. Modo bloqueo en los hosts; ESXi Shell y SSH apagados salvo
-  ventana, con excepciones registradas.
-- **Baseline de hardening**: guía oficial en el repositorio de Broadcom
-  `github.com/vmware/vcf-security-and-compliance-guidelines` (por versión, ya con 9.0). **CIS**: a
-  ago-2026 lo más reciente es **ESXi 8.0 v1.3.0** y **no hay benchmark de 9.0/ESX** — Broadcom como
-  baseline técnico, CIS cuando la auditoría exige marco atestable, y el hueco declarado.
-- **Parcheo**: los avisos son **VMSA** y llegan sin preaviso. Referencia: **VMSA-2026-0006
-  (29-jul-2026)** — bypass de autenticación en vCenter (CVE-2026-59309, 9.8), traversal en su syslog
-  (CVE-2026-59310) y **escape de VM** vía VMXNET3 (CVE-2026-47876, 9.3) **sin workaround**. Regla:
-  **escape de VM o bypass de autenticación en vCenter es cambio de emergencia**; el SLA general es de
+- **A compromised vCenter is a compromised data centre.** It gives control over every VM, their
+  disks and their consoles: it is **Tier 0**, not "just another management application". Dedicated
+  administrative workstation, MFA, named accounts, no shared SSO with the office estate and
+  `administrator@vsphere.local` reserved and audited.
+- **Isolated management plane**: vCenter, ESX management, iDRAC/iLO and vMotion on their own VLANs, **with
+  no route from the user network**. Lockdown mode on the hosts; ESXi Shell and SSH off except for a
+  window, with registered exceptions.
+- **Hardening baseline**: official guide in the Broadcom repository
+  `github.com/vmware/vcf-security-and-compliance-guidelines` (per version, already with 9.0). **CIS**: as of
+  Aug 2026 the most recent is **ESXi 8.0 v1.3.0** and **there is no 9.0/ESX benchmark** — Broadcom as the
+  technical baseline, CIS when the audit demands an attestable framework, and the gap declared.
+- **Patching**: the advisories are **VMSA** and arrive without notice. Reference: **VMSA-2026-0006
+  (29 Jul 2026)** — authentication bypass in vCenter (CVE-2026-59309, 9.8), traversal in its syslog
+  (CVE-2026-59310) and **VM escape** via VMXNET3 (CVE-2026-47876, 9.3) **with no workaround**. Rule:
+  **a VM escape or an authentication bypass in vCenter is an emergency change**; the general SLA is from
   `vulnerability-management-standards`.
-- Cifrado de VM y vTPM solo con custodia de claves resuelta (KMS externo **y su respaldo**): perder
-  el proveedor de claves es perder las VMs (`cryptography-pki-standards`).
+- VM encryption and vTPM only with key custody solved (external KMS **and its backup**): losing
+  the key provider is losing the VMs (`cryptography-pki-standards`).
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- Métricas que deciden: `%RDY` y `co-stop` (sobresuscripción de vCPU), *ballooning* y *swap* del
-  host, latencia de datastore y saturación de vMotion. Exportar a `observability-standards`.
-- VMs anchas (muchas vCPU) penalizan la planificación: dimensionar por consumo real, no por lo que
-  pidió el proveedor de la aplicación. Sin reservas ni límites por defecto; un límite de CPU
-  olvidado es la causa raíz recurrente de "la VM va lenta y no se sabe por qué".
-- Capacidad medida contra **cores licenciados**, no contra cores instalados: en este modelo, la
-  capacidad ociosa se paga.
+- Metrics that decide: `%RDY` and `co-stop` (vCPU oversubscription), host *ballooning* and *swap*,
+  datastore latency and vMotion saturation. Export to `observability-standards`.
+- Wide VMs (many vCPUs) penalise scheduling: size by real consumption, not by what the
+  application vendor asked for. No reservations or limits by default; a forgotten CPU limit
+  is the recurring root cause of "the VM is slow and nobody knows why".
+- Capacity measured against **licensed cores**, not against installed cores: in this model,
+  idle capacity is paid for.
 
-## 7. Sostenibilidad y criterio de salida
+## 7. Sustainability and exit criteria
 
-**Antes de decidir quedarse o salir, se mide esto — y se mide, no se estima:**
-1. **Coste real por VM al año** con la renovación ya cotizada (método en `finops-standards`), frente
-   al mismo cálculo en la plataforma destino incluyendo hardware, soporte, respaldo y **horas de
-   personal**.
-2. **Dependencia de vSAN y de NSX**: si el almacenamiento o la microsegmentación viven ahí, la
-   salida deja de ser "mover VMs" y pasa a ser rediseñar dos capas.
-3. **Formato de disco y arranque**: `.vmdk` a qcow2/raw, BIOS vs UEFI, controladoras (PVSCSI→virtio),
-   drivers del invitado, y el renombrado de interfaces de red que se lleva por delante IPs estáticas
-   y reglas de firewall.
-4. **Respaldo**: el producto actual puede no soportar el destino, o soportarlo peor. Se valida el
-   **restore** en el destino antes de migrar nada, no después.
-5. **Automatización acoplada**: cada script PowerCLI, pipeline con el proveedor de Terraform de
-   vSphere e integración por API es trabajo de reescritura que no aparece en la hoja de cálculo.
-6. **Personal**: el equipo sabe vSphere. La curva de la plataforma destino es coste real durante
-   12-18 meses, y el riesgo operativo en ese periodo es mayor que el ahorro del primer año.
+**Before deciding to stay or exit, this is measured — and it is measured, not estimated:**
+1. **Real cost per VM per year** with the renewal already quoted (method in `finops-standards`), against
+   the same calculation on the destination platform including hardware, support, backup and **staff
+   hours**.
+2. **Dependency on vSAN and NSX**: if storage or microsegmentation live there, the
+   exit stops being "moving VMs" and becomes redesigning two layers.
+3. **Disk format and boot**: `.vmdk` to qcow2/raw, BIOS vs UEFI, controllers (PVSCSI→virtio),
+   guest drivers, and the network interface renaming that takes static IPs and firewall rules
+   down with it.
+4. **Backup**: the current product may not support the destination, or support it worse. The
+   **restore** is validated on the destination before migrating anything, not afterwards.
+5. **Coupled automation**: every PowerCLI script, pipeline with the vSphere Terraform provider
+   and API integration is rewrite work that does not show up on the spreadsheet.
+6. **Staff**: the team knows vSphere. The destination platform's curve is a real cost for
+   12-18 months, and the operational risk in that period is greater than the first year's saving.
 
-**Por eso la salida cuesta más de lo que dice la hoja de cálculo**: la hoja compara licencias, y el
-proyecto paga rediseño de almacenamiento y red, reescritura de automatización, revalidación de
-respaldo y DR, ventanas de parada y una curva de aprendizaje. **Salir puede seguir siendo correcto
-—y a menudo lo es—, pero se decide con el coste completo, no con el delta de licencia.**
+**That is why the exit costs more than the spreadsheet says**: the spreadsheet compares licences, and the
+project pays for storage and network redesign, automation rewrite, backup and DR revalidation,
+downtime windows and a learning curve. **Exiting may still be correct
+—and often is—, but it is decided with the full cost, not with the licence delta.**
 
-**Prohibiciones:**
-- ❌ **PROHIBIDO** escribir un número de €/core, €/VM o "ahorro estimado" sin oferta firmada.
-- ❌ **PROHIBIDO** dimensionar una compra sin el mínimo de cores por CPU **confirmado por escrito**
-  por el partner para ese pedido concreto (§2, discrepancia del 72).
-- ❌ **PROHIBIDO** el ESXi gratuito en producción: sin soporte, sin vCenter, sin HA/vMotion y **sin
-  VADP** — es decir, sin respaldo por API. Laboratorio y nada más.
-- ❌ **PROHIBIDO** exponer vCenter o las interfaces de gestión de ESX a la red de usuarios o a
-  Internet, y ❌ usar `administrator@vsphere.local` como cuenta de trabajo diaria.
-- ❌ **PROHIBIDO** tratar un snapshot de vSphere como respaldo, y ❌ dejar snapshots vivos más allá
-  de la ventana de cambio (crecimiento del delta y consolidación imposible).
-- ❌ **PROHIBIDO** diseñar sobre **vVols** (deprecados en 9.0) o sobre ediciones que ya no se
-  renuevan sin plan de destino.
-- ❌ **PROHIBIDO** clústeres heterogéneos sin EVC, y ❌ activar EVC "más adelante".
-- ❌ **PROHIBIDO** posponer un VMSA de escape de VM o de bypass de autenticación al ciclo ordinario.
-- ❌ **PROHIBIDO** iniciar una migración de salida sin **restore probado en el destino** y sin
-  fallback documentado por ola.
-- ❌ **PROHIBIDO** dar por hecho que el proveedor actual podrá renovar: se verifica su autorización.
+**Prohibitions:**
+- ❌ **FORBIDDEN** to write a €/core, €/VM or "estimated saving" figure without a signed quote.
+- ❌ **FORBIDDEN** to size a purchase without the per-CPU core minimum **confirmed in writing**
+  by the partner for that specific order (§2, the 72 discrepancy).
+- ❌ **FORBIDDEN** free ESXi in production: no support, no vCenter, no HA/vMotion and **no
+  VADP** — that is, no API-based backup. Lab and nothing else.
+- ❌ **FORBIDDEN** to expose vCenter or the ESX management interfaces to the user network or to
+  the Internet, and ❌ to use `administrator@vsphere.local` as a daily working account.
+- ❌ **FORBIDDEN** to treat a vSphere snapshot as a backup, and ❌ to leave snapshots alive beyond
+  the change window (delta growth and impossible consolidation).
+- ❌ **FORBIDDEN** to design on **vVols** (deprecated in 9.0) or on editions that are no longer
+  renewed without a destination plan.
+- ❌ **FORBIDDEN** heterogeneous clusters without EVC, and ❌ enabling EVC "later on".
+- ❌ **FORBIDDEN** to defer a VM-escape or authentication-bypass VMSA to the ordinary cycle.
+- ❌ **FORBIDDEN** to start an exit migration without a **restore proven on the destination** and without
+  a documented fallback per wave.
+- ❌ **FORBIDDEN** to assume the current provider will be able to renew: its authorisation is verified.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada, comprobar en fuente primaria (Broadcom TechDocs, KB del portal de soporte,
-avisos VMSA) y con fecha:
-1. **Versión vigente** de VCF/VVF y de sus componentes, y su **EoGS/EoTG en el Product Lifecycle
-   Matrix**. **Hueco declarado**: no se ha confirmado en fuente primaria la fecha de EoGS de
-   vSphere 8 (ampliamente citada como 11-oct-2027) ni el EoGS de 9.0/9.1 — verificar en la matriz.
-2. **Hueco declarado — precios**: no hay lista pública. **No se escribe ninguna cifra sin oferta**.
-3. **Hueco declarado — mínimo de pedido**: el "mínimo de 72 cores" solo consta en prensa de canal y
-   se reporta aclarado o retirado. Confirmar por escrito con el partner. Lo primario y vigente es
-   **16 cores por CPU** (KB 313548).
-4. **Hueco declarado — penalización por renovación tardía** (20 %): prensa de canal, no primaria.
-5. Estado del **programa de partners** y de la vía de compra: cambió tres veces entre 2024 y 2026.
-6. Estado de las **ediciones** vendibles (VVF/VCF frente a Standard/Enterprise Plus): las fuentes
-   secundarias se contradicen sobre cuáles siguen renovándose. **Contrastar con el partner.**
-7. Condiciones vigentes del **ESXi/ESX gratuito** (versión ofrecida, límites, si sigue disponible).
-8. **VMSA** posteriores a VMSA-2026-0006 y su estado de explotación (KEV/CISA).
-9. Estado de **CIS Benchmark** para ESX 9.0 y versión vigente del repositorio de hardening de
-   Broadcom.
-10. Madurez y estado de las plataformas destino (Proxmox VE, Nutanix, Hyper-V/Azure Local,
-    OpenStack, OLVM, XCP-ng) — **el criterio de cada una es de su skill**, no de esta.
+Before pinning anything, check in a primary source (Broadcom TechDocs, support portal KBs,
+VMSA advisories) and with a date:
+1. **Current version** of VCF/VVF and its components, and its **EoGS/EoTG in the Product Lifecycle
+   Matrix**. **Declared gap**: the vSphere 8 EoGS date (widely cited as 11 Oct 2027) has not been
+   confirmed in a primary source, nor has the EoGS of 9.0/9.1 — verify in the matrix.
+2. **Declared gap — prices**: there is no public list. **No figure is written without a quote**.
+3. **Declared gap — order minimum**: the "72-core minimum" only appears in channel press and
+   is reported as clarified or withdrawn. Confirm in writing with the partner. What is primary and current is
+   **16 cores per CPU** (KB 313548).
+4. **Declared gap — late renewal penalty** (20 %): channel press, not primary.
+5. Status of the **partner programme** and of the purchasing route: it changed three times between 2024 and 2026.
+6. Status of the sellable **editions** (VVF/VCF versus Standard/Enterprise Plus): the secondary
+   sources contradict each other about which ones are still being renewed. **Cross-check with the partner.**
+7. Current conditions of **free ESXi/ESX** (version offered, limits, whether it is still available).
+8. **VMSA** advisories later than VMSA-2026-0006 and their exploitation status (KEV/CISA).
+9. Status of the **CIS Benchmark** for ESX 9.0 and the current version of Broadcom's hardening
+   repository.
+10. Maturity and status of the destination platforms (Proxmox VE, Nutanix, Hyper-V/Azure Local,
+    OpenStack, OLVM, XCP-ng) — **the criteria for each are their skill's**, not this one's.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,268 +3,268 @@ name: onprem-standards
 description: On-premise platform umbrella - the whole datacenter or server room as one system, and the router to the deep infra skill that owns each layer. Use when designing or reviewing a bare-metal fleet end to end, inventory-as-code with host naming and IPAM conventions, rebuild-from-code guarantees for every server, fleet-wide patch and end-of-life cadence, choosing a virtualization platform, setting the platform-wide invariants every layer must respect, or deciding which infrastructure skill a task belongs to.
 ---
 
-# Estándares on-premise — skill paraguas de plataforma
+# On-premise standards — platform umbrella skill
 
-Criterios verificados contra el estado del ecosistema en **agosto de 2026**. Ante cualquier
-versión, flag o parámetro concreto, **verifica en la web antes de fijarlo** (sección 8).
+Criteria verified against the state of the ecosystem as of **August 2026**. For any specific
+version, flag or parameter, **verify on the web before pinning it** (section 8).
 
-> **Esta skill es un paraguas.** Fija los **invariantes** de una plataforma on-premise y **enruta**
-> a la skill profunda de cada capa (§1.2). Si la tarea vive en una sola capa, manda la skill
-> profunda; este documento manda cuando la decisión es **de plataforma** (cómo encajan las capas,
-> qué se exige a todas, qué no puede quedar sin dueño).
+> **This skill is an umbrella.** It sets the **invariants** of an on-premise platform and **routes**
+> to the deep skill for each layer (§1.2). If the task lives in a single layer, the deep skill
+> wins; this document wins when the decision is a **platform** one (how the layers fit together,
+> what is demanded of all of them, what cannot be left without an owner).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-### 1.1 Qué decide esta skill
+### 1.1 What this skill decides
 
-- **Diseño de plataforma completa**: qué capas existen, quién es dueño de cada una, cómo encajan
-  cómputo, almacenamiento, red, respaldo y observabilidad en un CPD o sala propia.
-- **Elección de plataforma de virtualización** y salida de VMware; topología de cluster y quórum.
-- **Coherencia de flota**: que naming, IPAM y reconstruibilidad desde cero existan y sean los
-  mismos en todas las capas — el *cómo* de cada una lo deciden sus dueñas (§1.2).
-- **Cadencia de parcheo y de fin de vida** de toda la flota.
-- **Enrutado**: ante una tarea de infra, decidir qué skill profunda aplica (§1.2).
+- **Whole-platform design**: which layers exist, who owns each one, how compute, storage,
+  networking, backup and observability fit together in a datacenter or your own server room.
+- **Choice of virtualization platform** and exit from VMware; cluster topology and quorum.
+- **Fleet coherence**: that naming, IPAM and rebuildability from scratch exist and are the
+  same across every layer — the *how* of each one is decided by its owner (§1.2).
+- **Patch and end-of-life cadence** for the whole fleet.
+- **Routing**: for an infra task, deciding which deep skill applies (§1.2).
 
-### 1.2 Enrutado a skills profundas
+### 1.2 Routing to deep skills
 
-| Si la tarea es de… | Manda | Estado |
+| If the task is about… | Owner | Status |
 |---|---|---|
-| Instrumentación, métricas, trazas, logs, alertas, dashboards | `observability-standards` | existe |
-| SLO, error budget, on-call, postmortems, capacidad como práctica | `sre-practice-standards` | existe |
-| Routing, VLAN, BGP, DNS, firewall, VPN, captura de tráfico | `networking-standards` | existe |
-| Scripts de shell, automatización de sistema | `bash-linux-scripting-standards` | existe |
-| Ansible, Terraform/OpenTofu, drift, políticas de infra | `iac-standards` | existe |
-| Triaje de CVE, SLA de remediación, EOL, VEX | `vulnerability-management-standards` | existe |
-| PKI interna, ACME, mTLS, cifrado en reposo, custodia de claves | `cryptography-pki-standards` | existe |
-| IdP, SSO, MFA, bastión con PAM/JIT, federación | `identity-access-management-standards` | existe |
-| ISO 27001/NIST CSF/ENS, SoA, evidencia de auditoría | `grc-compliance-standards` | existe |
-| Laboratorio personal, self-hosting, un solo nodo, coste doméstico | `homelab-standards` | existe |
-| Hardening CIS del SO, auditd, OpenSCAP/Lynis, baseline | `linux-hardening-standards` | existe |
-| SELinux/AppArmor: políticas, `audit2allow`, contextos | `selinux-standards` | existe |
-| Ejercicio ofensivo autorizado: RoE, pentest, red team, informe | `offensive-security-standards` | existe |
-| Windows Server y Active Directory: dominio, GPO, Tier 0, Kerberos | `windows-server-ad-standards` | existe |
-| Seguridad del contenedor en ejecución: seccomp, escape, Falco | `container-runtime-security-standards` | existe |
-| Dato personal: minimización, retención, borrado, DPIA | `privacy-engineering-standards` | existe |
-| Laboratorio de seguridad aislado, CTF, entrenamiento | `ctf-lab-standards` | existe |
-| RTO/RPO, plan de continuidad, ejercicios de DR, sitio alterno | `bcdr-standards` | existe |
-| Declaración del incidente, IC, comunicación, postmortem | `incident-management-standards` | existe |
-| Reglas de detección, SIEM, cobertura ATT&CK, Sigma/YARA | `detection-engineering-standards` | existe |
-| Compromiso de seguridad: contención, evidencia, forense | `incident-response-forensics-standards` | existe |
-| systemd, usuarios, logs, paquetes, día a día del SO | `linux-administration-standards` | existe |
-| Familia RHEL/Fedora: `dnf5`, `rpm-ostree`, `bootc` | `rhel-fedora-standards` | existe |
-| ZFS: topología de pool, ARC, `zfs send`, scrub | `zfs-standards` | existe |
-| Estrategia de copia, retención, inmutabilidad, restore | `backup-recovery-standards` | existe |
-| Proxmox VE/PBS: cluster, SDN, PBS, RBAC | `proxmox-ve-standards` | existe |
-| KVM/libvirt puro, `virsh`, dominios XML | `libvirt-kvm-standards` | existe |
-| vSphere/ESX, vCenter, vSAN, licencias Broadcom, salida de VMware | `vmware-standards` | existe |
-| Hyper-V, WSFC, S2D, Azure Local, licencias por core de Windows | `hyper-v-standards` | existe |
-| Xen, XCP-ng, Xen Orchestra, XenServer heredado | `xen-standards` | existe |
-| Podman, Quadlet, contenedores bajo systemd | `podman-systemd-containers-standards` | existe |
-| LVM, multipath, NVMe, filesystems, tuning de I/O | `linux-storage-standards` | existe |
-| Pacemaker/Corosync, fencing, quórum, recursos | `ha-clustering-standards` | existe |
-| Servidor DNS, zona, DNSSEC, registros de correo | `dns-standards` | existe |
-| Ruleset nftables/firewalld, política de filtrado y su gobierno | `firewall-policy-standards` | existe |
-| Túneles y acceso remoto: WireGuard, IPsec, mallas | `vpn-standards` | existe |
-| "No conecta / va lento": diagnóstico reactivo de red | `network-troubleshooting-standards` | existe |
-| S3 y almacenamiento de objetos, Object Lock, ciclo de vida | `object-storage-standards` | existe |
-| Rack, energía, UPS, grupo electrógeno, refrigeración, incendios, acceso físico | `datacenter-facilities-standards` | existe |
-| Servidor físico: dimensionado, BMC/Redfish, firmware, garantía, discos, renovación | `server-hardware-standards` | existe |
-| Instalación desatendida: PXE/UEFI HTTP boot, Kickstart, cloud-init, Ignition, imagen dorada | `os-provisioning-standards` | existe |
-| Inventario y CMDB: NetBox/GLPI/Snipe-IT, descubrimiento, reconciliación, ciclo de vida del activo | `cmdb-inventory-standards` | existe |
-| Clúster de cálculo: Slurm, MPI, colas, filesystem paralelo | `hpc-standards` | existe |
-| Flota de nodos remotos: actualización A/B, operación desconectada, cero-toque | `edge-computing-standards` | existe |
-| Compartición de ficheros: Samba/SMB, NFS, ACLs, shadow copies | `file-servers-standards` | existe |
-| Servidor web y de aplicaciones: nginx/Apache/IIS, Tomcat, WSGI | `web-app-servers-standards` | existe |
-| Correo: MTA, buzones, entrega y recepción | `mail-servers-standards` | existe |
+| Instrumentation, metrics, traces, logs, alerts, dashboards | `observability-standards` | exists |
+| SLO, error budget, on-call, postmortems, capacity as a practice | `sre-practice-standards` | exists |
+| Routing, VLAN, BGP, DNS, firewall, VPN, traffic capture | `networking-standards` | exists |
+| Shell scripts, system automation | `bash-linux-scripting-standards` | exists |
+| Ansible, Terraform/OpenTofu, drift, infra policies | `iac-standards` | exists |
+| CVE triage, remediation SLA, EOL, VEX | `vulnerability-management-standards` | exists |
+| Internal PKI, ACME, mTLS, encryption at rest, key custody | `cryptography-pki-standards` | exists |
+| IdP, SSO, MFA, bastion with PAM/JIT, federation | `identity-access-management-standards` | exists |
+| ISO 27001/NIST CSF/ENS, SoA, audit evidence | `grc-compliance-standards` | exists |
+| Personal lab, self-hosting, a single node, household cost | `homelab-standards` | exists |
+| CIS hardening of the OS, auditd, OpenSCAP/Lynis, baseline | `linux-hardening-standards` | exists |
+| SELinux/AppArmor: policies, `audit2allow`, contexts | `selinux-standards` | exists |
+| Authorized offensive exercise: RoE, pentest, red team, report | `offensive-security-standards` | exists |
+| Windows Server and Active Directory: domain, GPO, Tier 0, Kerberos | `windows-server-ad-standards` | exists |
+| Security of the running container: seccomp, escape, Falco | `container-runtime-security-standards` | exists |
+| Personal data: minimisation, retention, deletion, DPIA | `privacy-engineering-standards` | exists |
+| Isolated security lab, CTF, training | `ctf-lab-standards` | exists |
+| RTO/RPO, continuity plan, DR exercises, alternate site | `bcdr-standards` | exists |
+| Incident declaration, IC, communication, postmortem | `incident-management-standards` | exists |
+| Detection rules, SIEM, ATT&CK coverage, Sigma/YARA | `detection-engineering-standards` | exists |
+| Security compromise: containment, evidence, forensics | `incident-response-forensics-standards` | exists |
+| systemd, users, logs, packages, day-to-day of the OS | `linux-administration-standards` | exists |
+| RHEL/Fedora family: `dnf5`, `rpm-ostree`, `bootc` | `rhel-fedora-standards` | exists |
+| ZFS: pool topology, ARC, `zfs send`, scrub | `zfs-standards` | exists |
+| Copy strategy, retention, immutability, restore | `backup-recovery-standards` | exists |
+| Proxmox VE/PBS: cluster, SDN, PBS, RBAC | `proxmox-ve-standards` | exists |
+| Pure KVM/libvirt, `virsh`, XML domains | `libvirt-kvm-standards` | exists |
+| vSphere/ESX, vCenter, vSAN, Broadcom licensing, exit from VMware | `vmware-standards` | exists |
+| Hyper-V, WSFC, S2D, Azure Local, Windows per-core licensing | `hyper-v-standards` | exists |
+| Xen, XCP-ng, Xen Orchestra, legacy XenServer | `xen-standards` | exists |
+| Podman, Quadlet, containers under systemd | `podman-systemd-containers-standards` | exists |
+| LVM, multipath, NVMe, filesystems, I/O tuning | `linux-storage-standards` | exists |
+| Pacemaker/Corosync, fencing, quorum, resources | `ha-clustering-standards` | exists |
+| DNS server, zone, DNSSEC, mail records | `dns-standards` | exists |
+| nftables/firewalld ruleset, filtering policy and its governance | `firewall-policy-standards` | exists |
+| Tunnels and remote access: WireGuard, IPsec, meshes | `vpn-standards` | exists |
+| "It won't connect / it's slow": reactive network diagnosis | `network-troubleshooting-standards` | exists |
+| S3 and object storage, Object Lock, lifecycle | `object-storage-standards` | exists |
+| Rack, power, UPS, generator set, cooling, fire, physical access | `datacenter-facilities-standards` | exists |
+| Physical server: sizing, BMC/Redfish, firmware, warranty, disks, refresh | `server-hardware-standards` | exists |
+| Unattended installation: PXE/UEFI HTTP boot, Kickstart, cloud-init, Ignition, golden image | `os-provisioning-standards` | exists |
+| Inventory and CMDB: NetBox/GLPI/Snipe-IT, discovery, reconciliation, asset lifecycle | `cmdb-inventory-standards` | exists |
+| Compute cluster: Slurm, MPI, queues, parallel filesystem | `hpc-standards` | exists |
+| Fleet of remote nodes: A/B update, disconnected operation, zero-touch | `edge-computing-standards` | exists |
+| File sharing: Samba/SMB, NFS, ACLs, shadow copies | `file-servers-standards` | exists |
+| Web and application server: nginx/Apache/IIS, Tomcat, WSGI | `web-app-servers-standards` | exists |
+| Mail: MTA, mailboxes, delivery and reception | `mail-servers-standards` | exists |
 
-**Todas las capas tienen ya dueño.** Este documento no contiene criterio provisional de ninguna:
-si la tarea cae en una fila de la tabla, manda esa skill. Lo que queda aquí es lo que **no** cabe
-en ninguna capa — la plataforma como conjunto — y los invariantes de §1.3.
+**Every layer already has an owner.** This document contains no provisional criteria for any of
+them: if the task falls on a row of the table, that skill wins. What remains here is what does
+**not** fit in any layer — the platform as a whole — and the invariants of §1.3.
 
-### 1.3 Invariantes (no negociables, valen para todas las capas)
+### 1.3 Invariants (non-negotiable, valid for every layer)
 
-1. **Sin telemetría no hay producción.** Un host o servicio sin métricas y sin alerta accionable
-   no está desplegado: está abandonado.
-2. **Un backup sin restore probado no existe.** La prueba es el restore cronometrado, no el job en
-   verde.
-3. **HA sin fencing probado es corrupción diferida.** Antes de activar HA, se apaga un nodo.
-4. **Ningún snowflake.** Todo cambio en prod nace del código y del inventario; el drift es hallazgo.
-5. **Ningún dato de host de memoria.** Se consulta el inventario: IP, rol, VLAN, dueño, criticidad.
-6. **Nada sin dueño ni fecha de fin de vida.** Servicio, servidor o certificado sin responsable y
-   sin EOL fechado es deuda que vencerá sola.
+1. **No telemetry, no production.** A host or service with no metrics and no actionable alert
+   is not deployed: it is abandoned.
+2. **A backup with no tested restore does not exist.** The proof is the timed restore, not the job
+   showing green.
+3. **HA without tested fencing is deferred corruption.** Before enabling HA, you power off a node.
+4. **No snowflakes.** Every change in prod is born from code and from the inventory; drift is a finding.
+5. **No host data from memory.** You query the inventory: IP, role, VLAN, owner, criticality.
+6. **Nothing without an owner and an end-of-life date.** A service, server or certificate with no
+   responsible party and no dated EOL is debt that will come due on its own.
 
-**No aplica**: además de las capas enrutadas en §1.2 — que mandan sobre este documento en su
-dominio —, ver `kubernetes-standards` (contenedores, manifiestos y cluster K8s aunque corran sobre
-este hierro), `aws-standards`/`azure-standards`/`gcp-standards` (la nube; aquí el lado on-prem de un
-híbrido y la conectividad hacia ellas), `data-platform-standards` (el motor de datos que corre
-encima: modelado, tuning, réplicas), `cicd-standards` (la pipeline que ejecuta los cambios),
-`appsec-standards` (código de aplicación), `homelab-standards` (la frontera es el **rigor exigido**,
-no el tamaño: aquí producción con RTO/RPO comprometido y ventanas acordadas; allí laboratorio
-personal donde el criterio es coste, ruido y consumo). `green-it-standards` (**el centro
-de datos físico —energía redundante, refrigeración, densidad, ciclo de vida del hardware— es de
-aquí**; **su contabilidad de huella y las obligaciones de reporte son suyas**, incluido el criterio
-sobre el PUE, que **la propia norma que lo define desaconseja usar como nota global**. Consecuencia
-que ambas comparten: **alargar la vida útil del equipo suele pesar más que optimizar su consumo**,
-porque la huella incorporada ya está gastada).
+**Not applicable**: besides the layers routed in §1.2 — which win over this document in their
+domain —, see `kubernetes-standards` (containers, manifests and the K8s cluster even if they run on
+this iron), `aws-standards`/`azure-standards`/`gcp-standards` (the cloud; here, the on-prem side of a
+hybrid and the connectivity towards them), `data-platform-standards` (the data engine that runs on
+top: modelling, tuning, replicas), `cicd-standards` (the pipeline that executes the changes),
+`appsec-standards` (application code), `homelab-standards` (the boundary is the **rigour demanded**,
+not the size: here, production with committed RTO/RPO and agreed windows; there, a personal
+lab where the criteria are cost, noise and power draw). `green-it-standards` (**the physical
+datacenter —redundant power, cooling, density, hardware lifecycle— is ours**; **its footprint
+accounting and reporting obligations are theirs**, including the criteria on PUE, which **the very
+standard that defines it advises against using as an overall grade**. A consequence both share:
+**extending the useful life of equipment usually weighs more than optimising its power draw**,
+because the embodied footprint is already spent).
 
-## 2. Decisiones por defecto de plataforma
+## 2. Default platform decisions
 
-> Nota: versiones verificadas ago-2026; re-verificar en la web antes de instalar (sección 8).
-> Esta tabla fija **la elección de plataforma**, no su operación fina: el detalle de cada pieza
-> pertenece a la skill de §1.2 que la cubre. Las versiones se citan solo como referencia de la
-> decisión; la versión vigente y su EOL los fija la skill dueña de esa capa.
+> Note: versions verified Aug 2026; re-verify on the web before installing (section 8).
+> This table sets **the choice of platform**, not its fine-grained operation: the detail of each
+> piece belongs to the §1.2 skill that covers it. Versions are quoted only as a reference for the
+> decision; the current version and its EOL are set by the skill that owns that layer.
 
-| Ámbito | Por defecto | Prohibido |
+| Area | Default | Forbidden |
 |---|---|---|
-| SO base servidores | **Debian 13 "trixie"** (estable desde ago-2025, soporte a 2028+LTS 2030) o **Ubuntu Server 26.04 LTS** (soporte a 2031) | Distros EOL o sin canal de security updates; instalar "testing" en prod |
-| Hipervisor | **Proxmox VE** sobre KVM como plataforma gestionada; libvirt puro solo en hosts sueltos. La operación, en `proxmox-ve-standards` y `libvirt-kvm-standards` | VMware nuevo sin justificar el coste tras Broadcom; hipervisores sin soporte. Alternativas válidas con dueño propio: `vmware-standards` (estancia o salida), `hyper-v-standards` (si las licencias de Windows ya están pagadas) y `xen-standards` (XCP-ng si el equipo lo domina) |
-| Respaldo | Copia **verificada con restore cronometrado**; la mecánica la fija `backup-recovery-standards` y el plan `bcdr-standards` | Backup = snapshot del hipervisor; job en verde sin restore probado |
-| Filesystem datos | **ZFS** para datos que importan; el diseño del pool lo fija `zfs-standards`, el stack de bloques `linux-storage-standards` | RAID5/RAIDZ1 con discos grandes; hardware RAID debajo de ZFS; RAID0 en prod |
-| Monitorización | node_exporter en **todo** host y una alerta accionable por síntoma; el stack y su diseño los fija `observability-standards` | Hosts sin telemetría ("sin telemetría no hay producción"); alertas por email sin on-call definido |
-| Acceso remoto | SSH con **claves ed25519 o FIDO2 (ed25519-sk)**, bastión, MFA | Contraseñas SSH, root login, telnet, SNMP v1/v2c |
-| Config management | Ansible (o equivalente) idempotente, repo versionado, ejecutado desde CI o AWX | Cambios manuales no capturados (snowflakes); scripts sueltos sin idempotencia |
-| Time/DNS | NTP interno (chrony) y DNS interno redundante; ambos monitorizados | Hosts con reloj libre (rompe TLS, Kerberos, logs); un único DNS |
+| Base OS for servers | **Debian 13 "trixie"** (stable since Aug 2025, supported to 2028 + LTS 2030) or **Ubuntu Server 26.04 LTS** (supported to 2031) | EOL distros or ones with no security update channel; installing "testing" in prod |
+| Hypervisor | **Proxmox VE** on KVM as the managed platform; pure libvirt only on standalone hosts. Operation, in `proxmox-ve-standards` and `libvirt-kvm-standards` | New VMware without justifying the cost post-Broadcom; unsupported hypervisors. Valid alternatives with their own owner: `vmware-standards` (stay or exit), `hyper-v-standards` (if the Windows licences are already paid for) and `xen-standards` (XCP-ng if the team masters it) |
+| Backup | Copy **verified with a timed restore**; the mechanics are set by `backup-recovery-standards` and the plan by `bcdr-standards` | Backup = hypervisor snapshot; job showing green with no tested restore |
+| Data filesystem | **ZFS** for data that matters; pool design is set by `zfs-standards`, the block stack by `linux-storage-standards` | RAID5/RAIDZ1 with large disks; hardware RAID underneath ZFS; RAID0 in prod |
+| Monitoring | node_exporter on **every** host and one actionable alert per symptom; the stack and its design are set by `observability-standards` | Hosts with no telemetry ("no telemetry, no production"); email alerts with no defined on-call |
+| Remote access | SSH with **ed25519 or FIDO2 (ed25519-sk) keys**, bastion, MFA | SSH passwords, root login, telnet, SNMP v1/v2c |
+| Config management | Idempotent Ansible (or equivalent), versioned repo, executed from CI or AWX | Manual changes not captured (snowflakes); loose scripts with no idempotency |
+| Time/DNS | Internal NTP (chrony) and redundant internal DNS; both monitored | Hosts with a free-running clock (breaks TLS, Kerberos, logs); a single DNS |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-**Systemd**: el diseño de unidades, timers, journald y el día a día del SO son de
-`linux-administration-standards`; su sandboxing como **control de seguridad** medido, de
-`linux-hardening-standards`. Lo que esta skill exige a la flota entera: **ningún servicio propio
-corre sin unidad versionada**, y la unidad se despliega desde el repo, no se escribe en el host.
+**Systemd**: unit design, timers, journald and the day-to-day of the OS belong to
+`linux-administration-standards`; its sandboxing as a measured **security control**, to
+`linux-hardening-standards`. What this skill demands of the whole fleet: **no in-house service
+runs without a versioned unit**, and the unit is deployed from the repo, not written on the host.
 
-**Convenciones de flota**
-- Inventario como código (fuente de verdad única: hostname, IP, rol, VLAN, dueño, criticidad).
-  Ningún dato de host "de memoria": se consulta el inventario.
-- Naming estable por rol+ubicación+índice; IPAM sin solapamientos (RFC1918), documentado en el repo.
-- Todo servidor reconstruible desde código (PXE/preseed/autoinstall/cloud-init + Ansible); la
-  prueba es reinstalar uno y que quede idéntico.
-- VMs con virtio + qemu-guest-agent; ballooning y CPU type coherentes por cluster (migración en vivo).
+**Fleet conventions**
+- Inventory as code (single source of truth: hostname, IP, role, VLAN, owner, criticality).
+  No host data "from memory": you query the inventory.
+- Stable naming by role+location+index; IPAM with no overlaps (RFC1918), documented in the repo.
+- Every server rebuildable from code (PXE/preseed/autoinstall/cloud-init + Ansible); the
+  proof is reinstalling one and having it come out identical.
+- VMs with virtio + qemu-guest-agent; ballooning and CPU type coherent per cluster (live migration).
 
-## 4. Gates de calidad obligatorios
+## 4. Mandatory quality gates
 
-- **Lint de IaC**: `ansible-lint`/`yamllint` (o equivalente) en CI; cambios de infra por PR/MR,
-  nunca ejecución directa en prod desde el portátil.
-- **Baseline de hardening auditada**: CIS Benchmark del SO aplicado vía código y verificado con
-  escáner (OpenSCAP/Lynis/Wazuh SCA) con score mínimo acordado; el drift es hallazgo, no anécdota.
-- **Validación pre-cambio**: `visudo -c`, `sshd -t`, `nginx -t`, `named-checkconf`… — todo
-  servicio con verificador propio se valida antes de recargar. Cambios SSH/firewall con sesión
-  de rescate abierta (o consola OOB) hasta confirmar acceso.
-- **Smoke test post-cambio**: el playbook/handler comprueba que el servicio responde (puerto,
-  health endpoint), no solo que systemd está `active`.
-- **Backup verificado como gate**: job periódico de **restore real** (fichero + VM completa) con
-  resultado en monitorización; un backup sin restore probado cuenta como inexistente.
-- **HA probada**: failover ejercitado (apagar un nodo del cluster) en ventana acordada, mínimo
-  semestral; el resultado alimenta el runbook.
+- **IaC lint**: `ansible-lint`/`yamllint` (or equivalent) in CI; infra changes by PR/MR,
+  never direct execution in prod from the laptop.
+- **Audited hardening baseline**: the OS CIS Benchmark applied via code and verified with a
+  scanner (OpenSCAP/Lynis/Wazuh SCA) with an agreed minimum score; drift is a finding, not an anecdote.
+- **Pre-change validation**: `visudo -c`, `sshd -t`, `nginx -t`, `named-checkconf`… — every
+  service with its own verifier is validated before reloading. SSH/firewall changes with a rescue
+  session open (or OOB console) until access is confirmed.
+- **Post-change smoke test**: the playbook/handler checks that the service responds (port,
+  health endpoint), not just that systemd is `active`.
+- **Verified backup as a gate**: periodic **real restore** job (file + full VM) with the
+  result in monitoring; a backup with no tested restore counts as non-existent.
+- **Tested HA**: failover exercised (powering off a cluster node) in an agreed window, at least
+  every six months; the result feeds the runbook.
 
-## 5. Seguridad
+## 5. Security
 
-> El **hardening del SO** (CIS, auditd, OpenSCAP/Lynis) pertenece a `linux-hardening-standards`, el
-> control de acceso obligatorio a `selinux-standards` y la política de filtrado a
-> `firewall-policy-standards` (§1.2). Lo de abajo **no es criterio de hardening**: es el mínimo
-> exigible a **toda** la plataforma, incluido lo que ninguna de ellas cubre — el plano de gestión
-> físico (BMC/IPMI) y la disciplina de flota.
+> **OS hardening** (CIS, auditd, OpenSCAP/Lynis) belongs to `linux-hardening-standards`, mandatory
+> access control to `selinux-standards` and the filtering policy to
+> `firewall-policy-standards` (§1.2). What follows **is not hardening criteria**: it is the minimum
+> demanded of the **whole** platform, including what none of them covers — the physical management
+> plane (BMC/IPMI) and fleet discipline.
 
-**Hardening (CIS como baseline)**
-- Mínimo instalado: sin servicios/puertos innecesarios; firewall de host **default-deny entrada**
-  (nftables) además del de perímetro; egress filtrado en zonas sensibles.
+**Hardening (CIS as the baseline)**
+- Minimum installed: no unnecessary services/ports; host firewall **default-deny inbound**
+  (nftables) on top of the perimeter one; egress filtered in sensitive zones.
 - SSH: `PermitRootLogin no`, `PasswordAuthentication no`, `KbdInteractiveAuthentication no`,
-  claves ed25519/FIDO2, `AllowGroups`, banner legal; acceso a prod solo vía **bastión** con
-  grabación/auditoría de sesión. Actualizaciones de seguridad automáticas del propio sshd/SO.
-- Cuentas: sudo nominal con logging (nada de root compartido), contraseñas locales solo de
-  emergencia en gestor de secretos, credenciales de servicio con rotación.
-- Kernel/plataforma: microcode al día, mitigaciones activas, SELinux/AppArmor enforcing,
-  auditd con reglas mínimas útiles reenviadas al SIEM.
-- Secure Boot + TPM donde el hardware lo permita; cifrado en reposo (LUKS/ZFS encryption) en
-  discos con datos y en backups; claves en gestor (no en el propio host).
+  ed25519/FIDO2 keys, `AllowGroups`, legal banner; access to prod only via **bastion** with
+  session recording/auditing. Automatic security updates of sshd/the OS itself.
+- Accounts: named sudo with logging (no shared root), local passwords only for emergencies in
+  a secrets manager, service credentials with rotation.
+- Kernel/platform: microcode up to date, mitigations enabled, SELinux/AppArmor enforcing,
+  auditd with a minimum set of useful rules forwarded to the SIEM.
+- Secure Boot + TPM where the hardware allows it; encryption at rest (LUKS/ZFS encryption) on
+  disks with data and on backups; keys in a manager (not on the host itself).
 
-**Red** — el diseño de red (routing, VLAN, BGP, DNS, política de firewall) lo fija
-`networking-standards`; aquí solo lo que la plataforma de servidores debe garantizar:
-- Segmentación por VLANs mínimo: gestión / servicios / almacenamiento-replicación / usuarios /
-  DMZ; **default-deny entre zonas**, cada flujo permitido documentado en el repo de red.
-- **Plano de gestión separado y out-of-band**: IPMI/iDRAC/iLO, interfaces de gestión del
-  hipervisor y switches en VLAN dedicada sin ruta desde redes de usuario; acceso solo vía
-  bastión/VPN (WireGuard). BMC con firmware parcheado y credenciales únicas por host.
-- Corosync/cluster y tráfico de replicación en red dedicada (latencia y aislamiento).
-- 802.1X/port-security en acceso donde aplique; SNMPv3 únicamente; TLS 1.2+/mTLS en tráfico
-  este-oeste de servicios internos; PKI interna con ACME (step-ca) mejor que certificados manuales.
+**Network** — network design (routing, VLAN, BGP, DNS, firewall policy) is set by
+`networking-standards`; here, only what the server platform must guarantee:
+- Segmentation by VLANs, minimum: management / services / storage-replication / users /
+  DMZ; **default-deny between zones**, every permitted flow documented in the network repo.
+- **Separate, out-of-band management plane**: IPMI/iDRAC/iLO, the management interfaces of the
+  hypervisor and switches on a dedicated VLAN with no route from user networks; access only via
+  bastion/VPN (WireGuard). BMC with patched firmware and unique credentials per host.
+- Corosync/cluster and replication traffic on a dedicated network (latency and isolation).
+- 802.1X/port-security on access where applicable; SNMPv3 only; TLS 1.2+/mTLS on east-west
+  traffic between internal services; internal PKI with ACME (step-ca) rather than manual certificates.
 
-**Mínimo privilegio operativo**
-- RBAC en Proxmox/libvirt (roles por función, API tokens con scope, no `root@pam` para automatización).
-- Ansible con cuentas dedicadas y sudo restringido a lo necesario; secretos en Vault/sops, jamás
-  en claro en el repo.
+**Operational least privilege**
+- RBAC in Proxmox/libvirt (roles by function, API tokens with scope, no `root@pam` for automation).
+- Ansible with dedicated accounts and sudo restricted to what is needed; secrets in Vault/sops, never
+  in the clear in the repo.
 
-## 6. Operabilidad
+## 6. Operability
 
-**Observabilidad**
-- node_exporter + exporters específicos (zfs, smartctl, libvirt/PVE, blackbox) en todo host;
-  scrape federado o Prometheus por sitio con retención larga (Thanos/Mimir solo si el volumen lo pide — KISS).
-- Alertas **accionables sobre síntomas** (golden signals + disco lleno con predicción, SMART,
-  degradación RAID/ZFS, backup fallido o **restore-test fallido**, certificado por caducar,
-  nodo de cluster caído, NTP drift). Cada alerta enlaza runbook; alerta sin acción posible se elimina.
-- Dashboards por capa (hardware / hipervisor / VM / servicio) y **SLOs con error budget** para
-  los servicios que importan; postmortems sin culpa con acciones.
+**Observability**
+- node_exporter + specific exporters (zfs, smartctl, libvirt/PVE, blackbox) on every host;
+  federated scrape or a Prometheus per site with long retention (Thanos/Mimir only if the volume demands it — KISS).
+- **Actionable alerts on symptoms** (golden signals + disk full with prediction, SMART,
+  RAID/ZFS degradation, failed backup or **failed restore-test**, certificate about to expire,
+  cluster node down, NTP drift). Every alert links a runbook; an alert with no possible action is removed.
+- Dashboards per layer (hardware / hypervisor / VM / service) and **SLOs with error budget** for
+  the services that matter; blameless postmortems with actions.
 
-**HA sin SPOF** — Pacemaker/Corosync, fencing y recursos en detalle van a `ha-clustering-standards`
-(§1.2); aquí la topología y la redundancia física, que son decisión de plataforma:
-- Clusters de 3+ nodos (quórum real; 2 nodos solo con qdevice); **fencing/watchdog configurado y
-  probado** antes de activar HA — HA sin fencing es corrupción diferida.
-- Redundancia física: dual PSU en feeds distintos, bonding LACP a switches apilados/MLAG, UPS
-  monitorizada con apagado ordenado probado, refrigeración vigilada.
-- Storage compartido con replicación (Ceph a partir de 3-5 nodos homogéneos; ZFS replication
-  para pares) — elige el más simple que cumpla el RPO, no el más potente.
+**HA with no SPOF** — Pacemaker/Corosync, fencing and resources in detail go to `ha-clustering-standards`
+(§1.2); here, topology and physical redundancy, which are platform decisions:
+- Clusters of 3+ nodes (real quorum; 2 nodes only with a qdevice); **fencing/watchdog configured and
+  tested** before enabling HA — HA without fencing is deferred corruption.
+- Physical redundancy: dual PSU on different feeds, LACP bonding to stacked/MLAG switches, monitored
+  UPS with a tested ordered shutdown, cooling under watch.
+- Shared storage with replication (Ceph from 3-5 homogeneous nodes upwards; ZFS replication
+  for pairs) — pick the simplest one that meets the RPO, not the most powerful.
 
-**Backups y DR** — el plan de continuidad, los RTO/RPO derivados del negocio, el orden de
-recuperación y los ejercicios de DR **ya son de `bcdr-standards`**; la mecánica de la copia es de
-`backup-recovery-standards` (§1.2). Aquí, el mínimo exigible a la plataforma:
-- Regla **3-2-1** con al menos una copia **inmutable u offline** (PBS remoto con sync cifrado,
-  S3 object-lock, o tape) — el ransomware ataca primero los backups accesibles.
-- Retención por criticidad (p. ej. 7d/4w/12m), cifrado en reposo y en tránsito, **claves de
-  cifrado custodiadas fuera** del sistema respaldado (backup cifrado sin clave = pérdida total).
-- **RTO/RPO por servicio, por escrito**, y **ejercicios de DR programados** (mínimo anual, ideal
-  semestral): restaurar el servicio crítico en hardware/sitio alterno, cronometrado, con informe.
-  También config de switches/firewall y la propia infraestructura de backup.
-- Runbooks de operación: arranque/parada ordenada del CPD, pérdida de nodo, pérdida de site,
-  restore selectivo. Probados, versionados, con dueño.
+**Backups and DR** — the continuity plan, the RTO/RPO derived from the business, the recovery
+order and the DR exercises **already belong to `bcdr-standards`**; the mechanics of the copy belong to
+`backup-recovery-standards` (§1.2). Here, the minimum demanded of the platform:
+- **3-2-1** rule with at least one **immutable or offline** copy (remote PBS with encrypted sync,
+  S3 object-lock, or tape) — ransomware attacks the accessible backups first.
+- Retention by criticality (e.g. 7d/4w/12m), encryption at rest and in transit, **encryption keys
+  held outside** the backed-up system (an encrypted backup with no key = total loss).
+- **RTO/RPO per service, in writing**, and **scheduled DR exercises** (annual minimum, ideally
+  every six months): restore the critical service on alternate hardware/site, timed, with a report.
+  Also switch/firewall configs and the backup infrastructure itself.
+- Operational runbooks: ordered startup/shutdown of the datacenter, node loss, site loss,
+  selective restore. Tested, versioned, with an owner.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia de parches/upgrades** — el triaje de un CVE concreto (CVSS+EPSS+KEV, SLA, VEX) lo fija
-`vulnerability-management-standards`; aquí la cadencia de la flota:
-- Seguridad SO: automático (`unattended-upgrades` solo security) en tiers bajos; semanal
-  orquestado con reinicio en ventana para prod. Kernel/microcode: mensual o ante CVE explotable (triaje CVSS+EPSS+KEV).
-- Hipervisor/PBS: minor updates mensuales rodando por el cluster (migrate→patch→reboot→rebalance);
-  majors tras leer release notes y probar en nodo/cluster de staging. No dejar morir soportes
-  (PVE 8 EOL ago-2026: planifica el salto a 9.x antes, no después).
-- Firmware (BIOS/BMC/NIC/discos) y switches: revisión trimestral; BMC ante cualquier CVE.
-- Prometheus/Grafana: seguir línea LTS/última minor; leer breaking changes antes de major.
+**Patch/upgrade cadence** — the triage of a specific CVE (CVSS+EPSS+KEV, SLA, VEX) is set by
+`vulnerability-management-standards`; here, the fleet's cadence:
+- OS security: automatic (`unattended-upgrades`, security only) in low tiers; weekly
+  orchestrated with a reboot in a window for prod. Kernel/microcode: monthly or on an exploitable CVE (CVSS+EPSS+KEV triage).
+- Hypervisor/PBS: minor updates monthly, rolling across the cluster (migrate→patch→reboot→rebalance);
+  majors after reading the release notes and testing on a staging node/cluster. Do not let support
+  windows die (PVE 8 EOL Aug 2026: plan the jump to 9.x before, not after).
+- Firmware (BIOS/BMC/NIC/disks) and switches: quarterly review; BMC on any CVE.
+- Prometheus/Grafana: follow the LTS/latest minor line; read breaking changes before a major.
 
-**PROHIBIDO**
-- Cambios manuales en prod no reflejados en el código/inventario (snowflakes); drift sin corregir.
-- Backups sin restore probado; una sola copia; backup en el mismo chasis/pool que el origen;
-  claves de cifrado de backup guardadas solo dentro del sistema respaldado.
-- SSH por contraseña, root login remoto, telnet, SNMP v1/v2c, interfaces de gestión (BMC/PVE/
-  switches) expuestas a redes de usuario o a Internet.
-- HA sin fencing probado; clusters de 2 nodos sin qdevice; "HA" con un único switch/PSU/UPS.
-- RAID5/RAIDZ1 con discos grandes; hardware RAID bajo ZFS; pools ZFS >80% llenos sin plan.
-- Desactivar SELinux/AppArmor o el firewall "para que funcione" sin diagnóstico ni revert.
-- Ejecutar en prod versiones EOL (SO, hipervisor, servicios) sin plan de salida fechado.
-- Alertas ruidosas mantenidas "por si acaso"; silencios permanentes sin caducidad.
-- Editar unidades systemd del paquete en vez de overrides; servicios como root sin sandboxing.
-- Compartir credenciales de BMC/rootIPMI entre hosts; credenciales por defecto de fábrica.
+**FORBIDDEN**
+- Manual changes in prod not reflected in the code/inventory (snowflakes); uncorrected drift.
+- Backups with no tested restore; a single copy; a backup on the same chassis/pool as the source;
+  backup encryption keys stored only inside the backed-up system.
+- SSH by password, remote root login, telnet, SNMP v1/v2c, management interfaces (BMC/PVE/
+  switches) exposed to user networks or to the Internet.
+- HA without tested fencing; 2-node clusters with no qdevice; "HA" with a single switch/PSU/UPS.
+- RAID5/RAIDZ1 with large disks; hardware RAID under ZFS; ZFS pools >80% full with no plan.
+- Disabling SELinux/AppArmor or the firewall "to make it work" with no diagnosis and no revert.
+- Running EOL versions in prod (OS, hypervisor, services) with no dated exit plan.
+- Noisy alerts kept "just in case"; permanent silences with no expiry.
+- Editing the package's systemd units instead of overrides; services as root with no sandboxing.
+- Sharing BMC/IPMI root credentials between hosts; factory default credentials.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier dato concreto, **búscalo — no lo recuerdes**:
-- Versión estable y EOL actual de: Proxmox VE/PBS (roadmap + endoflife.date), Debian/Ubuntu,
-  Prometheus (línea LTS), Grafana, OpenZFS. Verificado ago-2026: PVE 9.2, PBS 4.2, Debian 13.6,
-  Ubuntu 26.04 LTS, Prometheus 3.13 LTS, Grafana 13.x — pero caduca rápido.
-- CIS Benchmark vigente para la versión exacta del SO antes de aplicar/auditar hardening.
-- CVEs activos (con KEV/EPSS) del stack afectado antes de decidir cadencia de un parche urgente.
-- Compatibilidades antes de upgrades cruzados (PVE↔PBS, kernel↔ZFS, Ceph↔PVE) en las release
-  notes oficiales, y el procedimiento de upgrade oficial (pve-upgrade-checklist) — no de memoria.
-- Estado del mercado si la decisión es de plataforma (licenciamiento Broadcom/VMware, madurez
-  XCP-ng/alternativas) — cambia por trimestre.
+Before pinning any specific piece of data, **look it up — do not recall it**:
+- Current stable version and EOL of: Proxmox VE/PBS (roadmap + endoflife.date), Debian/Ubuntu,
+  Prometheus (LTS line), Grafana, OpenZFS. Verified Aug 2026: PVE 9.2, PBS 4.2, Debian 13.6,
+  Ubuntu 26.04 LTS, Prometheus 3.13 LTS, Grafana 13.x — but it expires fast.
+- The CIS Benchmark in force for the exact OS version before applying/auditing hardening.
+- Active CVEs (with KEV/EPSS) of the affected stack before deciding the cadence of an urgent patch.
+- Compatibilities before cross upgrades (PVE↔PBS, kernel↔ZFS, Ceph↔PVE) in the official release
+  notes, and the official upgrade procedure (pve-upgrade-checklist) — not from memory.
+- The state of the market if the decision is a platform one (Broadcom/VMware licensing, maturity of
+  XCP-ng/alternatives) — it changes quarter by quarter.
 
-Si no puedes verificar, dilo explícitamente en vez de suponer.
+If you cannot verify, say so explicitly instead of assuming.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

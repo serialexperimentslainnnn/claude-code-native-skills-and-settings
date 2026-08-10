@@ -3,19 +3,19 @@ name: vbnet-standards
 description: Visual Basic .NET as a frozen-but-supported language, and the stay-or-convert-to-C# decision. Use when editing .vb files, a .vbproj project, My.Settings/My.Resources/My.Application code, Option Strict / Option Explicit / Option Infer / Option Compare directives, Microsoft.VisualBasic namespace calls (CInt, CType, IsNothing, Mid, Left, InStr, Format, MsgBox, InputBox, IIf, On Error Resume Next, Err.Number), Handles and WithEvents, Module and Sub Main in VB, ByRef/ByVal parameters, VB WinForms designer files (.Designer.vb, Form1.vb), Microsoft.VisualBasic.FileIO.TextFieldParser, and when choosing VB templates in dotnet new (classlib, console, winforms, wpf) or evaluating a VB-to-C# converter such as ICSharpCode CodeConverter.
 ---
 
-# Estándares Visual Basic .NET
+# Visual Basic .NET standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Código **VB.NET** (`.vb`, `.vbproj`), corra sobre .NET Framework 4.x o sobre .NET moderno, y la
-decisión de mantenerlo o convertirlo. Triggers: `Option Strict`/`Explicit`/`Infer`/`Compare`,
-espacio `Microsoft.VisualBasic`, `My.*`, `Handles`/`WithEvents`, `On Error Resume Next`,
+**VB.NET** code (`.vb`, `.vbproj`), whether it runs on .NET Framework 4.x or on modern .NET, and the
+decision to keep it or convert it. Triggers: `Option Strict`/`Explicit`/`Infer`/`Compare`,
+the `Microsoft.VisualBasic` namespace, `My.*`, `Handles`/`WithEvents`, `On Error Resume Next`,
 `.Designer.vb`, `Module`, `MsgBox`, `TextFieldParser`.
 
-**El eje: VB.NET está soportado, pero congelado.** No es lo mismo que muerto y no es lo mismo que
-vivo. Declaración de Microsoft (blog del equipo de Visual Basic, **11-mar-2020**), **verbatim**:
+**The axis: VB.NET is supported, but frozen.** That is not the same as dead and not the same as
+alive. Microsoft's statement (Visual Basic team blog, **11-Mar-2020**), **verbatim**:
 
 > "One of the major benefits of using Visual Basic is that the language has been stable for a very
 > long time. The significant number of programmers using Visual Basic demonstrates that its
@@ -24,166 +24,167 @@ vivo. Declaración de Microsoft (blog del equipo de Visual Basic, **11-mar-2020*
 > Core and .NET Framework versions of Visual Basic. Future features of .NET Core that require
 > language changes may not be supported in Visual Basic."
 
-Consecuencia práctica, que es la que decide: **el compilador y el runtime sí evolucionan; el
-lenguaje no.** Todo lo que llega a la plataforma y necesita sintaxis nueva —records, pattern
-matching moderno, tipos de referencia anulables, `Span<T>` idiomático, top-level statements,
-generadores de código con sintaxis propia— llega a C# y **no llega aquí**. VB consume lo que
-puede desde bibliotecas; lo que exige gramática, no. Esto no es una opinión sobre el lenguaje: es
-la restricción de diseño con la que se planifica.
+The practical consequence, which is the one that decides: **the compiler and the runtime do evolve;
+the language does not.** Everything that reaches the platform and needs new syntax — records, modern
+pattern matching, nullable reference types, idiomatic `Span<T>`, top-level statements, source
+generators with their own syntax — reaches C# and **does not reach here**. VB consumes what it can
+from libraries; what demands grammar, it does not. This is not an opinion about the language: it is
+the design constraint you plan with.
 
-**No aplica**: `dotnet-standards` decide **la plataforma .NET moderna** —SDK, TFM, LTS, NuGet,
-ASP.NET Core, EF Core, publicación, testing, CI—, y **es la dueña del destino si se convierte a
-C#**: la calidad del C# resultante se rige por su criterio, no por el de aquí. Aquí, solo el
-lenguaje VB y la decisión.
-`dotnet-framework-legacy-standards` decide la **plataforma 4.x** y el porte a .NET moderno
-(WebForms, WCF, `packages.config`, SDK-style): si el problema es "no puedo salir de 4.8", es suyo;
-si es "cómo se escribe este `.vb`", es de aquí. Un `.vbproj` sobre `net48` toca las dos: **el
-proyecto y su TFM allí, el código aquí.**
-Hermanas: `vb6-standards` (VB6 es **otro lenguaje y otro runtime**, sin CLR — la similitud
-sintáctica es una trampa) y `classic-asp-standards` (VBScript en servidor, tampoco es esto).
-`legacy-modernization-standards`: estrategia de cartera, con
-`enterprise-architecture-standards`, `project-management-standards` y `tech-leadership-standards`.
-Además `refactoring-tech-debt-standards` (conversión segura), `testing-qa-standards` (la red que la
-hace defendible), `sql-standards` y `sqlserver-dba-standards` (el SQL embebido, que aquí suele ser
-la mitad del código), `appsec-standards`, `cicd-standards`, `git-workflow-standards`.
+**Not applicable**: `dotnet-standards` decides **the modern .NET platform** — SDK, TFM, LTS, NuGet,
+ASP.NET Core, EF Core, publishing, testing, CI — and **it owns the destination if you convert to
+C#**: the quality of the resulting C# is governed by its criteria, not by the ones here. Here, only
+the VB language and the decision.
+`dotnet-framework-legacy-standards` decides the **4.x platform** and the port to modern .NET
+(WebForms, WCF, `packages.config`, SDK-style): if the problem is "I cannot get off 4.8", it is
+theirs; if it is "how is this `.vb` written", it is ours. A `.vbproj` on `net48` touches both: **the
+project and its TFM there, the code here.**
+Sisters: `vb6-standards` (VB6 is **another language and another runtime**, with no CLR — the
+syntactic similarity is a trap) and `classic-asp-standards` (server-side VBScript, also not this).
+`legacy-modernization-standards`: portfolio strategy, with
+`enterprise-architecture-standards`, `project-management-standards` and `tech-leadership-standards`.
+Also `refactoring-tech-debt-standards` (safe conversion), `testing-qa-standards` (the net that makes
+it defensible), `sql-standards` and `sqlserver-dba-standards` (the embedded SQL, which here is
+usually half the code), `appsec-standards`, `cicd-standards`, `git-workflow-standards`.
 
-## 2. Qué está soportado hoy — decisiones por defecto
+## 2. What is supported today — default decisions
 
-> Verificar por web antes de fijarlo en un proyecto real (§8).
+> Verify on the web before pinning it in a real project (§8).
 
-**Plantillas de proyecto VB en el SDK moderno.** Tabla oficial de `dotnet new`, columna *Language*,
-**verbatim** en lo que importa: `classlib` → `[C#], F#, VB`; `console` → `[C#], F#, VB`;
-`winforms` y `winformslib` → `[C#], VB` (*Introduced*: `3.0 (5.0 for VB)`); `wpf`, `wpflib`,
+**VB project templates in the modern SDK.** Official `dotnet new` table, *Language* column,
+**verbatim** in what matters: `classlib` → `[C#], F#, VB`; `console` → `[C#], F#, VB`;
+`winforms` and `winformslib` → `[C#], VB` (*Introduced*: `3.0 (5.0 for VB)`); `wpf`, `wpflib`,
 `wpfcustomcontrollib`, `wpfusercontrollib` → `[C#], VB`; `mstest`, `mstest-class`, `nunit`,
 `nunit-test`, `xunit` → `[C#], F#, VB`.
 
-**Discrepancia declarada — importante.** El anuncio de 2020 prometía **verbatim** estos tipos de
-proyecto para VB en .NET 5: *"Class Library, Console, Windows Forms, WPF, Worker Service, ASP.NET
-Core Web API"*. La tabla vigente de plantillas del SDK **no lista VB** ni en `worker` (`[C#]`) ni
-en `webapi` (`[C#], F#`). Es decir: **lo prometido en 2020 no está en las plantillas de hoy**. No
-significa necesariamente que el compilador lo impida —se puede partir de un `classlib` VB y
-referenciar ASP.NET Core a mano—, pero **sin plantilla no hay camino soportado**: cualquier plan que
-asuma "web API en VB" hay que verificarlo con `dotnet new list --language VB` en el SDK real antes
-de comprometerlo.
+**Declared discrepancy — important.** The 2020 announcement promised **verbatim** these project
+types for VB in .NET 5: *"Class Library, Console, Windows Forms, WPF, Worker Service, ASP.NET
+Core Web API"*. The current SDK template table **does not list VB** either in `worker` (`[C#]`) or
+in `webapi` (`[C#], F#`). That is: **what was promised in 2020 is not in today's templates**. It
+does not necessarily mean the compiler prevents it — you can start from a VB `classlib` and
+reference ASP.NET Core by hand — but **without a template there is no supported path**: any plan
+that assumes "web API in VB" must be verified with `dotnet new list --language VB` on the real SDK
+before committing to it.
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | By default | Justifiable alternative |
 |---|---|---|
-| Ámbito de VB.NET **nuevo** | **Ninguno**: no se arranca proyecto nuevo en VB | Módulo dentro de una solución VB existente que un equipo VB mantiene |
-| Tipo de app viable | Escritorio **WinForms/WPF**, bibliotecas, consola, tests | Servicio/worker/API: solo tras verificar el SDK; por defecto, C# |
-| Plataforma destino si se porta | `net10.0-windows` (WinForms/WPF) o `net10.0` | `netstandard2.0` mientras conviva con 4.x |
-| Solución mixta | **Sí**: VB y C# conviven por proyecto | — |
-| Conversión a C# | Solo con motivo explícito (§5) | Mantener VB si el equipo lo mantiene bien |
+| Area for **new** VB.NET | **None**: no new project is started in VB | A module inside an existing VB solution that a VB team maintains |
+| Viable app type | **WinForms/WPF** desktop, libraries, console, tests | Service/worker/API: only after verifying the SDK; by default, C# |
+| Target platform if ported | `net10.0-windows` (WinForms/WPF) or `net10.0` | `netstandard2.0` while it coexists with 4.x |
+| Mixed solution | **Yes**: VB and C# coexist per project | — |
+| Conversion to C# | Only with an explicit reason (§5) | Keep VB if the team maintains it well |
 
-**Interoperabilidad C#/VB.NET**: ambos compilan al mismo IL y una solución puede tener proyectos de
-los dos. **La frontera es por proyecto, no por fichero**: un `.vbproj` no admite `.cs` ni al revés.
-Criterio: si se convierte, se convierte **proyecto a proyecto**, dejando la solución compilando y
-verde en cada paso — nunca fichero a fichero con la solución rota. El código nuevo entra en
-proyectos C# nuevos que referencian los VB existentes; eso ya es una migración incremental sin
-tocar una línea de VB.
+**C#/VB.NET interoperability**: both compile to the same IL and one solution can have projects of
+both. **The boundary is per project, not per file**: a `.vbproj` does not accept `.cs` or vice
+versa. Criteria: if you convert, you convert **project by project**, leaving the solution compiling
+and green at every step — never file by file with the solution broken. New code goes into new C#
+projects that reference the existing VB ones; that is already an incremental migration without
+touching a line of VB.
 
-## 3. La línea cero no negociable: `Option Strict On`
+## 3. The non-negotiable baseline: `Option Strict On`
 
-`Option Strict Off` y `Option Explicit Off` son el default histórico de VB y **la causa de la mayor
-parte de los bugs de este ecosistema**. Con ellos, el compilador acepta conversiones implícitas con
-pérdida, enlaza en tiempo de ejecución (*late binding*) y crea variables por escribirlas mal. El
-resultado: errores de tipo que aparecen en producción con datos reales en vez de en la compilación.
+`Option Strict Off` and `Option Explicit Off` are VB's historical default and **the cause of most
+of this ecosystem's bugs**. With them, the compiler accepts lossy implicit conversions, binds at run
+time (*late binding*) and creates variables by mistyping them. The result: type errors that show up
+in production with real data instead of at compile time.
 
-- **`Option Strict On` y `Option Explicit On` en todos los proyectos**, a nivel de `.vbproj`, no
-  fichero a fichero. `Option Infer On` es aceptable y deseable.
-- Activarlo en un código base que hoy está en `Off` genera cientos de errores. **No es motivo para
-  no hacerlo**: es la medida real de la deuda. Ruta: por proyecto, del de menos dependencias hacia
-  arriba, con cada conversión explícita revisada — antes la tomaba el runtime a ciegas.
-- **`DirectCast` frente a `CType`**: el primero falla si el tipo no es el esperado, el segundo
-  intenta convertir. Por defecto `DirectCast` (o `TryCast` comprobando `Nothing`): que falle pronto.
-- ❌ `On Error Resume Next`/`GoTo` → `Try/Catch/Finally`. Un `Resume Next` es un `catch` vacío
-  global: traga errores y deja el estado a medias.
-- ❌ Comparar cadenas con `=` dependiendo de `Option Compare Text`: fijar `Option Compare Binary` y
-  usar `String.Equals(..., StringComparison...)`.
-- `Nothing` no es el `null` de C# en todos los contextos (sobre un `Integer` vale `0`): trampa
-  clásica en la frontera con C# y en la conversión automática. `Is Nothing`, solo tipos referencia.
+- **`Option Strict On` and `Option Explicit On` in every project**, at `.vbproj` level, not file by
+  file. `Option Infer On` is acceptable and desirable.
+- Turning it on in a code base that is currently `Off` produces hundreds of errors. **That is not a
+  reason not to do it**: it is the real measure of the debt. Route: project by project, from the one
+  with the fewest dependencies upwards, with every explicit conversion reviewed — before, the
+  runtime made it blindly.
+- **`DirectCast` versus `CType`**: the first fails if the type is not the expected one, the second
+  tries to convert. By default `DirectCast` (or `TryCast` checking for `Nothing`): let it fail early.
+- ❌ `On Error Resume Next`/`GoTo` → `Try/Catch/Finally`. A `Resume Next` is a global empty `catch`:
+  it swallows errors and leaves the state half-done.
+- ❌ Comparing strings with `=` depending on `Option Compare Text`: set `Option Compare Binary` and
+  use `String.Equals(..., StringComparison...)`.
+- `Nothing` is not C#'s `null` in every context (on an `Integer` it is `0`): a classic trap at the
+  boundary with C# and in automatic conversion. `Is Nothing`, reference types only.
 
-**`Microsoft.VisualBasic`**: existe en .NET moderno (`Microsoft.VisualBasic.Core`), pero **no todo
-sobrevive**: `ApplicationServices`, `Devices` y `MyServices` —los que sostienen `My.Application`,
-`My.Computer` y compañía— tuvieron un hueco en .NET Core 3.x, y su estado por versión hay que
-**verificarlo en la página de cambios de ruptura de VB antes de portar** (§8). Criterio: en código
-que vaya a portarse, **sustituir las funciones de compatibilidad (`Left`, `Mid`, `InStr`, `Format`,
-`IIf`, `MsgBox`) por sus equivalentes de BCL**. No es purismo: `IIf` evalúa las dos ramas y `MsgBox`
-ata a Windows. `TextFieldParser` sí sigue disponible y es útil: no reinventarlo.
+**`Microsoft.VisualBasic`**: it exists in modern .NET (`Microsoft.VisualBasic.Core`), but **not
+everything survives**: `ApplicationServices`, `Devices` and `MyServices` — the ones that hold up
+`My.Application`, `My.Computer` and company — had a gap in .NET Core 3.x, and their state per
+version must be **verified on the VB breaking-changes page before porting** (§8). Criteria: in code
+that is going to be ported, **replace the compatibility functions (`Left`, `Mid`, `InStr`, `Format`,
+`IIf`, `MsgBox`) with their BCL equivalents**. This is not purism: `IIf` evaluates both branches and
+`MsgBox` ties you to Windows. `TextFieldParser` is still available and is useful: do not reinvent it.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-Aplican los gates de `dotnet-standards` (analizadores Roslyn, `.editorconfig`, SCA, CI). Específico
-de aquí, y todo debe **romper el build**:
+The gates from `dotnet-standards` apply (Roslyn analyzers, `.editorconfig`, SCA, CI). Specific to
+here, and all of it must **break the build**:
 
-- `Option Strict On`/`Explicit On` verificados en el `.vbproj`, no solo en el fichero.
-- `<TreatWarningsAsErrors>` activo; en VB los avisos de conversión implícita son el hallazgo real.
-- **Cobertura antes de convertir**: sin suite de pruebas sobre el comportamiento observable, una
-  conversión a C# no es defendible ni verificable. La estrategia la fija `testing-qa-standards`;
-  aquí la regla es dura: **primero la red, después la conversión**.
-- Los ficheros `.Designer.vb` son generados: no se editan a mano ni se revisan como código.
+- `Option Strict On`/`Explicit On` verified in the `.vbproj`, not just in the file.
+- `<TreatWarningsAsErrors>` on; in VB, implicit-conversion warnings are the real finding.
+- **Coverage before converting**: without a test suite over observable behaviour, a conversion to C#
+  is neither defensible nor verifiable. The strategy is set by `testing-qa-standards`;
+  here the rule is hard: **the net first, the conversion after**.
+- `.Designer.vb` files are generated: they are not edited by hand nor reviewed as code.
 
-## 5. Migración a C# — criterio honesto
+## 5. Migration to C# — honest criteria
 
-**Convertir no es modernizar.** Los conversores automáticos (ICSharpCode CodeConverter y similares)
-producen C# que **compila pero no es idiomático**: `Nothing` mal traducido, `On Error` convertido en
-`try/catch` vacíos, `IIf` en llamadas que evalúan ambas ramas, propiedades y eventos con nombres
-de máquina. Sale un código base en C# que nadie escribió y que nadie quiere mantener. Si el
-objetivo era "que el equipo pueda contratar gente", ese resultado no lo consigue.
+**Converting is not modernising.** Automatic converters (ICSharpCode CodeConverter and similar)
+produce C# that **compiles but is not idiomatic**: `Nothing` mistranslated, `On Error` turned into
+empty `try/catch`, `IIf` into calls that evaluate both branches, properties and events with machine
+names. What comes out is a C# code base nobody wrote and nobody wants to maintain. If the goal was
+"so the team can hire people", that result does not achieve it.
 
-- **Sí** cuando: la aplicación va a seguir evolucionando y necesita features que exigen sintaxis;
-  hay que unificar con un código base C# ya mayoritario; o el tipo de proyecto necesario **no tiene
-  plantilla VB** (web, worker — §2).
-- **No** cuando: es estable, el equipo que la mantiene sabe VB y hace buen trabajo, y no hay
-  roadmap. VB.NET está **soportado**; congelado no es un riesgo de seguridad por sí solo. Convertir
-  por estética es gastar presupuesto en cero valor.
-- Si se convierte: **proyecto a proyecto**, suite verde antes y después de cada paso, y una pasada
-  de revisión humana que **reescribe lo que el conversor dejó feo** —presupuestarla explícitamente;
-  sin ella el resultado es deuda nueva con sintaxis distinta—. **Nunca** convertir y portar de
-  plataforma en el mismo commit: si algo se rompe, no se sabrá cuál de los dos fue.
+- **Yes** when: the application is going to keep evolving and needs features that require syntax;
+  it has to be unified with an already-majority C# code base; or the required project type **has no
+  VB template** (web, worker — §2).
+- **No** when: it is stable, the team maintaining it knows VB and does a good job, and there is no
+  roadmap. VB.NET is **supported**; frozen is not a security risk in itself. Converting
+  for aesthetics is spending budget on zero value.
+- If you convert: **project by project**, a green suite before and after every step, and a human
+  review pass that **rewrites what the converter left ugly** — budget for it explicitly;
+  without it the result is new debt with different syntax. **Never** convert and port
+  platform in the same commit: if something breaks, you will not know which of the two it was.
 
-## 6. Seguridad del stack
+## 6. Stack security
 
-No hay superficie de ataque propia del lenguaje: manda `appsec-standards` y, en 4.x,
-`dotnet-framework-legacy-standards` (`BinaryFormatter`, `machineKey`, TLS). Específico de VB:
-**`Option Strict Off` es un problema de seguridad**, no solo de calidad —el *late binding* permite
-que una cadena decida qué miembro se invoca—; **SQL por concatenación** (`"... WHERE id=" &
-txt.Text`) es el patrón dominante del código VB heredado y su única corrección es `SqlCommand` con
-`Parameters.Add` tipado (`sql-standards`); y `My.Settings` con contraseñas o cadenas de conexión es
-configuración en claro dentro del artefacto: fuera, a `secrets-management-standards`.
+There is no attack surface specific to the language: `appsec-standards` rules and, on 4.x,
+`dotnet-framework-legacy-standards` (`BinaryFormatter`, `machineKey`, TLS). Specific to VB:
+**`Option Strict Off` is a security problem**, not just a quality one — *late binding* lets a
+string decide which member gets invoked —; **SQL by concatenation** (`"... WHERE id=" &
+txt.Text`) is the dominant pattern in legacy VB code and its only fix is `SqlCommand` with typed
+`Parameters.Add` (`sql-standards`); and `My.Settings` with passwords or connection strings is
+cleartext configuration inside the artifact: out, to `secrets-management-standards`.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-Cadencia: la aplicación se mantiene en el TFM soportado más alto que permita su plataforma;
-las dependencias NuGet se actualizan con la misma cadencia que un proyecto C#. **Que el lenguaje
-esté congelado no congela el runtime ni las dependencias** — ese es el error de mantenimiento
-característico de estas bases de código: se dejan de actualizar "porque VB ya no cambia".
+Cadence: the application is kept on the highest supported TFM its platform allows;
+NuGet dependencies are updated with the same cadence as a C# project. **The language being frozen
+does not freeze the runtime or the dependencies** — that is the characteristic maintenance mistake
+of these code bases: they stop being updated "because VB does not change any more".
 
-- ❌ PROHIBIDO `Option Strict Off` u `Option Explicit Off` en cualquier proyecto, nuevo o heredado.
-- ❌ PROHIBIDO `On Error Resume Next` / `On Error GoTo`.
-- ❌ PROHIBIDO *late binding* sobre `Object` para acceder a miembros.
-- ❌ PROHIBIDO SQL por concatenación de cadenas.
-- ❌ PROHIBIDO arrancar un proyecto **nuevo** en VB.NET fuera de una solución VB existente.
-- ❌ PROHIBIDO entregar la salida de un conversor automático sin la pasada de reescritura humana.
-- ❌ PROHIBIDO convertir a C# sin suite de pruebas previa sobre el comportamiento observable.
-- ❌ PROHIBIDO editar `.Designer.vb` a mano.
-- ❌ PROHIBIDO afirmar que VB.NET "no está soportado": lo está (§1); lo que no recibe es lenguaje
-  nuevo. Vender una migración con ese argumento la hunde en la primera revisión.
+- ❌ FORBIDDEN `Option Strict Off` or `Option Explicit Off` in any project, new or legacy.
+- ❌ FORBIDDEN `On Error Resume Next` / `On Error GoTo`.
+- ❌ FORBIDDEN *late binding* over `Object` to access members.
+- ❌ FORBIDDEN SQL by string concatenation.
+- ❌ FORBIDDEN starting a **new** project in VB.NET outside an existing VB solution.
+- ❌ FORBIDDEN shipping the output of an automatic converter without the human rewrite pass.
+- ❌ FORBIDDEN converting to C# without a prior test suite over observable behaviour.
+- ❌ FORBIDDEN editing `.Designer.vb` by hand.
+- ❌ FORBIDDEN claiming VB.NET "is not supported": it is (§1); what it does not get is new language.
+  Selling a migration with that argument sinks it at the first review.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Comprobar: si Microsoft ha publicado **algo posterior a marzo de 2020** que cambie o matice la
-declaración de congelación del lenguaje (es el dato que sostiene toda esta skill); qué plantillas VB
-lista el SDK instalado (`dotnet new list --language VB`) frente a la tabla oficial, y si la
-discrepancia de §2 sobre `worker`/`webapi` se ha resuelto en algún sentido; el estado por versión de
-`Microsoft.VisualBasic.ApplicationServices`, `.Devices` y `.MyServices` en la página de cambios de
-ruptura de VB; la versión LTS de .NET vigente y su fecha de fin de soporte (la fija
-`dotnet-standards`); CVEs de las dependencias NuGet.
+Check: whether Microsoft has published **anything after March 2020** that changes or qualifies the
+language-freeze statement (it is the fact that holds up this whole skill); which VB templates the
+installed SDK lists (`dotnet new list --language VB`) against the official table, and whether the
+§2 discrepancy about `worker`/`webapi` has been resolved either way; the state per version of
+`Microsoft.VisualBasic.ApplicationServices`, `.Devices` and `.MyServices` on the VB breaking-changes
+page; the current .NET LTS version and its end-of-support date (set by
+`dotnet-standards`); CVEs of the NuGet dependencies.
 
-**Huecos declarados (sin dato verificado, NO rellenar de memoria)**: no verificado a ago-2026 si
-existe una declaración de soporte del **lenguaje VB.NET con fecha de fin** — a día de hoy no consta
-ninguna, y la ausencia de fecha **no debe escribirse como si fuera una garantía indefinida**; estado
-de mantenimiento y calidad de salida de los conversores VB→C# concretos; disponibilidad real (no de
-plantilla) de ASP.NET Core y Worker Service en VB sobre el SDK actual; porcentaje de código base
-.NET escrito en VB — no hay cifra pública fiable, no citar ninguna.
+**Declared gaps (no verified data, do NOT fill in from memory)**: not verified as of Aug 2026 whether
+a support statement for the **VB.NET language with an end date** exists — as of today there is none
+on record, and the absence of a date **must not be written as if it were an indefinite guarantee**;
+maintenance state and output quality of the specific VB→C# converters; real availability (not
+template availability) of ASP.NET Core and Worker Service in VB on the current SDK; the percentage of
+the .NET code base written in VB — there is no reliable public figure, do not cite one.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

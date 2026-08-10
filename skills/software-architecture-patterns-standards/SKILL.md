@@ -3,188 +3,188 @@ name: software-architecture-patterns-standards
 description: Standards for choosing and justifying an internal architecture style. Use when deciding modular monolith vs distributing, applying layered, hexagonal/ports-and-adapters, clean or onion architecture, event-driven, pipes-and-filters, plugin/microkernel or space-based styles, drawing module boundaries and dependency rules, bounded contexts and ubiquitous language, CQRS and event sourcing, ADRs (Nygard/MADR templates), C4 model diagrams and Structurizr DSL, ArchUnit or dependency-cruiser fitness functions, ISO/IEC 25010 quality attributes and quality-attribute scenarios, or diagnosing big ball of mud, anemic domain model, shared database and excessive-layering antipatterns.
 ---
 
-# Estándares de patrones y arquitectura de software
+# Software architecture and patterns standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre el **diseño interno de un sistema**: elección de estilo arquitectónico, límites de módulo, reglas de dependencia, modelado de dominio, patrones de datos y consistencia dentro del despliegue, documentación de decisiones (ADR), notación (C4), atributos de calidad y su verificación automática (fitness functions). Triggers: "monolito modular", "hexagonal", "puertos y adaptadores", "clean architecture", "onion", "capas", "event-driven", "pipes and filters", "plugin/microkernel", "space-based", "bounded context", "lenguaje ubicuo", "CQRS", "event sourcing", "regla de dependencia", "acoplamiento/cohesión", "ADR", "C4", "ArchUnit", "fitness function", "ISO 25010", "big ball of mud".
+Covers the **internal design of a system**: choice of architectural style, module boundaries, dependency rules, domain modelling, data and consistency patterns within the deployment, documentation of decisions (ADR), notation (C4), quality attributes and their automatic verification (fitness functions). Triggers: "modular monolith", "hexagonal", "ports and adapters", "clean architecture", "onion", "layers", "event-driven", "pipes and filters", "plugin/microkernel", "space-based", "bounded context", "ubiquitous language", "CQRS", "event sourcing", "dependency rule", "coupling/cohesion", "ADR", "C4", "ArchUnit", "fitness function", "ISO 25010", "big ball of mud".
 
-**Principio rector — un patrón es la respuesta a una fuerza concreta.** Antes de nombrar un patrón hay que nombrar la fuerza que lo justifica (un atributo de calidad medible, un eje de cambio previsto, una restricción de negocio o normativa). **Un patrón aplicado sin esa fuerza no es arquitectura: es complejidad accidental**, y se paga en cada cambio futuro. Corolario operativo: en el ADR (§6) la sección que decide no es "decisión", es "fuerza y consecuencias".
+**Guiding principle — a pattern is the answer to a concrete force.** Before naming a pattern you have to name the force that justifies it (a measurable quality attribute, an expected axis of change, a business or regulatory constraint). **A pattern applied without that force is not architecture: it is accidental complexity**, and it is paid for on every future change. Operational corollary: in the ADR (§6) the section that decides is not "decision", it is "force and consequences".
 
-**No aplica**:
-- `microservices-architecture-standards` (**frontera crítica**): **suya** toda la topología distribuida — corte en servicios desplegables por separado, comunicación entre procesos por red (REST/gRPC/eventos), contratos entre servicios y su gobierno, **saga y outbox en su ejecución**, base de datos por servicio como regla operativa, resiliencia distribuida (timeouts, circuit breaker, backpressure, DLQ), mTLS, API gateway y service mesh, trazado distribuido. **Aquí** el diseño interno de un despliegue y **la decisión previa de si hace falta distribuir**, más el criterio de negocio sobre consistencia eventual. Regla de arbitraje: **si la pregunta es cómo se comunican dos procesos separados por la red, es suya; si es cómo se estructura el código dentro de un despliegue, es de aquí.**
-- `api-design-standards` (el **contrato hacia fuera**: recursos, verbos, códigos, paginación, versionado del contrato).
-- `data-platform-standards` y `sql-standards` (modelado físico, motor, índices, migraciones, tuning).
-- `enterprise-architecture-standards` (frontera fina: **suyo** el paisaje de aplicaciones de la organización, la gobernanza, el inventario y los estándares transversales; **aquí** el diseño de **un** sistema).
-- `tech-leadership-standards` (la decisión de invertir, el registro y la negociación; aquí el criterio técnico).
-- `refactoring-tech-debt-standards` (**el camino**: cómo se llega desde el diseño actual al que decide esta skill; aquí el destino).
-- `privacy-engineering-standards` (**suyo** el criterio sobre derecho de supresión frente a un log inmutable, base legal, minimización; aquí solo la consecuencia arquitectónica de elegir event sourcing).
-- `performance-engineering-standards` (medición, presupuestos y optimización), `sre-practice-standards` (SLO, error budget, operación), `testing-qa-standards` (estrategia de prueba), y las **skills de lenguaje** (cómo se implementa el patrón en cada stack).
+**Not applicable**:
+- `microservices-architecture-standards` (**critical boundary**): **theirs** is all the distributed topology — cutting into separately deployable services, inter-process communication over the network (REST/gRPC/events), contracts between services and their governance, **saga and outbox in their execution**, database per service as an operational rule, distributed resilience (timeouts, circuit breaker, backpressure, DLQ), mTLS, API gateway and service mesh, distributed tracing. **Here** the internal design of a deployment and **the prior decision of whether distribution is needed at all**, plus the business criteria on eventual consistency. Arbitration rule: **if the question is how two processes separated by the network communicate, it is theirs; if it is how the code is structured within one deployment, it belongs here.**
+- `api-design-standards` (the **outward contract**: resources, verbs, codes, pagination, contract versioning).
+- `data-platform-standards` and `sql-standards` (physical modelling, engine, indexes, migrations, tuning).
+- `enterprise-architecture-standards` (fine boundary: **theirs** is the organisation's application landscape, governance, inventory and cross-cutting standards; **here** the design of **one** system).
+- `tech-leadership-standards` (the decision to invest, the record and the negotiation; here the technical criteria).
+- `refactoring-tech-debt-standards` (**the path**: how you get from the current design to the one this skill decides; here the destination).
+- `privacy-engineering-standards` (**theirs** the criteria on the right to erasure against an immutable log, legal basis, minimisation; here only the architectural consequence of choosing event sourcing).
+- `performance-engineering-standards` (measurement, budgets and optimisation), `sre-practice-standards` (SLOs, error budget, operation), `testing-qa-standards` (test strategy), and the **language skills** (how the pattern is implemented in each stack).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión/estado por web antes de fijarlo en un proyecto real (§8).
+> Verify the latest version/status on the web before pinning it in a real project (§8).
 
-| Ámbito | Default | Alternativa justificable |
+| Area | Default | Justifiable alternative |
 |---|---|---|
-| Topología | **Monolito modular** (un despliegue, módulos con límites duros) | Distribuir solo con fuerza demostrada → `microservices-architecture-standards` |
-| Estilo interno | **Puertos y adaptadores** (dominio sin dependencias a tecnología) | Capas simples en CRUD sin lógica de dominio; *pipes and filters* en transformación de datos; plugin/microkernel si la variabilidad es la fuerza dominante |
-| Límite de módulo | **Por dominio de negocio** (vertical) | Nunca por capa técnica como límite de primer nivel |
-| Modelo de dominio | **Contexto delimitado + lenguaje ubicuo** (DDD estratégico) | DDD táctico solo donde hay invariantes reales (§4) |
-| Lectura/escritura | Un único modelo | **CQRS** solo con asimetría medida de carga o de forma del modelo |
-| Persistencia | Estado actual en BD relacional | **Event sourcing** solo con requisito real de auditoría/temporalidad y ADR de versionado + borrado (§5) |
-| Decisiones | **ADR obligatorio** para toda decisión *one-way* (plantilla Nygard o MADR) | — |
-| Notación | **C4 model** (Simon Brown; sitio y diagramas de ejemplo bajo **CC BY 4.0**) | UML donde el equipo ya lo domina |
-| Diagramas | **Modelo como código** (Structurizr DSL, o PlantUML/Mermaid en repo) | Herramienta gráfica solo si se regenera desde fuente |
-| Atributos de calidad | **ISO/IEC 25010:2023** (2.ª ed., 15-nov-2023) como checklist | — |
-| Verificación | **Fitness functions en CI** (ArchUnit — Apache-2.0 — en JVM; equivalente por stack) | — |
+| Topology | **Modular monolith** (one deployment, modules with hard boundaries) | Distribute only with a demonstrated force → `microservices-architecture-standards` |
+| Internal style | **Ports and adapters** (domain with no dependencies on technology) | Simple layers in CRUD with no domain logic; *pipes and filters* in data transformation; plugin/microkernel if variability is the dominant force |
+| Module boundary | **By business domain** (vertical) | Never by technical layer as a first-level boundary |
+| Domain model | **Bounded context + ubiquitous language** (strategic DDD) | Tactical DDD only where there are real invariants (§4) |
+| Read/write | A single model | **CQRS** only with measured asymmetry of load or of model shape |
+| Persistence | Current state in a relational DB | **Event sourcing** only with a real audit/temporality requirement and an ADR on versioning + deletion (§5) |
+| Decisions | **ADR mandatory** for every *one-way* decision (Nygard or MADR template) | — |
+| Notation | **C4 model** (Simon Brown; site and example diagrams under **CC BY 4.0**) | UML where the team already masters it |
+| Diagrams | **Model as code** (Structurizr DSL, or PlantUML/Mermaid in the repo) | Graphical tool only if it is regenerated from source |
+| Quality attributes | **ISO/IEC 25010:2023** (2nd ed., 15-Nov-2023) as a checklist | — |
+| Verification | **Fitness functions in CI** (ArchUnit — Apache-2.0 — on the JVM; equivalent per stack) | — |
 
-### 2.1 La decisión previa: monolito modular por defecto
+### 2.1 The prior decision: modular monolith by default
 
-Es la decisión más importante y la más barata de acertar. **Default: un despliegue, módulos con límites explícitos y verificados en CI.** No es "monolito por pereza": es la topología que conserva la opción de distribuir después (extrayendo un módulo ya aislado) sin pagar hoy latencia de red, consistencia eventual, fallos parciales y coste operativo ×N.
+It is the most important decision and the cheapest to get right. **Default: one deployment, modules with explicit boundaries verified in CI.** It is not "monolith out of laziness": it is the topology that preserves the option to distribute later (extracting an already isolated module) without paying today for network latency, eventual consistency, partial failures and ×N operational cost.
 
-Fuerzas que **sí** justifican salir del monolito modular (documentadas en ADR; el diseño resultante lo gobierna `microservices-architecture-standards`):
-- **Organizativa**: varios equipos que necesitan desplegar con cadencias distintas y colisionan en el mismo repo/release.
-- **Escala o aislamiento de fallo divergente** entre dominios, **medido** (no supuesto): un dominio necesita otra curva de recursos o no puede caer con el resto.
-- **Cumplimiento o ciclo de vida**: un dominio exige aislamiento de datos, de despliegue o de auditoría por norma.
-- **Heterogeneidad tecnológica obligada** (un dominio requiere un runtime que no cabe en el proceso principal).
+Forces that **do** justify leaving the modular monolith (documented in an ADR; the resulting design is governed by `microservices-architecture-standards`):
+- **Organisational**: several teams that need to deploy at different cadences and collide in the same repo/release.
+- **Divergent scale or failure isolation** between domains, **measured** (not assumed): one domain needs a different resource curve or cannot go down with the rest.
+- **Compliance or lifecycle**: a domain requires data, deployment or audit isolation by regulation.
+- **Mandatory technological heterogeneity** (a domain requires a runtime that does not fit in the main process).
 
-Fuerzas que **no** lo justifican: "está de moda", "escalará algún día", "así el código queda limpio", "queremos usar Kubernetes". Un monolito mal modularizado no mejora al distribuirlo: se convierte en monolito distribuido, con los mismos acoplamientos y latencia de red encima.
+Forces that do **not** justify it: "it is fashionable", "it will scale some day", "that way the code is clean", "we want to use Kubernetes". A badly modularised monolith does not improve by distributing it: it becomes a distributed monolith, with the same couplings plus network latency on top.
 
-**Ley de Conway** (Melvin E. Conway, *"How Do Committees Invent?"*, **Datamation 14(5):28–31, abril 1968**; el nombre "Conway's law" es posterior — atribuido a Fred Brooks en *The Mythical Man-Month*, con reclamación previa de George Mealy en 1968): las organizaciones producen diseños que **copian su estructura de comunicación**. Consecuencia práctica: la arquitectura elegida y el organigrama tienen que ser coherentes; si no puedes cambiar los equipos, tu margen real de diseño es menor de lo que crees. **Matiz honesto**: el enunciado original es de correspondencia, no de causalidad — no afirma que la comunicación *cause* la estructura.
+**Conway's law** (Melvin E. Conway, *"How Do Committees Invent?"*, **Datamation 14(5):28–31, April 1968**; the name "Conway's law" is later — attributed to Fred Brooks in *The Mythical Man-Month*, with a prior claim by George Mealy in 1968): organisations produce designs that **copy their communication structure**. Practical consequence: the chosen architecture and the org chart have to be coherent; if you cannot change the teams, your real design margin is smaller than you think. **Honest nuance**: the original statement is one of correspondence, not causality — it does not claim that communication *causes* the structure.
 
-## 3. Estilos y su criterio de elección
+## 3. Styles and the criteria for choosing them
 
-No hay estilo "mejor": hay estilo que atiende la fuerza dominante. Elige uno como base y aplica los demás como patrones locales.
+There is no "best" style: there is the style that addresses the dominant force. Pick one as the base and apply the others as local patterns.
 
-| Estilo | Fuerza que atiende | Coste que impone | Prohibido cuando |
+| Style | Force it addresses | Cost it imposes | Forbidden when |
 |---|---|---|---|
-| **Capas** | Orden mínimo, incorporación rápida | Límites técnicos, no de dominio; tiende a bola de barro con lasaña encima | Hay lógica de dominio rica y varios ejes de cambio |
-| **Puertos y adaptadores / clean / onion** | Aislar el dominio de la tecnología; testabilidad sin infra | Indirección y mapeo entre modelos | El "dominio" es CRUD puro (indirección sin beneficio) |
-| **Basada en eventos** | Desacoplo temporal, extensibilidad, reacción asíncrona | Flujo no lineal, depuración y orden difíciles, consistencia eventual | El caso de uso exige respuesta inmediata y transaccional |
-| **Pipes and filters** | Transformación de datos por etapas, reusabilidad de etapas | Estado compartido difícil; latencia acumulada | El proceso necesita decidir con contexto global |
-| **Plugin / microkernel** | Variabilidad conocida: mismo núcleo, muchas variantes | Contrato de extensión que hay que versionar y sostener | No hay variantes reales todavía (abstracción especulativa) |
-| **Space-based** | Escalado extremo con contención en la base de datos | Complejidad de replicación/consistencia en memoria muy alta | La contención no está medida |
+| **Layers** | Minimal order, fast onboarding | Technical boundaries, not domain ones; tends to a ball of mud with lasagne on top | There is rich domain logic and several axes of change |
+| **Ports and adapters / clean / onion** | Isolating the domain from technology; testability without infra | Indirection and mapping between models | The "domain" is pure CRUD (indirection with no benefit) |
+| **Event-driven** | Temporal decoupling, extensibility, asynchronous reaction | Non-linear flow, hard debugging and ordering, eventual consistency | The use case demands an immediate, transactional answer |
+| **Pipes and filters** | Data transformation in stages, stage reusability | Shared state is hard; accumulated latency | The process needs to decide with global context |
+| **Plugin / microkernel** | Known variability: same core, many variants | An extension contract that has to be versioned and sustained | There are no real variants yet (speculative abstraction) |
+| **Space-based** | Extreme scaling with contention on the database | Very high in-memory replication/consistency complexity | The contention has not been measured |
 
-### 3.1 Hexagonal, clean y onion: la honestidad que toca
+### 3.1 Hexagonal, clean and onion: the honesty required
 
-- **Puertos y adaptadores (hexagonal)**: **Alistair Cockburn** (documentada en el wiki de Portland; nombre "Ports and Adapters" adoptado hacia 2005; libro *Hexagonal Architecture Explained*, con Juan Manuel Garrido de Paz). El hexágono no significa "seis": se eligió para poder dibujar varios puertos sin la falsa linealidad de las capas.
-- **Onion**: **Jeffrey Palermo** (2008). **Clean**: **Robert C. Martin** (2012; libro *Clean Architecture*, 2017).
-- **En gran medida son la misma idea con nombres distintos**: dominio en el centro, tecnología en el borde y **todas las dependencias de código fuente apuntando hacia dentro**. El propio Cockburn lo dice en *Hexagonal Architecture Explained*: onion y clean tienen la misma estructura de dependencias que puertos y adaptadores, con dos diferencias — **no exigen especificar puertos** y **añaden capas que puertos y adaptadores no impone**.
-- **Criterio**: elige **una** nomenclatura por sistema y escríbela en el ADR. Discutir cuál de las tres es "la buena" no produce ningún atributo de calidad. Lo que sí importa y es verificable en CI: **el dominio no nombra ninguna tecnología**.
+- **Ports and adapters (hexagonal)**: **Alistair Cockburn** (documented on the Portland wiki; the name "Ports and Adapters" adopted around 2005; book *Hexagonal Architecture Explained*, with Juan Manuel Garrido de Paz). The hexagon does not mean "six": it was chosen so several ports could be drawn without the false linearity of layers.
+- **Onion**: **Jeffrey Palermo** (2008). **Clean**: **Robert C. Martin** (2012; book *Clean Architecture*, 2017).
+- **To a large extent they are the same idea under different names**: domain at the centre, technology at the edge and **all source-code dependencies pointing inwards**. Cockburn himself says so in *Hexagonal Architecture Explained*: onion and clean have the same dependency structure as ports and adapters, with two differences — **they do not require specifying ports** and **they add layers that ports and adapters does not impose**.
+- **Criteria**: choose **one** nomenclature per system and write it in the ADR. Arguing about which of the three is "the right one" produces no quality attribute at all. What does matter and is verifiable in CI: **the domain names no technology**.
 
-### 3.2 La regla de dependencia y su implicación práctica
+### 3.2 The dependency rule and its practical implication
 
-Las dependencias de código apuntan **hacia el dominio**; cuando la llamada va en el sentido contrario, se invierte con una interfaz **declarada por el dominio** e implementada por el adaptador. Implicaciones que sí se notan:
-- El dominio **no importa** el ORM, el cliente HTTP, el framework web ni el SDK del proveedor cloud. Si tu entidad de dominio lleva anotaciones de persistencia, no tienes esta arquitectura: tienes capas con nombre bonito.
-- Los tipos del dominio **no cruzan** hacia fuera sin traducción; el adaptador mapea. El coste del mapeo es el precio de la regla — si no estás dispuesto a pagarlo, elige capas y dilo.
-- **La regla se verifica en CI o no existe** (§4). Una regla de dependencia sostenida solo por revisión humana se erosiona en meses.
+Code dependencies point **towards the domain**; when the call goes the other way, it is inverted with an interface **declared by the domain** and implemented by the adapter. Implications that are actually felt:
+- The domain **does not import** the ORM, the HTTP client, the web framework or the cloud provider's SDK. If your domain entity carries persistence annotations, you do not have this architecture: you have layers with a pretty name.
+- Domain types **do not cross** outwards without translation; the adapter maps. The cost of mapping is the price of the rule — if you are not willing to pay it, choose layers and say so.
+- **The rule is verified in CI or it does not exist** (§4). A dependency rule sustained only by human review erodes within months.
 
-### 3.3 Módulos: acoplamiento, cohesión y qué oculta cada módulo
+### 3.3 Modules: coupling, cohesion and what each module hides
 
-- **Límites por dominio, no por capa técnica**. Un módulo `pedidos` que contiene su propio controlador, dominio y persistencia es un límite; un módulo `repositorios` que contiene los repositorios de los ocho dominios no lo es.
-- **Un módulo se define por lo que oculta**, no por lo que agrupa: **David L. Parnas**, *"On the Criteria To Be Used in Decomposing Systems into Modules"*, **CACM 15(12):1053–1058, dic. 1972** — descomponer por **decisiones de diseño difíciles o susceptibles de cambiar**, ocultando cada una tras un módulo, y **no** por el diagrama de flujo de datos. Criterio de bolsillo: si un cambio previsible obliga a tocar varios módulos, el límite está mal puesto.
-- **Vocabulario preciso de acoplamiento**: la taxonomía publicada reciente es la de **Vlad Khononov**, *Balancing Coupling in Software Design* (Addison-Wesley, **2024**; material asociado en `coupling.dev`), que sintetiza el *structured design* de los 70 y la *connascence* de los 90 en tres dimensiones:
-  - **Integration strength** (cuánto conocimiento se comparte a través del límite), con cuatro niveles de mayor a menor: **intrusive → functional → model → contract**. *Intrusive* es integrarse por los detalles internos del otro (leer su tabla, tocar su privado).
-  - **Distance** (esfuerzo de cambiar ambos lados: misma clase < mismo módulo < mismo despliegue < otro servicio/equipo).
-  - **Volatility** (con qué frecuencia se espera que eso cambie).
-  - Regla: **cuanto mayor la distancia, menor debe ser el conocimiento compartido** — por eso la coupling intrusiva entre servicios es catastrófica y entre dos clases del mismo módulo puede ser irrelevante. El acoplamiento fuerte no es un pecado en sí; lo es cuando coincide con distancia grande **y** volatilidad alta.
-- **Cohesión**: lo que cambia junto vive junto. Si dos módulos aparecen siempre en el mismo commit, o son uno o el límite está donde no toca (señal medible: acoplamiento por cambio en el historial de Git, §4).
+- **Boundaries by domain, not by technical layer**. An `orders` module containing its own controller, domain and persistence is a boundary; a `repositories` module containing the repositories of eight domains is not.
+- **A module is defined by what it hides**, not by what it groups: **David L. Parnas**, *"On the Criteria To Be Used in Decomposing Systems into Modules"*, **CACM 15(12):1053–1058, Dec. 1972** — decompose by **design decisions that are difficult or likely to change**, hiding each one behind a module, and **not** by the data flow diagram. Pocket criterion: if a foreseeable change forces you to touch several modules, the boundary is in the wrong place.
+- **Precise coupling vocabulary**: the recent published taxonomy is that of **Vlad Khononov**, *Balancing Coupling in Software Design* (Addison-Wesley, **2024**; associated material at `coupling.dev`), which synthesises 1970s *structured design* and 1990s *connascence* into three dimensions:
+  - **Integration strength** (how much knowledge is shared across the boundary), with four levels from higher to lower: **intrusive → functional → model → contract**. *Intrusive* is integrating through the other's internal details (reading its table, touching its private parts).
+  - **Distance** (effort of changing both sides: same class < same module < same deployment < another service/team).
+  - **Volatility** (how frequently that is expected to change).
+  - Rule: **the greater the distance, the less knowledge should be shared** — that is why intrusive coupling between services is catastrophic and between two classes of the same module may be irrelevant. Strong coupling is not a sin in itself; it is when it coincides with large distance **and** high volatility.
+- **Cohesion**: what changes together lives together. If two modules always show up in the same commit, either they are one or the boundary is in the wrong place (measurable signal: change coupling in the Git history, §4).
 
-### 3.4 DDD: lo que de verdad aporta
+### 3.4 DDD: what it really contributes
 
-- **Aporta el estratégico**: **contexto delimitado** (dentro de él un término significa una sola cosa) y **lenguaje ubicuo** (el mismo vocabulario en conversación, código y tests). Es la mejor herramienta disponible para **decidir dónde va el límite** — y el límite es la decisión que más caro sale corregir.
-- **Aviso honesto**: **el DDD táctico se aplica mal más veces de las que se aplica bien**. Agregados, entidades, objetos valor, repositorios y servicios de dominio son útiles **donde hay invariantes de negocio que proteger**; aplicados a un CRUD producen ceremonia sin beneficio y un modelo anémico con nombres de DDD.
-- Criterio: aplica táctico **por subdominio**, y solo en el **núcleo** (el que da ventaja competitiva). En subdominios de soporte y genéricos: lo más simple que funcione, o comprar en vez de construir.
-- El modelo anémico (**Martin Fowler, bliki, 25-nov-2003**, discutido con Eric Evans) no es un fallo si lo has elegido: es un *transaction script*. Es un fallo cuando pretendes que es DDD.
+- **The strategic part is what it contributes**: **bounded context** (within it a term means one single thing) and **ubiquitous language** (the same vocabulary in conversation, code and tests). It is the best available tool to **decide where the boundary goes** — and the boundary is the decision that is most expensive to correct.
+- **Honest warning**: **tactical DDD is applied badly more often than it is applied well**. Aggregates, entities, value objects, repositories and domain services are useful **where there are business invariants to protect**; applied to a CRUD they produce ceremony with no benefit and an anaemic model with DDD names.
+- Criteria: apply tactical **per subdomain**, and only in the **core** (the one that gives competitive advantage). In supporting and generic subdomains: the simplest thing that works, or buy instead of build.
+- The anaemic model (**Martin Fowler, bliki, 25-Nov-2003**, discussed with Eric Evans) is not a failure if you have chosen it: it is a *transaction script*. It is a failure when you claim it is DDD.
 
-## 4. Verificación: atributos de calidad y fitness functions
+## 4. Verification: quality attributes and fitness functions
 
-**El input real del diseño son los atributos de calidad, no los patrones.** Un requisito no funcional sin escenario no es verificable y por tanto no restringe el diseño.
+**The real input to design is the quality attributes, not the patterns.** A non-functional requirement without a scenario is not verifiable and therefore does not constrain the design.
 
-- **Catálogo de referencia: ISO/IEC 25010:2023** (2.ª edición, publicada **15-nov-2023**, ISO/IEC JTC 1/SC 7), **nueve características**. Cambios frente a 2011 que hay que conocer: se **añade Safety**; **Usability → Interaction capability** y **Portability → Flexibility**; el resto del modelo antiguo se repartió a **ISO/IEC 25002** (visión general de modelos) y **ISO/IEC 25019** (calidad en uso). Usar "ISO 25010" citando las características de 2011 es un error de hecho.
-- **Escenario de atributo de calidad** (formato mínimo, estilo ATAM/SEI): *fuente → estímulo → artefacto → entorno → respuesta → **medida de respuesta***. Sin la medida de respuesta no hay escenario, hay deseo. Ejemplo: "ante 3× el pico habitual (estímulo) en horario comercial (entorno), el listado responde por debajo de 300 ms p95 (medida)".
-- **Fitness functions**: término introducido en ***Building Evolutionary Architectures*** (Neal Ford, Rebecca Parsons, Patrick Kua; O'Reilly **2017**; 2.ª ed. **2023** con Pramod Sadalage). Definición de la 2.ª edición: *"any mechanism that provides an objective integrity assessment of some architecture characteristic or combination of characteristics"*. Categorías útiles: **atómica vs holística**, **disparada vs continua**.
-- Fitness functions **mínimas** que deben romper el build:
-  - **Reglas de dependencia entre módulos y capas** (ArchUnit en JVM — Apache-2.0; equivalentes por stack: dependency-cruiser, import-linter, deptrac, `go list`/`depguard`, `cargo-deny`). Sin esto, la arquitectura documentada y la real divergen.
-  - **Ausencia de ciclos** entre módulos.
-  - **Prohibición de importar tecnología desde el dominio** (paquetes vetados).
-  - Presupuestos de rendimiento y de tamaño donde el atributo lo exija (delegar el método a `performance-engineering-standards`).
-- Tests: el dominio se prueba **sin infraestructura** (esa es la razón práctica de puertos y adaptadores); los adaptadores se prueban contra la tecnología real (contenedores efímeros). La estrategia completa es de `testing-qa-standards`.
-- **Señal de erosión**: acoplamiento por cambio en el historial (ficheros de módulos distintos que cambian siempre juntos). Es evidencia, no opinión — cruzarla con el criterio de deuda de `refactoring-tech-debt-standards`.
+- **Reference catalogue: ISO/IEC 25010:2023** (2nd edition, published **15-Nov-2023**, ISO/IEC JTC 1/SC 7), **nine characteristics**. Changes from 2011 that you have to know: **Safety is added**; **Usability → Interaction capability** and **Portability → Flexibility**; the rest of the old model was split into **ISO/IEC 25002** (models overview) and **ISO/IEC 25019** (quality in use). Citing "ISO 25010" with the 2011 characteristics is a factual error.
+- **Quality attribute scenario** (minimum format, ATAM/SEI style): *source → stimulus → artefact → environment → response → **response measure***. Without the response measure there is no scenario, there is a wish. Example: "under 3× the usual peak (stimulus) during business hours (environment), the listing responds below 300 ms p95 (measure)".
+- **Fitness functions**: term introduced in ***Building Evolutionary Architectures*** (Neal Ford, Rebecca Parsons, Patrick Kua; O'Reilly **2017**; 2nd ed. **2023** with Pramod Sadalage). Definition from the 2nd edition: *"any mechanism that provides an objective integrity assessment of some architecture characteristic or combination of characteristics"*. Useful categories: **atomic vs holistic**, **triggered vs continuous**.
+- **Minimum** fitness functions that must break the build:
+  - **Dependency rules between modules and layers** (ArchUnit on the JVM — Apache-2.0; equivalents per stack: dependency-cruiser, import-linter, deptrac, `go list`/`depguard`, `cargo-deny`). Without this, the documented and the real architecture diverge.
+  - **Absence of cycles** between modules.
+  - **Ban on importing technology from the domain** (vetoed packages).
+  - Performance and size budgets where the attribute demands it (delegate the method to `performance-engineering-standards`).
+- Tests: the domain is tested **without infrastructure** (that is the practical reason for ports and adapters); the adapters are tested against the real technology (ephemeral containers). The full strategy belongs to `testing-qa-standards`.
+- **Erosion signal**: change coupling in the history (files from different modules that always change together). It is evidence, not opinion — cross it with the debt criteria of `refactoring-tech-debt-standards`.
 
-## 5. Datos, consistencia y decisiones caras
+## 5. Data, consistency and expensive decisions
 
 ### CQRS
-- **Qué resuelve de verdad**: la asimetría entre el modelo que necesita **proteger invariantes al escribir** y el que necesita **servir consultas** con otra forma, otra carga u otro SLA. Linaje: **CQS** de **Bertrand Meyer** (*Object-Oriented Software Construction*, 1988) a nivel de método; **CQRS** lo eleva a nivel arquitectónico y es de **Greg Young** (promovido también por Udi Dahan; documento "CQRS Documents" de 2010).
-- **Qué cuesta**: dos modelos que mantener y **consistencia eventual visible por el usuario** si las proyecciones son asíncronas. El propio Fowler advierte que en la mayoría de sistemas CQRS añade complejidad arriesgada.
-- **Criterio**: aplícalo **por contexto delimitado**, nunca "en todo el sistema". Sin asimetría medida, no se aplica. CQRS **no implica** dos bases de datos ni event sourcing.
+- **What it really solves**: the asymmetry between the model that needs to **protect invariants on write** and the one that needs to **serve queries** with a different shape, load or SLA. Lineage: **CQS** by **Bertrand Meyer** (*Object-Oriented Software Construction*, 1988) at method level; **CQRS** raises it to architectural level and is by **Greg Young** (also promoted by Udi Dahan; "CQRS Documents" paper from 2010).
+- **What it costs**: two models to maintain and **eventual consistency visible to the user** if the projections are asynchronous. Fowler himself warns that in most systems CQRS adds risky complexity.
+- **Criteria**: apply it **per bounded context**, never "across the whole system". Without measured asymmetry, it is not applied. CQRS does **not imply** two databases or event sourcing.
 
-### Event sourcing — decisión casi irreversible
-Guarda todo cambio de estado como una secuencia de eventos y reconstruye el estado reproduciéndolos (**Martin Fowler**, *Event Sourcing*, **12-dic-2005**; el propio Fowler marca ese material como borrador). Resuelve auditoría íntegra, consulta del estado en cualquier instante y reproyección hacia modelos nuevos.
+### Event sourcing — an almost irreversible decision
+It stores every state change as a sequence of events and reconstructs the state by replaying them (**Martin Fowler**, *Event Sourcing*, **12-Dec-2005**; Fowler himself marks that material as a draft). It solves full audit, querying state at any instant and reprojection into new models.
 
-**Es casi irreversible porque el log es el sistema.** Antes de adoptarlo, el ADR debe responder, con diseño, a las tres:
-1. **Versionado de eventos**: el esquema cambiará. Estrategia decidida de entrada (upcasting en lectura, eventos versionados, copia-y-transforma del stream) y **prohibido** cambiar el significado de un evento ya publicado.
-2. **Reproyección**: coste y tiempo de reconstruir todas las proyecciones desde cero con el volumen previsto **a 3 años**, y snapshots si no cabe en la ventana operativa.
-3. **Borrado de datos personales frente a un log inmutable**: el derecho de supresión choca de frente con un log que por diseño no se borra. Técnica arquitectónica habitual: **crypto-shredding** (cifrar los datos del sujeto con clave por sujeto y destruir la clave), o mantener los datos personales **fuera del log** y referenciarlos por identificador. **El criterio jurídico y de suficiencia es de `privacy-engineering-standards`**: aquí solo se fija que **sin esa respuesta escrita no se adopta event sourcing**.
+**It is almost irreversible because the log is the system.** Before adopting it, the ADR must answer all three, with design:
+1. **Event versioning**: the schema will change. Strategy decided up front (upcasting on read, versioned events, copy-and-transform of the stream) and **forbidden** to change the meaning of an already published event.
+2. **Reprojection**: cost and time to rebuild every projection from scratch at the volume expected **3 years out**, and snapshots if it does not fit in the operational window.
+3. **Deletion of personal data against an immutable log**: the right to erasure collides head-on with a log that by design is not deleted. Usual architectural technique: **crypto-shredding** (encrypt the subject's data with a per-subject key and destroy the key), or keep the personal data **outside the log** and reference it by identifier. **The legal and sufficiency criteria belong to `privacy-engineering-standards`**: here we only establish that **without that written answer event sourcing is not adopted**.
 
-Si lo que necesitas es "saber quién cambió qué", casi siempre basta una tabla de auditoría o CDC: mucho más barato y reversible.
+If what you need is "to know who changed what", an audit table or CDC is almost always enough: far cheaper and reversible.
 
-### Consistencia y patrones de datos
-- **Dentro de un despliegue**: transacción de base de datos. No inventes consistencia eventual donde ACID local resuelve — es la forma más común de complejidad accidental.
-- **Base de datos por servicio, saga y outbox**: su **ejecución** es de `microservices-architecture-standards`. Lo que se decide **aquí** es lo previo: **si el negocio tolera consistencia eventual**, y eso no lo decide el arquitecto solo.
-- **Cuándo es aceptable la consistencia eventual** (criterio de negocio, con dueño de producto en el ADR): la ventana de inconsistencia es **acotada y comunicable**; existe **compensación de negocio** posible (cancelar, reembolsar, reintentar) y alguien la ha aceptado por escrito; la UX muestra el estado intermedio en vez de mentir ("en proceso", no "hecho"); y ningún requisito legal o de seguridad exige lectura consistente (saldo, control de acceso, stock con sobreventa penalizada).
-- **Cuándo no lo es**: invariantes de dinero o de seguridad que se romperían durante la ventana, y flujos donde la compensación no existe en el mundo real (correo enviado, mercancía embarcada).
+### Consistency and data patterns
+- **Within one deployment**: a database transaction. Do not invent eventual consistency where local ACID solves it — it is the most common form of accidental complexity.
+- **Database per service, saga and outbox**: their **execution** belongs to `microservices-architecture-standards`. What is decided **here** is what comes first: **whether the business tolerates eventual consistency**, and that is not for the architect to decide alone.
+- **When eventual consistency is acceptable** (business criteria, with the product owner in the ADR): the inconsistency window is **bounded and communicable**; there is a possible **business compensation** (cancel, refund, retry) and someone has accepted it in writing; the UX shows the intermediate state instead of lying ("in progress", not "done"); and no legal or security requirement demands a consistent read (balance, access control, stock with penalised overselling).
+- **When it is not**: money or security invariants that would break during the window, and flows where compensation does not exist in the real world (email sent, goods shipped).
 
-## 6. Decisiones y documentación (§6 sustituida: aquí "rendimiento y operabilidad" resultaría artificial — el rendimiento se trata como atributo de calidad en §4 y su método pertenece a `performance-engineering-standards`)
+## 6. Decisions and documentation (§6 replaced: here "performance and operability" would be artificial — performance is treated as a quality attribute in §4 and its method belongs to `performance-engineering-standards`)
 
-- **ADR obligatorio** para toda decisión *one-way*: topología, estilo base, límites de contexto, persistencia (event sourcing, motor), formato de contratos internos, adopción de una plataforma difícil de abandonar. Origen del formato: **Michael Nygard, "Documenting Architecture Decisions", 15-nov-2011** (Cognitect), con linaje en la *decision view* de Philippe Kruchten. Plantilla Nygard: **título, estado, contexto, decisión, consecuencias**; **MADR** añade *decision drivers* y *considered options* (MADR 3.x; en 3.0.0-beta se renombró a "Markdown **Any** Decision Records").
-- **ADR versionado junto al código**, revisado en PR, **inmutable una vez aceptado**: no se edita, se **supersede** con otro ADR. Estados mínimos: propuesta → aceptada → deprecada/superseded.
-- **Puertas de un solo sentido vs reversibles**: las reversibles se deciden rápido, al nivel más bajo posible y sin ceremonia; las irreversibles piden ADR, alternativas y una estimación explícita de coste de salida. **Clasificar mal una puerta es el error caro**: tratar una irreversible como reversible se paga años; lo contrario paraliza al equipo.
-- **Notación por defecto: C4 model** (creado por **Simon Brown**; el sitio y los diagramas de ejemplo están bajo **Creative Commons Attribution 4.0 International**). Cuatro niveles: **System Context, Container, Component, Code**. En la práctica: mantén **contexto y contenedores** siempre; **componentes** solo donde aporte; **código** casi nunca (lo genera el IDE mejor que tú).
-- **El diagrama que se desactualiza solo no debe existir.** Un diagrama es válido si (a) se genera desde el código o desde un modelo versionado (Structurizr DSL, PlantUML, Mermaid en repo), o (b) tiene **dueño nombrado y fecha de revisión**. Si no cumple ninguna, bórralo: un diagrama falso es peor que ninguno porque se usa para decidir.
-- Documenta el **porqué**, no el cómo: el cómo lo cuenta el código; el porqué se pierde en cuanto se va la persona que lo sabía.
+- **ADR mandatory** for every *one-way* decision: topology, base style, context boundaries, persistence (event sourcing, engine), internal contract format, adoption of a platform that is hard to abandon. Origin of the format: **Michael Nygard, "Documenting Architecture Decisions", 15-Nov-2011** (Cognitect), with lineage in Philippe Kruchten's *decision view*. Nygard template: **title, status, context, decision, consequences**; **MADR** adds *decision drivers* and *considered options* (MADR 3.x; in 3.0.0-beta it was renamed to "Markdown **Any** Decision Records").
+- **ADR versioned alongside the code**, reviewed in a PR, **immutable once accepted**: it is not edited, it is **superseded** by another ADR. Minimum states: proposed → accepted → deprecated/superseded.
+- **One-way vs reversible doors**: reversible ones are decided fast, at the lowest possible level and without ceremony; irreversible ones call for an ADR, alternatives and an explicit estimate of the exit cost. **Misclassifying a door is the expensive mistake**: treating an irreversible one as reversible is paid for over years; the opposite paralyses the team.
+- **Default notation: C4 model** (created by **Simon Brown**; the site and the example diagrams are under **Creative Commons Attribution 4.0 International**). Four levels: **System Context, Container, Component, Code**. In practice: always keep **context and containers**; **components** only where it helps; **code** almost never (the IDE generates it better than you).
+- **A diagram that goes stale on its own must not exist.** A diagram is valid if (a) it is generated from the code or from a versioned model (Structurizr DSL, PlantUML, Mermaid in the repo), or (b) it has a **named owner and a review date**. If it meets neither, delete it: a false diagram is worse than none because it is used to decide.
+- Document the **why**, not the how: the how is told by the code; the why is lost as soon as the person who knew it leaves.
 
-## 7. Sostenibilidad, antipatrones y prohibiciones
+## 7. Sustainability, antipatterns and prohibitions
 
-**Evolución**: la arquitectura se juzga por cuánto facilita el próximo cambio, no por su elegancia. Revisa límites cuando aparezcan las señales de erosión (§4) y aplica el camino de `refactoring-tech-debt-standards`.
+**Evolution**: architecture is judged by how much it eases the next change, not by its elegance. Review boundaries when the erosion signals appear (§4) and apply the path from `refactoring-tech-debt-standards`.
 
-Antipatrones, con la consecuencia que provocan:
-- **Gran bola de barro** (*Big Ball of Mud*, **Brian Foote y Joseph Yoder, PLoP '97**, sept. 1997; también cap. 29 de *PLoPD 4*): estructura dictada por la conveniencia, no por diseño. Consecuencia: coste de cambio impredecible y conocimiento concentrado en pocas personas.
-- **Arquitectura de lasaña / capas en exceso**: capas que solo delegan (métodos y clases *pass-through*). Consecuencia: cada cambio toca N ficheros sin añadir valor. Variante conocida: *architecture sinkhole*, peticiones que atraviesan todas las capas sin lógica.
-- **Servicio/dominio anémico**: entidades sin comportamiento y lógica dispersa en servicios. Consecuencia: invariantes sin dueño, duplicadas y divergentes. Distribuido, se multiplica.
-- **Base de datos compartida** entre módulos o servicios: el esquema se convierte en el contrato real y nadie puede cambiarlo. Consecuencia: acoplamiento *intrusive* a distancia máxima (§3.3), el peor cuadrante posible.
-- **`Enterprise`/`Manager`/`Helper`/`Util` en el nombre**: nombre que no revela responsabilidad. Consecuencia: cajón de sastre, cohesión cero, imposible de dividir después.
-- **Monolito distribuido**: módulos que se despliegan y versionan juntos, pero por la red. Consecuencia: todos los costes de distribuir, ninguna de sus ventajas.
+Antipatterns, with the consequence they cause:
+- **Big Ball of Mud** (*Big Ball of Mud*, **Brian Foote and Joseph Yoder, PLoP '97**, Sept. 1997; also ch. 29 of *PLoPD 4*): structure dictated by convenience, not by design. Consequence: unpredictable cost of change and knowledge concentrated in a few people.
+- **Lasagne architecture / excessive layering**: layers that only delegate (*pass-through* methods and classes). Consequence: each change touches N files without adding value. Known variant: *architecture sinkhole*, requests that traverse every layer with no logic.
+- **Anaemic service/domain**: entities with no behaviour and logic scattered across services. Consequence: invariants with no owner, duplicated and divergent. Distributed, it multiplies.
+- **Shared database** between modules or services: the schema becomes the real contract and nobody can change it. Consequence: *intrusive* coupling at maximum distance (§3.3), the worst possible quadrant.
+- **`Enterprise`/`Manager`/`Helper`/`Util` in the name**: a name that does not reveal responsibility. Consequence: junk drawer, zero cohesion, impossible to split later.
+- **Distributed monolith**: modules that are deployed and versioned together, but over the network. Consequence: all the costs of distributing, none of its advantages.
 
-### Lista de prohibiciones
-- ❌ **PROHIBIDO aplicar un patrón sin nombrar la fuerza concreta que lo justifica** en el ADR (atributo de calidad, eje de cambio, restricción legal).
-- ❌ Microservicios por defecto, o sin ADR que compare con el monolito modular (§2.1).
-- ❌ **Event sourcing sin plan escrito de versionado de eventos, de reproyección y de borrado de datos personales.**
-- ❌ CQRS "en todo el sistema" o sin asimetría medida entre lectura y escritura.
-- ❌ Abstracción especulativa: interfaz con una sola implementación "por si acaso", plugin sin plugins, capa de portabilidad para una base de datos que nunca se cambiará.
-- ❌ Límites de primer nivel por capa técnica (`controllers/`, `services/`, `repositories/` como estructura de dominio).
-- ❌ Dominio que importa framework, ORM, SDK cloud o cliente HTTP.
-- ❌ Reglas de dependencia no verificadas en CI (documentación sin fitness function = ficción).
-- ❌ **Diagrama sin dueño ni fecha de revisión, o no generado desde fuente versionada.**
-- ❌ ADR editado tras ser aceptado (se supersede, no se reescribe) o decisión *one-way* sin ADR.
-- ❌ Consistencia eventual introducida sin que negocio/producto la acepte por escrito y sin compensación definida.
-- ❌ Transacción distribuida (2PC/XA) usada para tapar un límite mal cortado.
-- ❌ Citar "ISO 25010" con las características de la edición 2011 (§4).
-- ❌ Migrar a un patrón nuevo sin tests que cubran el comportamiento: **es cambiar una deuda por otra mayor** (ver `refactoring-tech-debt-standards`).
+### List of prohibitions
+- ❌ **FORBIDDEN to apply a pattern without naming the concrete force that justifies it** in the ADR (quality attribute, axis of change, legal constraint).
+- ❌ Microservices by default, or without an ADR comparing against the modular monolith (§2.1).
+- ❌ **Event sourcing without a written plan for event versioning, reprojection and deletion of personal data.**
+- ❌ CQRS "across the whole system" or without measured asymmetry between read and write.
+- ❌ Speculative abstraction: an interface with a single implementation "just in case", a plugin with no plugins, a portability layer for a database that will never be changed.
+- ❌ First-level boundaries by technical layer (`controllers/`, `services/`, `repositories/` as the domain structure).
+- ❌ A domain that imports a framework, ORM, cloud SDK or HTTP client.
+- ❌ Dependency rules not verified in CI (documentation without a fitness function = fiction).
+- ❌ **A diagram with no owner or review date, or not generated from a versioned source.**
+- ❌ An ADR edited after being accepted (it is superseded, not rewritten) or a *one-way* decision without an ADR.
+- ❌ Eventual consistency introduced without business/product accepting it in writing and without defined compensation.
+- ❌ A distributed transaction (2PC/XA) used to paper over a badly cut boundary.
+- ❌ Citing "ISO 25010" with the characteristics of the 2011 edition (§4).
+- ❌ Migrating to a new pattern without tests covering the behaviour: **it is trading one debt for a bigger one** (see `refactoring-tech-debt-standards`).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada de este documento en un entregable real, **verifica con WebSearch/WebFetch** (los datos son de agosto de 2026):
+Before pinning anything from this document in a real deliverable, **verify with WebSearch/WebFetch** (the data is from August 2026):
 
-1. **ISO/IEC 25010**: ¿sigue vigente la 2.ª ed. de 2023? ¿Estado de ISO/IEC 25002 y 25019? Las características exactas se citan de la norma comprada, no de blogs (las webs divergen al listarlas).
-2. **C4 model**: licencia vigente del sitio y de los materiales (CC BY 4.0 a fecha de verificación), estado de Structurizr (DSL, versiones on-premises/cloud y su modelo de precio).
-3. **ArchUnit** y el equivalente de tu stack: última versión, licencia leída del `LICENSE` en crudo (no del README ni de agregadores) y compatibilidad con la versión del lenguaje.
-4. **MADR / adr-tools**: versión vigente de la plantilla y mantenimiento real del repositorio (último commit), no la estrella de GitHub. `api.github.com` devuelve 403 sin autenticar: usa la web o los feeds Atom de releases.
-5. **Bibliografía citada**: ediciones vigentes de *Fundamentals of Software Architecture* (2.ª ed., abr-2025), *Building Evolutionary Architectures* (2.ª ed., 2023) y *Balancing Coupling in Software Design* (2024) antes de atribuir un término a una edición concreta.
-6. **Cifras**: este dominio arrastra folclore. **No se escribe ninguna cifra sin estudio primario localizable y metodología**. Ya descartadas aquí por falta de fuente primaria: el "coste 10×/100× por fase" (rastro muerto en notas internas de IBM de 1981 vía Pressman; documentado por Bossavit, *The Leprechauns of Software Engineering*) y el "80 % del coste es mantenimiento" (entró en la literatura como estimación informal citada por Lientz & Swanson, no como medición).
-7. **Frontera con `microservices-architecture-standards`**: si esa skill cambia de alcance, re-verifica la regla de arbitraje de §1 en ambas direcciones.
+1. **ISO/IEC 25010**: is the 2023 2nd ed. still in force? Status of ISO/IEC 25002 and 25019? The exact characteristics are cited from the purchased standard, not from blogs (the websites diverge when listing them).
+2. **C4 model**: current licence of the site and the materials (CC BY 4.0 at the verification date), status of Structurizr (DSL, on-premises/cloud versions and their pricing model).
+3. **ArchUnit** and the equivalent for your stack: latest version, licence read from the raw `LICENSE` (not from the README or aggregators) and compatibility with the language version.
+4. **MADR / adr-tools**: current template version and real maintenance of the repository (last commit), not the GitHub star count. `api.github.com` returns 403 unauthenticated: use the web or the release Atom feeds.
+5. **Cited bibliography**: current editions of *Fundamentals of Software Architecture* (2nd ed., Apr 2025), *Building Evolutionary Architectures* (2nd ed., 2023) and *Balancing Coupling in Software Design* (2024) before attributing a term to a specific edition.
+6. **Figures**: this domain drags folklore along. **No figure is written without a locatable primary study and methodology**. Already discarded here for lack of a primary source: the "10×/100× cost per phase" (dead trail in internal IBM notes from 1981 via Pressman; documented by Bossavit, *The Leprechauns of Software Engineering*) and "80 % of the cost is maintenance" (it entered the literature as an informal estimate cited by Lientz & Swanson, not as a measurement).
+7. **Boundary with `microservices-architecture-standards`**: if that skill changes scope, re-verify the arbitration rule of §1 in both directions.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

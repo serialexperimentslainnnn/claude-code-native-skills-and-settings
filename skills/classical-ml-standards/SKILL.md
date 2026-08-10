@@ -3,291 +3,291 @@ name: classical-ml-standards
 description: Classical (non-deep) machine learning on tabular data as an engineering discipline. Use when deciding whether a model is needed at all instead of a SQL query, a business rule or a heuristic, splitting data with train_test_split, StratifiedKFold, GroupKFold, TimeSeriesSplit or nested cross-validation, hunting data leakage from a scaler fit on the full dataset, a target-encoded column, an ID column or a future timestamp, building a scikit-learn Pipeline and ColumnTransformer so preprocessing is fit inside the fold, training gradient boosting with xgboost, lightgbm, catboost, HistGradientBoostingClassifier or a linear/logistic baseline with statsmodels, choosing metrics with accuracy_score, roc_auc_score, average_precision_score, precision_recall_curve, f1_score, confusion_matrix, calibrating probabilities with CalibratedClassifierCV, brier_score_loss or a reliability diagram, picking a decision threshold as a product decision, resampling with imbalanced-learn SMOTE and its calibration cost, interpreting with feature_importances_, permutation_importance, shap or partial dependence, or backtesting a time series with walk-forward validation.
 ---
 
-# Estándares de machine learning clásico (tabular)
+# Classical machine learning standards (tabular)
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **construir y evaluar un modelo predictivo no profundo sobre datos estructurados**: si
-hace falta un modelo, partición, fuga, validación, métricas y umbral, calibración, familia de
-modelo, características, desbalanceo, interpretabilidad y series temporales.
+Applies to **building and evaluating a non-deep predictive model on structured data**: whether
+a model is needed at all, splitting, leakage, validation, metrics and threshold, calibration, model
+family, features, imbalance, interpretability and time series.
 
 Triggers: `sklearn`, `Pipeline`, `ColumnTransformer`, `train_test_split`, `StratifiedKFold`,
 `GroupKFold`, `TimeSeriesSplit`, `cross_val_score`, `xgboost`, `lightgbm`, `catboost`,
 `HistGradientBoostingClassifier`, `LogisticRegression`, `statsmodels`, `roc_auc_score`,
 `average_precision_score`, `brier_score_loss`, `CalibratedClassifierCV`, `feature_importances_`,
-`permutation_importance`, `shap`, `imblearn`/`SMOTE`, `joblib.dump`, "0,99 de accuracy", "clases
-desbalanceadas", "¿qué umbral pongo?", "las probabilidades no cuadran", "leakage", "backtest",
-"predecir la baja / el impago / el fraude / la demanda".
+`permutation_importance`, `shap`, `imblearn`/`SMOTE`, `joblib.dump`, "0.99 accuracy", "imbalanced
+classes", "which threshold do I set?", "the probabilities do not add up", "leakage", "backtest",
+"predict churn / default / fraud / demand".
 
-**Tesis del dominio — ordena el resto del documento**:
+**Domain thesis — it orders the rest of the document**:
 
-1. **La primera pregunta no es qué modelo, sino si hace falta un modelo.** Regla de negocio,
-   heurística o consulta SQL resuelven buena parte de lo que llega etiquetado como "caso de ML",
-   con coste operativo casi nulo y comportamiento auditable (§2.0).
-2. **En tabular, el ML clásico sigue siendo el *default*** — por evidencia comparativa (§2.1) y
-   por coste de inferencia, tiempo de entrenamiento y depurabilidad.
-3. **La fuga de datos (*leakage*) es la causa número uno de modelos falsos**: métricas
-   excelentes en validación y nulas en producción casi siempre significan que el modelo vio algo
-   que no existirá en el instante de predecir.
-4. **Un número sin línea base no significa nada.** AUC 0,84 puede ser excelente o peor que
-   predecir siempre la clase mayoritaria; sin línea base no se sabe cuál.
+1. **The first question is not which model, but whether a model is needed at all.** A business rule,
+   a heuristic or a SQL query solves a good part of what arrives labelled as an "ML case",
+   with almost zero operational cost and auditable behaviour (§2.0).
+2. **In tabular data, classical ML is still the *default*** — by comparative evidence (§2.1) and
+   by inference cost, training time and debuggability.
+3. **Data leakage is the number one cause of fake models**: excellent metrics
+   in validation and useless ones in production almost always mean the model saw something
+   that will not exist at prediction time.
+4. **A number without a baseline means nothing.** AUC 0.84 can be excellent or worse than
+   always predicting the majority class; without a baseline there is no way to know which.
 
-**`classical-ml` no es "deep learning pequeño"**: es otra familia de modelos, con otros
-supuestos, otros modos de fallo y otra economía.
+**`classical-ml` is not "small deep learning"**: it is another family of models, with other
+assumptions, other failure modes and another economics.
 
-**No aplica**:
+**Not applicable**:
 
-- `mlops-standards` (**escrita — frontera crítica**): **el ciclo de vida del modelo en
-  producción es suyo** — versionado de datos y experimentos, registro, *feature store*,
-  despliegue, *train/serve skew*, deriva, reentrenamiento y retirada. **Aquí, cómo se entrena y
-  se evalúa el modelo antes de llegar ahí.** Arbitraje: "¿es bueno y por qué debo creérmelo?" es
-  de aquí; "¿cómo lo promuevo, lo vigilo y lo revierto?" es suya. El *fairness* y el umbral se
-  calculan aquí; su monitorización en el tiempo es de allí.
-- `deep-learning-standards` y `model-finetuning-standards` (**esta misma ola**): redes profundas
-  propias y modificación de pesos preentrenados. La frontera es la familia de modelo, no el
-  dominio del dato: **si vas a entrenar una red sobre tabular, la justificación frente a
-  *gradient boosting* se exige aquí (§2.1) y la mecánica de entrenamiento vive allí.**
+- `mlops-standards` (**written — critical boundary**): **the model's lifecycle in
+  production is theirs** — data and experiment versioning, registry, *feature store*,
+  deployment, *train/serve skew*, drift, retraining and retirement. **Here, how the model is trained and
+  evaluated before getting there.** Arbitration: "is it good and why should I believe it?" belongs
+  here; "how do I promote it, watch it and roll it back?" is theirs. *Fairness* and the threshold are
+  computed here; monitoring them over time is theirs.
+- `deep-learning-standards` and `model-finetuning-standards` (**this same wave**): your own deep
+  networks and modification of pretrained weights. The boundary is the model family, not the
+  data domain: **if you are going to train a network on tabular data, the justification against
+  *gradient boosting* is required here (§2.1) and the training mechanics live there.**
 - `llm-app-engineering-standards`, `rag-standards`, `llm-evaluation-standards`,
-  `ai-agents-standards` (**escritas**): todo lo que ocurre sobre un LLM de terceros. Frontera
-  práctica: **una clasificación tabular con etiquetas históricas no es trabajo para un LLM**;
-  un texto libre sin etiquetas no es trabajo para esta skill.
+  `ai-agents-standards` (**written**): everything that happens on top of a third-party LLM. Practical
+  boundary: **a tabular classification with historical labels is not a job for an LLM**;
+  free text without labels is not a job for this skill.
 - `data-engineering-standards`, `data-governance-quality-standards`,
-  `data-warehouse-modeling-standards`, `sql-standards` (**escritas**): la tubería, el contrato,
-  la calidad, el grano y la consulta. Aquí se **exige** que el dato de entrenamiento tenga
-  definición estable y marca temporal fiable; producirlo es suyo. **Si la solución era un
-  `GROUP BY`, §2.0 manda y la implementación es suya.**
-- `privacy-engineering-standards` (**dato personal en el conjunto de entrenamiento**: licitud,
-  minimización, retención, DPIA y supresión sobre un modelo ya entrenado — aquí solo se exige
-  hacerse la pregunta antes de entrenar) y `ai-governance-standards` (**clasificación de riesgo,
-  AI Act e inventario**: un umbral que deniega crédito o filtra candidatos es decisión regulada —
-  el número se calcula aquí, la aceptabilidad se decide allí).
-- `analytics-bi-standards` (cuadro de mando, no predicción automatizada); `python-standards`,
-  `r-standards`, `julia-standards` (lenguaje y entorno); `finops-standards`, `green-it-standards`
-  (coste y huella); `mlsecops-standards` (envenenamiento, procedencia, ataques);
-  `gpu-computing-standards` (la GPU como recurso); `computer-vision-standards`, `nlp-standards`,
-  `multimodal-genai-standards` (aplicaciones por modalidad).
+  `data-warehouse-modeling-standards`, `sql-standards` (**written**): the pipeline, the contract,
+  the quality, the grain and the query. Here it is **required** that the training data have a
+  stable definition and a reliable timestamp; producing it is theirs. **If the solution was a
+  `GROUP BY`, §2.0 rules and the implementation is theirs.**
+- `privacy-engineering-standards` (**personal data in the training set**: lawfulness,
+  minimisation, retention, DPIA and erasure on an already-trained model — here only asking
+  the question before training is required) and `ai-governance-standards` (**risk classification,
+  AI Act and inventory**: a threshold that denies credit or filters candidates is a regulated decision —
+  the number is computed here, acceptability is decided there).
+- `analytics-bi-standards` (dashboard, not automated prediction); `python-standards`,
+  `r-standards`, `julia-standards` (language and environment); `finops-standards`, `green-it-standards`
+  (cost and footprint); `mlsecops-standards` (poisoning, provenance, attacks);
+  `gpu-computing-standards` (the GPU as a resource); `computer-vision-standards`, `nlp-standards`,
+  `multimodal-genai-standards` (applications per modality).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-### 2.0 ¿Hace falta un modelo? (puerta obligatoria)
+### 2.0 Is a model needed? (mandatory gate)
 
-| Situación | Solución correcta |
+| Situation | Correct solution |
 |---|---|
-| La regla la sabe escribir un experto y cabe en 10 condiciones | **Regla de negocio**, versionada en código |
-| El criterio es un agregado o un ranking sobre datos existentes | **Consulta SQL / vista** |
-| Hay señal débil pero el volumen de decisiones es bajo y el coste del error alto | **Heurística + revisión humana** |
-| No hay etiquetas, o son <1000 y ruidosas | **No hay modelo**: primero instrumentar y etiquetar |
-| Relación multivariante, etiquetas abundantes, decisión repetitiva y tolerante a error | **Modelo** |
+| An expert can write the rule and it fits in 10 conditions | **Business rule**, versioned in code |
+| The criterion is an aggregate or a ranking over existing data | **SQL query / view** |
+| There is weak signal but the volume of decisions is low and the cost of error high | **Heuristic + human review** |
+| There are no labels, or there are <1000 and they are noisy | **There is no model**: instrument and label first |
+| Multivariate relationship, abundant labels, repetitive and error-tolerant decision | **Model** |
 
-**Regla dura**: un modelo introduce reentrenamiento, monitorización, deriva y una superficie de
-explicación ante el cliente; si una regla obtiene la mayor parte del beneficio, el modelo debe
-justificar el resto contra ese coste permanente.
+**Hard rule**: a model introduces retraining, monitoring, drift and an explanation
+surface towards the customer; if a rule obtains most of the benefit, the model must
+justify the rest against that permanent cost.
 
-### 2.1 Tabular: clásico como default — la evidencia
+### 2.1 Tabular: classical as the default — the evidence
 
-- Grinsztajn, Oyallon y Varoquaux, *"Why do tree-based models still outperform deep learning on
-  tabular data?"* (arXiv:2207.08815, v1 18-jul-2022). Metodología, verbatim: *"We define a
+- Grinsztajn, Oyallon and Varoquaux, *"Why do tree-based models still outperform deep learning on
+  tabular data?"* (arXiv:2207.08815, v1 18 Jul 2022). Methodology, verbatim: *"We define a
   standard set of 45 datasets from varied domains with clear characteristics of tabular data and
   a benchmarking methodology accounting for both fitting models and finding good
-  hyperparameters"*; conclusión verbatim: *"tree-based models remain state-of-the-art on
-  medium-sized data (~10K samples) even without accounting for their superior speed"*. **Límite
-  declarado por los autores: tamaño medio (~10K).**
+  hyperparameters"*; conclusion verbatim: *"tree-based models remain state-of-the-art on
+  medium-sized data (~10K samples) even without accounting for their superior speed"*. **Limit
+  declared by the authors: medium size (~10K).**
 - Erickson et al., *TabArena: A Living Benchmark for Machine Learning on Tabular Data*
-  (arXiv:2506.16791, v1 20-jun-2025, v4 3-nov-2025). Verbatim: *"While gradient-boosted trees are
+  (arXiv:2506.16791, v1 20 Jun 2025, v4 3 Nov 2025). Verbatim: *"While gradient-boosted trees are
   still strong contenders on practical tabular datasets, we observe that deep learning methods
   have caught up under larger time budgets with ensembling. At the same time, foundation models
-  excel on smaller datasets."*; y su propia advertencia: *"some deep learning models are
+  excel on smaller datasets."*; and their own warning: *"some deep learning models are
   overrepresented in cross-model ensembles due to validation set overfitting"*.
 
-**Lectura de criterio, no de titular**: el *gradient boosting* es el punto de partida correcto en
-tabular, y quien pierde la comparación es la red **con el presupuesto de cómputo y ensamblado de
-un proyecto real**, no el de un artículo. Los modelos fundacionales tabulares (línea TabPFN) son
-un frente en movimiento y **sus cifras más fuertes proceden de informes de sus propios autores:
-no se citan aquí como establecidas** — mide en tu conjunto contra un GBDT tuneado (§8).
+**Read this as criteria, not as a headline**: *gradient boosting* is the correct starting point in
+tabular data, and the one that loses the comparison is the network **with the compute and ensembling
+budget of a real project**, not that of a paper. Tabular foundation models (the TabPFN line) are
+a moving front and **their strongest figures come from reports by their own authors:
+they are not cited here as established** — measure on your own dataset against a tuned GBDT (§8).
 
 ### 2.2 Toolchain
 
-| Pieza | Elección | Versión verificada (ago-2026) | Licencia (leída en el repo) |
+| Piece | Choice | Verified version (Aug 2026) | Licence (read in the repo) |
 |---|---|---|---|
-| Base | scikit-learn | 1.9.0 (2-jun-2026, PyPI) | BSD-3-Clause |
-| GBDT general | XGBoost | 3.4.0 (4-ago-2026, PyPI; requiere Python ≥3.12) | Apache-2.0 |
-| GBDT rápido / gran volumen | LightGBM | 4.7.0 (18-jul-2026, PyPI) | MIT |
-| GBDT con categóricas nativas | CatBoost | 1.2.10 (18-feb-2026, PyPI) | Apache-2.0 (© 2017-2026 YANDEX LLC) |
-| Explicabilidad | SHAP | 0.52.0 (28-may-2026, PyPI) | MIT |
-| Inferencia estadística / IC | statsmodels | verificar | verificar |
+| Base | scikit-learn | 1.9.0 (2 Jun 2026, PyPI) | BSD-3-Clause |
+| General GBDT | XGBoost | 3.4.0 (4 Aug 2026, PyPI; requires Python ≥3.12) | Apache-2.0 |
+| Fast GBDT / large volume | LightGBM | 4.7.0 (18 Jul 2026, PyPI) | MIT |
+| GBDT with native categoricals | CatBoost | 1.2.10 (18 Feb 2026, PyPI) | Apache-2.0 (© 2017-2026 YANDEX LLC) |
+| Explainability | SHAP | 0.52.0 (28 May 2026, PyPI) | MIT |
+| Statistical inference / CI | statsmodels | verify | verify |
 
-- **Las tres de boosting son permisivas y aptas para uso comercial.** LightGBM es MIT, sin la
-  concesión de patentes que dan Apache-2.0 (XGBoost, CatBoost): si tu política exige *patent
-  grant*, eso decide (`opensource-licensing-standards`).
-- **Cambio de origen verificado**: LightGBM ya no se publica desde `microsoft/LightGBM`; PyPI
-  4.7.0 apunta a `github.com/lightgbm-org/LightGBM`, cuyo `LICENSE` en crudo mantiene MIT con
-  copyright de Microsoft **y** "The LightGBM developers". Actualiza URLs, SBOM y *pins*.
-- **Sin GPU y con dataset mediano, `HistGradientBoostingClassifier` evita una dependencia
-  entera.** Añadir XGBoost/LightGBM/CatBoost se justifica por rendimiento medido, categóricas
-  nativas o entrenamiento distribuido, no por costumbre.
+- **The three boosting libraries are permissive and suitable for commercial use.** LightGBM is MIT, without the
+  patent grant that Apache-2.0 gives (XGBoost, CatBoost): if your policy requires a *patent
+  grant*, that decides it (`opensource-licensing-standards`).
+- **Verified change of origin**: LightGBM is no longer published from `microsoft/LightGBM`; PyPI
+  4.7.0 points to `github.com/lightgbm-org/LightGBM`, whose raw `LICENSE` keeps MIT with
+  copyright by Microsoft **and** "The LightGBM developers". Update URLs, SBOM and *pins*.
+- **Without a GPU and with a medium-sized dataset, `HistGradientBoostingClassifier` avoids a whole
+  dependency.** Adding XGBoost/LightGBM/CatBoost is justified by measured performance, native
+  categoricals or distributed training, not by habit.
 
-## 3. Flujo mínimo defendible
+## 3. Minimum defensible workflow
 
-1. **Unidad de decisión e instante de predicción**: qué se predice, para quién, cuándo y con qué
-   información **disponible en ese momento**. Sin esto no hay dataset correcto.
-2. **Partir los datos ANTES de mirar nada**: exploración, estadísticos, selección de variables e
-   imputación se deciden sobre entrenamiento; la prueba se separa primero y no se toca (§7).
-3. **Línea base tonta** (clase mayoritaria, media, "lo mismo que ayer", la regla en producción) y
-   **línea base honesta** (regresión regularizada o árbol único, dentro del `Pipeline`).
-4. **Modelo candidato**: *gradient boosting*, con validación adecuada al dato (§4.2).
-5. **Calibración y umbral** (§4.3, §4.4) y **evaluación única en prueba**, con la base al lado.
+1. **Decision unit and prediction instant**: what is predicted, for whom, when and with what
+   information **available at that moment**. Without this there is no correct dataset.
+2. **Split the data BEFORE looking at anything**: exploration, statistics, feature selection and
+   imputation are decided on the training set; the test set is separated first and is not touched (§7).
+3. **Dumb baseline** (majority class, mean, "the same as yesterday", the rule in production) and
+   **honest baseline** (regularised regression or a single tree, inside the `Pipeline`).
+4. **Candidate model**: *gradient boosting*, with validation appropriate to the data (§4.2).
+5. **Calibration and threshold** (§4.3, §4.4) and **a single evaluation on the test set**, with the baseline alongside.
 
-Todo el preprocesado vive **dentro** del `Pipeline`/`ColumnTransformer` que se ajusta en cada
-pliegue: un `fit_transform` sobre el dataset completo antes de partir es fuga, aunque "solo" sea
-un `StandardScaler`.
+All preprocessing lives **inside** the `Pipeline`/`ColumnTransformer` that is fitted in each
+fold: a `fit_transform` over the full dataset before splitting is leakage, even if it is "only"
+a `StandardScaler`.
 
-## 4. Validación, métricas y umbral
+## 4. Validation, metrics and threshold
 
-### 4.1 Fuga de datos — los tres casos que producen casi todos los modelos falsos
+### 4.1 Data leakage — the three cases that produce almost every fake model
 
-- **Fuga temporal**: característica que en producción aún no existirá, o calculada con
-  información posterior al instante de predicción (agregados sobre "todo el histórico", columnas
-  actualizadas *in place*, tablas sin versionado). Síntoma: métricas irreales y una variable
-  dominante que "tiene sentido" a posteriori.
-- **Fuga por preprocesado ajustado sobre todo el conjunto**: escalar, imputar con la media
-  global, seleccionar variables o codificar el *target* usando también validación. **El *target
-  encoding* es el caso más traicionero: exige codificación fuera de pliegue.**
-- **Fuga por identificador**: un `id`, hash, código de expediente o correlativo que codifica el
-  orden o la clase; se delata como variable sin sentido causal arriba en importancia.
-- **Detección**: si el modelo bate la línea base por un margen que sorprende, la hipótesis por
-  defecto es fuga, no talento. Reprodúcelo con un corte temporal real antes de celebrarlo.
+- **Temporal leakage**: a feature that will not yet exist in production, or computed with
+  information later than the prediction instant (aggregates over "the whole history", columns
+  updated *in place*, tables without versioning). Symptom: unrealistic metrics and a dominant
+  variable that "makes sense" after the fact.
+- **Leakage from preprocessing fitted on the whole set**: scaling, imputing with the global
+  mean, selecting features or encoding the *target* using the validation set too. **The *target
+  encoding* is the most treacherous case: it requires out-of-fold encoding.**
+- **Identifier leakage**: an `id`, hash, case number or sequential code that encodes the
+  order or the class; it gives itself away as a causally meaningless variable high up in importance.
+- **Detection**: if the model beats the baseline by a surprising margin, the default
+  hypothesis is leakage, not talent. Reproduce it with a real temporal cut before celebrating.
 
-### 4.2 Validación
+### 4.2 Validation
 
-| Estructura del dato | Partición correcta | Prohibido |
+| Data structure | Correct split | Forbidden |
 |---|---|---|
-| i.i.d., clases equilibradas | K-fold | — |
-| i.i.d., clases desbalanceadas | K-fold estratificado | — |
-| Varias filas por entidad (cliente, paciente, dispositivo) | `GroupKFold` / `StratifiedGroupKFold` por entidad | Partición aleatoria: la misma entidad en train y test |
-| Temporal | Validación hacia delante (*walk-forward*), corte por fecha, `TimeSeriesSplit` | Partición aleatoria: entrenar con el futuro |
-| Selección de hiperparámetros + estimación de error | Validación cruzada anidada | Reportar el mejor CV como estimación insesgada |
+| i.i.d., balanced classes | K-fold | — |
+| i.i.d., imbalanced classes | Stratified K-fold | — |
+| Several rows per entity (customer, patient, device) | `GroupKFold` / `StratifiedGroupKFold` by entity | Random split: the same entity in train and test |
+| Temporal | Walk-forward validation, cut by date, `TimeSeriesSplit` | Random split: training with the future |
+| Hyperparameter selection + error estimation | Nested cross-validation | Reporting the best CV as an unbiased estimate |
 
-**La partición aleatoria es incorrecta en datos temporales o agrupados**, y produce
-exactamente el mismo síntoma que la fuga: un número que no se reproduce en producción.
+**A random split is incorrect on temporal or grouped data**, and it produces
+exactly the same symptom as leakage: a number that does not reproduce in production.
 
-### 4.3 Métricas con criterio
+### 4.3 Metrics with judgement
 
-- **La exactitud (*accuracy*) es inútil con clases desbalanceadas**: al 1 % de positivos,
-  predecir siempre "negativo" da 99 %. No se reporta sola nunca.
-- **Precisión / recall / F1**: se eligen por el coste asimétrico del error. F1 no tiene
-  significado de negocio propio: sirve para comparar, no para justificar.
-- **ROC frente a precisión-recall**: con positivos escasos la ROC es optimista (la tasa de falsos
-  positivos se diluye en un denominador enorme). **Con desbalance fuerte manda la curva de
-  precisión-recall y su *average precision***, con la prevalencia escrita al lado como base.
-- **Calibración: lo que casi nadie mide y lo que el negocio necesita.** Si el modelo dice 0,7,
-  ¿ocurre el 70 % de las veces? Se mide con *Brier score* y diagrama de fiabilidad y se corrige
-  con calibración (Platt/isotónica) ajustada en un conjunto separado. Buena discriminación con
-  mala calibración es inservible para toda decisión que multiplique probabilidad por importe.
-- **Regresión**: MAE/RMSE según si penalizas el error grande; MAPE se rompe con ceros y valores
-  pequeños. Reportar en unidades de negocio junto a la línea base.
+- ***Accuracy* is useless with imbalanced classes**: at 1 % positives,
+  always predicting "negative" gives 99 %. It is never reported on its own.
+- **Precision / recall / F1**: they are chosen by the asymmetric cost of the error. F1 has no
+  business meaning of its own: it is for comparing, not for justifying.
+- **ROC versus precision-recall**: with scarce positives the ROC is optimistic (the false
+  positive rate is diluted in a huge denominator). **With strong imbalance the precision-recall curve
+  and its *average precision* rule**, with the prevalence written alongside as a baseline.
+- **Calibration: what almost nobody measures and what the business needs.** If the model says 0.7,
+  does it happen 70 % of the time? It is measured with the *Brier score* and a reliability diagram and corrected
+  with calibration (Platt/isotonic) fitted on a separate set. Good discrimination with
+  poor calibration is useless for any decision that multiplies probability by an amount.
+- **Regression**: MAE/RMSE depending on whether you penalise the large error; MAPE breaks with zeros and small
+  values. Report in business units alongside the baseline.
 
-### 4.4 El umbral es una decisión de producto
+### 4.4 The threshold is a product decision
 
-El modelo produce una probabilidad; **el umbral la convierte en acción y pertenece a quien asume
-el coste del error**, no a quien entrena. Se fija con la matriz de coste (falso positivo ×
-volumen frente a falso negativo × volumen) o con una restricción operativa (casos revisables al
-día), se elige sobre validación, se declara y se versiona junto al modelo. **Elegirlo mirando el
-conjunto de prueba invalida la estimación de error** (§7).
+The model produces a probability; **the threshold turns it into an action and belongs to whoever bears
+the cost of the error**, not to whoever trains it. It is set with the cost matrix (false positive ×
+volume against false negative × volume) or with an operational constraint (cases reviewable per
+day), it is chosen on validation, it is declared and it is versioned alongside the model. **Choosing it by looking at the
+test set invalidates the error estimate** (§7).
 
-### 4.5 Gates de CI, en orden de coste
+### 4.5 CI gates, in order of cost
 
-1. Test que falla si hay `fit`/`fit_transform` fuera del `Pipeline` o previo a la partición.
-2. Esquema del dataset: columnas, tipos, rangos, nulos esperados.
-3. No-fuga: columnas prohibidas excluidas; alerta si una variable supera un umbral absurdo de
-   importancia.
-4. Métrica en validación **frente a la línea base**, con umbral que rompe el build.
-5. Semilla fijada y misma métrica en dos ejecuciones.
+1. A test that fails if there is a `fit`/`fit_transform` outside the `Pipeline` or before the split.
+2. Dataset schema: columns, types, ranges, expected nulls.
+3. No-leakage: forbidden columns excluded; an alert if a variable exceeds an absurd importance
+   threshold.
+4. Validation metric **against the baseline**, with a threshold that breaks the build.
+5. Fixed seed and the same metric across two runs.
 
-## 5. Datos, características y desbalanceo
+## 5. Data, features and imbalance
 
-- **Ingeniería de características y fuga son el mismo problema visto dos veces.** Cada
-  característica exige responder: ¿existe este valor en el instante de predicción, con esa
-  latencia y calculado solo con el pasado? Foco en los agregados temporales: ventana cerrada
-  anterior al corte.
-- **Categóricas de alta cardinalidad**: nativas de CatBoost/LightGBM o *target encoding* fuera de
-  pliegue. `OneHotEncoder` sobre miles de niveles es un error de coste.
-- **Desbalanceo**: pregunta primero si es un problema real o solo prevalencia baja. Con GBDT,
-  `scale_pos_weight`/pesos de clase y una métrica adecuada (§4.3) suelen bastar.
-- **El remuestreo sintético empeora la calibración.** van den Goorbergh, van Smeden, Timmerman y
-  Van Calster, JAMIA 29(9):1525-1534 (2022), doi:10.1093/jamia/ocac093. Metodología: regresión
-  logística estándar y *ridge* bajo cuatro tratamientos (sin corrección, *undersampling*,
-  *oversampling* y SMOTE), evaluados en discriminación, calibración y clasificación, con
-  simulación Monte Carlo variando tamaño, número de predictores y fracción de eventos.
-  Resultado: las correcciones **dañan la calibración sobreestimando la clase minoritaria, sin
-  beneficio en discriminación**. **Discrepancia declarada**: el seguimiento a algoritmos de ML
-  (Carriero et al., *Statistics in Medicine*, 2025) **no lo generaliza a todo algoritmo** (§8).
-  Criterio: **SMOTE no es el paso por defecto; si lo usas, mide calibración antes y después.**
-- **PII en el conjunto de entrenamiento**: licitud, minimización y retención se deciden en
-  `privacy-engineering-standards` **antes** de construir el dataset.
+- **Feature engineering and leakage are the same problem seen twice.** Every
+  feature requires answering: does this value exist at the prediction instant, with that
+  latency and computed only from the past? Focus on temporal aggregates: a closed window
+  before the cut.
+- **High-cardinality categoricals**: native ones in CatBoost/LightGBM or out-of-fold *target
+  encoding*. `OneHotEncoder` over thousands of levels is a cost mistake.
+- **Imbalance**: first ask whether it is a real problem or just low prevalence. With GBDT,
+  `scale_pos_weight`/class weights and an appropriate metric (§4.3) usually suffice.
+- **Synthetic resampling worsens calibration.** van den Goorbergh, van Smeden, Timmerman and
+  Van Calster, JAMIA 29(9):1525-1534 (2022), doi:10.1093/jamia/ocac093. Methodology: standard and
+  *ridge* logistic regression under four treatments (no correction, *undersampling*,
+  *oversampling* and SMOTE), evaluated on discrimination, calibration and classification, with
+  Monte Carlo simulation varying size, number of predictors and event fraction.
+  Result: the corrections **damage calibration by overestimating the minority class, with no
+  benefit in discrimination**. **Declared discrepancy**: the follow-up on ML algorithms
+  (Carriero et al., *Statistics in Medicine*, 2025) **does not generalise it to every algorithm** (§8).
+  Criteria: **SMOTE is not the default step; if you use it, measure calibration before and after.**
+- **PII in the training set**: lawfulness, minimisation and retention are decided in
+  `privacy-engineering-standards` **before** building the dataset.
 
-## 6. Interpretabilidad y series temporales
+## 6. Interpretability and time series
 
-- **Explicar el modelo ≠ explicar la decisión.** La importancia global describe el modelo; la
-  persona a la que deniegas algo pregunta por *su* caso. Dos entregables distintos, y el segundo
-  suele ser el legalmente obligatorio.
-- **Trampas de la importancia**: la de *split*/ganancia favorece la alta cardinalidad y se
-  reparte arbitrariamente entre variables correlacionadas; la de permutación es preferible, se
-  degrada con correlación fuerte y **debe calcularse sobre datos no vistos**.
-- **SHAP y sus límites**: atribución local aditiva, con supuestos de independencia en sus
-  aproximaciones habituales y coste de cómputo real. **No es medida causal** ni dice qué pasaría
-  si cambias la variable: sirve para depurar y explicar un caso, no para argumentar intervención.
-- **Cuando la interpretabilidad manda, un modelo lineal es preferible**: coeficientes con
-  intervalos y comportamiento estable. En dominios regulados, la diferencia de AUC frente a un
-  GBDT rara vez compensa perder la defendibilidad.
-- **Series temporales**: validación hacia delante con reentrenamiento en cada corte; retardos y
-  ventanas móviles calculados solo con el pasado; estacionalidad y calendario como variables
-  explícitas; horizonte declarado. Línea base obligatoria: *naïve* y estacional *naïve*.
+- **Explaining the model ≠ explaining the decision.** Global importance describes the model; the
+  person you are denying something asks about *their* case. Two different deliverables, and the second
+  is usually the legally mandatory one.
+- **Importance traps**: *split*/gain importance favours high cardinality and is
+  distributed arbitrarily among correlated variables; permutation importance is preferable, it
+  degrades with strong correlation and **must be computed on unseen data**.
+- **SHAP and its limits**: additive local attribution, with independence assumptions in its
+  usual approximations and a real compute cost. **It is not a causal measure** nor does it say what would happen
+  if you changed the variable: it is for debugging and explaining a case, not for arguing for an intervention.
+- **When interpretability rules, a linear model is preferable**: coefficients with
+  intervals and stable behaviour. In regulated domains, the AUC difference against a
+  GBDT rarely compensates for losing defensibility.
+- **Time series**: walk-forward validation with retraining at each cut; lags and
+  rolling windows computed only from the past; seasonality and calendar as explicit
+  variables; declared horizon. Mandatory baseline: *naïve* and seasonal *naïve*.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- Revisar versiones mayores de scikit-learn y del boosting cada trimestre. Un modelo serializado
-  con `pickle`/`joblib` **no es portable entre versiones**: fija la versión junto al artefacto y
-  prueba la carga en CI. Reentrenamiento, deriva y retirada: `mlops-standards`.
+- Review major versions of scikit-learn and of the boosting libraries every quarter. A model serialised
+  with `pickle`/`joblib` **is not portable across versions**: pin the version alongside the artifact and
+  test loading it in CI. Retraining, drift and retirement: `mlops-standards`.
 
-**PROHIBIDO**:
+**FORBIDDEN**:
 
-- ❌ **Evaluar sobre los datos de entrenamiento** y presentar esa métrica como resultado.
-- ❌ **Elegir el umbral mirando el conjunto de prueba** (o cualquier hiperparámetro).
-- ❌ **Presentar métricas sin línea base** ni sin la prevalencia de la clase positiva.
-- ❌ **Usar la importancia de características como causalidad** ("la variable X causa la baja").
-- ❌ Ajustar cualquier transformación sobre el conjunto completo antes de partir.
-- ❌ Partición aleatoria con datos temporales o con varias filas por entidad.
-- ❌ Reportar *accuracy* como métrica principal con desbalanceo, o AUC-ROC como única métrica con
-  prevalencia baja.
-- ❌ Entregar probabilidades sin medir calibración cuando alimentan una decisión económica.
-- ❌ Tocar el conjunto de prueba más de una vez, o "probar otra idea" sobre él.
-- ❌ Entrenar un modelo cuando una regla, una consulta o una heurística resolvían el caso.
-- ❌ Cifras de *benchmark* sin condiciones de medida: dataset, partición, presupuesto de tuneado
-  y línea base.
+- ❌ **Evaluating on the training data** and presenting that metric as the result.
+- ❌ **Choosing the threshold by looking at the test set** (or any hyperparameter).
+- ❌ **Presenting metrics without a baseline** or without the prevalence of the positive class.
+- ❌ **Using feature importance as causality** ("variable X causes churn").
+- ❌ Fitting any transformation on the full set before splitting.
+- ❌ A random split with temporal data or with several rows per entity.
+- ❌ Reporting *accuracy* as the main metric under imbalance, or AUC-ROC as the only metric with
+  low prevalence.
+- ❌ Delivering probabilities without measuring calibration when they feed an economic decision.
+- ❌ Touching the test set more than once, or "trying another idea" on it.
+- ❌ Training a model when a rule, a query or a heuristic solved the case.
+- ❌ *Benchmark* figures without measurement conditions: dataset, split, tuning budget
+  and baseline.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar por web:
+Before committing anything in a real project, check on the web:
 
-- Última estable y soporte de Python de **scikit-learn, XGBoost, LightGBM, CatBoost, SHAP y
-  statsmodels**; XGBoost 3.4.0 ya exige Python ≥3.12. Cambios de API que rompen antes de subir
-  versión mayor.
-- **Origen y licencia de cada biblioteca leídos en el `LICENSE` en crudo del repo**, no en un
-  resumen. LightGBM cambió de organización (`microsoft/` → `lightgbm-org/`).
-- **Estado de la literatura tabular clásico-vs-profundo**: marcador de `tabarena.ai` y
-  publicaciones posteriores a nov-2025. Los modelos fundacionales tabulares se mueven rápido y
-  **sus cifras más favorables proceden de sus propios autores**: exige metodología, presupuesto
-  de cómputo y evaluación independiente antes de citarlas.
-- **Huecos declarados**: (a) ninguna cifra de rendimiento comparado (AUC, Elo, posiciones de
-  *leaderboard*) se fija aquí — las disponibles carecen de condiciones de medida homogéneas y de
-  evaluación independiente; (b) versión y licencia de `statsmodels` e `imbalanced-learn` no
-  verificadas en esta redacción.
-- **Discrepancia declarada**: van den Goorbergh et al. (2022) concluye contra las correcciones de
-  desbalanceo en regresión logística; el seguimiento de Carriero et al. (2025) no lo generaliza a
-  todo algoritmo de ML. Comprueba el estado actual y mide calibración en tu caso.
+- Latest stable version and Python support of **scikit-learn, XGBoost, LightGBM, CatBoost, SHAP and
+  statsmodels**; XGBoost 3.4.0 already requires Python ≥3.12. Breaking API changes before moving up a
+  major version.
+- **The origin and licence of each library read in the repo's raw `LICENSE`**, not in a
+  summary. LightGBM changed organisation (`microsoft/` → `lightgbm-org/`).
+- **State of the tabular classical-vs-deep literature**: the `tabarena.ai` scoreboard and
+  publications after Nov 2025. Tabular foundation models move fast and
+  **their most favourable figures come from their own authors**: demand methodology, compute
+  budget and independent evaluation before citing them.
+- **Declared gaps**: (a) no comparative performance figure (AUC, Elo, *leaderboard*
+  positions) is pinned here — the available ones lack homogeneous measurement conditions and
+  independent evaluation; (b) the version and licence of `statsmodels` and `imbalanced-learn` were not
+  verified in this draft.
+- **Declared discrepancy**: van den Goorbergh et al. (2022) concludes against imbalance
+  corrections in logistic regression; the follow-up by Carriero et al. (2025) does not generalise it to
+  every ML algorithm. Check the current status and measure calibration in your case.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

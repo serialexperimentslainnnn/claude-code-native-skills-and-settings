@@ -3,180 +3,180 @@ name: python-standards
 description: Use when writing, reviewing, or designing Python code or projects - .py files, pyproject.toml, uv, ruff, FastAPI, Django, SQLAlchemy, pydantic, asyncio, pytest, alembic, uvicorn, celery, Python packaging, virtualenvs, type hints, or Python CI/CD pipelines.
 ---
 
-# Estándares Python (referencia: agosto 2026)
+# Python standards (reference: August 2026)
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a todo trabajo Python: código nuevo, revisión, diseño, refactor, packaging, CI y despliegue.
+Applies to all Python work: new code, review, design, refactor, packaging, CI and deployment.
 Triggers: `.py`, `pyproject.toml`, `uv.lock`, FastAPI, Django, SQLAlchemy, pydantic, asyncio, pytest, alembic.
-Este documento fija **criterio** (qué usar, qué está vetado, qué verificar), no tutoriales.
+This document sets **criteria** (what to use, what is vetoed, what to verify), not tutorials.
 
-**No aplica**: ver `api-design-standards` (diseño del contrato HTTP/GraphQL/gRPC: recursos, códigos,
-paginación, RFC 9457, versionado — aquí solo su implementación en FastAPI/Django),
-`microservices-architecture-standards` (corte de servicios, eventos, sagas, resiliencia distribuida),
-`appsec-standards` (modelado de amenazas y clases de vulnerabilidad agnósticas del stack; aquí solo
-los sinks y flags concretos de Python), `data-platform-standards` (modelado, índices, tuning y
-réplicas de PostgreSQL; aquí solo el uso de SQLAlchemy/Alembic), `cicd-standards` (la pipeline que
-ejecuta los gates de §4), `kubernetes-standards` (imagen OCI y despliegue del servicio),
-`observability-standards` (pipeline OTel/Prometheus; aquí solo la instrumentación en el código),
-`git-workflow-standards` (rama, commits y tagging SemVer del repo; la publicación en PyPI sí es de
-esta skill), `bash-linux-scripting-standards` (scripts de sistema: si el script pasa de ~50 líneas o
-necesita estructuras de datos, se reescribe en Python y vuelve aquí), `c-standards`/`cpp-standards`
-y `rust-standards` (**extensiones nativas**: el empaquetado, las ruedas y la frontera de la API de
-Python —`cffi`, `pybind11`, `PyO3`, la GIL y su liberación— son de aquí; el **código nativo que hay
-al otro lado** —memoria, UB, sanitizers, flags del compilador— es suyo), `sql-standards` (el SQL que
-SQLAlchemy genera o que escribes a mano en `text()`). **Elección de lenguaje** (la skill que manda
-es la del lenguaje elegido, no ésta): `go-standards`, `rust-standards`, `typescript-standards`,
+**Not applicable**: see `api-design-standards` (HTTP/GraphQL/gRPC contract design: resources, status codes,
+pagination, RFC 9457, versioning — here only its implementation in FastAPI/Django),
+`microservices-architecture-standards` (service boundaries, events, sagas, distributed resilience),
+`appsec-standards` (threat modelling and stack-agnostic vulnerability classes; here only
+Python's concrete sinks and flags), `data-platform-standards` (modelling, indexes, tuning and
+PostgreSQL replicas; here only the use of SQLAlchemy/Alembic), `cicd-standards` (the pipeline that
+runs the §4 gates), `kubernetes-standards` (OCI image and service deployment),
+`observability-standards` (OTel/Prometheus pipeline; here only the instrumentation in the code),
+`git-workflow-standards` (branch, commits and SemVer tagging of the repo; publishing to PyPI *is*
+this skill's), `bash-linux-scripting-standards` (system scripts: if the script goes past ~50 lines or
+needs data structures, it gets rewritten in Python and comes back here), `c-standards`/`cpp-standards`
+and `rust-standards` (**native extensions**: the packaging, the wheels and the Python API boundary
+—`cffi`, `pybind11`, `PyO3`, the GIL and its release— are ours; the **native code on the other
+side** —memory, UB, sanitizers, compiler flags— is theirs), `sql-standards` (the SQL that
+SQLAlchemy generates or that you write by hand in `text()`). **Language choice** (the skill that wins
+is the one for the chosen language, not this one): `go-standards`, `rust-standards`, `typescript-standards`,
 `jvm-spring-standards`, `dotnet-standards`, `php-standards`, `ruby-standards`,
 `elixir-erlang-standards`, `scala-standards`, `clojure-standards`, `haskell-fp-standards`,
-`ocaml-fsharp-standards`, `perl-standards` (**destino recíproco**: Python es el destino natural de
-una reescritura de Perl, pero **reescribir un Perl que funciona y no tiene tests es cambiar un
-riesgo conocido por uno desconocido** — la decisión de reescribir es suya, la calidad del Python
-resultante es de aquí), `r-standards`, `julia-standards` — estas dos últimas para análisis
-estadístico y computación numérica intensiva, donde Python **no** es automáticamente la respuesta.
+`ocaml-fsharp-standards`, `perl-standards` (**reciprocal destination**: Python is the natural target of
+a Perl rewrite, but **rewriting a Perl that works and has no tests is trading a known risk for an
+unknown one** — the decision to rewrite is theirs, the quality of the resulting Python is
+ours), `r-standards`, `julia-standards` — these last two for statistical
+analysis and intensive numerical computing, where Python is **not** automatically the answer.
 
-## 2. Toolchain por defecto
+## 2. Default toolchain
 
-> **Nota**: las versiones citadas son el estado verificado a 2026-08. **Antes de fijar versiones en un
-> proyecto real, verifica la última estable por web** (sección 8). Nunca fijes versiones de memoria.
+> **Note**: the versions cited are the state verified as of 2026-08. **Before pinning versions in a
+> real project, verify the latest stable on the web** (section 8). Never pin versions from memory.
 
-| Pieza | Elección | Mínimo | Por qué |
+| Piece | Choice | Minimum | Why |
 |---|---|---|---|
-| Runtime | CPython | **3.12**; preferir 3.13/3.14 en greenfield | 3.14 estable desde 2025-10; Django 6 exige ≥3.12 |
-| Gestor/entornos | **uv** (Astral) | 0.12+ | Estándar de facto: reemplaza pip, pip-tools, virtualenv, pyenv y pipx |
-| Formatter | **ruff format** | 0.16+ | Sustituye a black; un solo binario con el linter |
-| Linter | **ruff check** | 0.16+ | 400+ reglas por defecto desde 0.16; pin exacto en dev-deps |
-| Type checker (gate CI) | **pyright** modo `strict` | — | Líder en conformidad con la spec (~98%). `ty` (Astral) sigue en beta (~53% conformidad): útil como LSP/editor, **no como gate de CI** todavía. mypy solo si el repo ya lo usa |
+| Runtime | CPython | **3.12**; prefer 3.13/3.14 on greenfield | 3.14 stable since 2025-10; Django 6 requires ≥3.12 |
+| Package/env manager | **uv** (Astral) | 0.12+ | De facto standard: replaces pip, pip-tools, virtualenv, pyenv and pipx |
+| Formatter | **ruff format** | 0.16+ | Replaces black; a single binary with the linter |
+| Linter | **ruff check** | 0.16+ | 400+ rules by default since 0.16; exact pin in dev-deps |
+| Type checker (CI gate) | **pyright** in `strict` mode | — | Leader in spec conformance (~98%). `ty` (Astral) is still in beta (~53% conformance): useful as an LSP/editor tool, **not as a CI gate** yet. mypy only if the repo already uses it |
 | Testing | **pytest** + pytest-asyncio + coverage | — | — |
-| API async | **FastAPI** | 0.136+ | Framework Python más usado (JetBrains 2025) |
-| Web "batteries included" | **Django** | **5.2 LTS** (soporte hasta 2028-04) o 6.0 si asumes cadencia anual | 4.2 LTS murió en 2026-04 |
-| Validación/serialización | **pydantic v2** | 2.11+ | v3 NO publicada a 2026-08; no asumas API v3 |
-| ORM SQL (no-Django) | **SQLAlchemy 2.0** estilo 2.0 (`Mapped[]`, `mapped_column`) | 2.0.50+ | 2.1 aún en beta; migrar cuando sea final |
-| Migraciones | alembic (SQLAlchemy) / migrations nativas (Django) | — | — |
-| Servidor ASGI | uvicorn (workers via systemd/k8s, no `--workers` improvisado) | — | — |
-| Settings | pydantic-settings desde env vars | — | Config fuera del artefacto, 12-factor |
+| Async API | **FastAPI** | 0.136+ | Most used Python framework (JetBrains 2025) |
+| "Batteries included" web | **Django** | **5.2 LTS** (supported until 2028-04) or 6.0 if you take on the annual cadence | 4.2 LTS died in 2026-04 |
+| Validation/serialisation | **pydantic v2** | 2.11+ | v3 NOT released as of 2026-08; do not assume a v3 API |
+| SQL ORM (non-Django) | **SQLAlchemy 2.0** in 2.0 style (`Mapped[]`, `mapped_column`) | 2.0.50+ | 2.1 still in beta; migrate when it is final |
+| Migrations | alembic (SQLAlchemy) / native migrations (Django) | — | — |
+| ASGI server | uvicorn (workers via systemd/k8s, not an improvised `--workers`) | — | — |
+| Settings | pydantic-settings from env vars | — | Config outside the artifact, 12-factor |
 
-Comandos canónicos: `uv init` / `uv add` / `uv sync --locked` / `uv run` / `uvx`. Nunca `pip install` a mano dentro de un proyecto uv.
-Versión de Python del proyecto fijada en `.python-version` y gestionada con `uv python install` — no dependas del Python del sistema.
+Canonical commands: `uv init` / `uv add` / `uv sync --locked` / `uv run` / `uvx`. Never `pip install` by hand inside a uv project.
+The project's Python version pinned in `.python-version` and managed with `uv python install` — do not depend on the system Python.
 
-**Criterio de modelo de concurrencia** (elige uno, no los mezcles sin frontera clara):
-- I/O-bound con muchas conexiones → asyncio (FastAPI, asyncpg, httpx).
-- I/O-bound simple o libs síncronas → threads (`ThreadPoolExecutor`) o workers síncronos; no fuerces async.
-- CPU-bound → procesos (`ProcessPoolExecutor`) o task queue; free-threading (3.14, PEP 779) aún es opt-in
-  experimental para prod: verifica soporte del ecosistema antes de usarlo.
-- Django: síncrono por defecto sigue siendo válido; async solo donde haya beneficio medido.
+**Concurrency model criteria** (pick one, do not mix them without a clear boundary):
+- I/O-bound with many connections → asyncio (FastAPI, asyncpg, httpx).
+- Simple I/O-bound or synchronous libs → threads (`ThreadPoolExecutor`) or synchronous workers; do not force async.
+- CPU-bound → processes (`ProcessPoolExecutor`) or task queue; free-threading (3.14, PEP 779) is still an
+  experimental opt-in for prod: verify ecosystem support before using it.
+- Django: synchronous by default is still valid; async only where there is measured benefit.
 
-**Criterio pydantic vs dataclasses**: pydantic en los bordes (parsing/validación de datos externos);
-`dataclasses`/`attrs` (frozen por defecto) para tipos internos de dominio ya validados — no pagues
-validación donde no hay datos no confiables.
+**pydantic vs dataclasses criteria**: pydantic at the edges (parsing/validation of external data);
+`dataclasses`/`attrs` (frozen by default) for already-validated internal domain types — do not pay for
+validation where there is no untrusted input.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- **Layout `src/`** obligatorio en paquetes: `src/<paquete>/`, `tests/` fuera del paquete.
-- Un solo `pyproject.toml` como fuente de verdad: metadata, deps, `[dependency-groups]` (dev, test),
-  config de ruff/pyright/pytest/coverage dentro. Cero `setup.py`, `setup.cfg`, `requirements.txt` (salvo export puntual para plataformas legacy: `uv export`).
-- `uv.lock` **committeado siempre** (apps y también librerías para su CI).
-- `requires-python = ">=3.12"` explícito; classifiers coherentes.
-- Nombres: módulos `snake_case` cortos; sin `utils.py` cajón de sastre — módulos por dominio.
-- FastAPI: routers por dominio (`app/<dominio>/router.py`, `schemas.py`, `service.py`, `models.py`),
-  dependencias con `Depends` para sesión DB/auth/config; lifespan con `asynccontextmanager` (no `@app.on_event`, deprecado).
-- Django: apps pequeñas y cohesivas; lógica en services/managers, no en views ni signals; settings partidos por entorno con env vars (django-environ o pydantic-settings), `DEBUG=False` por defecto.
-- Separa esquemas de API (pydantic) de modelos de persistencia (SQLAlchemy/Django): nunca expongas el modelo ORM directamente en la API.
-- **Diseño de API HTTP**: versionado en path (`/v1`), errores con formato RFC 9457 (problem+json) o uno propio
-  consistente en toda la API, paginación obligatoria en colecciones (cursor para datasets grandes),
-  `response_model` explícito en cada endpoint FastAPI (nunca devolver dicts sin schema).
-- **Librerías publicables**: `uv build` + publicación desde CI con OIDC/attestations (PyPI Trusted Publishers),
-  nunca con token estático en local; `__all__` explícito, `py.typed` incluido, SemVer y changelog.
-- Transacciones: una sesión/transacción por request (dependency en FastAPI, `ATOMIC_REQUESTS` o
-  `transaction.atomic` en Django); commit/rollback en un solo sitio, no repartido por los services.
+- **`src/` layout** mandatory in packages: `src/<package>/`, `tests/` outside the package.
+- A single `pyproject.toml` as the source of truth: metadata, deps, `[dependency-groups]` (dev, test),
+  ruff/pyright/pytest/coverage config inside. Zero `setup.py`, `setup.cfg`, `requirements.txt` (except a one-off export for legacy platforms: `uv export`).
+- `uv.lock` **always committed** (apps and libraries too, for their CI).
+- Explicit `requires-python = ">=3.12"`; coherent classifiers.
+- Names: short `snake_case` modules; no catch-all `utils.py` — modules by domain.
+- FastAPI: routers by domain (`app/<domain>/router.py`, `schemas.py`, `service.py`, `models.py`),
+  dependencies with `Depends` for the DB session/auth/config; lifespan with `asynccontextmanager` (not `@app.on_event`, deprecated).
+- Django: small, cohesive apps; logic in services/managers, not in views or signals; settings split by environment with env vars (django-environ or pydantic-settings), `DEBUG=False` by default.
+- Separate API schemas (pydantic) from persistence models (SQLAlchemy/Django): never expose the ORM model directly in the API.
+- **HTTP API design**: versioning in the path (`/v1`), errors in RFC 9457 format (problem+json) or a bespoke one
+  consistent across the whole API, mandatory pagination on collections (cursor for large datasets),
+  explicit `response_model` on every FastAPI endpoint (never return dicts without a schema).
+- **Publishable libraries**: `uv build` + publishing from CI with OIDC/attestations (PyPI Trusted Publishers),
+  never with a static token locally; explicit `__all__`, `py.typed` included, SemVer and changelog.
+- Transactions: one session/transaction per request (dependency in FastAPI, `ATOMIC_REQUESTS` or
+  `transaction.atomic` in Django); commit/rollback in a single place, not scattered across the services.
 
-## 4. Calidad: formato, lint, tipos, tests
+## 4. Quality: formatting, lint, types, tests
 
-- **Formato**: `ruff format` sin discusión de estilo; línea 100 o 120, elegir una y fijarla.
-- **Lint**: `ruff check` con defaults 0.16+ y además `I` (isort), `B` (bugbear), `UP` (pyupgrade), `S` (bandit),
-  `PTH` (pathlib), `RUF`. `noqa` siempre con código concreto y motivo.
-- **Tipos**: `pyright` en `strict` para código nuevo; en legacy, `basic` + strict por directorios en avance.
-  Anota todo el API público. `Any` es fallo salvo frontera justificada; usa `TypedDict`, `Protocol`, genéricos PEP 695, `Self`.
+- **Formatting**: `ruff format`, no style debate; line length 100 or 120, pick one and pin it.
+- **Lint**: `ruff check` with 0.16+ defaults plus `I` (isort), `B` (bugbear), `UP` (pyupgrade), `S` (bandit),
+  `PTH` (pathlib), `RUF`. `noqa` always with a concrete code and a reason.
+- **Types**: `pyright` in `strict` for new code; in legacy, `basic` + strict per directory as you advance.
+  Annotate the whole public API. `Any` is a failure except at a justified boundary; use `TypedDict`, `Protocol`, PEP 695 generics, `Self`.
 - **Tests** (pytest):
-  - AAA, un motivo de fallo por test; nombres que describen comportamiento.
-  - Cubrir camino feliz, **bordes y errores** (entradas inválidas, timeouts, conflictos de concurrencia, permisos).
-  - FastAPI: `httpx.AsyncClient` + `ASGITransport` contra la app real; override de dependencias, no mocks del framework.
-  - DB: tests de integración contra Postgres real (testcontainers o servicio de CI), no SQLite "porque es más rápido" si prod es Postgres.
-  - Async: `pytest-asyncio` en modo `auto`; prohibido `time.sleep`/polling en tests — usa eventos o `anyio` fake clock.
-  - Todo bugfix deja test de regresión. Flaky = se arregla o se borra.
-- **Gates de CI** (todos bloquean el merge, en este orden — lo barato primero):
-  1. `uv sync --locked` (falla si el lock está desactualizado)
-  2. `ruff format --check` y `ruff check`
-  3. `pyright` (strict en código nuevo)
-  4. `pytest --cov` unit (rápidos) → integración (DB/servicios reales)
-  5. `pip-audit` / SCA + build del paquete o imagen
-  Umbral de cobertura acordado por equipo — la cobertura es señal, no meta. Main siempre verde.
-- Pin exacto de ruff y pyright en dev-deps: sus updates cambian defaults y rompen CI si flotan (ruff 0.16 lo demostró).
-- Pre-commit opcional pero recomendado (ruff format+check); CI es la autoridad, no el hook local.
-- Mismo comando en local y en CI (`uv run pytest`, `uv run ruff check`): si CI hace algo que no puedes
-  reproducir en local, es un bug del pipeline.
+  - AAA, one failure reason per test; names that describe behaviour.
+  - Cover the happy path, **edges and errors** (invalid inputs, timeouts, concurrency conflicts, permissions).
+  - FastAPI: `httpx.AsyncClient` + `ASGITransport` against the real app; dependency overrides, not framework mocks.
+  - DB: integration tests against a real Postgres (testcontainers or a CI service), not SQLite "because it is faster" if prod is Postgres.
+  - Async: `pytest-asyncio` in `auto` mode; `time.sleep`/polling forbidden in tests — use events or the `anyio` fake clock.
+  - Every bugfix leaves a regression test. Flaky = fixed or deleted.
+- **CI gates** (all block the merge, in this order — cheapest first):
+  1. `uv sync --locked` (fails if the lock is out of date)
+  2. `ruff format --check` and `ruff check`
+  3. `pyright` (strict on new code)
+  4. `pytest --cov` unit (fast) → integration (real DB/services)
+  5. `pip-audit` / SCA + package or image build
+  Coverage threshold agreed by the team — coverage is a signal, not a target. Main always green.
+- Exact pin of ruff and pyright in dev-deps: their updates change defaults and break CI if they float (ruff 0.16 proved it).
+- Pre-commit optional but recommended (ruff format+check); CI is the authority, not the local hook.
+- Same command locally and in CI (`uv run pytest`, `uv run ruff check`): if CI does something you cannot
+  reproduce locally, that is a pipeline bug.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **Entradas**: valida TODO en el borde con pydantic (tipos estrictos, `Field` con límites, `max_length` en strings, límites de tamaño de payload). En Django, forms/serializers siempre; nunca `request.GET[...]` crudo a lógica.
-- **SQL**: solo consultas parametrizadas (ORM o `text()` con bind params). Concatenar input en SQL/`os.system`/`subprocess(shell=True)` = veto absoluto.
-- **Secretos**: env vars o gestor (Vault/KMS); jamás en código, `pyproject`, logs, ni fixtures. `SECRET_KEY` de Django rotable y por entorno.
-- **AuthN/Z**: OAuth2/OIDC estándar; passwords con Argon2 (`argon2-cffi` / hasher Argon2 de Django). JWT: algoritmo fijado (RS256/EdDSA), expiración corta, verificación de `aud`/`iss`.
-- **Deserialización**: prohibido `pickle`/`eval`/`exec`/`yaml.load` sin `SafeLoader` sobre datos externos.
-- **SSRF**: al hacer fetch de URLs de usuario, allowlist de esquemas/hosts y bloqueo de rangos privados.
-- **SCA**: `pip-audit` (o `uv`-compatible) + escaneo de imagen en CI como gate; dependencias con pin en lock, actualizadas con cadencia (sección 7). Señala deps abandonadas.
-- **Django hardening**: `SECURE_*` settings, CSP (nativo en 6.0+ o django-csp), `ALLOWED_HOSTS` estricto, CSRF activo.
-- **FastAPI hardening**: CORS con allowlist explícita (nunca `*` con credenciales), docs (`/docs`, `/openapi.json`) desactivadas o autenticadas en prod si la API es interna, rate limiting en el borde.
-- **Errores**: nunca filtrar stack traces ni rutas internas al cliente; handler global que loguea con contexto y devuelve error neutro con correlation id.
-- Contenedores: imagen slim/distroless, non-root, multi-stage con `uv sync --locked --no-dev`.
+- **Inputs**: validate EVERYTHING at the edge with pydantic (strict types, `Field` with limits, `max_length` on strings, payload size limits). In Django, forms/serializers always; never raw `request.GET[...]` into logic.
+- **SQL**: parameterised queries only (ORM or `text()` with bind params). Concatenating input into SQL/`os.system`/`subprocess(shell=True)` = absolute veto.
+- **Secrets**: env vars or a manager (Vault/KMS); never in code, `pyproject`, logs or fixtures. Django's `SECRET_KEY` rotatable and per environment.
+- **AuthN/Z**: standard OAuth2/OIDC; passwords with Argon2 (`argon2-cffi` / Django's Argon2 hasher). JWT: fixed algorithm (RS256/EdDSA), short expiry, `aud`/`iss` verification.
+- **Deserialisation**: `pickle`/`eval`/`exec`/`yaml.load` without `SafeLoader` forbidden on external data.
+- **SSRF**: when fetching user-supplied URLs, allowlist schemes/hosts and block private ranges.
+- **SCA**: `pip-audit` (or `uv`-compatible) + image scanning in CI as a gate; dependencies pinned in the lock, updated on a cadence (section 7). Flag abandoned deps.
+- **Django hardening**: `SECURE_*` settings, CSP (native in 6.0+ or django-csp), strict `ALLOWED_HOSTS`, CSRF enabled.
+- **FastAPI hardening**: CORS with an explicit allowlist (never `*` with credentials), docs (`/docs`, `/openapi.json`) disabled or authenticated in prod if the API is internal, rate limiting at the edge.
+- **Errors**: never leak stack traces or internal paths to the client; a global handler that logs with context and returns a neutral error with a correlation id.
+- Containers: slim/distroless image, non-root, multi-stage with `uv sync --locked --no-dev`.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Async con disciplina**: nada de I/O bloqueante en el event loop — drivers async (asyncpg, `httpx.AsyncClient`)
-  o `run_in_threadpool`/`asyncio.to_thread` para lo síncrono. En FastAPI, un endpoint `async def` con llamada bloqueante dentro es un bug, no un detalle.
-- **Timeouts en todo**: httpx con `timeout` explícito siempre (el default infinito de muchas libs es un incidente esperando); pool de DB con `pool_size`, `max_overflow`, `pool_timeout`, `pool_pre_ping`.
-- Retries con backoff+jitter (tenacity) solo en operaciones idempotentes; circuit breaker en dependencias frágiles.
-- **Graceful shutdown**: lifespan que cierra pools y drena tareas; el proceso respeta SIGTERM (uvicorn lo hace; no lo rompas con `os._exit`, threads no-daemon o tareas huérfanas — guarda referencias a tus `asyncio.create_task`).
-- **Observabilidad**: logging estructurado JSON (structlog) con correlation id; OpenTelemetry (trazas+métricas) instrumentando ASGI, DB y HTTP client; endpoints `/healthz` (liveness) y `/readyz` (readiness con chequeo de deps). Sin telemetría no hay producción.
-- ORM: prohibido el N+1 — `selectinload`/`joinedload` (SQLAlchemy), `select_related`/`prefetch_related` (Django); pagina siempre listados (limit por defecto y máximo).
-- Trabajo pesado fuera del request: task queue (celery/arq/taskiq, o Tasks nativas de Django 6) — no `BackgroundTasks` de FastAPI para nada crítico o de larga duración.
-- Perfilado antes de optimizar (`py-spy`, `cProfile`); nada de micro-optimización especulativa.
-- Cache con criterio: TTL explícito y clave con versión de schema; invalidación diseñada, no "ya lo vaciamos a mano".
-- Migraciones compatibles hacia atrás (*expand/contract*): nunca una migración que rompa la versión N-1
-  del código en un rolling deploy; migraciones destructivas en release posterior.
-- Logs: nivel INFO en prod, DEBUG activable por env; jamás datos personales/secretos en logs (revisa
-  `repr` de modelos con campos sensibles — usa `SecretStr` de pydantic).
+- **Async with discipline**: no blocking I/O on the event loop — async drivers (asyncpg, `httpx.AsyncClient`)
+  or `run_in_threadpool`/`asyncio.to_thread` for synchronous work. In FastAPI, an `async def` endpoint with a blocking call inside is a bug, not a detail.
+- **Timeouts everywhere**: httpx with an explicit `timeout` always (the infinite default of many libs is an incident waiting to happen); DB pool with `pool_size`, `max_overflow`, `pool_timeout`, `pool_pre_ping`.
+- Retries with backoff+jitter (tenacity) only on idempotent operations; circuit breaker on fragile dependencies.
+- **Graceful shutdown**: a lifespan that closes pools and drains tasks; the process honours SIGTERM (uvicorn does; do not break it with `os._exit`, non-daemon threads or orphan tasks — keep references to your `asyncio.create_task`).
+- **Observability**: structured JSON logging (structlog) with a correlation id; OpenTelemetry (traces+metrics) instrumenting ASGI, DB and the HTTP client; `/healthz` (liveness) and `/readyz` (readiness with dependency checks) endpoints. No telemetry, no production.
+- ORM: N+1 forbidden — `selectinload`/`joinedload` (SQLAlchemy), `select_related`/`prefetch_related` (Django); always paginate listings (default and maximum limit).
+- Heavy work outside the request: task queue (celery/arq/taskiq, or Django 6 native Tasks) — not FastAPI's `BackgroundTasks` for anything critical or long-running.
+- Profile before optimising (`py-spy`, `cProfile`); no speculative micro-optimisation.
+- Cache with criteria: explicit TTL and a key carrying the schema version; invalidation designed, not "we'll flush it by hand".
+- Backward-compatible migrations (*expand/contract*): never a migration that breaks version N-1
+  of the code during a rolling deploy; destructive migrations in a later release.
+- Logs: INFO level in prod, DEBUG enableable by env; never personal data/secrets in logs (review the
+  `repr` of models with sensitive fields — use pydantic's `SecretStr`).
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- **Cadencia**: parches de seguridad inmediatos; minor de deps mensual/quincenal (Renovate/Dependabot con lock);
-  CPython al año de su release (cuando el ecosistema alcanza); Django de LTS a LTS salvo necesidad de features.
-- Presupuesto de mantenimiento en cada sprint; una dependencia sin release en >18 meses se revisa o se reemplaza.
-- Deprecaciones propias: warning + changelog + ventana de retirada; los `DeprecationWarning` de terceros se tratan como deuda con issue, no se silencian.
-- Deuda consciente: atajo = TODO con motivo e issue enlazada; prohibida la complejidad accidental silenciosa.
+- **Cadence**: security patches immediately; dependency minors monthly/fortnightly (Renovate/Dependabot with lock);
+  CPython within a year of its release (once the ecosystem catches up); Django from LTS to LTS unless features demand otherwise.
+- Maintenance budget in every sprint; a dependency with no release in >18 months gets reviewed or replaced.
+- Your own deprecations: warning + changelog + removal window; third-party `DeprecationWarning`s are treated as debt with an issue, not silenced.
+- Conscious debt: shortcut = TODO with a reason and a linked issue; silent accidental complexity forbidden.
 
-**Lista de prohibiciones (veto):**
-- `pip install` / `requirements.txt` como fuente de verdad en proyecto nuevo (uv + `pyproject` + lock).
-- Publicar/deployar sin lockfile o con deps sin pin.
-- `except Exception: pass` o capturas que tragan errores sin log ni re-raise.
-- Mutables como default de argumento; estado global mutable como "config".
-- `pickle`/`eval`/`exec`/`yaml.load` inseguro sobre datos externos; `subprocess(shell=True)` con input.
-- SQL por concatenación/f-string. MD5/SHA-1 para passwords; crypto casera.
-- I/O bloqueante en código async; `asyncio.get_event_loop()` legacy (usa `asyncio.run`/loop en curso).
-- Exponer modelos ORM directamente como schema de API.
-- `# type: ignore` / `noqa` sin código de regla y sin motivo.
-- Tests que dependen de orden, red pública o `sleep`; mocks del propio código bajo test.
-- Modelos pydantic v1 (`class Config`, `.dict()`, `.parse_obj`) en código nuevo — API v2 (`model_config`, `model_dump`, `model_validate`).
-- SQLAlchemy estilo 1.x (`Query`, `declarative_base` legacy) en código nuevo.
-- `@app.on_event("startup")` en FastAPI (usa lifespan). Lógica de negocio en signals de Django.
-- Versiones EOL: CPython <3.12 (nuevo), Django <5.2, Node… (ver skill TS). Nada de "ya lo subiremos".
+**List of prohibitions (veto):**
+- `pip install` / `requirements.txt` as the source of truth in a new project (uv + `pyproject` + lock).
+- Publishing/deploying without a lockfile or with unpinned deps.
+- `except Exception: pass` or catches that swallow errors without logging or re-raising.
+- Mutables as argument defaults; mutable global state as "config".
+- Unsafe `pickle`/`eval`/`exec`/`yaml.load` on external data; `subprocess(shell=True)` with input.
+- SQL by concatenation/f-string. MD5/SHA-1 for passwords; home-made crypto.
+- Blocking I/O in async code; legacy `asyncio.get_event_loop()` (use `asyncio.run`/the running loop).
+- Exposing ORM models directly as the API schema.
+- `# type: ignore` / `noqa` without a rule code and without a reason.
+- Tests that depend on order, the public network or `sleep`; mocks of the very code under test.
+- pydantic v1 models (`class Config`, `.dict()`, `.parse_obj`) in new code — v2 API (`model_config`, `model_dump`, `model_validate`).
+- SQLAlchemy 1.x style (`Query`, legacy `declarative_base`) in new code.
+- `@app.on_event("startup")` in FastAPI (use lifespan). Business logic in Django signals.
+- EOL versions: CPython <3.12 (new), Django <5.2, Node… (see the TS skill). No "we'll upgrade it later".
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar versiones o APIs en un proyecto, **verifica online** (WebSearch/WebFetch):
-1. Última estable y calendario EOL de: CPython (python.org/endoflife.date), Django (djangoproject.com — ¿salió 6.1? ¿nueva LTS?), FastAPI, pydantic (**¿ya salió v3?** A 2026-08 no), SQLAlchemy (**¿2.1 ya es final?** A 2026-08 en beta), uv y ruff (releases de astral-sh — ruff 0.16 cambió los defaults y rompe CI sin pin).
-2. Estado de `ty` (Astral): si su conformidad ya lo hace apto como gate de CI, reevalúa pyright.
-3. CVEs recientes del stack elegido (GitHub Advisories / osv.dev) antes de fijar una versión concreta.
-4. Breaking changes del changelog oficial antes de cualquier upgrade mayor — no de memoria, ni de blogs de terceros sin contrastar con la fuente oficial.
+Before pinning versions or APIs in a project, **verify online** (WebSearch/WebFetch):
+1. Latest stable and EOL calendar for: CPython (python.org/endoflife.date), Django (djangoproject.com — did 6.1 ship? a new LTS?), FastAPI, pydantic (**has v3 shipped yet?** As of 2026-08 no), SQLAlchemy (**is 2.1 final yet?** As of 2026-08 in beta), uv and ruff (astral-sh releases — ruff 0.16 changed the defaults and breaks CI without a pin).
+2. Status of `ty` (Astral): if its conformance now makes it fit as a CI gate, re-evaluate pyright.
+3. Recent CVEs in the chosen stack (GitHub Advisories / osv.dev) before pinning a concrete version.
+4. Breaking changes from the official changelog before any major upgrade — not from memory, nor from third-party blogs without checking against the official source.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

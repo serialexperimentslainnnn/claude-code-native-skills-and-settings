@@ -3,275 +3,275 @@ name: email-security-standards
 description: Email as an attack surface and the DNS records that defend it. Use when publishing or auditing SPF (v=spf1, the 10 DNS-lookup limit, +all, chained include, ~all vs -all), DKIM selectors, key length and rotation (selector._domainkey, rsa-sha256, ed25519-sha256), DMARC (_dmarc TXT, p=none/quarantine/reject, sp, np, t, adkim/aspf alignment, rua/ruf, the DMARCbis tree walk and the removal of pct), aggregate and failure report parsing, ARC and mailing-list or forwarding breakage, Authentication-Results headers, MTA-STS (_mta-sts TXT and .well-known/mta-sts.txt), TLS-RPT (_smtp._tls), DANE TLSA for SMTP with DNSSEC, BIMI (default._bimi, VMC/CMC, Mark Verifying Authority), third-party sending providers and the inventory of who sends on your behalf, Gmail/Yahoo/Outlook bulk-sender requirements and one-click unsubscribe (List-Unsubscribe-Post), inbound filtering, attachment and URL isolation, business email compromise and out-of-band payment verification, phishing simulations, or the reported-phish mailbox.
 ---
 
-# Estándares de seguridad del correo electrónico
+# Email security standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **defender el canal de correo**: autenticación del remitente (SPF, DKIM, DMARC) y su
-despliegue completo hasta política de rechazo; inventario de **quién envía en tu nombre**;
-seguridad del transporte (MTA-STS, TLS-RPT, DANE); indicadores de marca (BIMI); política de
-subdominios y de proveedores de envío; interpretación de informes agregados y de fallo;
-supervivencia del correo a listas y reenvíos (ARC); defensa de entrada (filtrado, aislamiento
-de adjuntos y de enlaces, cuarentena, *banners* de origen externo); fraude por compromiso de
-correo corporativo (BEC) y su control de proceso; formación y simulacros; y el buzón de
-denuncia como fuente de señal.
+Applies to **defending the email channel**: sender authentication (SPF, DKIM, DMARC) and its
+full rollout up to a reject policy; the inventory of **who sends on your behalf**;
+transport security (MTA-STS, TLS-RPT, DANE); brand indicators (BIMI); subdomain and
+sending-provider policy; interpretation of aggregate and failure reports;
+survival of email across lists and forwarding (ARC); inbound defence (filtering, isolation
+of attachments and links, quarantine, external-origin *banners*); business email
+compromise fraud (BEC) and its process control; training and simulations; and the reporting
+mailbox as a signal source.
 
 Triggers: `v=spf1`, `_dmarc`, `v=DMARC1`, `p=none`/`p=quarantine`/`p=reject`, `sp=`, `np=`,
 `t=y`, `rua=`/`ruf=`, `adkim`/`aspf`, `pct=`, `selector._domainkey`, `v=DKIM1; k=rsa; p=`,
 `v=ARC1`, `Authentication-Results:`, `ARC-Seal`, `_mta-sts`, `.well-known/mta-sts.txt`,
 `_smtp._tls`, `v=TLSRPTv1`, `_25._tcp` TLSA, `default._bimi`, `v=BIMI1`, VMC/CMC,
 `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, `550 5.7.26`, `dmarcian`/`parsedmarc`,
-`opendkim`/`opendmarc`, `swaks`, "informe agregado", "alineación", "suplantación de dominio",
-"phishing", "BEC", "fraude del CEO", "cambio de cuenta bancaria", "simulacro de phishing".
+`opendkim`/`opendmarc`, `swaks`, "aggregate report", "alignment", "domain spoofing",
+"phishing", "BEC", "CEO fraud", "bank account change", "phishing simulation".
 
-**Principio rector**: el correo es el canal de entrada más usado contra las personas de una
-organización, y **es el único cuya defensa base depende de tres registros DNS que casi nadie
-revisa**. Aquí el criterio es concreto y verificable: o el registro está publicado y
-alineado, o no lo está — se comprueba en 30 segundos con `dig`. Corolario: **DMARC no es un
-proyecto de DNS, es un proyecto de inventario**. El 90 % del trabajo real de llegar a
-`p=reject` es descubrir quién envía en tu nombre (facturación, RR. HH., el CRM, la imprenta,
-aquel plugin) y **la parte que falla no es la técnica, es que nadie tenía esa lista**.
+**Guiding principle**: email is the most used inbound channel against the people of an
+organisation, and **it is the only one whose baseline defence depends on three DNS records that almost
+nobody reviews**. Here the criteria are concrete and verifiable: either the record is published and
+aligned, or it is not — you check it in 30 seconds with `dig`. Corollary: **DMARC is not a
+DNS project, it is an inventory project**. 90 % of the real work of getting to
+`p=reject` is discovering who sends on your behalf (billing, HR, the CRM, the print shop,
+that plugin) and **the part that fails is not the technical one, it is that nobody had that list**.
 
-**No aplica**: la **regla de detección y su contenido analítico** (incluido convertir un
-correo denunciado en detección) son de `detection-engineering-standards`, el **incidente
-confirmado, la contención que preserva evidencia y el forense del buzón** son de
-`incident-response-forensics-standards`, y el **proceso del incidente** —severidad, mando,
-comunicación, postmortem— es de `incident-management-standards`; aquí termina en el momento
-en que hay compromiso confirmado. La **operación de la zona DNS** (delegación, DNSSEC, TTL,
-gestión del registro) es de `dns-standards` —aquí se fija **qué debe contener el registro y
-por qué**—, la **identidad y el acceso al buzón** (MFA, acceso condicional, tokens OAuth,
-revocación de sesión, reglas de reenvío como IoC de cuenta comprometida) son de
-`identity-access-management-standards`, la **criptografía y la PKI** (tamaño de clave, TLS,
-cadenas de certificación, S/MIME) de `cryptography-pki-standards`, el **triaje de CVE** del
-producto de correo de `vulnerability-management-standards`, la **cola, el turno y la métrica
-del SOC** de `soc-operations-standards`, y **el indicador, su caducidad y la inteligencia
-sobre suplantación de marca** de `threat-intelligence-standards`.
-Además: `mail-servers-standards` (**el servidor que implementa estos controles**: Postfix,
-Exim, Dovecot, Rspamd, colas, almacenamiento y reputación de la IP de salida — **aquí la
-política y el contenido del registro, allí el demonio que los aplica**),
-`offensive-security-standards` (**cualquier campaña simulada exige alcance y
-autorización por escrito**; esta skill es **defensiva**), `privacy-engineering-standards`
-(el buzón y sus cabeceras son dato personal: base legal, minimización y retención de los
-simulacros y del archivado), `grc-compliance-standards` (obligación regulatoria de
-notificación y evidencia de auditoría), `networking-standards` y `firewall-policy-standards`
-(salida SMTP, egress y reputación de IP), `observability-standards` (plataforma de
-telemetría), `itsm-itil-standards` (el ticket y el SLA), `macos-fleet-standards` y
-`endpoint-security-standards` (el cliente de correo y lo que pasa
-tras el clic), `ai-governance-standards` y `mlsecops-standards` (si el filtro decide con un
-modelo: gobierno, sesgo y evaluación).
+**Not applicable**: the **detection rule and its analytic content** (including turning a
+reported email into a detection) belong to `detection-engineering-standards`, the **confirmed
+incident, the containment that preserves evidence and mailbox forensics** belong to
+`incident-response-forensics-standards`, and the **incident process** — severity, command,
+communication, postmortem — belongs to `incident-management-standards`; here it ends the moment
+there is confirmed compromise. **DNS zone operation** (delegation, DNSSEC, TTL,
+registrar management) belongs to `dns-standards` — here we set **what the record must contain and
+why** —, **identity and mailbox access** (MFA, conditional access, OAuth tokens,
+session revocation, forwarding rules as an IoC of a compromised account) belong to
+`identity-access-management-standards`, **cryptography and PKI** (key size, TLS,
+certificate chains, S/MIME) to `cryptography-pki-standards`, **CVE triage** of the
+mail product to `vulnerability-management-standards`, **the SOC's queue, shift and metrics**
+to `soc-operations-standards`, and **the indicator, its expiry and intelligence
+about brand impersonation** to `threat-intelligence-standards`.
+Also: `mail-servers-standards` (**the server that implements these controls**: Postfix,
+Exim, Dovecot, Rspamd, queues, storage and outbound IP reputation — **here the
+policy and the content of the record, there the daemon that applies them**),
+`offensive-security-standards` (**any simulated campaign requires written scope and
+authorisation**; this skill is **defensive**), `privacy-engineering-standards`
+(the mailbox and its headers are personal data: legal basis, minimisation and retention of the
+simulations and of archiving), `grc-compliance-standards` (regulatory notification duty
+and audit evidence), `networking-standards` and `firewall-policy-standards`
+(outbound SMTP, egress and IP reputation), `observability-standards` (telemetry
+platform), `itsm-itil-standards` (the ticket and the SLA), `macos-fleet-standards` and
+`endpoint-security-standards` (the mail client and what happens
+after the click), `ai-governance-standards` and `mlsecops-standards` (if the filter decides with a
+model: governance, bias and evaluation).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web el estado de cada RFC y borrador antes de fijarlo en un proyecto (§8).
+> Verify on the web the status of every RFC and draft before pinning it in a project (§8).
 
-| Control | Norma verificada | Decisión por defecto |
+| Control | Verified standard | Default decision |
 |---|---|---|
-| SPF | **RFC 7208**, Proposed Standard (obsoleta RFC 4408; actualizada por 7372, 8553, 8616) | Un único registro `v=spf1`, terminado en `-all`. `~all` solo durante el despliegue |
-| DKIM | **RFC 6376**, Internet Standard (actualizada por 8301, 8463, 8553, 8616) | Firmar siempre. `rsa-sha256` con **≥2048 bits**; `ed25519-sha256` (RFC 8463) en doble firma, nunca solo |
-| DMARC | **RFC 9989** (núcleo) + **RFC 9990** (informe agregado) + **RFC 9991** (informe de fallo), Proposed Standard, may-2026 — **obsoletan RFC 7489 y RFC 9091** | Destino `p=reject` con `rua` activo. `sp` y `np` explícitos |
-| ARC | **RFC 8617**, **Experimental** | Sellar en los intermediarios propios (listas, gateways); **no** confiar en el ARC ajeno sin lista de confianza |
-| Auth-Results | **RFC 8601**, Proposed Standard (obsoleta 7601) | El MTA de borde escribe la cabecera y **borra las falsificadas** que llegan de fuera |
-| MTA-STS | **RFC 8461**, Proposed Standard | `mode: enforce`, `max_age` alto (máximo permitido 31 557 600 s). `testing` solo como paso previo con TLS-RPT activo |
-| TLS-RPT | **RFC 8460**, Proposed Standard | Siempre, y **antes** que MTA-STS/DANE: es la única forma de ver qué rompes |
-| DANE SMTP | **RFC 7672** (TLSA: RFC 6698, act. por 7218, 7671, 8749), Proposed Standard | Solo si **la zona y la de los MX están firmadas con DNSSEC**; si no, MTA-STS |
-| BIMI | **NO es RFC**: `draft-brand-indicators-for-message-identification-14` (may-2026), *Individual Submission*, estado IESG "I-D Exists" | Opcional y **último**. Exige DMARC en `quarantine`/`reject`, logo SVG y **VMC/CMC de pago** emitido por una MVA |
-| Baja de listas | **RFC 8058**, Proposed Standard | `List-Unsubscribe` + `List-Unsubscribe-Post` en todo correo comercial o suscrito |
+| SPF | **RFC 7208**, Proposed Standard (obsoletes RFC 4408; updated by 7372, 8553, 8616) | A single `v=spf1` record, ending in `-all`. `~all` only during rollout |
+| DKIM | **RFC 6376**, Internet Standard (updated by 8301, 8463, 8553, 8616) | Always sign. `rsa-sha256` with **≥2048 bits**; `ed25519-sha256` (RFC 8463) as a dual signature, never alone |
+| DMARC | **RFC 9989** (core) + **RFC 9990** (aggregate report) + **RFC 9991** (failure report), Proposed Standard, May 2026 — **they obsolete RFC 7489 and RFC 9091** | Destination `p=reject` with `rua` active. Explicit `sp` and `np` |
+| ARC | **RFC 8617**, **Experimental** | Seal at your own intermediaries (lists, gateways); do **not** trust someone else's ARC without a trust list |
+| Auth-Results | **RFC 8601**, Proposed Standard (obsoletes 7601) | The edge MTA writes the header and **deletes the forged ones** arriving from outside |
+| MTA-STS | **RFC 8461**, Proposed Standard | `mode: enforce`, high `max_age` (maximum allowed 31,557,600 s). `testing` only as a prior step with TLS-RPT active |
+| TLS-RPT | **RFC 8460**, Proposed Standard | Always, and **before** MTA-STS/DANE: it is the only way to see what you break |
+| DANE SMTP | **RFC 7672** (TLSA: RFC 6698, upd. by 7218, 7671, 8749), Proposed Standard | Only if **your zone and the MXs' zones are signed with DNSSEC**; otherwise, MTA-STS |
+| BIMI | **NOT an RFC**: `draft-brand-indicators-for-message-identification-14` (May 2026), *Individual Submission*, IESG state "I-D Exists" | Optional and **last**. Requires DMARC at `quarantine`/`reject`, an SVG logo and a **paid VMC/CMC** issued by an MVA |
+| List unsubscribe | **RFC 8058**, Proposed Standard | `List-Unsubscribe` + `List-Unsubscribe-Post` in every commercial or subscribed email |
 
-**Lo que cambió con DMARCbis y hay que reescribir** (RFC 9989, verificado en el registro IANA
-del propio documento): `pct`, `rf` y `ri` pasan a **histórico**; se añaden `np` (política para
-subdominios **inexistentes**), `psd` (el dominio es un sufijo público) y **`t` (modo de
-prueba)**. La lista de sufijos públicos (PSL) se sustituye por el **DNS Tree Walk**: hasta
-**8 consultas** ascendiendo por el árbol (si el nombre tiene ≥8 etiquetas, salta a las 7 de la
-derecha). Y el dato que corrige la creencia habitual: **DMARC ya no es Informational del flujo
-independiente — ahora es Proposed Standard del flujo IETF.**
+**What changed with DMARCbis and has to be rewritten** (RFC 9989, verified in the IANA registry
+of the document itself): `pct`, `rf` and `ri` move to **historic**; `np` is added (policy for
+**non-existent** subdomains), `psd` (the domain is a public suffix) and **`t` (test
+mode)**. The public suffix list (PSL) is replaced by the **DNS Tree Walk**: up to
+**8 queries** ascending the tree (if the name has ≥8 labels, it jumps to the rightmost 7).
+And the fact that corrects the usual belief: **DMARC is no longer Informational of the
+independent stream — it is now Proposed Standard of the IETF stream.**
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
 ```dns
-; --- SPF: uno solo, ≤10 términos con consulta DNS, terminado en -all
+; --- SPF: only one, ≤10 terms with a DNS lookup, ending in -all
 example.com.               IN TXT "v=spf1 include:_spf.proveedor.example -all"
-; --- DKIM: un selector por emisor y por rotación; k=rsa p=<clave ≥2048b>
+; --- DKIM: one selector per sender and per rotation; k=rsa p=<key ≥2048b>
 2026q3._domainkey.example.com. IN TXT "v=DKIM1; k=rsa; t=s; p=MIIBIjAN..."
-; --- DMARC: destino final; np=reject se publica desde el día 1
+; --- DMARC: final destination; np=reject is published from day 1
 _dmarc.example.com.        IN TXT "v=DMARC1; p=reject; sp=reject; np=reject; adkim=s; aspf=s; rua=mailto:dmarc@example.com"
-; --- Autorización del destino externo de informes (RFC 9990 §4)
+; --- Authorisation of the external report destination (RFC 9990 §4)
 example.com._report._dmarc.proveedor.example. IN TXT "v=DMARC1"
-; --- Transporte
-_mta-sts.example.com.      IN TXT "v=STSv1; id=20260805T120000Z;"   ; política en https://mta-sts.example.com/.well-known/mta-sts.txt
+; --- Transport
+_mta-sts.example.com.      IN TXT "v=STSv1; id=20260805T120000Z;"   ; policy at https://mta-sts.example.com/.well-known/mta-sts.txt
 _smtp._tls.example.com.    IN TXT "v=TLSRPTv1; rua=mailto:tlsrpt@example.com"
-_25._tcp.mx1.example.com.  IN TLSA 3 1 1 <hash>                      ; solo con DNSSEC
-; --- Subdominio que NO envía: SPF vacío y DMARC de rechazo
+_25._tcp.mx1.example.com.  IN TLSA 3 1 1 <hash>                      ; only with DNSSEC
+; --- Subdomain that does NOT send: empty SPF and reject DMARC
 _dmarc.static.example.com. IN TXT "v=DMARC1; p=reject;"
 static.example.com.        IN TXT "v=spf1 -all"
 ```
 
-- **Un subdominio por caso de uso de envío** (`mkt.`, `facturas.`, `notif.`), cada uno con su
-  SPF y su DKIM. Aísla el fallo de un proveedor y permite `sp` distinto del dominio raíz.
-- **Todo dominio y subdominio que no envía correo publica `v=spf1 -all` y DMARC de rechazo**,
-  incluidos los dominios *parked*, los de campañas viejas y los defensivos.
-- **Alineación estricta (`adkim=s; aspf=s`) es el objetivo**, no el punto de partida: la
-  relajada acepta el subdominio organizacional y es lo que permite que un proveedor
-  comprometido firme por ti. Endurecer **después** de cerrar el inventario.
-- **`np=reject` desde el primer día**: ningún correo legítimo sale de un subdominio que no
-  existe. Coste cero, cubre la suplantación por subdominio inventado.
-- **Selector por emisor y por rotación** (`2026q3._domainkey`), nunca un selector compartido:
-  rotar sin selector nuevo implica una ventana en la que se rompen las firmas en tránsito.
+- **One subdomain per sending use case** (`mkt.`, `invoices.`, `notif.`), each with its own
+  SPF and its own DKIM. It isolates a provider's failure and allows an `sp` different from the root domain's.
+- **Every domain and subdomain that does not send email publishes `v=spf1 -all` and a reject DMARC**,
+  including *parked* domains, old campaign ones and defensive registrations.
+- **Strict alignment (`adkim=s; aspf=s`) is the goal**, not the starting point: the
+  relaxed one accepts the organisational subdomain and it is what allows a compromised
+  provider to sign as you. Tighten **after** closing the inventory.
+- **`np=reject` from day one**: no legitimate email comes from a subdomain that does not
+  exist. Zero cost, it covers impersonation through an invented subdomain.
+- **A selector per sender and per rotation** (`2026q3._domainkey`), never a shared selector:
+  rotating without a new selector implies a window in which in-transit signatures break.
 
-## 4. Verificación y gates
+## 4. Verification and gates
 
-- **El inventario es el entregable, no el registro DNS.** Se construye con `rua` en `p=none`
-  hasta que **todo remitente del informe agregado esté identificado y clasificado** (legítimo
-  autenticado / legítimo sin autenticar / desconocido / suplantador). Sin esa tabla cerrada,
-  subir a `quarantine` corta correo real.
-- **La rampa con DMARCbis ya no es por porcentaje** (`pct` es histórico): se sube publicando
-  `p=quarantine` con **`t=y`** —el receptor no aplica la política pero sí informa— y luego
-  `t=n`. Ojo: `t` **no tiene efecto** cuando la política es `none`.
-- **Gates automáticos** (rompen el build o abren ticket, en orden de coste): (1) `dig` +
-  validador de sintaxis de SPF/DKIM/DMARC/MTA-STS sobre **todos** los dominios del inventario,
-  a diario; (2) **contador de consultas DNS de SPF** — la norma obliga a `permerror` al pasar
-  de **10 términos que consultan** (`include`, `a`, `mx`, `ptr`, `exists`, `redirect`), y
-  recomienda un máximo de **2 *void lookups***, así que el umbral de alarma es 8, no 10;
-  (3) longitud de clave DKIM y algoritmo; (4) caducidad del certificado de la política
-  MTA-STS y del VMC; (5) *diff* del registro DNS contra el esperado (detección de deriva).
-- **Parsear los informes agregados con herramienta, no con la vista**: son XML comprimido, uno
-  por receptor y día (RFC 9990: realimentación **diaria o más frecuente**). Sin agregador no
-  hay despliegue.
-- **Probar el camino de fallo, no solo el feliz**: enviar desde un origen no autorizado y
-  comprobar que el receptor lo rechaza; romper a propósito la política MTA-STS en `testing` y
-  comprobar que llega el informe TLS-RPT.
-- **Auditar el `ruf`** antes de publicarlo: el informe de fallo lleva contenido del mensaje y
-  es **dato personal**; muchos receptores no lo envían y publicarlo sin base legal y sin
-  minimización es un problema de privacidad, no una mejora de seguridad.
+- **The inventory is the deliverable, not the DNS record.** It is built with `rua` at `p=none`
+  until **every sender in the aggregate report is identified and classified** (legitimate
+  authenticated / legitimate unauthenticated / unknown / impersonator). Without that table closed,
+  moving up to `quarantine` cuts real mail.
+- **The ramp with DMARCbis is no longer by percentage** (`pct` is historic): you move up by publishing
+  `p=quarantine` with **`t=y`** — the receiver does not apply the policy but does report — and then
+  `t=n`. Careful: `t` **has no effect** when the policy is `none`.
+- **Automated gates** (they break the build or open a ticket, in order of cost): (1) `dig` +
+  an SPF/DKIM/DMARC/MTA-STS syntax validator over **all** the domains in the inventory,
+  daily; (2) **SPF DNS query counter** — the standard mandates `permerror` on exceeding
+  **10 querying terms** (`include`, `a`, `mx`, `ptr`, `exists`, `redirect`), and
+  recommends a maximum of **2 *void lookups***, so the alarm threshold is 8, not 10;
+  (3) DKIM key length and algorithm; (4) expiry of the MTA-STS policy certificate
+  and of the VMC; (5) a *diff* of the DNS record against the expected one (drift detection).
+- **Parse the aggregate reports with a tool, not by eye**: they are compressed XML, one
+  per receiver per day (RFC 9990: feedback **daily or more frequently**). Without an aggregator there is
+  no rollout.
+- **Test the failure path, not just the happy one**: send from an unauthorised source and
+  check that the receiver rejects it; deliberately break the MTA-STS policy in `testing` and
+  check that the TLS-RPT report arrives.
+- **Audit the `ruf`** before publishing it: the failure report carries message content and
+  is **personal data**; many receivers do not send it and publishing it without a legal basis and without
+  minimisation is a privacy problem, not a security improvement.
 
-## 5. Defensa de entrada, BEC y personas
+## 5. Inbound defence, BEC and people
 
-- **El phishing moderno rara vez trae adjunto malicioso.** Lleva un enlace a una página de
-  recolección de credenciales o a un flujo de consentimiento OAuth, o simplemente **texto**
-  pidiendo una acción. Un programa que solo mide adjuntos bloqueados está midiendo la parte
-  fácil. Los controles que sí importan: reescritura y **detonación de URL en el momento del
-  clic** (no solo en la entrega), aislamiento del adjunto, bloqueo por **tipo real** de
-  fichero y no por extensión, y **cabecera visible de origen externo** en el cliente.
-- **Suplantación por parecido**: DMARC protege **tu** dominio, no protege de `exarnple.com`.
-  Hace falta vigilancia de dominios similares y regla de cuarentena por *display name* que
-  imita a un directivo interno cuando el `From` es externo.
-- **BEC: ningún control técnico lo detiene solo.** El fraude no lleva malware ni enlace, y con
-  frecuencia sale de un buzón **legítimo y comprometido**, así que pasa SPF, DKIM y DMARC. El
-  único control que funciona es de proceso: **verificación fuera de banda obligatoria** —
-  llamada a un número del maestro de proveedores, nunca al del correo— para todo alta o
-  **cambio de cuenta bancaria** y para todo pago por encima de un umbral, con **doble
-  aprobación** y sin excepción por urgencia o jerarquía. La excepción "lo pide el CEO y es
-  urgente" **es** el ataque.
-- **Magnitud, con fuente primaria y su sesgo declarado**: el *Internet Crime Report 2025* del
-  IC3 del FBI registra **24 768 denuncias de BEC y 3 046 598 558 USD** en pérdidas
-  declaradas, segundo por importe tras el fraude de inversión, frente a **32 320 105 USD** en
-  *ransomware*. Metodología y límites, textuales del informe: son **denuncias
-  voluntarias**, mayoritariamente de EE. UU., con posibles duplicados, y la cifra de
-  *ransomware* **"no incluye estimaciones de negocio, tiempo, salarios, ficheros o equipos
-  perdidos"** — por eso no se pueden comparar como si fueran el mismo tipo de dato. Lo que sí
-  sostiene el dato: **el BEC mueve dinero por transferencia directa** (el propio informe cifra
-  en el 86 % la transferencia bancaria/ACH como vía del BEC) y por eso su pérdida directa es
-  desproporcionada frente a su volumen de casos.
-- **Formación y simulacros**: un simulacro mide **la tasa de denuncia**, que es la métrica
-  accionable; la tasa de clic solo mide qué señuelo usaste. Reglas: nunca cebos con salario,
-  despido, bonus o salud; **cero consecuencias individuales** por caer; resultados agregados,
-  nunca *ranking* nominal; y el objetivo declarado es **reducir el tiempo hasta la primera
-  denuncia**. Un programa que castiga produce el peor resultado posible: gente que cae y
-  no lo cuenta.
-- **El buzón de denuncia es una fuente de detección de primer orden** —botón "denunciar" en el
-  cliente, con acuse y respuesta— porque un usuario que denuncia detecta campañas que el
-  filtro dejó pasar. Aquí se define el canal y el compromiso de respuesta; **la regla que se
-  escribe con esa señal es de `detection-engineering-standards`** y la búsqueda y purga
-  retroactiva del mismo mensaje en todos los buzones es contención de incidente.
+- **Modern phishing rarely carries a malicious attachment.** It carries a link to a credential
+  harvesting page or to an OAuth consent flow, or simply **text**
+  asking for an action. A programme that only measures blocked attachments is measuring the
+  easy part. The controls that do matter: URL rewriting and **detonation at click
+  time** (not only at delivery), attachment isolation, blocking by the file's **real
+  type** and not by extension, and a **visible external-origin header** in the client.
+- **Lookalike impersonation**: DMARC protects **your** domain, it does not protect against `exarnple.com`.
+  You need lookalike-domain monitoring and a quarantine rule for a *display name* that
+  imitates an internal executive when the `From` is external.
+- **BEC: no technical control stops it on its own.** The fraud carries no malware and no link, and
+  frequently comes from a **legitimate and compromised** mailbox, so it passes SPF, DKIM and DMARC. The
+  only control that works is a process one: **mandatory out-of-band verification** —
+  a call to a number from the supplier master, never to the one in the email — for every onboarding or
+  **bank account change** and for every payment above a threshold, with **dual
+  approval** and no exception for urgency or hierarchy. The exception "the CEO is asking and it is
+  urgent" **is** the attack.
+- **Magnitude, with a primary source and its declared bias**: the FBI IC3's *Internet Crime Report 2025*
+  records **24,768 BEC complaints and 3,046,598,558 USD** in reported
+  losses, second by amount after investment fraud, against **32,320,105 USD** in
+  *ransomware*. Methodology and limits, verbatim from the report: they are **voluntary
+  complaints**, mostly from the US, with possible duplicates, and the *ransomware*
+  figure **"does not include estimates from lost business, time, wages, files, or equipment"**
+  — which is why they cannot be compared as if they were the same type of data. What the data does
+  support: **BEC moves money by direct transfer** (the report itself puts
+  wire/ACH transfer at 86 % as the BEC route) and that is why its direct loss is
+  disproportionate to its case volume.
+- **Training and simulations**: a simulation measures **the reporting rate**, which is the actionable
+  metric; the click rate only measures which lure you used. Rules: never lures involving salary,
+  dismissal, bonus or health; **zero individual consequences** for falling for it; aggregate results,
+  never a named *ranking*; and the declared objective is **reducing the time to the first
+  report**. A programme that punishes produces the worst possible outcome: people who fall for it and
+  do not tell anyone.
+- **The reporting mailbox is a first-order detection source** — a "report" button in the
+  client, with acknowledgement and a response — because a user who reports detects campaigns the
+  filter let through. Here the channel and the response commitment are defined; **the rule
+  written from that signal belongs to `detection-engineering-standards`** and the retroactive search
+  and purge of the same message across all mailboxes is incident containment.
 
-## 6. Salida, terceros y operabilidad
+## 6. Outbound, third parties and operability
 
-- **Inventario vivo de remitentes autorizados**, con dueño de negocio, subdominio asignado,
-  método de autenticación y fecha de revisión. **Alta de proveedor = entrada en el inventario
-  + subdominio + DKIM propio**; si no cabe en el SPF, cabe en un subdominio delegado.
-- **El SPF encadenado se rompe solo**: cada `include:` de un SaaS arrastra los suyos y el
-  presupuesto de 10 consultas se agota sin avisar. Ante el límite: aplanar **no** (rompe
-  cuando el proveedor cambia de IP), delegar por subdominio **sí**, y priorizar **DKIM**, que
-  no consume presupuesto DNS y sobrevive al reenvío.
-- **Requisitos de los grandes buzones** (verificado en la fuente de Google): desde el
-  **1-feb-2024**, todo remitente a Gmail necesita **SPF o DKIM**, DNS directo e inverso (PTR)
-  válidos, conexión **TLS**, formato RFC 5322 y **tasa de spam <0,3 %** en Postmaster Tools;
-  quien envía **>5000 mensajes/día** necesita **SPF y DKIM**, **DMARC** (la política puede ser
-  `p=none`), **alineación** del `From` con SPF o DKIM y **baja en un clic** más enlace visible.
-  Guía adicional de Google: mantenerse **por debajo del 0,10 %** y no llegar nunca al 0,30 %.
-- **Listas y reenvíos rompen SPF siempre y DKIM cuando el intermediario modifica el mensaje**
-  (asunto con prefijo, pie añadido). Mitigación por orden: no modificar el cuerpo, reescribir
-  el `From` a un dominio de la lista (`From` rewriting), y **ARC** para que el receptor final
-  pueda evaluar la autenticación previa — recordando que ARC es **Experimental** y solo sirve
-  si el receptor confía en ese sellador.
-- **Operabilidad**: alertar por **caída del volumen de informes agregados** (indica registro
-  roto o zona mal publicada), por aparición de un remitente desconocido con volumen, por
-  cambio de la política MTA-STS y por fallo de validación TLS en TLS-RPT. Ensayar la rotación
-  de clave DKIM antes de necesitarla.
+- **A live inventory of authorised senders**, with a business owner, assigned subdomain,
+  authentication method and review date. **Onboarding a provider = an entry in the inventory
+  + a subdomain + its own DKIM**; if it does not fit in the SPF, it fits in a delegated subdomain.
+- **Chained SPF breaks by itself**: every SaaS `include:` drags in its own and the
+  budget of 10 lookups runs out without warning. Faced with the limit: flattening **no** (it breaks
+  when the provider changes IPs), delegating by subdomain **yes**, and prioritising **DKIM**, which
+  does not consume the DNS budget and survives forwarding.
+- **Requirements of the large mailbox providers** (verified in Google's source): since
+  **1-Feb-2024**, every sender to Gmail needs **SPF or DKIM**, valid forward and reverse DNS (PTR),
+  a **TLS** connection, RFC 5322 format and a **spam rate <0.3 %** in Postmaster Tools;
+  anyone sending **>5000 messages/day** needs **SPF and DKIM**, **DMARC** (the policy may be
+  `p=none`), **alignment** of the `From` with SPF or DKIM and **one-click unsubscribe** plus a visible link.
+  Additional Google guidance: stay **below 0.10 %** and never reach 0.30 %.
+- **Lists and forwarding always break SPF, and DKIM when the intermediary modifies the message**
+  (a prefixed subject, an added footer). Mitigation in order: do not modify the body, rewrite
+  the `From` to a list domain (`From` rewriting), and **ARC** so the final receiver
+  can evaluate the previous authentication — remembering that ARC is **Experimental** and only helps
+  if the receiver trusts that sealer.
+- **Operability**: alert on **a drop in aggregate report volume** (it indicates a broken record
+  or a badly published zone), on the appearance of an unknown sender with volume, on
+  a change to the MTA-STS policy and on TLS validation failures in TLS-RPT. Rehearse DKIM key
+  rotation before you need it.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-Revisión trimestral del inventario de remitentes y del registro DNS; rotación de claves DKIM
-al menos anual con selector nuevo; revisión del estado de los borradores (BIMI, DKIM2) en cada
-ciclo. Todo cambio de registro, versionado en el repositorio de la zona.
+Quarterly review of the sender inventory and of the DNS record; DKIM key rotation
+at least annually with a new selector; review of the status of the drafts (BIMI, DKIM2) every
+cycle. Every record change versioned in the zone repository.
 
-- ❌ **Dejar DMARC en `p=none` indefinidamente.** `p=none` no protege de nada: es solo el
-  instrumento de medida. Sin fecha de salida acordada, el proyecto está muerto y publicado.
-- ❌ **`+all` en SPF** — autoriza a todo internet a enviar en tu nombre. Igual de vetados
-  `?all` en producción y un segundo registro `v=spf1` en el mismo nombre (`permerror`).
-- ❌ Publicar **DKIM con clave <2048 bits**. RFC 8301 obliga a ≥1024 y **prohíbe** a los
-  verificadores dar por válida una firma con menos; 1024 es el mínimo legal, no el criterio.
-- ❌ **`rsa-sha1`**: RFC 8301 lo prohíbe explícitamente para firmar y para verificar.
-- ❌ **Añadir un proveedor de envío sin inventariarlo.** Es la causa número uno de que un
-  despliegue de DMARC corte correo legítimo meses después.
-- ❌ **Aplanar el SPF** expandiendo las IP de un tercero para esquivar el límite de 10.
-  Rompe silenciosamente el día que el proveedor cambia de rango.
-- ❌ Medir la formación por **tasa de clic** y nada más, publicar *rankings* nominales o
-  aplicar consecuencias disciplinarias por caer en un simulacro.
-- ❌ Usar cebos de **salario, despido, bonus, salud o emergencia familiar** en un simulacro.
-- ❌ Autorizar un **pago o cambio de cuenta bancaria** con verificación por el mismo hilo de
-  correo, o con el teléfono que aparece en ese correo.
-- ❌ Publicar `ruf` con destino externo **sin base legal, sin minimización y sin autorización
-  `_report._dmarc`** del dominio receptor.
-- ❌ **DANE sin DNSSEC** en tu zona y en la de los MX: sin firma la validación no aporta nada.
-- ❌ Poner **MTA-STS en `enforce` sin haber pasado por `testing` con TLS-RPT activo**, o
-  publicar `max_age` de horas "por si acaso" — anula la protección contra el ataque de
-  degradación.
-- ❌ Tratar **BIMI como control de seguridad**: es marca. Y comprar un VMC antes de estar en
-  `p=reject` es dinero adelantado sobre trabajo no hecho.
-- ❌ Confiar en cabeceras `Authentication-Results` o sellos **ARC de origen externo** sin lista
-  explícita de intermediarios de confianza: son texto que cualquiera puede escribir.
-- ❌ Lanzar una **campaña simulada de phishing sin alcance y autorización por escrito**
-  (ver `offensive-security-standards`) o sin avisar al SOC (*deconfliction*).
+- ❌ **Leaving DMARC at `p=none` indefinitely.** `p=none` protects against nothing: it is only the
+  measuring instrument. Without an agreed exit date, the project is dead and published.
+- ❌ **`+all` in SPF** — it authorises the whole internet to send on your behalf. Equally vetoed are
+  `?all` in production and a second `v=spf1` record on the same name (`permerror`).
+- ❌ Publishing **DKIM with a key <2048 bits**. RFC 8301 requires ≥1024 and **forbids**
+  verifiers from treating a signature with less as valid; 1024 is the legal minimum, not the criteria.
+- ❌ **`rsa-sha1`**: RFC 8301 explicitly forbids it for signing and for verifying.
+- ❌ **Adding a sending provider without inventorying it.** It is the number one cause of a
+  DMARC rollout cutting legitimate mail months later.
+- ❌ **Flattening the SPF** by expanding a third party's IPs to dodge the limit of 10.
+  It breaks silently the day the provider changes range.
+- ❌ Measuring training by **click rate** and nothing else, publishing named *rankings* or
+  applying disciplinary consequences for falling for a simulation.
+- ❌ Using **salary, dismissal, bonus, health or family emergency** lures in a simulation.
+- ❌ Authorising a **payment or bank account change** with verification through the same email
+  thread, or with the phone number that appears in that email.
+- ❌ Publishing `ruf` with an external destination **without a legal basis, without minimisation and without
+  `_report._dmarc` authorisation** from the receiving domain.
+- ❌ **DANE without DNSSEC** in your zone and in the MXs': without signing, validation adds nothing.
+- ❌ Putting **MTA-STS in `enforce` without having gone through `testing` with TLS-RPT active**, or
+  publishing a `max_age` of hours "just in case" — it nullifies the protection against the
+  downgrade attack.
+- ❌ Treating **BIMI as a security control**: it is branding. And buying a VMC before being at
+  `p=reject` is money paid up front for work not done.
+- ❌ Trusting `Authentication-Results` headers or **externally originated ARC** seals without an explicit
+  list of trusted intermediaries: they are text anybody can write.
+- ❌ Launching a **simulated phishing campaign without written scope and authorisation**
+  (see `offensive-security-standards`) or without notifying the SOC (*deconfliction*).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-1. **Cada RFC, uno a uno, en `rfc-editor.org`**, comprobando `obsoleted-by` y no solo el
-   número: SPF **7208**, DKIM **6376** (+8301, +8463), DMARC **9989/9990/9991** (que
-   **obsoletan 7489 y 9091** — casi toda la literatura sigue citando 7489), ARC **8617**,
+1. **Every RFC, one by one, at `rfc-editor.org`**, checking `obsoleted-by` and not just the
+   number: SPF **7208**, DKIM **6376** (+8301, +8463), DMARC **9989/9990/9991** (which
+   **obsolete 7489 and 9091** — almost all the literature still cites 7489), ARC **8617**,
    MTA-STS **8461**, TLS-RPT **8460**, DANE-SMTP **7672** (TLSA **6698**), Auth-Results
-   **8601**, baja en un clic **8058**.
-2. **Estado de BIMI**: sigue siendo *Internet-Draft* individual, no RFC. Comprobar revisión y
-   caducidad en `datatracker.ietf.org` antes de citarlo como norma.
-3. **Discrepancia declarada**: el borrador BIMI rev. 14 (may-2026) referencia normativamente
-   **RFC 7489 y el tag `pct`**, que **RFC 9989 (may-2026) declara histórico**. Hasta que se
-   actualice, la condición "quarantine con `pct=100`" no tiene equivalente literal en DMARCbis;
-   interpretarla como "quarantine sin modo de prueba (`t=n`)" y **confirmar con el receptor**.
-4. **Trabajo de DKIM2 en el IETF** (grupo `dkim`, borradores `draft-ietf-dkim-dkim2-*`): es
-   trabajo en curso, **no hay RFC**. No diseñar contra él todavía.
-5. **Requisitos de los grandes buzones**, que cambian sin previo aviso: Google (verificado),
-   Yahoo y Microsoft. **Hueco declarado**: no se ha podido confirmar contra fuente primaria
-   accesible el umbral y la fecha exacta de aplicación de los requisitos de Microsoft para
-   remitentes de alto volumen a dominios de consumo (la página de Microsoft no sirve contenido
-   sin JavaScript). **Verificar antes de citarla**; no dar por buena la cifra de un blog.
-6. **Cifras descartadas por falta de metodología pública**: "el 90 % de los ciberataques
-   empieza por correo", "el 95 % de las brechas son error humano", el coste medio de una
-   brecha y las tasas de detección de cualquier fabricante de correo seguro. Si la fuente es
-   un proveedor que vende el control que la cifra justifica y no publica método ni muestra,
-   **no se usa**. Fuentes con metodología declarada: IC3/FBI (denuncias voluntarias, sesgo
-   EE. UU.), ENISA, CISA, y los informes de los operadores de buzón sobre su propio tráfico.
-7. Estado de los validadores y agregadores que se recomienden (licencia y mantenimiento) antes
-   de fijar herramienta.
+   **8601**, one-click unsubscribe **8058**.
+2. **BIMI status**: it is still an individual *Internet-Draft*, not an RFC. Check the revision and
+   its expiry at `datatracker.ietf.org` before citing it as a standard.
+3. **Declared discrepancy**: the BIMI draft rev. 14 (May 2026) normatively references
+   **RFC 7489 and the `pct` tag**, which **RFC 9989 (May 2026) declares historic**. Until it is
+   updated, the condition "quarantine with `pct=100`" has no literal equivalent in DMARCbis;
+   interpret it as "quarantine without test mode (`t=n`)" and **confirm with the receiver**.
+4. **DKIM2 work at the IETF** (`dkim` working group, `draft-ietf-dkim-dkim2-*` drafts): it is
+   work in progress, **there is no RFC**. Do not design against it yet.
+5. **Requirements of the large mailbox providers**, which change without notice: Google (verified),
+   Yahoo and Microsoft. **Declared gap**: it has not been possible to confirm against an accessible
+   primary source the threshold and the exact enforcement date of Microsoft's requirements for
+   high-volume senders to consumer domains (Microsoft's page does not serve content
+   without JavaScript). **Verify before citing it**; do not take a blog's figure on faith.
+6. **Figures discarded for lack of public methodology**: "90 % of cyberattacks
+   start with email", "95 % of breaches are human error", the average cost of a
+   breach and the detection rates of any secure email vendor. If the source is
+   a provider selling the control the figure justifies and it publishes neither method nor sample,
+   **it is not used**. Sources with a declared methodology: IC3/FBI (voluntary complaints, US
+   bias), ENISA, CISA, and the mailbox operators' reports on their own traffic.
+7. The status of the validators and aggregators being recommended (licence and maintenance) before
+   pinning a tool.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

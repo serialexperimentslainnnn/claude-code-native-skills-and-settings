@@ -3,383 +3,383 @@ name: cloud-security-posture-standards
 description: Cloud security posture as a transversal discipline across AWS, Azure and Google Cloud at once — what the per-provider skills cannot answer. Use when deciding what CSPM, CWPP, CIEM and CNAPP actually mean and which problem each one solves, choosing between open tooling (Prowler, ScoutSuite, CloudSploit, Steampipe and Powerpipe mods, Cartography, Cloud Custodian, Checkov, Conftest) and a commercial posture suite, running a CIS Foundations Benchmark assessment across several accounts, subscriptions or projects at once, building a multi-account or multi-tenant baseline and landing-zone guardrails, preferring preventive policy-as-code in the pipeline and in admission over after-the-fact findings, measuring effective permissions versus granted permissions and hunting wildcard or unused entitlements that no vulnerability scanner will ever report, replacing a flat list of findings with attack-path or toxic-combination analysis, inventorying internet-exposed resources, reconciling declared infrastructure against what actually exists (posture drift), replacing static long-lived cloud access keys with workload identity and OIDC federation, scoping the posture tool's own reader role so it cannot read every secret in the estate, or writing the buy-versus-build criterion for posture tooling.
 ---
 
-# Estándares de postura de seguridad en la nube (CSPM/CNAPP)
+# Cloud security posture standards (CSPM/CNAPP)
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **la seguridad de la nube vista desde arriba y a la vez en los tres proveedores**: qué
-significa cada sigla del mercado y qué problema resuelve, cómo se establece y se mide una línea
-base sobre decenas de cuentas/suscripciones/proyectos, cómo se pone la barrera **antes** (política
-como código en el pipeline y en la admisión) en vez de contar hallazgos después, cómo se mide el
-**permiso efectivo** frente al concedido, cómo se pasa de una lista de hallazgos a **caminos de
-ataque**, cómo se inventaría lo expuesto a Internet, cómo se detecta la deriva entre lo declarado
-en IaC y lo real, y con qué criterio se compra o se construye la herramienta.
+Applies to **cloud security seen from above and across all three providers at once**: what
+each acronym in the market means and which problem it solves, how a baseline is established and measured
+over dozens of accounts/subscriptions/projects, how the barrier is placed **beforehand** (policy
+as code in the pipeline and in admission) instead of counting findings afterwards, how the
+**effective permission** is measured against the granted one, how you go from a list of findings to **attack
+paths**, how what is exposed to the Internet is inventoried, how the drift between what is declared
+in IaC and what is real is detected, and with what criteria the tool is bought or built.
 
-Triggers: "CSPM", "CWPP", "CIEM", "CNAPP", "KSPM", "DSPM", "postura de seguridad en la nube",
-"benchmark CIS de la nube", `prowler`, `prowler aws|azure|gcp|kubernetes`, `scout aws`,
+Triggers: "CSPM", "CWPP", "CIEM", "CNAPP", "KSPM", "DSPM", "cloud security posture",
+"cloud CIS benchmark", `prowler`, `prowler aws|azure|gcp|kubernetes`, `scout aws`,
 `cloudsploit`, `steampipe query`, `powerpipe benchmark run`, `cartography`, `custodian run`,
-`checkov -d`, `conftest test`, "landing zone", "guardrail", "baseline multi-cuenta",
-"permisos efectivos", "permisos sin usar", "rol con comodín", `"Action": "*"`, "Owner en la
-suscripción", `roles/owner`, "camino de ataque", "combinación tóxica", "recurso expuesto a
-Internet", "bucket público", "deriva de configuración", "clave estática de acceso", "federación
-OIDC del pipeline", "¿qué CNAPP compramos?".
+`checkov -d`, `conftest test`, "landing zone", "guardrail", "multi-account baseline",
+"effective permissions", "unused permissions", "wildcard role", `"Action": "*"`, "Owner on the
+subscription", `roles/owner`, "attack path", "toxic combination", "internet-exposed
+resource", "public bucket", "configuration drift", "static access key", "pipeline OIDC
+federation", "which CNAPP do we buy?".
 
-**Principio rector**: **en la nube el fallo dominante no es el exploit, es la configuración y el
-permiso.** El plano de control es una API pública autenticada; quien tiene la credencial o el rol
-adecuado no necesita explotar nada. Corolarios que ordenan el documento:
+**Guiding principle**: **in the cloud the dominant failure is not the exploit, it is the configuration and the
+permission.** The control plane is an authenticated public API; whoever has the right credential or role
+does not need to exploit anything. Corollaries that order the document:
 
-1. **Un rol con `*:*` no es una vulnerabilidad para ningún escáner** — no tiene CVE, no tiene CVSS
-   y no aparece en `vulnerability-management`. Es el hallazgo real y hay que buscarlo con otra
-   herramienta y otro modelo de datos (§3.3).
-2. **Prevenir es más barato que detectar.** Un `deny` en la admisión cuesta una política; el mismo
-   fallo detectado en producción cuesta un ticket, una ventana de cambio, un dueño que discute y
-   una excepción que sobrevive tres años (§3.2).
-3. **Una lista de 12.000 hallazgos no es postura, es un vertedero.** Lo que decide es el camino:
-   qué expuesto llega a qué identidad y de ahí a qué dato (§3.4).
-4. **El agente que audita es un usuario privilegiado más** (§5). Un rol "de solo lectura" que puede
-   leer todos los secretos es un rol de administrador con otro nombre.
+1. **A role with `*:*` is not a vulnerability for any scanner** — it has no CVE, no CVSS
+   and it does not show up in `vulnerability-management`. It is the real finding and it must be hunted with another
+   tool and another data model (§3.3).
+2. **Preventing is cheaper than detecting.** A `deny` in admission costs a policy; the same
+   failure detected in production costs a ticket, a change window, an owner who argues and
+   an exception that survives three years (§3.2).
+3. **A list of 12,000 findings is not posture, it is a landfill.** What decides is the path:
+   which exposed thing reaches which identity and from there which data (§3.4).
+4. **The agent that audits is one more privileged user** (§5). A "read-only" role that can
+   read every secret is an administrator role by another name.
 
-**Postura defensiva y autorizada.** Todo lo de aquí se ejecuta sobre entornos propios o con
-autorización escrita. Este documento no contiene explotación: describe **clase de riesgo,
-evidencia y control**.
+**Defensive and authorised posture.** Everything here is run on your own environments or with
+written authorisation. This document contains no exploitation: it describes **risk class,
+evidence and control**.
 
-**No aplica**: ver `aws-standards`, `azure-standards` y `gcp-standards` (**el servicio concreto y
-su configuración segura son suyos, sin excepción**: qué servicio elegir, qué flag activar, qué
-producto de hallazgos gestionado usar y qué cuesta. **Aquí lo transversal**: el criterio que no
-cambia al cambiar de proveedor —qué sigla resuelve qué, cómo se mide el permiso efectivo, cómo se
-prioriza por camino de ataque, qué baseline se exige en las tres— y el problema **multi-nube**,
-que ninguna de las tres puede resolver desde dentro. Regla de arbitraje: *si la respuesta cambia
-al cambiar de proveedor, es suya; si es la misma en los tres, es de aquí*), `iac-standards` (**el
-código que crea el recurso**: módulos, state, backend, y el escáner de IaC como herramienta —
-aquí, la deriva entre ese código y la realidad, y por qué la política tiene que existir también
-fuera del pipeline), `kubernetes-standards` (**el clúster y su admisión**: Kyverno/Gatekeeper, Pod
-Security Standards, manifiestos; el KSPM que venden dentro de un CNAPP es su terreno),
-`container-runtime-security-standards` (**el contenedor ya corriendo**: seccomp, escape, Falco —
-el "CWPP en runtime" de las suites es suyo), `detection-engineering-standards` (**la regla de
-detección sobre el log del plano de control es suya, sin excepción**; aquí solo qué configuración
-y qué permiso importan y por qué), `soc-operations-standards` (turno, cola y triaje de lo que
-genere la herramienta), `incident-response-forensics-standards` (el compromiso ya confirmado en
-la nube y su adquisición), `identity-access-management-standards` (**el diseño de la identidad**:
-IdP, SSO, MFA, ciclo joiner-mover-leaver, motores de autorización, SPIFFE; aquí solo la **medición
-del derecho efectivo** sobre recursos de nube y la sustitución de la clave estática por
-federación), `identity-threat-detection-standards` (**hermana**: el **ataque** contra esa
-identidad, su detección y su respuesta — aquí el permiso mal puesto en frío, allí el token robado
-en caliente), `vulnerability-management-standards` (**CVE, CVSS/EPSS/KEV y SLA de remediación**:
-la carga de trabajo vulnerable se triaja allí; aquí por qué el permiso excesivo nunca entra en ese
-embudo), `appsec-standards` (el fallo en el código de la aplicación), `secrets-management-standards`
-(custodia y rotación del secreto; aquí solo quién puede leerlo), `cicd-standards` (el pipeline y su
-OIDC), `grc-compliance-standards` (**el marco, el SoA y la evidencia de auditoría son suyos**: aquí
-el benchmark como control técnico medible, no como informe de cumplimiento),
-`finops-standards` (coste de la herramienta y de la ingesta), `privacy-engineering-standards`
-(el dato personal dentro del bucket que se declara expuesto), `platform-engineering-standards`
-(el camino pavimentado que hace que el guardrail no duela), `datacenter-facilities-standards`
-(el mundo físico, que aquí no existe).
+**Not applicable**: see `aws-standards`, `azure-standards` and `gcp-standards` (**the specific service and
+its secure configuration are theirs, without exception**: which service to choose, which flag to enable, which
+managed findings product to use and what it costs. **Here the transversal part**: the criteria that do not
+change when you change provider —which acronym solves what, how effective permission is measured, how you
+prioritise by attack path, which baseline is required in all three— and the **multi-cloud** problem,
+which none of the three can solve from the inside. Arbitration rule: *if the answer changes
+when you change provider, it is theirs; if it is the same in all three, it belongs here*), `iac-standards` (**the
+code that creates the resource**: modules, state, backend, and the IaC scanner as a tool —
+here, the drift between that code and reality, and why the policy must also exist
+outside the pipeline), `kubernetes-standards` (**the cluster and its admission**: Kyverno/Gatekeeper, Pod
+Security Standards, manifests; the KSPM sold inside a CNAPP is their turf),
+`container-runtime-security-standards` (**the container already running**: seccomp, escape, Falco —
+the suites' "runtime CWPP" is theirs), `detection-engineering-standards` (**the detection
+rule over the control-plane log is theirs, without exception**; here only which configuration
+and which permission matter and why), `soc-operations-standards` (shift, queue and triage of whatever
+the tool generates), `incident-response-forensics-standards` (the already-confirmed compromise in
+the cloud and its acquisition), `identity-access-management-standards` (**the design of identity**:
+IdP, SSO, MFA, joiner-mover-leaver lifecycle, authorisation engines, SPIFFE; here only the **measurement
+of the effective entitlement** over cloud resources and the replacement of the static key with
+federation), `identity-threat-detection-standards` (**sister skill**: the **attack** against that
+identity, its detection and its response — here the badly set permission in the cold, there the stolen token
+in the heat), `vulnerability-management-standards` (**CVE, CVSS/EPSS/KEV and remediation SLAs**:
+the vulnerable workload is triaged there; here why excessive permission never enters that
+funnel), `appsec-standards` (the flaw in the application code), `secrets-management-standards`
+(custody and rotation of the secret; here only who can read it), `cicd-standards` (the pipeline and its
+OIDC), `grc-compliance-standards` (**the framework, the SoA and the audit evidence are theirs**: here
+the benchmark as a measurable technical control, not as a compliance report),
+`finops-standards` (cost of the tool and of the ingestion), `privacy-engineering-standards`
+(the personal data inside the bucket declared as exposed), `platform-engineering-standards`
+(the paved road that makes the guardrail painless), `datacenter-facilities-standards`
+(the physical world, which does not exist here).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-**Licencias leídas verbatim del `LICENSE` del repositorio (agosto 2026)** — no de la web ni de
-memoria. Este punto ha producido errores caros en el catálogo:
+**Licences read verbatim from the repository's `LICENSE` (August 2026)** — not from the web nor from
+memory. This point has produced expensive errors in the catalogue:
 
-| Herramienta | Rol | Última vista (ago-2026) | Licencia (verbatim del `LICENSE`) |
+| Tool | Role | Last seen (Aug 2026) | Licence (verbatim from `LICENSE`) |
 |---|---|---|---|
-| **Prowler** (`prowler-cloud/prowler`) | Evaluación de benchmarks multi-nube y multi-cuenta | `5.37.1` | **Apache-2.0** |
-| **ScoutSuite** (`nccgroup/ScoutSuite`) | Informe de postura por proveedor, salida HTML | `5.14.0` (2024-05-10) | **GPL-2.0** ⚠️ copyleft |
-| **CloudSploit** (`aquasecurity/cloudsploit`) | Checks de configuración | ver §8 | **GPL-3.0** ⚠️ copyleft |
-| **Steampipe** (`turbot/steampipe`) | Nube como SQL: inventario y consulta ad hoc | `v2.4.4` | **AGPL-3.0** ⚠️ copyleft de red |
-| **Powerpipe** (`turbot/powerpipe`) | Benchmarks y dashboards sobre Steampipe | `v1.5.2` | **AGPL-3.0** ⚠️ copyleft de red |
-| **Cartography** (`cartography-cncf/cartography`) | Grafo de activos y relaciones en Neo4j | `0.139.1` | **Apache-2.0** |
-| **Cloud Custodian** (`cloud-custodian`) | Política + **remediación** como código | ver §8 | **Apache-2.0** |
-| **Checkov** (`bridgecrewio/checkov`) | Política sobre IaC antes del `apply` | `3.3.9` | **Apache-2.0** |
-| **OPA / Conftest** | Política genérica y gate en CI | ver §8 | **Apache-2.0** |
+| **Prowler** (`prowler-cloud/prowler`) | Multi-cloud, multi-account benchmark assessment | `5.37.1` | **Apache-2.0** |
+| **ScoutSuite** (`nccgroup/ScoutSuite`) | Per-provider posture report, HTML output | `5.14.0` (2024-05-10) | **GPL-2.0** ⚠️ copyleft |
+| **CloudSploit** (`aquasecurity/cloudsploit`) | Configuration checks | see §8 | **GPL-3.0** ⚠️ copyleft |
+| **Steampipe** (`turbot/steampipe`) | Cloud as SQL: inventory and ad-hoc querying | `v2.4.4` | **AGPL-3.0** ⚠️ network copyleft |
+| **Powerpipe** (`turbot/powerpipe`) | Benchmarks and dashboards over Steampipe | `v1.5.2` | **AGPL-3.0** ⚠️ network copyleft |
+| **Cartography** (`cartography-cncf/cartography`) | Graph of assets and relationships in Neo4j | `0.139.1` | **Apache-2.0** |
+| **Cloud Custodian** (`cloud-custodian`) | Policy + **remediation** as code | see §8 | **Apache-2.0** |
+| **Checkov** (`bridgecrewio/checkov`) | Policy over IaC before the `apply` | `3.3.9` | **Apache-2.0** |
+| **OPA / Conftest** | Generic policy and CI gate | see §8 | **Apache-2.0** |
 
-Notas que cambian decisiones, no adorno:
-- **AGPL-3.0 en Steampipe y Powerpipe**: si se ofrece un dashboard de postura **como servicio** a
-  terceros, la AGPL activa su cláusula de red. Uso interno no la activa. Decidir con
-  `opensource-licensing-standards`, no aquí, pero **no asumir "es open source, da igual"**.
-- **GPL-2.0 en ScoutSuite y GPL-3.0 en CloudSploit**: incompatibles con integrarlos dentro de un
-  producto propietario. Ejecutarlos como herramienta externa y consumir su salida no es derivar.
-- **ScoutSuite lleva sin release desde 2024-05-10** (verificado en la API de releases). No es
-  descalificante para un uso puntual, pero **una cobertura de servicios congelada en 2024 miente
-  por omisión** sobre todo lo que el proveedor ha publicado después. Verificar actividad del
-  repositorio antes de apoyarse en él (§8).
+Notes that change decisions, not decoration:
+- **AGPL-3.0 in Steampipe and Powerpipe**: if a posture dashboard is offered **as a service** to
+  third parties, the AGPL triggers its network clause. Internal use does not trigger it. Decide with
+  `opensource-licensing-standards`, not here, but **do not assume "it is open source, it does not matter"**.
+- **GPL-2.0 in ScoutSuite and GPL-3.0 in CloudSploit**: incompatible with embedding them inside a
+  proprietary product. Running them as an external tool and consuming their output is not deriving.
+- **ScoutSuite has had no release since 2024-05-10** (verified in the releases API). It is not
+  disqualifying for one-off use, but **service coverage frozen in 2024 lies by omission**
+  about everything the provider has released since. Verify the repository's activity
+  before relying on it (§8).
 
-Decisiones por defecto:
+Default decisions:
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Primer paso en un entorno desconocido | **Prowler** contra las tres nubes con el perfil CIS, en modo lectura | ScoutSuite si se quiere informe navegable de un solo proveedor |
-| Inventario y preguntas cruzadas | **Steampipe/Powerpipe** (SQL) o **Cartography** (grafo) | El inventario nativo del proveedor si no hay multi-nube |
-| Camino de ataque | **Cartography** + consultas Cypher propias | Suite comercial si el grafo tiene que cubrir identidad + vulnerabilidad + dato |
-| Prevención | **Checkov/Conftest en el pipeline** + política nativa del proveedor en el plano de control | Solo pipeline, únicamente si el `apply` es el **único** camino a producción — y casi nunca lo es |
-| Remediación automática | **Cloud Custodian** en modo `--dryrun` primero, y solo para clases acotadas | Ninguna: notificar al dueño (por defecto para todo lo que pueda cortar un servicio) |
-| Autenticación de la herramienta | **Rol asumible / workload identity con federación OIDC** | Nunca clave estática de larga vida (§5) |
+| First step in an unknown environment | **Prowler** against all three clouds with the CIS profile, in read mode | ScoutSuite if a browsable single-provider report is wanted |
+| Inventory and cross-cutting questions | **Steampipe/Powerpipe** (SQL) or **Cartography** (graph) | The provider's native inventory if there is no multi-cloud |
+| Attack path | **Cartography** + your own Cypher queries | A commercial suite if the graph has to cover identity + vulnerability + data |
+| Prevention | **Checkov/Conftest in the pipeline** + the provider's native policy in the control plane | Pipeline only, solely if the `apply` is the **only** road to production — and it almost never is |
+| Automatic remediation | **Cloud Custodian** in `--dryrun` mode first, and only for bounded classes | None: notify the owner (the default for anything that could take a service down) |
+| Tool authentication | **Assumable role / workload identity with OIDC federation** | Never a long-lived static key (§5) |
 
-**Criterio de compra (build vs. buy), en una línea por eje**: la herramienta abierta te da
-**checks**; la suite comercial te vende **correlación**. Si tu problema es "no sé qué tengo", lo
-abierto sobra. Si tu problema es "tengo 40.000 hallazgos y no sé cuál mata", lo que compras es
-priorización por camino de ataque, y **eso es exactamente lo que hay que probar en la PoC con tus
-datos**, no en la demo del fabricante. Preguntas eliminatorias a un CNAPP: ¿calcula **permiso
-efectivo** o solo lista políticas? ¿Sabe si el recurso es **realmente alcanzable** desde Internet o
-solo si el grupo de seguridad es `0.0.0.0/0`? ¿Qué permisos exige su rol y **puede leer secretos**
-(§5)? ¿Exporta los hallazgos a tu SIEM en un formato que no sea suyo?
+**Buy-versus-build criterion, one line per axis**: the open tool gives you
+**checks**; the commercial suite sells you **correlation**. If your problem is "I do not know what I have", the
+open stuff is more than enough. If your problem is "I have 40,000 findings and I do not know which one kills", what you buy is
+prioritisation by attack path, and **that is exactly what has to be tested in the PoC with your
+data**, not in the vendor's demo. Knockout questions for a CNAPP: does it compute **effective
+permission** or only list policies? Does it know whether the resource is **actually reachable** from the Internet or
+only whether the security group is `0.0.0.0/0`? Which permissions does its role require and **can it read secrets**
+(§5)? Does it export findings to your SIEM in a format that is not its own?
 
-**Sobre la taxonomía**: CSPM, CWPP, CIEM, CNAPP, KSPM, DSPM y CDR son **categorías de analista**,
-acuñadas por Gartner y adoptadas por el marketing. Describen mercados, no arquitecturas. Su
-utilidad es acotar la conversación de compra; su daño es hacer creer que hacen falta siete
-productos. Traducción honesta, sin sigla:
-- **CSPM** = ¿está bien configurado el plano de control?
-- **CWPP** = ¿está sana la carga que corre encima (VM, contenedor, función)?
-- **CIEM** = ¿quién puede hacer qué, de verdad?
-- **CNAPP** = las anteriores en un producto, con **un grafo** que las correlaciona — y ese grafo es
-  lo único que justifica el paquete frente a comprarlas sueltas.
+**About the taxonomy**: CSPM, CWPP, CIEM, CNAPP, KSPM, DSPM and CDR are **analyst categories**,
+coined by Gartner and adopted by marketing. They describe markets, not architectures. Their
+usefulness is bounding the purchasing conversation; their damage is making you believe you need seven
+products. Honest translation, without the acronym:
+- **CSPM** = is the control plane configured correctly?
+- **CWPP** = is the workload running on top healthy (VM, container, function)?
+- **CIEM** = who can do what, really?
+- **CNAPP** = all of the above in one product, with **a graph** that correlates them — and that graph is
+  the only thing that justifies the bundle over buying them separately.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Línea base multi-cuenta y landing zone
+### 3.1 Multi-account baseline and landing zone
 
-La unidad de aislamiento es **la cuenta / suscripción / proyecto**, y la línea base se aplica **en
-la jerarquía**, no recurso a recurso. Invariantes, iguales en las tres nubes (el mecanismo concreto
-lo pone la skill del proveedor):
+The unit of isolation is **the account / subscription / project**, and the baseline is applied **in
+the hierarchy**, not resource by resource. Invariants, the same in all three clouds (the specific mechanism
+is provided by the provider's skill):
 
-- **Jerarquía organizativa antes que cualquier control**: sin unidad organizativa / grupo de
-  administración / carpeta no hay dónde colgar la política, y se acaba copiándola N veces.
-- **Barrera preventiva heredada** en la raíz (SCP / Azure Policy `Deny` / política de organización),
-  que **ningún administrador de la cuenta hija puede desactivar**. Ese es el punto: una guardrail
-  que el dueño del recurso puede quitar no es una guardrail.
-- **Registro de auditoría centralizado, en cuenta distinta, con escritura pero no borrado** desde
-  las cuentas productoras. Si el atacante que compromete la cuenta puede borrar su rastro, no hay
-  investigación posible (frontera con `incident-response-forensics-standards`).
-- **Cuenta nueva = línea base aplicada el día 0**, por vending automatizado. Una cuenta creada a
-  mano es un agujero permanente porque nunca aparece en el alcance del escaneo.
-- **El escaneo cubre el 100 % de las cuentas o no significa nada.** La métrica que importa no es
-  "hallazgos resueltos", es **cobertura**: cuántas cuentas/suscripciones/proyectos existen y en
-  cuántas se ejecuta la evaluación. Lo demás se mide sobre un denominador falso.
+- **Organisational hierarchy before any control**: without an organisational unit / management
+  group / folder there is nowhere to hang the policy, and it ends up being copied N times.
+- **Inherited preventive barrier** at the root (SCP / Azure Policy `Deny` / organisation policy),
+  which **no administrator of the child account can disable**. That is the point: a guardrail
+  that the resource owner can remove is not a guardrail.
+- **Centralised audit log, in a separate account, with write but not delete** from
+  the producing accounts. If the attacker who compromises the account can delete their trail, there is no
+  possible investigation (boundary with `incident-response-forensics-standards`).
+- **New account = baseline applied on day 0**, via automated vending. An account created by
+  hand is a permanent hole because it never appears in the scan's scope.
+- **The scan covers 100 % of the accounts or it means nothing.** The metric that matters is not
+  "findings resolved", it is **coverage**: how many accounts/subscriptions/projects exist and in
+  how many the assessment is run. Everything else is measured over a false denominator.
 
-Benchmarks: **CIS Foundations Benchmark** por proveedor como línea base mínima y auditable. Las
-versiones se mueven cada año y **no son comparables entre sí** (un control renumerado no es un
-control nuevo). Verificado en agosto de 2026: **CIS Microsoft Azure Foundations Benchmark v6.0.0**
-y **CIS Google Cloud Platform Foundation Benchmark v5.0.0** figuran como vigentes en el NCP del
-NIST; **la versión vigente del de AWS no se pudo confirmar contra fuente primaria** — verificar en
-`cisecurity.org` antes de citarla (§8). Aviso operativo: **el benchmark es piso, no techo**. Cumplir
-CIS al 100 % y tener un rol con `*:*` es perfectamente posible.
+Benchmarks: **CIS Foundations Benchmark** per provider as the minimum auditable baseline. The
+versions move every year and **they are not comparable with each other** (a renumbered control is not a
+new control). Verified in August 2026: **CIS Microsoft Azure Foundations Benchmark v6.0.0**
+and **CIS Google Cloud Platform Foundation Benchmark v5.0.0** appear as current in NIST's
+NCP; **the current version of the AWS one could not be confirmed against a primary source** — verify at
+`cisecurity.org` before quoting it (§8). Operational warning: **the benchmark is a floor, not a ceiling**. Meeting
+CIS 100 % and having a role with `*:*` is perfectly possible.
 
-### 3.2 Guardrail preventivo frente a hallazgo posterior
+### 3.2 Preventive guardrail versus after-the-fact finding
 
-Tres capas, en orden de coste creciente por fallo detectado:
+Three layers, in increasing order of cost per failure detected:
 
-1. **Código (IaC)**: `checkov`/`conftest` en el PR. Coste del fallo: un comentario.
-2. **Admisión / plano de control**: política nativa del proveedor que **rechaza** la creación, y
-   admisión en el clúster (esa parte es de `kubernetes-standards`). Coste: un error en el `apply`.
-3. **Postura (detección)**: el escaneo periódico que encuentra lo que se coló. Coste: ticket,
-   dueño, ventana, discusión y excepción.
+1. **Code (IaC)**: `checkov`/`conftest` in the PR. Cost of the failure: a comment.
+2. **Admission / control plane**: the provider's native policy that **rejects** the creation, and
+   admission in the cluster (that part belongs to `kubernetes-standards`). Cost: an error in the `apply`.
+3. **Posture (detection)**: the periodic scan that finds what slipped through. Cost: ticket,
+   owner, window, argument and exception.
 
-**La capa 3 no sustituye a la 1 y la 2, y la 1 no sustituye a la 2**: hay más caminos a producción
-que el pipeline (consola, CLI, un operador, un servicio que crea recursos por su cuenta). Una
-política que solo vive en el repositorio de IaC protege exactamente al equipo que ya hacía las
-cosas bien. Regla: **toda regla de postura que se repite debería convertirse en una barrera
-preventiva o desaparecer**; si un hallazgo aparece 200 veces al mes, el problema no es el hallazgo,
-es que no hay `deny`.
+**Layer 3 does not replace 1 and 2, and 1 does not replace 2**: there are more roads to production
+than the pipeline (console, CLI, an operator, a service that creates resources on its own). A
+policy that only lives in the IaC repository protects exactly the team that was already doing things
+right. Rule: **every posture rule that repeats should become a preventive
+barrier or disappear**; if a finding shows up 200 times a month, the problem is not the finding,
+it is that there is no `deny`.
 
-Contrapartida honesta: la barrera preventiva rompe cosas y genera excepciones. Por eso se despliega
-en **modo auditoría primero**, con métrica de cuántas veces habría bloqueado y a quién, y se
-promueve a `deny` con esa evidencia. Una excepción **lleva dueño y caducidad**; sin caducidad es una
-derogación.
+Honest counterpart: the preventive barrier breaks things and generates exceptions. That is why it is deployed
+in **audit mode first**, with a metric of how many times it would have blocked and whom, and it is
+promoted to `deny` with that evidence. An exception **carries an owner and an expiry**; without an expiry it is a
+repeal.
 
-### 3.3 El permiso excesivo: derecho efectivo frente a derecho concedido
+### 3.3 Excessive permission: effective entitlement versus granted entitlement
 
-Este es el hallazgo que nadie reporta y el que decide el alcance de un compromiso.
+This is the finding nobody reports and the one that decides the blast radius of a compromise.
 
-- **Derecho concedido** = lo que dicen las políticas adjuntas. **Derecho efectivo** = lo que la
-  identidad puede hacer de verdad, tras resolver **herencia de la jerarquía, políticas de límite,
-  denegaciones explícitas, condiciones, políticas basadas en recurso, cadenas de asunción de rol y
-  suplantación de cuenta de servicio**. Casi nunca coinciden, y la diferencia va en los dos
-  sentidos: hay roles que parecen amplios y están acotados por una condición, y roles que parecen
-  acotados y pueden escalar a administrador **encadenando un permiso de `iam:PassRole`,
-  suplantación o edición de la propia política**.
-- **El permiso de escalada es el que hay que buscar primero**: quien puede modificar políticas,
-  crear credenciales de otra identidad, adjuntarse un rol o desplegar código en un contexto
-  privilegiado **ya es administrador**, diga lo que diga su nombre.
-- **El comodín es el síntoma barato**: `*:*`, `Owner` sobre la suscripción, `roles/owner`,
-  `roles/editor` a nivel de proyecto. Búsqueda obligatoria y de resultado inmediato, pero
-  insuficiente.
-- **Permiso concedido y no usado**: casi todas las nubes exponen la última vez que se usó un
-  servicio o permiso por identidad. **Es la única fuente objetiva para reducir sin romper**: se
-  recorta a lo usado en una ventana representativa (cuidado con lo trimestral y lo anual: cierres,
-  auditorías y DR usan permisos once al año).
-- **Camino de reducción sin drama**: registrar → proponer política mínima derivada del uso →
-  aplicar **en modo auditoría** → medir denegaciones que habrían ocurrido → aplicar. Recortar a
-  ciegas es la forma más rápida de que el equipo de seguridad pierda el permiso de tocar IAM.
-- **Identidades no humanas > humanas** en número, en permisos y en olvido. La cuenta de servicio de
-  un proyecto muerto sigue teniendo `editor`. El inventario de identidades **no humanas** con su
-  dueño es un entregable, no una nota.
+- **Granted entitlement** = what the attached policies say. **Effective entitlement** = what the
+  identity can actually do, after resolving **hierarchy inheritance, boundary policies,
+  explicit denies, conditions, resource-based policies, role assumption chains and
+  service account impersonation**. They almost never match, and the difference goes both
+  ways: there are roles that look broad and are bounded by a condition, and roles that look
+  bounded and can escalate to administrator **by chaining an `iam:PassRole` permission,
+  impersonation or editing the policy itself**.
+- **The escalation permission is the one to hunt first**: whoever can modify policies,
+  create credentials for another identity, attach a role to themselves or deploy code in a
+  privileged context **is already an administrator**, whatever their name says.
+- **The wildcard is the cheap symptom**: `*:*`, `Owner` over the subscription, `roles/owner`,
+  `roles/editor` at project level. A mandatory search with immediate results, but
+  insufficient.
+- **Permission granted and not used**: almost every cloud exposes the last time a
+  service or permission was used per identity. **It is the only objective source for reducing without breaking**: it
+  is trimmed to what was used in a representative window (careful with quarterly and annual things: closes,
+  audits and DR use permissions once a year).
+- **Path to reduction without drama**: log → propose a minimal policy derived from usage →
+  apply **in audit mode** → measure the denials that would have occurred → apply. Trimming
+  blind is the fastest way for the security team to lose permission to touch IAM.
+- **Non-human identities > human ones** in number, in permissions and in being forgotten. The service account of
+  a dead project still has `editor`. The inventory of **non-human** identities with their
+  owner is a deliverable, not a note.
 
-### 3.4 Camino de ataque frente a lista de hallazgos
+### 3.4 Attack path versus list of findings
 
-Lo que hace útil o inútil a una herramienta de postura: **si te da hallazgos independientes, el
-trabajo de correlación te lo quedas tú**. Lo que importa es la combinación:
+What makes a posture tool useful or useless: **if it gives you independent findings, the
+correlation work stays with you**. What matters is the combination:
 
-> Máquina alcanzable desde Internet → con una vulnerabilidad explotable → cuyo rol de instancia
-> puede leer un almacén con dato regulado → y además puede asumir un rol en otra cuenta.
+> A machine reachable from the Internet → with an exploitable vulnerability → whose instance role
+> can read a store with regulated data → and can also assume a role in another account.
 
-Ninguno de esos cuatro hechos es crítico por separado; juntos son el incidente. Consecuencias
-prácticas:
-- **La severidad de un hallazgo aislado es casi siempre falsa** (alta o baja). El contexto la fija:
-  exposición real, sensibilidad del dato alcanzable y privilegio de la identidad implicada.
-- **"Expuesto a Internet" hay que calcularlo, no declararlo**: grupo de seguridad abierto + IP
-  pública + ruta + lista de control de acceso de red + política del recurso + balanceador delante.
-  Un bucket "público" detrás de una política que deniega todo no lo está; una máquina "privada"
-  detrás de un balanceador público sí.
-- **Sin inventario no hay camino**: el grafo (Cartography o equivalente) es prerrequisito. La
-  frontera con `cmdb-inventory-standards` es que allí vive el registro del activo y aquí las
-  relaciones de seguridad entre ellos.
-- Métrica útil: **número de caminos desde Internet hasta un dato clasificado**, y su evolución. Es
-  un número pequeño, entendible por dirección y que baja al arreglar cosas de verdad.
+None of those four facts is critical on its own; together they are the incident. Practical
+consequences:
+- **The severity of an isolated finding is almost always false** (high or low). Context sets it:
+  real exposure, sensitivity of the reachable data and privilege of the identity involved.
+- **"Internet-exposed" has to be computed, not declared**: open security group + public
+  IP + route + network access control list + resource policy + load balancer in front.
+  A "public" bucket behind a policy that denies everything is not; a "private" machine
+  behind a public load balancer is.
+- **Without an inventory there is no path**: the graph (Cartography or equivalent) is a prerequisite. The
+  boundary with `cmdb-inventory-standards` is that the asset record lives there and here the security
+  relationships between them.
+- Useful metric: **the number of paths from the Internet to classified data**, and its evolution. It is
+  a small number, understandable by management, and it drops when things actually get fixed.
 
-### 3.5 Deriva entre lo declarado y lo real
+### 3.5 Drift between what is declared and what is real
 
-- La postura se evalúa **contra el entorno vivo**, no contra el repositorio. El escaneo de IaC dice
-  lo que se pretendía; la nube dice lo que hay.
-- **Toda diferencia es una señal**, y hay tres causas: cambio manual (arreglar y prevenir), recurso
-  creado fuera de IaC (adoptar o borrar), o el propio proveedor cambiando defaults (leer las notas).
-- **Recurso sin dueño identificable = incidente de gobierno**, no un hallazgo menor: no se puede
-  arreglar lo que no tiene a quién pedírselo. Etiqueta de dueño obligatoria y **verificada en la
-  admisión**, no en una hoja de cálculo (la política de etiquetas la fija `finops-standards`; aquí
-  solo la exigencia de que exista).
+- Posture is assessed **against the live environment**, not against the repository. The IaC scan says
+  what was intended; the cloud says what is there.
+- **Every difference is a signal**, and there are three causes: a manual change (fix and prevent), a resource
+  created outside IaC (adopt or delete), or the provider itself changing defaults (read the notes).
+- **A resource with no identifiable owner = a governance incident**, not a minor finding: you cannot
+  fix what has nobody to ask. A mandatory owner tag, **verified at
+  admission**, not on a spreadsheet (the tagging policy is set by `finops-standards`; here
+  only the requirement that it exist).
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-- **La política es código y se prueba como código**: cada regla de `conftest`/`checkov` custom lleva
-  un caso que **debe** fallar y otro que **debe** pasar. Una política sin test negativo no está
-  probada: pasa siempre.
-- **Gates de CI, en orden de coste creciente**: (1) lint y test unitario de las políticas;
-  (2) `checkov`/`conftest` sobre el plan/plantilla, rompiendo el build en severidad alta;
-  (3) evaluación de postura sobre entorno efímero o cuenta de pruebas; (4) escaneo completo
-  programado del estate, que no rompe build sino que abre trabajo.
-- **Validar la barrera, no solo escribirla**: desplegar un recurso deliberadamente no conforme en un
-  entorno de pruebas y comprobar que el `deny` dispara. Una política mal ámbito-limitada que no
-  aplica a nada es indistinguible de una que funciona, salvo por este test.
-- **Falsos negativos antes que falsos positivos**: la pregunta a la herramienta no es "¿cuántos
-  hallazgos da?" sino "¿qué NO ve?". Servicios sin cobertura, regiones no escaneadas, cuentas
-  ausentes y tipos de recurso desconocidos son huecos silenciosos. Exigir el **inventario de
-  cobertura** por servicio y región.
-- **Regresión de excepciones**: cada excepción con caducidad tiene un test que la reabre al vencer.
-- **Nada de gate sobre la nota agregada**: "puntuación de postura 87 %" es una métrica de vendedor.
-  Sube limpiando cuentas vacías. Se mide por cobertura, por número de caminos de ataque y por
-  tiempo hasta corregir lo alcanzable desde Internet.
+- **Policy is code and it is tested as code**: every custom `conftest`/`checkov` rule carries
+  a case that **must** fail and another that **must** pass. A policy without a negative test is not
+  tested: it always passes.
+- **CI gates, in increasing order of cost**: (1) lint and unit test of the policies;
+  (2) `checkov`/`conftest` over the plan/template, breaking the build on high severity;
+  (3) posture assessment over an ephemeral environment or a test account; (4) full scheduled scan
+  of the estate, which does not break the build but opens work.
+- **Validate the barrier, not just write it**: deploy a deliberately non-compliant resource in a
+  test environment and check that the `deny` fires. A badly scoped policy that
+  applies to nothing is indistinguishable from one that works, except through this test.
+- **False negatives before false positives**: the question to ask the tool is not "how many
+  findings does it give?" but "what does it NOT see?". Services with no coverage, unscanned regions, missing
+  accounts and unknown resource types are silent gaps. Demand the **coverage
+  inventory** by service and region.
+- **Exception regression**: every exception with an expiry has a test that reopens it when it expires.
+- **No gate on the aggregate score**: "posture score 87 %" is a vendor metric.
+  It goes up by cleaning out empty accounts. Measure by coverage, by number of attack paths and by
+  time to fix what is reachable from the Internet.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-**La herramienta de postura es el activo más privilegiado que vas a desplegar.** Lee todo el
-estate, en todas las cuentas, de forma continua. Tratarla como una utilidad más es el error
-recurrente.
+**The posture tool is the most privileged asset you are going to deploy.** It reads the whole
+estate, in every account, continuously. Treating it as one more utility is the
+recurring mistake.
 
-- **"Solo lectura" no significa inofensivo.** Los roles de lectura amplios que ofrecen los
-  proveedores **incluyen leer el contenido de secretos, de parámetros y de configuración
-  sensible** en varios servicios. Un rol de auditoría que puede leer el gestor de secretos es un
-  rol de administrador diferido: quien comprometa el escáner tiene las credenciales de todo lo
-  demás. **Verificar permiso a permiso qué implica el rol de lectura que pide el fabricante, y
-  denegar explícitamente la lectura de material secreto** salvo justificación concreta.
-- **Federación OIDC, nunca clave estática.** El SaaS de postura que pide un par de claves de larga
-  vida está pidiendo la llave maestra sin caducidad. Rol asumible con condición sobre el
-  identificador externo del tenant (o su equivalente), y **verificar que ese identificador es único
-  por cliente**: si es adivinable, cualquier otro cliente del mismo SaaS puede asumir tu rol —
-  problema del *confused deputy*, real y documentado en este tipo de integración.
-- **Modelo de despliegue**: agente en tu cuenta > SaaS que asume rol en tu cuenta > SaaS con copia
-  de tu inventario. Cada salto hacia la derecha añade un tercero que guarda el mapa completo de tu
-  superficie de ataque. Si se elige SaaS, esa decisión es de riesgo de terceros y va a
-  `grc-compliance-standards` con nombre y apellidos.
-- **Sin permisos de escritura por defecto.** La remediación automática exige permisos de cambio, y
-  con ellos el escáner pasa a poder **borrar** producción. Si se activa: alcance mínimo, clases de
-  acción explícitas en lista blanca, `dry-run` obligatorio antes, registro de cada acción y
-  posibilidad de deshacer.
-- **Los hallazgos son inteligencia sobre tu propia debilidad**: el informe de postura describe
-  exactamente dónde atacar. Se trata con el mismo control de acceso que el resultado de un pentest.
-- **La deriva del propio permiso del escáner** se vigila: si alguien amplía el rol de auditoría,
-  eso es una alerta, no un cambio administrativo.
-- **Credenciales estáticas de larga vida en general**: son el hallazgo con mejor relación
-  esfuerzo/valor de todo el catálogo. Inventariar, medir antigüedad y último uso, sustituir por
-  identidad de carga de trabajo y **prohibirlas por política preventiva**, no por recordatorio.
+- **"Read-only" does not mean harmless.** The broad read roles offered by the
+  providers **include reading the content of secrets, of parameters and of sensitive
+  configuration** in several services. An audit role that can read the secrets manager is a
+  deferred administrator role: whoever compromises the scanner has the credentials to everything
+  else. **Verify permission by permission what the read role the vendor asks for implies, and
+  explicitly deny reading secret material** unless there is a specific justification.
+- **OIDC federation, never a static key.** The posture SaaS that asks for a long-lived
+  key pair is asking for the master key with no expiry. An assumable role with a condition on the
+  tenant's external identifier (or its equivalent), and **verify that that identifier is unique
+  per customer**: if it is guessable, any other customer of the same SaaS can assume your role —
+  the *confused deputy* problem, real and documented in this kind of integration.
+- **Deployment model**: agent in your account > SaaS assuming a role in your account > SaaS with a copy
+  of your inventory. Each step to the right adds a third party holding the complete map of your
+  attack surface. If SaaS is chosen, that decision is third-party risk and it goes to
+  `grc-compliance-standards` with a name attached.
+- **No write permissions by default.** Automatic remediation requires change permissions, and
+  with them the scanner becomes able to **delete** production. If it is enabled: minimal scope, explicit
+  allowlisted action classes, mandatory `dry-run` first, logging of every action and
+  the ability to undo.
+- **Findings are intelligence about your own weakness**: the posture report describes
+  exactly where to attack. It is handled with the same access control as a pentest result.
+- **Drift in the scanner's own permission** is watched: if someone broadens the audit role,
+  that is an alert, not an administrative change.
+- **Long-lived static credentials in general**: they are the finding with the best
+  effort/value ratio in the whole catalogue. Inventory them, measure age and last use, replace with
+  workload identity and **forbid them by preventive policy**, not by reminder.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Límites de API del proveedor**: un escaneo completo de un estate grande consume cuota del plano
-  de control y puede degradar el resto. Escalonar por cuenta y región, respetar el *backoff* y
-  medir. Un escaneo que provoca `429` a la aplicación es un incidente causado por seguridad.
-- **Cadencia por clase, no una sola**: cambios de identidad y de exposición a Internet, en continuo
-  (por eventos del plano de control); benchmark completo, diario o semanal; grafo de caminos, con la
-  cadencia que soporte el coste.
-- **Coste**: la ingesta de eventos del plano de control y el almacenamiento del inventario son la
-  factura real de un CSPM, no la licencia. Se dimensiona antes (`finops-standards`).
-- **Ruido**: un producto que entrega miles de hallazgos el primer día no ha encontrado miles de
-  problemas; ha encontrado un entorno sin línea base. Se establece una **línea de corte inicial**
-  (todo lo anterior a la fecha X entra como deuda con plan) y a partir de ahí se trabaja el flujo
-  nuevo. Sin ese corte, el equipo se rinde en dos semanas.
-- **Dueño por hallazgo o no hay proceso**: enrutado automático por etiqueta de dueño/cuenta al
-  equipo responsable. Un panel central que nadie mira es el estado final por defecto.
-- **Salida abierta**: exigir exportación (SARIF, OCSF, JSON documentado) para no depender del panel
-  del fabricante y poder correlacionar en el SIEM.
+- **The provider's API limits**: a full scan of a large estate consumes control-plane
+  quota and can degrade everything else. Stagger it by account and region, respect the *backoff* and
+  measure. A scan that causes `429` for the application is an incident caused by security.
+- **Cadence by class, not a single one**: identity and Internet-exposure changes, continuously
+  (from control-plane events); full benchmark, daily or weekly; path graph, at whatever
+  cadence the cost supports.
+- **Cost**: control-plane event ingestion and inventory storage are the real
+  bill of a CSPM, not the licence. Size it beforehand (`finops-standards`).
+- **Noise**: a product that delivers thousands of findings on day one has not found thousands of
+  problems; it has found an environment with no baseline. An **initial cut line** is established
+  (everything before date X enters as debt with a plan) and from there the new flow is worked. Without that cut,
+  the team gives up in two weeks.
+- **An owner per finding or there is no process**: automatic routing by owner/account tag to the
+  responsible team. A central dashboard nobody looks at is the default end state.
+- **Open output**: require export (SARIF, OCSF, documented JSON) so as not to depend on the vendor's
+  dashboard and to be able to correlate in the SIEM.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- Las nubes publican servicios y cambian *defaults* continuamente: **la cobertura de la herramienta
-  caduca sola**. Revisión trimestral de qué servicios nuevos hay en uso y si están cubiertos.
-- Versión del benchmark **fijada explícitamente** en la configuración y actualizada como cambio
-  consciente, con nota de qué controles se han añadido o renumerado. Saltar de versión sin leer el
-  diff produce un pico de hallazgos que parece una regresión y no lo es.
-- Las excepciones se revisan en cada ciclo; **caducadas se reabren solas**.
+- The clouds publish services and change *defaults* continuously: **the tool's coverage
+  expires on its own**. Quarterly review of which new services are in use and whether they are covered.
+- The benchmark version **explicitly pinned** in the configuration and updated as a conscious
+  change, with a note on which controls have been added or renumbered. Jumping versions without reading the
+  diff produces a spike of findings that looks like a regression and is not.
+- Exceptions are reviewed every cycle; **expired ones reopen by themselves**.
 
-**PROHIBIDO**:
-- ❌ Duplicar aquí el criterio de `aws`/`azure`/`gcp` sobre cómo se configura un servicio concreto.
-- ❌ Dar por buena una licencia de herramienta **sin leer el `LICENSE` del repositorio**. Las
-  suposiciones falsas ya han costado dieciséis correcciones en este catálogo.
-- ❌ Claves de acceso estáticas de larga vida para humanos, para pipelines o para el propio escáner.
-- ❌ Conceder al escáner permisos de escritura "por si acaso", o aceptar sin revisar el rol de
-  lectura que pide el fabricante.
-- ❌ Presentar una **puntuación de postura** como métrica de dirección, o "0 hallazgos críticos"
-  sobre un alcance que no cubre todas las cuentas.
-- ❌ Tratar el permiso excesivo como un hallazgo de gestión de vulnerabilidades: **no tiene CVE y no
-  entra en ese embudo**; si se mete allí, se pierde.
-- ❌ Remediación automática sobre clases no acotadas, sin `dry-run` previo y sin registro.
-- ❌ Excepciones sin dueño y sin fecha de caducidad.
-- ❌ Citar **"el 99 % de los fallos de seguridad en la nube serán culpa del cliente"** como si fuera
-  una medición. Es una **predicción** de Gartner (descendiente directa de otra anterior de "al menos
-  el 95 % hasta 2022"), con horizonte 2025, repetida por cientos de fuentes que la han convertido en
-  hecho consumado, le han cambiado la fecha y han sustituido "responsabilidad del cliente bajo el
-  modelo de responsabilidad compartida" por "error del usuario". **La tesis de fondo —el fallo
-  dominante está en la configuración y el permiso, no en el hipervisor del proveedor— se sostiene sin
-  necesidad de ese número.** Si hay que citar una cifra, que venga con metodología; si no la tiene,
-  se dice el argumento y se omite el porcentaje.
-- ❌ Comprar un CNAPP sin PoC con datos propios sobre las dos preguntas que deciden: permiso
-  efectivo y alcanzabilidad real desde Internet.
-- ❌ Ejecutar cualquier evaluación sobre entornos de terceros sin autorización escrita.
+**FORBIDDEN**:
+- ❌ Duplicating here the criteria of `aws`/`azure`/`gcp` on how a specific service is configured.
+- ❌ Accepting a tool's licence **without reading the repository's `LICENSE`**. False
+  assumptions have already cost sixteen corrections in this catalogue.
+- ❌ Long-lived static access keys for humans, for pipelines or for the scanner itself.
+- ❌ Granting the scanner write permissions "just in case", or accepting without review the
+  read role the vendor asks for.
+- ❌ Presenting a **posture score** as a management metric, or "0 critical findings"
+  over a scope that does not cover every account.
+- ❌ Treating excessive permission as a vulnerability management finding: **it has no CVE and it does
+  not enter that funnel**; if it is put there, it gets lost.
+- ❌ Automatic remediation over unbounded classes, without a prior `dry-run` and without logging.
+- ❌ Exceptions with no owner and no expiry date.
+- ❌ Quoting **"99 % of cloud security failures will be the customer's fault"** as if it were
+  a measurement. It is a Gartner **prediction** (a direct descendant of an earlier one of "at least
+  95 % through 2022"), with a 2025 horizon, repeated by hundreds of sources that have turned it into
+  established fact, changed its date and replaced "customer's responsibility under the
+  shared responsibility model" with "user error". **The underlying thesis —the dominant failure
+  is in configuration and permission, not in the provider's hypervisor— stands without
+  needing that number.** If a figure must be quoted, let it come with methodology; if it has none,
+  state the argument and omit the percentage.
+- ❌ Buying a CNAPP without a PoC on your own data over the two questions that decide it: effective
+  permission and real reachability from the Internet.
+- ❌ Running any assessment on third-party environments without written authorisation.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar por web:
-1. **Versión vigente de cada CIS Foundations Benchmark** (AWS, Azure, GCP) en `cisecurity.org`.
-   **Hueco declarado**: en agosto de 2026 se confirmaron por fuente secundaria (NCP del NIST)
-   Azure v6.0.0 y GCP v5.0.0; **la versión vigente del de AWS no se pudo verificar contra fuente
-   primaria y no se escribe aquí**.
-2. **Última versión y actividad** de Prowler, ScoutSuite, CloudSploit, Steampipe, Powerpipe,
-   Cartography, Cloud Custodian y Checkov. Vistas en agosto de 2026 vía la API de releases:
-   Prowler `5.37.1`, ScoutSuite `5.14.0` (2024-05-10, **sin release desde entonces**), Checkov
+Before committing anything in a real project, check on the web:
+1. **Current version of each CIS Foundations Benchmark** (AWS, Azure, GCP) at `cisecurity.org`.
+   **Declared gap**: in August 2026 Azure v6.0.0 and GCP v5.0.0 were confirmed from a secondary source (NIST's NCP);
+   **the current version of the AWS one could not be verified against a primary
+   source and is not written here**.
+2. **Latest version and activity** of Prowler, ScoutSuite, CloudSploit, Steampipe, Powerpipe,
+   Cartography, Cloud Custodian and Checkov. Seen in August 2026 via the releases API:
+   Prowler `5.37.1`, ScoutSuite `5.14.0` (2024-05-10, **no release since then**), Checkov
    `3.3.9`, Cartography `0.139.1`, Steampipe `v2.4.4`, Powerpipe `v1.5.2`.
-3. **Licencia, releyendo el `LICENSE` del repositorio** — no la web ni la ficha de un agregador.
-   Verificadas verbatim en agosto de 2026: Prowler Apache-2.0, ScoutSuite GPL-2.0, CloudSploit
+3. **The licence, by re-reading the repository's `LICENSE`** — not the website nor an aggregator's entry.
+   Verified verbatim in August 2026: Prowler Apache-2.0, ScoutSuite GPL-2.0, CloudSploit
    GPL-3.0, Steampipe AGPL-3.0, Powerpipe AGPL-3.0, Cartography Apache-2.0, Cloud Custodian
-   Apache-2.0, Checkov Apache-2.0, OPA/Conftest Apache-2.0. **Comprobar además si el proyecto ha
-   relicenciado o ha separado componentes de pago desde entonces.**
-4. **Cambios de *default* del proveedor** que invaliden un control (bloqueo de acceso público,
-   cifrado por defecto, versiones mínimas de TLS): la skill de la nube manda.
-5. **Permisos exactos del rol de auditoría** que pide cada herramienta, y si el rol de lectura del
-   proveedor incluye leer secretos. Cambia entre versiones.
-6. **Cualquier cifra** antes de citarla: fuente primaria, metodología y denominador. Las de este
-   documento se han citado solo cuando existen las tres.
-7. Estado de **Cartography en CNCF** (el repositorio vive ya bajo la organización `cartography-cncf`)
-   y su nivel de madurez, si eso pesa en la decisión de adopción.
+   Apache-2.0, Checkov Apache-2.0, OPA/Conftest Apache-2.0. **Also check whether the project has
+   relicensed or split out paid components since then.**
+4. **Provider *default* changes** that invalidate a control (public access block,
+   encryption by default, minimum TLS versions): the cloud's skill rules.
+5. **The exact permissions of the audit role** each tool asks for, and whether the provider's read role
+   includes reading secrets. It changes between versions.
+6. **Any figure** before quoting it: primary source, methodology and denominator. Those in this
+   document have been quoted only where all three exist.
+7. The status of **Cartography in the CNCF** (the repository now lives under the `cartography-cncf` organisation)
+   and its maturity level, if that weighs on the adoption decision.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

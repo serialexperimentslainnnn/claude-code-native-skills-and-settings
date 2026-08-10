@@ -3,499 +3,498 @@ name: detection-engineering-standards
 description: Security detection engineering — building and governing SIEM detections as code. Use when writing or tuning Sigma rules (sigma-cli, pySigma, sigma correlations), YARA or YARA-X rules, Elastic detection-rules TOML, KQL, SPL, EQL or YARA-L analytics, Suricata and Zeek signatures, Wazuh decoders and rules, ATT&CK Navigator coverage layers, DeTT&CT, Chainsaw or Hayabusa triage, alert runbooks and false-positive rates, detection unit tests in CI, OCSF or ECS log normalization, or onboarding a new log source into a SIEM.
 ---
 
-# Estándares de ingeniería de detección
+# Detection engineering standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al diseñar, escribir, probar, desplegar, medir y **retirar** contenido de detección:
-backlog e hipótesis de detección, modelo de datos y onboarding de fuentes, normalización de
-esquema (OCSF, ECS), autoría de reglas en cualquier formato (Sigma, YARA/YARA-X, KQL, SPL,
-EQL, YARA-L, Suricata, Zeek, Wazuh, Falco), pipeline de detección como código (repo, CI,
-tests, despliegue, versionado), mapa de cobertura frente a MITRE ATT&CK, enriquecimiento y
-deduplicación, umbrales y severidad, gestión del falso positivo, runbook por alerta,
-validación adversaria de la detección, uso de threat intelligence, y las métricas del
-programa (MTTD, cobertura por fuente, FP por regla, alertas por analista y hora).
+Applies to designing, writing, testing, deploying, measuring and **retiring** detection content:
+detection backlog and hypotheses, data model and source onboarding, schema
+normalisation (OCSF, ECS), rule authoring in any format (Sigma, YARA/YARA-X, KQL, SPL,
+EQL, YARA-L, Suricata, Zeek, Wazuh, Falco), the detection-as-code pipeline (repo, CI,
+tests, deployment, versioning), coverage map against MITRE ATT&CK, enrichment and
+deduplication, thresholds and severity, false positive management, per-alert runbook,
+adversarial validation of the detection, use of threat intelligence, and the programme's
+metrics (MTTD, coverage per source, FP per rule, alerts per analyst per hour).
 
-Triggers: `*.yml` de Sigma con `detection:`/`logsource:`, `sigma-cli`/`sigmac`, `pySigma`,
-`*.yar`/`*.yara`, `yr` (YARA-X), `rules/**/*.toml` de `elastic/detection-rules`,
+Triggers: Sigma `*.yml` with `detection:`/`logsource:`, `sigma-cli`/`sigmac`, `pySigma`,
+`*.yar`/`*.yara`, `yr` (YARA-X), `rules/**/*.toml` from `elastic/detection-rules`,
 `detection_rules test`, `contentctl`/`contentctl-ng`, `panther_analysis_tool`, `suricata.yaml`
-y `*.rules`, scripts `*.zeek`, `local_rules.xml`/`decoders` de Wazuh, `falco_rules.local.yaml`,
-capas `.json` de ATT&CK Navigator, `chainsaw`, `hayabusa`, `atomic-red-team`, "regla de
-detección", "caso de uso de SIEM", "falso positivo", "tuning", "cobertura ATT&CK", "MTTD".
+and `*.rules`, `*.zeek` scripts, Wazuh `local_rules.xml`/`decoders`, `falco_rules.local.yaml`,
+ATT&CK Navigator `.json` layers, `chainsaw`, `hayabusa`, `atomic-red-team`, "detection
+rule", "SIEM use case", "false positive", "tuning", "ATT&CK coverage", "MTTD".
 
-**Principio rector**: la detección es un **producto de ingeniería con ciclo de vida**, no un
-catálogo de alertas compradas. Se rige por tres invariantes: **(1) sin la fuente correcta no
-hay detección** — el modelo de datos precede a la regla; **(2) toda regla se prueba con el
-ataque real que dice detectar** antes de creerle; **(3) una alerta sin acción posible no es
-una alerta, es ruido con dueño**. Corolario incómodo: **cobertura ≠ detección**. "Cubrimos
-300 técnicas" casi siempre significa "tenemos 300 reglas que nadie ha ejecutado contra un
-ataque".
+**Guiding principle**: detection is an **engineering product with a lifecycle**, not a
+catalogue of bought alerts. It is governed by three invariants: **(1) without the right source there is
+no detection** — the data model precedes the rule; **(2) every rule is tested with the
+real attack it claims to detect** before it is believed; **(3) an alert with no possible action is not
+an alert, it is noise with an owner**. Uncomfortable corollary: **coverage ≠ detection**. "We cover
+300 techniques" almost always means "we have 300 rules nobody has run against an
+attack".
 
-**No aplica**: ver `observability-standards` (telemetría para **diagnosticar**: OpenTelemetry,
-Prometheus, Loki, cardinalidad, coste, Alertmanager — **la frontera es el propósito, no la
-herramienta**: el mismo log alimenta ambas, allí para explicar una caída, aquí para descubrir
-a un adversario; el pipeline, la retención y la integridad de la telemetría son suyos, el
-contenido analítico es mío), `sre-practice-standards` (on-call, SLO, error budget, burn rate,
-postmortems), `incident-management-standards` (**gobierno del incidente que mi alerta
-dispara**: declaración, severidad, IC, comunicación — mi entregable termina exactamente en el
-handoff, y su retro me devuelve trabajo), `incident-response-forensics-standards` (**respuesta
-técnica e investigación**: contención, imaging, timeline, erradicación — frontera
-**bidireccional**: allí se investiga lo que yo detecto, y **toda investigación debe volver
-convertida en regla nueva**; el uso de YARA para *hunting* forense y triaje de evidencia es
-suyo, la **autoría y gobierno de la regla** es mía), `offensive-security-standards` (purple
-team, emulación de adversario, Atomic Red Team y Caldera como **generadores** del ataque
-autorizado y su deconfliction con el SOC — **ellos generan la actividad, yo escribo y valido
-la detección**), `container-runtime-security-standards` (**qué señal de runtime importa** —
-shell inesperada, escritura en binarios, socket del runtime, drift— y el despliegue del
-agente eBPF: **la regla Falco nace allí y se gobierna aquí**, con mi ciclo de vida, mis tests
-y mi cobertura), `linux-hardening-standards` y `selinux-standards` (baseline CIS, `auditd` y
-AVC de SELinux **como fuente**: la configuración del ruleset de auditoría es suya, convertir
-esos eventos en detección es mío), `windows-server-ad-standards` (qué evento de AD importa y
-por qué), `networking-standards` (segmentación, NetFlow/IPFIX y la red que Suricata/Zeek
-observan), `appsec-standards` (**A09 Security Logging and Alerting Failures**: qué eventos
-debe **emitir** la aplicación — authn, authz denegada, cambio de privilegios; yo consumo esa
-emisión, no la diseño), `vulnerability-management-standards` (CVE, CVSS/EPSS/KEV y SLA de
-parcheo), `privacy-engineering-standards` (PII dentro de los logs de seguridad, minimización
-y límites de retención por finalidad), `secrets-management-standards` (custodia y rotación de
-secretos — **frontera compartida**: un secreto filtrado o un secreto usado desde un origen
-anómalo es un **caso de detección mío**, alimentado por su telemetría de gestor y de
-escaneo), `grc-compliance-standards` (el control normativo que exige monitorización y su
-evidencia), `identity-access-management-standards` (diseño del IdP, políticas de acceso
-condicional y flujos OAuth — yo detecto su abuso, no los configuro),
-`threat-intelligence-standards` (**frontera bidireccional**: la hipótesis, el indicador y su
-caducidad son suyos, la regla es mía — y **el retorno de *sightings* es suyo**: un indicador que
-caduca por falta de avistamientos se retira allí, con su criterio, no aquí).
+**Not applicable**: see `observability-standards` (telemetry for **diagnosing**: OpenTelemetry,
+Prometheus, Loki, cardinality, cost, Alertmanager — **the boundary is the purpose, not the
+tool**: the same log feeds both, there to explain an outage, here to discover
+an adversary; the pipeline, retention and integrity of the telemetry are theirs, the
+analytical content is mine), `sre-practice-standards` (on-call, SLOs, error budget, burn rate,
+postmortems), `incident-management-standards` (**governance of the incident my alert
+triggers**: declaration, severity, IC, communication — my deliverable ends exactly at the
+handoff, and its retro sends work back to me), `incident-response-forensics-standards` (**technical
+response and investigation**: containment, imaging, timeline, eradication — a
+**bidirectional** boundary: there they investigate what I detect, and **every investigation must come back
+turned into a new rule**; the use of YARA for forensic *hunting* and evidence triage is
+theirs, the **authoring and governance of the rule** is mine), `offensive-security-standards` (purple
+team, adversary emulation, Atomic Red Team and Caldera as **generators** of the authorised
+attack and its deconfliction with the SOC — **they generate the activity, I write and validate
+the detection**), `container-runtime-security-standards` (**which runtime signal matters** —
+unexpected shell, writes to binaries, runtime socket, drift— and the deployment of the
+eBPF agent: **the Falco rule is born there and is governed here**, with my lifecycle, my tests
+and my coverage), `linux-hardening-standards` and `selinux-standards` (CIS baseline, `auditd` and
+SELinux AVCs **as a source**: configuring the audit ruleset is theirs, turning
+those events into detection is mine), `windows-server-ad-standards` (which AD event matters and
+why), `networking-standards` (segmentation, NetFlow/IPFIX and the network Suricata/Zeek
+observe), `appsec-standards` (**A09 Security Logging and Alerting Failures**: which events
+the application must **emit** — authn, denied authz, privilege change; I consume that
+emission, I do not design it), `vulnerability-management-standards` (CVE, CVSS/EPSS/KEV and patching
+SLAs), `privacy-engineering-standards` (PII inside security logs, minimisation
+and retention limits by purpose), `secrets-management-standards` (custody and rotation of
+secrets — **shared boundary**: a leaked secret or a secret used from an anomalous origin is a
+**detection case of mine**, fed by their manager and scanning telemetry), `grc-compliance-standards` (the
+regulatory control requiring monitoring and its evidence), `identity-access-management-standards` (IdP design,
+conditional access policies and OAuth flows — I detect their abuse, I do not configure them),
+`threat-intelligence-standards` (**bidirectional boundary**: the hypothesis, the indicator and its
+expiry are theirs, the rule is mine — and **the return of *sightings* is theirs**: an indicator that
+expires for lack of sightings is retired there, by their criteria, not here).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Datos verificados ago-2026. **Verificar la última versión, licencia y estado por web antes
-> de fijarlo en un proyecto real (§8)**: este ecosistema rota en meses y varios proyectos
-> cambiaron de gobernanza en 2025-2026.
+> Data verified Aug 2026. **Verify the latest version, licence and status on the web before
+> pinning it in a real project (§8)**: this ecosystem rotates in months and several projects
+> changed governance in 2025-2026.
 
-| Ámbito | Por defecto | Alternativa justificable / vetado |
+| Area | Default | Justifiable alternative / vetoed |
 |---|---|---|
-| Formato de autoría portable | **Sigma** — spec **v2.1.0** (sep-2025, formaliza *correlations* y *meta-rules*), `pySigma` **1.5.0**, `sigma-cli` **3.1.0**, reglas `SigmaHQ/sigma` **r2026-07-01** | Escribir directamente en el lenguaje del SIEM **solo** cuando la traducción pierde semántica (§3). **Mínimo duro: pySigma ≥ 1.3.0** — las versiones anteriores ejecutaban código vía *template vars* (hoy tras `--enable-template-vars` y Jinja2 sandboxed) |
-| Ficheros y memoria | **YARA-X 1.19.0** | YARA clásico **4.5.8** solo por compatibilidad de motor de terceros: VirusTotal lo declaró en **maintenance mode** al publicar YARA-X 1.0.0 (jun-2025) y los módulos nuevos (`macho`, `lnk`) solo llegan a YARA-X. Migrar validando el ruleset (≈99 % compatible a nivel de regla) |
-| Marco de referencia de amenaza | **MITRE ATT&CK v19.1** (abr-2026) + **Navigator 5.3.2** | Ninguna. Es la lengua franca. Ojo a dos rupturas: **v18.0** sustituyó las *Detections* por **Detection Strategies (`DETxxxx`) + Analytics (`ANxxxx`)** y deprecó las *Data Sources* legacy; **v19** partió **Defense Evasion** en **Stealth (TA0005)** y **Defense Impairment (TA0112)** — usa el *crosswalk* oficial, no renumeres a mano |
-| Medición de cobertura | **DeTT&CT 2.2.0** sobre capas de Navigator, puntuando **calidad de la fuente de datos**, no solo presencia de regla | Hoja de cálculo propia (se desincroniza sola). **Vetado**: presentar "técnicas con regla" como cobertura sin puntuar visibilidad |
-| Validación adversaria | **Atomic Red Team** (MIT, modelo *rolling* sin tags) para pruebas atómicas por técnica | **Apache Caldera** para cadenas y emulación de campaña — **cambió de gobernanza: MITRE lo contribuyó al Apache Incubator el 20-may-2026**, repo canónico `apache/caldera`. **Mínimo duro ≥ 5.1.0** por **CVE-2025-27364** (CVSS 10.0, RCE preauth en compilación de agentes) |
-| Esquema de normalización | **El del motor que consumes**, declarado explícitamente: **ECS 9.4.0** en el mundo Elastic/Sigma; **OCSF 1.8.0** (Linux Foundation desde nov-2024) en lago de datos e interoperabilidad multi-vendor | **No hay ganador único hoy.** Corrección frecuente: **ECS no fue donado a OCSF, sino a OpenTelemetry (abr-2023)**, y esa convergencia sigue **incompleta**. Elegir uno por plataforma y escribirlo; traducir en el borde, no en la regla |
-| SIEM autoalojado de bajo coste | **Wazuh 4.14.7** (GPLv2) | **Mínimo duro 4.14.4+**. Wazuh tiene historial serio: **CVE-2025-24016** (CVSS 9.9, deserialización en DAPI, fix 4.9.1) fue **explotada activamente por botnets Mirai**. Es un servidor expuesto a agentes: trátalo como Tier 0 |
-| SIEM comercial | El que ya tengas; la portabilidad la da Sigma, no el producto | **Elastic Security 9.4.x** (licencia **triple**: AGPLv3 / SSPL / Elastic License — verifica cuál aplica a tu despliegue); **Microsoft Sentinel**; **Google SecOps** (antes Chronicle) con **YARA-L 2.0**; **Splunk ES** |
-| Red — IDS/IPS | **Suricata** (8.0.6 y 7.0.17 en paralelo, GPLv2) para firma y detección de protocolo | **Zeek 8.0.9** (BSD) para **metadatos y contexto** de red: no compiten, se complementan. Zeek te da el `conn.log`/`ssl.log` que hace investigable la alerta de Suricata |
-| Runtime de contenedor | **Falco 0.44.1** (Apache-2.0, CNCF **graduado** desde feb-2024) | La elección del agente y el *qué vigilar* es de `container-runtime-security-standards`; aquí el ciclo de vida del contenido |
-| Triaje offline de EVTX | **Hayabusa 3.10.0** (AGPL-3.0, ATT&CK v19) o **Chainsaw 2.16.2** (GPL-3.0) — ambos ejecutan Sigma sobre evidencia | Parseo manual de EVTX. Útiles además como **motor de test** de reglas Sigma de Windows en CI |
-| Contenido de terceros como base | **SigmaHQ** (reglas), **elastic/detection-rules**, **splunk/security_content (ESCU 6.3.0, Apache-2.0)**, **panther-analysis 3.112.0** (Apache-2.0), **Nextron `signature-base`** (licencia **DRL 1.1** — revisa antes de usar en producto comercial) | Consumir el paquete entero sin calibrar (§7). **Vetado**: reglas de proveedor cerradas cuya lógica no puedes leer ni versionar |
+| Portable authoring format | **Sigma** — spec **v2.1.0** (Sep 2025, formalises *correlations* and *meta-rules*), `pySigma` **1.5.0**, `sigma-cli` **3.1.0**, `SigmaHQ/sigma` rules **r2026-07-01** | Writing directly in the SIEM's language **only** when translation loses semantics (§3). **Hard minimum: pySigma ≥ 1.3.0** — earlier versions executed code via *template vars* (today behind `--enable-template-vars` and a sandboxed Jinja2) |
+| Files and memory | **YARA-X 1.19.0** | Classic YARA **4.5.8** only for third-party engine compatibility: VirusTotal declared it in **maintenance mode** when publishing YARA-X 1.0.0 (Jun 2025) and new modules (`macho`, `lnk`) only reach YARA-X. Migrate while validating the ruleset (≈99 % compatible at rule level) |
+| Threat reference framework | **MITRE ATT&CK v19.1** (Apr 2026) + **Navigator 5.3.2** | None. It is the lingua franca. Watch two breaks: **v18.0** replaced *Detections* with **Detection Strategies (`DETxxxx`) + Analytics (`ANxxxx`)** and deprecated the legacy *Data Sources*; **v19** split **Defense Evasion** into **Stealth (TA0005)** and **Defense Impairment (TA0112)** — use the official *crosswalk*, do not renumber by hand |
+| Coverage measurement | **DeTT&CT 2.2.0** over Navigator layers, scoring **data source quality**, not just rule presence | Your own spreadsheet (it desynchronises on its own). **Vetoed**: presenting "techniques with a rule" as coverage without scoring visibility |
+| Adversarial validation | **Atomic Red Team** (MIT, *rolling* model with no tags) for atomic tests per technique | **Apache Caldera** for chains and campaign emulation — **it changed governance: MITRE contributed it to the Apache Incubator on 20 May 2026**, canonical repo `apache/caldera`. **Hard minimum ≥ 5.1.0** because of **CVE-2025-27364** (CVSS 10.0, preauth RCE in agent compilation) |
+| Normalisation schema | **The one of the engine you consume**, declared explicitly: **ECS 9.4.0** in the Elastic/Sigma world; **OCSF 1.8.0** (Linux Foundation since Nov 2024) in a data lake and for multi-vendor interoperability | **There is no single winner today.** Frequent correction: **ECS was not donated to OCSF, but to OpenTelemetry (Apr 2023)**, and that convergence is still **incomplete**. Pick one per platform and write it down; translate at the edge, not in the rule |
+| Low-cost self-hosted SIEM | **Wazuh 4.14.7** (GPLv2) | **Hard minimum 4.14.4+**. Wazuh has a serious history: **CVE-2025-24016** (CVSS 9.9, deserialisation in DAPI, fix 4.9.1) was **actively exploited by Mirai botnets**. It is a server exposed to agents: treat it as Tier 0 |
+| Commercial SIEM | Whichever you already have; portability comes from Sigma, not the product | **Elastic Security 9.4.x** (**triple** licence: AGPLv3 / SSPL / Elastic License — verify which applies to your deployment); **Microsoft Sentinel**; **Google SecOps** (formerly Chronicle) with **YARA-L 2.0**; **Splunk ES** |
+| Network — IDS/IPS | **Suricata** (8.0.6 and 7.0.17 in parallel, GPLv2) for signatures and protocol detection | **Zeek 8.0.9** (BSD) for network **metadata and context**: they do not compete, they complement each other. Zeek gives you the `conn.log`/`ssl.log` that makes the Suricata alert investigable |
+| Container runtime | **Falco 0.44.1** (Apache-2.0, CNCF **graduated** since Feb 2024) | The choice of agent and the *what to watch* belongs to `container-runtime-security-standards`; here the content lifecycle |
+| Offline EVTX triage | **Hayabusa 3.10.0** (AGPL-3.0, ATT&CK v19) or **Chainsaw 2.16.2** (GPL-3.0) — both run Sigma over evidence | Manual EVTX parsing. Also useful as a **test engine** for Windows Sigma rules in CI |
+| Third-party content as a base | **SigmaHQ** (rules), **elastic/detection-rules**, **splunk/security_content (ESCU 6.3.0, Apache-2.0)**, **panther-analysis 3.112.0** (Apache-2.0), **Nextron `signature-base`** (**DRL 1.1** licence — check before using in a commercial product) | Consuming the whole package without calibrating (§7). **Vetoed**: closed vendor rules whose logic you can neither read nor version |
 
-**Proyectos a no elegir en 2026** (verificado): **Matano** — sin commits desde ene-2025;
-**DetectionLab** — declarado muerto por su autor desde 2023. **Panther**: Databricks anunció
-acuerdo de adquisición el 16-jun-2026 y **la nota no dice nada sobre el futuro del OSS** —
-`panther-analysis` sigue Apache-2.0 y activo, pero es una apuesta con riesgo de gobernanza.
-Mención por si aplica al sector público europeo: **OpenTIDE** (Comisión Europea, EUPL 1.2,
-org `OpenTideHQ`) es hoy el marco de detection-as-code formal más completo de fuente abierta.
+**Projects not to choose in 2026** (verified): **Matano** — no commits since Jan 2025;
+**DetectionLab** — declared dead by its author since 2023. **Panther**: Databricks announced an
+acquisition agreement on 16 Jun 2026 and **the release says nothing about the future of the OSS** —
+`panther-analysis` is still Apache-2.0 and active, but it is a bet with governance risk.
+Worth mentioning in case it applies to the European public sector: **OpenTIDE** (European Commission, EUPL 1.2,
+org `OpenTideHQ`) is today the most complete formal open-source detection-as-code framework.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 El ciclo de vida (una regla es un artefacto de software, no un ticket)
+### 3.1 The lifecycle (a rule is a software artifact, not a ticket)
 
-`idea/hipótesis → fuente de datos → regla → test → despliegue por CI → medición → tuning → retiro`
+`idea/hypothesis → data source → rule → test → deployment by CI → measurement → tuning → retirement`
 
-- **Idea/hipótesis**: toda regla nace de una hipótesis escrita (`"un atacante con credenciales
-  válidas registrará un dispositivo nuevo en Entra tras el phishing de device code"`), con
-  técnica ATT&CK, actor o campaña de referencia, y **valor esperado**. Sin hipótesis no hay
-  criterio para saber si la regla funciona ni para retirarla.
-- **Fuente antes que regla** (§3.2): si el evento no llega, la regla es teatro.
-- **Regla**: en el repo, con metadatos completos (§3.4), revisada en PR por alguien distinto
-  del autor.
-- **Test**: unitario obligatorio (§4), más validación adversaria antes de subir la severidad.
-- **Despliegue por CI**: nunca a mano en la consola del SIEM. La consola es *read-only* para
-  contenido; lo editado ahí se pierde en la siguiente sincronización o produce *drift*
-  invisible.
-- **Medición**: FP rate, disparos, acciones tomadas. Una regla sin telemetría de sí misma no
-  se puede gobernar.
-- **Retiro**: la regla que no ha disparado nada útil en su ventana de revisión **se borra o
-  se degrada a informativa**, en la misma PR que lo constata. El coste de una regla muerta no
-  es cero: consume cómputo, ensucia la cobertura y desgasta al analista que la triaja.
+- **Idea/hypothesis**: every rule is born from a written hypothesis (`"an attacker with valid
+  credentials will register a new device in Entra after device code phishing"`), with an
+  ATT&CK technique, a reference actor or campaign, and **expected value**. Without a hypothesis there is no
+  criterion for knowing whether the rule works or for retiring it.
+- **Source before rule** (§3.2): if the event does not arrive, the rule is theatre.
+- **Rule**: in the repo, with complete metadata (§3.4), reviewed in a PR by somebody other
+  than the author.
+- **Test**: mandatory unit test (§4), plus adversarial validation before raising the severity.
+- **Deployment by CI**: never by hand in the SIEM console. The console is *read-only* for
+  content; what is edited there is lost at the next sync or produces invisible
+  *drift*.
+- **Measurement**: FP rate, firings, actions taken. A rule with no telemetry about itself
+  cannot be governed.
+- **Retirement**: a rule that has fired nothing useful in its review window **is deleted or
+  downgraded to informational**, in the same PR that establishes this. The cost of a dead rule is
+  not zero: it consumes compute, dirties the coverage and wears down the analyst who triages it.
 
-**Estructura de repo de referencia** (adáptala, pero que exista una):
+**Reference repo structure** (adapt it, but have one):
 
 ```
 detections/
-  rules/<plataforma>/<tactica>/<id>.yml     # Sigma u origen del motor
-  pipelines/<plataforma>.yml                # pySigma processing pipelines
-  tests/<id>/{positive,negative}.jsonl      # eventos que DEBEN y NO deben disparar
-  runbooks/<id>.md                          # obligatorio (§3.5)
-  coverage/navigator-*.json                 # capas generadas, no editadas a mano
-  deprecated/                               # con motivo y fecha, no borrado silencioso
+  rules/<platform>/<tactic>/<id>.yml        # Sigma or the engine's native format
+  pipelines/<platform>.yml                  # pySigma processing pipelines
+  tests/<id>/{positive,negative}.jsonl      # events that MUST and MUST NOT fire
+  runbooks/<id>.md                          # mandatory (§3.5)
+  coverage/navigator-*.json                 # generated layers, not hand-edited
+  deprecated/                               # with reason and date, not silent deletion
 ```
 
-### 3.2 Modelo de datos y telemetría: la parte que casi nadie hace
+### 3.2 Data model and telemetry: the part almost nobody does
 
-- **El onboarding de una fuente es un proyecto, no un checkbox.** Por cada fuente:
-  *qué eventos concretos* (por ID/categoría, no "los logs del AD"), *cómo se transportan*,
-  *cómo se normalizan*, *cuánto se retienen*, *cuánto cuesta* y *qué detecciones habilita*.
-  Si no habilita ninguna, no se ingiere.
-- **Coste y retención son restricciones de diseño de primera clase**, exactamente igual que en
-  `observability-standards`. Patrón sano: **retención caliente corta (búsqueda interactiva) +
-  retención fría larga y barata (investigación y cumplimiento)**. Regla práctica: la ventana
-  fría debe cubrir el *dwell time* que asumes, no el que te gustaría.
-- **Normaliza en el borde, no en la regla.** Una regla que trocea strings para reconstruir un
-  campo que el pipeline debía haber normalizado es deuda que se paga en cada fuente nueva.
-- **Mide la salud de la fuente como si fuera un SLI**: latencia de ingesta, volumen por hora
-  con banda esperada, y **alerta por ausencia de eventos** — el silencio de una fuente es
-  indistinguible de "no ha pasado nada", y es exactamente lo que produce un atacante que
-  desactiva el agente. *Detection of missing detection* es la primera regla que se escribe.
-- **Integridad**: los logs de seguridad se separan de la telemetría operativa (control de
-  acceso, retención e **inmutabilidad** distintos). El SIEM es el registro que un atacante
-  querrá borrar.
+- **Onboarding a source is a project, not a checkbox.** For every source:
+  *which concrete events* (by ID/category, not "the AD logs"), *how they are transported*,
+  *how they are normalised*, *how long they are retained*, *what they cost* and *which detections they enable*.
+  If it enables none, it is not ingested.
+- **Cost and retention are first-class design constraints**, exactly as in
+  `observability-standards`. Healthy pattern: **short hot retention (interactive search) +
+  long, cheap cold retention (investigation and compliance)**. Practical rule: the cold
+  window must cover the *dwell time* you assume, not the one you would like.
+- **Normalise at the edge, not in the rule.** A rule that slices strings to reconstruct a
+  field the pipeline should have normalised is debt paid on every new source.
+- **Measure source health as if it were an SLI**: ingestion latency, volume per hour
+  with an expected band, and **alert on the absence of events** — a source's silence is
+  indistinguishable from "nothing happened", and it is exactly what an attacker who
+  disables the agent produces. *Detection of missing detection* is the first rule you write.
+- **Integrity**: security logs are kept separate from operational telemetry (different access
+  control, retention and **immutability**). The SIEM is the record an attacker
+  will want to erase.
 
-**Prioridad de fuentes hoy** (por relación valor/coste, no por tradición):
-1. **Identidad y plano de control cloud** — es la superficie principal (§3.7).
-2. **Endpoint/EDR** (proceso, línea de comandos, padre/hijo, carga de módulos).
-3. **Autenticación y directorio** (AD, Entra, IdP).
-4. **CI/CD y registro de artefactos** (§5).
-5. **Red** (DNS, proxy/egress, `conn.log`): imprescindible para investigar, mediocre para
-   detectar en solitario.
+**Source priority today** (by value/cost ratio, not by tradition):
+1. **Identity and the cloud control plane** — it is the main surface (§3.7).
+2. **Endpoint/EDR** (process, command line, parent/child, module loading).
+3. **Authentication and directory** (AD, Entra, IdP).
+4. **CI/CD and the artifact registry** (§5).
+5. **Network** (DNS, proxy/egress, `conn.log`): indispensable for investigating, mediocre for
+   detecting on its own.
 
-### 3.3 Cobertura ATT&CK con honestidad
+### 3.3 ATT&CK coverage with honesty
 
-- La cobertura se puntúa por **calidad de visibilidad × calidad de la detección**, no por
-  conteo de reglas. Escala mínima por técnica: `sin telemetría` → `telemetría sin regla` →
-  `regla no validada` → `regla validada contra ejecución real` → `regla validada y con
-  procedimiento de respuesta`. Solo los dos últimos cuentan como cobertura.
-- **Una técnica cubierta por una sola variante no está cubierta.** ATT&CK enumera
-  comportamientos, no comandos: si la regla solo casa el binario que usó el atomic test, has
-  cubierto la herramienta, no la técnica.
-- Prioriza por **amenaza relevante** (perfil de adversario, sector, superficie real), no por
-  llenar la matriz. Una matriz verde uniforme es señal de que se ha optimizado el color.
-- **Genera las capas de Navigator desde el repo en CI.** Un mapa de cobertura editado a mano
-  miente en cuanto se mergea la siguiente PR.
-- Al saltar de versión de ATT&CK, **usa el crosswalk oficial** (la partición de Defense
-  Evasion en v19 invalida mapeos previos) y trata la migración como un cambio con PR y
-  revisión, no como un `sed`.
+- Coverage is scored by **visibility quality × detection quality**, not by
+  rule count. Minimum scale per technique: `no telemetry` → `telemetry with no rule` →
+  `unvalidated rule` → `rule validated against a real execution` → `rule validated and with
+  a response procedure`. Only the last two count as coverage.
+- **A technique covered by a single variant is not covered.** ATT&CK enumerates
+  behaviours, not commands: if the rule only matches the binary the atomic test used, you have
+  covered the tool, not the technique.
+- Prioritise by **relevant threat** (adversary profile, sector, real surface), not by
+  filling the matrix. A uniformly green matrix is a sign the colour has been optimised.
+- **Generate the Navigator layers from the repo in CI.** A hand-edited coverage map
+  lies as soon as the next PR is merged.
+- When jumping ATT&CK versions, **use the official crosswalk** (the split of Defense
+  Evasion in v19 invalidates previous mappings) and treat the migration as a change with a PR and
+  review, not as a `sed`.
 
-### 3.4 Anatomía de una regla que se puede gobernar
+### 3.4 Anatomy of a rule that can be governed
 
-Metadatos obligatorios, sin excepción: `id` estable (UUID, nunca reutilizado), `title`
-accionable, `status` (`experimental` → `test` → `stable` → `deprecated`), `description` con
-la hipótesis, `author`/`owner` (equipo, no persona), `date`/`modified`, `level` justificado,
-`tags` ATT&CK con versión del framework, `falsepositives` **poblado con casos reales
-observados**, `references` y **enlace al runbook**.
+Mandatory metadata, no exceptions: a stable `id` (UUID, never reused), an actionable
+`title`, `status` (`experimental` → `test` → `stable` → `deprecated`), a `description` with
+the hypothesis, `author`/`owner` (a team, not a person), `date`/`modified`, a justified `level`,
+ATT&CK `tags` with the framework version, `falsepositives` **populated with real observed
+cases**, `references` and **a link to the runbook**.
 
-- **La severidad se gana, no se declara.** Una regla nace en `experimental` con severidad
-  informativa; sube solo con datos: N días en producción, FP rate medido, y validación
-  adversaria superada. Subir la severidad "porque la técnica es grave" es la vía directa a la
-  fatiga de alertas.
-- **Contexto accionable en el propio evento**: quién (identidad resuelta, no un GUID), qué
-  activo (con dueño y criticidad), qué pasó (comando/campos crudos relevantes), qué se espera
-  del analista. Una alerta que obliga a abrir cuatro consolas para saber si importa ya ha
-  fallado.
-- **Enriquecimiento en el pipeline, no en la cabeza del analista**: inventario de activos,
-  criticidad, propietario, geolocalización, reputación, y **si esa actividad estaba
-  autorizada** (ventana de cambio, ejercicio de red team deconflictado).
-- **Deduplicación y agrupación**: la unidad de trabajo es el **incidente**, no la alerta. Se
-  agrupa por las entidades que definen *un mismo caso* (identidad, host, sesión, campaña) con
-  ventana temporal. Las **correlations de Sigma v2** (`event_count`, `value_count`,
-  `temporal`) son el mecanismo portable para expresar cadenas y umbrales sin atarse al motor.
-- **Portabilidad con límite declarado**: Sigma es el formato de autoría; el backend traduce.
-  Cuando la semántica no sobrevive a la traducción (correlación compleja, joins, funciones
-  propias del motor, análisis de secuencia), **se escribe en el lenguaje nativo y se declara
-  la excepción en la regla** — no se fuerza un Sigma que traduce a algo que no es lo que dice.
-- **Frescura de los backends de pySigma: verifícala, no confíes en la etiqueta.** El
-  directorio oficial marca como *stable* backends abandonados (`sentinelone` sin publicar
-  desde 2023, `ibm-qradar-aql` e `insightidr` igualmente rezagados). Antes de apostar una
-  plataforma a un backend, mira la fecha del último release, no el badge.
+- **Severity is earned, not declared.** A rule is born in `experimental` with informational
+  severity; it goes up only with data: N days in production, a measured FP rate, and
+  adversarial validation passed. Raising the severity "because the technique is serious" is the direct route to
+  alert fatigue.
+- **Actionable context in the event itself**: who (a resolved identity, not a GUID), which
+  asset (with owner and criticality), what happened (relevant raw command/fields), what is expected
+  of the analyst. An alert that forces you to open four consoles to know whether it matters has already
+  failed.
+- **Enrichment in the pipeline, not in the analyst's head**: asset inventory,
+  criticality, owner, geolocation, reputation, and **whether that activity was
+  authorised** (change window, deconflicted red team exercise).
+- **Deduplication and grouping**: the unit of work is the **incident**, not the alert. It is
+  grouped by the entities that define *one and the same case* (identity, host, session, campaign) with
+  a time window. **Sigma v2 correlations** (`event_count`, `value_count`,
+  `temporal`) are the portable mechanism for expressing chains and thresholds without tying yourself to the engine.
+- **Portability with a declared limit**: Sigma is the authoring format; the backend translates.
+  When the semantics do not survive translation (complex correlation, joins, engine-specific
+  functions, sequence analysis), **write it in the native language and declare
+  the exception in the rule** — do not force a Sigma that translates into something other than what it says.
+- **Freshness of pySigma backends: verify it, do not trust the label.** The
+  official directory marks abandoned backends as *stable* (`sentinelone` unpublished
+  since 2023, `ibm-qradar-aql` and `insightidr` equally behind). Before betting a
+  platform on a backend, look at the date of the last release, not the badge.
 
-### 3.5 Runbook obligatorio: la regla sin acción no se despliega
+### 3.5 Mandatory runbook: a rule with no action is not deployed
 
-Cada alerta lleva runbook versionado **en el mismo repo y en la misma PR**, con: qué significa
-el disparo, **cómo se verifica en 5 minutos** (consultas concretas, no "investigar"), qué es
-benigno conocido, qué acción inmediata corresponde (contener, revocar sesión, aislar,
-escalar), a quién se escala y con qué severidad, y qué datos preservar antes de tocar nada
-(la preservación es de `incident-response-forensics-standards`; el enlace es obligatorio).
+Every alert carries a runbook versioned **in the same repo and in the same PR**, with: what the
+firing means, **how it is verified in 5 minutes** (concrete queries, not "investigate"), what is
+known benign, what immediate action is appropriate (contain, revoke session, isolate,
+escalate), to whom it is escalated and at what severity, and which data to preserve before touching anything
+(preservation belongs to `incident-response-forensics-standards`; the link is mandatory).
 
-**Si no sabes escribir el runbook, no sabes qué detecta la regla: no se mergea.**
+**If you cannot write the runbook, you do not know what the rule detects: it is not merged.**
 
-### 3.6 Validación adversaria y detección de regresiones
+### 3.6 Adversarial validation and regression detection
 
-- **Ninguna regla sube de `experimental` sin haber disparado contra la ejecución real de la
-  técnica.** El generador del ataque es de `offensive-security-standards`; la evidencia de
-  disparo es entregable mío.
-- **Purple team ≠ red team**: el valor no es "nos entraron", es la **matriz ejecutada
-  vs. detectada vs. alertada vs. respondida** por técnica. Toda ejecución no detectada abre un
-  ítem de backlog con dueño y fecha.
-- **Regresiones**: una regla que funcionaba deja de funcionar sola cuando cambia el agente,
-  el esquema del proveedor, la versión del SO o la ruta de un binario. Ejecución **programada
-  y automática** de un subconjunto de atomics contra un entorno controlado, con alerta si la
-  detección esperada no aparece. Ejemplo real y reciente de por qué esto no es teórico: el
-  esquema de *advanced hunting* de Defender renombró `AADSignInEventsBeta` a
-  `EntraIdSignInEvents` y **eliminó las tablas legacy el 9-dic-2025**, y el 25-feb-2026 los
-  booleanos pasaron de `1`/`0` a `True`/`False` — cada uno de esos cambios rompe reglas en
-  silencio.
-- Toda ejecución adversaria se **deconflicta con el SOC** antes: un ejercicio que consume el
-  proceso de incidente real es un fallo de proceso, no una prueba superada.
+- **No rule leaves `experimental` without having fired against a real execution of the
+  technique.** The attack generator belongs to `offensive-security-standards`; the evidence of
+  the firing is my deliverable.
+- **Purple team ≠ red team**: the value is not "they got in", it is the **executed
+  vs. detected vs. alerted vs. responded** matrix by technique. Every undetected execution opens
+  a backlog item with an owner and a date.
+- **Regressions**: a rule that used to work stops working on its own when the agent changes,
+  or the vendor's schema, the OS version or a binary's path. **Scheduled and automatic**
+  execution of a subset of atomics against a controlled environment, with an alert if the expected
+  detection does not appear. A real and recent example of why this is not theoretical: Defender's
+  *advanced hunting* schema renamed `AADSignInEventsBeta` to
+  `EntraIdSignInEvents` and **removed the legacy tables on 9 Dec 2025**, and on 25 Feb 2026 the
+  booleans went from `1`/`0` to `True`/`False` — each of those changes breaks rules
+  silently.
+- Every adversarial execution is **deconflicted with the SOC** beforehand: an exercise that consumes the
+  real incident process is a process failure, not a test passed.
 
-### 3.7 Identidad y nube: donde está hoy la detección que importa
+### 3.7 Identity and cloud: where the detection that matters lives today
 
-El perímetro es la identidad. Las fuentes mínimas, con **nombres exactos** (verificar §8):
+The perimeter is identity. The minimum sources, with **exact names** (verify §8):
 
-- **Entra ID**: `SigninLogs` (interactivos), `AADNonInteractiveUserSignInLogs`,
-  `AADServicePrincipalSignInLogs`, `AADManagedIdentitySignInLogs`, `AuditLogs` y
-  **`MicrosoftGraphActivityLogs`** (requiere P1/P2). En 2026 se añadieron **Agent logs** para
-  *Entra Agent ID*, y `AADNonInteractiveUserSignInLogs` ya trae columna `Agent`: las
-  identidades de agente de IA son superficie nueva y hay que ingerirlas desde el día uno.
-- **AWS CloudTrail**: hoy son **cuatro** categorías, no dos — *Management*, *Data*, ***Network
-  activity*** (`eventCategory = NetworkActivity`; único `errorCode` válido
-  `VpceAccessDenied`, sirve para ver credenciales ajenas a tu organización usando tus VPC
-  endpoints) e *Insights*. **Solo management está activo por defecto**: los eventos de datos
-  y de red se habilitan explícitamente y se presupuestan.
-- **GCP**: `cloudaudit.googleapis.com%2Factivity` (Admin Activity, siempre),
-  `%2Fdata_access` (**deshabilitado por defecto** salvo BigQuery), `%2Fsystem_event`,
-  `%2Fpolicy`. Para abuso de consentimiento en Workspace, el log clave es el **OAuth Token
-  Audit** (`applicationName=token`, eventos `authorize`/`revoke`, con `scope_data`,
-  `client_id`, `app_name`); retención por defecto **6 meses** — si tu ventana de
-  investigación es mayor, expórtalo.
-- **GuardDuty Extended Threat Detection** está activo por defecto y sin coste extra, con
-  ventana móvil de 24 h. **Trampa operativa verificada: ignora los findings archivados,
-  incluidos los archivados por tus propias suppression rules** — un tuning agresivo te ciega
-  la correlación de secuencias de ataque.
+- **Entra ID**: `SigninLogs` (interactive), `AADNonInteractiveUserSignInLogs`,
+  `AADServicePrincipalSignInLogs`, `AADManagedIdentitySignInLogs`, `AuditLogs` and
+  **`MicrosoftGraphActivityLogs`** (requires P1/P2). In 2026 **Agent logs** were added for
+  *Entra Agent ID*, and `AADNonInteractiveUserSignInLogs` now carries an `Agent` column: AI
+  agent identities are a new surface and must be ingested from day one.
+- **AWS CloudTrail**: there are now **four** categories, not two — *Management*, *Data*, ***Network
+  activity*** (`eventCategory = NetworkActivity`; the only valid `errorCode` is
+  `VpceAccessDenied`, useful for seeing credentials outside your organisation using your VPC
+  endpoints) and *Insights*. **Only management is on by default**: data and network events
+  are enabled explicitly and budgeted for.
+- **GCP**: `cloudaudit.googleapis.com%2Factivity` (Admin Activity, always),
+  `%2Fdata_access` (**disabled by default** except for BigQuery), `%2Fsystem_event`,
+  `%2Fpolicy`. For consent abuse in Workspace, the key log is the **OAuth Token
+  Audit** (`applicationName=token`, `authorize`/`revoke` events, with `scope_data`,
+  `client_id`, `app_name`); default retention **6 months** — if your investigation
+  window is longer, export it.
+- **GuardDuty Extended Threat Detection** is on by default and at no extra cost, with a rolling
+  24 h window. **Verified operational trap: it ignores archived findings,
+  including those archived by your own suppression rules** — aggressive tuning blinds you to
+  attack sequence correlation.
 
-**Casos de uso obligatorios en identidad** (cadena ATT&CK defendible:
-`T1566.002 → T1528 → T1550.001 → T1098.005 / T1098.001`; **no existe sub-técnica dedicada al
-device code phishing** — quien lo menciona explícitamente es T1566.002, no T1528):
+**Mandatory identity use cases** (defensible ATT&CK chain:
+`T1566.002 → T1528 → T1550.001 → T1098.005 / T1098.001`; **there is no dedicated sub-technique for
+device code phishing** — the one that mentions it explicitly is T1566.002, not T1528):
 
-- **Device code phishing**: el campo decisivo en Entra es `AuthenticationProtocol == "deviceCode"`.
-  Es la técnica de **Storm-2372** (Microsoft, feb-2025; **reclasificado el 31-jul-2026 como
-  sub-cluster de Midnight Blizzard/SVR**), que pivotó al client ID
-  `29d9ed98-a469-4536-ade2-f981bc1d605e` (*Microsoft Authentication Broker*) para obtener un
-  **PRT** y registrar dispositivo. Control preventivo: condición **"Authentication flows"** de
-  Acceso Condicional. Aviso de planificación: Microsoft despliega una **política gestionada
-  "Block device code flow"** que crea en *report-only* y **activa sola tras un mínimo de 45
-  días**, avisando 28 días antes; audítala filtrando `AuditLogs` por el iniciador
-  `Microsoft Managed Policy Manager`. Caveat crítico: **una política de CA dirigida a usuarios
-  no cubre a los service principals**.
-- **Registro de dispositivo y de credencial nueva**: alta o cambio de credenciales en
-  *service principals* y *app registrations*. Es exactamente el patrón del caso
-  **Commvault/Metallic** (CISA, may-2025, **CVE-2025-3928** en KEV): robo de *client secrets*
-  de una app cross-tenant.
-- **Abuso de token OAuth de integración de terceros**: el caso **Salesloft Drift / UNC6395**
-  (ago-2025) exfiltró datos de Salesforce con tokens OAuth legítimos, buscando con SOQL
-  masivo cadenas como `AKIA`, `Snowflake`, `password`, `secret`, y **borrando los registros de
-  los query jobs**. Señales: eventos `UniqueQuery` de Salesforce Event Monitoring, UA
-  `Salesforce-Multi-Org-Fetcher/1.0`. Lección de diseño: **el consentimiento de una app de
-  terceros es una llave permanente sin MFA** — inventaría y vigila los consentimientos como
-  vigilas los administradores.
-- **Viaje imposible y anomalía de sesión**: útil, pero **solo como enriquecimiento o señal de
-  baja severidad**. En una plantilla con VPN corporativa y móviles genera FP masivo; nunca
-  como página en solitario.
-- **Correlación Graph↔sign-in** (patrón canónico verificado):
+- **Device code phishing**: the decisive field in Entra is `AuthenticationProtocol == "deviceCode"`.
+  It is the technique of **Storm-2372** (Microsoft, Feb 2025; **reclassified on 31 Jul 2026 as a
+  sub-cluster of Midnight Blizzard/SVR**), which pivoted to the client ID
+  `29d9ed98-a469-4536-ade2-f981bc1d605e` (*Microsoft Authentication Broker*) to obtain a
+  **PRT** and register a device. Preventive control: the Conditional Access **"Authentication flows"**
+  condition. Planning notice: Microsoft is rolling out a **managed policy
+  "Block device code flow"** which it creates in *report-only* and **enables on its own after a minimum of 45
+  days**, warning 28 days in advance; audit it by filtering `AuditLogs` on the initiator
+  `Microsoft Managed Policy Manager`. Critical caveat: **a CA policy targeting users
+  does not cover service principals**.
+- **Device registration and new credential**: adding or changing credentials on
+  *service principals* and *app registrations*. It is exactly the pattern of the
+  **Commvault/Metallic** case (CISA, May 2025, **CVE-2025-3928** in KEV): theft of *client secrets*
+  from a cross-tenant app.
+- **Abuse of a third-party integration's OAuth token**: the **Salesloft Drift / UNC6395** case
+  (Aug 2025) exfiltrated Salesforce data with legitimate OAuth tokens, searching with mass
+  SOQL for strings such as `AKIA`, `Snowflake`, `password`, `secret`, and **deleting the records of
+  the query jobs**. Signals: Salesforce Event Monitoring `UniqueQuery` events, UA
+  `Salesforce-Multi-Org-Fetcher/1.0`. Design lesson: **a third-party app's consent
+  is a permanent key with no MFA** — inventory and watch consents the way you
+  watch administrators.
+- **Impossible travel and session anomaly**: useful, but **only as enrichment or a low-severity
+  signal**. In a workforce with a corporate VPN and mobiles it generates massive FPs; never
+  as a paging alert on its own.
+- **Graph↔sign-in correlation** (verified canonical pattern):
   `MicrosoftGraphActivityLogs | join ... on $left.SignInActivityId == $right.UniqueTokenIdentifier`
-  — es lo que convierte "un token hizo cosas" en "esta sesión, de este usuario, desde este
-  origen, hizo estas cosas".
+  — it is what turns "a token did things" into "this session, of this user, from this
+  origin, did these things".
 
-### 3.8 Threat intelligence: pirámide del dolor, no lista de la compra
+### 3.8 Threat intelligence: pyramid of pain, not shopping list
 
-- **Los IoC caducan; los TTP no.** Hash y IP se rotan en horas y su valor es casi solo
-  retrospectivo; herramientas y TTP cuestan al adversario y sobreviven meses o años. El
-  esfuerzo de ingeniería va **arriba** de la pirámide; los IoC se automatizan y se olvidan.
-- **Todo IoC entra con caducidad y procedencia.** Un feed sin fecha de expiración es una
-  fuente de FP que crece sola. Los feeds gratuitos indiscriminados generan más triaje del que
-  ahorran: se miden como cualquier regla (§6) y se cortan si no rinden.
-- **Retro-hunt sistemático**: cada IoC nuevo se busca **hacia atrás** en la retención fría, no
-  solo hacia delante. Ahí es donde el IoC sí vale.
-- El objetivo final de la TI no es la lista: es **priorizar el backlog de detección** por
-  adversario relevante.
+- **IoCs expire; TTPs do not.** Hashes and IPs are rotated in hours and their value is almost purely
+  retrospective; tools and TTPs cost the adversary and survive months or years. The
+  engineering effort goes to the **top** of the pyramid; IoCs are automated and forgotten.
+- **Every IoC comes in with an expiry and a provenance.** A feed with no expiry date is a
+  source of FPs that grows on its own. Indiscriminate free feeds generate more triage than they
+  save: they are measured like any rule (§6) and cut if they do not pay off.
+- **Systematic retro-hunt**: every new IoC is searched **backwards** in the cold retention, not
+  only forwards. That is where the IoC does earn its keep.
+- The ultimate goal of TI is not the list: it is **prioritising the detection backlog** by
+  relevant adversary.
 
-## 4. Gates de calidad (rompen el build)
+## 4. Quality gates (they break the build)
 
-En orden de coste creciente. Los cuatro primeros son bloqueantes en toda PR de detección.
+In increasing order of cost. The first four are blocking on every detection PR.
 
-1. **Lint y esquema**: la regla parsea, valida contra el esquema del formato (Sigma spec 2.1,
-   TOML de `detection-rules`, esquema del motor) y **compila con el backend de destino**
-   (`sigma convert`). Una regla que no traduce no existe.
-2. **Metadatos completos**: `id` único y no reutilizado, dueño, `status`, tags ATT&CK
-   **existentes en la versión declarada** del framework, `falsepositives` no vacío.
-3. **Runbook presente y enlazado.** Sin runbook, sin merge (§3.5). No negociable.
-4. **Test unitario con positivos y negativos**: al menos un evento que **debe** disparar y
-   varios que **no deben** (los FP conocidos de la propia regla). Motores válidos:
-   `detection_rules test` (Elastic), `panther_analysis_tool test`, Hayabusa/Chainsaw sobre
-   EVTX de muestra, o el runner del backend. **Una regla sin test negativo no está probada:
-   está declarada.**
-5. **Test de no-regresión de esquema**: los eventos de prueba se validan contra el esquema
-   vigente (ECS/OCSF/tabla del proveedor), de modo que un renombrado de campo rompa el build
-   y no la detección en silencio (§3.6).
-6. **Cobertura**: la capa de Navigator se **regenera en CI** y el diff se revisa. Añadir una
-   regla que no mueve la cobertura declarada es señal de duplicado.
-7. **Validación adversaria** antes de promover a `stable` o de subir severidad: ejecución
-   atómica real y evidencia del disparo adjunta a la PR.
-8. **Despliegue por pipeline** con versionado y rollback: `Sentinel repositories` (GA
-   mar-2026), `elastic/detection-rules` con *version lock* por rama de stack, o el mecanismo
-   equivalente. **Prohibido el despliegue manual en consola.**
+1. **Lint and schema**: the rule parses, validates against the format's schema (Sigma spec 2.1,
+   `detection-rules` TOML, the engine's schema) and **compiles with the target backend**
+   (`sigma convert`). A rule that does not translate does not exist.
+2. **Complete metadata**: a unique, non-reused `id`, owner, `status`, ATT&CK tags
+   **existing in the declared version** of the framework, non-empty `falsepositives`.
+3. **Runbook present and linked.** No runbook, no merge (§3.5). Non-negotiable.
+4. **Unit test with positives and negatives**: at least one event that **must** fire and
+   several that **must not** (the rule's own known FPs). Valid engines:
+   `detection_rules test` (Elastic), `panther_analysis_tool test`, Hayabusa/Chainsaw over
+   sample EVTX, or the backend's runner. **A rule with no negative test is not tested:
+   it is declared.**
+5. **Schema non-regression test**: the test events are validated against the current
+   schema (ECS/OCSF/vendor table), so that a field rename breaks the build
+   and not the detection in silence (§3.6).
+6. **Coverage**: the Navigator layer is **regenerated in CI** and the diff is reviewed. Adding a
+   rule that does not move the declared coverage is a sign of a duplicate.
+7. **Adversarial validation** before promoting to `stable` or raising severity: a real
+   atomic execution and evidence of the firing attached to the PR.
+8. **Deployment by pipeline** with versioning and rollback: `Sentinel repositories` (GA
+   Mar 2026), `elastic/detection-rules` with a *version lock* per stack branch, or the equivalent
+   mechanism. **Manual deployment in the console is forbidden.**
 
-**Regla de promoción medible** (ajusta los números, pero fija unos): `experimental` → `test`
-tras compilar y pasar tests; `test` → `stable` tras ≥ 2 semanas en producción con **FP rate
-medido y < 20 %** y validación adversaria superada. **Se mide antes de subir la severidad,
-nunca después.**
+**Measurable promotion rule** (adjust the numbers, but fix some): `experimental` → `test`
+after compiling and passing tests; `test` → `stable` after ≥ 2 weeks in production with a **measured
+FP rate < 20 %** and adversarial validation passed. **It is measured before raising the severity,
+never after.**
 
-## 5. Seguridad del propio programa de detección
+## 5. Security of the detection programme itself
 
-- **La cadena de suministro del tooling de seguridad es un objetivo de primer orden, y 2026
-  lo demostró.** El compromiso de **Trivy** por el actor *TeamPCP* (**CVE-2026-33634**, CVSS
-  9.4, en **CISA KEV** desde el 26-mar-2026) llegó a **force-pushear 76 de 77 tags** de
-  `trivy-action` y los 7 de `setup-trivy`, con payload que **leía la memoria del proceso
-  `Runner.Worker` para extraer secretos enmascarados**; la misma campaña secuestró los 35 tags
-  de `Checkmarx/kics-github-action`. Precedente análogo: `tj-actions/changed-files`
-  (**CVE-2025-30066**). Consecuencias operativas, sin excepción:
-  - **Pin por SHA de commit** de toda GitHub Action del pipeline de detección; **pin por
-    digest** de toda imagen; verificación de firma y checksum de los binarios de detección.
-  - **Immutable releases** activadas en tus propios repos de contenido.
-  - **No confundas procedencia con bondad**: la variante *CanisterWorm* llegó a **generar
-    atestaciones SLSA Build L3 válidas vía Sigstore para paquetes maliciosos**. La firma
-    prueba **quién** lo construyó, no **qué** hace.
-  - El detalle del endurecimiento del pipeline es de `cicd-standards`; aquí es requisito de
-    entrada.
-- **Verificado ago-2026: ninguna de las herramientas de detección recomendadas (Sigma,
-  YARA/YARA-X, Atomic Red Team, Caldera, Falco, Suricata, Zeek, Wazuh, Elastic) aparece como
-  víctima de compromiso de repositorio en 2025-2026.** El vector, sin embargo, les aplica
-  igual: no lo trates como descartado, sino como no ocurrido todavía.
-- **El SIEM y sus reglas son datos sensibles.** El ruleset revela exactamente qué ves y qué
-  no: control de acceso al repo de detección, revisión de quién puede desactivar o modificar
-  reglas, y **alerta sobre la modificación o el silenciamiento del propio contenido**. La
-  desactivación de una regla es un evento de seguridad.
-- **Nunca embebas secretos en reglas ni en consultas** (tokens de API, credenciales de
-  enriquecimiento, claves de webhook). Van al gestor de secretos
+- **The supply chain of security tooling is a first-order target, and 2026
+  proved it.** The compromise of **Trivy** by the actor *TeamPCP* (**CVE-2026-33634**, CVSS
+  9.4, in **CISA KEV** since 26 Mar 2026) went as far as **force-pushing 76 of 77 tags** of
+  `trivy-action` and all 7 of `setup-trivy`, with a payload that **read the memory of the
+  `Runner.Worker` process to extract masked secrets**; the same campaign hijacked the 35 tags
+  of `Checkmarx/kics-github-action`. Analogous precedent: `tj-actions/changed-files`
+  (**CVE-2025-30066**). Operational consequences, without exception:
+  - **Pin by commit SHA** every GitHub Action in the detection pipeline; **pin by
+    digest** every image; verify signatures and checksums of the detection binaries.
+  - **Immutable releases** enabled in your own content repos.
+  - **Do not confuse provenance with goodness**: the *CanisterWorm* variant went as far as **generating
+    valid SLSA Build L3 attestations via Sigstore for malicious packages**. The signature
+    proves **who** built it, not **what** it does.
+  - The detail of pipeline hardening belongs to `cicd-standards`; here it is an entry
+    requirement.
+- **Verified Aug 2026: none of the recommended detection tools (Sigma,
+  YARA/YARA-X, Atomic Red Team, Caldera, Falco, Suricata, Zeek, Wazuh, Elastic) appears as a
+  victim of a repository compromise in 2025-2026.** The vector, however, applies to them
+  just the same: do not treat it as ruled out, but as not having happened yet.
+- **The SIEM and its rules are sensitive data.** The ruleset reveals exactly what you see and what
+  you do not: access control on the detection repo, review of who can disable or modify
+  rules, and **an alert on the modification or silencing of the content itself**. Disabling
+  a rule is a security event.
+- **Never embed secrets in rules or in queries** (API tokens, enrichment
+  credentials, webhook keys). They go to the secrets manager
   (`secrets-management-standards`).
-- **PII y minimización**: los logs de seguridad contienen datos personales por definición.
-  Base legal, retención por finalidad y control de acceso son de
-  `privacy-engineering-standards`; el requisito aquí es que **la regla y su enriquecimiento no
-  amplíen el conjunto de datos personales** más allá de lo necesario para decidir.
-- **Integridad y no repudio** de la evidencia: logs append-only, reloj sincronizado y
-  verificado (una deriva de reloj destruye cualquier correlación temporal y cualquier
-  timeline forense) y control de quién puede purgar.
+- **PII and minimisation**: security logs contain personal data by definition.
+  Legal basis, retention by purpose and access control belong to
+  `privacy-engineering-standards`; the requirement here is that **the rule and its enrichment do not
+  widen the set of personal data** beyond what is needed to decide.
+- **Integrity and non-repudiation** of the evidence: append-only logs, a synchronised and
+  verified clock (clock drift destroys any temporal correlation and any
+  forensic timeline) and control over who can purge.
 
-## 6. Operabilidad, coste y métricas del programa
+## 6. Operability, cost and programme metrics
 
-**Métricas que se publican (y qué las corrompe)**
+**Metrics that are published (and what corrupts them)**
 
-| Métrica | Qué mide | Cómo se corrompe |
+| Metric | What it measures | How it gets corrupted |
 |---|---|---|
-| **MTTD** | Tiempo desde la actividad del adversario hasta la detección | Medir desde la ingesta, no desde el evento; excluir lo que nunca se detectó (sesgo de supervivencia). Solo es honesta con purple team, donde conoces el `t0` real |
-| **Cobertura por fuente** | % de activos de cada clase que reportan la fuente esperada | Contar fuentes configuradas en vez de fuentes **que envían eventos ahora** |
-| **FP rate por regla** | Disparos cerrados como benignos / disparos totales | No registrar la disposición del analista; entonces no hay dato y el tuning es opinión |
-| **Alertas por analista y hora** | Carga real de triaje | Contar alertas en vez de **incidentes agrupados**. Umbral de alarma del programa, no del turno |
-| **Reglas huérfanas** | Sin dueño, sin disparos, sin runbook, sin revisión en su ventana | Ninguna: es la métrica más difícil de maquillar y la que mejor predice el colapso del programa |
-| **% de reglas validadas adversarialmente** | Cobertura real | Contar reglas escritas |
+| **MTTD** | Time from the adversary's activity to detection | Measuring from ingestion, not from the event; excluding what was never detected (survivorship bias). It is only honest with purple team, where you know the real `t0` |
+| **Coverage per source** | % of assets of each class reporting the expected source | Counting configured sources instead of sources **that are sending events now** |
+| **FP rate per rule** | Firings closed as benign / total firings | Not recording the analyst's disposition; then there is no data and tuning is opinion |
+| **Alerts per analyst per hour** | Real triage load | Counting alerts instead of **grouped incidents**. An alarm threshold for the programme, not for the shift |
+| **Orphaned rules** | No owner, no firings, no runbook, no review within its window | None: it is the metric hardest to dress up and the one that best predicts the programme's collapse |
+| **% of adversarially validated rules** | Real coverage | Counting written rules |
 
-- **La fatiga de alertas es el fallo modal del dominio.** Si el analista ignora la cola, la
-  detección no existe aunque las reglas sean perfectas. Prioridad de trabajo cuando la cola
-  se desborda: **reducir el ruido antes que añadir cobertura**, siempre.
-- **Tuning ≠ desactivar.** El orden correcto es: (1) arreglar el dato o el enriquecimiento,
-  (2) acotar la condición de la regla, (3) excepción **estrecha, documentada y con
-  caducidad**, (4) degradar a informativa, (5) retirar. Una supresión amplia y permanente es
-  un agujero de detección con forma de tuning — y en AWS, además, ciega la correlación de
-  GuardDuty (§3.7).
-- **Coste**: el SIEM se paga por ingesta, por retención o por cómputo de consulta según
-  producto — **averigua tu unidad de cobro antes de diseñar**, porque decide qué optimizar.
-  Palancas en orden: no ingerir lo que no habilita detección; filtrar y agregar en el borde;
-  retención escalonada a almacenamiento barato; consultas programadas eficientes. Ingerir "por
-  si acaso" es la forma más cara de no detectar nada.
-- **Rendimiento de la regla**: consultas programadas con ventana y frecuencia coherentes
-  (ventana ≥ frecuencia + latencia de ingesta, o pierdes eventos en el borde), sin joins
-  sobre todo el histórico, sin regex catastróficas. Una regla que no termina dentro de su
-  intervalo no detecta: se salta ejecuciones.
-- **Cambio de plataforma con fecha dura**: si usas **Microsoft Sentinel**, el producto ya está
-  GA en el portal de Defender (ene-2026) y **deja de estar soportado en el portal de Azure
-  después del 31-mar-2027**. Es un proyecto de migración con fecha, no un cambio de UI.
+- **Alert fatigue is the domain's modal failure.** If the analyst ignores the queue,
+  detection does not exist even if the rules are perfect. Work priority when the queue
+  overflows: **reduce noise before adding coverage**, always.
+- **Tuning ≠ disabling.** The correct order is: (1) fix the data or the enrichment,
+  (2) narrow the rule's condition, (3) a **narrow, documented exception with an
+  expiry**, (4) downgrade to informational, (5) retire. A broad and permanent suppression is
+  a detection hole shaped like tuning — and on AWS it also blinds GuardDuty's
+  correlation (§3.7).
+- **Cost**: the SIEM is paid for by ingestion, by retention or by query compute depending on the
+  product — **find out your billing unit before designing**, because it decides what to optimise.
+  Levers in order: do not ingest what does not enable detection; filter and aggregate at the edge;
+  tiered retention to cheap storage; efficient scheduled queries. Ingesting "just in
+  case" is the most expensive way of detecting nothing.
+- **Rule performance**: scheduled queries with a coherent window and frequency
+  (window ≥ frequency + ingestion latency, or you lose events at the edge), no joins
+  over the whole history, no catastrophic regexes. A rule that does not finish within its
+  interval does not detect: it skips executions.
+- **Platform change with a hard date**: if you use **Microsoft Sentinel**, the product is already
+  GA in the Defender portal (Jan 2026) and **stops being supported in the Azure portal
+  after 31 Mar 2027**. It is a migration project with a date, not a UI change.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisión de ATT&CK y remapeo en cada release mayor del framework (~semestral;
-  v18 y v19 trajeron rupturas estructurales); revisión de todo el ruleset **trimestral** con
-  poda explícita; actualización de `pySigma`/backends y del ruleset comunitario mensual;
-  revisión de fuentes y de su salud, continua.
-- **Toda excepción y toda supresión llevan caducidad y dueño.** Sin fecha, se convierten en
-  agujeros permanentes que nadie recuerda haber abierto.
-- El contenido de terceros se **calibra al adoptarlo**, no "algún día": entra al repo, pasa
-  los gates de §4 y se le asigna dueño, o no entra.
-- Cuando un proyecto cambia de gobernanza (Caldera → Apache Incubator; Panther → Databricks),
-  **revísalo como riesgo de plataforma**, no como nota de prensa: licencia, cadencia de
-  releases y quién responde a un CVE.
+- **Cadence**: review ATT&CK and remap on every major framework release (~half-yearly;
+  v18 and v19 brought structural breaks); review the entire ruleset **quarterly** with
+  explicit pruning; update `pySigma`/backends and the community ruleset monthly;
+  review sources and their health continuously.
+- **Every exception and every suppression carries an expiry and an owner.** Without a date, they become
+  permanent holes nobody remembers opening.
+- Third-party content is **calibrated on adoption**, not "some day": it enters the repo, passes
+  the gates of §4 and is assigned an owner, or it does not enter.
+- When a project changes governance (Caldera → Apache Incubator; Panther → Databricks),
+  **review it as a platform risk**, not as a press release: licence, release cadence
+  and who responds to a CVE.
 
-**PROHIBIDO**
-- ❌ Desplegar una regla **sin test unitario** (positivo **y** negativo).
-- ❌ Desplegar una regla **sin runbook** con acción concreta.
-- ❌ **Subir la severidad sin haber medido** el FP rate en producción.
-- ❌ Crear o editar contenido **directamente en la consola** del SIEM, sin repo ni PR.
-- ❌ Habilitar el paquete de reglas por defecto del producto **sin calibrar** — el anti-patrón
-  central del dominio: un SIEM lleno de reglas que nadie ha tocado no es cobertura, es una
-  cola de ruido que garantiza que la alerta buena pase desapercibida.
-- ❌ Presentar **conteo de reglas o de técnicas** como cobertura sin puntuar visibilidad y
-  validación.
-- ❌ Reglas sin dueño, sin `id` estable, sin tags de versión de ATT&CK o con `falsepositives`
-  vacío.
-- ❌ Escribir reglas para una fuente que **no está confirmada en ingesta**, o dejar sin alerta
-  la **ausencia de eventos** de una fuente.
-- ❌ Supresiones amplias, permanentes o sin dueño; silenciar una regla en lugar de arreglarla.
-- ❌ Alertar sobre IoC sin caducidad ni procedencia, o construir el programa sobre IoC en vez
-  de sobre TTP.
-- ❌ Viaje imposible (u otras heurísticas de anomalía pura) como alerta de página en solitario.
-- ❌ Consumir GitHub Actions o imágenes del pipeline de detección **por tag mutable** en vez de
-  por SHA/digest, o tratar una atestación SLSA como prueba de que el artefacto es benigno.
-- ❌ Ejecutar validación adversaria **sin deconfliction** previa con el SOC.
-- ❌ Secretos o credenciales embebidos en reglas, consultas o pipelines de enriquecimiento.
-- ❌ Empezar algo nuevo sobre **Matano** o **DetectionLab** (sin mantenimiento), o sobre YARA
-  clásico pudiendo usar YARA-X.
-- ❌ Ejecutar Wazuh o Caldera en versiones anteriores a los mínimos de §2 (CVEs críticas, una
-  de ellas explotada en masa).
-- ❌ Traducir a la fuerza a Sigma una lógica que el backend no soporta y confiar en el
-  resultado.
+**FORBIDDEN**
+- ❌ Deploying a rule **without a unit test** (positive **and** negative).
+- ❌ Deploying a rule **without a runbook** with a concrete action.
+- ❌ **Raising the severity without having measured** the FP rate in production.
+- ❌ Creating or editing content **directly in the SIEM console**, with no repo and no PR.
+- ❌ Enabling the product's default rule pack **without calibrating** — the domain's central
+  antipattern: a SIEM full of rules nobody has touched is not coverage, it is a
+  noise queue that guarantees the good alert goes unnoticed.
+- ❌ Presenting a **count of rules or techniques** as coverage without scoring visibility and
+  validation.
+- ❌ Rules with no owner, no stable `id`, no ATT&CK version tags or with empty
+  `falsepositives`.
+- ❌ Writing rules for a source **not confirmed in ingestion**, or leaving the **absence of events**
+  from a source without an alert.
+- ❌ Broad, permanent or ownerless suppressions; silencing a rule instead of fixing it.
+- ❌ Alerting on IoCs with no expiry or provenance, or building the programme on IoCs instead
+  of on TTPs.
+- ❌ Impossible travel (or other pure anomaly heuristics) as a standalone paging alert.
+- ❌ Consuming GitHub Actions or images in the detection pipeline **by mutable tag** instead of
+  by SHA/digest, or treating an SLSA attestation as proof that the artifact is benign.
+- ❌ Running adversarial validation **without prior deconfliction** with the SOC.
+- ❌ Secrets or credentials embedded in rules, queries or enrichment pipelines.
+- ❌ Starting anything new on **Matano** or **DetectionLab** (unmaintained), or on classic
+  YARA when YARA-X is available.
+- ❌ Running Wazuh or Caldera on versions earlier than the minimums of §2 (critical CVEs, one
+  of them mass-exploited).
+- ❌ Forcing into Sigma a logic the backend does not support and trusting the
+  result.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión, licencia, estado de proyecto o nombre de tabla/campo,
-**búscalo — no lo recuerdes**. Datos verificados ago-2026 (caducan rápido): Sigma spec
-**v2.1.0**, pySigma **1.5.0**, sigma-cli **3.1.0**, reglas SigmaHQ **r2026-07-01**; ATT&CK
-**v19.1** (abr-2026) y Navigator **5.3.2**; ATT&CK Workbench **4.10.0**; OCSF **1.8.0** (LF
-desde nov-2024); ECS **9.4.0**; Elasticsearch **9.3.0** / Elastic Security **9.4.4**; Wazuh
-**4.14.7**; Suricata **8.0.6** y **7.0.17**; Zeek **8.0.9**; Falco **0.44.1** (CNCF graduado
-feb-2024); YARA-X **1.19.0** y YARA **4.5.8**; Splunk ESCU **6.3.0**; `panther-analysis`
+Before pinning any version, licence, project status or table/field name,
+**look it up — do not recall it**. Data verified Aug 2026 (it expires fast): Sigma spec
+**v2.1.0**, pySigma **1.5.0**, sigma-cli **3.1.0**, SigmaHQ rules **r2026-07-01**; ATT&CK
+**v19.1** (Apr 2026) and Navigator **5.3.2**; ATT&CK Workbench **4.10.0**; OCSF **1.8.0** (LF
+since Nov 2024); ECS **9.4.0**; Elasticsearch **9.3.0** / Elastic Security **9.4.4**; Wazuh
+**4.14.7**; Suricata **8.0.6** and **7.0.17**; Zeek **8.0.9**; Falco **0.44.1** (CNCF graduated
+Feb 2024); YARA-X **1.19.0** and YARA **4.5.8**; Splunk ESCU **6.3.0**; `panther-analysis`
 **3.112.0**; Chainsaw **2.16.2**; Hayabusa **3.10.0**; DeTT&CT **2.2.0**.
 
-1. **Versión vigente de ATT&CK y su changelog**, incluido el *crosswalk* de la partición de
-   Defense Evasion (v19) y el modelo Detection Strategies/Analytics (v18) — **antes** de
-   remapear nada.
-2. **Frescura real del backend de pySigma** que vayas a usar: fecha del último release en el
-   `pySigma-plugin-directory`, no el badge `stable`.
-3. **Gobernanza y salud** de Caldera (Apache Incubator desde may-2026, **versión actual no
-   verificada aquí**) y de Panther (adquisición por Databricks anunciada jun-2026, **futuro
-   del OSS no declarado**).
-4. **Nombres exactos de tablas, campos y logs** del proveedor antes de escribir la consulta:
-   los esquemas de Defender/Entra, CloudTrail y Cloud Audit Logs cambiaron en 2025-2026 y
-   siguen cambiando.
-5. **Fechas duras de plataforma**: fin de soporte de Sentinel en el portal de Azure
-   (31-mar-2027, verificar), estado de las migraciones de contenido en curso.
-6. **Advisories y CVEs** de tu SIEM y de tus agentes (Wazuh y Elastic han tenido críticas
-   recientes) y del tooling que ejecutas en CI.
-7. **Compromisos de cadena de suministro** de cualquier action, imagen o binario nuevo del
-   pipeline de detección antes de adoptarlo (§5).
+1. **The current ATT&CK version and its changelog**, including the *crosswalk* for the split of
+   Defense Evasion (v19) and the Detection Strategies/Analytics model (v18) — **before**
+   remapping anything.
+2. **The real freshness of the pySigma backend** you are going to use: the date of the last release in the
+   `pySigma-plugin-directory`, not the `stable` badge.
+3. **Governance and health** of Caldera (Apache Incubator since May 2026, **current version not
+   verified here**) and of Panther (acquisition by Databricks announced Jun 2026, **future
+   of the OSS not declared**).
+4. **Exact names of the vendor's tables, fields and logs** before writing the query:
+   the Defender/Entra, CloudTrail and Cloud Audit Logs schemas changed in 2025-2026 and
+   keep changing.
+5. **Hard platform dates**: end of support for Sentinel in the Azure portal
+   (31 Mar 2027, verify), status of the content migrations under way.
+6. **Advisories and CVEs** for your SIEM and your agents (Wazuh and Elastic have had recent
+   criticals) and for the tooling you run in CI.
+7. **Supply chain compromises** of any new action, image or binary in the
+   detection pipeline before adopting it (§5).
 
-**Huecos declarados — no verificados en este documento, verifícalos tú antes de usarlos**:
-- **Versión actual de Apache Caldera (incubating)**.
-- **Versión de Splunk Enterprise Security** y novedades del producto tras la adquisición por
-  Cisco (la documentación oficial no fue accesible durante la verificación).
-- **Fechas EOL formales de las ramas Suricata 7.0 y 8.0**, y si existe o está planificada una
-  release 9.0 (la guía de upgrade la menciona; no hay release publicada).
-- **Estado del soporte de OCSF en Elastic Security y en Splunk** en 2026.
-- **Que Red Canary (mantenedor de Atomic Red Team) sea hoy parte de Zscaler** — fuente
-  secundaria, sin confirmar contra nota primaria.
-- **Fechas de GA** de la condición "Authentication flows" de Acceso Condicional, de los
-  *network activity events* de CloudTrail y de GuardDuty Extended Threat Detection.
-- **IDs ATT&CK secundarios** citados en literatura de identidad (T1621, T1539, T1550.004,
-  T1078.004, T1098.002/.003, T1606.002): no verificados individualmente contra el sitio.
-- **Si los proyectos de detección recomendados consumían** `trivy-action` o
-  `tj-actions/changed-files` durante sus ventanas de exposición: no descartado, solo no
-  encontrado.
+**Declared gaps — not verified in this document, verify them yourself before using them**:
+- **The current version of Apache Caldera (incubating)**.
+- **The version of Splunk Enterprise Security** and product news after the acquisition by
+  Cisco (the official documentation was not accessible during verification).
+- **Formal EOL dates for the Suricata 7.0 and 8.0 branches**, and whether a 9.0 release exists or is
+  planned (the upgrade guide mentions it; no release has been published).
+- **The status of OCSF support in Elastic Security and in Splunk** in 2026.
+- **Whether Red Canary (maintainer of Atomic Red Team) is today part of Zscaler** — a secondary
+  source, unconfirmed against a primary release.
+- **GA dates** for the Conditional Access "Authentication flows" condition, for CloudTrail's
+  *network activity events* and for GuardDuty Extended Threat Detection.
+- **Secondary ATT&CK IDs** cited in identity literature (T1621, T1539, T1550.004,
+  T1078.004, T1098.002/.003, T1606.002): not individually verified against the site.
+- **Whether the recommended detection projects consumed** `trivy-action` or
+  `tj-actions/changed-files` during their exposure windows: not ruled out, just not
+  found.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,27 +3,27 @@ name: podman-systemd-containers-standards
 description: Containers as systemd services on a single host with Podman and Quadlet, without an orchestrator. Use when writing or debugging Quadlet unit files (.container, .pod, .volume, .network, .kube, .build, .image, .artifact) under /etc/containers/systemd or ~/.config/containers/systemd, running quadlet -dryrun or podman quadlet list/install/rm, migrating off the deprecated podman generate systemd, podman auto-update with io.containers.autoupdate=registry and podman-auto-update.timer, netavark and aardvark-dns or pasta rootless networking and default_rootless_network_cmd, containers.conf, storage.conf, registries.conf unqualified-search-registries and policy.json image trust, podman secret versus systemd LoadCredential=, --userns=keep-id, named volumes versus bind mounts, podman.socket with DOCKER_HOST for docker compose, podman-compose, podman system prune housekeeping, or deciding between a single-host Quadlet stack and a real orchestrator.
 ---
 
-# Estándares de contenedores como servicios de systemd (Podman + Quadlet)
+# Containers as systemd services (Podman + Quadlet) standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-> **Premisa dura**: aquí un contenedor **no es una carga de trabajo programable**: es un
-> **servicio de systemd** que resulta estar empaquetado como imagen OCI. Todo lo que sigue se
-> deriva de eso. Si necesitas que algo *decida en qué host corre*, no estás en este documento:
-> estás en `kubernetes-standards`. Y si la respuesta a esa necesidad es un script propio que
-> reparte contenedores entre hosts, has escrito un orquestador peor que los que ya existen.
+> **Hard premise**: here a container **is not a schedulable workload**: it is a
+> **systemd service** that happens to be packaged as an OCI image. Everything that follows derives
+> from that. If you need something to *decide which host it runs on*, you are not in this document:
+> you are in `kubernetes-standards`. And if the answer to that need is a homegrown script that
+> spreads containers across hosts, you have written an orchestrator worse than the ones that already exist.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **ejecutar contenedores en un host, bajo systemd, sin orquestador**: Quadlet como
-formato canónico de unidad, modo rootless, red de Podman en el host, volúmenes, política de
-imágenes y firma, actualización automatizada, integración real con systemd (notify, health
-checks, cgroups, journald, credenciales), compatibilidad con Docker y las dos migraciones que
-importan (Compose → Quadlet, Quadlet → orquestador).
+Applies to **running containers on one host, under systemd, without an orchestrator**: Quadlet as the
+canonical unit format, rootless mode, Podman networking on the host, volumes, image policy
+and signing, automated updates, real systemd integration (notify, health
+checks, cgroups, journald, credentials), Docker compatibility and the two migrations that
+matter (Compose → Quadlet, Quadlet → orchestrator).
 
-Disparadores: `podman`, `podman-remote`, `quadlet`, `/usr/libexec/podman/quadlet -dryrun`,
-`podman quadlet list|install|rm|print`, ficheros `*.container`, `*.pod`, `*.volume`,
-`*.network`, `*.kube`, `*.build`, `*.image`, `*.artifact`, `/etc/containers/systemd/`,
+Triggers: `podman`, `podman-remote`, `quadlet`, `/usr/libexec/podman/quadlet -dryrun`,
+`podman quadlet list|install|rm|print`, `*.container`, `*.pod`, `*.volume`,
+`*.network`, `*.kube`, `*.build`, `*.image`, `*.artifact` files, `/etc/containers/systemd/`,
 `~/.config/containers/systemd/`, `/run/containers/systemd/`,
 `/usr/share/containers/systemd/`, `containers.conf`, `storage.conf`, `registries.conf`,
 `policy.json`, `podman generate systemd`, `podman auto-update`,
@@ -31,163 +31,163 @@ Disparadores: `podman`, `podman-remote`, `quadlet`, `/usr/libexec/podman/quadlet
 `--sdnotify=container`, `Notify=`, `HealthCmd=`, `HealthOnFailure=`, `--userns=keep-id`,
 `loginctl enable-linger`, `/etc/subuid`, `netavark`, `aardvark-dns`, `pasta`/`passt`,
 `default_rootless_network_cmd`, `podman.socket`, `DOCKER_HOST`, `podman compose`,
-`podman-compose`, `podman system prune`, `podlet`, "el contenedor no arranca tras reiniciar",
-"la unidad Quadlet no aparece en systemctl".
+`podman-compose`, `podman system prune`, `podlet`, "the container does not start after a reboot",
+"the Quadlet unit does not show up in systemctl".
 
-**Regla de arbitraje interna**: si la respuesta se escribe en un **fichero de unidad
-(`*.container` y hermanos) o en un `containers.conf`/`registries.conf` de un host**, es de esta
-skill. Si se escribe en un **manifiesto con `apiVersion`/`kind` que un scheduler consume**, es
-de `kubernetes-standards`.
+**Internal arbitration rule**: if the answer is written in a **unit file
+(`*.container` and siblings) or in a host's `containers.conf`/`registries.conf`**, it belongs to this
+skill. If it is written in a **manifest with `apiVersion`/`kind` that a scheduler consumes**, it belongs
+to `kubernetes-standards`.
 
-**No aplica**: ver `kubernetes-standards` (**frontera pactada**: allí la **construcción de la
-imagen** —`Containerfile`/`Dockerfile`, multi-stage, base mínima, pin por digest, SBOM y firma
-con cosign—, los **manifiestos** y su admisión, Helm/Kustomize y GitOps; **aquí** cómo esa misma
-imagen se ejecuta como servicio de un host sin scheduler. La `.kube` de Quadlet **no convierte
-esto en Kubernetes**: es un formato de entrada, no un cluster),
-`container-runtime-security-standards` (**la seguridad del contenedor ya en ejecución es suya,
-sin excepción**: seccomp, elección y pinning del runtime OCI —`runc`/`crun`/gVisor/Kata—,
-`--privileged` y capabilities, rutas de escape, montaje de sockets del runtime, detección en
-runtime con Falco/Tetragon, drift y forense con CRIU; **aquí** rootless como **modelo operativo
-por defecto del servicio** —linger, `keep-id`, qué se pierde y cómo se compensa—, no como
-control de aislamiento), `selinux-standards` (**el MAC es suyo**: `container_t`, MCS, semántica
-exacta de `:z`/`:Z`, `udica`; aquí solo la **obligación** de etiquetar el montaje),
-`linux-administration-standards` (**systemd genérico**: `Type=`, `Restart=`, dependencias,
-journald, cgroups v2, timers, `systemd-analyze security` — **la unidad generada por Quadlet es
-una unidad de systemd corriente y su semántica se decide allí**; aquí solo las claves de la
-sección `[Container]`/`[Pod]`/… y lo que Quadlet genera),
-`rhel-fedora-standards` (que Podman es el default de la familia y Docker la excepción a
-justificar; aquí el criterio detallado de cómo se opera), `homelab-standards` (**la frontera es
-el rigor exigido, no la herramienta**: allí un lab personal donde Compose upstream sin traducir
-es una respuesta legítima; aquí un servicio con dueño, arranque en frío probado y actualización
-gobernada), `backup-recovery-standards` (**el respaldo de los volúmenes es suyo**: mecánica,
-retención, inmutabilidad y restore probado; aquí solo **qué** hay que respaldar y que el volumen
-se para o se cuiesce antes de copiarlo), `secrets-management-standards` (origen, rotación y
-custodia del secreto —Vault/OpenBao, SOPS, ESO—; aquí solo **cómo llega** al contenedor:
-`podman secret` y `LoadCredential=`), `cryptography-pki-standards` (PKI y claves de firma; aquí
-solo que `policy.json` **exige** firma), `networking-standards` y `firewall-policy-standards`
-(diseño de red y política de filtrado como artefacto gobernado; aquí solo la red de Podman en el
-host y la **trampa** de los puertos publicados frente al firewall), `observability-standards`
-(diseño de métricas y alertas; aquí qué exportar), `iac-standards` (Ansible/Terraform que
-**despliegan** los ficheros de unidad; aquí qué debe contener la unidad), `cicd-standards` (la
-pipeline que construye y firma la imagen), `ha-clustering-standards` (**mención cruzada, sin
-solape**: si la pregunta es "cómo sobrevive este contenedor a la caída del **host**", la
-respuesta honesta es **casi nunca con Pacemaker** —ver §7—, sino con un orquestador o asumiendo
-el downtime; Pacemaker gestionando contenedores en un host es complejidad que no compra nada).
+**Not applicable**: see `kubernetes-standards` (**agreed boundary**: there the **image
+build** —`Containerfile`/`Dockerfile`, multi-stage, minimal base, pinning by digest, SBOM and signing
+with cosign—, the **manifests** and their admission, Helm/Kustomize and GitOps; **here** how that same
+image runs as a service on a host without a scheduler. Quadlet's `.kube` **does not turn
+this into Kubernetes**: it is an input format, not a cluster),
+`container-runtime-security-standards` (**the security of the already-running container is theirs,
+without exception**: seccomp, choice and pinning of the OCI runtime —`runc`/`crun`/gVisor/Kata—,
+`--privileged` and capabilities, escape paths, mounting runtime sockets, runtime detection
+with Falco/Tetragon, drift and forensics with CRIU; **here** rootless as the **default operating
+model of the service** —linger, `keep-id`, what is lost and how it is compensated—, not as an
+isolation control), `selinux-standards` (**MAC is theirs**: `container_t`, MCS, exact
+semantics of `:z`/`:Z`, `udica`; here only the **obligation** to label the mount),
+`linux-administration-standards` (**generic systemd**: `Type=`, `Restart=`, dependencies,
+journald, cgroups v2, timers, `systemd-analyze security` — **the unit generated by Quadlet is
+an ordinary systemd unit and its semantics are decided there**; here only the keys of the
+`[Container]`/`[Pod]`/… section and what Quadlet generates),
+`rhel-fedora-standards` (that Podman is the family default and Docker the exception to
+justify; here the detailed criteria for how it is operated), `homelab-standards` (**the boundary is
+the rigour demanded, not the tool**: there a personal lab where untranslated upstream Compose
+is a legitimate answer; here a service with an owner, a tested cold start and governed
+updates), `backup-recovery-standards` (**backing up the volumes is theirs**: mechanics,
+retention, immutability and tested restore; here only **what** must be backed up and that the volume
+is stopped or quiesced before copying it), `secrets-management-standards` (origin, rotation and
+custody of the secret —Vault/OpenBao, SOPS, ESO—; here only **how it reaches** the container:
+`podman secret` and `LoadCredential=`), `cryptography-pki-standards` (PKI and signing keys; here
+only that `policy.json` **requires** a signature), `networking-standards` and `firewall-policy-standards`
+(network design and filtering policy as a governed artifact; here only Podman networking on the
+host and the **trap** of published ports versus the firewall), `observability-standards`
+(metrics and alerting design; here what to export), `iac-standards` (Ansible/Terraform that
+**deploy** the unit files; here what the unit must contain), `cicd-standards` (the
+pipeline that builds and signs the image), `ha-clustering-standards` (**cross-reference, no
+overlap**: if the question is "how does this container survive the failure of the **host**", the
+honest answer is **almost never with Pacemaker** —see §7—, but with an orchestrator or by accepting
+the downtime; Pacemaker managing containers on a host is complexity that buys nothing).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Decisión | Por defecto (ago-2026) | Motivo |
+| Decision | Default (Aug 2026) | Reason |
 |---|---|---|
-| Motor | **Podman 6.0.2** (línea 6.0, GA 2026-06-24); línea anterior mantenida **5.8.5**. `6.1.0-rc1` publicada 2026-07-31 — **no en prod** | Sin daemon, sin root, unidad de systemd real por contenedor. Es el modelo que encaja con un host |
-| **Versión mínima absoluta** | **≥ 5.8.4** o **≥ 6.0.0** | **CVE-2026-57231** (GHSA-4hq8-gpf5-8p68): una imagen maliciosa con entradas `Env` malformadas filtra variables de entorno **del host** al contenedor, con comodín `*` para exfiltrar sin conocer los nombres. Afecta **1.8.1 → 5.8.3**. Cualquier host por debajo de esa línea que ejecute imágenes de terceros está comprometible por diseño |
-| Formato de unidad | **Quadlet**, siempre | Es el formato declarativo soportado. `podman generate systemd` no es una alternativa (ver abajo) |
-| Runtime OCI | **`crun` 1.28** | Default de la familia RHEL/Fedora, menor huella. La elección y el pinning del runtime como control de seguridad los fija `container-runtime-security-standards` |
-| Modo | **Rootless** | Rootful exige **justificación escrita** en el repo (§3.3) |
-| Red | **netavark 2.0.0** + **aardvark-dns 2.0.0** | Podman 6 **exige** exactamente estas versiones. CNI **eliminado** en Podman 6 |
-| Red rootless | **pasta** (`passt`) | Default upstream desde **Podman 5.0**; en RHEL/Oracle Linux desde **9.5**. En **Podman 6 `slirp4netns` está eliminado**: no es una opción, ni con `default_rootless_network_cmd` |
-| Backend de firewall | **nftables** | `iptables` **eliminado** en Podman 6 |
-| cgroups | **v2 obligatorio** | Podman 6 **elimina** el soporte de cgroups v1. Un host con cgroups v1 no actualiza |
-| Base de datos interna | **SQLite** | BoltDB **eliminado**; Podman 6 intenta migración automática al primer arranque — **hacer copia de `~/.local/share/containers` / `/var/lib/containers` antes** |
-| Compose | **`docker compose` v2 contra `podman.socket`** si hay que consumir un Compose upstream; **Quadlet** para todo lo propio | `podman-compose` (v1.6.0, jun-2026) es una reimplementación con huecos conocidos (secretos externos, configs, red) |
-| Actualización | `podman auto-update` con política **`registry`** + `podman-auto-update.timer` | Ver §3.5: solo es seguro con `--sdnotify=container` y rollback |
-| Herramienta de conversión | `podlet` para el **primer borrador** de una unidad | Su salida se revisa a mano: no genera hardening ni dependencias correctas |
+| Engine | **Podman 6.0.2** (6.0 line, GA 2026-06-24); previous line maintained at **5.8.5**. `6.1.0-rc1` published 2026-07-31 — **not in prod** | No daemon, no root, a real systemd unit per container. It is the model that fits a host |
+| **Absolute minimum version** | **≥ 5.8.4** or **≥ 6.0.0** | **CVE-2026-57231** (GHSA-4hq8-gpf5-8p68): a malicious image with malformed `Env` entries leaks environment variables **from the host** into the container, with a `*` wildcard to exfiltrate without knowing the names. Affects **1.8.1 → 5.8.3**. Any host below that line running third-party images is compromisable by design |
+| Unit format | **Quadlet**, always | It is the supported declarative format. `podman generate systemd` is not an alternative (see below) |
+| OCI runtime | **`crun` 1.28** | Default of the RHEL/Fedora family, smaller footprint. The choice and pinning of the runtime as a security control is set by `container-runtime-security-standards` |
+| Mode | **Rootless** | Rootful requires **written justification** in the repo (§3.3) |
+| Network | **netavark 2.0.0** + **aardvark-dns 2.0.0** | Podman 6 **requires** exactly these versions. CNI **removed** in Podman 6 |
+| Rootless network | **pasta** (`passt`) | Upstream default since **Podman 5.0**; on RHEL/Oracle Linux since **9.5**. In **Podman 6 `slirp4netns` is removed**: it is not an option, not even with `default_rootless_network_cmd` |
+| Firewall backend | **nftables** | `iptables` **removed** in Podman 6 |
+| cgroups | **v2 mandatory** | Podman 6 **removes** cgroups v1 support. A host with cgroups v1 does not upgrade |
+| Internal database | **SQLite** | BoltDB **removed**; Podman 6 attempts automatic migration on first start — **make a copy of `~/.local/share/containers` / `/var/lib/containers` first** |
+| Compose | **`docker compose` v2 against `podman.socket`** if an upstream Compose must be consumed; **Quadlet** for everything of your own | `podman-compose` (v1.6.0, Jun 2026) is a reimplementation with known gaps (external secrets, configs, networking) |
+| Updates | `podman auto-update` with the **`registry`** policy + `podman-auto-update.timer` | See §3.5: it is only safe with `--sdnotify=container` and rollback |
+| Conversion tool | `podlet` for the **first draft** of a unit | Its output is reviewed by hand: it generates neither hardening nor correct dependencies |
 
-**Piezas acompañantes obligadas con Podman 6.0.x** (lo dice la nota de release, no es
-opinable): **Buildah 1.44.0**, **Skopeo 1.23**, **netavark y aardvark-dns 2.0.0**, y ficheros de
-configuración de `container-libs` **common/v0.68.0**. Mezclar versiones aquí produce fallos que
-parecen de red o de storage y no lo son.
+**Mandatory companion pieces with Podman 6.0.x** (the release note says so, it is not
+up for debate): **Buildah 1.44.0**, **Skopeo 1.23**, **netavark and aardvark-dns 2.0.0**, and
+`container-libs` configuration files **common/v0.68.0**. Mixing versions here produces failures that
+look like networking or storage failures and are not.
 
-**Cambio de gobernanza a tener en cuenta**: Podman es proyecto **CNCF (Sandbox desde el
-2025-01-21)** y el repositorio se ha movido a la organización **`podman-container-tools`**; el
-import path pasó a `go.podman.io/podman/v6`. Consecuencia práctica: **cualquier automatización,
-pin de acción de CI o URL de descarga que apunte a `github.com/containers/podman` se revisa** —
-el redirect funciona hoy, pero un artefacto de suministro no se ancla en un redirect.
+**Governance change to keep in mind**: Podman is a **CNCF** project (**Sandbox since
+2025-01-21**) and the repository has moved to the **`podman-container-tools`** organisation; the
+import path became `go.podman.io/podman/v6`. Practical consequence: **any automation,
+CI action pin or download URL pointing at `github.com/containers/podman` gets reviewed** —
+the redirect works today, but a supply artifact is not anchored on a redirect.
 
-### 2.1 Cuándo esto y cuándo un orquestador (el punto de corte honesto)
+### 2.1 When this and when an orchestrator (the honest cut-off point)
 
-| Situación | Respuesta |
+| Situation | Answer |
 |---|---|
-| **Un host**, pocos servicios, sin necesidad de programación ni de escalado horizontal, downtime del host aceptable | **Quadlet.** Es la respuesta correcta, no la respuesta pobre |
-| Varios hosts y hace falta **decidir dónde corre** cada cosa | **Orquestador.** Kubernetes (o k3s/Talos si el tamaño lo pide) |
-| Hace falta **escalar réplicas** por carga, o rolling update sin ventana | **Orquestador** |
-| Hace falta que un servicio **sobreviva a la caída de su host** de forma automática | **Orquestador.** No Pacemaker, no scripts |
-| Dos hosts y "que uno tome el relevo del otro" con contenedores | Casi siempre: **asumir el downtime** o **balanceador delante de dos instancias activas** con estado fuera. Ver §7 |
-| Mucho servicio pero todo en un host y sin SLO de disponibilidad | Quadlet, con la nota de que el host **es** el SPOF y eso está aceptado por escrito |
+| **One host**, few services, no need for scheduling or horizontal scaling, host downtime acceptable | **Quadlet.** It is the correct answer, not the poor answer |
+| Several hosts and you need to **decide where each thing runs** | **Orchestrator.** Kubernetes (or k3s/Talos if the size calls for it) |
+| You need to **scale replicas** by load, or rolling updates without a window | **Orchestrator** |
+| You need a service to **survive its host going down** automatically | **Orchestrator.** Not Pacemaker, not scripts |
+| Two hosts and "let one take over from the other" with containers | Almost always: **accept the downtime** or **a load balancer in front of two active instances** with state kept outside. See §7 |
+| Plenty of services but all on one host and no availability SLO | Quadlet, with the note that the host **is** the SPOF and that is accepted in writing |
 
-**El antipatrón**: reimplementar un orquestador a mano — scripts que copian unidades entre
-hosts, health checks caseros que hacen `ssh` para arrancar el contenedor en el otro nodo, un
-"registro de servicios" en un fichero. Eso no es simplicidad, es un orquestador sin comunidad,
-sin tests y sin nadie que sepa depurarlo a las 3 de la mañana. **Si necesitas programación,
-usa un programador.**
+**The antipattern**: reimplementing an orchestrator by hand — scripts that copy units between
+hosts, homegrown health checks that `ssh` to start the container on the other node, a
+"service registry" in a file. That is not simplicity, it is an orchestrator with no community,
+no tests and nobody who knows how to debug it at 3 in the morning. **If you need scheduling,
+use a scheduler.**
 
-**El antipatrón contrario, igual de caro**: montar Kubernetes para cuatro servicios en un host.
-Multiplica piezas, upgrades y modos de fallo sin dar nada a cambio.
+**The opposite antipattern, just as expensive**: standing up Kubernetes for four services on one host.
+It multiplies pieces, upgrades and failure modes without giving anything back.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Quadlet es el formato canónico
+### 3.1 Quadlet is the canonical format
 
-Quadlet es un **generador de systemd**: lee ficheros descriptivos y **genera unidades `.service`
-en tiempo de arranque y de `daemon-reload`**. Consecuencias operativas que hay que interiorizar:
+Quadlet is a **systemd generator**: it reads descriptive files and **generates `.service` units
+at boot time and on `daemon-reload`**. Operational consequences that must be internalised:
 
-- La unidad generada **no existe en disco de forma persistente**: no se edita, no se versiona, no
-  se copia. Se edita el `.container` y se recarga.
-- **Recarga**: `systemctl daemon-reload` (rootful) / `systemctl --user daemon-reload` (rootless).
-  No hay `podman quadlet reload` que sustituya a esto.
-- **Validación antes de recargar**: ejecutar el generador en seco —
-  `/usr/libexec/podman/quadlet -dryrun -user` — y leer la unidad que produce. **Un fichero
-  Quadlet con un error de sintaxis no falla ruidosamente: simplemente no genera la unidad**, y
-  `systemctl start` responde "unit not found". Es el fallo nº1 del formato.
-- El nombre del servicio se deriva del fichero: `web.container` → `web.service`.
-- `podman quadlet list|install|rm|print` existe como interfaz de gestión. **En Podman 6 cambió
-  el modelo de `podman quadlet install`**: los ficheros asociados pasan a **subdirectorios** en
-  lugar del antiguo fichero de seguimiento `.app`. Si automatizabas contra ese comportamiento,
-  se revisa antes de subir a 6.
+- The generated unit **does not exist on disk persistently**: it is not edited, not versioned, not
+  copied. You edit the `.container` and reload.
+- **Reload**: `systemctl daemon-reload` (rootful) / `systemctl --user daemon-reload` (rootless).
+  There is no `podman quadlet reload` that replaces this.
+- **Validation before reloading**: run the generator dry —
+  `/usr/libexec/podman/quadlet -dryrun -user` — and read the unit it produces. **A Quadlet
+  file with a syntax error does not fail loudly: it simply does not generate the unit**, and
+  `systemctl start` answers "unit not found". It is the format's failure no. 1.
+- The service name derives from the file: `web.container` → `web.service`.
+- `podman quadlet list|install|rm|print` exists as a management interface. **In Podman 6 the model
+  of `podman quadlet install` changed**: the associated files move to **subdirectories** instead
+  of the old `.app` tracking file. If you automated against that behaviour,
+  review it before moving up to 6.
 
-**Tipos de unidad Quadlet vigentes (8, verificados en el manual `podman-systemd.unit(5)`)**:
+**Quadlet unit types in force (8, verified in the `podman-systemd.unit(5)` manual)**:
 `.container`, `.pod`, `.volume`, `.network`, `.kube`, `.build`, `.image`, `.artifact`.
 
-| Tipo | Para qué, y criterio |
+| Type | What for, and criteria |
 |---|---|
-| `.container` | El caso normal. **Uno por servicio** |
-| `.pod` | Varios contenedores que **comparten namespace de red** y ciclo de vida. Úsalo solo si de verdad comparten red; si no, dos `.container` y una `.network` |
-| `.volume` | Volumen nombrado declarado. **Preferido a crear volúmenes a mano** |
-| `.network` | Red de usuario declarada. Obligatoria para DNS entre contenedores (§3.4) |
-| `.image` | Pre-descarga de una imagen como dependencia de otra unidad. Útil para `.container` que no deben tirar del registry en el arranque |
-| `.build` | Construye una imagen en el host desde un `Containerfile`. **Vetado en producción**: construir en el host de ejecución rompe la inmutabilidad del artefacto y mezcla toolchain de build con runtime. La imagen se construye en CI (`cicd-standards`) |
-| `.kube` | Ejecuta un YAML tipo Kubernetes en el host. Solo como **puente de migración** hacia un cluster real, nunca como destino. Aviso: `podman kube play` tuvo un traversal por symlink (GHSA-wp3j-xq48-xpjw, abr-2026, severidad baja) — no ejecutar YAML no confiable |
-| `.artifact` | Artefactos OCI. Nicho; verificar comportamiento antes de depender de él |
+| `.container` | The normal case. **One per service** |
+| `.pod` | Several containers that **share a network namespace** and lifecycle. Use it only if they really share the network; otherwise two `.container` files and a `.network` |
+| `.volume` | A declared named volume. **Preferred over creating volumes by hand** |
+| `.network` | A declared user network. Mandatory for DNS between containers (§3.4) |
+| `.image` | Pre-pull of an image as a dependency of another unit. Useful for `.container` units that must not pull from the registry at boot |
+| `.build` | Builds an image on the host from a `Containerfile`. **Vetoed in production**: building on the execution host breaks artifact immutability and mixes build toolchain with runtime. The image is built in CI (`cicd-standards`) |
+| `.kube` | Runs a Kubernetes-style YAML on the host. Only as a **migration bridge** towards a real cluster, never as a destination. Warning: `podman kube play` had a symlink traversal (GHSA-wp3j-xq48-xpjw, Apr 2026, low severity) — do not run untrusted YAML |
+| `.artifact` | OCI artifacts. Niche; verify the behaviour before depending on it |
 
-**Rutas de búsqueda** (verbatim del manual, en orden de precedencia; `/run` gana sobre `/etc`,
-que gana sobre `/usr`):
+**Search paths** (verbatim from the manual, in order of precedence; `/run` wins over `/etc`,
+which wins over `/usr`):
 
-- Rootful: `/run/containers/systemd/` (temporales/pruebas) → `/etc/containers/systemd/`
-  (definidos por el administrador) → `/usr/share/containers/systemd/` (definidos por la
-  distribución).
-- Rootless: `$XDG_RUNTIME_DIR/containers/systemd/` → `$XDG_CONFIG_HOME/containers/systemd/` (o
+- Rootful: `/run/containers/systemd/` (temporary/testing) → `/etc/containers/systemd/`
+  (defined by the administrator) → `/usr/share/containers/systemd/` (defined by the
+  distribution).
+- Rootless: `$XDG_RUNTIME_DIR/containers/systemd/` → `$XDG_CONFIG_HOME/containers/systemd/` (or
   `~/.config/containers/systemd/`) → `/etc/containers/systemd/users/${UID}` →
   `/etc/containers/systemd/users/` → `/usr/share/containers/systemd/users/${UID}` →
   `/usr/share/containers/systemd/users/`.
 
-Criterio: **lo propio va en `/etc/containers/systemd/` (rootful) o
-`~/.config/containers/systemd/` (rootless)**. `/run/...` solo para probar. `/usr/share/...` es
-territorio del empaquetador — no escribas ahí.
+Criteria: **your own stuff goes in `/etc/containers/systemd/` (rootful) or
+`~/.config/containers/systemd/` (rootless)**. `/run/...` only for testing. `/usr/share/...` is
+packager territory — do not write there.
 
-**`podman generate systemd` está DEPRECADO.** Cita textual del manual: *"**podman generate
+**`podman generate systemd` is DEPRECATED.** Verbatim quote from the manual: *"**podman generate
 systemd** is deprecated. We recommend using Quadlet files when running Podman containers or pods
 under systemd. There are no plans to remove the command. It will receive urgent bug fixes but no
-new features."* Lectura correcta: **no está eliminado, está congelado**. Por tanto:
+new features."* Correct reading: **it is not removed, it is frozen**. Therefore:
 
-- ❌ Prohibido en cualquier unidad nueva.
-- Las unidades existentes generadas así **funcionan**, pero son deuda: no reciben funcionalidad,
-  y su modelo (generar un `.service` a partir de un contenedor ya creado) es imperativo —
-  el estado real vive en el contenedor, no en el fichero, y eso es exactamente lo que rompe la
-  reconstruibilidad desde cero.
-- Migración: `podlet` para el borrador, revisión a mano, y **prueba de arranque en frío** (§4).
+- ❌ Forbidden in any new unit.
+- Existing units generated that way **work**, but they are debt: they receive no functionality,
+  and their model (generating a `.service` from an already-created container) is imperative —
+  the real state lives in the container, not in the file, and that is exactly what breaks
+  rebuildability from scratch.
+- Migration: `podlet` for the draft, review by hand, and a **cold start test** (§4).
 
-### 3.2 Layout del repositorio
+### 3.2 Repository layout
 
 ```
 containers/
@@ -197,371 +197,371 @@ containers/
 │  │  ├─ app-data.volume
 │  │  └─ app.container
 │  └─ users/<svc>/         # → ~<svc>/.config/containers/systemd/
-├─ containers.conf.d/      # overrides drop-in, nunca el fichero base
+├─ containers.conf.d/      # drop-in overrides, never the base file
 ├─ registries.conf.d/
 ├─ policy.json
-└─ README.md               # dueño, propósito, y la justificación de cada rootful
+└─ README.md               # owner, purpose, and the justification for each rootful
 ```
 
-- **Todo bajo control de versiones**, desplegado por Ansible/`iac-standards`. Un fichero Quadlet
-  editado a mano en el host es un snowflake.
-- Overrides de systemd sobre la unidad generada: `/etc/systemd/system/<svc>.service.d/*.conf`
-  cuando haga falta algo que Quadlet no expone. Documentar por qué.
+- **Everything under version control**, deployed by Ansible/`iac-standards`. A Quadlet file
+  edited by hand on the host is a snowflake.
+- systemd overrides on top of the generated unit: `/etc/systemd/system/<svc>.service.d/*.conf`
+  when something Quadlet does not expose is needed. Document why.
 
-### 3.3 Rootless por defecto
+### 3.3 Rootless by default
 
-- **Requisitos**: rangos en `/etc/subuid` y `/etc/subgid` para el usuario (uno por usuario, sin
-  solapes) y **`loginctl enable-linger <usuario>`**. Sin linger, las unidades de usuario **no
-  arrancan en el boot y mueren al cerrar sesión** — es la causa nº1 de "funcionaba y tras el
-  reinicio no está".
-- **Un usuario de servicio por servicio**, sin shell interactiva. No compartir usuario entre
-  servicios no relacionados: comparten storage, red y namespace de usuario.
-- **Qué se pierde y cómo se resuelve**:
+- **Requirements**: ranges in `/etc/subuid` and `/etc/subgid` for the user (one per user, without
+  overlaps) and **`loginctl enable-linger <user>`**. Without linger, user units **do not
+  start at boot and die when the session closes** — it is cause no. 1 of "it worked and after
+  the reboot it is gone".
+- **One service user per service**, without an interactive shell. Do not share a user between
+  unrelated services: they share storage, networking and the user namespace.
+- **What is lost and how it is solved**:
 
-| Limitación rootless | Resolución |
+| Rootless limitation | Resolution |
 |---|---|
-| No puede escuchar en puertos < 1024 | Publicar en puerto alto y **poner delante un reverse proxy**, o bajar `net.ipv4.ip_unprivileged_port_start` por `sysctl.d` (documentado). **Nunca** dar `CAP_NET_BIND_SERVICE` al proceso rootless como atajo |
-| Capabilities limitadas | Si el servicio *de verdad* las necesita, es candidato a rootful — con justificación |
-| UID dentro ≠ UID fuera en volúmenes | `--userns=keep-id` (o `UserNS=keep-id` en Quadlet) para que el UID del usuario se mapee 1:1. Sin esto, los ficheros del bind mount aparecen como `nobody` |
-| Rendimiento de I/O en overlay sin `fuse-overlayfs` nativo | Verificar que el kernel soporta overlay en user namespace (lo normal hoy); si no, medir antes de asumir |
-| Algunas herramientas esperan el socket de root | Socket de usuario en `$XDG_RUNTIME_DIR/podman/podman.sock` |
+| Cannot listen on ports < 1024 | Publish on a high port and **put a reverse proxy in front**, or lower `net.ipv4.ip_unprivileged_port_start` via `sysctl.d` (documented). **Never** grant `CAP_NET_BIND_SERVICE` to the rootless process as a shortcut |
+| Limited capabilities | If the service *really* needs them, it is a candidate for rootful — with justification |
+| UID inside ≠ UID outside on volumes | `--userns=keep-id` (or `UserNS=keep-id` in Quadlet) so the user's UID maps 1:1. Without this, the bind mount's files show up as `nobody` |
+| I/O performance on overlay without native `fuse-overlayfs` | Verify that the kernel supports overlay in a user namespace (normal today); if not, measure before assuming |
+| Some tools expect the root socket | User socket at `$XDG_RUNTIME_DIR/podman/podman.sock` |
 
-- **Rootful solo con justificación escrita en el repo**, y aun así: `NoNewPrivileges`, sin
-  `--privileged`, capabilities mínimas. El detalle de ese hardening es de
+- **Rootful only with written justification in the repo**, and even then: `NoNewPrivileges`, no
+  `--privileged`, minimum capabilities. The detail of that hardening belongs to
   `container-runtime-security-standards`.
 
-### 3.4 Red
+### 3.4 Networking
 
-- **netavark** es el backend (CNI eliminado en Podman 6); **aardvark-dns** da resolución de
-  nombres entre contenedores.
-- **El DNS entre contenedores solo funciona en redes de usuario creadas explícitamente.** En la
-  red `podman` por defecto **no hay resolución por nombre**. Por tanto: **una `.network` por
-  stack**, y los contenedores del stack se hablan por nombre de servicio. Esto no es opcional,
-  es la diferencia entre una configuración mantenible y un fichero lleno de IPs.
-- **Rootless usa pasta**. Diferencia con el difunto `slirp4netns` que hay que conocer: pasta
-  **copia la configuración de red del host** en vez de crear una red NAT aparte, así que **desde
-  el contenedor la IP principal del host no es alcanzable por defecto** y `host.containers.internal`
-  puede no comportarse como esperas. Si necesitas hablar con el host, `--map-gw` u otra ruta
-  explícita — y se documenta.
-- **La trampa del firewall**: publicar un puerto (`PublishPort=`) **inserta reglas en el
-  ruleset del host** y puede abrir el servicio a toda la red aunque tu política de filtrado diga
-  otra cosa. Regla: **`PublishPort=` siempre con IP de escucha explícita** (`127.0.0.1:8080:8080`
-  o la IP de la interfaz correcta), **nunca el puerto suelto**. La política del host es de
-  `firewall-policy-standards`; la obligación de no saltársela es de aquí.
-- IPv6: si el host lo tiene, la red del stack lo declara explícitamente. Una red dual-stack a
-  medias produce fallos de conexión intermitentes que se diagnostican fatal.
-- Podman 6: *"Network isolation now defaults to enabled"* — comportamiento nuevo respecto a 5.x
-  que puede romper stacks que dependían de que contenedores en redes distintas se vieran.
-  **Verificar al migrar.**
+- **netavark** is the backend (CNI removed in Podman 6); **aardvark-dns** provides name
+  resolution between containers.
+- **DNS between containers only works on explicitly created user networks.** On the
+  default `podman` network **there is no name resolution**. Therefore: **one `.network` per
+  stack**, and the stack's containers talk to each other by service name. This is not optional,
+  it is the difference between a maintainable configuration and a file full of IPs.
+- **Rootless uses pasta**. A difference from the late `slirp4netns` that must be known: pasta
+  **copies the host's network configuration** instead of creating a separate NAT network, so **from
+  the container the host's main IP is not reachable by default** and `host.containers.internal`
+  may not behave as you expect. If you need to talk to the host, `--map-gw` or another explicit
+  route — and it gets documented.
+- **The firewall trap**: publishing a port (`PublishPort=`) **inserts rules into the
+  host's ruleset** and can open the service to the whole network even if your filtering policy says
+  otherwise. Rule: **`PublishPort=` always with an explicit listen IP** (`127.0.0.1:8080:8080`
+  or the correct interface's IP), **never the bare port**. The host policy belongs to
+  `firewall-policy-standards`; the obligation not to bypass it belongs here.
+- IPv6: if the host has it, the stack's network declares it explicitly. A half-done dual-stack
+  network produces intermittent connection failures that diagnose terribly.
+- Podman 6: *"Network isolation now defaults to enabled"* — new behaviour relative to 5.x
+  that may break stacks that relied on containers on different networks seeing each other.
+  **Verify when migrating.**
 
-### 3.5 Almacenamiento
+### 3.5 Storage
 
-- **Volumen nombrado (`.volume`) por defecto.** Bind mount solo cuando el dato tiene que ser
-  visible y manipulable desde el host (config, certificados, un directorio de datos existente).
-- **Todo montaje con etiquetado SELinux**: `:z` (compartido entre contenedores) o `:Z`
-  (exclusivo). La semántica exacta y sus riesgos —`:Z` sobre un directorio del sistema
-  reetiqueta recursivamente y puede romper el host— son de `selinux-standards`. Aquí solo:
-  **un bind mount sin `:z`/`:Z` en un host con SELinux en enforcing falla, y "desactivar SELinux"
-  no es la solución.**
-- Permisos: con rootless, `UserNS=keep-id` para que los UID cuadren. Con volúmenes nombrados,
-  Quadlet `.volume` acepta desde Podman 6 las claves **`UID=`, `GID=` y `Options=`**, que evitan
-  el clásico `chown` a mano en un `ExecStartPre`.
-- **`Mount=` sin origen** crea volúmenes anónimos (soportado desde Podman 6). Evítalo en
-  servicios: un volumen anónimo es dato sin nombre, sin respaldo y sin dueño.
-- **Respaldo**: el volumen se respalda **parando el contenedor o cuiesciendo la aplicación**; un
-  `tar` en caliente de un directorio de base de datos es una copia corrupta con buen aspecto. La
-  mecánica, retención y el restore probado son de `backup-recovery-standards`. Lo que fija esta
-  skill: **todo `.volume` de un servicio tiene una entrada en el plan de respaldo, o una línea
-  explícita diciendo que es descartable.**
+- **Named volume (`.volume`) by default.** Bind mount only when the data has to be
+  visible and manipulable from the host (config, certificates, an existing data directory).
+- **Every mount with SELinux labelling**: `:z` (shared between containers) or `:Z`
+  (exclusive). The exact semantics and their risks —`:Z` on a system directory
+  relabels recursively and can break the host— belong to `selinux-standards`. Here only:
+  **a bind mount without `:z`/`:Z` on a host with SELinux in enforcing fails, and "disable SELinux"
+  is not the solution.**
+- Permissions: with rootless, `UserNS=keep-id` so the UIDs line up. With named volumes,
+  Quadlet `.volume` accepts, since Podman 6, the keys **`UID=`, `GID=` and `Options=`**, which avoid
+  the classic manual `chown` in an `ExecStartPre`.
+- **`Mount=` without a source** creates anonymous volumes (supported since Podman 6). Avoid it in
+  services: an anonymous volume is data with no name, no backup and no owner.
+- **Backup**: the volume is backed up **by stopping the container or quiescing the application**; a
+  hot `tar` of a database directory is a corrupt copy that looks fine. The
+  mechanics, retention and tested restore belong to `backup-recovery-standards`. What this
+  skill sets: **every `.volume` of a service has an entry in the backup plan, or an explicit
+  line saying it is disposable.**
 
-### 3.6 Imágenes, registries y actualización
+### 3.6 Images, registries and updates
 
-- **`registries.conf`**: `unqualified-search-registries` es un **peligro de seguridad**, no una
-  comodidad. Un `podman run nginx` sin cualificar resuelve contra la lista y puede traer la
-  imagen equivocada del registry equivocado. **Regla: todas las referencias de imagen en las
-  unidades van completamente cualificadas** (`registry.example.com/ns/img:tag`), y la lista de
-  búsqueda no cualificada se deja **vacía** en servidores.
-- **Mirrors y `blocked`/`insecure`**: `insecure = true` está **prohibido** en producción. Un
-  registry interno sin TLS es un registry que cualquiera en la red puede suplantar.
-- **`policy.json`**: la política por defecto de muchas distros es `insecureAcceptAnything`.
-  **Debe endurecerse** para exigir firma en los registries propios (`signedBy`/sigstore). La
-  gestión de las claves de firma es de `cryptography-pki-standards`; la firma en la pipeline, de
-  `cicd-standards`. Aquí: **el host verifica; un host que acepta cualquier cosa anula toda la
-  cadena de suministro que se construyó aguas arriba.**
-- **Digest frente a tag — la tensión real**:
-  - **Digest** (`img@sha256:…`) es el contrato: reproducible, auditable. Es lo correcto para un
-    servicio crítico y para todo lo que despliegue IaC.
-  - **Tag** es lo que necesita `podman auto-update --policy registry`, que compara contra el
-    registry: **una referencia fijada por digest no se actualiza sola** (por definición: el
-    digest ya es exacto).
-  - **Criterio**: servicios críticos → **digest + actualización deliberada por pipeline**.
-    Servicios de bajo riesgo con imagen de proveedor de confianza → **tag estable +
-    auto-update + rollback**. **Nunca `:latest`.**
-- **`podman auto-update`** (verificado en el manual):
-  - Dos políticas: **`registry`** (consulta el registry) y **`local`** (compara con la imagen ya
-    en el almacenamiento local). Se declaran con la etiqueta `io.containers.autoupdate` o la
-    clave `AutoUpdate=` de Quadlet.
-  - Lo dispara `podman-auto-update.service`, **activado a diario a medianoche por
-    `podman-auto-update.timer`**. Cambiar ese horario a la ventana acordada y **añadir
-    `RandomizedDelaySec`** si hay varios hosts: si no, toda la flota golpea el registry a la vez.
-  - **Rollback está activo por defecto** ("Default is true"): si la unidad falla al reiniciar con
-    la imagen nueva, vuelve a la anterior. **Pero la detección de fallo real exige que el
-    contenedor envíe `READY` por SDNOTIFY, creado con `--sdnotify=container`.** Sin eso, "arrancó
-    el proceso" cuenta como éxito y el rollback nunca se dispara: tienes actualización automática
-    **sin red de seguridad**, que es peor que no tenerla.
-  - **Requisito de gobierno**: auto-update **solo** sobre imágenes de un registry cuya firma
-    verifica `policy.json`. Auto-update contra un registry público sin verificación es ejecución
-    remota de código programada por `cron`.
-- **Higiene**: `podman system prune` (y `podman image prune`) periódico en timer propio. Ojo:
-  **en Podman 6 `podman volume prune` solo poda volúmenes anónimos no usados** (cambio para
-  igualar a Docker); el comportamiento anterior exige `--all`. Un `--all` heredado de un script
-  de la era 5.x **borra volúmenes nombrados**: revisar antes de migrar.
+- **`registries.conf`**: `unqualified-search-registries` is a **security hazard**, not a
+  convenience. An unqualified `podman run nginx` resolves against the list and may pull the
+  wrong image from the wrong registry. **Rule: all image references in the
+  units are fully qualified** (`registry.example.com/ns/img:tag`), and the unqualified
+  search list is left **empty** on servers.
+- **Mirrors and `blocked`/`insecure`**: `insecure = true` is **forbidden** in production. An
+  internal registry without TLS is a registry that anyone on the network can impersonate.
+- **`policy.json`**: the default policy on many distros is `insecureAcceptAnything`.
+  **It must be hardened** to require a signature on your own registries (`signedBy`/sigstore). The
+  management of the signing keys belongs to `cryptography-pki-standards`; signing in the pipeline, to
+  `cicd-standards`. Here: **the host verifies; a host that accepts anything nullifies the whole
+  supply chain built upstream.**
+- **Digest versus tag — the real tension**:
+  - **Digest** (`img@sha256:…`) is the contract: reproducible, auditable. It is the right thing for a
+    critical service and for everything IaC deploys.
+  - **Tag** is what `podman auto-update --policy registry` needs, since it compares against the
+    registry: **a reference pinned by digest does not update itself** (by definition: the
+    digest is already exact).
+  - **Criteria**: critical services → **digest + deliberate updates through the pipeline**.
+    Low-risk services with a trusted vendor image → **stable tag +
+    auto-update + rollback**. **Never `:latest`.**
+- **`podman auto-update`** (verified in the manual):
+  - Two policies: **`registry`** (queries the registry) and **`local`** (compares against the image
+    already in local storage). They are declared with the `io.containers.autoupdate` label or the
+    Quadlet `AutoUpdate=` key.
+  - It is triggered by `podman-auto-update.service`, **activated daily at midnight by
+    `podman-auto-update.timer`**. Change that schedule to the agreed window and **add
+    `RandomizedDelaySec`** if there are several hosts: otherwise the whole fleet hits the registry at once.
+  - **Rollback is enabled by default** ("Default is true"): if the unit fails to restart with
+    the new image, it goes back to the previous one. **But real failure detection requires the
+    container to send `READY` via SDNOTIFY, created with `--sdnotify=container`.** Without that, "the
+    process started" counts as success and the rollback never fires: you have automatic updates
+    **without a safety net**, which is worse than not having them.
+  - **Governance requirement**: auto-update **only** over images from a registry whose signature
+    `policy.json` verifies. Auto-update against a public registry without verification is remote
+    code execution scheduled by `cron`.
+- **Hygiene**: periodic `podman system prune` (and `podman image prune`) on its own timer. Careful:
+  **in Podman 6 `podman volume prune` only prunes unused anonymous volumes** (a change to
+  match Docker); the previous behaviour requires `--all`. An `--all` inherited from a script
+  of the 5.x era **deletes named volumes**: review before migrating.
 
-### 3.7 Integración de verdad con systemd
+### 3.7 Real integration with systemd
 
-Lo que separa "un contenedor que corre" de "un servicio":
+What separates "a container that runs" from "a service":
 
-- **`Notify=true` / `--sdnotify=container`**: la unidad se declara activa cuando la aplicación
-  lo dice, no cuando el proceso existe. Requisito para dependencias fiables y para el rollback de
-  auto-update. Si la aplicación no habla sdnotify, `Notify=healthy` (que ata el READY al health
-  check) es la alternativa — **verificar disponibilidad en la versión instalada**.
-- **Health checks**: `HealthCmd=`, `HealthInterval=`, `HealthRetries=`, `HealthStartPeriod=` y
-  **`HealthOnFailure=`** (`kill`/`restart`/`stop`/`none`). Un health check que solo pinta
-  "unhealthy" y no actúa es decoración. Criterio: **`HealthOnFailure=kill` + `Restart=on-failure`
-  en la unidad**, para que el ciclo lo cierre systemd con su backoff, que es donde debe estar.
-- **Dependencias**: `After=`/`Requires=` sobre otras unidades; las `.network` y `.volume` de
-  Quadlet generan dependencias implícitas. Para dependencias de red externa,
-  `Wants=network-online.target`. **La semántica de dependencias de systemd es de
-  `linux-administration-standards`** — no la reinventes aquí.
-- **Recursos por cgroup**: `MemoryMax=`, `CPUQuota=`, `IOWeight=` en la sección `[Service]` de la
-  unidad Quadlet. **Todo servicio lleva al menos un límite de memoria**: sin él, un contenedor
-  con fuga se lleva el host por delante. Podman 6 expone `OOMKilled` en el evento `died` — útil
-  para distinguir "lo mató el kernel" de "se cayó solo".
-- **Logs**: driver `journald` (default). Los logs del contenedor van al journal del host y de ahí
-  al agregador. Retención y límites, en `linux-administration-standards`. **Prohibido** el driver
-  `json-file` en un host con systemd: duplica almacenamiento y esquiva la rotación del journal.
-- **Secretos**: el orden de preferencia es
-  1. **`LoadCredential=`/`systemd-creds`** en la unidad, montando la credencial en un tmpfs solo
-     para ese servicio;
-  2. **`podman secret`** (`Secret=` en Quadlet) montado como fichero;
-  3. — y nada más. **`Environment=` con el secreto en claro está prohibido**: acaba en
-     `systemctl show`, en `podman inspect` y en el journal. El origen del secreto y su rotación
-     son de `secrets-management-standards`.
-- **Sandboxing de la unidad**: la unidad generada admite las directivas de endurecimiento de
-  systemd. Aplicar el criterio de `linux-administration-standards` y medir con
+- **`Notify=true` / `--sdnotify=container`**: the unit is declared active when the application
+  says so, not when the process exists. A requirement for reliable dependencies and for the rollback of
+  auto-update. If the application does not speak sdnotify, `Notify=healthy` (which ties READY to the health
+  check) is the alternative — **verify availability in the installed version**.
+- **Health checks**: `HealthCmd=`, `HealthInterval=`, `HealthRetries=`, `HealthStartPeriod=` and
+  **`HealthOnFailure=`** (`kill`/`restart`/`stop`/`none`). A health check that only paints
+  "unhealthy" and does not act is decoration. Criteria: **`HealthOnFailure=kill` + `Restart=on-failure`
+  in the unit**, so systemd closes the loop with its backoff, which is where it belongs.
+- **Dependencies**: `After=`/`Requires=` on other units; Quadlet's `.network` and `.volume`
+  generate implicit dependencies. For external network dependencies,
+  `Wants=network-online.target`. **The semantics of systemd dependencies belong to
+  `linux-administration-standards`** — do not reinvent them here.
+- **Resources per cgroup**: `MemoryMax=`, `CPUQuota=`, `IOWeight=` in the `[Service]` section of the
+  Quadlet unit. **Every service carries at least a memory limit**: without it, a container
+  with a leak takes the host down with it. Podman 6 exposes `OOMKilled` in the `died` event — useful
+  for telling "the kernel killed it" from "it crashed on its own".
+- **Logs**: `journald` driver (default). The container's logs go to the host's journal and from there
+  to the aggregator. Retention and limits, in `linux-administration-standards`. **Forbidden**: the
+  `json-file` driver on a host with systemd: it duplicates storage and dodges journal rotation.
+- **Secrets**: the order of preference is
+  1. **`LoadCredential=`/`systemd-creds`** in the unit, mounting the credential on a tmpfs only
+     for that service;
+  2. **`podman secret`** (`Secret=` in Quadlet) mounted as a file;
+  3. — and nothing else. **`Environment=` with the secret in clear text is forbidden**: it ends up in
+     `systemctl show`, in `podman inspect` and in the journal. The origin of the secret and its rotation
+     belong to `secrets-management-standards`.
+- **Unit sandboxing**: the generated unit accepts systemd's hardening
+  directives. Apply the criteria of `linux-administration-standards` and measure with
   `systemd-analyze security <unit>`.
 
-### 3.8 Docker frente a Podman
+### 3.8 Docker versus Podman
 
-- **En un host con systemd, la respuesta por defecto es Podman.** Docker mete un daemon con un
-  socket que es equivalente a root, un modelo de arranque paralelo al de systemd, y contenedores
-  que no son unidades. Podman produce servicios que se operan con `systemctl`.
-- **Compatibilidad de CLI**: alta pero **no total**. Un alias `docker=podman` es cómodo en
-  interactivo y **una fuente de sorpresas en scripts**. En automatización se escribe `podman`.
-- **`podman.socket`** expone una API compatible con Docker; con `DOCKER_HOST` apuntando ahí,
-  `docker compose` v2 funciona para muchos flujos. Límites conocidos:
-  - `docker compose build` **envía el contexto entero al socket** — pierdes el modelo sin daemon.
-    Construye en CI.
-  - Cobertura parcial de la API: funciones de Compose recientes pueden no existir.
-  - **Un socket TCP (`podman system service tcp://…`) no tiene autenticación**. Prohibido
-    exponerlo; si hace falta remoto, SSH.
-  - El socket rootful (`/run/podman/podman.sock`) es **equivalente a root en el host**: los
-    permisos de ese socket son un control de seguridad de primer orden.
-- **`podman compose`** es un envoltorio que delega en un proveedor externo: **`docker-compose`
-  tiene precedencia** si está instalado, si no `podman-compose`. Se fija explícitamente con
-  `compose_providers` en `containers.conf` o `PODMAN_COMPOSE_PROVIDER` — **fíjalo**, no dejes que
-  dependa de qué paquete esté instalado en cada host.
-- **`podman-compose`** (v1.6.0, jun-2026): reimplementación en Python, sin daemon, orientada a
-  rootless. Huecos frente a Compose: secretos externos y desde entorno, `configs`, matices de red.
-  **Criterio: no es la base de un stack de producción.**
+- **On a host with systemd, the default answer is Podman.** Docker adds a daemon with a
+  socket that is equivalent to root, a startup model parallel to systemd's, and containers
+  that are not units. Podman produces services that are operated with `systemctl`.
+- **CLI compatibility**: high but **not total**. A `docker=podman` alias is convenient in
+  interactive use and **a source of surprises in scripts**. In automation you write `podman`.
+- **`podman.socket`** exposes a Docker-compatible API; with `DOCKER_HOST` pointing there,
+  `docker compose` v2 works for many flows. Known limits:
+  - `docker compose build` **sends the entire context to the socket** — you lose the daemonless model.
+    Build in CI.
+  - Partial API coverage: recent Compose features may not exist.
+  - **A TCP socket (`podman system service tcp://…`) has no authentication**. Forbidden to
+    expose it; if remote access is needed, SSH.
+  - The rootful socket (`/run/podman/podman.sock`) is **equivalent to root on the host**: the
+    permissions on that socket are a first-order security control.
+- **`podman compose`** is a wrapper that delegates to an external provider: **`docker-compose`
+  takes precedence** if installed, otherwise `podman-compose`. It is pinned explicitly with
+  `compose_providers` in `containers.conf` or `PODMAN_COMPOSE_PROVIDER` — **pin it**, do not let it
+  depend on which package happens to be installed on each host.
+- **`podman-compose`** (v1.6.0, Jun 2026): a Python reimplementation, daemonless, oriented to
+  rootless. Gaps versus Compose: external and environment-sourced secrets, `configs`, networking nuances.
+  **Criteria: it is not the basis of a production stack.**
 
-### 3.9 Migraciones
+### 3.9 Migrations
 
-**De `docker-compose` a Quadlet** — un servicio por `.container`, y:
+**From `docker-compose` to Quadlet** — one service per `.container`, and:
 
-| En Compose | En Quadlet |
+| In Compose | In Quadlet |
 |---|---|
-| `services:` (cada uno) | Un fichero `.container` |
-| `networks:` | Un `.network` (obligatorio para DNS por nombre) |
-| `volumes:` | Un `.volume` |
-| `depends_on` | `After=`/`Requires=` — y **`depends_on` de Compose no espera a que el servicio esté listo**; `Notify=` sí. La migración es una **mejora**, no una traducción |
-| `restart: always` | `Restart=always` en `[Service]` — pero **`on-failure` es mejor default** |
+| `services:` (each one) | One `.container` file |
+| `networks:` | A `.network` (mandatory for DNS by name) |
+| `volumes:` | A `.volume` |
+| `depends_on` | `After=`/`Requires=` — and **Compose's `depends_on` does not wait for the service to be ready**; `Notify=` does. The migration is an **improvement**, not a translation |
+| `restart: always` | `Restart=always` in `[Service]` — but **`on-failure` is a better default** |
 | `healthcheck` | `HealthCmd=` + **`HealthOnFailure=`** |
-| `env_file` con secretos | `LoadCredential=`/`Secret=`. **No se traduce tal cual** |
-| `ports: "8080:8080"` | `PublishPort=127.0.0.1:8080:8080` — con IP explícita |
+| `env_file` with secrets | `LoadCredential=`/`Secret=`. **It is not translated as is** |
+| `ports: "8080:8080"` | `PublishPort=127.0.0.1:8080:8080` — with an explicit IP |
 
-Procedimiento: `podlet` genera el borrador → revisión a mano de red, secretos, límites y
-etiquetado SELinux → **prueba de arranque en frío** (§4). **No se migra un Compose upstream que
-cambia cada release**: ahí se consume el Compose original vía socket, o se acepta la deuda de
-traducirlo en cada versión (y se anota quién lo hace).
+Procedure: `podlet` generates the draft → manual review of networking, secrets, limits and
+SELinux labelling → **cold start test** (§4). **An upstream Compose that
+changes every release is not migrated**: there you consume the original Compose via the socket, or you accept the debt of
+translating it on every version (and note down who does it).
 
-**De Quadlet a Kubernetes** — cuándo y cómo:
-- El disparador es de §2.1 (programación, escalado, supervivencia a la caída del host), **no**
-  "hemos crecido".
-- `podman kube generate` produce un YAML de partida. **Es un punto de partida, no un manifiesto
-  de producción**: le faltan `securityContext`, probes, recursos, políticas de red y todo lo que
-  exige `kubernetes-standards`.
-- El trabajo real de la migración no son los manifiestos: es **el estado**. Los volúmenes locales
-  se convierten en almacenamiento de red o en un servicio gestionado, y eso se decide antes de
-  escribir el primer YAML.
+**From Quadlet to Kubernetes** — when and how:
+- The trigger is from §2.1 (scheduling, scaling, surviving a host going down), **not**
+  "we have grown".
+- `podman kube generate` produces a starting YAML. **It is a starting point, not a production
+  manifest**: it lacks `securityContext`, probes, resources, network policies and everything
+  `kubernetes-standards` demands.
+- The real work of the migration is not the manifests: it is **the state**. Local volumes
+  turn into network storage or a managed service, and that is decided before
+  writing the first YAML.
 
-## 4. Calidad y gates
+## 4. Quality and gates
 
-En orden de coste creciente. **Los tres primeros rompen el despliegue.**
+In order of increasing cost. **The first three break the deployment.**
 
-1. **Lint de la unidad**: `/usr/libexec/podman/quadlet -dryrun` (con `-user` si aplica) produce
-   una unidad y **no emite avisos**. Un Quadlet inválido no genera nada y falla en silencio.
-2. **Referencias cualificadas y firma**: ninguna imagen sin registry explícito, ninguna con
-   `:latest`, `policy.json` no es `insecureAcceptAnything` para los registries propios.
-3. **Sin secretos en claro**: `grep` de la unidad contra `Environment=`/`PodmanArgs=` con
-   material sensible. Un `gitleaks` sobre el repo de unidades (`secrets-management-standards`).
-4. **GATE PRINCIPAL — arranque en frío tras reinicio.** No `systemctl start`: **`reboot`**, y el
-   servicio queda activo y sano sin intervención. Es la única prueba que vale, y la que atrapa:
-   - falta de `loginctl enable-linger` en unidades de usuario;
-   - dependencias de red mal declaradas;
-   - montajes que aún no existen al arrancar la unidad;
-   - imágenes que ya no están en el almacenamiento local y un registry inalcanzable en el boot;
-   - permisos de volumen que solo funcionaban porque alguien hizo `chown` a mano.
-5. **Health check que falla y recupera**: se induce el fallo dentro del contenedor (parar el
-   proceso, saturar la dependencia) y se comprueba que la unidad pasa a `unhealthy`, que
-   `HealthOnFailure=` actúa y que systemd la levanta. Un health check nunca probado en fallo
-   **no está probado**.
-6. **Actualización automatizada que no rompe**: en un entorno de pruebas, se publica una imagen
-   deliberadamente rota con el tag que vigila auto-update y se comprueba que **el rollback
-   ocurre** y el servicio queda sirviendo con la versión anterior. Si no ocurre, casi siempre
-   falta `--sdnotify=container`.
-7. **Restore del volumen**: se restaura una copia en un host limpio y el servicio arranca con
-   ella. La mecánica es de `backup-recovery-standards`; **que se haya hecho al menos una vez por
-   servicio es gate de aquí**.
-8. **Prueba de no-privilegio**: el servicio corre rootless salvo justificación escrita; se
-   comprueba con `podman info` / `systemctl --user status` que efectivamente es así.
+1. **Unit lint**: `/usr/libexec/podman/quadlet -dryrun` (with `-user` if applicable) produces
+   a unit and **emits no warnings**. An invalid Quadlet generates nothing and fails silently.
+2. **Qualified references and signature**: no image without an explicit registry, none with
+   `:latest`, `policy.json` is not `insecureAcceptAnything` for your own registries.
+3. **No secrets in clear text**: `grep` the unit for `Environment=`/`PodmanArgs=` with
+   sensitive material. A `gitleaks` over the unit repo (`secrets-management-standards`).
+4. **MAIN GATE — cold start after a reboot.** Not `systemctl start`: **`reboot`**, and the
+   service ends up active and healthy without intervention. It is the only test that counts, and the one that catches:
+   - a missing `loginctl enable-linger` on user units;
+   - badly declared network dependencies;
+   - mounts that do not exist yet when the unit starts;
+   - images that are no longer in local storage and an unreachable registry at boot;
+   - volume permissions that only worked because someone did a manual `chown`.
+5. **A health check that fails and recovers**: the failure is induced inside the container (stopping the
+   process, saturating the dependency) and it is checked that the unit goes to `unhealthy`, that
+   `HealthOnFailure=` acts and that systemd brings it back up. A health check never tested in failure
+   **is not tested**.
+6. **Automated updates that do not break**: in a test environment, an image deliberately
+   broken is published with the tag auto-update watches and it is checked that **the rollback
+   happens** and the service ends up serving with the previous version. If it does not happen, almost always
+   `--sdnotify=container` is missing.
+7. **Volume restore**: a copy is restored on a clean host and the service starts with
+   it. The mechanics belong to `backup-recovery-standards`; **that it has been done at least once per
+   service is a gate from here**.
+8. **Non-privilege test**: the service runs rootless unless justified in writing; it is
+   checked with `podman info` / `systemctl --user status` that this is indeed the case.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **Versión mínima ≥ 5.8.4 / ≥ 6.0.0** por CVE-2026-57231 (§2). No negociable en hosts que
-  ejecuten imágenes de terceros.
-- **Cadena de suministro**: imagen cualificada + digest o tag verificado por firma + `policy.json`
-  que exige esa firma. Sin el último eslabón, los dos primeros son teatro.
-- **`unqualified-search-registries` vacío** en servidores. Es el vector de *typosquatting* de
-  imágenes.
-- **Socket de Podman**: el rootful equivale a root. No se expone por TCP, no se monta dentro de
-  un contenedor (eso es territorio de `container-runtime-security-standards`, y allí está
-  prohibido por la misma razón).
-- **Rootless como reducción de daño, no como aislamiento**: un escape desde rootless te deja como
-  el usuario del servicio, no como root — es mucho, pero **no es una frontera de seguridad
-  completa**. El modelo de aislamiento y sus límites reales los fija
+- **Minimum version ≥ 5.8.4 / ≥ 6.0.0** because of CVE-2026-57231 (§2). Non-negotiable on hosts that
+  run third-party images.
+- **Supply chain**: qualified image + digest or tag verified by signature + `policy.json`
+  requiring that signature. Without the last link, the first two are theatre.
+- **`unqualified-search-registries` empty** on servers. It is the *typosquatting* vector for
+  images.
+- **Podman socket**: the rootful one is equivalent to root. It is not exposed over TCP, not mounted inside
+  a container (that is `container-runtime-security-standards` territory, and there it is
+  forbidden for the same reason).
+- **Rootless as damage reduction, not as isolation**: an escape from rootless leaves you as
+  the service user, not as root — that is a lot, but **it is not a complete security
+  boundary**. The isolation model and its real limits are set by
   `container-runtime-security-standards`.
-- **Podman Desktop**: si está en el parque, **≥ 1.26.2** por CVE-2026-34045 (servidor HTTP no
-  autenticado: DoS y filtrado de información). No pinta en servidores, pero suele estar en los
-  portátiles del equipo.
-- **`podman kube play`** con YAML de origen no confiable: vetado (GHSA-wp3j-xq48-xpjw).
-- **Actualizaciones del propio Podman**: cadencia con el resto del SO (`rhel-fedora-standards` /
-  `linux-administration-standards`), y triaje de CVE por `vulnerability-management-standards`.
-- **Migración a Podman 6**: hacer copia del almacenamiento antes del primer arranque — la
-  migración BoltDB → SQLite es automática y **no está diseñada para volver atrás**.
+- **Podman Desktop**: if it is in the estate, **≥ 1.26.2** because of CVE-2026-34045 (unauthenticated
+  HTTP server: DoS and information disclosure). It has no place on servers, but it tends to be on
+  the team's laptops.
+- **`podman kube play`** with YAML from an untrusted source: vetoed (GHSA-wp3j-xq48-xpjw).
+- **Updates to Podman itself**: cadence with the rest of the OS (`rhel-fedora-standards` /
+  `linux-administration-standards`), and CVE triage via `vulnerability-management-standards`.
+- **Migration to Podman 6**: make a copy of the storage before the first start — the
+  BoltDB → SQLite migration is automatic and **is not designed to go back**.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Métricas**: `podman` expone estadísticas por contenedor; en un host con systemd, la vía
-  natural es el `cadvisor`/exportador que ya use la flota más las métricas de cgroup de la unidad.
-  El diseño de qué se alerta es de `observability-standards`. **Lo que esta skill exige que se
-  vigile**: unidad `active`, estado del health check, reinicios en ventana, OOM kills, edad de la
-  imagen en ejecución frente al tag del registry, y **fallos de `podman-auto-update.service`**
-  (un auto-update que lleva semanas fallando en silencio es el peor de los dos mundos).
-- **Arranque**: `systemd-analyze blame` incluye tus unidades. Un `.container` que tira una imagen
-  grande del registry en cada boot es un boot lento y frágil — usa `.image` como dependencia o
-  conserva la imagen local.
-- **Parada limpia**: `StopTimeout=`/`TimeoutStopSec=` coherentes con lo que tarda la aplicación
-  en cerrar. El default corta a lo bruto y corrompe datos en servicios con estado.
-- **Capacidad**: límites de cgroup por servicio **y** margen en el host. El almacenamiento de
-  imágenes crece sin control sin `prune` en timer.
-- **Modo de fallo aceptado por escrito**: el host es el SPOF. Si el servicio no puede tolerarlo,
-  la conversación es la de §2.1, no la de afinar la unidad.
+- **Metrics**: `podman` exposes per-container statistics; on a host with systemd, the
+  natural route is the `cadvisor`/exporter the fleet already uses plus the unit's cgroup metrics.
+  The design of what gets alerted belongs to `observability-standards`. **What this skill requires
+  be watched**: unit `active`, health check status, restarts in a window, OOM kills, age of
+  the running image versus the registry tag, and **failures of `podman-auto-update.service`**
+  (an auto-update that has been failing silently for weeks is the worst of both worlds).
+- **Boot**: `systemd-analyze blame` includes your units. A `.container` that pulls a large image
+  from the registry on every boot is a slow, fragile boot — use `.image` as a dependency or
+  keep the image locally.
+- **Clean shutdown**: `StopTimeout=`/`TimeoutStopSec=` consistent with how long the application takes
+  to close. The default cuts brutally and corrupts data in stateful services.
+- **Capacity**: cgroup limits per service **and** headroom on the host. Image storage
+  grows uncontrolled without `prune` on a timer.
+- **Failure mode accepted in writing**: the host is the SPOF. If the service cannot tolerate it,
+  the conversation is the one in §2.1, not tuning the unit.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia**
-- Podman sigue el ciclo de la distribución; línea mayor nueva **no entra en producción hasta que
-  la empaqueta la distro** y se ha probado en un host de pruebas. Podman 6 es una migración, no
-  una actualización: rompe cgroups v1, CNI, iptables, slirp4netns y la base de datos.
-- Revisión semestral de: unidades que aún vengan de `podman generate systemd`, imágenes con tag
-  móvil, servicios rootful, y volúmenes fuera del plan de respaldo.
-- Toda unidad tiene **dueño** en el README del repo. Sin dueño, se apaga.
+**Cadence**
+- Podman follows the distribution's cycle; a new major line **does not enter production until
+  the distro packages it** and it has been tested on a test host. Podman 6 is a migration, not
+  an update: it breaks cgroups v1, CNI, iptables, slirp4netns and the database.
+- Half-yearly review of: units still coming from `podman generate systemd`, images with a
+  moving tag, rootful services, and volumes outside the backup plan.
+- Every unit has an **owner** in the repo's README. Without an owner, it gets shut down.
 
-**PROHIBIDO**
-- ❌ `podman generate systemd` en nada nuevo (deprecado y congelado). Migrar lo existente.
-- ❌ `:latest` o cualquier tag móvil sin firma verificada en un servicio.
-- ❌ `unqualified-search-registries` no vacío en un servidor; referencias de imagen sin registry.
-- ❌ `policy.json` en `insecureAcceptAnything` para registries propios; `insecure = true`.
-- ❌ Secretos en `Environment=` o en la línea de comando del contenedor.
-- ❌ `PublishPort=` sin IP de escucha explícita.
-- ❌ Bind mount sin `:z`/`:Z` en host con SELinux; y **jamás** "desactivar SELinux para que
-  arranque".
-- ❌ Servicio rootful sin justificación escrita; `--privileged` (y su detalle, vetado en
+**FORBIDDEN**
+- ❌ `podman generate systemd` in anything new (deprecated and frozen). Migrate what exists.
+- ❌ `:latest` or any moving tag without a verified signature in a service.
+- ❌ Non-empty `unqualified-search-registries` on a server; image references without a registry.
+- ❌ `policy.json` at `insecureAcceptAnything` for your own registries; `insecure = true`.
+- ❌ Secrets in `Environment=` or on the container's command line.
+- ❌ `PublishPort=` without an explicit listen IP.
+- ❌ A bind mount without `:z`/`:Z` on a host with SELinux; and **never** "disable SELinux so it
+  starts".
+- ❌ A rootful service without written justification; `--privileged` (and its detail, vetoed in
   `container-runtime-security-standards`).
-- ❌ Unidad de usuario sin `loginctl enable-linger`.
-- ❌ `.build` de Quadlet en producción: la imagen se construye en CI, no en el host que la ejecuta.
-- ❌ Auto-update sin `--sdnotify=container` (rollback ciego) o contra un registry sin firma
-  verificada.
-- ❌ Driver de log `json-file` en un host con journald.
-- ❌ Exponer el socket de Podman por TCP, o montarlo dentro de un contenedor.
-- ❌ Alias `docker=podman` dentro de scripts y automatización.
-- ❌ `podman-compose` como base de un stack de producción.
-- ❌ Editar a mano la unidad `.service` generada por Quadlet, o versionarla.
-- ❌ Contenedor sin límite de memoria por cgroup.
-- ❌ Volúmenes anónimos (`Mount=` sin origen) en un servicio con estado.
-- ❌ **Reimplementar un orquestador con scripts** (arranque cruzado por SSH, "failover" casero,
-  registro de servicios en un fichero). Si hace falta programación, se usa un programador.
-- ❌ **Poner Pacemaker a gestionar contenedores de un host para "darles HA"**: complejidad de
-  cluster sin ninguna de sus garantías. Ver `ha-clustering-standards`: la respuesta es un
-  orquestador, un balanceador delante de dos instancias con el estado fuera, o aceptar el
-  downtime por escrito.
-- ❌ Kubernetes para cuatro servicios en un host "porque escalará algún día".
+- ❌ A user unit without `loginctl enable-linger`.
+- ❌ Quadlet `.build` in production: the image is built in CI, not on the host that runs it.
+- ❌ Auto-update without `--sdnotify=container` (blind rollback) or against a registry without a verified
+  signature.
+- ❌ The `json-file` log driver on a host with journald.
+- ❌ Exposing the Podman socket over TCP, or mounting it inside a container.
+- ❌ A `docker=podman` alias inside scripts and automation.
+- ❌ `podman-compose` as the basis of a production stack.
+- ❌ Editing by hand the `.service` unit generated by Quadlet, or versioning it.
+- ❌ A container without a cgroup memory limit.
+- ❌ Anonymous volumes (`Mount=` without a source) in a stateful service.
+- ❌ **Reimplementing an orchestrator with scripts** (cross-host startup over SSH, homegrown "failover",
+  a service registry in a file). If scheduling is needed, a scheduler is used.
+- ❌ **Putting Pacemaker in charge of a host's containers to "give them HA"**: cluster complexity
+  without any of its guarantees. See `ha-clustering-standards`: the answer is an
+  orchestrator, a load balancer in front of two instances with state kept outside, or accepting the
+  downtime in writing.
+- ❌ Kubernetes for four services on one host "because it will scale some day".
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real:
+Before pinning anything in a real project:
 
-1. **Versión de Podman** en la distro destino (no la upstream) y su relación con la **mínima de
-   seguridad ≥ 5.8.4 / ≥ 6.0.0** (CVE-2026-57231, GHSA-4hq8-gpf5-8p68). Fuente:
-   `api.github.com/repositories/109145553/releases` y el advisory, no un resumen.
-2. **Versiones acompañantes exigidas** por la línea de Podman instalada (Buildah, Skopeo,
-   netavark, aardvark-dns, `container-libs/common`). Cambian con cada mayor.
-3. **Lista vigente de tipos de unidad Quadlet** y de **rutas de búsqueda** en
-   `podman-systemd.unit(5)` de **la versión instalada**: ambas han crecido y siguen creciendo.
-4. **Estado de `podman generate systemd`**: hoy deprecado y congelado, **no eliminado**.
-   Comprobar si alguna línea nueva lo retira.
-5. **Default de red rootless** en la versión instalada y en la distro: pasta desde Podman 5.0
-   upstream y RHEL/OL 9.5; **slirp4netns eliminado en Podman 6**.
-6. **Modos y comportamiento de `podman auto-update`** (`registry`/`local`, rollback, timer) en el
-   manual de la versión instalada.
-7. **CVE abiertos** de `podman`, `crun`, `netavark`, `aardvark-dns`, `passt/pasta`, `buildah` y
-   `skopeo`, y de las imágenes base que ejecutes.
-8. **Incidentes de cadena de suministro** en el ecosistema de contenedores antes de fijar una
-   herramienta nueva o una acción de CI (precedente reciente en el catálogo: el compromiso de
-   `trivy-action` de marzo de 2026 documentado en `kubernetes-standards`).
-9. **Movimiento a CNCF**: repositorio en `podman-container-tools`, import path
-   `go.podman.io/podman/v6`. Revisar URLs fijadas en automatizaciones.
+1. **Podman version** on the target distro (not upstream) and its relation to the **security
+   minimum ≥ 5.8.4 / ≥ 6.0.0** (CVE-2026-57231, GHSA-4hq8-gpf5-8p68). Source:
+   `api.github.com/repositories/109145553/releases` and the advisory, not a summary.
+2. **Companion versions required** by the installed Podman line (Buildah, Skopeo,
+   netavark, aardvark-dns, `container-libs/common`). They change with every major.
+3. **Current list of Quadlet unit types** and of **search paths** in
+   `podman-systemd.unit(5)` for **the installed version**: both have grown and keep growing.
+4. **Status of `podman generate systemd`**: today deprecated and frozen, **not removed**.
+   Check whether any new line drops it.
+5. **Rootless network default** in the installed version and in the distro: pasta since Podman 5.0
+   upstream and RHEL/OL 9.5; **slirp4netns removed in Podman 6**.
+6. **Modes and behaviour of `podman auto-update`** (`registry`/`local`, rollback, timer) in the
+   manual of the installed version.
+7. **Open CVEs** for `podman`, `crun`, `netavark`, `aardvark-dns`, `passt/pasta`, `buildah` and
+   `skopeo`, and for the base images you run.
+8. **Supply-chain incidents** in the container ecosystem before pinning a new
+   tool or a CI action (recent precedent in the catalogue: the compromise of
+   `trivy-action` of March 2026 documented in `kubernetes-standards`).
+9. **Move to CNCF**: repository at `podman-container-tools`, import path
+   `go.podman.io/podman/v6`. Review URLs pinned in automations.
 
-**Huecos declarados — NO rellenar de memoria, verificar antes de usar:**
-- **Comportamiento exacto de `podman auto-update` frente a referencias fijadas por digest** (se
-  asume aquí que no actualiza, por definición del digest, pero **no se ha leído la frase textual
-  del manual**). Verificar antes de diseñar una política mixta digest/tag.
-- **Disponibilidad y semántica exacta de `Notify=healthy`** en la versión instalada: se menciona
-  como alternativa a sdnotify pero **no se ha verificado por web** en esta revisión.
-- **Versión de Podman empaquetada en RHEL 10 / CentOS Stream 10, Debian 13 y Ubuntu 26.04 LTS**:
-  no verificada. Determina si la mínima de seguridad se alcanza con el paquete de la distro o
-  hace falta un módulo/backport.
-- **Estado de mantenimiento real de `podman-compose`** más allá de la fecha de su v1.6.0
-  (2026-06-03): no se ha evaluado cadencia ni tamaño del equipo.
-- **`Pesto` / `rootless_port_forwarder=pasta`**: aparece en las notas de Podman 6.0.1 como
-  herramienta de reenvío de puertos rootless con un bug de limpieza de reglas corregido. **No se
-  ha verificado qué es, si es default ni sus implicaciones**. No dependas de ello sin leer el
-  manual de tu versión.
-- **Soporte y estado del tipo de unidad `.artifact`**: listado en el manual, pero **su madurez no
-  se ha verificado**.
-- **CVE específicos de `crun` en 2026**: la búsqueda no devolvió ninguno, pero **no se consultó
-  el advisory feed del repositorio directamente**. Confirmar antes de fijar la versión mínima del
-  runtime.
+**Declared gaps — DO NOT fill from memory, verify before using:**
+- **Exact behaviour of `podman auto-update` with references pinned by digest** (it is
+  assumed here that it does not update, by definition of the digest, but **the verbatim sentence
+  from the manual has not been read**). Verify before designing a mixed digest/tag policy.
+- **Availability and exact semantics of `Notify=healthy`** in the installed version: it is mentioned
+  as an alternative to sdnotify but **it has not been verified on the web** in this revision.
+- **Podman version packaged in RHEL 10 / CentOS Stream 10, Debian 13 and Ubuntu 26.04 LTS**:
+  not verified. It determines whether the security minimum is reached with the distro package or
+  a module/backport is needed.
+- **Real maintenance status of `podman-compose`** beyond the date of its v1.6.0
+  (2026-06-03): neither cadence nor team size has been assessed.
+- **`Pesto` / `rootless_port_forwarder=pasta`**: it appears in the Podman 6.0.1 notes as a
+  rootless port-forwarding tool with a fixed rule-cleanup bug. **What it is, whether it is the
+  default and its implications have not been verified**. Do not depend on it without reading the
+  manual of your version.
+- **Support and status of the `.artifact` unit type**: listed in the manual, but **its maturity has
+  not been verified**.
+- **`crun`-specific CVEs in 2026**: the search returned none, but **the repository's advisory
+  feed was not consulted directly**. Confirm before pinning the runtime's minimum
+  version.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

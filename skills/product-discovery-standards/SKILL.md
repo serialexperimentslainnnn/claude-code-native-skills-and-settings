@@ -3,384 +3,384 @@ name: product-discovery-standards
 description: Reducing the risk of building something nobody needs, before it is built. Use when deciding how much discovery a decision deserves and whether it is reversible, addressing the four product risks (value, usability, feasibility, business viability) from Marty Cagan and SVPG, running customer interviews about past behaviour instead of future intent, building an opportunity solution tree (Teresa Torres, Continuous Discovery Habits) to trace a solution back to an outcome, writing a problem statement behind a requested feature, choosing an experiment (paper or clickable prototype, smoke test, fake door, concierge, Wizard of Oz) and its ethical and privacy limits, designing an A/B or online controlled experiment with a minimum detectable effect, power and sample-size calculation and duration fixed in advance, one primary metric plus guardrails, sample ratio mismatch checks, the peeking problem and always-valid or sequential inference, multiple-comparison correction, deciding when an A/B test is impossible (low traffic, network effects, structural change), separating outcome metrics from activity and vanity metrics, applying Goodhart's law to a target, using HEART or AARRR metric frameworks, running dual-track discovery alongside delivery, killing an idea as a successful outcome, or doing discovery for an internal product or platform with captive users.
 ---
 
-# Estándares de descubrimiento de producto
+# Product discovery standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**El descubrimiento existe para reducir el riesgo de construir lo que nadie necesita.** Criterio de
-existencia, aplicable el lunes: **si al terminar una actividad de descubrimiento no ha cambiado
-ninguna decisión —ni el alcance, ni el orden, ni el "no lo hacemos"—, no era descubrimiento, era
-teatro.** Un descubrimiento cuyo resultado posible es solo "seguimos adelante" no es un experimento:
-es una ceremonia de aprobación.
+**Discovery exists to reduce the risk of building what nobody needs.** Criteria for its existence,
+applicable on Monday: **if by the end of a discovery activity no decision has changed —not the scope,
+not the order, not the "we are not doing it"—, it was not discovery, it was
+theatre.** A discovery whose only possible outcome is "we carry on" is not an experiment:
+it is an approval ceremony.
 
-Corolario que gobierna todo lo demás: **la decisión de matar una idea es el resultado más valioso
-del proceso** (§6.3), y una función de descubrimiento que nunca mata nada está midiendo su propio
-consenso.
+Corollary that governs everything else: **the decision to kill an idea is the most valuable outcome
+of the process** (§6.3), and a discovery function that never kills anything is measuring its own
+consensus.
 
-Cubre: los cuatro riesgos de producto, el criterio de cuánto descubrimiento merece una decisión,
-entrevistas de comportamiento, oportunidades y soluciones (árbol de oportunidades), experimentos sin
-construir (prototipos, humo, concierge, mago de Oz) y su límite ético, experimentación cuantitativa
-(A/B con potencia, muestra y duración fijadas antes), métricas de resultado frente a actividad,
-Goodhart, dual track, y descubrimiento en producto interno.
+Covers: the four product risks, the criteria for how much discovery a decision deserves,
+behavioural interviews, opportunities and solutions (opportunity tree), experiments without
+building (prototypes, smoke, concierge, Wizard of Oz) and their ethical limit, quantitative
+experimentation (A/B with power, sample and duration fixed in advance), outcome metrics versus activity,
+Goodhart, dual track, and discovery in internal products.
 
-**No aplica**:
-- `project-management-standards` (**frontera limpia**: **qué se construye y por qué es de aquí; cómo
-  se entrega —plan, dependencias, riesgo de ejecución, informe de estado— es suyo**).
-- `analytics-bi-standards` (**suyos** el cuadro de mando, la **definición canónica de cada métrica**
-  y quién decide con ella; **aquí** qué métrica merece existir y qué decisión cuelga de ella. Si una
-  métrica de este documento no está definida allí, no es una métrica: es una opinión con número).
-- `llm-evaluation-standards` (**la medición de un sistema no determinista es suya**: el A/B de §5 no
-  aplica tal cual cuando la variante es un modelo generativo).
-- `data-governance-quality-standards` (calidad, linaje y contratos del dato con el que se decide).
-- `privacy-engineering-standards` (**precondición dura, no consejo**: la **base legal** del
-  tratamiento de datos de usuarios en un experimento —incluidos *fake door*, concierge y mago de
-  Oz— se decide con sus reglas **antes** de lanzar. Sin base legal no hay experimento, por bueno que
-  sea el aprendizaje).
-- `accessibility-standards` (**la conformidad no se somete a prueba A/B**: WCAG es requisito, no
-  hipótesis; una variante que degrada accesibilidad se descarta aunque gane en conversión).
-- `platform-engineering-standards` (**recíproca**: una plataforma interna es un producto con
-  clientes que pueden no usarla; **el descubrimiento de sus necesidades se hace aquí** y su gobierno
-  de adopción, allí).
-- `tech-leadership-standards` (quién decide, registro de decisión y presupuesto).
-- `web-performance-standards` (**el efecto medido del rendimiento sobre conversión es su territorio
-  de datos**; aquí solo el diseño del experimento que lo mide).
-- `enterprise-architecture-standards` y `knowledge-management-standards`. **El paisaje decide qué
-  sistemas existen; el descubrimiento, qué se construye; la documentación es lo que queda escrito de
-  ambas decisiones.**
+**Not applicable**:
+- `project-management-standards` (**clean boundary**: **what gets built and why belongs here; how it
+  is delivered —plan, dependencies, execution risk, status report— is theirs**).
+- `analytics-bi-standards` (**theirs** the dashboard, the **canonical definition of each metric**
+  and who decides with it; **here** which metric deserves to exist and which decision hangs on it. If a
+  metric in this document is not defined there, it is not a metric: it is an opinion with a number).
+- `llm-evaluation-standards` (**measuring a non-deterministic system is theirs**: the A/B of §5 does not
+  apply as-is when the variant is a generative model).
+- `data-governance-quality-standards` (quality, lineage and contracts of the data used to decide).
+- `privacy-engineering-standards` (**hard precondition, not advice**: the **legal basis** for
+  processing user data in an experiment —including *fake door*, concierge and Wizard of
+  Oz— is decided by their rules **before** launching. Without a legal basis there is no experiment, however good
+  the learning is).
+- `accessibility-standards` (**conformance is not subjected to an A/B test**: WCAG is a requirement, not a
+  hypothesis; a variant that degrades accessibility is discarded even if it wins on conversion).
+- `platform-engineering-standards` (**reciprocal**: an internal platform is a product with
+  customers who may not use it; **discovery of their needs happens here** and its adoption
+  governance, there).
+- `tech-leadership-standards` (who decides, decision record and budget).
+- `web-performance-standards` (**the measured effect of performance on conversion is their data
+  territory**; here only the design of the experiment that measures it).
+- `enterprise-architecture-standards` and `knowledge-management-standards`. **The landscape decides which
+  systems exist; discovery, what gets built; documentation is what remains written of
+  both decisions.**
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar autoría, versión y fuente por web antes de citarlas en un documento formal (§8).
+> Verify authorship, version and source on the web before citing them in a formal document (§8).
 
-| Ámbito | Default | Alternativa justificable |
+| Area | Default | Justifiable alternative |
 |---|---|---|
-| Taxonomía de riesgo | **Cuatro riesgos**: valor, usabilidad, factibilidad, viabilidad de negocio (SVPG / Marty Cagan) | Ninguna; ampliarla exige justificar qué riesgo no cubre |
-| Esfuerzo de descubrimiento | **Proporcional a la irreversibilidad y al coste** (§3.1) | Ninguna |
-| Fuente primaria | **Entrevista sobre comportamiento pasado**, continua | Analítica de uso cuando la pregunta es "cuánto", no "por qué" |
-| Encuesta | **Solo para dimensionar algo ya observado** | Nunca como sustituto de observación (§7) |
-| Trazabilidad | **Árbol de oportunidades** (resultado → oportunidad → solución → experimento) | Cualquier trazado explícito equivalente, escrito |
-| Prototipo | **La menor fidelidad que responda a la pregunta** | Alta fidelidad solo para riesgo de usabilidad |
-| Cuantitativo | **A/B con muestra, potencia y duración fijadas antes** | Inferencia secuencial / *always-valid* **si se decide antes** (§5.3) |
-| Métrica de éxito | **Una primaria de resultado + guardarraíles** | Nunca dos primarias |
-| Cadencia | **Dual track continuo** | Ninguna: el descubrimiento no es una fase previa (§6.1) |
-| Resultado admisible | **Incluye "no se construye"** | Ninguna |
+| Risk taxonomy | **Four risks**: value, usability, feasibility, business viability (SVPG / Marty Cagan) | None; extending it requires justifying which risk it does not cover |
+| Discovery effort | **Proportional to irreversibility and cost** (§3.1) | None |
+| Primary source | **Interview about past behaviour**, continuous | Usage analytics when the question is "how much", not "why" |
+| Survey | **Only to size something already observed** | Never as a substitute for observation (§7) |
+| Traceability | **Opportunity tree** (outcome → opportunity → solution → experiment) | Any equivalent explicit tracing, written down |
+| Prototype | **The lowest fidelity that answers the question** | High fidelity only for usability risk |
+| Quantitative | **A/B with sample, power and duration fixed in advance** | Sequential / *always-valid* inference **if decided in advance** (§5.3) |
+| Success metric | **One primary outcome metric + guardrails** | Never two primaries |
+| Cadence | **Continuous dual track** | None: discovery is not a preceding phase (§6.1) |
+| Admissible outcome | **Includes "we do not build it"** | None |
 
-### 2.1 Los cuatro riesgos y su origen
+### 2.1 The four risks and their origin
 
-- Formulación de referencia: **Silicon Valley Product Group / Marty Cagan, ensayo *The Four Big
-  Risks*** (`svpg.com/four-big-risks/`) y ***INSPIRED*, 2.ª edición**. Evolución declarada por el
-  propio autor: la 1.ª edición usaba tres atributos (valioso, usable, factible) y **el valor se
-  partió después en *valor* y *viabilidad de negocio*** porque la viabilidad quedaba sistemáticamente
-  ignorada.
-  - **Valor**: el cliente no lo comprará o el usuario no lo elegirá.
-  - **Usabilidad**: el usuario no sabrá usarlo.
-  - **Factibilidad**: no se puede construir con el tiempo, las capacidades y la tecnología disponibles.
-  - **Viabilidad de negocio**: el resto de la organización —legal, finanzas, ventas, marketing,
-    marca— no puede sostenerlo.
-- **Cautela de cita**: la frase corta que circula ("Before we build, we must address four big
-  risks…") **no aparece verbatim** en el ensayo consultado; es paráfrasis. **Citar el ensayo y el
-  libro, no la frase.** El autor ha usado también "deseabilidad" en lugar de "valor" — si se cita,
-  decir qué versión.
-- **Regla operativa**: los cuatro se abordan **antes de construir**, y **el riesgo que más se salta
-  es el de viabilidad de negocio** porque no tiene dueño natural en el equipo técnico. Ponerle dueño
-  con nombre es parte del diseño del proceso, no un detalle.
+- Reference formulation: **Silicon Valley Product Group / Marty Cagan, essay *The Four Big
+  Risks*** (`svpg.com/four-big-risks/`) and ***INSPIRED*, 2nd edition**. Evolution declared by the
+  author himself: the 1st edition used three attributes (valuable, usable, feasible) and **value
+  was later split into *value* and *business viability*** because viability was systematically
+  ignored.
+  - **Value**: the customer will not buy it or the user will not choose it.
+  - **Usability**: the user will not know how to use it.
+  - **Feasibility**: it cannot be built with the available time, capabilities and technology.
+  - **Business viability**: the rest of the organisation —legal, finance, sales, marketing,
+    brand— cannot sustain it.
+- **Citation caution**: the short sentence going around ("Before we build, we must address four big
+  risks…") **does not appear verbatim** in the essay consulted; it is a paraphrase. **Cite the essay and the
+  book, not the sentence.** The author has also used "desirability" instead of "value" — if cited,
+  say which version.
+- **Operational rule**: all four are addressed **before building**, and **the risk most often skipped
+  is business viability** because it has no natural owner in the technical team. Giving it a named owner
+  is part of the process design, not a detail.
 
-## 3. Cuánto descubrimiento, y sobre qué
+## 3. How much discovery, and about what
 
-### 3.1 El criterio de esfuerzo: reversibilidad × coste
+### 3.1 The effort criteria: reversibility × cost
 
-| Situación | Descubrimiento proporcionado |
+| Situation | Proportionate discovery |
 |---|---|
-| Reversible y barato (flag, texto, orden de una lista) | **Ninguno previo: se lanza y se mide.** Discutirlo en reunión cuesta más que probarlo |
-| Reversible y caro (funcionalidad de un sprint) | Entrevistas + prototipo + criterio de éxito escrito antes |
-| **Irreversible** (migración de datos, contrato plurianual, cambio de modelo de precio, API pública) | Descubrimiento formal: experimento con hipótesis, alternativa evaluada y decisión registrada (ADR / registro de decisión → `tech-leadership-standards`) |
-| Regulatorio o de accesibilidad | **No se descubre: se cumple.** No es una hipótesis |
+| Reversible and cheap (flag, copy, order of a list) | **None beforehand: it is launched and measured.** Discussing it in a meeting costs more than testing it |
+| Reversible and expensive (a sprint's worth of functionality) | Interviews + prototype + success criteria written in advance |
+| **Irreversible** (data migration, multi-year contract, pricing model change, public API) | Formal discovery: experiment with hypothesis, evaluated alternative and recorded decision (ADR / decision record → `tech-leadership-standards`) |
+| Regulatory or accessibility | **It is not discovered: it is complied with.** It is not a hypothesis |
 
-**Regla antiparálisis**: el coste del descubrimiento no puede superar el coste de equivocarse y
-rectificar. Si construir el experimento cuesta más que construir la funcionalidad, **se construye la
-funcionalidad detrás de un flag y se mide**.
+**Anti-paralysis rule**: the cost of discovery cannot exceed the cost of getting it wrong and
+correcting it. If building the experiment costs more than building the functionality, **the
+functionality is built behind a flag and measured**.
 
-### 3.2 Entrevistas: comportamiento pasado, no intención futura
+### 3.2 Interviews: past behaviour, not future intent
 
-- **"¿Usarías esto?" no aporta información** y su respuesta es sistemáticamente positiva: el
-  entrevistado responde por cortesía, por imaginación y sin coste. Una respuesta que no puede ser
-  "no" no es un dato.
-- Se pregunta por **hechos con fecha**: *"cuéntame la última vez que tuviste que hacer X"*, *"¿qué
-  hiciste exactamente?"*, *"¿cuánto tardaste?"*, *"¿qué usaste en su lugar?"*, *"¿qué pasó
-  después?"*. La historia concreta contiene comportamiento; la opinión contiene deseo de agradar.
-- **PROHIBIDO en una entrevista**: describir la solución antes de entender el problema, preguntar en
-  hipotético, preguntar por precio en abstracto ("¿pagarías 20 €?"), y encadenar preguntas cerradas.
-- Reglas de proceso: **cadencia semanal** (una entrevista semanal sostenida vale más que veinte en
-  un mes muerto), **asisten las tres cabezas** (producto, diseño, ingeniería) porque el aprendizaje
-  de segunda mano no cambia decisiones, y **las notas se guardan enlazadas a la oportunidad**
+- **"Would you use this?" carries no information** and its answer is systematically positive: the
+  interviewee answers out of politeness, out of imagination and at no cost. An answer that cannot be
+  "no" is not data.
+- Ask about **dated facts**: *"tell me about the last time you had to do X"*, *"what
+  exactly did you do?"*, *"how long did it take you?"*, *"what did you use instead?"*, *"what happened
+  next?"*. The concrete story contains behaviour; the opinion contains a desire to please.
+- **FORBIDDEN in an interview**: describing the solution before understanding the problem, asking in
+  the hypothetical, asking about price in the abstract ("would you pay €20?"), and stringing together closed questions.
+- Process rules: **weekly cadence** (one sustained weekly interview is worth more than twenty in
+  a dead month), **the three heads attend** (product, design, engineering) because second-hand
+  learning does not change decisions, and **notes are stored linked to the opportunity**
   (`knowledge-management-standards`).
-- **Sesgo de reclutamiento**: entrevistar solo a los clientes que responden al correo produce el
-  producto que quieren los clientes que responden al correo. **Los que se fueron y los que nunca
-  entraron son la muestra que falta**, y su ausencia se declara.
+- **Recruitment bias**: interviewing only the customers who reply to the email produces the
+  product wanted by the customers who reply to the email. **Those who left and those who never
+  came in are the missing sample**, and their absence is declared.
 
-### 3.3 Oportunidad y solución: el árbol como trazabilidad
+### 3.3 Opportunity and solution: the tree as traceability
 
-- **Árbol de oportunidades** (*opportunity solution tree*): **Teresa Torres**, formulado en **2016**
-  y desarrollado en ***Continuous Discovery Habits*** (2021, ISBN 978-1736633304); raíz intelectual
-  reconocida en el trabajo de Bernie Roth (Stanford) sobre conectar soluciones deseadas con
-  necesidades subyacentes. Estructura: **resultado → oportunidades → soluciones → experimentos**.
-- Uso real, no decorativo: **toda solución en la hoja de ruta cuelga de una oportunidad, y toda
-  oportunidad de un resultado medible.** Una solución que no cuelga de nada es una petición, no una
-  decisión.
-- **La trampa de la lista de funcionalidades sin problema detrás**: un backlog es una lista de
-  soluciones; sin la oportunidad asociada no se puede priorizar (no hay con qué comparar), no se
-  puede matar (no hay criterio) y no se puede sustituir por algo más barato que resuelva lo mismo.
-  **Regla: cada elemento de la hoja de ruta lleva escrita en una frase la oportunidad que ataca y
-  cómo se sabrá si la resolvió.** Sin esa frase no entra.
-- **Comparar soluciones alternativas para la misma oportunidad es obligatorio**: una única opción
-  evaluada no es una decisión, es una justificación.
+- **Opportunity tree** (*opportunity solution tree*): **Teresa Torres**, formulated in **2016**
+  and developed in ***Continuous Discovery Habits*** (2021, ISBN 978-1736633304); intellectual root
+  acknowledged in Bernie Roth's (Stanford) work on connecting desired solutions with
+  underlying needs. Structure: **outcome → opportunities → solutions → experiments**.
+- Real use, not decorative: **every solution on the roadmap hangs from an opportunity, and every
+  opportunity from a measurable outcome.** A solution that hangs from nothing is a request, not a
+  decision.
+- **The trap of the feature list with no problem behind it**: a backlog is a list of
+  solutions; without the associated opportunity it cannot be prioritised (there is nothing to compare against), it cannot
+  be killed (there is no criterion) and it cannot be replaced by something cheaper that solves the same thing.
+  **Rule: every roadmap item carries, written in one sentence, the opportunity it attacks and
+  how it will be known whether it solved it.** Without that sentence it does not get in.
+- **Comparing alternative solutions for the same opportunity is mandatory**: a single evaluated
+  option is not a decision, it is a justification.
 
-## 4. Experimentos cualitativos y su límite ético
+## 4. Qualitative experiments and their ethical limit
 
-*(Sección 4 de la plantilla —calidad y testing— reinterpretada: el equivalente aquí es qué se puede
-aprender sin construir y bajo qué condiciones el aprendizaje es legítimo.)*
+*(Section 4 of the template —quality and testing— reinterpreted: the equivalent here is what can be
+learned without building and under what conditions the learning is legitimate.)*
 
-| Técnica | Qué riesgo ataca | Qué **no** demuestra |
+| Technique | Which risk it attacks | What it does **not** prove |
 |---|---|---|
-| Prototipo en papel / baja fidelidad | Usabilidad y comprensión del concepto | Que alguien lo usaría de verdad |
-| Prototipo clicable de alta fidelidad | Usabilidad fina, flujo | Valor |
-| **Prueba de humo / *fake door*** (anuncio o botón de algo que aún no existe) | **Valor**: intención revelada con coste | Retención ni disposición a pagar |
-| Página de destino con lista de espera | Valor y mensaje | Uso |
-| **Concierge** (el servicio se presta manualmente, el usuario lo sabe) | Valor y viabilidad operativa | Escalabilidad ni coste unitario a escala |
-| **Mago de Oz** (parece automático, detrás hay personas) | Valor de la automatización antes de automatizarla | Factibilidad técnica |
-| Prototipo técnico / *spike* | **Factibilidad** | Valor |
+| Paper / low-fidelity prototype | Usability and comprehension of the concept | That someone would actually use it |
+| High-fidelity clickable prototype | Fine-grained usability, flow | Value |
+| **Smoke test / *fake door*** (ad or button for something that does not yet exist) | **Value**: revealed intent with a cost | Neither retention nor willingness to pay |
+| Landing page with a waiting list | Value and messaging | Usage |
+| **Concierge** (the service is delivered manually, the user knows it) | Value and operational viability | Neither scalability nor unit cost at scale |
+| **Wizard of Oz** (it looks automatic, there are people behind it) | Value of automation before automating it | Technical feasibility |
+| Technical prototype / *spike* | **Feasibility** | Value |
 
-**Límites duros, no recomendaciones:**
+**Hard limits, not recommendations:**
 
-- **No se engaña al usuario sobre el tratamiento de sus datos.** En concierge y mago de Oz **hay
-  personas leyendo contenido del usuario**: eso es un tratamiento que debe tener base legal,
-  información al interesado y control de acceso → `privacy-engineering-standards`. **La simulación
-  puede ocultar la implementación; nunca quién ve los datos.**
-- **Fake door**: el usuario que pulsa un botón de algo inexistente merece una respuesta honesta
-  inmediata ("aún no está disponible") y **no debe pagar, ni perder trabajo, ni quedar en un estado
-  inconsistente**. Un fake door en un flujo de compra o en un flujo crítico está **PROHIBIDO**.
-- Un experimento que solo funciona si el usuario no se entera **no se lanza**. Prueba: si tuvieras
-  que explicarlo después en público, ¿lo defenderías?
-- Datos personales recogidos "por si acaso" en un experimento: **PROHIBIDO** (minimización).
+- **The user is not deceived about the processing of their data.** In concierge and Wizard of Oz **there are
+  people reading user content**: that is processing which must have a legal basis,
+  information for the data subject and access control → `privacy-engineering-standards`. **The simulation
+  may hide the implementation; never who sees the data.**
+- **Fake door**: the user who presses a button for something non-existent deserves an honest, immediate
+  answer ("not available yet") and **must not pay, nor lose work, nor be left in an
+  inconsistent state**. A fake door in a purchase flow or in a critical flow is **FORBIDDEN**.
+- An experiment that only works if the user does not find out **is not launched**. Test: if you had
+  to explain it afterwards in public, would you defend it?
+- Personal data collected "just in case" in an experiment: **FORBIDDEN** (minimisation).
 
-## 5. Experimentación cuantitativa
+## 5. Quantitative experimentation
 
-### 5.1 Lo que se fija **antes** de lanzar (y se escribe)
+### 5.1 What is fixed **before** launching (and written down)
 
-1. **Hipótesis** en forma falsable: qué cambia, en qué métrica, en qué dirección, y **qué resultado
-   haría que se descartase**.
-2. **Una métrica primaria** de resultado. **Dos primarias = ninguna**, porque siempre habrá una que
-   gane.
-3. **Guardarraíles** que pueden matar el experimento aunque la primaria gane: errores, latencia
-   (`web-performance-standards`), accesibilidad, reclamaciones, coste unitario (`finops-standards`).
-4. **MDE** (efecto mínimo detectable) **decidido por su relevancia de negocio**, no por lo que salga
-   significativo: ¿qué mejora justifica el coste de mantener este cambio para siempre?
-5. **Cálculo de potencia y tamaño de muestra** con ese MDE (potencia 80 % y α 0,05 como punto de
-   partida; se declara si se cambian).
-6. **Duración fijada antes**, y **nunca menor a un ciclo semanal completo** (el comportamiento de
-   lunes no es el de sábado). Si la muestra se alcanza en dos días, se completa la semana igual.
-7. **Regla de decisión escrita**: qué se hace si gana, si pierde y si no es concluyente. **"No
-   concluyente" es un resultado, y su acción por defecto es no lanzar.**
+1. **Hypothesis** in falsifiable form: what changes, in which metric, in which direction, and **what result
+   would make it be discarded**.
+2. **One primary metric** of outcome. **Two primaries = none**, because there will always be one that
+   wins.
+3. **Guardrails** that can kill the experiment even if the primary wins: errors, latency
+   (`web-performance-standards`), accessibility, complaints, unit cost (`finops-standards`).
+4. **MDE** (minimum detectable effect) **decided by its business relevance**, not by what comes out
+   significant: what improvement justifies the cost of maintaining this change forever?
+5. **Power and sample-size calculation** with that MDE (80 % power and α 0.05 as a starting
+   point; declare it if changed).
+6. **Duration fixed in advance**, and **never shorter than a full weekly cycle** (Monday behaviour
+   is not Saturday's). If the sample is reached in two days, the week is completed anyway.
+7. **Written decision rule**: what is done if it wins, if it loses and if it is inconclusive. **"Not
+   conclusive" is a result, and its default action is not to launch.**
 
-### 5.2 Validez: lo que invalida un resultado
+### 5.2 Validity: what invalidates a result
 
-- **Sample Ratio Mismatch (SRM)**: si el reparto observado se desvía del diseñado de forma
-  estadísticamente improbable, **el experimento no se analiza, se depura**. Kohavi documenta el caso
-  de 821 588 vs. 815 482 usuarios (50,2 % frente a 50,0 %) con p ≈ 1,8e-6 → resultado descartado.
-  **Comprobación de SRM obligatoria antes de mirar la métrica primaria**, y sobre la unidad de
-  aleatorización (no sobre páginas vistas ni sesiones). Referencias: Fabijan et al., *Diagnosing
+- **Sample Ratio Mismatch (SRM)**: if the observed split deviates from the designed one in a
+  statistically improbable way, **the experiment is not analysed, it is debugged**. Kohavi documents the case
+  of 821,588 vs. 815,482 users (50.2 % versus 50.0 %) with p ≈ 1.8e-6 → result discarded.
+  **SRM check mandatory before looking at the primary metric**, and on the randomisation
+  unit (not on page views or sessions). References: Fabijan et al., *Diagnosing
   Sample Ratio Mismatch in Online Controlled Experiments*, KDD '19; Kohavi, Tang & Xu, *Trustworthy
-  Online Controlled Experiments*, cap. 21.
-- **Contaminación**: mismo usuario en ambas ramas (multi-dispositivo, caché, sesión anónima → login).
-- **Efecto novedad y efecto primacía**: el pico de la primera semana no es el efecto.
-- **Segmentación posterior sin corrección**: buscar el segmento donde el resultado sale bien es
-  fabricar significancia (§5.4).
+  Online Controlled Experiments*, ch. 21.
+- **Contamination**: same user in both arms (multi-device, cache, anonymous session → login).
+- **Novelty effect and primacy effect**: the first week's spike is not the effect.
+- **Post-hoc segmentation without correction**: looking for the segment where the result comes out well is
+  manufacturing significance (§5.4).
 
-### 5.3 El *peeking* — **prohibido parar al ver significancia**
+### 5.3 *Peeking* — **stopping on seeing significance is forbidden**
 
-- Mirar repetidamente un test diseñado como muestra fija y parar en cuanto cruza el umbral **produce
-  falsos positivos de forma sistemática**: reaplicar ingenuamente pruebas convencionales en cada
-  instante acaba detectando un efecto aunque no exista (Johari, Koomen, Pekelis & Walsh, *Peeking at
-  A/B Tests*, KDD '17; versión ampliada en *Operations Research*, 2021).
-- **Regla**: con diseño de muestra fija, **el resultado se lee una vez, al alcanzar la muestra y la
-  duración planificadas**. Punto.
-- **Si se necesita mirar antes**, se decide **antes de lanzar** usar **inferencia secuencial /
-  *always-valid*** (p-valores siempre válidos, mSPRT, *alpha spending*). No es gratis: **se paga en
-  potencia**, y detectar efectos pequeños se vuelve más difícil. Cambiar de método a mitad del test
-  invalida ambos.
-- **Excepción legítima y única**: parada temprana por **daño** (guardarraíl roto, error, pérdida de
-  ingresos). Se define el umbral de daño antes y se monitoriza solo eso.
+- Repeatedly looking at a test designed with a fixed sample and stopping as soon as it crosses the threshold **produces
+  false positives systematically**: naively reapplying conventional tests at every
+  instant ends up detecting an effect even when none exists (Johari, Koomen, Pekelis & Walsh, *Peeking at
+  A/B Tests*, KDD '17; extended version in *Operations Research*, 2021).
+- **Rule**: with a fixed-sample design, **the result is read once, upon reaching the planned sample and
+  duration**. Full stop.
+- **If you need to look earlier**, it is decided **before launching** to use **sequential /
+  *always-valid* inference** (always-valid p-values, mSPRT, *alpha spending*). It is not free: **it is paid for
+  in power**, and detecting small effects becomes harder. Changing method halfway through the test
+  invalidates both.
+- **Legitimate and sole exception**: early stopping due to **harm** (broken guardrail, error, revenue
+  loss). The harm threshold is defined in advance and only that is monitored.
 
-### 5.4 Comparaciones múltiples
+### 5.4 Multiple comparisons
 
-- Un test con una primaria y muchas métricas secundarias **producirá secundarias "significativas"
-  por azar**: con α=0,05 y 20 métricas independientes, se espera una falsa por test.
-- **Regla**: la decisión cuelga **solo** de la primaria. Las secundarias son generadoras de
-  hipótesis, y **al analizarlas se aplica corrección** (Bonferroni si son pocas y la decisión es
-  crítica; control de FDR tipo Benjamini-Hochberg si son muchas y exploratorias). **Declarar cuál se
-  usó.**
-- Lo mismo para variantes: un A/B/C/D es un problema de comparaciones múltiples, no cuatro tests.
+- A test with one primary and many secondary metrics **will produce "significant" secondaries
+  by chance**: with α=0.05 and 20 independent metrics, one false one per test is expected.
+- **Rule**: the decision hangs **only** on the primary. Secondaries are hypothesis
+  generators, and **when analysing them a correction is applied** (Bonferroni if there are few and the decision is
+  critical; Benjamini-Hochberg-style FDR control if there are many and they are exploratory). **Declare which one was
+  used.**
+- The same for variants: an A/B/C/D is a multiple-comparisons problem, not four tests.
 
-### 5.5 Cuándo **no** se puede hacer un A/B test
+### 5.5 When an A/B test **cannot** be done
 
-- **Tráfico insuficiente**: si el cálculo de §5.1 da una duración mayor que el horizonte de la
-  decisión (p. ej. > 6-8 semanas), el test no existe. Alternativas: medir un cambio mayor, usar una
-  métrica más sensible aguas arriba, o decidir con cualitativo y asumirlo por escrito.
-- **Efectos de red / mercados de dos lados**: la rama de control se contamina por la de tratamiento
-  (marketplaces, mensajería, redes sociales). Alternativas: aleatorización por *cluster* (ciudad,
-  equipo, cohorte) o experimentos por *switchback*, ambos con menos potencia y más supuestos.
-- **Cambios estructurales**: rediseño completo, cambio de precios, migración de plataforma. El
-  efecto medido a corto plazo será dominado por la sorpresa, no por el valor. Alternativas: lanzado
-  progresivo con vigilancia de guardarraíles, cohortes en el tiempo, mercados de prueba.
-- **Poblaciones pequeñas y cautivas** (producto interno, B2B con 40 clientes): **no hay test**; hay
-  entrevistas, pilotos y adopción observada (§6.4).
-- **Cuestiones normativas o de accesibilidad**: no se testean.
-- **Cuando no se puede testear, la regla es declarar la incertidumbre y hacer el cambio reversible**
-  (flag, plan de reversión), no fingir rigor con un test infrapotenciado. **Un test sin potencia no
-  es evidencia débil: es ruido con apariencia de dato.**
+- **Insufficient traffic**: if the calculation in §5.1 yields a duration longer than the horizon of the
+  decision (e.g. > 6-8 weeks), the test does not exist. Alternatives: measure a bigger change, use a
+  more sensitive metric upstream, or decide with qualitative evidence and own it in writing.
+- **Network effects / two-sided markets**: the control arm is contaminated by the treatment one
+  (marketplaces, messaging, social networks). Alternatives: *cluster* randomisation (city,
+  team, cohort) or *switchback* experiments, both with less power and more assumptions.
+- **Structural changes**: complete redesign, price change, platform migration. The
+  effect measured in the short term will be dominated by surprise, not by value. Alternatives: progressive
+  rollout with guardrail monitoring, cohorts over time, test markets.
+- **Small and captive populations** (internal product, B2B with 40 customers): **there is no test**; there are
+  interviews, pilots and observed adoption (§6.4).
+- **Regulatory or accessibility matters**: they are not tested.
+- **When it cannot be tested, the rule is to declare the uncertainty and make the change reversible**
+  (flag, rollback plan), not to fake rigour with an underpowered test. **A test without power is not
+  weak evidence: it is noise that looks like data.**
 
-## 6. Métricas, cadencia y contextos sin usuarios externos
+## 6. Metrics, cadence and contexts without external users
 
-### 6.1 Resultado, actividad y vanidad
+### 6.1 Outcome, activity and vanity
 
-| Tipo | Ejemplo | Qué le pasa cuando se convierte en objetivo |
+| Type | Example | What happens to it when it becomes a target |
 |---|---|---|
-| **Resultado** (comportamiento del cliente o efecto de negocio) | Tareas completadas por semana, retención a 30 días, tiempo hasta el primer valor | Es la única defendible; aun así requiere guardarraíles |
-| **Actividad** (lo que hace el equipo) | Funcionalidades entregadas, historias cerradas, experimentos lanzados | Se infla trivialmente; no dice nada del usuario |
-| **Vanidad** (crece siempre y no decide nada) | Usuarios registrados acumulados, descargas totales, páginas vistas | Nunca baja, así que nunca desmiente nada |
+| **Outcome** (customer behaviour or business effect) | Tasks completed per week, 30-day retention, time to first value | It is the only defensible one; even so it requires guardrails |
+| **Activity** (what the team does) | Features delivered, stories closed, experiments launched | It is trivially inflated; it says nothing about the user |
+| **Vanity** (always grows and decides nothing) | Cumulative registered users, total downloads, page views | It never goes down, so it never disproves anything |
 
-**Prueba de la métrica**: *¿qué decisión distinta tomaríamos si este número cayera un 20 %?* Sin
-respuesta concreta, la métrica no se publica.
+**Metric test**: *what different decision would we take if this number dropped by 20 %?* Without a
+concrete answer, the metric is not published.
 
-### 6.2 Ley de Goodhart, con su formulación original
+### 6.2 Goodhart's law, with its original formulation
 
 - **Original (Charles Goodhart, 1975)**: *"Any observed statistical regularity will tend to collapse
-  once pressure is placed upon it for control purposes."* (contexto: política monetaria del Reino
-  Unido; recogido también en *Monetary Theory and Practice*).
-- **Corrección frecuente**: la versión popular *"When a measure becomes a target, it ceases to be a
-  good measure"* **no es de Goodhart**: se debe a **Marilyn Strathern (1997)**, citando la
-  formulación de Keith Hoskin (1996). Si se cita la frase corta, se atribuye a Strathern. Emparentada
-  con la **ley de Campbell** (formulaciones desde 1969), que probablemente le precede.
-- **Uso operativo, no cita ornamental**: (a) **toda métrica primaria lleva guardarraíles** que
-  detecten su forma barata de subir; (b) **la métrica que fija el objetivo del equipo no puede ser
-  la misma que se usa para evaluar a las personas** (→ `tech-leadership-standards`); (c) si una
-  métrica sube mientras el resultado de negocio no se mueve, **la métrica está siendo optimizada, no
-  el producto**.
+  once pressure is placed upon it for control purposes."* (context: United Kingdom monetary
+  policy; also collected in *Monetary Theory and Practice*).
+- **Frequent correction**: the popular version *"When a measure becomes a target, it ceases to be a
+  good measure"* **is not Goodhart's**: it is due to **Marilyn Strathern (1997)**, citing Keith
+  Hoskin's (1996) formulation. If the short sentence is cited, it is attributed to Strathern. Related
+  to **Campbell's law** (formulations from 1969 onwards), which probably precedes it.
+- **Operational use, not ornamental citation**: (a) **every primary metric carries guardrails** that
+  detect its cheap way of going up; (b) **the metric that sets the team's target cannot be
+  the same one used to evaluate people** (→ `tech-leadership-standards`); (c) if a
+  metric goes up while the business outcome does not move, **the metric is being optimised, not
+  the product**.
 
-### 6.3 Marcos de métricas, con su origen
+### 6.3 Metric frameworks, with their origin
 
-- **HEART** (Happiness, Engagement, Adoption, Retention, Task success) + proceso **Goals-Signals-
-  Metrics**: Rodden, Hutchinson & Fu, *Measuring the User Experience on a Large Scale:
-  User-Centered Metrics for Web Applications*, **CHI 2010** (Google). Orientado a **calidad de
-  experiencia**.
+- **HEART** (Happiness, Engagement, Adoption, Retention, Task success) + **Goals-Signals-
+  Metrics** process: Rodden, Hutchinson & Fu, *Measuring the User Experience on a Large Scale:
+  User-Centered Metrics for Web Applications*, **CHI 2010** (Google). Oriented to **experience
+  quality**.
 - **AARRR "pirate metrics"** (Acquisition, Activation, Retention, Referral, Revenue): **Dave
-  McClure, 2007**. Orientado al **embudo de crecimiento**. (Las fuentes discrepan sobre el evento
-  exacto de presentación —Ignite Seattle o un taller de Seedcamp—; el año, 2007, es consistente.)
-- **Regla de uso**: un marco de métricas **no elige la métrica, solo evita olvidos**. Se elige **una
-  primaria por objetivo** y se define canónicamente en `analytics-bi-standards`. **Adoptar HEART o
-  AARRR completos y reportar sus cinco casillas cada mes es actividad, no medida.**
+  McClure, 2007**. Oriented to the **growth funnel**. (Sources disagree about the exact
+  presentation event —Ignite Seattle or a Seedcamp workshop—; the year, 2007, is consistent.)
+- **Usage rule**: a metric framework **does not choose the metric, it only prevents omissions**. **One
+  primary per objective** is chosen and defined canonically in `analytics-bi-standards`. **Adopting HEART or
+  AARRR wholesale and reporting their five boxes every month is activity, not measurement.**
 
-### 6.4 Dual track: **el descubrimiento no es una fase previa**
+### 6.4 Dual track: **discovery is not a preceding phase**
 
-- **Mismo equipo, mismo período, dos flujos**: descubrimiento (qué construir y por qué) y entrega
-  (construirlo bien). No dos equipos, no dos fases, no "sprint 0".
-- Señales de que se ha degradado a fase: la entrega espera a que "termine el descubrimiento"; existe
-  un backlog de descubrimiento aprobado con meses de antelación; el equipo de entrega recibe
-  especificaciones que no puede discutir.
-- **Compromiso mínimo semanal**: al menos un contacto con cliente y al menos una decisión de
-  descubrimiento registrada por semana. Menos que eso, no es continuo.
-- **Matar una idea es el mejor resultado posible.** Para que sea posible hay que hacerlo barato:
-  (a) criterio de éxito **escrito antes** —sin él nadie puede declarar el fallo—, (b) sin nombre de
-  autor pegado a la idea, (c) **celebrar públicamente el ahorro**, cuantificado en semanas-persona no
-  gastadas. **Métrica de la función: nº de ideas descartadas tras descubrimiento por trimestre. Si
-  es 0, el proceso está validando, no descubriendo.**
+- **Same team, same period, two streams**: discovery (what to build and why) and delivery
+  (building it well). Not two teams, not two phases, not "sprint 0".
+- Signs it has degraded into a phase: delivery waits for "discovery to finish"; there is
+  a discovery backlog approved months in advance; the delivery team receives
+  specifications it cannot discuss.
+- **Minimum weekly commitment**: at least one customer contact and at least one discovery
+  decision recorded per week. Less than that, and it is not continuous.
+- **Killing an idea is the best possible outcome.** For it to be possible it has to be made cheap:
+  (a) success criteria **written in advance** —without them nobody can declare the failure—, (b) with no author's
+  name stuck to the idea, (c) **publicly celebrating the saving**, quantified in person-weeks not
+  spent. **Metric for the function: number of ideas discarded after discovery per quarter. If
+  it is 0, the process is validating, not discovering.**
 
-### 6.5 Descubrimiento sin usuarios externos (producto interno, plataforma)
+### 6.5 Discovery without external users (internal product, platform)
 
-- El cliente interno **no es cautivo aunque lo parezca**: puede esquivar la herramienta, montarse la
-  suya o abrir un ticket para saltársela. **La deserción es la señal**, y la adopción forzada la
-  destruye (premisa de `platform-engineering-standards`).
-- Ventajas que hay que explotar: **acceso ilimitado a los usuarios** (están en el edificio) y
-  **telemetría real de su trabajo**. La excusa "no tenemos usuarios" es falsa en producto interno.
-- Limitación real: **no hay tráfico para A/B**. Sustitutos: piloto con un equipo voluntario, uso
-  observado (no encuesta de satisfacción), **tiempo hasta el primer resultado útil** y **abandono a
-  los 30 días**.
-- **Trampa específica**: confundir al que paga (un directivo) con el que usa (los equipos). El
-  patrocinador aprueba; el usuario decide si vive. **Se entrevista al que usa.**
-- Un experimento con empleados como sujetos **también** tiene requisitos de privacidad y de relación
-  laboral: monitorizar el trabajo de una persona no es telemetría de producto sin más →
+- The internal customer **is not captive even if it looks that way**: they can dodge the tool, build their
+  own or open a ticket to bypass it. **Desertion is the signal**, and forced adoption
+  destroys it (premise of `platform-engineering-standards`).
+- Advantages to be exploited: **unlimited access to the users** (they are in the building) and
+  **real telemetry of their work**. The excuse "we have no users" is false in internal products.
+- Real limitation: **there is no traffic for A/B**. Substitutes: pilot with a volunteer team, observed
+  usage (not a satisfaction survey), **time to first useful result** and **30-day
+  abandonment**.
+- **Specific trap**: confusing the one who pays (an executive) with the one who uses (the teams). The
+  sponsor approves; the user decides whether it lives. **You interview the one who uses it.**
+- An experiment with employees as subjects **also** has privacy and employment-relationship
+  requirements: monitoring a person's work is not just product telemetry →
   `privacy-engineering-standards`.
 
-## 7. Sostenibilidad a largo plazo y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-- **Cadencia sostenible**: contacto semanal con clientes; revisión trimestral del árbol de
-  oportunidades contra el resultado; **retirada de métricas** que ya no deciden nada (mismo criterio
-  de poda que los cuadros de mando en `analytics-bi-standards`).
-- **Conservación del aprendizaje**: cada experimento deja una ficha con hipótesis, diseño, resultado
-  y **decisión tomada**, enlazada a la oportunidad y guardada donde se busque
-  (`knowledge-management-standards`). **Un aprendizaje que no se puede recuperar se vuelve a pagar.**
-- Prohibiciones:
-  - ❌ **Validar una idea buscando confirmación.** Se diseña el experimento que **podría matarla**; si
-    no existe resultado posible que la mate, no es un experimento.
-  - ❌ **Encuesta como sustituto de la observación.** La encuesta dimensiona lo ya observado; no
-    descubre.
-  - ❌ **Preguntar por intención futura** ("¿usarías…?", "¿pagarías…?") y tratar la respuesta como dato.
-  - ❌ **A/B test sin cálculo previo de muestra, potencia y duración.**
-  - ❌ **Parar un test al ver significancia** (§5.3), salvo parada por daño definida de antemano.
-  - ❌ **Cambiar la métrica primaria, el diseño o la segmentación con el test en marcha.**
-  - ❌ **Reportar una secundaria significativa sin corrección por comparaciones múltiples.**
-  - ❌ **"Lo pidió un cliente" como justificación única.** Una petición es una solución propuesta: hay
-    que recuperar el problema, y comprobar a cuántos afecta.
-  - ❌ **Descubrimiento que nunca mata nada** (§6.4).
-  - ❌ **Fake door en un flujo crítico o de pago**, y cualquier experimento que engañe sobre **quién ve
-    los datos del usuario** (§4).
-  - ❌ **Someter a prueba A/B un requisito de accesibilidad, de privacidad o legal.**
-  - ❌ **Citar tasas de fracaso de producto o de uso de funcionalidades sin fuente primaria y
-    metodología** (§8): en una discusión de inversión, una cifra sin fuente destruye el argumento
-    entero cuando alguien la comprueba.
-  - ❌ **Hoja de ruta con fechas para elementos aún no descubiertos**: convierte el descubrimiento en
-    trámite (→ `project-management-standards` para cómo se comunica un compromiso).
+- **Sustainable cadence**: weekly customer contact; quarterly review of the opportunity
+  tree against the outcome; **retirement of metrics** that no longer decide anything (same pruning
+  criteria as dashboards in `analytics-bi-standards`).
+- **Preserving the learning**: every experiment leaves a record with hypothesis, design, result
+  and **decision taken**, linked to the opportunity and stored where it will be searched for
+  (`knowledge-management-standards`). **A learning that cannot be recovered gets paid for again.**
+- Prohibitions:
+  - ❌ **Validating an idea by seeking confirmation.** You design the experiment that **could kill it**; if
+    no possible result kills it, it is not an experiment.
+  - ❌ **Survey as a substitute for observation.** The survey sizes what has already been observed; it does not
+    discover.
+  - ❌ **Asking about future intent** ("would you use…?", "would you pay…?") and treating the answer as data.
+  - ❌ **A/B test without a prior calculation of sample, power and duration.**
+  - ❌ **Stopping a test on seeing significance** (§5.3), except for a harm stop defined in advance.
+  - ❌ **Changing the primary metric, the design or the segmentation with the test running.**
+  - ❌ **Reporting a significant secondary without multiple-comparisons correction.**
+  - ❌ **"A customer asked for it" as the sole justification.** A request is a proposed solution: you have
+    to recover the problem, and check how many it affects.
+  - ❌ **Discovery that never kills anything** (§6.4).
+  - ❌ **Fake door in a critical or payment flow**, and any experiment that deceives about **who sees
+    the user's data** (§4).
+  - ❌ **Subjecting an accessibility, privacy or legal requirement to an A/B test.**
+  - ❌ **Citing product failure rates or feature usage rates without a primary source and
+    methodology** (§8): in an investment discussion, a figure without a source destroys the entire
+    argument when somebody checks it.
+  - ❌ **Roadmap with dates for items not yet discovered**: it turns discovery into
+    a formality (→ `project-management-standards` for how a commitment is communicated).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Comprobar antes de fijar o citar nada:
+Check before committing to or citing anything:
 
-1. **Cuatro riesgos**: `svpg.com/four-big-risks/` e *INSPIRED* 2.ª ed. **La frase corta que circula
-   es paráfrasis, no verbatim** — verificado en esta pasada; citar ensayo/libro.
-2. **Árbol de oportunidades**: Teresa Torres, 2016; *Continuous Discovery Habits* (2021). Confirmar
-   en `producttalk.org` antes de atribuir variantes del diagrama.
-3. **Ley de Goodhart**: formulación original de 1975 (verbatim en §6.2) y **atribución correcta de
-   la versión popular a Strathern (1997), no a Goodhart**.
-4. **Peeking y always-valid**: Johari et al., KDD '17 / *Operations Research* 2021. **SRM**: Fabijan
-   et al., KDD '19 y Kohavi/Tang/Xu cap. 21. Verificar el método concreto que implemente la
-   herramienta que uses **antes** de confiar en su "significancia".
-5. **HEART**: Rodden, Hutchinson & Fu, CHI 2010. **AARRR**: McClure, 2007 (**discrepancia declarada**
-   en las fuentes sobre el evento exacto de presentación).
-6. **Cifras famosas — descartadas, y por qué. No usarlas:**
-   - **"El 95 % de los productos nuevos fracasa"** (atribuido a Clayton Christensen): **sin estudio,
-     paper ni dataset** en las fuentes localizadas; se propaga como anécdota de aula. Los trabajos
-     que separan productos *lanzados* de conceptos muertos en I+D sitúan el fracaso comercial en un
-     orden mucho menor. **Descartada.** Si se necesita una cifra, buscar los estudios de referencia
-     de la PDMA y Castellion & Markham (*JPIM*, 2013) sobre el origen de las tasas infladas —
-     **no verificados en esta pasada**.
-   - **"El 80 % de las funcionalidades no se usa"**: origen concreto **Pendo, 2019 Feature Adoption
-     Report**, sobre **615 suscripciones de Pendo**, midiendo **volumen de clics** de funcionalidades
-     **etiquetadas por el propio cliente**. Muestra autoseleccionada, "funcionalidad" definida por
-     quien etiqueta, clic como sustituto del valor y **fabricante con interés comercial en el
-     hallazgo**. La estirpe Standish previa da **45 %, 64 %, 75 % y 80 %** según edición —
-     inconsistencia que es en sí misma la crítica. **Se puede usar como hipótesis a comprobar en tu
-     propio producto; no como hecho.**
-   - **"Cuesta 5 veces más captar que retener"**: la cadena de citas lleva a Reichheld & Sasser,
-     *Zero Defections* (HBR, 1990), **cuyo hallazgo documentado es el efecto de la retención sobre el
-     beneficio en unas pocas empresas de servicios financieros, no un múltiplo de coste de
-     adquisición generalizable**. El múltiplo circula como 5×, 6-7× y 5-25×, señal de fuente débil.
-     **Descartada.**
-   - **Estadísticas de adopción de marcos de producto** ("el X % de los equipos usa descubrimiento
-     continuo"): **hueco declarado**, sin fuente primaria localizada. No se escriben.
-7. **Precondición de privacidad**: antes de cualquier experimento con datos de usuarios, comprobar
-   base legal y obligaciones vigentes con `privacy-engineering-standards` — **la normativa cambia y
-   este documento no es la fuente**.
+1. **Four risks**: `svpg.com/four-big-risks/` and *INSPIRED* 2nd ed. **The short sentence going around
+   is a paraphrase, not verbatim** — verified in this pass; cite the essay/book.
+2. **Opportunity tree**: Teresa Torres, 2016; *Continuous Discovery Habits* (2021). Confirm
+   on `producttalk.org` before attributing variants of the diagram.
+3. **Goodhart's law**: original 1975 formulation (verbatim in §6.2) and **correct attribution of
+   the popular version to Strathern (1997), not to Goodhart**.
+4. **Peeking and always-valid**: Johari et al., KDD '17 / *Operations Research* 2021. **SRM**: Fabijan
+   et al., KDD '19 and Kohavi/Tang/Xu ch. 21. Verify the concrete method implemented by the
+   tool you use **before** trusting its "significance".
+5. **HEART**: Rodden, Hutchinson & Fu, CHI 2010. **AARRR**: McClure, 2007 (**declared discrepancy**
+   in the sources about the exact presentation event).
+6. **Famous figures — discarded, and why. Do not use them:**
+   - **"95 % of new products fail"** (attributed to Clayton Christensen): **no study,
+     paper or dataset** in the sources located; it propagates as a classroom anecdote. The works
+     that separate *launched* products from concepts that died in R&D put commercial failure at a
+     much lower order of magnitude. **Discarded.** If a figure is needed, look for the reference studies
+     from the PDMA and Castellion & Markham (*JPIM*, 2013) on the origin of the inflated rates —
+     **not verified in this pass**.
+   - **"80 % of features are not used"**: concrete origin **Pendo, 2019 Feature Adoption
+     Report**, over **615 Pendo subscriptions**, measuring **click volume** of features
+     **labelled by the customer themselves**. Self-selected sample, "feature" defined by
+     whoever labels it, click as a proxy for value and **a vendor with a commercial interest in the
+     finding**. The earlier Standish lineage gives **45 %, 64 %, 75 % and 80 %** depending on the edition —
+     an inconsistency that is itself the criticism. **It can be used as a hypothesis to check in your
+     own product; not as a fact.**
+   - **"It costs 5 times more to acquire than to retain"**: the citation chain leads to Reichheld & Sasser,
+     *Zero Defections* (HBR, 1990), **whose documented finding is the effect of retention on
+     profit in a few financial services firms, not a generalisable acquisition cost
+     multiple**. The multiple circulates as 5×, 6-7× and 5-25×, a sign of a weak source.
+     **Discarded.**
+   - **Adoption statistics for product frameworks** ("X % of teams use continuous
+     discovery"): **declared gap**, no primary source located. They are not written down.
+7. **Privacy precondition**: before any experiment with user data, check the
+   legal basis and obligations in force with `privacy-engineering-standards` — **regulations change and
+   this document is not the source**.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

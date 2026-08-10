@@ -3,243 +3,243 @@ name: bsd-systems-standards
 description: FreeBSD, OpenBSD and NetBSD as deliberate production choices, and their derivatives. Use when working with FreeBSD (freebsd-update, pkg install/upgrade with quarterly or latest branches, ports tree and make.conf, /etc/rc.conf, sysrc, service(8), bectl boot environments, zfs and zpool on FreeBSD, jail(8) and /etc/jail.conf, ezjail, iocage, BastilleBSD, AppJail, vnet jails, bhyve and vm-bhyve, pf.conf and pfctl, CARP, netgraph, dtrace on FreeBSD, kldload, loader.conf, FreeBSD RELEASE/STABLE/CURRENT branches), OpenBSD (syspatch, sysupgrade, pkg_add, /etc/pf.conf and pfctl -sr, pledge(2) and unveil(2), relayd, httpd, smtpd, iked, doas and doas.conf, rcctl, W^X, KARL, retguard, errata patches, signify), NetBSD (pkgsrc, bmake, npf.conf, sysinst, rump kernels), and their derivatives pfSense CE or Plus, OPNsense, TrueNAS CORE, FreeNAS, HardenedBSD, GhostBSD or DragonFly BSD — including deciding which BSD to use, or whether to use one at all.
 ---
 
-# Estándares de sistemas BSD
+# BSD systems standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**BSD no es legacy: es una familia viva que se elige por razones concretas**, y esta skill existe
-para fijar cuáles. Confundirla con el Unix propietario heredado es el error de encuadre: aquí nadie
-"se quedó" en BSD — alguien lo eligió, y hay que poder defender por qué.
+**BSD is not legacy: it is a living family chosen for concrete reasons**, and this skill exists
+to set out which ones. Confusing it with inherited proprietary Unix is the framing error: nobody
+here "stayed" on BSD — somebody chose it, and must be able to defend why.
 
-Las tres tienen releases nuevas en 2026, políticas de soporte **distintas entre sí** (§2) y un caso
-de uso propio y estrecho:
+All three have new releases in 2026, support policies **that differ from one another** (§2) and a
+narrow use case of their own:
 
-- **FreeBSD** — la de propósito general: **ZFS de primera clase, jails, `bhyve` y `pf`**. Su caso
-  fuerte es **almacenamiento y red**: un servidor de ficheros ZFS, un cortafuegos con estado, un
-  encaminador, un servidor de virtualización pequeño. Fuera de ahí compite de tú a tú con Linux y
-  suele perder por ecosistema (§7).
-- **OpenBSD** — la de superficie mínima: **seguro por defecto**, `pledge`/`unveil`, y **origen de
-  `pf`**. Su caso fuerte es el **cortafuegos/VPN y el servicio expuesto y pequeño** (relay, DNS
-  autoritativo, correo, salto SSH). No es una plataforma de aplicación general y no pretende serlo.
-- **NetBSD** — la portable. **Acótalo**: su argumento es correr en arquitecturas que nadie más
-  cubre y `pkgsrc` como árbol de paquetes multiplataforma. En un centro de datos x86/ARM corriente
-  **no hay ninguna razón para elegir NetBSD sobre FreeBSD**; decirlo es parte del criterio.
+- **FreeBSD** — the general-purpose one: **first-class ZFS, jails, `bhyve` and `pf`**. Its strong
+  case is **storage and networking**: a ZFS file server, a stateful firewall, a
+  router, a small virtualisation server. Beyond that it goes head to head with Linux and
+  usually loses on ecosystem (§7).
+- **OpenBSD** — the minimal-surface one: **secure by default**, `pledge`/`unveil`, and **the origin
+  of `pf`**. Its strong case is the **firewall/VPN and the small exposed service** (relay, authoritative
+  DNS, mail, SSH jump host). It is not a general application platform and does not claim to be.
+- **NetBSD** — the portable one. **Bound it**: its argument is running on architectures nobody else
+  covers and `pkgsrc` as a cross-platform package tree. In an ordinary x86/ARM data centre
+  **there is no reason at all to choose NetBSD over FreeBSD**; saying so is part of the criteria.
 
-Cubre: estado y política de soporte de cada una (§2); convenciones de FreeBSD que deciden la
-operación (§3); jails frente a contenedores Linux y `pf` frente a `nftables` (§4); qué enseña
-OpenBSD aunque no lo despliegues (§5); operabilidad y el ecosistema derivado —pfSense, OPNsense,
-TrueNAS— (§6); y **cuándo no elegir BSD** (§7).
+Covers: the status and support policy of each one (§2); FreeBSD conventions that decide the
+operation (§3); jails versus Linux containers and `pf` versus `nftables` (§4); what
+OpenBSD teaches even if you do not deploy it (§5); operability and the derivative ecosystem —pfSense, OPNsense,
+TrueNAS— (§6); and **when not to choose BSD** (§7).
 
-**No aplica**:
+**Not applicable**:
 - `linux-administration-standards`, `rhel-fedora-standards`, `linux-hardening-standards`,
-  `linux-storage-standards` y `zfs-standards` (**ya escritas**): **Linux y ZFS son suyos** — el
-  diseño de `zpool`, RAIDZ, snapshots, replicación y ajuste de ARC es de `zfs-standards`; **aquí
-  solo lo específico de ZFS en FreeBSD** (entornos de arranque, ZFS como raíz, integración con
+  `linux-storage-standards` and `zfs-standards` (**already written**): **Linux and ZFS are theirs** — the
+  design of `zpool`, RAIDZ, snapshots, replication and ARC tuning belongs to `zfs-standards`; **here
+  only what is specific to ZFS on FreeBSD** (boot environments, ZFS as root, integration with
   jails).
-- `firewall-policy-standards` (**ya escrita**): **suya la política de filtrado** —qué se permite,
-  zonas, default-deny, revisión de reglas—; aquí solo **`pf` como motor** y qué implica elegirlo.
-- `networking-standards`, `vpn-standards`, `dns-standards` (los protocolos y su diseño).
-- `onprem-standards` (**paraguas de plataforma con la tabla de enrutado**), `homelab-standards`
-  (**suyo el laboratorio doméstico**, donde pfSense/OPNsense y TrueNAS son vecinos naturales; aquí
-  el criterio de sistema operativo y licencia), `ha-clustering-standards`,
+- `firewall-policy-standards` (**already written**): **the filtering policy is theirs** —what is allowed,
+  zones, default-deny, rule review—; here only **`pf` as an engine** and what choosing it implies.
+- `networking-standards`, `vpn-standards`, `dns-standards` (the protocols and their design).
+- `onprem-standards` (**the platform umbrella with the routing table**), `homelab-standards`
+  (**the home lab is theirs**, where pfSense/OPNsense and TrueNAS are natural neighbours; here
+  the operating system and licence criteria), `ha-clustering-standards`,
   `backup-recovery-standards`, `bcdr-standards`, `os-provisioning-standards`,
   `server-hardware-standards`, `identity-access-management-standards`,
   `secrets-management-standards`, `vulnerability-management-standards`,
-  `detection-engineering-standards` (**suya la detección en el endpoint y sus reglas**),
+  `detection-engineering-standards` (**endpoint detection and its rules are theirs**),
   `endpoint-security-standards`, `grc-compliance-standards`, `iac-standards`,
-  `legacy-modernization-standards` y `migration-projects-standards`.
-- `podman-systemd-containers-standards` y `kubernetes-standards`: **el ecosistema de contenedores
-  es suyo**; aquí solo la comparación honesta con jails (§4).
-- `aix-solaris-hpux-standards` y `macos-fleet-standards`: **BSD no es Unix propietario** —no se
-  hereda, se elige, y no tiene contrato de proveedor detrás— **y macOS no es una flota de
-  servidores**, aunque comparta ascendencia BSD. El nombre "Unix" las junta y no comparten casi
-  nada operativo.
+  `legacy-modernization-standards` and `migration-projects-standards`.
+- `podman-systemd-containers-standards` and `kubernetes-standards`: **the container ecosystem
+  is theirs**; here only the honest comparison with jails (§4).
+- `aix-solaris-hpux-standards` and `macos-fleet-standards`: **BSD is not proprietary Unix** —it is not
+  inherited, it is chosen, and it has no vendor contract behind it— **and macOS is not a server
+  fleet**, even though it shares BSD ancestry. The name "Unix" lumps them together and they share almost
+  nothing operationally.
 
-## 2. Estado y política de soporte verificados
+## 2. Verified status and support policy
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Sistema | Vigente a ago-2026 | Política de soporte (verificada) |
+| System | Current as of Aug 2026 | Support policy (verified) |
 |---|---|---|
-| **FreeBSD** | **15.1-RELEASE** (16-jun-2026); 14.4-RELEASE (10-mar-2026) | *"Each minor release is only supported for three months after the next minor release within the same major version"*. **`stable/15` hasta 31-dic-2029; `stable/14` hasta 30-nov-2028.** Desde FreeBSD 15: *"each stable branch is explicitly supported for 4 years from its dot-zero release"* (antes eran 5) |
-| FreeBSD — fechas cortas | 15.0 termina **30-sep-2026**; 14.4 termina **31-dic-2026**; 15.1 termina **31-mar-2027** | **La release menor caduca rápido**: se planifica actualizar dentro de la rama cada pocos meses, no cada año |
-| **OpenBSD** | **7.9** (actual) y **7.8** (anterior) | **Solo las dos últimas releases reciben errata**; `-stable` se mantiene un año. Cadencia semestral ⇒ **una actualización de sistema cada seis meses, obligatoria y sin excepción** |
-| **NetBSD** | **11.0** (ago-2026); rama 10.x mantenida | Una release mayor deja de estar soportada **un mes después de la segunda mayor posterior**. NetBSD 8 y anteriores, EOL |
+| **FreeBSD** | **15.1-RELEASE** (16 Jun 2026); 14.4-RELEASE (10 Mar 2026) | *"Each minor release is only supported for three months after the next minor release within the same major version"*. **`stable/15` until 31 Dec 2029; `stable/14` until 30 Nov 2028.** From FreeBSD 15 on: *"each stable branch is explicitly supported for 4 years from its dot-zero release"* (it used to be 5) |
+| FreeBSD — short dates | 15.0 ends **30 Sep 2026**; 14.4 ends **31 Dec 2026**; 15.1 ends **31 Mar 2027** | **The minor release expires fast**: plan to update within the branch every few months, not every year |
+| **OpenBSD** | **7.9** (current) and **7.8** (previous) | **Only the last two releases receive errata**; `-stable` is maintained for a year. Six-monthly cadence ⇒ **one system update every six months, mandatory and without exception** |
+| **NetBSD** | **11.0** (Aug 2026); 10.x branch maintained | A major release stops being supported **one month after the second subsequent major**. NetBSD 8 and earlier, EOL |
 
-**Lo que decide de esa tabla**: FreeBSD tiene ramas largas (4 años) pero releases menores muy
-cortas; OpenBSD no tiene rama larga en absoluto y **te obliga a una cadencia de seis meses**. Si tu
-organización no puede sostener dos actualizaciones al año de un sistema, **OpenBSD está descartado
-antes de mirar sus virtudes**. Ese es el filtro real, no la lista de mitigaciones.
+**What decides in that table**: FreeBSD has long branches (4 years) but very short minor
+releases; OpenBSD has no long branch at all and **forces a six-month cadence on you**. If your
+organisation cannot sustain two updates a year of a system, **OpenBSD is ruled out
+before you even look at its virtues**. That is the real filter, not the list of mitigations.
 
-**Ecosistema derivado, con licencia leída en crudo:**
+**Derivative ecosystem, with the licence read raw:**
 
-| Producto | Licencia | Estado |
+| Product | Licence | Status |
 |---|---|---|
-| **pfSense CE** | **Apache License 2.0** — verificado leyendo el `LICENSE` del repositorio en crudo (encabezado literal: *"Apache License / Version 2.0, January 2004"*) | Base FreeBSD. **Marca registrada restringida por Netgate**: la licencia del código no te autoriza a redistribuir bajo el nombre |
-| **pfSense Plus** | **Propietario, sin código fuente público** | Producto distinto, no una edición del anterior. Gratis sobre hardware Netgate; sobre hardware de terceros exige suscripción (§8: precio no verificado en fuente oficial) |
-| **OPNsense** | **BSD 2-Clause** — verificado leyendo el `LICENSE` del repositorio `opnsense/core` en crudo | Base FreeBSD, mantenido por Deciso. **Todo el código, incluida la interfaz y los plugins, bajo la misma licencia**; la *Business Edition* es el mismo código con soporte y rama conservadora |
-| **TrueNAS** | — | **Dejó de ser un producto BSD.** La línea viva es Linux (25.10 "Goldeye"); **TrueNAS CORE está en sostenimiento**, sin base FreeBSD 14, última entrega 13.3-U1.2 (abr-2025) y **sin fecha de fin de vida anunciada** |
+| **pfSense CE** | **Apache License 2.0** — verified by reading the repository's `LICENSE` raw (literal header: *"Apache License / Version 2.0, January 2004"*) | FreeBSD-based. **Trademark restricted by Netgate**: the code licence does not authorise you to redistribute under the name |
+| **pfSense Plus** | **Proprietary, no public source code** | A different product, not an edition of the previous one. Free on Netgate hardware; on third-party hardware it requires a subscription (§8: price not verified against an official source) |
+| **OPNsense** | **BSD 2-Clause** — verified by reading the `LICENSE` of the `opnsense/core` repository raw | FreeBSD-based, maintained by Deciso. **All the code, including the interface and the plugins, under the same licence**; the *Business Edition* is the same code with support and a conservative branch |
+| **TrueNAS** | — | **It stopped being a BSD product.** The living line is Linux (25.10 "Goldeye"); **TrueNAS CORE is in sustaining mode**, with no FreeBSD 14 base, last delivery 13.3-U1.2 (Apr 2025) and **no announced end-of-life date** |
 
-**Consecuencia de criterio, no de nostalgia**: **pfSense CE y OPNsense no son equivalentes en
-licencia**, y la diferencia importa cuando hay auditoría, derecho a bifurcar o reventa. **Y TrueNAS
-ya no es un argumento a favor de FreeBSD**: si eliges FreeBSD para almacenamiento hoy, lo eliges tú
-y lo montas tú, no lo hereda de TrueNAS.
+**A consequence of criteria, not of nostalgia**: **pfSense CE and OPNsense are not equivalent in
+licence**, and the difference matters when there is an audit, a right to fork or resale. **And TrueNAS
+is no longer an argument in favour of FreeBSD**: if you choose FreeBSD for storage today, you choose it
+and you build it yourself, you do not inherit it from TrueNAS.
 
-## 3. Convenciones de FreeBSD que deciden
+## 3. FreeBSD conventions that decide
 
-- **ZFS como raíz, siempre**, y **entornos de arranque (`bectl`) como mecanismo de actualización**:
-  se actualiza sobre un BE nuevo y la vuelta atrás es un reinicio. Es la razón operativa principal
-  para elegir FreeBSD; renunciar a ella es tirar la ventaja. (El diseño del pool es de
+- **ZFS as root, always**, and **boot environments (`bectl`) as the update mechanism**:
+  you update onto a new BE and rolling back is a reboot. It is the main operational reason
+  to choose FreeBSD; giving it up is throwing away the advantage. (Pool design belongs to
   `zfs-standards`.)
-- **Elige rama de paquetes conscientemente**: `quarterly` para servidores (cambios acotados,
-  correcciones de seguridad portadas) y `latest` solo donde necesites versiones frescas. **Mezclar
-  `pkg` con `ports` compilados a mano en la misma máquina es la fuente número uno de dependencias
-  rotas**; si necesitas opciones propias, monta un repositorio propio (poudriere) y sirve
-  paquetes, no compiles en producción.
-- **Configuración en `/etc/rc.conf` gestionada con `sysrc`**, versionada y aplicada por
-  automatización. **Ninguna configuración editada a mano en producción sin quedar en el
-  repositorio** — el punto de contacto con `iac-standards`.
-- **Jails "thin"** con plantilla común y sistema de ficheros de solo lectura compartido; jails
-  `vnet` cuando cada servicio necesita su propia pila de red. Elige **una** herramienta de gestión
-  (Bastille, AppJail, iocage) y una sola: la mezcla de gestores de jails deja huérfanos.
-- **`bhyve` es suficiente para virtualización modesta**, y solo eso: sin migración en vivo
-  comparable a un hipervisor de gama, sin ecosistema de gestión. Si necesitas una plataforma de
-  virtualización, esa decisión es de `onprem-standards`, no de aquí.
-- **`freebsd-update` para binarios en RELEASE.** Correr `-CURRENT` en producción está vetado (§7);
-  `-STABLE` solo con compilación propia y una razón escrita.
+- **Choose the package branch deliberately**: `quarterly` for servers (bounded changes,
+  backported security fixes) and `latest` only where you need fresh versions. **Mixing
+  `pkg` with hand-compiled `ports` on the same machine is the number one source of broken
+  dependencies**; if you need your own options, set up your own repository (poudriere) and serve
+  packages, do not compile in production.
+- **Configuration in `/etc/rc.conf` managed with `sysrc`**, versioned and applied by
+  automation. **No configuration edited by hand in production without ending up in the
+  repository** — the point of contact with `iac-standards`.
+- **"Thin" jails** with a common template and a shared read-only filesystem; `vnet`
+  jails when each service needs its own network stack. Choose **one** management tool
+  (Bastille, AppJail, iocage) and only one: mixing jail managers leaves orphans.
+- **`bhyve` is enough for modest virtualisation**, and only that: no live migration
+  comparable to a high-end hypervisor, no management ecosystem. If you need a virtualisation
+  platform, that decision belongs to `onprem-standards`, not here.
+- **`freebsd-update` for binaries on RELEASE.** Running `-CURRENT` in production is vetoed (§7);
+  `-STABLE` only with your own build and a written reason.
 
-## 4. Jails frente a contenedores, y `pf` frente a `nftables`
+## 4. Jails versus containers, and `pf` versus `nftables`
 
-> *(Sustituye a la sección de "calidad y testing" del formato, que aquí sería artificial: no hay
-> toolchain de pruebas propio que fijar. Lo que decide en su lugar son estas dos comparaciones.)*
+> *(Replaces the format's "quality and testing" section, which would be artificial here: there is no
+> testing toolchain of its own to set. What decides instead are these two comparisons.)*
 
-**Jails**: aislamiento de sistema completo, muy barato, con integración nativa de ZFS y de red. Lo
-que **se gana** frente a un contenedor Linux: madurez, superficie pequeña, límites claros, y que un
-jail es un sistema, no un proceso empaquetado. Lo que **se pierde**, y es mucho: **no hay imágenes
-OCI, ni registro, ni ecosistema de herramientas, ni orquestador**. Un jail no se reconstruye desde
-un `Containerfile` que alguien más entienda ni se despliega desde tu pipeline sin trabajo propio.
+**Jails**: full system isolation, very cheap, with native ZFS and network integration. What
+you **gain** over a Linux container: maturity, small surface, clear boundaries, and the fact that a
+jail is a system, not a packaged process. What you **lose**, and it is a lot: **there are no OCI
+images, no registry, no tooling ecosystem, no orchestrator**. A jail is not rebuilt from
+a `Containerfile` that somebody else understands, nor deployed from your pipeline without work of your own.
 
-Regla: **jails para servicios de larga vida gestionados como máquinas** (almacenamiento, red,
-servicios de infraestructura). **Contenedores para cargas de aplicación con ciclo de entrega
-continuo.** No conviertas jails en un sustituto artesanal de Kubernetes: acabarás manteniendo un
-orquestador propio que nadie más sabe operar.
+Rule: **jails for long-lived services managed as machines** (storage, networking,
+infrastructure services). **Containers for application workloads with a continuous delivery
+cycle.** Do not turn jails into a hand-crafted substitute for Kubernetes: you will end up maintaining an
+orchestrator of your own that nobody else knows how to operate.
 
-**`pf` frente a `nftables`**: `pf` gana en legibilidad —el conjunto de reglas se lee como una
-política y se revisa en una revisión de código— y trae `pfsync`/CARP para pares con estado
-sincronizado. `nftables` gana en integración: es lo que hay bajo Kubernetes, contenedores y las
-herramientas de automatización de red del mundo Linux. **Elige el motor por dónde vive el resto de
-tu infraestructura, no por elegancia de sintaxis.** La **política** de filtrado —zonas,
-denegación por defecto, egress, revisión— es idéntica en ambos casos y vive en
+**`pf` versus `nftables`**: `pf` wins on readability —the rule set reads like a
+policy and gets reviewed in a code review— and it brings `pfsync`/CARP for stateful synchronised
+pairs. `nftables` wins on integration: it is what sits underneath Kubernetes, containers and the
+network automation tooling of the Linux world. **Choose the engine by where the rest of
+your infrastructure lives, not by elegance of syntax.** The filtering **policy** —zones,
+default deny, egress, review— is identical in both cases and lives in
 `firewall-policy-standards`.
 
-## 5. Seguridad: qué enseña OpenBSD aunque no lo despliegues
+## 5. Security: what OpenBSD teaches even if you do not deploy it
 
-OpenBSD es **la referencia de mitigaciones**, y su valor para el resto del catálogo es doctrinal:
+OpenBSD is **the reference for mitigations**, and its value to the rest of the catalogue is doctrinal:
 
-- **Seguro por defecto de verdad**: instalación mínima, casi nada escuchando, servicios en `chroot`
-  desde el primer arranque. La lección transferible: **la postura correcta es "nada expuesto salvo
-  lo declarado"**, no "endurecer después".
-- **`pledge(2)` y `unveil(2)`**: el programa **declara qué llamadas al sistema y qué rutas
-  necesita** y el kernel lo mata si se sale. Es privilegio mínimo aplicado dentro del proceso, y es
-  el modelo mental correcto para escribir perfiles seccomp, políticas SELinux o unidades systemd
-  endurecidas en Linux. **Si un servicio no puede enumerar los ficheros que necesita, el problema
-  es el servicio.**
-- **Mitigaciones de explotación por defecto** (W^X, ASLR, kernel reordenado en cada arranque,
-  protecciones de retorno, `malloc` con detección de abusos): no son opciones que se activan, son
-  el sistema. La lección: **las mitigaciones que hay que recordar activar no se activan.**
-- **`syspatch`/`signify`**: parches firmados, binarios, aplicables sin compilar. **Un sistema cuya
-  actualización de seguridad requiere compilar no se actualiza.**
-- **Honestidad sobre el alcance**: OpenBSD protege el sistema base. **El código de terceros que
-  instales encima (`pkg_add`) no hereda ese nivel de revisión** y sigue siendo tu superficie de
-  ataque; su gestión de vulnerabilidades es de `vulnerability-management-standards`.
-- **`doas` en lugar de `sudo`**: menos superficie y una configuración que cabe en la cabeza.
-  Trasladable como criterio: la herramienta de elevación se elige por lo pequeña que es su
-  configuración, no por costumbre.
+- **Genuinely secure by default**: minimal install, almost nothing listening, services in a `chroot`
+  from the first boot. The transferable lesson: **the correct posture is "nothing exposed except
+  what is declared"**, not "harden afterwards".
+- **`pledge(2)` and `unveil(2)`**: the program **declares which system calls and which paths it
+  needs** and the kernel kills it if it steps outside. It is least privilege applied inside the process, and it is
+  the right mental model for writing seccomp profiles, SELinux policies or hardened systemd
+  units on Linux. **If a service cannot enumerate the files it needs, the problem
+  is the service.**
+- **Exploit mitigations by default** (W^X, ASLR, kernel relinked at every boot,
+  return protections, `malloc` with abuse detection): they are not options you switch on, they are
+  the system. The lesson: **mitigations you have to remember to enable do not get enabled.**
+- **`syspatch`/`signify`**: signed, binary patches, applicable without compiling. **A system whose
+  security update requires compiling does not get updated.**
+- **Honesty about scope**: OpenBSD protects the base system. **The third-party code you
+  install on top (`pkg_add`) does not inherit that level of review** and remains your attack
+  surface; managing its vulnerabilities belongs to `vulnerability-management-standards`.
+- **`doas` instead of `sudo`**: less surface and a configuration that fits in your head.
+  Transferable as criteria: the elevation tool is chosen by how small its configuration
+  is, not by habit.
 
-## 6. Operabilidad y ecosistema derivado
+## 6. Operability and derivative ecosystem
 
-- **Hardware y controladores son el riesgo operativo real de BSD**, no la estabilidad. Antes de
-  comprometer una plataforma: verifica la lista de compatibilidad para tu NIC, HBA y plataforma de
-  gestión concreta, y comprueba si hay agente de tu proveedor de copias, de monitorización y de
-  seguridad de endpoint. **Muchos productos corporativos no tienen agente para BSD**: eso solo
-  decide de un plumazo.
-- **pfSense CE frente a OPNsense** como aparato de cortafuegos: mismo linaje, licencias distintas
-  (§2) y cadencia de actualización distinta. Criterio: **si necesitas garantía de código abierto
-  íntegro, derecho a bifurcar o auditoría del fuente, OPNsense**; si ya operas hardware Netgate con
-  soporte contratado, pfSense Plus es coherente **asumiendo que es software propietario**. Lo que
-  no es defendible es elegir uno creyendo que el otro es lo mismo con otro nombre.
-- **Un aparato de cortafuegos sigue siendo un servidor**: inventario, ciclo de parcheo, copia de la
-  configuración y registro centralizado; configuración exportada y versionada como mínimo.
-- **Almacenamiento**: FreeBSD + ZFS sigue siendo excelente, pero **hoy la montas tú** (§2). Si
-  quieres un aparato, evalúa la línea Linux de TrueNAS o un diseño ZFS propio sobre Linux — la
-  decisión de plataforma no es sentimental.
-- **Actualizaciones como calendario, no como reacción**: FreeBSD, ventana por release menor (caducan
-  en meses, §2); OpenBSD, dos al año en fecha fija. Si no está en el calendario, no ocurre.
+- **Hardware and drivers are BSD's real operational risk**, not stability. Before
+  committing to a platform: check the compatibility list for your specific NIC, HBA and management
+  platform, and check whether there is an agent from your backup, monitoring and
+  endpoint security vendor. **Many corporate products have no BSD agent**: that alone
+  decides it outright.
+- **pfSense CE versus OPNsense** as a firewall appliance: same lineage, different licences
+  (§2) and a different update cadence. Criteria: **if you need a guarantee of fully open
+  source, a right to fork or source auditing, OPNsense**; if you already operate Netgate hardware with
+  contracted support, pfSense Plus is coherent **on the assumption that it is proprietary software**. What
+  is not defensible is choosing one believing the other is the same thing under a different name.
+- **A firewall appliance is still a server**: inventory, patching cycle, a copy of the
+  configuration and centralised logging; configuration exported and versioned at the very least.
+- **Storage**: FreeBSD + ZFS is still excellent, but **today you build it yourself** (§2). If
+  you want an appliance, evaluate the TrueNAS Linux line or your own ZFS design on Linux — the
+  platform decision is not sentimental.
+- **Updates as a calendar, not as a reaction**: FreeBSD, a window per minor release (they expire
+  in months, §2); OpenBSD, twice a year on a fixed date. If it is not on the calendar, it does not happen.
 
-## 7. Cuándo NO elegir BSD, y prohibiciones
+## 7. When NOT to choose BSD, and prohibitions
 
-**No elijas BSD cuando:**
+**Do not choose BSD when:**
 
-- **El ecosistema de aplicaciones no está**: plataformas de datos, agentes propietarios,
-  controladores de GPU y suites comerciales que solo publican para Linux. Motivo número uno, y no
-  se resuelve con voluntad. **O la carga es de contenedores**: si el destino natural es
-  OCI/Kubernetes, BSD te deja fuera del camino trillado (§4).
-- **Necesitas soporte comercial con SLA sobre el sistema operativo.** Existe (Deciso, Netgate,
-  proveedores especializados) pero **no es comparable en cobertura al de una distribución Linux
-  empresarial**, y esa comparación honesta es parte de la decisión.
-- **No hay gente.** Contratar y sustituir a quien opera BSD es medible y peor que en Linux: **un
-  sistema que solo una persona sabe operar es un riesgo de continuidad**.
-- **Ya operas una flota Linux homogénea** y esto añade un segundo sistema operativo con su parcheo,
-  inventario, agentes y conocimiento, por una mejora marginal.
+- **The application ecosystem is not there**: data platforms, proprietary agents,
+  GPU drivers and commercial suites that only ship for Linux. Reason number one, and it is
+  not solved by willpower. **Or the workload is containers**: if the natural destination is
+  OCI/Kubernetes, BSD leaves you off the beaten path (§4).
+- **You need commercial support with an SLA on the operating system.** It exists (Deciso, Netgate,
+  specialist vendors) but **it is not comparable in coverage to that of an enterprise Linux
+  distribution**, and that honest comparison is part of the decision.
+- **There are no people.** Hiring and replacing whoever operates BSD is measurably worse than on Linux: **a
+  system only one person knows how to operate is a continuity risk**.
+- **You already operate a homogeneous Linux fleet** and this adds a second operating system with its patching,
+  inventory, agents and knowledge, for a marginal improvement.
 
-**Prohibiciones:**
+**Prohibitions:**
 
-- ❌ **PROHIBIDO** usar `-CURRENT` en producción, o una release menor de FreeBSD ya caducada — que
-  caducan **en meses**, no en años (§2).
-- ❌ Correr OpenBSD sin comprometerse a la actualización semestral. **Sin esa cadencia, OpenBSD es
-  menos seguro que un Linux mantenido**, no más.
-- ❌ Mezclar paquetes binarios y ports compilados a mano en la misma máquina, o compilar ports en
-  producción.
-- ❌ Actualizar FreeBSD sin entorno de arranque nuevo y vuelta atrás probada.
-- ❌ Tratar **pfSense CE y pfSense Plus** como la misma cosa: uno es Apache-2.0, **el otro es
-  propietario sin fuente**. Ni citar la licencia de un derivado sin haber leído su `LICENSE` en
-  crudo.
-- ❌ Redistribuir o rebautizar pfSense apoyándose solo en la licencia del código: la **marca** está
-  restringida aparte.
-- ❌ Presentar TrueNAS como argumento de que "FreeBSD tiene ecosistema de almacenamiento": la línea
-  viva es Linux (§2).
-- ❌ Elegir NetBSD para una plataforma x86/ARM corriente sin una razón de portabilidad escrita.
-- ❌ Reinventar un orquestador sobre jails para cargas que pedían contenedores (§4).
-- ❌ Desplegar BSD sin haber verificado antes controladores, agente de copias y agente de
-  seguridad de endpoint (§6).
-- ❌ Dejar el aparato de cortafuegos fuera del inventario, del parcheo o del registro centralizado.
+- ❌ **FORBIDDEN** to use `-CURRENT` in production, or a FreeBSD minor release already expired — and they
+  expire **in months**, not years (§2).
+- ❌ Running OpenBSD without committing to the six-monthly update. **Without that cadence, OpenBSD is
+  less secure than a maintained Linux**, not more.
+- ❌ Mixing binary packages and hand-compiled ports on the same machine, or compiling ports in
+  production.
+- ❌ Updating FreeBSD without a new boot environment and a tested rollback.
+- ❌ Treating **pfSense CE and pfSense Plus** as the same thing: one is Apache-2.0, **the other is
+  proprietary with no source**. Nor citing a derivative's licence without having read its `LICENSE`
+  raw.
+- ❌ Redistributing or rebranding pfSense relying only on the code licence: the **trademark** is
+  restricted separately.
+- ❌ Presenting TrueNAS as an argument that "FreeBSD has a storage ecosystem": the living
+  line is Linux (§2).
+- ❌ Choosing NetBSD for an ordinary x86/ARM platform without a written portability reason.
+- ❌ Reinventing an orchestrator on top of jails for workloads that called for containers (§4).
+- ❌ Deploying BSD without having first verified drivers, backup agent and endpoint
+  security agent (§6).
+- ❌ Leaving the firewall appliance out of the inventory, the patching cycle or centralised logging.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar por web —y con **cita literal**, nunca con un
-resumen automático:
+Before pinning anything in a real project, check on the web —and with a **literal quote**, never with an
+automated summary:
 
-1. **FreeBSD**: página oficial de seguridad, tabla de ramas soportadas y fechas. Las de §2 están
-   tomadas literalmente de ahí a ago-2026; **la fecha de la release menor que uses caduca en
-   meses**.
-2. **OpenBSD**: release vigente y su página de errata; confirma que sigues dentro de las **dos
-   últimas**.
-3. **NetBSD**: rama vigente tras 11.0 y estado real de 10.x.
-4. **pfSense y OPNsense**: **lee el `LICENSE` en crudo del repositorio** antes de afirmar nada — no
-   la etiqueta que muestre la portada de GitHub, y no el feed de releases, que no es la fuente de
-   verdad si el proyecto se muda. Verificado así a ago-2026: **pfSense CE = Apache-2.0**,
-   **OPNsense = BSD 2-Clause**. **Hueco declarado: los precios** (suscripción TAC de pfSense Plus,
-   *Business Edition* de OPNsense) **no fueron verificados en la página de tarifas oficial** — no
-   los cites de aquí. **Hueco declarado**: tampoco se verificó en fuente oficial el alcance exacto
-   de la política de marca de Netgate.
-5. **TrueNAS**: si sigue habiendo entregas de CORE y si iXsystems ha anunciado por fin una fecha de
-   fin de vida. A ago-2026 **no la había**: sostenimiento sin fecha, que a efectos de planificación
-   se trata como fin de vida no anunciado.
-6. **Compatibilidad de hardware** de tu modelo concreto y disponibilidad de agentes de terceros
-   (§6): es lo que descarta la plataforma, más que cualquier consideración de diseño.
-7. **CVEs** del sistema base y **de los paquetes de terceros por separado**: son dos flujos de
-   avisos distintos con calendarios distintos.
+1. **FreeBSD**: official security page, table of supported branches and dates. Those in §2 are
+   taken literally from there as of Aug 2026; **the date of the minor release you use expires in
+   months**.
+2. **OpenBSD**: current release and its errata page; confirm you are still within the **last
+   two**.
+3. **NetBSD**: current branch after 11.0 and the real status of 10.x.
+4. **pfSense and OPNsense**: **read the repository's `LICENSE` raw** before asserting anything — not
+   the label shown on the GitHub front page, and not the releases feed, which is not the source of
+   truth if the project moves. Verified that way as of Aug 2026: **pfSense CE = Apache-2.0**,
+   **OPNsense = BSD 2-Clause**. **Declared gap: the prices** (pfSense Plus TAC subscription,
+   OPNsense *Business Edition*) **were not verified against the official pricing page** — do not
+   quote them from here. **Declared gap**: neither was the exact scope of Netgate's trademark
+   policy verified against an official source.
+5. **TrueNAS**: whether there are still CORE deliveries and whether iXsystems has finally announced an
+   end-of-life date. As of Aug 2026 **there was none**: sustaining with no date, which for planning
+   purposes is treated as an unannounced end of life.
+6. **Hardware compatibility** for your specific model and availability of third-party agents
+   (§6): that is what rules the platform out, more than any design consideration.
+7. **CVEs** of the base system and **of third-party packages separately**: they are two different
+   advisory streams with different calendars.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

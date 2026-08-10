@@ -3,19 +3,19 @@ name: classic-asp-standards
 description: Classic ASP (ASP 3.0) on IIS - the worst attack surface in the Microsoft legacy catalogue, and the migrate-or-isolate decision. Use when working with .asp and .asa files, global.asa, server-side VBScript or JScript in <% %> blocks, the asp.dll ISAPI extension and the IIS ASP feature, Response.Write / Request.QueryString / Request.Form / Server.MapPath / Server.Execute / Server.Transfer / Session and Application objects, #include file and #include virtual directives, ADODB.Connection / ADODB.Recordset / ADODB.Command with CreateParameter, Scripting.FileSystemObject, Server.CreateObject with registered COM components, ASPError and detailed error pages, and when planning around the VBScript Feature on Demand deprecation or migrating Classic ASP to ASP.NET Core.
 ---
 
-# Estándares ASP clásico (ASP 3.0)
+# Classic ASP (ASP 3.0) standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplicaciones **ASP clásico** (ASP 3.0) servidas por IIS: mantenimiento correctivo, endurecimiento,
-aislamiento y salida. Triggers: `.asp`, `.asa`, `global.asa`, bloques `<% %>` con VBScript o JScript
-de servidor, `asp.dll`, `Response.Write`, `Request.QueryString`/`Form`, `Server.CreateObject`,
+**Classic ASP** applications (ASP 3.0) served by IIS: corrective maintenance, hardening,
+isolation and exit. Triggers: `.asp`, `.asa`, `global.asa`, `<% %>` blocks with server-side
+VBScript or JScript, `asp.dll`, `Response.Write`, `Request.QueryString`/`Form`, `Server.CreateObject`,
 `Server.Execute`, `ADODB.*`, `Scripting.FileSystemObject`, `#include file`/`#include virtual`.
 
-**El eje: sigue funcionando, y por eso sobrevive.** Declaración de Microsoft (*Active Server Pages
-(ASP) support in Windows*, KB 2669020; publicada 2020, revisada 13-ago-2025), **verbatim**:
+**The crux: it still works, and that is why it survives.** Microsoft's statement (*Active Server Pages
+(ASP) support in Windows*, KB 2669020; published 2020, revised 13-Aug-2025), **verbatim**:
 
 > "The use of ASP pages with Microsoft Internet Information Services (IIS) is currently supported in
 > all supported versions of IIS."
@@ -23,209 +23,209 @@ de servidor, `asp.dll`, `Response.Write`, `Request.QueryString`/`Form`, `Server.
 > "IIS is included in Windows operating systems. Therefore, both ASP and IIS support lifetimes are
 > tied to the support lifecycle of the host operating system."
 
-Es decir: **ASP no tiene fecha de fin de soporte propia**; hereda la del Windows Server anfitrión,
-igual que .NET Framework 4.8. Instalar la característica ASP en un IIS de un Windows Server soportado
-es una configuración soportada, no una chapuza tolerada. **Y eso es exactamente el problema**: no hay
-ninguna fuerza que empuje a salir, mientras el código acumula veinte años de patrones inseguros que
-ningún analizador moderno mira. Es la peor superficie de ataque de este catálogo de legacy: **la
-única de las cuatro que, por definición, atiende tráfico HTTP no confiable**.
+That is: **ASP has no end-of-support date of its own**; it inherits the host Windows Server's,
+just like .NET Framework 4.8. Installing the ASP feature on the IIS of a supported Windows Server
+is a supported configuration, not a tolerated bodge. **And that is exactly the problem**: there is
+no force pushing anyone out, while the code accumulates twenty years of insecure patterns that
+no modern analyser looks at. It is the worst attack surface in this legacy catalogue: **the
+only one of the four that, by definition, serves untrusted HTTP traffic**.
 
-**El reloj real no es ASP: es VBScript.** Fila oficial de *Deprecated features in the Windows
+**The real clock is not ASP: it is VBScript.** Official row of *Deprecated features in the Windows
 client*, **verbatim**: *"VBScript is deprecated. In future releases of Windows, VBScript will be
-available as a feature on demand before its removal from the operating system."* — anuncio de
-**octubre de 2023**. Y en *Resources for deprecated features*, **verbatim**: *"VBScript will be
+available as a feature on demand before its removal from the operating system."* — announced in
+**October 2023**. And in *Resources for deprecated features*, **verbatim**: *"VBScript will be
 available as a feature on demand before being retired in future Windows releases. Initially, the
 VBScript feature on demand will be preinstalled to allow for uninterrupted use while you prepare for
 the retirement of VBScript."*
 
-Las tres fases son, por tanto: **(1)** FOD **preinstalada y activa** → **(2)** FOD **ya no activa por
-defecto**: hay que habilitarla explícitamente para que la aplicación siga funcionando → **(3)**
-**retirada del sistema operativo**, sin vuelta atrás. Criterio de planificación: **una aplicación ASP
-clásica escrita en VBScript tiene fecha de caducidad aunque ASP no la tenga**, y la fase 2 es la que
-rompe despliegues por sorpresa —el día que se aprovisiona un servidor nuevo y la FOD ya no viene
-puesta—. Las fechas concretas de fase 2 y 3 **no se escriben aquí sin verificarlas**: ver §8.
+The three phases are therefore: **(1)** FOD **preinstalled and active** → **(2)** FOD **no longer active by
+default**: it must be enabled explicitly for the application to keep working → **(3)**
+**removal from the operating system**, with no way back. Planning criteria: **a Classic ASP
+application written in VBScript has an expiry date even though ASP does not**, and phase 2 is the one that
+breaks deployments by surprise —the day a new server is provisioned and the FOD no longer comes
+installed—. The concrete dates for phases 2 and 3 **are not written here without verifying them**: see §8.
 
-**No aplica**: `web-app-servers-standards` decide **IIS como servidor** —
-sitios, *application pools* y su identidad, reciclado, límites, ARR, certificados y TLS del
-*listener*, registro de acceso—; aquí, solo lo que decide el código ASP y su `web.config`/metabase
-de aplicación. `dotnet-framework-legacy-standards` (ASP.NET **con** `System.Web`: WebForms, MVC5 —
-**otra tecnología**, aunque comparta IIS y extensión mental) y `dotnet-standards` (**ASP.NET Core:
-el destino de la migración, y el dueño del criterio del código resultante**).
-Hermanas: `vb6-standards` (VB6 nativo — la propia declaración de soporte de VB6 dice **verbatim**
-*"VBScript is unrelated to Visual Basic 6.0 and this support statement"*) y `vbnet-standards`
-(VB.NET sobre el CLR). Tres cosas distintas que se parecen al leerlas.
-`legacy-modernization-standards`: cartera y decisión invertir/migrar/
-retirar, con `enterprise-architecture-standards`, `project-management-standards`,
-`tech-leadership-standards`, `refactoring-tech-debt-standards` y `testing-qa-standards`. Además
-`appsec-standards` (**clases de vulnerabilidad y modelado de amenazas**; aquí solo los sinks
-concretos de ASP), `vulnerability-management-standards`, `secrets-management-standards`,
-`firewall-policy-standards` y `vpn-standards` (el aislamiento que exige §5), `sql-standards` y
+**Not applicable**: `web-app-servers-standards` decides **IIS as a server** —
+sites, *application pools* and their identity, recycling, limits, ARR, certificates and TLS of the
+*listener*, access logging—; here, only what the ASP code and its application `web.config`/metabase
+decide. `dotnet-framework-legacy-standards` (ASP.NET **with** `System.Web`: WebForms, MVC5 —
+**a different technology**, even if it shares IIS and mental bracket) and `dotnet-standards` (**ASP.NET Core:
+the migration target, and the owner of the criteria for the resulting code**).
+Siblings: `vb6-standards` (native VB6 — VB6's own support statement says **verbatim**
+*"VBScript is unrelated to Visual Basic 6.0 and this support statement"*) and `vbnet-standards`
+(VB.NET on the CLR). Three different things that look alike when you read them.
+`legacy-modernization-standards`: portfolio and the invest/migrate/
+retire decision, with `enterprise-architecture-standards`, `project-management-standards`,
+`tech-leadership-standards`, `refactoring-tech-debt-standards` and `testing-qa-standards`. Also
+`appsec-standards` (**vulnerability classes and threat modelling**; here only the concrete ASP
+sinks), `vulnerability-management-standards`, `secrets-management-standards`,
+`firewall-policy-standards` and `vpn-standards` (the isolation §5 demands), `sql-standards` and
 `sqlserver-dba-standards`, `windows-server-ad-standards`, `powershell-standards`,
 `grc-compliance-standards`.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web antes de fijarlo (§8): el calendario de VBScript es lo que cambia.
+> Verify on the web before pinning it (§8): the VBScript calendar is what changes.
 
-| Decisión | Por defecto | Nota |
+| Decision | Default | Note |
 |---|---|---|
-| Aplicación ASP **nueva** | **Ninguna.** Prohibido | Sin excepción, ni "una paginita" |
-| Exposición | **Nunca directa a internet** | §5; es la regla que domina todo lo demás |
-| Motor de script | VBScript (lo que hay) | Contarlo como **deuda con reloj** (§1), no como estable |
-| Acceso a datos | ADO con **comandos parametrizados** | `ADODB.Command` + `CreateParameter`; nada más |
-| Errores en producción | `<httpErrors>` genérico, `scriptErrorSentToBrowser=false` | Detalle solo al log del servidor |
-| Estado de sesión | Evitar `Session` para datos sensibles; nunca para autorización | `Session` en proceso, se pierde al reciclar el *pool* |
-| Ruta de salida | **Migrar o aislar** (§7) | No hay tercera opción honesta |
+| **New** ASP application | **None.** Forbidden | No exception, not even "just one little page" |
+| Exposure | **Never directly to the internet** | §5; it is the rule that dominates everything else |
+| Script engine | VBScript (what is there) | Count it as **debt with a clock** (§1), not as stable |
+| Data access | ADO with **parameterised commands** | `ADODB.Command` + `CreateParameter`; nothing else |
+| Errors in production | Generic `<httpErrors>`, `scriptErrorSentToBrowser=false` | Detail only to the server log |
+| Session state | Avoid `Session` for sensitive data; never for authorisation | `Session` is in-process, lost when the *pool* recycles |
+| Exit route | **Migrate or isolate** (§7) | There is no honest third option |
 
-**Inventario primero.** Antes de decidir nada: listar los `.asp`, los `#include`, los componentes COM
-que la aplicación registra o instancia (`Server.CreateObject` con el ProgID exacto), su fabricante y
-si sigue existiendo, y el motor de datos al que habla. **Un COM registrado sin fabricante vivo es un
-bloqueo duro para cualquier plan**, y no aparece en ningún escáner de dependencias.
+**Inventory first.** Before deciding anything: list the `.asp` files, the `#include`s, the COM components
+the application registers or instantiates (`Server.CreateObject` with the exact ProgID), their vendor and
+whether it still exists, and the data engine it talks to. **A registered COM component with no living vendor is a
+hard blocker for any plan**, and it shows up in no dependency scanner.
 
-## 3. Convenciones para el código que sobrevive
+## 3. Conventions for the code that survives
 
-Mientras exista, el código que se toca cumple:
+While it exists, the code that gets touched complies with:
 
-- **`Option Explicit` en la primera línea de cada `.asp`.** VBScript sin él crea variables al
-  escribirlas mal, en silencio, y ese es el origen de fallos de autorización reales (una variable de
-  permiso mal escrita evalúa a vacío y pasa la comprobación).
-- **`On Error Resume Next` solo acotado** a la instrucción concreta que lo necesita, con comprobación
-  inmediata de `Err.Number` y `On Error GoTo 0` justo después. A nivel de página es un tragador de
-  errores global: la aplicación sigue con estado corrupto.
-- **Cerrar y liberar**: `Recordset`/`Connection` con `.Close` y `Set x = Nothing` — el *pool* de
-  conexiones y los objetos COM no se recogen solos y una fuga tumba el *app pool*.
-- **`#include` es textual y en tiempo de compilación de la página**: no admite rutas dinámicas y las
-  inclusiones anidadas crean dependencias invisibles. Documentar el grafo; es lo primero que
-  sorprende en cualquier migración.
-- **Nada de lógica nueva en ASP**: la funcionalidad nueva se escribe fuera (§7) y se enlaza.
+- **`Option Explicit` on the first line of every `.asp`.** Without it, VBScript creates variables when you
+  misspell them, silently, and that is the origin of real authorisation failures (a misspelled
+  permission variable evaluates to empty and passes the check).
+- **`On Error Resume Next` only scoped** to the specific statement that needs it, with an immediate
+  check of `Err.Number` and `On Error GoTo 0` right after. At page level it is a global error
+  swallower: the application carries on with corrupt state.
+- **Close and release**: `Recordset`/`Connection` with `.Close` and `Set x = Nothing` — the connection
+  *pool* and the COM objects are not collected on their own and one leak takes down the *app pool*.
+- **`#include` is textual and happens at page compile time**: it takes no dynamic paths and nested
+  inclusions create invisible dependencies. Document the graph; it is the first thing that
+  surprises people in any migration.
+- **No new logic in ASP**: new functionality is written outside (§7) and linked in.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-Sección **omitida por artificial**: no existe toolchain moderna soportada (linter, análisis estático,
-formateador, framework de pruebas) para ASP clásico con VBScript. Lo único aplicable es
-caracterizar el comportamiento observable con pruebas de extremo a extremo antes de tocar nada, y eso
-lo fija `testing-qa-standards`.
+Section **omitted as artificial**: there is no supported modern toolchain (linter, static analysis,
+formatter, test framework) for Classic ASP with VBScript. The only thing applicable is
+characterising the observable behaviour with end-to-end tests before touching anything, and that
+is set by `testing-qa-standards`.
 
-## 5. Seguridad — sección principal
+## 5. Security — main section
 
-**Es la razón de existir de esta skill.** El código ASP clásico típico se escribió antes de que
-existiera OWASP y no ha sido revisado desde entonces. Los patrones dominantes, con su corrección
-real:
+**It is the reason this skill exists.** Typical Classic ASP code was written before OWASP
+existed and has not been reviewed since. The dominant patterns, with their actual
+fix:
 
-**1. Inyección SQL por concatenación — el patrón número uno de este código.** El idioma nativo de
-ASP es construir la consulta con `&` a partir de `Request.QueryString` o `Request.Form`. Cada una de
-esas líneas es una vulnerabilidad crítica explotable sin autenticación. Correcciones falsas que
-aparecen constantemente en estas bases de código y que hay que **rechazar**: duplicar comillas
-simples, filtrar palabras clave (`SELECT`, `UNION`), limitar la longitud del campo, o validar en
-JavaScript de cliente. **La única corrección es la parametrización**: `ADODB.Command` con
-`CreateParameter` (nombre, tipo, dirección, tamaño, valor) y `Parameters.Append`, o procedimientos
-almacenados invocados con parámetros —**nunca** un procedimiento almacenado que a su vez concatene
-dentro—. Los tipos y tamaños se declaran de verdad, no se copian del ejemplo de al lado.
+**1. SQL injection by concatenation — the number one pattern in this code.** The native idiom of
+ASP is to build the query with `&` from `Request.QueryString` or `Request.Form`. Every one of
+those lines is a critical vulnerability exploitable without authentication. False fixes that
+appear constantly in these codebases and that must be **rejected**: doubling single
+quotes, filtering keywords (`SELECT`, `UNION`), limiting the field length, or validating in
+client-side JavaScript. **The only fix is parameterisation**: `ADODB.Command` with
+`CreateParameter` (name, type, direction, size, value) and `Parameters.Append`, or stored
+procedures invoked with parameters —**never** a stored procedure that concatenates
+inside—. Types and sizes are declared for real, not copied from the example next door.
 
-**2. XSS reflejado y almacenado.** `Response.Write Request.QueryString("x")` escribe la entrada tal
-cual. Codificar **en la salida y según el contexto** (HTML, atributo, JavaScript, URL); `Server.
-HTMLEncode` cubre el caso HTML y **no** el resto. Añadir CSP en las cabeceras es mitigación, no
-corrección.
+**2. Reflected and stored XSS.** `Response.Write Request.QueryString("x")` writes the input as
+is. Encode **on output and according to context** (HTML, attribute, JavaScript, URL); `Server.
+HTMLEncode` covers the HTML case and **not** the rest. Adding CSP in the headers is mitigation, not
+a fix.
 
-**3. Inclusión y ejecución dinámica.** `Server.Execute` y `Server.Transfer` con una ruta derivada de
-la petición permiten ejecutar cualquier `.asp` del servidor; combinados con una subida de ficheros,
-son **ejecución remota de código**. Regla: el destino de `Server.Execute` es **siempre** una
-constante o un valor de una lista blanca cerrada. Lo mismo para cualquier `Server.MapPath` con
-entrada de usuario: *path traversal* directo al sistema de ficheros.
+**3. Dynamic inclusion and execution.** `Server.Execute` and `Server.Transfer` with a path derived from
+the request allow any `.asp` on the server to be executed; combined with a file upload,
+they are **remote code execution**. Rule: the target of `Server.Execute` is **always** a
+constant or a value from a closed allowlist. The same for any `Server.MapPath` with
+user input: *path traversal* straight into the filesystem.
 
-**4. Subida de ficheros.** El fallo mortal es guardar el fichero **bajo un directorio que IIS
-ejecuta**: subir un `.asp` disfrazado y pedirlo por HTTP es RCE. Reglas duras: almacenar **fuera del
-árbol web** y servir por un manejador que lea el fichero; lista blanca de extensiones y verificación
-del contenido, no del nombre ni del `Content-Type`; nombre generado por el servidor; y el directorio
-de subidas con **permisos de ejecución de scripts deshabilitados en IIS**, no solo por convención.
+**4. File upload.** The fatal failure is storing the file **under a directory that IIS
+executes**: uploading a disguised `.asp` and requesting it over HTTP is RCE. Hard rules: store **outside the
+web tree** and serve through a handler that reads the file; allowlist of extensions and verification
+of the content, not of the name nor the `Content-Type`; server-generated name; and the uploads
+directory with **script execution permissions disabled in IIS**, not just by convention.
 
-**5. Mensajes de error detallados expuestos.** Un error ASP sin controlar imprime la consulta, la
-ruta física y a veces la cadena de conexión. Es reconocimiento gratis para el atacante y filtración
-de datos por sí mismo. `scriptErrorSentToBrowser=false`, página de error genérica, y el detalle solo
-en el log del servidor.
+**5. Detailed error messages exposed.** An uncontrolled ASP error prints the query, the
+physical path and sometimes the connection string. It is free reconnaissance for the attacker and a data
+leak in itself. `scriptErrorSentToBrowser=false`, generic error page, and the detail only
+in the server log.
 
-**6. Credenciales en el código.** Cadenas de conexión con usuario y contraseña en `global.asa` o en
-un `include` de configuración: es lo normal aquí. Sacarlas (`secrets-management-standards`), rotarlas
-asumiendo que ya son conocidas, y comprobar que **ningún fichero de configuración es servible por
-HTTP** (un `.inc` o `.txt` incluido se descarga tal cual: renombrar a `.asp` o sacarlo del árbol).
+**6. Credentials in the code.** Connection strings with user and password in `global.asa` or in
+a configuration `include`: it is the norm here. Take them out (`secrets-management-standards`), rotate them
+assuming they are already known, and check that **no configuration file is servable over
+HTTP** (an included `.inc` or `.txt` downloads as is: rename it to `.asp` or take it out of the tree).
 
-**7. Sesión y autorización.** Comprobar la autorización **en cada página**, no en la de login ni en
-un `#include` que alguien puede olvidar. La cookie de sesión de ASP debe ir `HttpOnly` y `Secure`.
-Y no confiar en `Session` para nada que el reciclado del *app pool* pueda tirar.
+**7. Session and authorisation.** Check authorisation **on every page**, not on the login page nor in
+an `#include` that someone can forget. The ASP session cookie must be `HttpOnly` and `Secure`.
+And do not trust `Session` for anything that an *app pool* recycle can throw away.
 
-**Por qué un WAF delante no arregla nada de esto.** Un WAF filtra por patrones sobre la petición: no
-conoce la consulta que se va a construir, ni qué fichero se va a ejecutar, ni si el que sube el
-fichero está autorizado. Contra inyección por concatenación reduce el ruido automatizado y **no
-detiene a un atacante que ajuste la carga**; contra un fallo de autorización —el más común y el más
-caro— no puede hacer absolutamente nada, porque la petición maliciosa es sintácticamente idéntica a
-la legítima. Un WAF es **una capa que compra tiempo mientras se corrige el código o se aísla la
-aplicación**; declararlo como control compensatorio permanente ante una auditoría es insostenible, y
-tratarlo como corrección es la decisión que convierte un hallazgo en una brecha.
+**Why a WAF in front fixes none of this.** A WAF filters by patterns over the request: it does not
+know the query that is going to be built, nor which file is going to be executed, nor whether whoever uploads the
+file is authorised. Against injection by concatenation it reduces automated noise and **does not
+stop an attacker who tunes the payload**; against an authorisation failure —the most common and the most
+expensive— it can do absolutely nothing, because the malicious request is syntactically identical to
+the legitimate one. A WAF is **a layer that buys time while the code is fixed or the
+application is isolated**; declaring it a permanent compensating control in front of an audit is unsustainable, and
+treating it as a fix is the decision that turns a finding into a breach.
 
-**Privilegios y contención**: *application pool* con identidad propia y mínima, sin permisos de
-escritura sobre el árbol web, sin `sysadmin` en el motor de base de datos —usuario con permisos solo
-sobre los objetos que usa—, y salida de red restringida (`firewall-policy-standards`): si la
-aplicación se compromete, que no pueda llamar a casa.
+**Privileges and containment**: *application pool* with its own minimal identity, without write permissions
+over the web tree, without `sysadmin` on the database engine —a user with permissions only
+over the objects it uses—, and restricted network egress (`firewall-policy-standards`): if the
+application is compromised, it must not be able to call home.
 
-## 6. Operabilidad
+## 6. Operability
 
-Sección **reducida deliberadamente**: la operación del servidor —*app pools*, reciclado, límites,
-TLS, registro— es de `web-app-servers-standards` y no se duplica aquí. Lo específico del
-código: `Session` es estado en proceso y **cualquier reciclado la pierde**, así que ni balanceo sin
-afinidad ni escalado horizontal sin rediseñar el estado; y las fugas de objetos COM (§3) son la causa
-habitual de reinicios en cadena. La telemetría útil se saca del log de IIS, no de instrumentación en
-el código: no la hay.
+Section **deliberately reduced**: server operation —*app pools*, recycling, limits,
+TLS, logging— belongs to `web-app-servers-standards` and is not duplicated here. What is specific to the
+code: `Session` is in-process state and **any recycle loses it**, so no load balancing without
+affinity and no horizontal scaling without redesigning the state; and COM object leaks (§3) are the
+usual cause of cascading restarts. Useful telemetry comes out of the IIS log, not from instrumentation in
+the code: there is none.
 
-## 7. Salida: migrar o aislar, y prohibiciones
+## 7. Exit: migrate or isolate, and prohibitions
 
-**Solo hay dos recomendaciones honestas, y la elección la decide una pregunta: ¿la aplicación es
-alcanzable desde una red no confiable?**
+**There are only two honest recommendations, and the choice is decided by one question: is the
+application reachable from an untrusted network?**
 
-- **Si es pública o alcanzable desde internet: migrar.** No hay configuración que haga aceptable este
-  código base frente a tráfico hostil. Ruta: **strangler fig** — poner ASP.NET Core delante como
-  *reverse proxy* (YARP) y mover ruta a ruta, empezando por las que tocan datos y autenticación, con
-  la aplicación viva. El destino y su calidad se rigen por `dotnet-standards`. Reescribir por partes,
-  nunca de golpe: la lógica de negocio de estas aplicaciones no está documentada en ningún otro sitio
-  y el *big bang* pierde reglas que nadie sabía que existían.
-- **Si es estrictamente interna, estable y sin roadmap: aislar** y congelar, con fecha de revisión.
-  Red segmentada y *default-deny* de entrada y salida, acceso solo por VPN o desde una red
-  identificada, autenticación fuerte delante, credenciales rotadas, errores silenciados, y las
-  inyecciones SQL **corregidas igualmente** (la amenaza interna y el movimiento lateral existen). El
-  aislamiento compra tiempo; no absuelve del §5.
-- **Migrar el motor de script no es una opción**: reescribir el VBScript en JScript de servidor
-  mantiene todos los problemas y añade uno nuevo. El calendario de VBScript (§1) es un motivo para
-  salir de ASP, no para cambiar de lenguaje dentro de ASP.
+- **If it is public or reachable from the internet: migrate.** There is no configuration that makes this
+  codebase acceptable against hostile traffic. Route: **strangler fig** — put ASP.NET Core in front as a
+  *reverse proxy* (YARP) and move route by route, starting with the ones that touch data and authentication, with
+  the application live. The target and its quality are governed by `dotnet-standards`. Rewrite in parts,
+  never all at once: the business logic of these applications is not documented anywhere else
+  and the *big bang* loses rules nobody knew existed.
+- **If it is strictly internal, stable and with no roadmap: isolate** and freeze, with a review date.
+  Segmented network and *default-deny* on ingress and egress, access only via VPN or from an identified
+  network, strong authentication in front, rotated credentials, silenced errors, and the SQL
+  injections **fixed all the same** (the insider threat and lateral movement exist). Isolation
+  buys time; it does not absolve you of §5.
+- **Migrating the script engine is not an option**: rewriting the VBScript in server-side JScript
+  keeps every problem and adds a new one. The VBScript calendar (§1) is a reason to
+  leave ASP, not to change language within ASP.
 
-- ❌ PROHIBIDO crear una página ASP clásica **nueva**, en cualquier circunstancia.
-- ❌ PROHIBIDO exponer una aplicación ASP clásica directamente a internet.
-- ❌ PROHIBIDO construir SQL concatenando entrada del usuario. Sin excepción por "es un id numérico".
-- ❌ PROHIBIDO "sanear" duplicando comillas o filtrando palabras clave en vez de parametrizar.
-- ❌ PROHIBIDO `Server.Execute`/`Server.Transfer`/`Server.MapPath` con rutas derivadas de la petición.
-- ❌ PROHIBIDO guardar ficheros subidos en un directorio con ejecución de scripts habilitada.
-- ❌ PROHIBIDO enviar errores detallados al navegador en producción.
-- ❌ PROHIBIDO credenciales en `global.asa` o en ficheros servibles por HTTP (`.inc`, `.txt`).
-- ❌ PROHIBIDO omitir `Option Explicit`.
-- ❌ PROHIBIDO `On Error Resume Next` a nivel de página.
-- ❌ PROHIBIDO declarar un WAF como corrección de un hallazgo de inyección o de autorización.
-- ❌ PROHIBIDO planificar como si ASP fuera indefinido: ASP no tiene EOL propio, **VBScript sí tiene
-  calendario de retirada** (§1), y ese es el que manda.
+- ❌ FORBIDDEN to create a **new** Classic ASP page, under any circumstance.
+- ❌ FORBIDDEN to expose a Classic ASP application directly to the internet.
+- ❌ FORBIDDEN to build SQL by concatenating user input. No exception for "it is a numeric id".
+- ❌ FORBIDDEN to "sanitise" by doubling quotes or filtering keywords instead of parameterising.
+- ❌ FORBIDDEN `Server.Execute`/`Server.Transfer`/`Server.MapPath` with paths derived from the request.
+- ❌ FORBIDDEN to store uploaded files in a directory with script execution enabled.
+- ❌ FORBIDDEN to send detailed errors to the browser in production.
+- ❌ FORBIDDEN credentials in `global.asa` or in files servable over HTTP (`.inc`, `.txt`).
+- ❌ FORBIDDEN to omit `Option Explicit`.
+- ❌ FORBIDDEN `On Error Resume Next` at page level.
+- ❌ FORBIDDEN to declare a WAF as the fix for an injection or authorisation finding.
+- ❌ FORBIDDEN to plan as if ASP were indefinite: ASP has no EOL of its own, **VBScript does have a
+  retirement calendar** (§1), and that is the one that rules.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Comprobar siempre: el **calendario de retirada de VBScript** —fases, y sobre todo **en qué versión de
-Windows la FOD deja de venir activada por defecto y cuándo se retira**—, contra la página de
-características obsoletas de Windows y el blog de Windows IT Pro; si la declaración de soporte de ASP
-(KB 2669020) sigue diciendo *"currently supported in all supported versions of IIS"*; la fecha de fin
-de soporte del **Windows Server anfitrión**, que es el reloj de ASP; el estado del fabricante de cada
-componente COM del inventario; CVEs de IIS y de esos componentes.
+Always check: the **VBScript retirement calendar** —phases, and above all **in which version of
+Windows the FOD stops coming enabled by default and when it is retired**—, against the Windows
+deprecated features page and the Windows IT Pro blog; whether the ASP support statement
+(KB 2669020) still says *"currently supported in all supported versions of IIS"*; the end-of-support
+date of the **host Windows Server**, which is ASP's clock; the status of the vendor of each
+COM component in the inventory; CVEs of IIS and of those components.
 
-**Huecos declarados (sin dato verificado, NO rellenar de memoria)**: **las fechas concretas de la
-fase 2 (VBScript deshabilitado por defecto) y de la fase 3 (retirada) no están verificadas verbatim a
-ago-2026** — la documentación oficial de Microsoft consultada describe las fases *"in future Windows
-releases"* **sin dar año**, y las cifras que circulan en prensa técnica no coinciden entre sí; **no
-escribir una fecha en un plan sin obtenerla de la fuente primaria**. Tampoco verificado: si la
-característica ASP de IIS sigue instalable en la última versión de Windows Server publicada (probar,
-no suponer); número de sitios ASP clásico en producción o cuota de mercado — no hay cifra pública
-fiable, no citar ninguna.
+**Declared gaps (no verified data, do NOT fill in from memory)**: **the concrete dates of
+phase 2 (VBScript disabled by default) and of phase 3 (retirement) are not verified verbatim as of
+Aug 2026** — the official Microsoft documentation consulted describes the phases *"in future Windows
+releases"* **without giving a year**, and the figures circulating in the technical press do not agree with each other; **do not
+write a date into a plan without getting it from the primary source**. Also unverified: whether
+the IIS ASP feature is still installable on the latest published version of Windows Server (test it,
+do not assume); number of Classic ASP sites in production or market share — there is no reliable public
+figure, do not cite any.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

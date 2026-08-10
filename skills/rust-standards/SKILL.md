@@ -3,29 +3,29 @@ name: rust-standards
 description: Rust engineering standards (staff-level). Trigger on any Rust work - files with .rs extension, Cargo.toml/Cargo.lock, workspace manifests, clippy/rustfmt config, deny.toml, or crates/frameworks like tokio, axum, actix-web, serde, thiserror, anyhow, sqlx. Apply when writing, reviewing, refactoring, or configuring CI for Rust code.
 ---
 
-# Estándares Rust
+# Rust standards
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a todo trabajo en Rust: ficheros `.rs`, `Cargo.toml`/`Cargo.lock`, `rustfmt.toml`, `clippy.toml`, `deny.toml`, `rust-toolchain.toml`, pipelines de CI que compilan/testean Rust. Cubre servicios backend, CLIs, librerías y workspaces multi-crate. Este skill fija **criterio** (qué usar, qué está prohibido, qué verificar); no es un tutorial.
+Applies to all Rust work: `.rs` files, `Cargo.toml`/`Cargo.lock`, `rustfmt.toml`, `clippy.toml`, `deny.toml`, `rust-toolchain.toml`, CI pipelines that build/test Rust. Covers backend services, CLIs, libraries and multi-crate workspaces. This skill sets **criteria** (what to use, what is forbidden, what to verify); it is not a tutorial.
 
-**No aplica**: ver `api-design-standards` (diseño del contrato HTTP/gRPC — aquí solo su implementación con axum/tonic), `microservices-architecture-standards` (corte de servicios, eventos, sagas, resiliencia distribuida), `appsec-standards` (modelado de amenazas y clases de vulnerabilidad agnósticas del stack; aquí solo `unsafe`, FFI y los sinks concretos de Rust), `go-standards` (la otra skill de lenguaje de sistemas: elección Rust-vs-Go por workload, no por inercia), `c-standards` y `cpp-standards` (**frontera recíproca de FFI y de elección de lenguaje**: el lado C/C++ de la interfaz —cabeceras, `extern "C"`, ABI, ciclo de vida de lo que se cede al otro lado— es suyo; **el lado Rust —`unsafe`, `bindgen`/`cbindgen`, invariantes que el `unsafe` promete y `#[repr(C)]`— es de aquí**. Para código de sistemas **nuevo**, Rust es el default del catálogo; C y C++ cubren lo que ya existe, lo que exige un ABI concreto y lo que tiene requisito normativo —MISRA, CERT—), `haskell-fp-standards` y `ocaml-fsharp-standards` (**comparten con Rust el linaje ML**: ADTs, *pattern matching* exhaustivo, inferencia. La frontera no es "funcional": es el **modelo de memoria y el propósito** —aquí, control sin recolector de basura y despliegue como binario de sistemas; allí, expresividad del sistema de tipos con GC—. Si la discusión es *"¿tipos algebraicos o herencia?"* no es de nadie de estas tres en particular; si es *"¿quién libera esto y cuándo?"*, es de aquí), `zig-standards`, `nim-standards` y `crystal-standards` (**los tres nicho que compiten con Rust y lo citan como comparación obligada**; la frontera no es el rendimiento, es el **modelo de memoria y la madurez**: Zig, control manual sin runtime y **sin haber llegado a 1.0** —cada versión menor rompe—; Nim, GC configurable y metaprogramación; Crystal, GC y ergonomía tipo Ruby. Rust sigue siendo el default del catálogo para sistemas nuevo: elegir uno de los tres exige justificar ecosistema, contratación y estabilidad del lenguaje en un ADR), `ada-standards` (**la comparación obligada cuando la memoria segura tiene que ser además *certificable***: SPARK, sus niveles de adopción y la prueba formal son suyos, y su §7 arbitra Ada/SPARK frente a Rust —incluido el estado real de cualificación de **Ferrocene**— con los mismos datos que se usan aquí), `data-platform-standards` (modelado, índices y tuning del motor; aquí solo el uso de sqlx/SeaORM), `cicd-standards` (la pipeline que ejecuta los gates), `kubernetes-standards` (imagen OCI y despliegue), `observability-standards` (pipeline OTel; aquí solo `tracing` y la instrumentación en el código), `git-workflow-standards` (rama, commits y tagging SemVer; la publicación en crates.io sí es de esta skill), `cryptography-pki-standards` (elección de algoritmos y gestión de claves; aquí solo qué crates criptográficos usar y cuáles están sin mantenimiento), `assembly-standards` (`core::arch`, los intrínsecos y el `asm!` son frontera compartida — el criterio de **cuándo se justifica escribir ensamblador y cómo se mantiene** es suyo, incluidas las ABIs y el tiempo constante; el `unsafe` que lo rodea y sus invariantes, de aquí), `webassembly-standards` (Rust es el lenguaje de origen más habitual para Wasm y la frontera es limpia: **el código Rust, su build y sus tests son de aquí**; **el objetivo de compilación, el runtime, el modelo de componentes, los límites del sandbox y el tamaño del artefacto son suyos** — incluida la elección entre `wasm32-unknown-unknown`, `wasm32-wasip1` y `wasm32-wasip2`, y el nivel de soporte real de cada target).
+**Not applicable**: see `api-design-standards` (design of the HTTP/gRPC contract — here only its implementation with axum/tonic), `microservices-architecture-standards` (service decomposition, events, sagas, distributed resilience), `appsec-standards` (threat modelling and stack-agnostic vulnerability classes; here only `unsafe`, FFI and Rust's concrete sinks), `go-standards` (the other systems-language skill: Rust-vs-Go choice by workload, not by inertia), `c-standards` and `cpp-standards` (**reciprocal boundary for FFI and language choice**: the C/C++ side of the interface —headers, `extern "C"`, ABI, lifecycle of whatever is handed to the other side— is theirs; **the Rust side —`unsafe`, `bindgen`/`cbindgen`, the invariants the `unsafe` promises and `#[repr(C)]`— belongs here**. For **new** systems code, Rust is the catalogue default; C and C++ cover what already exists, what requires a specific ABI and what has a regulatory requirement —MISRA, CERT—), `haskell-fp-standards` and `ocaml-fsharp-standards` (**they share the ML lineage with Rust**: ADTs, exhaustive *pattern matching*, inference. The boundary is not "functional": it is the **memory model and the purpose** —here, control without a garbage collector and deployment as a systems binary; there, type-system expressiveness with GC—. If the discussion is *"algebraic types or inheritance?"* it belongs to none of these three in particular; if it is *"who frees this and when?"*, it belongs here), `zig-standards`, `nim-standards` and `crystal-standards` (**the three niche languages that compete with Rust and cite it as the obligatory comparison**; the boundary is not performance, it is the **memory model and maturity**: Zig, manual control without a runtime and **having never reached 1.0** —every minor version breaks—; Nim, configurable GC and metaprogramming; Crystal, GC and Ruby-like ergonomics. Rust remains the catalogue default for new systems code: choosing one of the three requires justifying ecosystem, hiring and language stability in an ADR), `ada-standards` (**the obligatory comparison when memory safety must also be *certifiable***: SPARK, its adoption levels and formal proof are theirs, and its §7 arbitrates Ada/SPARK against Rust —including the real qualification status of **Ferrocene**— with the same data used here), `data-platform-standards` (modelling, indexes and engine tuning; here only the use of sqlx/SeaORM), `cicd-standards` (the pipeline that runs the gates), `kubernetes-standards` (OCI image and deployment), `observability-standards` (OTel pipeline; here only `tracing` and in-code instrumentation), `git-workflow-standards` (branching, commits and SemVer tagging; publishing to crates.io does belong to this skill), `cryptography-pki-standards` (algorithm choice and key management; here only which crypto crates to use and which are unmaintained), `assembly-standards` (`core::arch`, the intrinsics and `asm!` are a shared boundary — the criteria for **when writing assembly is justified and how it is maintained** are theirs, including ABIs and constant time; the `unsafe` around it and its invariants belong here), `webassembly-standards` (Rust is the most common source language for Wasm and the boundary is clean: **the Rust code, its build and its tests belong here**; **the compilation target, the runtime, the component model, the sandbox limits and the artifact size are theirs** — including the choice between `wasm32-unknown-unknown`, `wasm32-wasip1` and `wasm32-wasip2`, and the real support level of each target).
 
-## 2. Toolchain por defecto
+## 2. Default toolchain
 
-> **Verificar la última versión por web antes de fijarla en un proyecto** (releases.rs / blog.rust-lang.org). Lo siguiente es el estado verificado a 2026-08-02.
+> **Verify the latest version on the web before pinning it in a project** (releases.rs / blog.rust-lang.org). What follows is the state verified as of 2026-08-02.
 
-- **Rust estable: 1.97.x** (1.97.1, 2026-07-16). Cadencia de 6 semanas; **solo el último stable recibe parches** — no hay LTS: quedarse atrás es quedarse sin fixes de seguridad.
-- **Edición: 2024** (estabilizada en 1.85). Todo crate nuevo nace en `edition = "2024"`; migrar los existentes con `cargo fix --edition`. La próxima edición se espera ~2027.
-- `rust-toolchain.toml` versionado con `channel = "1.97.1"` (o la stable vigente) para builds reproducibles; `rust-version` (MSRV) declarado en `Cargo.toml` de librerías.
-- **Herramientas core**: `rustfmt` + `clippy` (componentes oficiales), **cargo-deny** (subsume a cargo-audit: advisories + licencias + bans + sources), `cargo-nextest` como runner de tests en CI, `taiki-e/install-action` para instalar tooling en GitHub Actions.
-- **Runtime async: tokio 1.x** (1.52.x actual; líneas LTS 1.47/1.51 disponibles). No existe "tokio 2.0" pese a artículos que lo afirmen.
-- **Web: axum 0.8** por defecto (equipo tokio, Tower, hyper). actix-web solo si el equipo ya lo opera o necesita su modelo de actores.
+- **Rust stable: 1.97.x** (1.97.1, 2026-07-16). 6-week cadence; **only the latest stable gets patches** — there is no LTS: falling behind means going without security fixes.
+- **Edition: 2024** (stabilised in 1.85). Every new crate is born with `edition = "2024"`; migrate existing ones with `cargo fix --edition`. The next edition is expected ~2027.
+- `rust-toolchain.toml` versioned with `channel = "1.97.1"` (or the current stable) for reproducible builds; `rust-version` (MSRV) declared in the `Cargo.toml` of libraries.
+- **Core tooling**: `rustfmt` + `clippy` (official components), **cargo-deny** (subsumes cargo-audit: advisories + licences + bans + sources), `cargo-nextest` as the test runner in CI, `taiki-e/install-action` to install tooling in GitHub Actions.
+- **Async runtime: tokio 1.x** (1.52.x current; LTS lines 1.47/1.51 available). There is no "tokio 2.0" despite articles claiming otherwise.
+- **Web: axum 0.8** by default (tokio team, Tower, hyper). actix-web only if the team already operates it or needs its actor model.
 
-## 3. Estructura y convenciones de proyecto
+## 3. Project structure and conventions
 
-- **Workspace desde el principio** en cualquier proyecto no trivial: `[workspace]` con `resolver = "3"`, crates en `crates/`, binarios finos que delegan en crates de librería.
-- `[workspace.dependencies]` **obligatorio**: toda versión de dependencia se declara una vez en la raíz y los miembros usan `dep.workspace = true`. Igual con `[workspace.lints]` y `[workspace.package]` (edition, rust-version, license). Cero versiones duplicadas dispersas. Raíz de referencia:
+- **Workspace from the start** in any non-trivial project: `[workspace]` with `resolver = "3"`, crates in `crates/`, thin binaries that delegate to library crates.
+- `[workspace.dependencies]` **mandatory**: every dependency version is declared once at the root and members use `dep.workspace = true`. Same with `[workspace.lints]` and `[workspace.package]` (edition, rust-version, license). Zero duplicated versions scattered around. Reference root:
 
 ```toml
 [workspace]
@@ -34,11 +34,11 @@ members = ["crates/*"]
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.97"        # verificar stable vigente antes de fijar
+rust-version = "1.97"        # verify the current stable before pinning
 license = "..."
 
 [workspace.dependencies]
-tokio = { version = "1", features = ["full"] }   # recortar features en cada crate
+tokio = { version = "1", features = ["full"] }   # trim features in each crate
 axum = "0.8"
 thiserror = "2"
 anyhow = "1"
@@ -55,43 +55,43 @@ undocumented_unsafe_blocks = "deny"
 lto = "thin"
 codegen-units = 1
 ```
-- `Cargo.lock` **versionado siempre**, también en librerías (recomendación oficial vigente).
-- Módulos por dominio, no por tipo técnico; `mod.rs` no — ficheros con nombre del módulo (estilo 2018+). API pública mínima: `pub(crate)` por defecto, `pub` es decisión deliberada; `#![warn(missing_docs)]` en librerías publicadas.
-- Newtypes sobre primitivos para IDs y unidades (`UserId(Uuid)`); estados imposibles irrepresentables (enums con datos > flags booleanos + Option). El type system es la primera línea de tests.
+- `Cargo.lock` **always versioned**, in libraries too (current official recommendation).
+- Modules by domain, not by technical type; no `mod.rs` — files named after the module (2018+ style). Minimal public API: `pub(crate)` by default, `pub` is a deliberate decision; `#![warn(missing_docs)]` in published libraries.
+- Newtypes over primitives for IDs and units (`UserId(Uuid)`); impossible states unrepresentable (enums with data > boolean flags + Option). The type system is the first line of tests.
 
-## 4. Calidad: formato, lint, testing
+## 4. Quality: formatting, lint, testing
 
-### Manejo de errores (criterio por capa)
-- **Librerías / crates de dominio**: errores tipados con **`thiserror`** — enum por módulo/operación, variantes con contexto, `#[from]` para conversiones. El llamante debe poder hacer match.
-- **Binarios / aplicaciones (capa top)**: **`anyhow`** (`anyhow::Result`, `.context("leyendo config {path}")`) donde el error solo se reporta, no se distingue.
-- Regla: anyhow **nunca** en la API pública de una librería; thiserror en binarios solo si el binario necesita distinguir variantes.
-- **Prohibido** `unwrap()`/`expect()` en código de producción salvo invariante demostrada con comentario (`// invariante: validado en construcción`); en tests son aceptables. `clippy::unwrap_used` activado como warn/deny en crates de producción.
-- Los errores se propagan con `?`; prohibido `let _ = fallible()` que trague un `Result` (`#[must_use]` existe por algo).
+### Error handling (criteria by layer)
+- **Libraries / domain crates**: typed errors with **`thiserror`** — one enum per module/operation, variants with context, `#[from]` for conversions. The caller must be able to match.
+- **Binaries / applications (top layer)**: **`anyhow`** (`anyhow::Result`, `.context("reading config {path}")`) where the error is only reported, not discriminated.
+- Rule: anyhow **never** in the public API of a library; thiserror in binaries only if the binary needs to distinguish variants.
+- **Forbidden** `unwrap()`/`expect()` in production code unless the invariant is demonstrated with a comment (`// invariant: validated at construction`); in tests they are acceptable. `clippy::unwrap_used` enabled as warn/deny in production crates.
+- Errors propagate with `?`; `let _ = fallible()` swallowing a `Result` is forbidden (`#[must_use]` exists for a reason).
 
-### Formato y lint (gates que rompen build)
-- `cargo fmt --check` en CI; `rustfmt.toml` mínimo (defaults + `imports_granularity` si el equipo lo acuerda) — no pelearse con el formatter.
-- `cargo clippy --workspace --all-targets --all-features -- -D warnings` en CI. Lints en `[workspace.lints]`: `clippy::all`, `clippy::pedantic` como warn (triando excepciones), y como deny: `clippy::unwrap_used`, `clippy::dbg_macro`, `clippy::todo`, `clippy::undocumented_unsafe_blocks`.
-- `#[allow]` siempre con lint específico y motivo en comentario; nunca `#[allow(clippy::all)]`.
+### Formatting and lint (build-breaking gates)
+- `cargo fmt --check` in CI; minimal `rustfmt.toml` (defaults + `imports_granularity` if the team agrees) — do not fight the formatter.
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings` in CI. Lints in `[workspace.lints]`: `clippy::all`, `clippy::pedantic` as warn (triaging exceptions), and as deny: `clippy::unwrap_used`, `clippy::dbg_macro`, `clippy::todo`, `clippy::undocumented_unsafe_blocks`.
+- `#[allow]` always with a specific lint and a reason in a comment; never `#[allow(clippy::all)]`.
 
 ### Async (tokio)
-- Un solo runtime: tokio. Prohibido mezclar runtimes (async-std está descontinuado) o crear runtimes anidados.
-- **Nunca bloquear el executor**: I/O síncrona, CPU-bound >~100µs o locks de `std::sync` mantenidos a través de `.await` van a `spawn_blocking` / `rayon`. Usar `tokio::sync::{Mutex, RwLock}` solo cuando el lock cruza un await; si no, `std::sync` o `parking_lot`.
-- Toda task spawneada tiene dueño: `JoinSet`/`TaskTracker` + `CancellationToken` (tokio-util) para ciclo de vida; prohibido `tokio::spawn` fire-and-forget cuyo `JoinHandle` y errores nadie observa.
-- Cancelación es siempre posible en async: código cancel-safe en `select!`; documentar cancel-safety de funciones propias que se usen en `select!`.
-- Channels con límite (`mpsc::channel(n)` bounded) por defecto — backpressure explícita; `unbounded` requiere justificación.
+- A single runtime: tokio. Forbidden to mix runtimes (async-std is discontinued) or to create nested runtimes.
+- **Never block the executor**: synchronous I/O, CPU-bound >~100µs or `std::sync` locks held across `.await` go to `spawn_blocking` / `rayon`. Use `tokio::sync::{Mutex, RwLock}` only when the lock crosses an await; otherwise `std::sync` or `parking_lot`.
+- Every spawned task has an owner: `JoinSet`/`TaskTracker` + `CancellationToken` (tokio-util) for lifecycle; forbidden fire-and-forget `tokio::spawn` whose `JoinHandle` and errors nobody observes.
+- Cancellation is always possible in async: cancel-safe code in `select!`; document the cancel-safety of your own functions used in `select!`.
+- Bounded channels (`mpsc::channel(n)`) by default — explicit backpressure; `unbounded` requires justification.
 
-### Unsafe — prohibido salvo justificación documentada
-- `#![forbid(unsafe_code)]` en todo crate de aplicación y en librerías que no lo necesiten.
-- Excepción solo por FFI o rendimiento **medido**: bloque mínimo, encapsulado en API segura, con `// SAFETY:` que demuestre las invariantes (lint `undocumented_unsafe_blocks` lo fuerza), test dedicado y **Miri** en CI para los crates con unsafe. Vigilar el unsafe heredado del árbol de deps con `cargo-geiger` cuando el perfil de riesgo lo exija.
+### Unsafe — forbidden unless documented and justified
+- `#![forbid(unsafe_code)]` in every application crate and in libraries that do not need it.
+- Exception only for FFI or **measured** performance: minimal block, encapsulated in a safe API, with a `// SAFETY:` that demonstrates the invariants (the `undocumented_unsafe_blocks` lint enforces it), a dedicated test and **Miri** in CI for crates with unsafe. Watch the unsafe inherited from the dependency tree with `cargo-geiger` when the risk profile demands it.
 
 ### Testing
-- Unit tests junto al código (`#[cfg(test)]`), integración en `tests/`, doctests en librerías (documentan y verifican a la vez).
-- Cobertura de **bordes y errores**: variantes de error de cada API, entradas vacías/límite, cancelación de futures, timeouts.
-- **Property testing** (`proptest`) para lógica con invariantes; **fuzzing** (`cargo-fuzz`) en todo parser/decoder de entrada no confiable, corpus versionado.
-- Concurrencia: `tokio::test(start_paused = true)` para tiempo virtual determinista (nada de sleeps reales en tests); `loom` para primitivas de sincronización propias.
-- Integración con deps reales vía `testcontainers` (Postgres, Redis...) mejor que mocks de driver; mockear fronteras propias (traits), no el mundo.
-- Todo bugfix deja test de regresión que reproduce el bug antes del fix.
-- Gate mínimo de CI (todo rompe el build):
+- Unit tests next to the code (`#[cfg(test)]`), integration in `tests/`, doctests in libraries (they document and verify at the same time).
+- Coverage of **edges and errors**: error variants of every API, empty/boundary inputs, future cancellation, timeouts.
+- **Property testing** (`proptest`) for logic with invariants; **fuzzing** (`cargo-fuzz`) on every parser/decoder of untrusted input, corpus versioned.
+- Concurrency: `tokio::test(start_paused = true)` for deterministic virtual time (no real sleeps in tests); `loom` for your own synchronisation primitives.
+- Integration with real deps via `testcontainers` (Postgres, Redis...) rather than driver mocks; mock your own boundaries (traits), not the world.
+- Every bugfix leaves a regression test that reproduces the bug before the fix.
+- Minimum CI gate (everything breaks the build):
 
 ```
 cargo fmt --all --check
@@ -102,68 +102,68 @@ cargo doc --no-deps          # RUSTDOCFLAGS="-D warnings"
 cargo deny check
 ```
 
-Main siempre verde; no se mergea con CI roja. Test flaky: se arregla o se borra.
+Main always green; no merging with red CI. Flaky test: fixed or deleted.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **Secretos**: nunca en código, `Cargo.toml`, logs ni `Debug` derivado — usar `secrecy::SecretString` (redacta en Debug/Display) para credenciales en structs de config. Env vars o gestor (Vault/KMS).
-- **SCA / supply chain**: `cargo deny check` en cada PR **y programado** (diario) contra RustSec; `cargo-vet` cuando se requiera revisión humana de deps (perfil alto). `deny.toml` de partida (`cargo deny init` y endurecer):
+- **Secrets**: never in code, `Cargo.toml`, logs or derived `Debug` — use `secrecy::SecretString` (redacts in Debug/Display) for credentials in config structs. Env vars or a manager (Vault/KMS).
+- **SCA / supply chain**: `cargo deny check` on every PR **and scheduled** (daily) against RustSec; `cargo-vet` when human review of deps is required (high-risk profile). Starting `deny.toml` (`cargo deny init` and harden):
 
 ```toml
 [advisories]
-yanked = "deny"                 # unmaintained/unsound se trian, no se ignoran a ciegas
+yanked = "deny"                 # unmaintained/unsound are triaged, not blindly ignored
 
 [licenses]
-allow = ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC", "Unicode-3.0"]  # allowlist, no denylist
+allow = ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC", "Unicode-3.0"]  # allowlist, not denylist
 
 [bans]
-multiple-versions = "warn"      # subir a deny cuando el árbol esté limpio
+multiple-versions = "warn"      # raise to deny once the tree is clean
 wildcards = "deny"
 
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
 ```
-- Recordar el modelo de amenaza real: `build.rs` y proc-macros **ejecutan código arbitrario en build** con permisos del runner — cada dependencia nueva es una decisión de confianza, no un import gratis. Minimizar deps; preferir stdlib y crates del ecosistema núcleo (tokio/serde/tower).
-- SQL solo parametrizado: `sqlx` (query checking) o diesel; prohibido formatear input en queries. Validación en los bordes con tipos (`serde` + validación en `TryFrom`/constructores, no structs "abiertos").
-- Crypto: `ring`, `aws-lc-rs`, RustCrypto (AES-GCM, ChaCha20-Poly1305, SHA-256+, Argon2); `rustls` para TLS (no openssl salvo requisito). Aleatoriedad de seguridad con `rand::rngs::OsRng`/`getrandom`. Nada de crypto casera.
-- Contenedores: build multi-stage, binario release (`opt-level = 3`, `lto = "thin"`, `codegen-units = 1`, `panic = "abort"` en binarios si no se necesita unwind), imagen distroless/scratch, **non-root**, FS read-only. `cargo auditable` para embeber el SBOM de deps en el binario.
+- Remember the real threat model: `build.rs` and proc-macros **execute arbitrary code at build time** with the runner's permissions — every new dependency is a trust decision, not a free import. Minimise deps; prefer the stdlib and core-ecosystem crates (tokio/serde/tower).
+- SQL only parameterised: `sqlx` (query checking) or diesel; forbidden to format input into queries. Validation at the boundaries with types (`serde` + validation in `TryFrom`/constructors, not "open" structs).
+- Crypto: `ring`, `aws-lc-rs`, RustCrypto (AES-GCM, ChaCha20-Poly1305, SHA-256+, Argon2); `rustls` for TLS (not openssl unless required). Security randomness with `rand::rngs::OsRng`/`getrandom`. No home-made crypto.
+- Containers: multi-stage build, release binary (`opt-level = 3`, `lto = "thin"`, `codegen-units = 1`, `panic = "abort"` in binaries if unwind is not needed), distroless/scratch image, **non-root**, read-only FS. `cargo auditable` to embed the dependency SBOM in the binary.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Logging/trazas**: `tracing` + `tracing-subscriber` (JSON en prod) con spans por request; OpenTelemetry (`tracing-opentelemetry`) para trazas distribuidas y métricas. Prohibido `println!`/`dbg!` en código de servicio (clippy lo veta).
-- **Timeouts y límites en todo borde**: `reqwest`/`hyper` client con timeout explícito (el default sin timeout es inaceptable), `tower` layers para timeout/concurrency-limit/rate-limit en axum, límites de body (`DefaultBodyLimit`), pools de DB acotados (`sqlx::PoolOptions`: max_connections, acquire_timeout). Retries con backoff + jitter solo en idempotentes.
-- **Graceful shutdown obligatorio**: `axum::serve(...).with_graceful_shutdown(señal SIGTERM/ctrl_c)`, `CancellationToken` propagado a workers, `TaskTracker::wait()` con deadline para drenar tasks, cerrar recursos en orden. Sin shutdown limpio no hay deploy rolling fiable.
-- Health endpoints separados: liveness trivial y readiness que verifica deps.
-- Perfilado antes de optimizar: `cargo flamegraph`, `criterion`/`divan` para benchmarks comparables; no micro-optimizar sin medir. `clone()` no es pecado hasta que el profiler lo diga — claridad primero, `Arc`/borrows donde el dato lo justifique.
-- Builds: perfil `release` para prod siempre; caché de CI (sccache o `Swatinem/rust-cache`) para mantener pipelines <10 min.
+- **Logging/tracing**: `tracing` + `tracing-subscriber` (JSON in prod) with per-request spans; OpenTelemetry (`tracing-opentelemetry`) for distributed traces and metrics. `println!`/`dbg!` forbidden in service code (clippy vetoes it).
+- **Timeouts and limits at every boundary**: `reqwest`/`hyper` client with an explicit timeout (the no-timeout default is unacceptable), `tower` layers for timeout/concurrency-limit/rate-limit in axum, body limits (`DefaultBodyLimit`), bounded DB pools (`sqlx::PoolOptions`: max_connections, acquire_timeout). Retries with backoff + jitter only on idempotent operations.
+- **Graceful shutdown mandatory**: `axum::serve(...).with_graceful_shutdown(SIGTERM/ctrl_c signal)`, `CancellationToken` propagated to workers, `TaskTracker::wait()` with a deadline to drain tasks, close resources in order. Without a clean shutdown there is no reliable rolling deploy.
+- Separate health endpoints: trivial liveness and readiness that checks deps.
+- Profile before optimising: `cargo flamegraph`, `criterion`/`divan` for comparable benchmarks; do not micro-optimise without measuring. `clone()` is not a sin until the profiler says so — clarity first, `Arc`/borrows where the data justifies it.
+- Builds: `release` profile for prod always; CI cache (sccache or `Swatinem/rust-cache`) to keep pipelines <10 min.
 
-## 7. Sostenibilidad: upgrades y prohibiciones
+## 7. Sustainability: upgrades and prohibitions
 
-**Cadencia**: subir de stable en días tras cada release (6 semanas) — sin LTS, la versión vieja no recibe parches; point releases (1.x.y) inmediatos. Deps con Renovate/Dependabot agrupado semanal; majors revisados a mano con changelog. Edición nueva: migrar dentro del año siguiente a su estabilización. En librerías, la MSRV declarada es un contrato: subirla es al menos minor bump y se anota en changelog.
+**Cadence**: move up stable within days of each release (6 weeks) — with no LTS, the old version gets no patches; point releases (1.x.y) immediately. Deps with Renovate/Dependabot grouped weekly; majors reviewed by hand with the changelog. New edition: migrate within the year following its stabilisation. In libraries, the declared MSRV is a contract: raising it is at least a minor bump and is recorded in the changelog.
 
-**Estabilidad de API**: SemVer estricto (con `cargo-semver-checks` en CI de librerías publicadas); seguir las Rust API Guidelines (C-*) en crates públicos. Deprecar con `#[deprecated(note = "...")]` y ventana de migración antes de eliminar.
+**API stability**: strict SemVer (with `cargo-semver-checks` in the CI of published libraries); follow the Rust API Guidelines (C-*) in public crates. Deprecate with `#[deprecated(note = "...")]` and a migration window before removal.
 
-**Deuda consciente**: todo atajo deja `// TODO(usuario): motivo — link a issue`; nada de complejidad accidental silenciosa. Revisar TODOs en cada ciclo de planificación.
+**Conscious debt**: every shortcut leaves `// TODO(user): reason — link to issue`; no silent accidental complexity. Review TODOs in every planning cycle.
 
-**PROHIBIDO** (requiere justificación escrita y aprobación para excepcionar):
-- `unsafe` sin `// SAFETY:` + encapsulación + Miri (ver §4); `unsafe` "por rendimiento" sin benchmark que lo demuestre.
-- `unwrap()`/`expect()`/`panic!` como manejo de errores en producción; `todo!()`/`unimplemented!()` mergeados a main.
-- `anyhow` en API pública de librería; errores como `String`/`Box<dyn Error>` en APIs tipables.
-- Bloquear el executor async (I/O síncrona o CPU-bound en tasks); `std::sync::Mutex` mantenido a través de `.await`; `block_on` dentro de contexto async.
-- Runtimes async distintos de tokio en el mismo árbol; channels unbounded sin justificar.
-- `Cargo.lock` fuera del VCS; deps con `git = ...` sin `rev` fijado; wildcard versions (`*`); features `default` sin revisar en deps pesadas.
-- Añadir dependencia para lo que hace la stdlib o un crate ya presente (left-pad-ismo); crates sin mantenimiento (RUSTSEC unmaintained) — cargo-deny los caza.
-- `#[allow]` global de clippy; CI sin `-D warnings`; merge con CI rojo o tests flaky.
-- MD5/SHA-1/DES/ECB, openssl vendored sin motivo, TLS <1.2.
-- Macros procedurales propias para lo que resuelve un derive existente o código explícito (coste de compilación + opacidad).
+**FORBIDDEN** (requires written justification and approval to make an exception):
+- `unsafe` without `// SAFETY:` + encapsulation + Miri (see §4); `unsafe` "for performance" without a benchmark that proves it.
+- `unwrap()`/`expect()`/`panic!` as error handling in production; `todo!()`/`unimplemented!()` merged to main.
+- `anyhow` in the public API of a library; errors as `String`/`Box<dyn Error>` in APIs that can be typed.
+- Blocking the async executor (synchronous I/O or CPU-bound work in tasks); `std::sync::Mutex` held across `.await`; `block_on` inside an async context.
+- Async runtimes other than tokio in the same tree; unbounded channels without justification.
+- `Cargo.lock` outside VCS; deps with `git = ...` without a pinned `rev`; wildcard versions (`*`); unreviewed `default` features in heavy deps.
+- Adding a dependency for what the stdlib or an already-present crate does (left-pad-ism); unmaintained crates (RUSTSEC unmaintained) — cargo-deny catches them.
+- Global clippy `#[allow]`; CI without `-D warnings`; merging with red CI or flaky tests.
+- MD5/SHA-1/DES/ECB, vendored openssl without reason, TLS <1.2.
+- Your own procedural macros for what an existing derive or explicit code solves (compile cost + opacity).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar versiones o afirmar estado del ecosistema en un proyecto real, **verificar por web** (no de memoria):
-1. Rust stable y edición vigente: https://releases.rs y https://blog.rust-lang.org (endoflife.date/rust como resumen).
-2. Versiones de crates clave (tokio y sus líneas LTS, axum, serde, sqlx): crates.io / docs.rs — desconfiar de artículos que anuncien majors inexistentes ("tokio 2.0").
-3. Advisories: https://rustsec.org y salida real de `cargo deny check advisories`.
-4. Estado de features del lenguaje (¿estable, nightly?): The Rust Reference / release notes oficiales, no posts de terceros.
+Before pinning versions or asserting the state of the ecosystem in a real project, **verify on the web** (not from memory):
+1. Current Rust stable and edition: https://releases.rs and https://blog.rust-lang.org (endoflife.date/rust as a summary).
+2. Versions of key crates (tokio and its LTS lines, axum, serde, sqlx): crates.io / docs.rs — distrust articles announcing non-existent majors ("tokio 2.0").
+3. Advisories: https://rustsec.org and the real output of `cargo deny check advisories`.
+4. Status of language features (stable? nightly?): The Rust Reference / official release notes, not third-party posts.
 
-Regla: si un dato de este skill contradice lo que devuelve la verificación web, **manda la web** y conviene actualizar este skill.
+Rule: if a fact in this skill contradicts what web verification returns, **the web wins** and this skill should be updated.

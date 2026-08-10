@@ -3,215 +3,215 @@ name: computer-vision-standards
 description: Applied computer vision as a data problem, not a model problem. Use when defining a vision task (classification, object detection, semantic versus instance versus panoptic segmentation, multi-object tracking, OCR, keypoint/pose estimation), building or auditing an image dataset and its label quality, inter-annotator agreement, annotating with CVAT, Label Studio, labelme, Roboflow, FiftyOne or supervision, converting between COCO JSON, YOLO .txt, Pascal VOC XML, YOLO data.yaml and instances_train.json, writing albumentations or kornia augmentation pipelines and spotting augmentation that breaks the label, choosing a detector or segmenter (Ultralytics YOLO/YOLO26, RT-DETR, RF-DETR, D-FINE, DEIM, YOLOX, Detectron2, MMDetection, SAM/SAM 2/SAM 3, Grounding DINO, DINOv2/DINOv3) and reading its weights licence before shipping, computing IoU, mAP@0.5:0.95, per-class confusion or PR curves, exporting to ONNX, TensorRT, OpenVINO, LiteRT or Core ML, matching train and serve preprocessing (resize, letterbox, BGR/RGB, normalisation), budgeting per-frame latency on an edge device, or handling camera, lens and lighting drift. Also covers biometric and CCTV footage constraints.
 ---
 
-# Estándares de visión por computador (computer vision)
+# Computer vision standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **resolver un problema de visión con imágenes o vídeo**: definir la tarea, construir y
-etiquetar el conjunto de datos, elegir un modelo preentrenado y su licencia, evaluar en el dominio
-real, exportar y desplegar con presupuesto de latencia, y vigilar la deriva del sensor.
+Applies to **solving a vision problem with images or video**: defining the task, building and
+labelling the dataset, choosing a pretrained model and its licence, evaluating in the real
+domain, exporting and deploying with a latency budget, and watching for sensor drift.
 
-Triggers: `.jpg`/`.png`/`.mp4` como dato de entrada, `instances_train2017.json`, `data.yaml`,
-`labels/*.txt` de YOLO, `Annotations/*.xml` de Pascal VOC, `annotations.xml` de CVAT, `mAP`,
-`IoU`, `NMS`, `conf`/`iou` de umbral, `letterbox`, `imgsz`, `albumentations`, `A.Compose`,
+Triggers: `.jpg`/`.png`/`.mp4` as input data, `instances_train2017.json`, `data.yaml`,
+YOLO `labels/*.txt`, Pascal VOC `Annotations/*.xml`, CVAT `annotations.xml`, `mAP`,
+`IoU`, `NMS`, `conf`/`iou` thresholds, `letterbox`, `imgsz`, `albumentations`, `A.Compose`,
 `kornia`, `cv2.imread`, `torchvision.transforms`, `ultralytics`, `YOLO(...)`, `RT-DETR`,
 `RF-DETR`, `detectron2`, `mmdet`, `SamPredictor`, `GroundingDINO`, `DINOv3`, `.onnx`, `.engine`,
-`.xml`+`.bin` de OpenVINO, `.tflite`, `.mlpackage`, "detectar piezas defectuosas", "contar
-personas", "leer matrículas", "seguir objetos entre fotogramas", "va bien en test y mal en
-planta", "en la cámara nueva falla".
+OpenVINO `.xml`+`.bin`, `.tflite`, `.mlpackage`, "detect defective parts", "count
+people", "read number plates", "track objects across frames", "it does well on test and badly on
+the shop floor", "it fails on the new camera".
 
-**Tesis del dominio**: **casi todo problema de visión se resuelve con un modelo preentrenado y un
-conjunto de datos bien etiquetado; el modelo casi nunca es el cuello de botella.** El orden real de
-impacto sobre la métrica es **definición de la tarea > calidad y consistencia del etiquetado >
-representatividad del conjunto > aumento de datos > arquitectura > hiperparámetros**, y el trabajo
-se reparte casi siempre al revés. Corolarios que fijan criterio: **(a)** cambiar de detector rara
-vez compensa arreglar 200 etiquetas mal puestas; **(b)** si el modelo falla, el primer sospechoso
-es la etiqueta, no la red; **(c)** una métrica pública alta no dice nada de tu planta, tu cámara ni
-tu iluminación.
+**Thesis of the domain**: **almost every vision problem is solved with a pretrained model and a
+well-labelled dataset; the model is almost never the bottleneck.** The real order of
+impact on the metric is **task definition > label quality and consistency >
+dataset representativeness > augmentation > architecture > hyperparameters**, and the work
+is almost always distributed in reverse. Corollaries that set the criteria: **(a)** switching detector rarely
+beats fixing 200 badly placed labels; **(b)** if the model fails, the first suspect
+is the label, not the network; **(c)** a high public metric says nothing about your shop floor, your camera or
+your lighting.
 
-**No aplica**:
+**Not applicable**:
 
-- `deep-learning-standards`, `model-finetuning-standards` y `classical-ml-standards` (**escritas**):
-  **entrenar una red propia y su bucle son de la primera** (precisión mixta, distribuido,
-  reproducibilidad, diagnóstico de la pérdida, compresión); **tocar los pesos de un modelo ajeno es
-  de la segunda**; **el dato tabular es de la tercera**, junto con la mecánica común de fuga,
-  partición, umbral y calibración, que **no se duplica aquí**: se aplica igual y vive allí. Desde
-  este lado solo se afirma qué es específico de la imagen —qué tarea, qué etiqueta, qué
-  preprocesado y qué deriva de sensor.
-- `llm-app-engineering-standards`, `rag-standards` y `llm-evaluation-standards` (**escritas**):
-  **el producto sobre un LLM de terceros es de la primera, la recuperación de la segunda y la
-  medición de sistemas no deterministas de la tercera**; aquí las métricas son deterministas
-  (IoU, mAP, matriz de confusión) y se calculan aquí. Un VLM que describe una imagen en texto libre
-  es producto LLM y se evalúa allí; un detector que devuelve cajas es de aquí.
-- `mlops-standards`, `local-inference-standards`, `gpu-computing-standards`, `mlsecops-standards` y
-  `ai-governance-standards` (**escritas**): **el ciclo de vida en producción es de la primera**
-  —registro, promoción, vigilancia de deriva, reentrenamiento—, **servir pesos propios de la
-  segunda**, **la GPU como recurso de la tercera**, **la procedencia de los pesos y los ataques al
-  modelo de la cuarta**, y **la clasificación de riesgo, el AI Act y el inventario de la quinta**.
-  Aquí se **detecta** la deriva de cámara (§6) y se **exige** la clasificación de riesgo antes de
-  desplegar biometría (§5); el gobierno, allí.
-- Comunes: `privacy-engineering-standards` (**biometría, rostros y voz de personas**),
-  `opensource-licensing-standards` (**la política de licencias, incluidas las de pesos y datasets**),
-  `data-engineering-standards` y `data-governance-quality-standards` (ingesta, linaje y calidad del
-  dato), `python-standards`, `finops-standards` y `green-it-standards` (coste y huella de la
-  inferencia), `grc-compliance-standards`, `webgl-webgpu-standards` (inferencia en el navegador) y
-  `embedded-iot-standards` (el dispositivo de borde como sistema).
-- `xr-standards` y `robotics-ros-standards`: **el SLAM y la percepción son de aquí**; **el consumo
-  del resultado y su temporización son suyos** — el presupuesto de fotograma y la latencia
-  movimiento-a-fotón allí, el ciclo de control y la QoS del mensaje que transporta la detección
-  allá. Una detección correcta que llega tarde es un fallo suyo, no de la métrica de aquí.
-- Skills hermanas de modalidad: `nlp-standards` (texto) y `multimodal-genai-standards` (generación
-  de imagen, audio y vídeo). **Son tres modalidades, no tres niveles**: ninguna es prerrequisito de
-  otra. **Regla de arbitraje con `multimodal-genai-standards`, recíproca y ya declarada en su §1:
-  si la salida son cajas, máscaras, *keypoints* o etiquetas, es de aquí; si es prosa, descripción,
-  extracción semántica de un documento o un artefacto generado, es suya.**
+- `deep-learning-standards`, `model-finetuning-standards` and `classical-ml-standards` (**written**):
+  **training your own network and its loop belong to the first** (mixed precision, distributed,
+  reproducibility, loss diagnosis, compression); **touching someone else's weights belongs
+  to the second**; **tabular data belongs to the third**, along with the common mechanics of leakage,
+  splitting, thresholding and calibration, which **are not duplicated here**: they apply just the same and live there. From
+  this side only what is specific to images is asserted —which task, which label, which
+  preprocessing and which sensor drift.
+- `llm-app-engineering-standards`, `rag-standards` and `llm-evaluation-standards` (**written**):
+  **the product on top of a third-party LLM belongs to the first, retrieval to the second and
+  measuring non-deterministic systems to the third**; here the metrics are deterministic
+  (IoU, mAP, confusion matrix) and are computed here. A VLM that describes an image in free text
+  is an LLM product and is evaluated there; a detector that returns boxes belongs here.
+- `mlops-standards`, `local-inference-standards`, `gpu-computing-standards`, `mlsecops-standards` and
+  `ai-governance-standards` (**written**): **the production lifecycle belongs to the first**
+  —registry, promotion, drift monitoring, retraining—, **serving your own weights to the
+  second**, **the GPU as a resource to the third**, **weight provenance and attacks on the
+  model to the fourth**, and **risk classification, the AI Act and the inventory to the fifth**.
+  Here camera drift is **detected** (§6) and risk classification is **required** before
+  deploying biometrics (§5); governance, there.
+- Common ones: `privacy-engineering-standards` (**biometrics, faces and people's voices**),
+  `opensource-licensing-standards` (**licence policy, including that of weights and datasets**),
+  `data-engineering-standards` and `data-governance-quality-standards` (ingestion, lineage and data
+  quality), `python-standards`, `finops-standards` and `green-it-standards` (cost and footprint of
+  inference), `grc-compliance-standards`, `webgl-webgpu-standards` (inference in the browser) and
+  `embedded-iot-standards` (the edge device as a system).
+- `xr-standards` and `robotics-ros-standards`: **SLAM and perception belong here**; **consuming
+  the result and its timing are theirs** — the frame budget and motion-to-photon
+  latency there, the control loop and the QoS of the message carrying the detection
+  over there. A correct detection that arrives late is their failure, not a failure of the metric here.
+- Sister skills by modality: `nlp-standards` (text) and `multimodal-genai-standards` (image, audio and
+  video generation). **They are three modalities, not three levels**: none is a prerequisite for
+  another. **Arbitration rule with `multimodal-genai-standards`, reciprocal and already declared in its §1:
+  if the output is boxes, masks, *keypoints* or labels, it belongs here; if it is prose, a description,
+  semantic extraction from a document or a generated artifact, it is theirs.**
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión y la licencia **de los pesos** por web antes de fijarla en un
-> proyecto real (§8). La licencia del repositorio **no** es la de los pesos.
+> Verify the latest version and the licence **of the weights** on the web before pinning it in a
+> real project (§8). The repository's licence is **not** the weights' licence.
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Punto de partida | **Preentrenado + tus datos etiquetados** | Entrenar desde cero: exige justificarlo (`deep-learning-standards` §1) |
-| Detección, licencia permisiva | **RT-DETR / RF-DETR / D-FINE / DEIM / YOLOX** (Apache-2.0 verificado) | Ultralytics YOLO **solo** con licencia Enterprise o proyecto AGPL |
-| Segmentación de instancia | **Detectron2 / MMDetection** (Apache-2.0) | Ultralytics `-seg` bajo las mismas condiciones |
-| Segmentación interactiva / *zero-shot* | **SAM 2** (Apache-2.0 verificado) | SAM 3: licencia propia de Meta, no OSI (§5) |
-| *Backbone* de propósito general | **DINOv2** (Apache-2.0 verificado) | DINOv3: licencia propia y acceso restringido (§5) |
-| Detección por texto libre | Grounding DINO (Apache-2.0) para **prototipar y preetiquetar**, no para producción |
-| Anotación | **CVAT** (MIT verificado) autoalojado; **Label Studio** (Apache-2.0) si mezclas modalidades | Roboflow / SaaS: revisa a quién cede derechos sobre tus imágenes |
-| Auditoría del dataset | **FiftyOne** (Apache-2.0 verificado) | Scripts propios: se acaban escribiendo igual, peor |
-| Aumento de datos | **albumentations** (MIT) | `kornia` (Apache-2.0) si el aumento va en GPU dentro del grafo |
-| Formato canónico en el repo | **COCO JSON** como fuente de verdad; YOLO `.txt` derivado | VOC XML solo por compatibilidad heredada |
-| Exportación | **ONNX** + ONNX Runtime (MIT) como *baseline* portable | TensorRT (NVIDIA), OpenVINO (Intel), LiteRT / Core ML según el hardware final |
+| Starting point | **Pretrained + your labelled data** | Training from scratch: requires justification (`deep-learning-standards` §1) |
+| Detection, permissive licence | **RT-DETR / RF-DETR / D-FINE / DEIM / YOLOX** (Apache-2.0 verified) | Ultralytics YOLO **only** with an Enterprise licence or an AGPL project |
+| Instance segmentation | **Detectron2 / MMDetection** (Apache-2.0) | Ultralytics `-seg` under the same conditions |
+| Interactive / *zero-shot* segmentation | **SAM 2** (Apache-2.0 verified) | SAM 3: Meta's own licence, not OSI (§5) |
+| General-purpose *backbone* | **DINOv2** (Apache-2.0 verified) | DINOv3: proprietary licence and restricted access (§5) |
+| Free-text detection | Grounding DINO (Apache-2.0) to **prototype and pre-label**, not for production |
+| Annotation | **CVAT** (MIT verified) self-hosted; **Label Studio** (Apache-2.0) if you mix modalities | Roboflow / SaaS: check what rights over your images you are granting and to whom |
+| Dataset auditing | **FiftyOne** (Apache-2.0 verified) | Your own scripts: they end up being written anyway, worse |
+| Augmentation | **albumentations** (MIT) | `kornia` (Apache-2.0) if augmentation runs on GPU inside the graph |
+| Canonical format in the repo | **COCO JSON** as the source of truth; YOLO `.txt` derived | VOC XML only for legacy compatibility |
+| Export | **ONNX** + ONNX Runtime (MIT) as a portable *baseline* | TensorRT (NVIDIA), OpenVINO (Intel), LiteRT / Core ML depending on the final hardware |
 
-**Regla de elección**: fija primero **el hardware de despliegue y el presupuesto de fotograma**;
-después la familia de modelo. Al revés se acaba con un modelo que no entra en el dispositivo.
+**Selection rule**: pin **the deployment hardware and the frame budget** first;
+the model family afterwards. The other way round you end up with a model that does not fit on the device.
 
-## 3. Definir la tarea antes que el modelo
+## 3. Define the task before the model
 
-**Elegir mal la tarea es el error más caro del dominio**, porque no se detecta hasta que el
-etiquetado está pagado y hay que rehacerlo entero.
+**Choosing the wrong task is the most expensive error in the domain**, because it is not detected until the
+labelling has been paid for and has to be redone entirely.
 
-| Pregunta de negocio | Tarea | Etiqueta que hay que pagar |
+| Business question | Task | Label you have to pay for |
 |---|---|---|
-| ¿Está presente / de qué tipo es? | Clasificación (mono o multietiqueta) | Una etiqueta por imagen |
-| ¿Cuántos hay y dónde? | Detección | Caja + clase por instancia |
-| ¿Qué superficie ocupa? | Segmentación **semántica** (píxel → clase, sin instancias) | Máscara por píxel |
-| ¿Cuántos objetos y qué píxeles son de cada uno? | Segmentación **de instancia** | Máscara por instancia |
-| Ambas a la vez, sin huecos ni solapes | Segmentación **panóptica** | Etiquetado más caro de todos |
-| ¿Es el mismo objeto que el fotograma anterior? | Seguimiento (detección + asociación) | Identidad persistente entre fotogramas |
-| ¿Qué dice ese texto? | OCR (detección + reconocimiento) | Cajas de texto + transcripción |
-| ¿En qué postura está? | Estimación de pose | Puntos clave por instancia |
+| Is it present / what type is it? | Classification (single or multi-label) | One label per image |
+| How many are there and where? | Detection | Box + class per instance |
+| What area does it occupy? | **Semantic** segmentation (pixel → class, no instances) | Per-pixel mask |
+| How many objects and which pixels belong to each? | **Instance** segmentation | Per-instance mask |
+| Both at once, with no gaps or overlaps | **Panoptic** segmentation | The most expensive labelling of all |
+| Is it the same object as in the previous frame? | Tracking (detection + association) | Persistent identity across frames |
+| What does that text say? | OCR (detection + recognition) | Text boxes + transcription |
+| What pose is it in? | Pose estimation | Keypoints per instance |
 
-Criterios duros:
+Hard criteria:
 
-- **Semántica vs. instancia no es un detalle**: si hay que **contar**, semántica no sirve; dos
-  objetos pegados son una sola región. Reetiquetar de semántica a instancia cuesta casi lo mismo
-  que empezar.
-- **Seguimiento es detección + asociación**: la métrica de seguimiento (cambios de identidad) no
-  mejora con un detector mejor si el problema es la asociación.
-- **Detección con una sola clase y un objeto por imagen = clasificación**: no pagues cajas.
-- **Contar no siempre es detectar**: si los objetos se solapan mucho (células, grano, multitud), la
-  regresión de densidad supera a la detección con una fracción del etiquetado.
-- **OCR de documento estructurado**: comprueba antes si el productor del documento puede darte el
-  dato en origen. Reconocer texto que alguien imprimió desde una base de datos es un fracaso de
-  integración, no un problema de visión.
+- **Semantic vs. instance is not a detail**: if you have to **count**, semantic is no use; two
+  touching objects are a single region. Relabelling from semantic to instance costs almost as much
+  as starting over.
+- **Tracking is detection + association**: the tracking metric (identity switches) does not
+  improve with a better detector if the problem is the association.
+- **Detection with a single class and one object per image = classification**: do not pay for boxes.
+- **Counting is not always detecting**: if the objects overlap a lot (cells, grain, crowds),
+  density regression beats detection at a fraction of the labelling cost.
+- **OCR of a structured document**: check first whether the producer of the document can give you the
+  data at source. Recognising text that somebody printed from a database is an integration failure,
+  not a vision problem.
 
-## 4. Datos: el factor dominante
+## 4. Data: the dominant factor
 
-**Adquisición**: captura con **el mismo sensor, óptica, montaje e iluminación** que tendrá
-producción. Un conjunto tomado con el móvil del jefe de planta no predice nada sobre la cámara
-industrial que se instalará. Registra por imagen: cámara, lente, exposición, turno, línea, lote —
-son las variables con las que después se parte el conjunto y se diagnostica la deriva.
+**Acquisition**: capture with **the same sensor, optics, mounting and lighting** that production
+will have. A dataset shot with the plant manager's phone predicts nothing about the industrial
+camera that will be installed. Record per image: camera, lens, exposure, shift, line, batch —
+they are the variables you will later use to split the dataset and diagnose drift.
 
-**Etiquetado — la calidad y la consistencia mandan sobre la cantidad**:
+**Labelling — quality and consistency beat quantity**:
 
-- **Guía de etiquetado escrita antes de la primera etiqueta**, con casos límite resueltos y
-  ejemplos de "sí / no / dudoso". Sin guía, cada anotador inventa la suya y el techo de la métrica
-  queda fijado por esa inconsistencia.
-- **Acuerdo entre anotadores medido, no supuesto**: un subconjunto solapado etiquetado por ≥2
-  personas y un estadístico de acuerdo (para cajas, IoU pareado y coincidencia de clase; para
-  clasificación, un índice tipo kappa que corrija el azar). **Si dos anotadores no se ponen de
-  acuerdo, el modelo no puede aprenderlo y la evaluación no significa nada.** El acuerdo es el
-  techo práctico de la métrica.
-- **Ciclo de revisión**: etiqueta → revisión por segunda persona → corrección de la guía. Las
-  discrepancias son el mejor detector de tarea mal definida.
-- **Auditoría de etiquetas ya existentes** antes de culpar al modelo: ordena por pérdida y revisa
-  los peores; los errores de etiqueta se concentran ahí. Los conjuntos públicos también los tienen.
-- **Trazabilidad**: quién etiquetó qué y cuándo, versión de la guía y versión del conjunto
-  (`data-governance-quality-standards`). Un dataset sin versión no es evaluable.
+- **Written labelling guide before the first label**, with edge cases resolved and
+  "yes / no / doubtful" examples. Without a guide, each annotator invents their own and the metric's ceiling
+  is set by that inconsistency.
+- **Inter-annotator agreement measured, not assumed**: an overlapping subset labelled by ≥2
+  people and an agreement statistic (for boxes, paired IoU and class match; for
+  classification, a kappa-type index that corrects for chance). **If two annotators cannot agree,
+  the model cannot learn it and the evaluation means nothing.** Agreement is the
+  practical ceiling of the metric.
+- **Review cycle**: label → review by a second person → correction of the guide. The
+  discrepancies are the best detector of a badly defined task.
+- **Audit of existing labels** before blaming the model: sort by loss and review
+  the worst; label errors concentrate there. Public datasets have them too.
+- **Traceability**: who labelled what and when, guide version and dataset version
+  (`data-governance-quality-standards`). An unversioned dataset is not evaluable.
 
-**Formatos**: COCO JSON (un fichero, cajas `[x, y, w, h]` absolutas, máscaras RLE o polígono),
-YOLO (un `.txt` por imagen, `[clase, xc, yc, w, h]` **normalizado**), Pascal VOC (un XML por
-imagen, `[xmin, ymin, xmax, ymax]`). **La conversión entre ellos es la fuente clásica de cajas
-desplazadas**: origen de coordenadas, absoluto vs. normalizado, esquina vs. centro y orden de
-clases. Verifica siempre **superponiendo las cajas convertidas sobre la imagen**, no leyendo el
+**Formats**: COCO JSON (one file, absolute `[x, y, w, h]` boxes, RLE or polygon masks),
+YOLO (one `.txt` per image, **normalised** `[class, xc, yc, w, h]`), Pascal VOC (one XML per
+image, `[xmin, ymin, xmax, ymax]`). **Converting between them is the classic source of shifted
+boxes**: coordinate origin, absolute vs. normalised, corner vs. centre and class order.
+Always verify **by overlaying the converted boxes on the image**, not by reading the
 JSON.
 
-**Aumento de datos con criterio**: el aumento simula la variabilidad **que existirá en producción**,
-no la que se te ocurra. Si la cámara está fija y cenital, rotar 90° enseña una variación que nunca
-verá y gasta capacidad.
+**Augmentation with judgement**: augmentation simulates the variability **that will exist in production**,
+not whatever occurs to you. If the camera is fixed and overhead, rotating 90° teaches a variation it will
+never see and wastes capacity.
 
-**Aumento que rompe la etiqueta** — lista de veto:
+**Augmentation that breaks the label** — veto list:
 
-- ❌ **Volteo horizontal** cuando la clase depende de la lateralidad: texto, dígitos, matrículas,
-  izquierda/derecha anatómica, tornillos por sentido de rosca, señales asimétricas.
-- ❌ **Recorte o traslación sin recalcular caja/máscara/puntos clave**, o dejando cajas de objetos
-  que ya no están en la imagen. Usa transformaciones que transporten la anotación (`bbox_params`,
-  `keypoint_params`) y **descarta** cajas por debajo de un área visible mínima.
-- ❌ **Cambios de color agresivos** cuando el color **es** la clase: madurez de fruta, código de
-  cable, semáforo, óxido, tinción médica.
-- ❌ **Desenfoque, ruido o compresión fuertes** cuando el defecto a detectar es sutil: borras la
-  clase positiva.
-- ❌ **Mezcla de imágenes (mosaico, mixup, copy-paste)** en un conjunto de **validación**. Solo
-  entrenamiento, nunca evaluación.
-- ❌ Aumento **después** de normalizar, o con un pipeline distinto del de inferencia (§6).
+- ❌ **Horizontal flip** when the class depends on handedness: text, digits, number plates,
+  anatomical left/right, screws by thread direction, asymmetric signs.
+- ❌ **Crop or translation without recomputing box/mask/keypoints**, or leaving boxes of objects
+  that are no longer in the image. Use transforms that carry the annotation (`bbox_params`,
+  `keypoint_params`) and **discard** boxes below a minimum visible area.
+- ❌ **Aggressive colour changes** when the colour **is** the class: fruit ripeness, cable
+  coding, traffic lights, rust, medical staining.
+- ❌ **Strong blur, noise or compression** when the defect to detect is subtle: you erase
+  the positive class.
+- ❌ **Image mixing (mosaic, mixup, copy-paste)** in a **validation** set. Training
+  only, never evaluation.
+- ❌ Augmentation **after** normalising, or with a different pipeline from the inference one (§6).
 
-**Desequilibrio y casos raros**: en visión industrial **el caso raro es el objetivo** — el defecto
-que aparece una vez cada diez mil piezas es justamente el que hay que detectar. Consecuencias:
-sobremuestrea o pondera la clase rara en entrenamiento, pero **nunca en el conjunto de evaluación**,
-que debe conservar la prevalencia real; reserva un conjunto específico de casos raros y repórtalo
-aparte; y si los positivos son poquísimos, plantea **detección de anomalías** (entrenar solo con
-normales) en vez de clasificación supervisada.
+**Imbalance and rare cases**: in industrial vision **the rare case is the objective** — the defect
+that appears once every ten thousand parts is exactly the one to detect. Consequences:
+oversample or weight the rare class in training, but **never in the evaluation set**,
+which must keep the real prevalence; reserve a specific rare-case set and report it
+separately; and if the positives are extremely few, consider **anomaly detection** (training only
+on normals) instead of supervised classification.
 
-## 5. Licencias, biometría y videovigilancia
+## 5. Licences, biometrics and video surveillance
 
-**La licencia de los pesos no es la del repositorio, y esto es el error de licencia más común del
-dominio.** Verificado leyendo el fichero en crudo (ago-2026):
+**The weights' licence is not the repository's, and this is the most common licensing error in the
+domain.** Verified by reading the raw file (Aug 2026):
 
-| Familia | Licencia verificada | Consecuencia |
+| Family | Verified licence | Consequence |
 |---|---|---|
-| **Ultralytics** (YOLOv5, YOLOv8, YOLO11, YOLO26, y su RT-DETR/YOLO-World empaquetados) | **AGPL-3.0** en `LICENSE`, con Enterprise de pago | Su página de licencia lo dice sin ambigüedad: *"An Enterprise License is required if you want to use Ultralytics YOLO without open-sourcing your entire project"*, y lista expresamente *"Internal business tools or private company applications"*, *"Embedded deployments in hardware, edge devices, robotics, cameras, or appliances"* y *"Using custom-trained or fine-tuned YOLO models in a proprietary or commercial setting"*. **Tu modelo entrenado con tus datos sigue afectado** según el licenciante |
-| YOLOv7, YOLOv9, YOLOv6 (Meituan), YOLO-World | **GPL-3.0** | Copyleft fuerte igualmente |
-| YOLOv10 (THU-MIG) | **AGPL-3.0** | Igual que Ultralytics |
-| **YOLOX** (Megvii), **RT-DETR**, **D-FINE**, **DEIM**, **RF-DETR** (Roboflow) | **Apache-2.0** | Vía permisiva real para detección |
-| Detectron2, MMDetection, Grounding DINO, **SAM 2**, **DINOv2** | **Apache-2.0** | Permisivo |
-| **SAM 3** (Meta, "SAM License", 19-nov-2025) y **DINOv3** (Meta, 19-ago-2025) | **Licencia propia, no OSI** | Vírica en la forma: *"If you distribute or make the … Materials, or any derivative works thereof, available to a third party, you may only do so under the terms of this Agreement"*; prohíbe *"reverse engineer, decompile or discover the underlying components"*; excluye usos militares, nucleares y de armas por *Trade Controls*; **tú indemnizas a Meta**; y **Meta puede modificar el acuerdo unilateralmente** (*"All such changes will be effective immediately"*). DINOv3 exige además aceptación con datos personales; sus variantes *EUPE* van bajo la **FAIR Noncommercial Research License** |
+| **Ultralytics** (YOLOv5, YOLOv8, YOLO11, YOLO26, and their packaged RT-DETR/YOLO-World) | **AGPL-3.0** in `LICENSE`, with a paid Enterprise option | Their licensing page says it unambiguously: *"An Enterprise License is required if you want to use Ultralytics YOLO without open-sourcing your entire project"*, and expressly lists *"Internal business tools or private company applications"*, *"Embedded deployments in hardware, edge devices, robotics, cameras, or appliances"* and *"Using custom-trained or fine-tuned YOLO models in a proprietary or commercial setting"*. **Your model trained on your data is still affected** according to the licensor |
+| YOLOv7, YOLOv9, YOLOv6 (Meituan), YOLO-World | **GPL-3.0** | Strong copyleft all the same |
+| YOLOv10 (THU-MIG) | **AGPL-3.0** | Same as Ultralytics |
+| **YOLOX** (Megvii), **RT-DETR**, **D-FINE**, **DEIM**, **RF-DETR** (Roboflow) | **Apache-2.0** | A genuinely permissive route for detection |
+| Detectron2, MMDetection, Grounding DINO, **SAM 2**, **DINOv2** | **Apache-2.0** | Permissive |
+| **SAM 3** (Meta, "SAM License", 19 Nov 2025) and **DINOv3** (Meta, 19 Aug 2025) | **Proprietary licence, not OSI** | Viral in form: *"If you distribute or make the … Materials, or any derivative works thereof, available to a third party, you may only do so under the terms of this Agreement"*; it forbids *"reverse engineer, decompile or discover the underlying components"*; it excludes military, nuclear and weapons uses via *Trade Controls*; **you indemnify Meta**; and **Meta can modify the agreement unilaterally** (*"All such changes will be effective immediately"*). DINOv3 additionally requires acceptance with personal data; its *EUPE* variants come under the **FAIR Noncommercial Research License** |
 
-**Reglas duras**: (1) un modelo AGPL entrenado con tus datos **no se despliega en un SaaS ni en un
-producto cerrado** sin licencia comercial — hay proveedores que revenden esa licencia comercial,
-verifica el alcance exacto; (2) `pip install` no es aceptación informada: la licencia se lee
-**antes**; (3) el cumplimiento se automatiza en CI (`opensource-licensing-standards`), no se
-recuerda.
+**Hard rules**: (1) an AGPL model trained on your data **is not deployed in a SaaS or in a
+closed product** without a commercial licence — some vendors resell that commercial licence,
+verify the exact scope; (2) `pip install` is not informed acceptance: the licence is read
+**beforehand**; (3) compliance is automated in CI (`opensource-licensing-standards`), not
+remembered.
 
-**Datasets**: los conjuntos públicos son mayoritariamente **solo investigación**. Verificado:
+**Datasets**: public datasets are mostly **research only**. Verified:
 **ImageNet** — *"Researcher shall use the Database only for non-commercial research and educational
-purposes"*, y **vincula al empleador** si trabajas en una empresa con ánimo de lucro; **Cityscapes**
-— no comercial, con permiso para distribuir "representaciones abstractas" (modelos entrenados) pero
-no el dato; **KITTI** — CC BY-NC-SA. En **COCO** la licencia de **las anotaciones y la de las
-imágenes no son la misma** (imágenes de terceros con sus propios términos): verifica ambas.
-Consecuencia práctica que casi nadie comprueba: **unos pesos preentrenados sobre un dataset "solo
-investigación" arrastran la duda al producto**. Decídelo con legal, no con una intuición.
+purposes"*, and it **binds your employer** if you work at a for-profit company; **Cityscapes**
+— non-commercial, with permission to distribute "abstract representations" (trained models) but
+not the data; **KITTI** — CC BY-NC-SA. In **COCO** the licence of **the annotations and that of the
+images are not the same** (third-party images with their own terms): verify both.
+A practical consequence almost nobody checks: **weights pretrained on a "research only" dataset
+carry the doubt into the product**. Decide it with legal, not on a hunch.
 
-**Biometría y videovigilancia** — el marco de riesgo vive en `ai-governance-standards` (AI Act,
-clasificación, inventario, calendario) y el tratamiento del dato personal en
-`privacy-engineering-standards` (base jurídica, DPIA, minimización, retención, derechos). Lo que
-esta skill fija es la **parada técnica**: un rostro, una matrícula, una marcha o una huella son
-**dato biométrico** en cuanto sirven para identificar, y ese proyecto **no arranca sin evaluación
-previa**. El **AI Act (Reglamento (UE) 2024/1689) art. 5** prohíbe expresamente, verbatim:
+**Biometrics and video surveillance** — the risk framework lives in `ai-governance-standards` (AI Act,
+classification, inventory, timetable) and the processing of personal data in
+`privacy-engineering-standards` (legal basis, DPIA, minimisation, retention, rights). What
+this skill sets is the **technical stop**: a face, a number plate, a gait or a fingerprint are
+**biometric data** as soon as they serve to identify, and such a project **does not start without a prior
+assessment**. The **AI Act (Regulation (EU) 2024/1689) art. 5** expressly prohibits, verbatim:
 
 - *"the placing on the market, the putting into service for this specific purpose, or the use of AI
   systems that create or expand facial recognition databases through the untargeted scraping of
@@ -223,119 +223,119 @@ previa**. El **AI Act (Reglamento (UE) 2024/1689) art. 5** prohíbe expresamente
   on their biometric data to deduce or infer their race, political opinions, trade union
   membership, religious or philosophical beliefs, sex life or sexual orientation"* (art. 5.1.g);
 - *"the use of 'real-time' remote biometric identification systems in publicly accessible spaces for
-  the purposes of law enforcement"*, salvo las excepciones tasadas del art. 5.1.h con autorización
-  judicial previa (art. 5.2-5.3).
+  the purposes of law enforcement"*, except for the enumerated exceptions of art. 5.1.h with prior
+  judicial authorisation (art. 5.2-5.3).
 
-Estas prohibiciones **aplican desde el 2-feb-2025**. La identificación biométrica **no prohibida**
-cae en el **alto riesgo** del Anexo III con su régimen completo. Además, el art. 50.3 obliga al
-desplegador de un sistema de **reconocimiento de emociones o categorización biométrica** a
-*"inform the natural persons exposed thereto of the operation of the system"*. **Calendario y
-matices: `ai-governance-standards` §3.3, que ya los tiene verificados contra el DOUE incluido el
-Digital Omnibus.** Regla de ingeniería derivada: **cuando la identidad no es el objetivo, no la
-captures** — detectar presencia, contar o medir ocupación se hace sin reconocer a nadie, y elegir la
-variante que no identifica elimina el problema entero en vez de gestionarlo.
+These prohibitions **apply from 2 Feb 2025**. Biometric identification that is **not prohibited**
+falls under **high risk** in Annex III with its full regime. In addition, art. 50.3 obliges the
+deployer of an **emotion recognition or biometric categorisation** system to
+*"inform the natural persons exposed thereto of the operation of the system"*. **Timetable and
+nuances: `ai-governance-standards` §3.3, which already has them verified against the OJEU including the
+Digital Omnibus.** Derived engineering rule: **when identity is not the objective, do not
+capture it** — detecting presence, counting or measuring occupancy is done without recognising anyone, and choosing the
+variant that does not identify removes the whole problem instead of managing it.
 
-## 6. Evaluación, despliegue y deriva
+## 6. Evaluation, deployment and drift
 
-**Evaluación**:
+**Evaluation**:
 
-- **IoU** define qué cuenta como acierto; el umbral es una decisión de producto, no un valor por
-  defecto. **mAP** promedia precisión media sobre clases y sobre umbrales de IoU.
-- **mAP oculta la clase que te importa.** Un mAP global excelente convive con un 0,2 de AP en la
-  clase de defecto crítico si esa clase es minoritaria. **Reporta siempre AP por clase**, y fija el
-  criterio de aceptación sobre la clase que decide el negocio, no sobre el promedio.
-- **Matriz de confusión por clase** con los fondos incluidos: separa "no lo vio" de "lo vio y lo
-  llamó otra cosa". Son fallos con arreglos distintos (más datos vs. mejor guía de etiquetado).
-- **Curva precisión-recall completa** y elección explícita del punto de operación según el coste
-  asimétrico: en inspección, un falso negativo que llega al cliente no vale lo mismo que un falso
-  positivo que solo cuesta una revisión.
-- **Evaluar en el dominio de despliegue, no en el conjunto público.** El conjunto de prueba se
-  captura en la línea, la tienda o la calle donde va a correr, se congela y **no se toca**. Una
-  cifra de *benchmark* público es una señal de capacidad de la arquitectura, jamás una predicción
-  de tu rendimiento.
-- **Partición por grupo, no aleatoria**: fotogramas del mismo vídeo, imágenes del mismo lote, de la
-  misma pieza o de la misma persona van **enteros** al mismo lado. Partir al azar fotogramas
-  consecutivos es fuga y produce métricas de fantasía (`classical-ml-standards`).
+- **IoU** defines what counts as a hit; the threshold is a product decision, not a default
+  value. **mAP** averages average precision over classes and over IoU thresholds.
+- **mAP hides the class you care about.** An excellent global mAP coexists with 0.2 AP on the
+  critical defect class if that class is a minority. **Always report per-class AP**, and set the
+  acceptance criteria on the class that decides the business, not on the average.
+- **Per-class confusion matrix** with backgrounds included: it separates "did not see it" from "saw it and
+  called it something else". They are failures with different fixes (more data vs. a better labelling guide).
+- **Full precision-recall curve** and an explicit choice of operating point according to the asymmetric
+  cost: in inspection, a false negative that reaches the customer is not worth the same as a false
+  positive that only costs a re-check.
+- **Evaluate in the deployment domain, not on the public dataset.** The test set is
+  captured on the line, in the shop or on the street where it is going to run, is frozen and **is
+  not touched**. A public *benchmark* figure is a signal of the architecture's capability, never a prediction
+  of your performance.
+- **Split by group, not at random**: frames from the same video, images from the same batch, from the
+  same part or from the same person go **whole** to the same side. Splitting consecutive frames
+  at random is leakage and produces fantasy metrics (`classical-ml-standards`).
 
-**Despliegue**:
+**Deployment**:
 
-- **Presupuesto de fotograma explícito** antes de elegir modelo: FPS objetivo, resolución de
-  entrada, número de cámaras por dispositivo y latencia extremo a extremo (captura → preproceso →
-  inferencia → posproceso → acción). **El NMS y el preproceso pueden costar más que la red**;
-  mídelos por separado.
-- **Cuantización y exportación**: exporta a ONNX como base portable y compila al motor del hardware
-  final (TensorRT en NVIDIA, OpenVINO en Intel, LiteRT/NNAPI en Android, Core ML en Apple).
-  **Reevalúa la métrica completa después de cuantizar** —no solo un par de imágenes—: INT8 sin
-  calibración representativa hunde selectivamente las clases raras, que son las que importan (§4).
-- **El preprocesado debe coincidir exactamente entre entrenamiento y producción. Es la fuente
-  número uno de degradación silenciosa** y no da error: da menos precisión. Puntos de fallo
-  reales: orden de canales (BGR de OpenCV vs. RGB de PIL/torchvision), algoritmo de redimensionado
-  e interpolación, *letterbox* con o sin relleno y su color, media y desviación de normalización,
-  rango 0-255 vs. 0-1, EXIF de orientación aplicado o no, y el espacio de color del decodificador
-  de vídeo. **Regla**: el preprocesado se implementa **una vez**, se versiona junto al modelo y se
-  verifica con un test de igualdad numérica entre el pipeline de entrenamiento y el de servicio
-  sobre las mismas imágenes (§7).
+- **Explicit frame budget** before choosing a model: target FPS, input
+  resolution, number of cameras per device and end-to-end latency (capture → preprocess →
+  inference → postprocess → action). **NMS and preprocessing can cost more than the network**;
+  measure them separately.
+- **Quantisation and export**: export to ONNX as a portable base and compile to the final hardware's
+  engine (TensorRT on NVIDIA, OpenVINO on Intel, LiteRT/NNAPI on Android, Core ML on Apple).
+  **Re-evaluate the full metric after quantising** —not just a couple of images—: INT8 without
+  representative calibration selectively sinks the rare classes, which are the ones that matter (§4).
+- **Preprocessing must match exactly between training and production. It is the number
+  one source of silent degradation** and it raises no error: it just gives lower accuracy. Real
+  failure points: channel order (OpenCV's BGR vs. PIL/torchvision's RGB), resize algorithm
+  and interpolation, *letterbox* with or without padding and its colour, normalisation mean and standard deviation,
+  0-255 vs. 0-1 range, EXIF orientation applied or not, and the colour space of the video
+  decoder. **Rule**: preprocessing is implemented **once**, versioned alongside the model and
+  verified with a numerical equality test between the training pipeline and the serving one
+  on the same images (§7).
 
-**Deriva** (detección aquí, gobierno en `mlops-standards`): en visión la deriva casi nunca es
-"cambió el mundo", es **cambió el sensor**. Disparadores conocidos: sustitución de cámara o de
-lente, actualización de firmware que altera el balance de blancos o la compresión, cambio de
-iluminaria, suciedad o condensación en el óptica, reposicionamiento del montaje, cambio de estación
-o de turno, y cambio de formato del envase o de la pieza. Vigila **estadísticos de la imagen**
-(brillo, contraste, nitidez, histograma por canal) y **la distribución de las salidas** (confianza
-media, número de detecciones por fotograma) — se degradan antes de que nadie reporte un fallo.
-**Cualquier cambio físico en la instalación dispara reevaluación**, y eso se pacta con el
-responsable de mantenimiento, no se descubre después.
+**Drift** (detection here, governance in `mlops-standards`): in vision, drift is almost never
+"the world changed", it is **the sensor changed**. Known triggers: camera or lens replacement,
+a firmware update that alters white balance or compression, a change of light fittings, dirt
+or condensation on the optics, repositioning of the mount, a change of season
+or shift, and a change in the packaging or part format. Watch **image statistics**
+(brightness, contrast, sharpness, per-channel histogram) and **the distribution of the outputs** (mean
+confidence, number of detections per frame) — they degrade before anyone reports a failure.
+**Any physical change in the installation triggers re-evaluation**, and that is agreed with the
+maintenance lead, not discovered afterwards.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-Mantenimiento: fija el **motor de inferencia** (ONNX Runtime, TensorRT, OpenVINO) como dependencia
-versionada y prueba la migración con el conjunto congelado antes de subir versión. Comprueba la
-**actividad real** del proyecto antes de casarte con él: a ago-2026, MMDetection no publica versión
-etiquetada desde ene-2024 y Detectron2 desde 2021 — usables, pero sin soporte que esperar.
+Maintenance: pin the **inference engine** (ONNX Runtime, TensorRT, OpenVINO) as a versioned
+dependency and test the migration with the frozen dataset before bumping the version. Check the
+**real activity** of a project before marrying it: as of Aug 2026, MMDetection has published no tagged
+release since Jan 2024 and Detectron2 since 2021 — usable, but with no support to expect.
 
-- ❌ **PROHIBIDO** usar un modelo AGPL (Ultralytics y derivados, YOLOv10) en producto cerrado, SaaS
-  o herramienta interna sin licencia comercial escrita.
-- ❌ **PROHIBIDO** desplegar pesos sin haber leído su fichero de licencia **en crudo** y comprobado
-  que no es una licencia propia del proveedor con restricciones de uso.
-- ❌ **PROHIBIDO** entrenar o desplegar con un dataset "solo investigación" en un producto comercial.
-- ❌ **PROHIBIDO** empezar a etiquetar sin guía escrita y sin medir el acuerdo entre anotadores.
-- ❌ **PROHIBIDO** reportar solo mAP global: sin AP por clase y matriz de confusión, la evaluación
-  no está hecha.
-- ❌ **PROHIBIDO** evaluar en un conjunto público y desplegar en otro dominio como si midiera lo
-  mismo.
-- ❌ **PROHIBIDO** partir aleatoriamente fotogramas de un mismo vídeo o imágenes de una misma pieza
-  entre entrenamiento y prueba.
-- ❌ **PROHIBIDO** aplicar aumento de datos que invalida la etiqueta (volteo en texto/lateralidad,
-  color cuando el color es la clase) o aumento de mezcla en validación.
-- ❌ **PROHIBIDO** dos implementaciones distintas del preprocesado, una para entrenar y otra para
-  servir. Una sola, versionada con el modelo y con test de igualdad numérica.
-- ❌ **PROHIBIDO** dar por buena una exportación o una cuantización sin reevaluar la métrica
-  completa sobre el conjunto congelado.
-- ❌ **PROHIBIDO** ajustar el umbral de confianza mirando el conjunto de prueba.
-- ❌ **PROHIBIDO** capturar o inferir identidad biométrica cuando la tarea no la necesita.
-- ❌ **PROHIBIDO** arrancar un proyecto de reconocimiento facial, categorización biométrica o
-  inferencia de emociones sin clasificación de riesgo previa y base jurídica documentada (§5).
-- ❌ **PROHIBIDO** almacenar imágenes de personas sin política de retención y borrado.
-- ❌ **PROHIBIDO** cambiar cámara, lente, iluminación o montaje sin reevaluar el modelo.
+- ❌ **FORBIDDEN** to use an AGPL model (Ultralytics and derivatives, YOLOv10) in a closed product, SaaS
+  or internal tool without a written commercial licence.
+- ❌ **FORBIDDEN** to deploy weights without having read their licence file **in raw** and checked
+  that it is not a vendor-proprietary licence with usage restrictions.
+- ❌ **FORBIDDEN** to train or deploy with a "research only" dataset in a commercial product.
+- ❌ **FORBIDDEN** to start labelling without a written guide and without measuring inter-annotator agreement.
+- ❌ **FORBIDDEN** to report global mAP only: without per-class AP and a confusion matrix, the evaluation
+  has not been done.
+- ❌ **FORBIDDEN** to evaluate on a public dataset and deploy in another domain as if it measured the
+  same thing.
+- ❌ **FORBIDDEN** to randomly split frames from the same video or images of the same part
+  between training and test.
+- ❌ **FORBIDDEN** to apply augmentation that invalidates the label (flipping with text/handedness,
+  colour when colour is the class) or mixing augmentation in validation.
+- ❌ **FORBIDDEN** to have two different implementations of the preprocessing, one for training and one for
+  serving. One only, versioned with the model and with a numerical equality test.
+- ❌ **FORBIDDEN** to accept an export or a quantisation without re-evaluating the full metric
+  on the frozen dataset.
+- ❌ **FORBIDDEN** to tune the confidence threshold by looking at the test set.
+- ❌ **FORBIDDEN** to capture or infer biometric identity when the task does not need it.
+- ❌ **FORBIDDEN** to start a facial recognition, biometric categorisation or
+  emotion inference project without a prior risk classification and a documented legal basis (§5).
+- ❌ **FORBIDDEN** to store images of people without a retention and deletion policy.
+- ❌ **FORBIDDEN** to change camera, lens, lighting or mounting without re-evaluating the model.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-1. **Licencia de los pesos, versión por versión y proveedor por proveedor** —el mismo nombre de
-   modelo cambia de licencia entre encarnaciones—, leyendo `LICENSE`/`LICENSE.md`/`COPYING` **en
-   crudo** en la rama correcta y la ficha del modelo aparte: **son documentos distintos**.
-2. Estado y términos de las **licencias comerciales de reventa** para modelos AGPL: qué modelos
-   cubren, con qué alcance y hasta cuándo.
-3. **Licencia y términos de uso de cada dataset** —imágenes y anotaciones por separado— y de los
-   pesos preentrenados sobre él.
-4. **Mantenimiento real** de marcos y herramientas de anotación (última versión etiquetada, ritmo
-   de *commits*, CVEs abiertas) antes de fijarlos.
-5. Versión y soporte de hardware de **ONNX / ONNX Runtime / TensorRT / OpenVINO / LiteRT / Core ML**
-   y su matriz de compatibilidad con el modelo que exportas.
-6. **AI Act**: texto vigente del art. 5 y del art. 50, calendario y modificaciones del *Digital
-   Omnibus* — contrástalo con `ai-governance-standards` §3.3 y con el DOUE.
-7. **Hueco declarado**: este documento **no fija ninguna cifra de exactitud, mAP, FPS ni latencia**.
-   No se han verificado cifras de *benchmark* con sus condiciones de medida (resolución, hardware,
-   precisión, tamaño de lote, si incluye NMS y preproceso), y **sin esas condiciones una cifra no
-   significa nada**. Si necesitas comparar, mide tú en tu hardware con tu conjunto congelado.
+1. **Licence of the weights, version by version and vendor by vendor** —the same model
+   name changes licence between incarnations—, reading `LICENSE`/`LICENSE.md`/`COPYING` **in
+   raw** on the right branch and the model card separately: **they are different documents**.
+2. Status and terms of the **commercial resale licences** for AGPL models: which models
+   they cover, with what scope and until when.
+3. **Licence and terms of use of every dataset** —images and annotations separately— and of the
+   weights pretrained on it.
+4. **Real maintenance** of frameworks and annotation tools (last tagged release, commit
+   tempo, open CVEs) before pinning them.
+5. Version and hardware support of **ONNX / ONNX Runtime / TensorRT / OpenVINO / LiteRT / Core ML**
+   and their compatibility matrix with the model you are exporting.
+6. **AI Act**: current text of art. 5 and art. 50, timetable and amendments from the *Digital
+   Omnibus* — cross-check it with `ai-governance-standards` §3.3 and with the OJEU.
+7. **Declared gap**: this document **sets no accuracy, mAP, FPS or latency figure whatsoever**.
+   No *benchmark* figures have been verified together with their measurement conditions (resolution, hardware,
+   precision, batch size, whether it includes NMS and preprocessing), and **without those conditions a figure
+   means nothing**. If you need to compare, measure it yourself on your hardware with your frozen dataset.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

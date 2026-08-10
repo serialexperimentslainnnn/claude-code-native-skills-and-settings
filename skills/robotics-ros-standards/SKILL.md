@@ -3,419 +3,419 @@ name: robotics-ros-standards
 description: Robotics with ROS 2, from workspace layout to machine safety. Use when working with package.xml and CMakeLists.txt using ament_cmake or ament_python, colcon build/test with --symlink-install and --packages-select, a src/ workspace and install/setup.bash overlay, rclcpp and rclpy nodes, lifecycle nodes and executors and callback groups, .msg/.srv/.action interfaces and rosidl generation, ros2 topic/node/param/service/bag/doctor CLI, launch.py and launch.xml files with parameter YAML, ROS_DOMAIN_ID and RMW_IMPLEMENTATION, DDS middleware (Fast DDS, Cyclone DDS, Connext) or rmw_zenoh, QoS reliability durability history and deadline mismatches where messages silently never arrive, tf2 transform trees and static_transform_publisher and TF_OLD_DATA or extrapolation errors, URDF and xacro and robot_state_publisher, Gazebo (Harmonic, Ionic, Jetty, Ignition or Gazebo Classic) and ros_gz_bridge, Nav2 behavior trees and costmaps, MoveIt 2 planning, ros2_control hardware interfaces and controller_manager, rosbag2 recording, real-time constraints with PREEMPT_RT and CPU isolation, SROS2 security enclaves and keystore, or ISO 10218 and ISO/TS 15066 machine safety obligations for an industrial or collaborative robot.
 ---
 
-# Estándares de robótica con ROS 2
+# ROS 2 robotics standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Fija el criterio de ingeniería sobre **construir y operar un robot con ROS 2**: cómo se estructura el
-espacio de trabajo, cómo se comunican los nodos y por qué a veces no lo hacen, qué exige el tiempo
-real, qué se simula y con qué, cómo se asegura una red donde el tráfico mueve masa, y qué normas de
-seguridad de máquina aplican antes de que el brazo se mueva con alguien delante.
+Sets the engineering criteria for **building and operating a robot with ROS 2**: how the workspace
+is structured, how nodes communicate and why sometimes they do not, what real time demands, what
+gets simulated and with what, how to secure a network where the traffic moves mass, and which
+machine safety standards apply before the arm moves with someone standing in front of it.
 
-**Dato duro que va primero: ROS 1 está muerto.** Verbatim de REP-3 (índice oficial de distribuciones
-de ROS): **«Noetic Ninjemys (May 2020 - May 2025)»**. Noetic fue la **última** distribución de ROS 1
-y su soporte terminó en **mayo de 2025**; no hay parches, no hay paquetes binarios nuevos, no hay
-correcciones de seguridad. **Un proyecto que arranca hoy sobre ROS 1 arranca sin mantenimiento y sin
-salida**, y uno que ya está sobre ROS 1 tiene una migración pendiente, no una decisión pendiente.
-`ros1_bridge` sirve para migrar por partes, no para quedarse.
+**Hard fact that comes first: ROS 1 is dead.** Verbatim from REP-3 (the official index of ROS
+distributions): **«Noetic Ninjemys (May 2020 - May 2025)»**. Noetic was the **last** ROS 1
+distribution and its support ended in **May 2025**; there are no patches, no new binary packages, no
+security fixes. **A project starting today on ROS 1 starts unmaintained and with no way out**, and
+one already on ROS 1 has a pending migration, not a pending decision.
+`ros1_bridge` is for migrating piece by piece, not for staying put.
 
-**Segundo eje: en ROS 2 el middleware es parte del diseño, no un detalle.** ROS 2 no transporta
-mensajes por sí mismo: delega en DDS (o en Zenoh) a través de una capa RMW. De ahí sale la patología
-número uno del dominio —**"publico y el otro nodo no recibe nada, y no hay ningún error"**— que casi
-nunca es un bug: es **QoS incompatible**, o un `ROS_DOMAIN_ID` distinto, o multidifusión bloqueada
-por la red. **El silencio es el modo de fallo por defecto de este sistema**, y por eso la QoS y el
-descubrimiento se diseñan y se documentan como cualquier otro contrato.
+**Second axis: in ROS 2 the middleware is part of the design, not a detail.** ROS 2 does not
+transport messages by itself: it delegates to DDS (or to Zenoh) through an RMW layer. That is where
+the domain's number one pathology comes from —**"I publish and the other node receives nothing, and
+there is no error at all"**— which is almost never a bug: it is **incompatible QoS**, or a different
+`ROS_DOMAIN_ID`, or multicast blocked by the network. **Silence is this system's default failure
+mode**, and that is why QoS and discovery are designed and documented like any other contract.
 
-**Tercer eje: aquí un fallo mueve masa.** Un desbordamiento en una web devuelve un 500; en un brazo
-de 30 kg a 2 m/s es una lesión. Eso cambia el listón de todo lo demás: seguridad de red, control de
-cambios, pruebas antes de tocar hardware y normativa de seguridad de máquina (§5, §6).
+**Third axis: here a failure moves mass.** An overflow on a website returns a 500; on a 30 kg arm at
+2 m/s it is an injury. That raises the bar for everything else: network security, change control,
+testing before touching hardware and machine safety regulation (§5, §6).
 
-Triggers: `package.xml`, `CMakeLists.txt` con `ament_cmake`, `setup.py` con `ament_python`,
-`colcon build`, `install/setup.bash`, `src/` con múltiples paquetes, `rclcpp::Node`,
+Triggers: `package.xml`, `CMakeLists.txt` with `ament_cmake`, `setup.py` with `ament_python`,
+`colcon build`, `install/setup.bash`, `src/` with multiple packages, `rclcpp::Node`,
 `rclpy.node.Node`, `create_publisher`/`create_subscription`, `.msg`/`.srv`/`.action`,
-`ros2 topic echo`, `ros2 doctor`, `ros2 bag record`, `*.launch.py`, `ros__parameters` en YAML,
+`ros2 topic echo`, `ros2 doctor`, `ros2 bag record`, `*.launch.py`, `ros__parameters` in YAML,
 `ROS_DOMAIN_ID`, `RMW_IMPLEMENTATION`, `rmw_fastrtps_cpp`, `rmw_cyclonedds_cpp`, `rmw_zenoh_cpp`,
 `tf2_ros`, `TransformListener`, `static_transform_publisher`, "extrapolation into the future",
 `urdf`/`xacro`, `robot_state_publisher`, `ros_gz_bridge`, `controller_manager`, `nav2_bringup`,
-`move_group`, `sros2`, `--enclave`, y los síntomas: "el tópico está pero no llega nada", "va bien en
-simulación y mal en el robot", "se cae la comunicación por wifi", "TF_OLD_DATA".
+`move_group`, `sros2`, `--enclave`, and the symptoms: "the topic is there but nothing arrives", "it
+works in simulation and fails on the robot", "communication drops over wifi", "TF_OLD_DATA".
 
-**No aplica**: ver `embedded-iot-standards` (**el microcontrolador y el firmware son suyos, sin
-excepción**: MCU, arranque, particionado, watchdog, energía, actualización OTA del dispositivo,
-identidad de hardware. **Frontera operativa**: si el código corre en un MCU sin sistema operativo
-completo —incluido `micro-ROS` sobre un MCU—, **el firmware es suyo y aquí solo queda el contrato de
-mensajes y la QoS del enlace**; si corre en un SBC/PC con Linux y `rclcpp`/`rclpy`, es de aquí),
-`ot-ics-security-standards` (**la planta industrial es suya, sin excepción**: modelo Purdue/ISA-95,
-zonas y conductos de IEC 62443, PLC/DCS/SCADA/SIS, protocolos de campo, monitorización pasiva,
-ventana de parada. **Frontera**: un robot en una celda de producción **se diseña bajo esta skill y
-se gobierna bajo la suya** — la segmentación, la política de acceso remoto del fabricante y el
-gobierno del riesgo de proceso son de allí; el nodo, la QoS, TF y el control, de aquí),
-`computer-vision-standards` (**percepción: SLAM, detección, segmentación, calibración de cámara,
-etiquetado y evaluación son suyos**; aquí solo **consumir** el resultado en un tópico y su
-temporización), `deep-learning-standards` y `model-finetuning-standards` (entrenar redes;
-aprendizaje por refuerzo y política aprendida se diseñan allí y se **despliegan** con las reglas de
-aquí), `local-inference-standards` (servir el modelo en el robot: motor, cuantización, memoria),
-`gpu-computing-standards` (la GPU embebida como recurso: driver, reparto, toolchain),
-`edge-computing-standards` (**el nodo de borde y la flota como sistema distribuido son suyos**:
-orquestación remota, sincronización, despliegue sobre muchos aparatos; **aquí el robot como
-sistema**), `linux-administration-standards` y `linux-hardening-standards` (el sistema operativo, su
-hardening y `systemd`; **aquí solo lo específico**: `PREEMPT_RT`, aislamiento de CPU y prioridades),
-`networking-standards` y `wireless-standards` (diseño de red, VLAN, y **el wifi como medio**: la
-itinerancia y la pérdida de paquetes son suyas; aquí sus consecuencias en QoS y en descubrimiento),
-`cpp-standards` y `c-standards` (el lenguaje: UB, RAII, sanitizers, MISRA/CERT), `python-standards`
-(el Python fuera de `ament_python`), `cicd-standards` (pipeline y gates), `observability-standards`
-(pipeline OTel y backend; aquí `rosbag2`, `/rosout` y los diagnósticos), `mlops-standards` (ciclo de
-vida del modelo), `game-development-standards` y `xr-standards` (**lote 22**: motor de juego,
-presupuesto de fotograma y teleoperación inmersiva — un visor para pilotar un robot es un cliente,
-**el robot sigue siendo de aquí**), `functional-safety` como disciplina formal (**no existe en el
-catálogo**: esta skill fija el criterio de ingeniería y las normas aplicables, **no sustituye a un
-evaluador de seguridad funcional**).
+**Not applicable**: see `embedded-iot-standards` (**the microcontroller and the firmware are theirs,
+without exception**: MCU, boot, partitioning, watchdog, power, device OTA update, hardware identity.
+**Operational boundary**: if the code runs on an MCU without a full operating system —including
+`micro-ROS` on an MCU—, **the firmware is theirs and all that remains here is the message contract
+and the link QoS**; if it runs on an SBC/PC with Linux and `rclcpp`/`rclpy`, it belongs here),
+`ot-ics-security-standards` (**the industrial plant is theirs, without exception**: Purdue/ISA-95
+model, IEC 62443 zones and conduits, PLC/DCS/SCADA/SIS, fieldbus protocols, passive monitoring,
+shutdown window. **Boundary**: a robot in a production cell **is designed under this skill and
+governed under theirs** — segmentation, the vendor's remote access policy and process risk
+governance are theirs; the node, QoS, TF and control are ours),
+`computer-vision-standards` (**perception: SLAM, detection, segmentation, camera calibration,
+labelling and evaluation are theirs**; here only **consuming** the result on a topic and its
+timing), `deep-learning-standards` and `model-finetuning-standards` (training networks;
+reinforcement learning and learned policy are designed there and **deployed** with the rules from
+here), `local-inference-standards` (serving the model on the robot: engine, quantisation, memory),
+`gpu-computing-standards` (the embedded GPU as a resource: driver, sharing, toolchain),
+`edge-computing-standards` (**the edge node and the fleet as a distributed system are theirs**:
+remote orchestration, synchronisation, deployment across many devices; **here the robot as a
+system**), `linux-administration-standards` and `linux-hardening-standards` (the operating system,
+its hardening and `systemd`; **here only the specifics**: `PREEMPT_RT`, CPU isolation and
+priorities), `networking-standards` and `wireless-standards` (network design, VLANs, and **wifi as a
+medium**: roaming and packet loss are theirs; here their consequences on QoS and discovery),
+`cpp-standards` and `c-standards` (the language: UB, RAII, sanitizers, MISRA/CERT), `python-standards`
+(Python outside `ament_python`), `cicd-standards` (pipeline and gates), `observability-standards`
+(OTel pipeline and backend; here `rosbag2`, `/rosout` and diagnostics), `mlops-standards` (model
+lifecycle), `game-development-standards` and `xr-standards` (**batch 22**: game engine,
+frame budget and immersive teleoperation — a headset for piloting a robot is a client,
+**the robot still belongs here**), `functional-safety` as a formal discipline (**does not exist in
+the catalogue**: this skill sets the engineering criteria and the applicable standards, **it does
+not replace a functional safety assessor**).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la distribución vigente, su EOL y el estado de las normas por web antes de fijarlas en un
-> proyecto real (§8).
+> Verify the current distribution, its EOL and the status of the standards on the web before pinning
+> them in a real project (§8).
 
-| Decisión | Por defecto | Alternativa justificable | Motivo |
+| Decision | Default | Justifiable alternative | Reason |
 |---|---|---|---|
-| Versión de ROS | **ROS 2 LTS** | — | ROS 1 sin soporte desde may-2025 |
-| Distribución | **Lyrical Luth (LTS, EOL may-2031)** | Jazzy (EOL may-2029) si el ecosistema no ha migrado | Vida útil del robot |
-| Distribución no-LTS | **No en producto** | Prototipo y I+D | 1,5 años de soporte |
-| RMW | **El por defecto de la distro** (`rmw_fastrtps_cpp`) | Cyclone DDS; `rmw_zenoh_cpp` con enlace malo o WAN | Soporte Tier 1 y paquetes probados |
-| Build | **`colcon` + `ament_cmake`/`ament_python`** | — | Es la cadena soportada |
-| Lenguaje de nodo | **C++ (`rclcpp`)** en el lazo de control; Python (`rclpy`) en orquestación y herramientas | — | GIL y latencia no determinista |
-| Nodos con estado | **Lifecycle nodes** (`rclcpp_lifecycle`) | Nodo simple en utilidades | Arranque y parada gobernables |
-| Simulación | **Gazebo (Jetty LTS o Harmonic LTS)** | Isaac Sim / Webots / MuJoCo por caso | Integración `ros_gz` |
-| Control | **`ros2_control`** | Controlador propio con ADR | Interfaces de hardware reutilizables |
-| Navegación / manipulación | **Nav2** / **MoveIt 2** | Propio solo con requisito imposible | Coste de reimplementar |
-| Tiempo real | `PREEMPT_RT` + aislamiento de CPU **para el lazo**, no para todo | Lazo en MCU/FPGA aparte | ROS 2 no es tiempo real duro §6 |
-| Seguridad de red | **SROS2 activado desde el diseño** | Aislamiento físico documentado | DDS va en claro por defecto §5 |
+| ROS version | **ROS 2 LTS** | — | ROS 1 unsupported since May 2025 |
+| Distribution | **Lyrical Luth (LTS, EOL May 2031)** | Jazzy (EOL May 2029) if the ecosystem has not migrated | Robot service life |
+| Non-LTS distribution | **Not in a product** | Prototype and R&D | 1.5 years of support |
+| RMW | **The distro default** (`rmw_fastrtps_cpp`) | Cyclone DDS; `rmw_zenoh_cpp` on a bad link or WAN | Tier 1 support and tested packages |
+| Build | **`colcon` + `ament_cmake`/`ament_python`** | — | It is the supported toolchain |
+| Node language | **C++ (`rclcpp`)** in the control loop; Python (`rclpy`) in orchestration and tooling | — | GIL and non-deterministic latency |
+| Stateful nodes | **Lifecycle nodes** (`rclcpp_lifecycle`) | Plain node in utilities | Governable startup and shutdown |
+| Simulation | **Gazebo (Jetty LTS or Harmonic LTS)** | Isaac Sim / Webots / MuJoCo case by case | `ros_gz` integration |
+| Control | **`ros2_control`** | Own controller with an ADR | Reusable hardware interfaces |
+| Navigation / manipulation | **Nav2** / **MoveIt 2** | Own only with an impossible requirement | Cost of reimplementing |
+| Real time | `PREEMPT_RT` + CPU isolation **for the loop**, not for everything | Loop on a separate MCU/FPGA | ROS 2 is not hard real time §6 |
+| Network security | **SROS2 enabled from the design stage** | Documented physical isolation | DDS runs in the clear by default §5 |
 
-**Calendario verificado de ROS 2** (fuente: `Releases.rst` de `ros2_documentation`, leído en crudo,
-ago-2026):
+**Verified ROS 2 calendar** (source: `Releases.rst` from `ros2_documentation`, read raw,
+Aug 2026):
 
-| Distro | Publicación | EOL | Tipo |
+| Distro | Release | EOL | Type |
 |---|---|---|---|
-| **Lyrical Luth** | 22-may-2026 | **may-2031** | **LTS** |
-| Kilted Kaiju | 23-may-2025 | dic-2026 | no-LTS |
-| **Jazzy Jalisco** | 23-may-2024 | **may-2029** | **LTS** |
-| Iron Irwini | 23-may-2023 | 4-dic-2024 | EOL |
-| **Humble Hawksbill** | 23-may-2022 | **may-2027** | LTS, **caduca en 9 meses** |
+| **Lyrical Luth** | 22 May 2026 | **May 2031** | **LTS** |
+| Kilted Kaiju | 23 May 2025 | Dec 2026 | non-LTS |
+| **Jazzy Jalisco** | 23 May 2024 | **May 2029** | **LTS** |
+| Iron Irwini | 23 May 2023 | 4 Dec 2024 | EOL |
+| **Humble Hawksbill** | 23 May 2022 | **May 2027** | LTS, **expires in 9 months** |
 
-Plataforma y lenguajes de Lyrical, verificados en su página de plataformas soportadas: **Ubuntu
-Resolute (26.04) Tier 1** en amd64 y arm64 (Ubuntu Noble en Tier 3, con EOL adelantado a
-**2029-06-01**), **C++20**, **C17**, **Python 3.12–3.14**, **Gazebo Jetty** como dependencia, y
-—verbatim— *«The default middleware in ROS Lyrical is rmw_fastrtps_cpp»*. `rmw_zenoh_cpp` entró
-como **Tier 1** ya en Kilted (REP-2000). REP-2000 fija además el ritmo: *«New ROS 2 releases will be
-published in a time based fashion every 12 months»*, LTS **5 años**, no-LTS **1,5 años**.
+Lyrical's platform and languages, verified on its supported platforms page: **Ubuntu
+Resolute (26.04) Tier 1** on amd64 and arm64 (Ubuntu Noble on Tier 3, with EOL brought forward to
+**2029-06-01**), **C++20**, **C17**, **Python 3.12–3.14**, **Gazebo Jetty** as a dependency, and
+—verbatim— *«The default middleware in ROS Lyrical is rmw_fastrtps_cpp»*. `rmw_zenoh_cpp` entered
+as **Tier 1** already in Kilted (REP-2000). REP-2000 also sets the rhythm: *«New ROS 2 releases will be
+published in a time based fashion every 12 months»*, LTS **5 years**, non-LTS **1.5 years**.
 
-**Gazebo — el lío de nombres, aclarado con fechas verificadas.** Hubo tres cosas distintas llamadas
-casi igual: **Gazebo Classic** (`gazebo11`, el de siempre), **Ignition Gazebo** (la reescritura) y
-**Gazebo** (el nombre actual de la reescritura, tras devolverle el nombre en 2022; las versiones se
-nombran por letra: Fortress, Garden, Harmonic, Ionic, Jetty…). Estado verificado:
+**Gazebo — the naming mess, cleared up with verified dates.** There were three different things
+named almost the same: **Gazebo Classic** (`gazebo11`, the old one), **Ignition Gazebo** (the rewrite)
+and **Gazebo** (the current name of the rewrite, after the name was given back in 2022; versions are
+named by letter: Fortress, Garden, Harmonic, Ionic, Jetty…). Verified status:
 
-- **Gazebo Classic**: verbatim de `classic.gazebosim.org` — *«This version of Gazebo, now called
-  Gazebo classic, reaches end-of-life in January 2025»*, con fecha exacta *«end-of-life on January
-  29, 2025»*. **Muerto. No se empieza nada nuevo con él y lo existente se migra.**
-- **Gazebo (nuevo)**, según la tabla oficial de releases: **Jetty** sep-2025 → **may-2031 (LTS)**;
-  **Ionic** sep-2024 → dic-2026; **Harmonic** sep-2023 → **may-2029 (LTS)**; **Fortress** sep-2021 →
-  may-2027 (LTS); **Garden** EOL nov-2024.
-- Regla práctica: **elegir la pareja distro-ROS ↔ versión de Gazebo que el propio REP/plataforma
-  declara** (Lyrical→Jetty, Jazzy→Harmonic) y no mezclar. El puente es `ros_gz`.
+- **Gazebo Classic**: verbatim from `classic.gazebosim.org` — *«This version of Gazebo, now called
+  Gazebo classic, reaches end-of-life in January 2025»*, with the exact date *«end-of-life on January
+  29, 2025»*. **Dead. Nothing new is started on it and what exists gets migrated.**
+- **Gazebo (new)**, per the official releases table: **Jetty** Sep 2025 → **May 2031 (LTS)**;
+  **Ionic** Sep 2024 → Dec 2026; **Harmonic** Sep 2023 → **May 2029 (LTS)**; **Fortress** Sep 2021 →
+  May 2027 (LTS); **Garden** EOL Nov 2024.
+- Practical rule: **pick the ROS distro ↔ Gazebo version pairing that the REP/platform itself
+  declares** (Lyrical→Jetty, Jazzy→Harmonic) and do not mix. The bridge is `ros_gz`.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-**Espacio de trabajo.** Un `src/` con paquetes pequeños y de responsabilidad única; nunca un
-mega-paquete con todo dentro. Separar por naturaleza, porque de eso depende poder reutilizar y poder
-probar:
+**Workspace.** One `src/` with small, single-responsibility packages; never a
+mega-package with everything inside. Separate by nature, because reusability and testability depend
+on it:
 
 ```
 ws/src/
-  mi_robot_msgs/        # SOLO interfaces .msg/.srv/.action  (cambian poco, rompen mucho)
-  mi_robot_description/ # URDF/xacro, mallas, ros2_control tags
-  mi_robot_bringup/     # launch + parámetros YAML por entorno (sim / robot / laboratorio)
-  mi_robot_control/     # nodos de control (C++), sin dependencias de simulación
-  mi_robot_perception/  # nodos que consumen sensores
-  mi_robot_bt/          # árboles de comportamiento / lógica de misión
+  mi_robot_msgs/        # ONLY .msg/.srv/.action interfaces  (change little, break a lot)
+  mi_robot_description/ # URDF/xacro, meshes, ros2_control tags
+  mi_robot_bringup/     # launch + per-environment YAML parameters (sim / robot / lab)
+  mi_robot_control/     # control nodes (C++), with no simulation dependencies
+  mi_robot_perception/  # nodes that consume sensors
+  mi_robot_bt/          # behaviour trees / mission logic
 ```
 
-- **Las interfaces van en su propio paquete**: cualquiera que las use no arrastra tus dependencias, y
-  su versionado es visible. **Cambiar un `.msg` publicado es un cambio incompatible**: se añade
-  campo, no se reordena ni se reinterpreta; si hay que romper, se crea un tipo nuevo y se migra.
-- **`colcon build --symlink-install`** en desarrollo; en CI y en el robot, build limpio. **Un solo
-  *overlay* activo**: encadenar tres `setup.bash` de tres workspaces es la causa clásica de "ejecuta
-  una versión antigua del nodo y no me explico por qué". `ros2 doctor` y `ros2 pkg prefix` antes de
-  culpar al código.
-- **Nada de rutas absolutas ni de `~/ws/...` en el código**: `ament_index` y `$(find-pkg-share ...)`.
+- **Interfaces go in their own package**: anyone using them does not drag in your dependencies, and
+  their versioning is visible. **Changing a published `.msg` is a breaking change**: you add a
+  field, you do not reorder or reinterpret; if you must break, create a new type and migrate.
+- **`colcon build --symlink-install`** in development; in CI and on the robot, a clean build. **A
+  single active *overlay***: chaining three `setup.bash` from three workspaces is the classic cause of
+  "it runs an old version of the node and I cannot explain why". `ros2 doctor` and `ros2 pkg prefix`
+  before blaming the code.
+- **No absolute paths and no `~/ws/...` in the code**: `ament_index` and `$(find-pkg-share ...)`.
 
-**Parámetros y launch.** Todo lo configurable es **parámetro declarado** (con descriptor, rango y
-valor por defecto), cargado desde YAML por entorno, nunca constante escondida ni variable de entorno
-ad hoc. Los `launch` describen composición y nada más: sin lógica de negocio dentro. Para latencia,
-**componer nodos en un mismo proceso** (composición de componentes) evita serialización y copia
-—vale más que cualquier micro-optimización del nodo—.
+**Parameters and launch.** Everything configurable is a **declared parameter** (with descriptor,
+range and default value), loaded from per-environment YAML, never a hidden constant nor an ad hoc
+environment variable. `launch` files describe composition and nothing else: no business logic inside.
+For latency, **composing nodes in the same process** (component composition) avoids serialisation and
+copying —worth more than any micro-optimisation of the node—.
 
-**QoS — el contrato que nadie escribe y todo el mundo rompe.** Verbatim de la documentación oficial:
+**QoS — the contract nobody writes and everybody breaks.** Verbatim from the official documentation:
 *«A connection between a publisher and a subscription is only made if the pair has compatible QoS
-profiles»*, bajo modelo **«Request vs Offered»**: *«Subscriptions request a QoS profile that is the
+profiles»*, under the **«Request vs Offered»** model: *«Subscriptions request a QoS profile that is the
 "minimum quality" that it is willing to accept, and publishers offer a QoS profile that is the
-"maximum quality" that it is able to provide»*. Las dos tablas que explican el 90 % de los
-"mensajes que no llegan":
+"maximum quality" that it is able to provide»*. The two tables that explain 90 % of
+"messages that never arrive":
 
-| Fiabilidad: publicador → suscriptor | ¿Compatible? |
+| Reliability: publisher → subscriber | Compatible? |
 |---|---|
-| Best effort → Best effort | Sí |
+| Best effort → Best effort | Yes |
 | **Best effort → Reliable** | **No** |
-| Reliable → Best effort | Sí |
-| Reliable → Reliable | Sí |
+| Reliable → Best effort | Yes |
+| Reliable → Reliable | Yes |
 
-| Durabilidad: publicador → suscriptor | ¿Compatible? | Resultado |
+| Durability: publisher → subscriber | Compatible? | Result |
 |---|---|---|
-| Volatile → Volatile | Sí | Solo mensajes nuevos |
-| **Volatile → Transient local** | **No** | **Sin comunicación** |
-| Transient local → Volatile | Sí | Solo mensajes nuevos |
-| Transient local → Transient local | Sí | Nuevos y antiguos |
+| Volatile → Volatile | Yes | New messages only |
+| **Volatile → Transient local** | **No** | **No communication** |
+| Transient local → Volatile | Yes | New messages only |
+| Transient local → Transient local | Yes | New and old |
 
-Y el detalle que se paga caro: *«To achieve a "latched" topic that is visible to late subscribers,
-both the publisher and subscriber must agree to use 'Transient Local'»* — el equivalente al *latched*
-de ROS 1 exige **acuerdo en los dos extremos** (mapa, descripción del robot, configuración estática).
-Los valores por defecto, también verbatim: *«By default, publishers and subscriptions in ROS 2 have
+And the detail that gets paid for dearly: *«To achieve a "latched" topic that is visible to late subscribers,
+both the publisher and subscriber must agree to use 'Transient Local'»* — the equivalent of the ROS 1
+*latched* requires **agreement at both ends** (map, robot description, static configuration).
+The defaults, also verbatim: *«By default, publishers and subscriptions in ROS 2 have
 "keep last" for history with a queue size of 10, "reliable" for reliability, "volatile" for
-durability»*; el perfil de **sensor data** usa *best effort* y cola pequeña, y los **servicios** son
-fiables y **volátiles a propósito** —*«otherwise service servers that re-start may receive outdated
-requests»*—. Reglas de la casa:
+durability»*; the **sensor data** profile uses *best effort* and a small queue, and **services** are
+reliable and **volatile on purpose** —*«otherwise service servers that re-start may receive outdated
+requests»*—. House rules:
 
-- **La QoS de cada tópico se declara en la documentación del paquete**, junto al tipo. Es parte de la
-  interfaz.
-- **Sensores de alta frecuencia → sensor data** (best effort, cola corta). **Mapas, TF estático,
-  descripción del robot y estado de configuración → transient local en ambos extremos.** Comandos de
-  actuación → reliable, cola 1 (no interesa un comando viejo).
-- **`deadline` y `liveliness`** no son adorno: son la forma estándar de enterarse de que un nodo dejó
-  de publicar. En un lazo de seguridad, el temporizador de vigilancia va aquí, no en un `if`.
-- Ante "no llega nada": comprobar en este orden **`ROS_DOMAIN_ID` → misma red y multidifusión →
-  `ros2 topic info -v` (perfiles de ambos extremos) → tipo de mensaje → *namespace*/remapeo**.
+- **Each topic's QoS is declared in the package documentation**, next to the type. It is part of the
+  interface.
+- **High-frequency sensors → sensor data** (best effort, short queue). **Maps, static TF, robot
+  description and configuration state → transient local at both ends.** Actuation commands
+  → reliable, queue 1 (an old command is of no interest).
+- **`deadline` and `liveliness`** are not decoration: they are the standard way of finding out that a
+  node stopped publishing. In a safety loop, the watchdog timer goes here, not in an `if`.
+- Faced with "nothing arrives": check in this order **`ROS_DOMAIN_ID` → same network and multicast →
+  `ros2 topic info -v` (profiles at both ends) → message type → *namespace*/remapping**.
 
-**TF2 — el árbol de transformadas.** Reglas que evitan casi todos sus fallos:
+**TF2 — the transform tree.** Rules that avoid almost all of its failures:
 
-- **Un único padre por marco y un solo árbol conectado**: dos publicadores del mismo par
-  padre→hijo es un error de diseño (el clásico: `odom→base_link` publicado por dos nodos).
-- Convención de nombres y jerarquía estándar (`map` → `odom` → `base_link` → sensores; REP-105) y
-  ejes según REP-103 (metros, radianes, x adelante, y izquierda, z arriba). Salirse cuesta
-  integración con todo el ecosistema.
-- **Todo dato lleva marca de tiempo del sensor, no del reloj de recepción.** Los errores de
-  extrapolación y `TF_OLD_DATA` son casi siempre relojes sin sincronizar entre máquinas (NTP/PTP
-  obligatorio en robots multi-computador) o *timestamps* rellenados con `now()`.
-- Transformadas **fijas** con `static_transform_publisher` / `tf2_ros::StaticTransformBroadcaster`
-  (que usan *transient local*), nunca republicadas a 100 Hz.
-- **En simulación, `use_sim_time` a `true` en todos los nodos.** Uno solo con el reloj de pared
-  desincroniza el árbol entero.
+- **A single parent per frame and a single connected tree**: two publishers of the same
+  parent→child pair is a design error (the classic: `odom→base_link` published by two nodes).
+- Standard naming convention and hierarchy (`map` → `odom` → `base_link` → sensors; REP-105) and
+  axes per REP-103 (metres, radians, x forward, y left, z up). Departing from it costs you
+  integration with the whole ecosystem.
+- **Every piece of data carries the sensor's timestamp, not the receiving clock's.** Extrapolation
+  errors and `TF_OLD_DATA` are almost always unsynchronised clocks across machines (NTP/PTP
+  mandatory on multi-computer robots) or *timestamps* filled in with `now()`.
+- **Fixed** transforms with `static_transform_publisher` / `tf2_ros::StaticTransformBroadcaster`
+  (which use *transient local*), never republished at 100 Hz.
+- **In simulation, `use_sim_time` set to `true` on every node.** A single one on the wall clock
+  desynchronises the entire tree.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-- **Pirámide adaptada al robot**: (1) tests unitarios de la lógica **separada del nodo** —extraer el
-  algoritmo a una clase sin `rclcpp` es la decisión de diseño que más test permite—; (2) tests de
-  nodo con `launch_testing` (arranque, parámetros, publicación esperada, QoS declarada); (3)
-  **reproducción de `rosbag2`** grabado del robot real contra la versión nueva, comparando salidas;
-  (4) simulación con escenarios; (5) banco de pruebas con el hardware; (6) robot en su entorno.
-- **`rosbag2` es la herramienta de regresión del dominio**: cada incidente de campo deja un *bag*
-  recortado y un test que lo reproduce. Sin eso, cada fallo se investiga desde cero.
-- **La simulación miente y hay que saber en qué**: fricción, holguras, ruido de sensor, latencia de
-  bus, deriva térmica y tiempos de CPU. Sirve para lógica, integración y casos peligrosos; **no
-  valida tiempos ni tolerancias mecánicas**. "Funciona en Gazebo" no es un criterio de aceptación.
-- **Gates de CI en orden de coste**: formateo y linters de `ament` (`ament_cpplint`,
-  `ament_clang_format`, `ament_flake8`, `ament_mypy`, `ament_copyright`) → build con warnings como
-  error → tests unitarios → `launch_testing` → reproducción de bags de referencia → simulación
-  automatizada → despliegue a banco. **`main` verde o no se toca el robot.**
-- **Análisis dinámico en el nodo de control**: ASan/UBSan/TSan en CI (`cpp-standards`); una condición
-  de carrera en un lazo de control se manifiesta en movimiento.
-- **Determinismo de arranque**: probar el orden de arranque desordenado —nodo que arranca antes que
-  su fuente, TF incompleto, parámetro ausente—. Un sistema que solo funciona si todo arranca en el
-  orden bonito falla en el primer reinicio de campo.
-- **Prueba de red degradada obligatoria** si hay wifi: pérdida de paquetes, latencia y corte total.
-  Comprobar qué hace el robot cuando se queda sin operador: **parar es la respuesta correcta por
-  defecto**.
+- **Pyramid adapted to the robot**: (1) unit tests of the logic **separated from the node** —extracting
+  the algorithm into a class without `rclcpp` is the design decision that enables the most testing—; (2)
+  node tests with `launch_testing` (startup, parameters, expected publication, declared QoS); (3)
+  **replay of a `rosbag2`** recorded from the real robot against the new version, comparing outputs;
+  (4) simulation with scenarios; (5) test bench with the hardware; (6) the robot in its environment.
+- **`rosbag2` is the domain's regression tool**: every field incident leaves a trimmed *bag* and a
+  test that reproduces it. Without that, every failure is investigated from scratch.
+- **Simulation lies and you have to know where**: friction, backlash, sensor noise, bus latency,
+  thermal drift and CPU timings. It is good for logic, integration and dangerous cases; **it does not
+  validate timings or mechanical tolerances**. "It works in Gazebo" is not an acceptance criterion.
+- **CI gates in order of cost**: formatting and `ament` linters (`ament_cpplint`,
+  `ament_clang_format`, `ament_flake8`, `ament_mypy`, `ament_copyright`) → build with warnings as
+  errors → unit tests → `launch_testing` → replay of reference bags → automated simulation
+  → deployment to the bench. **`main` green or the robot is not touched.**
+- **Dynamic analysis in the control node**: ASan/UBSan/TSan in CI (`cpp-standards`); a race
+  condition in a control loop shows up as movement.
+- **Startup determinism**: test out-of-order startup —a node that starts before its source,
+  incomplete TF, a missing parameter—. A system that only works if everything starts in the
+  pretty order fails at the first field restart.
+- **Degraded network test mandatory** if there is wifi: packet loss, latency and total outage.
+  Check what the robot does when it loses its operator: **stopping is the correct default
+  answer**.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-**El hecho fundacional, verbatim de la documentación de diseño oficial de ROS 2
-(`design.ros2.org`, artículo *ROS 2 DDS-Security integration*):**
+**The founding fact, verbatim from the official ROS 2 design documentation
+(`design.ros2.org`, article *ROS 2 DDS-Security integration*):**
 
 > ***«By default, none of the security features of DDS are enabled in ROS 2.»***
 
-Traducido: **sin `sros2` configurado, el tráfico de ROS 2 viaja sin autenticación, sin autorización y
-sin cifrado**. Cualquier máquina con acceso a la red y el mismo `ROS_DOMAIN_ID` puede **descubrir
-todos los tópicos, leerlos, publicar comandos de actuación, cambiar parámetros y llamar servicios**.
-No hay contraseña que romper porque no hay contraseña. **En un robot, eso no es una fuga de datos:
-es control físico del aparato en manos de cualquiera que llegue a la red.**
+Translated: **without `sros2` configured, ROS 2 traffic travels with no authentication, no
+authorisation and no encryption**. Any machine with access to the network and the same
+`ROS_DOMAIN_ID` can **discover every topic, read them, publish actuation commands, change parameters
+and call services**. There is no password to break because there is no password. **On a robot, that
+is not a data leak: it is physical control of the device in the hands of anyone who reaches the network.**
 
-- **Un robot en una red plana es un riesgo de seguridad física**, no de TI. La primera medida es
-  arquitectónica: segmento propio, sin ruta hacia (ni desde) la ofimática, sin wifi de invitados,
-  acceso remoto solo por bastión y con autenticación fuerte. La red y el gobierno de esa zona son de
-  `ot-ics-security-standards` y `networking-standards`; **la obligación de exigirlo es de aquí**.
-- **`ROS_DOMAIN_ID` no es seguridad.** Es un separador de tráfico: cualquiera puede fijarlo. Tampoco
-  lo es "está detrás del NAT" ni "es una VLAN".
-- **SROS2** habilita DDS-Security: CA de identidad y de permisos, certificados X.509 por *enclave*,
-  fichero de gobernanza que —verbatim del mismo documento— *«will encrypt all DDS traffic by
-  default»*, y permisos expresados en términos de ROS (qué nodo puede publicar/suscribirse a qué).
-  **Su coste es real y hay que presupuestarlo**: una PKI que alguien tiene que operar (emisión,
-  distribución, caducidad, **revocación y rotación**), sobrecarga de CPU y de latencia en el cifrado
-  y la firma, complejidad de despliegue y de depuración, y un fallo de configuración que se
-  manifiesta —cómo no— **como silencio**. Se activa **desde el diseño**, no al final: retrofit de
-  seguridad en un sistema de 40 nodos es un proyecto.
-- **Mínimo privilegio real**: un *enclave* por nodo o por grupo funcional, con permisos explícitos de
-  lectura/escritura por tópico. Un único enclave para todo el robot es cifrado sin autorización.
-- **Superficie que no cubre DDS-Security**: interfaces de operador (web, `rosbridge`,
-  `web_video_server`, Foxglove) **expuestas sin autenticación** —son un mando a distancia—; `rosbag2`
-  con datos personales (vídeo del entorno, caras, matrículas: `privacy-engineering-standards`);
-  actualización del software del robot sin firma ni verificación de origen; credenciales de nube en
-  la imagen; y **puertos de depuración y consolas serie** accesibles en la máquina.
-- **Cadena de suministro**: los paquetes de terceros de `rosdistro`, los drivers del fabricante y los
-  modelos descargados son código que corre con permiso de mover el robot. Fijar versiones, revisar
-  licencias (`opensource-licensing-standards`) y no instalar desde fuentes no verificadas.
-- **Registro y trazabilidad**: quién habilitó el modo manual, quién cambió un parámetro de velocidad,
-  quién anuló un límite. En un incidente con lesión, **eso es la prueba**.
+- **A robot on a flat network is a physical security risk**, not an IT one. The first measure is
+  architectural: its own segment, no route to (or from) the office network, no guest wifi, remote
+  access only through a bastion and with strong authentication. The network and governance of that
+  zone belong to `ot-ics-security-standards` and `networking-standards`; **demanding it is our duty**.
+- **`ROS_DOMAIN_ID` is not security.** It is a traffic separator: anyone can set it. Neither is
+  "it is behind NAT" nor "it is a VLAN".
+- **SROS2** enables DDS-Security: identity and permissions CA, X.509 certificates per *enclave*, a
+  governance file that —verbatim from the same document— *«will encrypt all DDS traffic by
+  default»*, and permissions expressed in ROS terms (which node may publish/subscribe to what).
+  **Its cost is real and must be budgeted for**: a PKI someone has to operate (issuance,
+  distribution, expiry, **revocation and rotation**), CPU and latency overhead from encryption
+  and signing, deployment and debugging complexity, and a configuration mistake that shows up
+  —how else— **as silence**. It is enabled **from the design stage**, not at the end: retrofitting
+  security into a 40-node system is a project.
+- **Real least privilege**: one *enclave* per node or per functional group, with explicit read/write
+  permissions per topic. A single enclave for the whole robot is encryption without authorisation.
+- **Surface that DDS-Security does not cover**: operator interfaces (web, `rosbridge`,
+  `web_video_server`, Foxglove) **exposed without authentication** —they are a remote control—;
+  `rosbag2` with personal data (video of the surroundings, faces, number plates:
+  `privacy-engineering-standards`); robot software updates without signing or origin verification;
+  cloud credentials in the image; and **debug ports and serial consoles** reachable on the machine.
+- **Supply chain**: third-party packages from `rosdistro`, the manufacturer's drivers and the
+  downloaded models are code that runs with permission to move the robot. Pin versions, review
+  licences (`opensource-licensing-standards`) and do not install from unverified sources.
+- **Logging and traceability**: who enabled manual mode, who changed a speed parameter,
+  who overrode a limit. In an incident with an injury, **that is the evidence**.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-**Tiempo real: dónde está el límite, dicho sin ambigüedad.** **ROS 2 no es un sistema de tiempo real
-duro por sí solo.** Que use DDS y tenga *executors* configurables no lo convierte en determinista:
-sigue habiendo asignación dinámica de memoria, planificación del sistema operativo, GIL en `rclpy`,
-copias en el transporte, descubrimiento en segundo plano y un núcleo Linux estándar que no garantiza
-latencia. Lo que **sí** se puede construir:
+**Real time: where the limit is, said without ambiguity.** **ROS 2 is not a hard real-time system
+on its own.** That it uses DDS and has configurable *executors* does not make it deterministic:
+there is still dynamic memory allocation, operating system scheduling, the GIL in `rclpy`,
+copies in the transport, background discovery and a standard Linux kernel that does not guarantee
+latency. What you **can** build:
 
-- **Núcleo con `PREEMPT_RT`**: el parche de tiempo real **se fusionó en el núcleo Linux 6.12**
-  (publicado el **17-nov-2024**), tras dos décadas fuera del árbol —verificado en el resumen oficial
-  de la versión—. Deja de ser un parche externo, pero **sigue habiendo que compilarlo/activarlo y,
-  sobre todo, ajustar el sistema entero**.
-- **Aislamiento**: `isolcpus`/`cpuset` para el lazo de control, IRQ fuera de esos núcleos, gobernador
-  de frecuencia fijo, sin ahorro de energía, sin *hyperthreading* compartido, **memoria bloqueada
-  (`mlockall`) y sin asignaciones en el lazo**, prioridades `SCHED_FIFO` bien elegidas.
-- **Medir, no suponer**: `cyclictest` para la latencia del núcleo y medición de *jitter* del lazo en
-  el robot real, durante horas y con carga (percepción, red, disco). **La latencia media no importa:
-  importa el peor caso.**
-- **El límite honesto**: cuando el requisito es de seguridad y de microsegundos —parada de
-  emergencia, lazo de corriente, límite de par—, **eso no vive en ROS 2**. Vive en el controlador del
-  robot, en un MCU/FPGA o en un relé de seguridad certificado, y ROS 2 le habla desde fuera. **Un
-  paro de emergencia implementado como un nodo de ROS 2 es un fallo de diseño de seguridad**, no una
-  optimización pendiente.
+- **Kernel with `PREEMPT_RT`**: the real-time patch **was merged into Linux kernel 6.12**
+  (released on **17 Nov 2024**), after two decades out of tree —verified in the official release
+  summary—. It stops being an external patch, but **you still have to compile/enable it and, above
+  all, tune the entire system**.
+- **Isolation**: `isolcpus`/`cpuset` for the control loop, IRQs off those cores, a fixed frequency
+  governor, no power saving, no shared *hyperthreading*, **locked memory
+  (`mlockall`) and no allocations in the loop**, well-chosen `SCHED_FIFO` priorities.
+- **Measure, do not assume**: `cyclictest` for kernel latency and loop *jitter* measurement on the
+  real robot, over hours and under load (perception, network, disk). **Average latency does not
+  matter: the worst case does.**
+- **The honest limit**: when the requirement is safety-related and measured in microseconds
+  —emergency stop, current loop, torque limit—, **that does not live in ROS 2**. It lives in the
+  robot controller, in an MCU/FPGA or in a certified safety relay, and ROS 2 talks to it from
+  outside. **An emergency stop implemented as a ROS 2 node is a safety design failure**, not a
+  pending optimisation.
 
-**Operabilidad:**
+**Operability:**
 
-- **Diagnósticos** (`diagnostic_updater`/`diagnostic_aggregator`) para cada subsistema, con estado
-  legible por un operador, no solo por un desarrollador. `/rosout` estructurado y con nivel
-  correcto; **nada de `INFO` a 100 Hz** (llena el disco y la CPU).
-- **Métricas**: frecuencia real de cada tópico crítico frente a la esperada, latencia extremo a
-  extremo, tiempo de ciclo del lazo (p99), mensajes perdidos, uso de CPU por nodo, temperatura,
-  batería. Exportar al backend de `observability-standards`.
-- **Grabación permanente en anillo** con `rosbag2` (tamaño acotado, con rotación) para tener el
-  "antes" de cualquier incidente; con política de retención y de datos personales.
-- **Arranque supervisado**: `systemd` con reinicio controlado, dependencias explícitas, y **estado
-  seguro al arrancar** (frenos puestos, potencia de actuadores desactivada hasta habilitación
-  explícita).
-- **Degradación**: pérdida de sensor, de red o de operador → **estado seguro definido**, no
-  "continuar con el último valor conocido". Cada nodo declara qué hace cuando su entrada envejece
-  (para eso está `deadline`).
-- **Actualización de campo**: imagen versionada, despliegue con vuelta atrás probada, y **nunca
-  actualizar con el robot habilitado**. La ventana de mantenimiento se acuerda con quien opera.
+- **Diagnostics** (`diagnostic_updater`/`diagnostic_aggregator`) for every subsystem, with status
+  readable by an operator, not only by a developer. `/rosout` structured and at the
+  right level; **no `INFO` at 100 Hz** (it fills the disk and the CPU).
+- **Metrics**: actual frequency of every critical topic against the expected one, end-to-end
+  latency, loop cycle time (p99), lost messages, CPU usage per node, temperature,
+  battery. Export to the `observability-standards` backend.
+- **Permanent ring recording** with `rosbag2` (bounded size, with rotation) so you have the
+  "before" of any incident; with a retention and personal data policy.
+- **Supervised startup**: `systemd` with controlled restart, explicit dependencies, and a **safe
+  state at boot** (brakes engaged, actuator power disabled until explicit
+  enablement).
+- **Degradation**: loss of a sensor, of the network or of the operator → **a defined safe state**, not
+  "carry on with the last known value". Each node declares what it does when its input ages
+  (that is what `deadline` is for).
+- **Field update**: versioned image, deployment with tested rollback, and **never
+  update with the robot enabled**. The maintenance window is agreed with whoever operates it.
 
-**Seguridad de máquina (normativa) — estado verificado, y es un cambio grande de 2025:**
+**Machine safety (regulation) — verified status, and it is a big change from 2025:**
 
-- **ISO 10218-1:2025** (robots industriales) e **ISO 10218-2:2025** (aplicaciones y celdas) se
-  publicaron en **febrero de 2025** y sustituyen a las versiones de 2011. **ISO/TS 15066 deja de ser
-  una especificación técnica aparte: su contenido —colaboración por limitación de potencia y fuerza
-  (PFL), monitorización de velocidad y separación (SSM), guiado manual (HGC), y los límites de fuerza
-  y presión— se ha incorporado a ISO 10218-2.** La nueva serie introduce además **dos clases de
-  robot** (Clase 1 para robots muy débiles sin riesgo significativo, con requisitos de control
-  reducidos; Clase 2 para el resto), abandona el nivel de prestaciones único PL d/cat. 3 en favor de
-  un **PL por función de seguridad** (con opción de desviarse mediante evaluación de riesgos
-  ampliada), exige una función de **parada normal** distinta de la de emergencia, e incorpora por
-  primera vez **requisitos de ciberseguridad** en tanto afecten a la seguridad.
-- **Terminología**: la nueva serie habla de **"aplicación colaborativa"**, no de "robot
-  colaborativo": lo que se evalúa y se valida es **el uso concreto** —robot + herramienta + pieza +
-  entorno + tarea—, no el aparato. Comprar un "cobot" **no** exime de evaluación de riesgos.
-- **Marco legal en la UE**: el **Reglamento (UE) 2023/1230 de máquinas** sustituye a la Directiva
-  2006/42/CE; verbatim de EUR-Lex: *«It shall apply from 14 January 2027»* y *«Directive 2006/42/EC
-  is repealed with effect from 14 January 2027»*. **Fecha de planificación, no de sorpresa.**
-- **Presunción de conformidad**: la citación de EN ISO 10218-1/-2 en el Diario Oficial de la UE
-  estaba pendiente en el momento de la verificación (con un periodo transitorio de 24 meses
-  solicitado). **Verificar el estado antes de apoyar un expediente técnico en ello (§8).**
-- **Lo que esta skill no hace**: no sustituye la evaluación de riesgos, ni el cálculo de PL/SIL
-  (ISO 13849-1 / IEC 62061), ni al organismo o evaluador correspondiente. Fija que **existe la
-  obligación** y que se planifica desde el principio, no antes de entregar.
+- **ISO 10218-1:2025** (industrial robots) and **ISO 10218-2:2025** (applications and cells) were
+  published in **February 2025** and supersede the 2011 versions. **ISO/TS 15066 ceases to be
+  a separate technical specification: its content —collaboration by power and force limiting
+  (PFL), speed and separation monitoring (SSM), hand guiding (HGC), and the force
+  and pressure limits— has been incorporated into ISO 10218-2.** The new series additionally introduces **two robot
+  classes** (Class 1 for very weak robots with no significant risk, with reduced control
+  requirements; Class 2 for the rest), abandons the single performance level PL d/cat. 3 in favour of
+  a **PL per safety function** (with the option to deviate through an extended risk assessment),
+  requires a **normal stop** function distinct from the emergency stop, and incorporates for the first
+  time **cybersecurity requirements** insofar as they affect safety.
+- **Terminology**: the new series speaks of a **"collaborative application"**, not a "collaborative
+  robot": what is assessed and validated is **the specific use** —robot + tool + workpiece +
+  environment + task—, not the device. Buying a "cobot" does **not** exempt you from a risk assessment.
+- **Legal framework in the EU**: the **Machinery Regulation (EU) 2023/1230** supersedes Directive
+  2006/42/EC; verbatim from EUR-Lex: *«It shall apply from 14 January 2027»* and *«Directive 2006/42/EC
+  is repealed with effect from 14 January 2027»*. **A planning date, not a surprise.**
+- **Presumption of conformity**: the citation of EN ISO 10218-1/-2 in the Official Journal of the EU
+  was pending at the time of verification (with a 24-month transitional period
+  requested). **Verify the status before resting a technical file on it (§8).**
+- **What this skill does not do**: it does not replace the risk assessment, nor the PL/SIL calculation
+  (ISO 13849-1 / IEC 62061), nor the relevant body or assessor. It establishes that **the
+  obligation exists** and that it is planned from the start, not just before delivery.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- **Cadencia**: producto sobre **LTS**, con salto planificado antes del EOL (Humble caduca en
-  **may-2027**: si hay flota sobre Humble, la migración a Jazzy o Lyrical es trabajo de este año, no
-  del año que viene). Las no-LTS solo para prototipo.
-- **Migración como práctica continua**: probar contra `rolling` en un job de CI *no bloqueante* para
-  enterarse pronto de las rupturas, en vez de descubrirlas todas juntas en el salto.
-- **Vida del robot > vida de la distro**: un aparato industrial dura 10–15 años y ninguna distro de
-  ROS 2 dura tanto. **Se planifica la migración desde el diseño**: dependencias acotadas, capa de
-  abstracción sobre lo que cambia y capacidad de actualizar en campo. Si el robot no se puede
-  actualizar, se está firmando su obsolescencia.
-- **Documentar en ADR**: distribución y motivo, RMW elegido, perfiles de QoS por tópico, estrategia
-  de tiempo real y dónde está la frontera de seguridad, decisión sobre SROS2, simulador y versión.
+- **Cadence**: product on **LTS**, with a planned jump before EOL (Humble expires in
+  **May 2027**: if there is a fleet on Humble, migrating to Jazzy or Lyrical is this year's work, not
+  next year's). Non-LTS only for prototypes.
+- **Migration as a continuous practice**: test against `rolling` in a *non-blocking* CI job to
+  find out about breakage early, instead of discovering it all at once at the jump.
+- **Robot life > distro life**: an industrial device lasts 10–15 years and no ROS 2 distro
+  lasts that long. **Migration is planned from the design stage**: bounded dependencies, an
+  abstraction layer over what changes and the ability to update in the field. If the robot cannot be
+  updated, you are signing off on its obsolescence.
+- **Document in an ADR**: distribution and reason, chosen RMW, QoS profiles per topic, real-time
+  strategy and where the safety boundary is, the decision on SROS2, simulator and version.
 
-**Prohibiciones explícitas:**
+**Explicit prohibitions:**
 
-- ❌ **Empezar un proyecto nuevo en ROS 1** o mantener uno "porque funciona": Noetic terminó en
-  **mayo de 2025** y no recibe parches de seguridad.
-- ❌ Ejecutar ROS 2 **sin SROS2 en una red a la que llegue algo más que el robot**, o creer que
-  `ROS_DOMAIN_ID`, la VLAN o el NAT son seguridad.
-- ❌ Exponer `rosbridge`, `web_video_server`, Foxglove o cualquier interfaz de teleoperación **sin
-  autenticación**.
-- ❌ **Implementar el paro de emergencia, el límite de par o el enclavamiento de seguridad como nodos
-  de ROS 2.** La función de seguridad va en hardware/controlador certificado.
-- ❌ Prometer "tiempo real" por usar ROS 2, o por instalar `PREEMPT_RT` sin aislar CPU, sin fijar
-  prioridades, sin `mlockall` y **sin medir el peor caso**.
-- ❌ Lógica de control en `rclpy` dentro del lazo caliente; asignar memoria, hacer E/S o esperar
-  bloqueos dentro de un *callback* de control.
-- ❌ Publicar TF del mismo par padre→hijo desde dos nodos, o usar `now()` como marca de tiempo de un
-  dato de sensor.
-- ❌ Usar QoS por defecto para todo y depurar a base de reiniciar; o declarar un tópico "latched" sin
-  *transient local* **en ambos extremos**.
-- ❌ Encadenar *overlays* de workspaces y depurar el binario equivocado.
-- ❌ Cambiar un mensaje publicado (reordenar campos, reinterpretar unidades) sin tipo nuevo y ruta de
-  migración.
-- ❌ Validar solo en simulación y llamarlo listo; o probar el primer movimiento a velocidad de
-  producción con personas cerca.
-- ❌ Empezar nada nuevo sobre **Gazebo Classic** (EOL 29-ene-2025) o mezclar versiones de Gazebo con
-  la distro que no le corresponde.
-- ❌ Tratar la seguridad de máquina (ISO 10218 / Reglamento de máquinas) como papeleo del final. Es
-  requisito de diseño con fecha: **14 de enero de 2027**.
-- ❌ `INFO`/`DEBUG` a frecuencia de sensor en producción.
+- ❌ **Starting a new project on ROS 1** or keeping one "because it works": Noetic ended in
+  **May 2025** and receives no security patches.
+- ❌ Running ROS 2 **without SROS2 on a network reachable by anything other than the robot**, or believing that
+  `ROS_DOMAIN_ID`, the VLAN or NAT are security.
+- ❌ Exposing `rosbridge`, `web_video_server`, Foxglove or any teleoperation interface **without
+  authentication**.
+- ❌ **Implementing the emergency stop, the torque limit or the safety interlock as ROS 2
+  nodes.** The safety function goes in certified hardware/controller.
+- ❌ Promising "real time" because you use ROS 2, or because you installed `PREEMPT_RT` without isolating CPUs, without setting
+  priorities, without `mlockall` and **without measuring the worst case**.
+- ❌ Control logic in `rclpy` inside the hot loop; allocating memory, doing I/O or waiting on
+  locks inside a control *callback*.
+- ❌ Publishing TF for the same parent→child pair from two nodes, or using `now()` as the timestamp of a
+  sensor reading.
+- ❌ Using default QoS for everything and debugging by restarting; or declaring a topic "latched" without
+  *transient local* **at both ends**.
+- ❌ Chaining workspace *overlays* and debugging the wrong binary.
+- ❌ Changing a published message (reordering fields, reinterpreting units) without a new type and a
+  migration path.
+- ❌ Validating only in simulation and calling it done; or testing the first movement at production
+  speed with people nearby.
+- ❌ Starting anything new on **Gazebo Classic** (EOL 29 Jan 2025) or mixing Gazebo versions with
+  the distro they do not correspond to.
+- ❌ Treating machine safety (ISO 10218 / the Machinery Regulation) as end-of-project paperwork. It is
+  a design requirement with a date: **14 January 2027**.
+- ❌ `INFO`/`DEBUG` at sensor frequency in production.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de decidir, comprobar en la fuente primaria:
+Before deciding, check against the primary source:
 
-1. **Distribución vigente y EOL**: `docs.ros.org` (página *Releases*/*Distributions*) y **REP-2000**
-   —ojo: el REP en `master` **aún no listaba Lyrical** cuando se verificó este documento, mientras la
-   documentación sí; **manda la documentación de la distro**. Verificado: Lyrical Luth 22-may-2026 →
-   **may-2031 (LTS)**; Jazzy → may-2029; Humble → **may-2027**; Kilted → dic-2026.
-2. **Plataforma y dependencias** de la distro elegida en su página de *Supported Platforms* (Ubuntu,
-   C++/Python mínimos, RMW por defecto, versión de Gazebo). Verificado para Lyrical: Ubuntu Resolute
+1. **Current distribution and EOL**: `docs.ros.org` (*Releases*/*Distributions* page) and **REP-2000**
+   —careful: the REP on `master` **did not yet list Lyrical** when this document was verified, while the
+   documentation did; **the distro documentation wins**. Verified: Lyrical Luth 22 May 2026 →
+   **May 2031 (LTS)**; Jazzy → May 2029; Humble → **May 2027**; Kilted → Dec 2026.
+2. **Platform and dependencies** of the chosen distro on its *Supported Platforms* page (Ubuntu,
+   minimum C++/Python, default RMW, Gazebo version). Verified for Lyrical: Ubuntu Resolute
    26.04, C++20/C17, Python 3.12–3.14, `rmw_fastrtps_cpp`, Gazebo Jetty.
-3. **REP-3** para confirmar que Noetic sigue siendo la última de ROS 1 y su EOL (verificado:
+3. **REP-3** to confirm that Noetic is still the last ROS 1 release and its EOL (verified:
    *«Noetic Ninjemys (May 2020 - May 2025)»*).
-4. **Gazebo**: tabla de releases y EOL en `gazebosim.org/docs/latest/releases/` (verificado: Jetty
-   →may-2031, Ionic →dic-2026, Harmonic →may-2029, Fortress →may-2027) y el aviso de EOL de
-   `classic.gazebosim.org` (verificado: **29-ene-2025**).
-5. **Seguridad**: que la afirmación *«By default, none of the security features of DDS are enabled in
-   ROS 2»* sigue vigente en `design.ros2.org` y en la documentación de `sros2`; avisos de seguridad
-   de la implementación DDS usada (Fast DDS, Cyclone DDS, Connext) y del `rmw` correspondiente.
-6. **Tiempo real**: estado de `PREEMPT_RT` en la versión de núcleo que se vaya a usar (verificado:
-   fusionado en **Linux 6.12**, 17-nov-2024) y la guía de ajuste vigente.
-7. **Normativa de seguridad de máquina**: estado de **ISO 10218-1/-2:2025**, de la absorción de
-   **ISO/TS 15066** y —**crítico**— de su **citación en el DOUE** bajo el Reglamento (UE) 2023/1230,
-   que estaba **pendiente** en la fecha de verificación. **Hueco declarado**: `iso.org` devuelve
-   **HTTP 403** a acceso automatizado, así que el estado de las normas se verificó en fuente
-   secundaria especializada; **el texto normativo hay que comprarlo y leerlo**, y las fechas de
-   aplicación se contrastan en EUR-Lex (verificado allí: *«It shall apply from 14 January 2027»*).
-8. **Nav2, MoveIt 2, `ros2_control` y drivers de fabricante**: qué distribuciones soportan hoy y con
-   qué versión; suelen ir por detrás de la LTS recién publicada, **y eso puede decidir la distro**.
-9. **CVEs** de la pila: núcleo, DDS, dependencias C++ y paquetes de `rosdistro` instalados.
+4. **Gazebo**: releases and EOL table at `gazebosim.org/docs/latest/releases/` (verified: Jetty
+   →May 2031, Ionic →Dec 2026, Harmonic →May 2029, Fortress →May 2027) and the EOL notice at
+   `classic.gazebosim.org` (verified: **29 Jan 2025**).
+5. **Security**: that the statement *«By default, none of the security features of DDS are enabled in
+   ROS 2»* is still current on `design.ros2.org` and in the `sros2` documentation; security advisories
+   for the DDS implementation in use (Fast DDS, Cyclone DDS, Connext) and for the corresponding `rmw`.
+6. **Real time**: the status of `PREEMPT_RT` in the kernel version you intend to use (verified:
+   merged into **Linux 6.12**, 17 Nov 2024) and the current tuning guide.
+7. **Machine safety regulation**: the status of **ISO 10218-1/-2:2025**, of the absorption of
+   **ISO/TS 15066** and —**critically**— of their **citation in the OJEU** under Regulation (EU) 2023/1230,
+   which was **pending** on the verification date. **Declared gap**: `iso.org` returns
+   **HTTP 403** to automated access, so the status of the standards was verified against a specialised
+   secondary source; **the normative text has to be bought and read**, and the dates of
+   application are cross-checked on EUR-Lex (verified there: *«It shall apply from 14 January 2027»*).
+8. **Nav2, MoveIt 2, `ros2_control` and manufacturer drivers**: which distributions they support today and with
+   which version; they usually lag behind a freshly released LTS, **and that may decide the distro**.
+9. **CVEs** in the stack: kernel, DDS, C++ dependencies and installed `rosdistro` packages.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

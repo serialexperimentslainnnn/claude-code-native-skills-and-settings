@@ -1,79 +1,91 @@
 ---
 name: _template
-description: PLANTILLA CANÓNICA — no es una skill activable. Referencia de estructura para autoría de skills del catálogo. Copiar este fichero al crear una skill nueva.
+description: CANONICAL TEMPLATE — not an activatable skill. Structural reference for authoring catalogue skills. Copy this file when creating a new one.
 ---
 
-# PLANTILLA CANÓNICA DE SKILL
+# CANONICAL SKILL TEMPLATE
 
-> Este fichero **no es una skill**: es la referencia de estructura del catálogo
-> `~/.claude/skills/`. Al crear una skill nueva, copiar y sustituir.
+> This file **is not a skill**: it is the structural reference for the `~/.claude/skills/`
+> catalogue. When creating a new skill, copy it and replace.
 
-## Reglas de frontmatter (obligatorias)
+## Front-matter rules (mandatory)
 
-- `name`: slug kebab-case, sufijo `-standards`, idéntico al nombre del directorio.
-- `description`: **en inglés, una sola línea**. Es lo único que se inyecta en cada turno;
-  de su precisión depende que la skill se active o no. **Sin límite duro de palabras**: la
-  regla es *cero relleno y cero solape con skills hermanas*. Una descripción larga se
-  justifica si cada término es un disparador distinto (p. ej. nombres de servicio de un
-  proveedor cloud); una corta pero conceptual ("best practices and quality") es peor.
-  - Disparadores por **artefacto concreto**, no por concepto: extensiones de fichero,
-    nombres de fichero de config, binarios, frameworks, comandos.
-  - Ejemplo correcto: `Use when writing .py files, pyproject.toml, uv, ruff, FastAPI, Django...`
-  - Ejemplo incorrecto: `Use for Python best practices and quality` (no dispara nada).
-  - Evitar términos que ya reclame otra skill de la misma familia (test de colisión).
+- `name`: kebab-case slug, `-standards` suffix, identical to the directory name.
+- `description`: **in English, a single line**. It is the only thing injected every turn; whether
+  the skill activates at all depends on its precision. **No hard word limit**: the rule is *zero
+  filler and zero overlap with sibling skills*. A long description is justified when every term is
+  a distinct trigger (cloud service names, for instance); a short but conceptual one ("best
+  practices and quality") is worse.
+  - Triggers by **concrete artefact**, not by concept: file extensions, config file names,
+    binaries, frameworks, commands.
+  - Correct: `Use when writing .py files, pyproject.toml, uv, ruff, FastAPI, Django...`
+  - Wrong: `Use for Python best practices and quality` (triggers nothing).
+  - Avoid terms already claimed by another skill in the same family (collision test).
 
-## Estructura del cuerpo
+## Body structure
 
-Cuerpo en **español**. **La longitud la dicta el contenido, no una cuota**: el cuerpo no se
-carga hasta que la skill se activa, así que extenderse no cuesta índice. El criterio es
-**densidad**: cada línea fija una decisión, una prohibición o algo a verificar. Un dominio
-denso (criptografía, redes, GRC) puede pedir 400+ líneas; uno de nicho legacy se queda en
-80 y omite las secciones 4 y 6 si resultan artificiales. Lo contraproducente no es el
-tamaño, es el relleno: tutorial y prosa entierran la decisión que se venía a buscar.
+Body in **English**. **Length is dictated by content, not by a quota**: the body is not loaded
+until the skill activates, so going long costs no index. The criterion is **density**: every line
+fixes a decision, a prohibition or something to verify. A dense domain (cryptography, networking,
+GRC) may need 400+ lines; a niche legacy one stops at 80 and omits sections 4 and 6 if they would
+be artificial. What is counterproductive is not size, it is filler: tutorials and prose bury the
+decision the reader came for.
 
-Primera línea del cuerpo, siempre:
-`Criterios verificados a **<mes-año>**. Re-verificar por web antes de fijar nada (§8).`
+First line of the body, always:
+`Criteria verified as of **<month-year>**. Re-verify on the web before committing to anything (§8).`
 
-### 1. Alcance y triggers
-Qué cubre, con los disparadores concretos. **Obligatorio** cerrar con la línea de frontera:
-`**No aplica**: ver <skill-x> (para …), <skill-y> (para …).`
-Sin esta línea la skill colisiona con sus vecinas y el enrutado degrada.
+### 1. Scope and triggers
+What it covers, with the concrete triggers. **Mandatory** closing boundary line:
+`**Not applicable**: see <skill-x> (for …), <skill-y> (for …).`
+Without this line the skill collides with its neighbours and routing degrades.
 
-### 2. Decisiones por defecto / Toolchain
-Tabla de elecciones concretas con versión mínima y motivo. Encabezado obligatorio:
-`> Verificar la última versión por web antes de fijarla en un proyecto real (§8).`
-En dominios de criterio sin toolchain (arquitectura, proceso), sustituir por
-"Decisiones por defecto" con la tabla de opción recomendada vs. alternativa justificable.
+### 2. Default decisions / Toolchain
+Table of concrete choices with minimum version and reason. Mandatory header:
+`> Verify the latest version on the web before pinning it in a real project (§8).`
+For criteria domains with no toolchain (architecture, process), replace with "Default decisions"
+and a table of recommended option vs. justifiable alternative.
 
-### 3. Estructura y convenciones
-Layout, naming, organización. Un bloque de código de referencia si aporta.
+### 3. Structure and conventions
+Layout, naming, organisation. One reference code block if it earns its place.
 
-### 4. Calidad y testing
-Formatter, linter, análisis estático, estrategia de test (camino feliz **y bordes y
-errores**), y los **gates de CI que rompen el build**, en orden de coste creciente.
+### 4. Quality and testing
+Formatter, linter, static analysis, test strategy (happy path **plus edges and errors**), and the
+**CI gates that break the build**, in order of increasing cost.
 
-### 5. Seguridad del stack
-OWASP aplicado al dominio, secretos, SCA/dependencias, hardening específico.
+### 5. Stack security
+OWASP applied to the domain, secrets, SCA/dependencies, specific hardening.
 
-### 6. Rendimiento y operabilidad
-Observabilidad, timeouts, límites, graceful shutdown, capacidad.
+### 6. Performance and operability
+Observability, timeouts, limits, graceful shutdown, capacity.
 
-### 7. Sostenibilidad a largo plazo
-Cadencia de upgrades, política de deprecación, y **lista de prohibiciones explícita**
-(anti-patrones vetados, atajos de corto plazo). Formato de viñetas con ❌ o `PROHIBIDO`.
+### 7. Long-term sustainability
+Upgrade cadence, deprecation policy, and an **explicit list of prohibitions** (vetoed
+anti-patterns, short-term shortcuts). Bullet format with ❌ or `FORBIDDEN`.
 
-### 8. Verificación web obligatoria
-Qué comprobar online antes de decidir: última estable, EOL, CVEs, breaking changes,
-nombres exactos de features. Cerrar siempre con:
-`Si la web contradice este documento, **manda la web** y señala la discrepancia.`
+### 8. Mandatory web verification
+What to check online before deciding: latest stable, EOL, CVEs, breaking changes, exact feature
+names. Always close with:
+`If the web contradicts this document, **the web wins** — flag the discrepancy.`
 
-## Reglas transversales
+## Cross-cutting rules
 
-- **Fija criterio, no enseña**: el modelo ya sabe programar. La skill decide qué usar,
-  qué está vetado y qué verificar. Cero tutorial, cero relleno.
-- **Extiende el `CLAUDE.md`, no lo repite**: la doctrina transversal ya está ahí.
-- **Ningún dato concreto de memoria**: versiones, EOL, flags y nombres se verifican por web.
-- **Skills de seguridad ofensiva**: §1 fija como precondición dura el alcance y la
-  autorización por escrito (o entorno de laboratorio propio / CTF). §7 prohíbe
-  explícitamente incluir payloads listos, bypasses concretos de producto o credenciales
-  por defecto de terceros: metodología y gobernanza, no recetario.
+- **Fix criteria, do not teach**: the model already knows how to program. The skill decides what to
+  use, what is vetoed and what to verify. Zero tutorial, zero filler.
+- **Extend `CLAUDE.md`, do not repeat it**: the cross-cutting doctrine is already there.
+- **No concrete fact from memory**: versions, EOL, flags and names are verified on the web.
+- **Offensive security skills**: §1 sets scope and written authorisation (or an own lab / CTF
+  environment) as a hard precondition. §7 explicitly forbids including ready-made payloads, product
+  bypasses or third-party default credentials: methodology and governance, not a cookbook.
+
+## Enforced strings (do not paraphrase)
+
+`./check.sh` greps for these literally. Changing the wording silently disables a gate:
+
+- `**Not applicable**:` — the §1 boundary line.
+- `If the web contradicts this document, **the web wins** — flag the discrepancy.` — the §8 close.
+- `name:` in the front matter must equal the directory name.
+
+> **Migration note (August 2026)**: the catalogue was written in Spanish and is being translated to
+> English. While that lasts, `check.sh` accepts both the English strings above and their Spanish
+> originals (`**No aplica**:` and `manda la web`). Once no Spanish body remains, drop the
+> alternative from the gate patterns so a regression cannot pass unnoticed.

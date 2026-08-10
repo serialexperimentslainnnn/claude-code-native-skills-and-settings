@@ -3,297 +3,297 @@ name: model-finetuning-standards
 description: Fine-tuning an existing model's weights as the last resort, after prompting and retrieval. Use when deciding between prompt engineering, RAG and training, running full fine-tuning versus PEFT with peft LoraConfig (r, lora_alpha, target_modules="all-linear", lora_dropout), QLoRA with bitsandbytes 4-bit, or DoRA and other LoRA variants, training with trl SFTTrainer, DPOTrainer, GRPOTrainer, KTOTrainer, RLOOTrainer or RewardTrainer, Unsloth or Axolotl configs, building a chat-formatted instruction dataset with chat templates and JSONL conversations, checking eval-set contamination and synthetic-data provenance, measuring catastrophic forgetting of general capability before and after, reading the weights licence of Llama, Gemma, Qwen, Mistral or DeepSeek checkpoints and whether it is OSI-approved, merging adapters with merge_and_unload versus serving adapters at runtime, or maintaining a family of fine-tuned variants.
 ---
 
-# Estándares de ajuste fino (fine-tuning) de modelos
+# Model fine-tuning standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **modificar los pesos de un modelo preentrenado ajeno**: la decisión de si hacerlo, el
-método (completo frente a PEFT), los datos, la alineación de preferencias, la evaluación
-obligatoria antes y después, la licencia de los pesos de partida y el despliegue de la variante
-resultante.
+Applies to **modifying the weights of someone else's pretrained model**: the decision of whether to do it, the
+method (full versus PEFT), the data, preference alignment, the mandatory
+evaluation before and after, the licence of the starting weights and the deployment of the resulting
+variant.
 
 Triggers: `peft`, `LoraConfig`, `get_peft_model`, `r=`/`lora_alpha`/`target_modules`,
 `QLoRA`, `bitsandbytes` 4-bit, `trl`, `SFTTrainer`, `DPOTrainer`, `GRPOTrainer`, `KTOTrainer`,
 `RLOOTrainer`, `RewardTrainer`, `unsloth`, `axolotl`, `adapter_model.safetensors`,
-`adapter_config.json`, `merge_and_unload`, plantilla de chat / `chat_template`, `.jsonl` de
-conversaciones, "afinar el modelo con nuestros documentos", "que aprenda nuestro producto",
-"que responda en nuestro tono", "el modelo no sabe X", "entrenar con nuestros tickets".
+`adapter_config.json`, `merge_and_unload`, chat template / `chat_template`, `.jsonl` of
+conversations, "fine-tune the model with our documents", "make it learn our product",
+"make it answer in our tone", "the model doesn't know X", "train on our tickets".
 
-**Tesis del dominio**: **el ajuste fino es la última opción, no la primera.** El orden de coste
-creciente y de reversibilidad decreciente es:
+**Domain thesis**: **fine-tuning is the last option, not the first.** The order of increasing
+cost and decreasing reversibility is:
 
-1. **Prompt** (instrucciones, ejemplos, salida estructurada). Coste marginal, cambio en
-   segundos, reversible. Resuelve formato, tono, criterio y tareas acotadas.
-2. **Recuperación (RAG)**. Resuelve **conocimiento**: hechos propios, actualizables, citables y
-   borrables. Es lo que la gente cree que resuelve el ajuste fino.
-3. **Ajuste fino**. Resuelve **comportamiento**: formato rígido, estilo consistente, tarea
-   estrecha repetitiva, reducción de longitud de prompt y de latencia/coste por petición.
-4. **Entrenamiento propio** (`deep-learning-standards`). Otro orden de magnitud de coste.
+1. **Prompt** (instructions, examples, structured output). Marginal cost, change in
+   seconds, reversible. Solves format, tone, judgement and bounded tasks.
+2. **Retrieval (RAG)**. Solves **knowledge**: your own facts, updatable, citable and
+   deletable. It is what people believe fine-tuning solves.
+3. **Fine-tuning**. Solves **behaviour**: rigid format, consistent style, narrow
+   repetitive task, reduced prompt length and lower latency/cost per request.
+4. **Training your own** (`deep-learning-standards`). Another order of magnitude of cost.
 
-**Qué arregla y qué no arregla el ajuste fino**:
+**What fine-tuning fixes and what it does not**:
 
-| Sí arregla | No arregla |
+| It does fix | It does not fix |
 |---|---|
-| Formato de salida estable sin instrucciones largas | **Desconocimiento de hechos** — el error más común y más caro |
-| Estilo, tono y registro consistentes | Conocimiento que cambia (precios, catálogo, políticas) |
-| Tarea estrecha y repetitiva (clasificar, extraer, reescribir) | Trazabilidad y citación de la fuente |
-| Consistencia entre ejecuciones y menos deriva de instrucción | Borrar un dato a petición del titular |
-| Prompt más corto → menos tokens, menos latencia | Razonamiento general que el modelo base no tiene |
-| Cumplir un esquema o una taxonomía propia | Que el modelo "no alucine" |
+| Stable output format without long instructions | **Not knowing facts** — the most common and most expensive mistake |
+| Consistent style, tone and register | Knowledge that changes (prices, catalogue, policies) |
+| Narrow, repetitive task (classify, extract, rewrite) | Traceability and source citation |
+| Consistency across runs and less instruction drift | Deleting a datum at the subject's request |
+| Shorter prompt → fewer tokens, less latency | General reasoning the base model does not have |
+| Meeting your own schema or taxonomy | Making the model "not hallucinate" |
 
-**Regla dura**: si la respuesta a "¿qué esperas que aprenda?" es un conjunto de hechos, la
-solución es recuperación, no ajuste fino. Meter hechos en los pesos es caro, no verificable,
-no actualizable y no borrable.
+**Hard rule**: if the answer to "what do you expect it to learn?" is a set of facts, the
+solution is retrieval, not fine-tuning. Putting facts into the weights is expensive, not verifiable,
+not updatable and not deletable.
 
-Corolario: **el ajuste fino no es entrenar.** Se parte de pesos ajenos, se mueven poco y el
-resultado hereda las capacidades **y las restricciones legales** del modelo base (§5).
+Corollary: **fine-tuning is not training.** You start from someone else's weights, move them a little and the
+result inherits the capabilities **and the legal restrictions** of the base model (§5).
 
-**No aplica**:
+**Not applicable**:
 
-- `llm-app-engineering-standards` y `rag-standards` (**escritas — frontera crítica**):
-  **construir producto sobre un LLM de terceros es suyo**, igual que **la recuperación** —
-  ingesta, *chunking*, embeddings, índice, híbrido, *reranking*, citación. **Aquí, modificar los
-  pesos.** El orden prompt → recuperación → ajuste fino cruza las tres skills: desde este lado
-  se afirma solo el tercer peldaño y **la carga de la prueba de haber agotado los dos anteriores
-  recae aquí**. Si el prompt o el índice resuelven el caso, esta skill declara que no hay
-  proyecto.
-- `mlops-standards` (**escrita — frontera crítica**): **el ciclo de vida del modelo en
-  producción es suyo** — registro y versionado del artefacto, promoción, despliegue, *rollback*
-  a los pesos anteriores, deriva, reentrenamiento y retirada. **Aquí, cómo se ajusta y se evalúa
-  el modelo antes de llegar ahí.** Un adaptador entrenado por ti **es un artefacto de modelo
-  propio** y entra en su registro con su tarjeta y su linaje.
-- `llm-evaluation-standards` (**escrita**): **la medición de sistemas no deterministas es suya** —
-  conjunto de evaluación, jueces LLM, significancia, gates en CI, contaminación de *benchmarks*.
-  Aquí se **exige** la evaluación antes y después (§6) y se define **qué** medir (tarea objetivo
-  **y** capacidades generales); el **cómo**, allí.
-- `local-inference-standards` (**escrita**): **servir pesos propios es suyo** — vLLM, llama.cpp,
-  batching, caché KV, adaptadores en caliente, cuantización de servicio. Aquí, la decisión
-  **fusionar o servir adaptadores** y su coste de mantenimiento; el motor, allí.
-- `deep-learning-standards` (**esta misma ola**): entrenar una red propia. **El ajuste fino no es
-  entrenar**, pero hereda su mecánica: precisión mixta, acumulación de gradientes, *checkpoints*
-  y semillas se rigen por allí.
-- `classical-ml-standards` (**esta misma ola**): con miles de ejemplos etiquetados, **un
-  clasificador clásico sobre embeddings suele ganar en coste, latencia y depurabilidad** a
-  ajustar un modelo generativo. Es la línea base olvidada.
-- `gpu-computing-standards` (**la GPU como recurso que se aprovisiona, comparte y paga**);
-  `mlsecops-standards` (**procedencia de pesos, formatos seguros y ataques al modelo**, incluido
-  el envenenamiento del corpus y las puertas traseras); `ai-governance-standards` (**riesgo, AI
-  Act e inventario** — ojo: **ajustar y publicar puede convertirte en proveedor** a efectos
-  regulatorios); `opensource-licensing-standards` (**la política de licencias**; aquí solo la
-  restricción concreta de unos pesos); `privacy-engineering-standards` (dato personal y
-  memorización); `data-engineering-standards`, `data-governance-quality-standards`;
+- `llm-app-engineering-standards` and `rag-standards` (**written — critical boundary**):
+  **building a product on a third-party LLM is theirs**, as is **retrieval** —
+  ingestion, *chunking*, embeddings, index, hybrid, *reranking*, citation. **Here, modifying the
+  weights.** The order prompt → retrieval → fine-tuning crosses all three skills: from this side
+  only the third rung is asserted and **the burden of proof of having exhausted the previous two
+  falls here**. If the prompt or the index solve the case, this skill declares there is no
+  project.
+- `mlops-standards` (**written — critical boundary**): **the model's lifecycle in
+  production is theirs** — artifact registry and versioning, promotion, deployment, *rollback*
+  to the previous weights, drift, retraining and retirement. **Here, how the model is tuned and evaluated
+  before it gets there.** An adapter you trained **is a model artifact of your own**
+  and enters their registry with its card and its lineage.
+- `llm-evaluation-standards` (**written**): **measuring non-deterministic systems is theirs** —
+  evaluation set, LLM judges, significance, CI gates, *benchmark* contamination.
+  Here evaluation before and after is **required** (§6) and **what** to measure is defined (target task
+  **and** general capabilities); the **how**, there.
+- `local-inference-standards` (**written**): **serving your own weights is theirs** — vLLM, llama.cpp,
+  batching, KV cache, hot adapters, serving quantisation. Here, the decision to
+  **merge or serve adapters** and its maintenance cost; the engine, there.
+- `deep-learning-standards` (**this same wave**): training your own network. **Fine-tuning is not
+  training**, but it inherits its mechanics: mixed precision, gradient accumulation, *checkpoints*
+  and seeds are governed there.
+- `classical-ml-standards` (**this same wave**): with thousands of labelled examples, **a
+  classical classifier over embeddings usually wins on cost, latency and debuggability** over
+  fine-tuning a generative model. It is the forgotten baseline.
+- `gpu-computing-standards` (**the GPU as a resource that is provisioned, shared and paid for**);
+  `mlsecops-standards` (**weight provenance, safe formats and attacks on the model**, including
+  corpus poisoning and backdoors); `ai-governance-standards` (**risk, the AI
+  Act and inventory** — careful: **tuning and publishing can turn you into a provider** for
+  regulatory purposes); `opensource-licensing-standards` (**the licence policy**; here only the
+  specific restriction of a given set of weights); `privacy-engineering-standards` (personal data and
+  memorisation); `data-engineering-standards`, `data-governance-quality-standards`;
   `finops-standards`, `green-it-standards`; `python-standards`; `computer-vision-standards`,
   `nlp-standards`, `multimodal-genai-standards`.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Pieza | Elección | Versión verificada (ago-2026, PyPI) | Licencia |
+| Piece | Choice | Verified version (Aug 2026, PyPI) | Licence |
 |---|---|---|---|
-| PEFT / adaptadores | `peft` | 0.20.0 (28-jul-2026) | Apache-2.0 (cabecera del repo) |
-| Entrenadores SFT y preferencias | `trl` | 1.9.2 (28-jul-2026) | Apache-2.0 (metadatos PyPI) |
-| Modelos y tokenizadores | `transformers` | 5.14.1 (16-jul-2026) | Apache-2.0 |
-| Distribución / lanzamiento | `accelerate` | 1.14.0 (11-jun-2026) | Apache-2.0 |
-| Cuantización de entrenamiento (QLoRA) | `bitsandbytes` | 0.50.0 (24-jul-2026) | MIT (metadatos PyPI) |
-| Datos | `datasets` | 5.0.1 (28-jul-2026) | Apache-2.0 |
-| Formato de pesos | `safetensors` | 0.8.0 (9-jun-2026) | verificar (§8) |
+| PEFT / adapters | `peft` | 0.20.0 (28 Jul 2026) | Apache-2.0 (repo header) |
+| SFT and preference trainers | `trl` | 1.9.2 (28 Jul 2026) | Apache-2.0 (PyPI metadata) |
+| Models and tokenizers | `transformers` | 5.14.1 (16 Jul 2026) | Apache-2.0 |
+| Distribution / launching | `accelerate` | 1.14.0 (11 Jun 2026) | Apache-2.0 |
+| Training quantisation (QLoRA) | `bitsandbytes` | 0.50.0 (24 Jul 2026) | MIT (PyPI metadata) |
+| Data | `datasets` | 5.0.1 (28 Jul 2026) | Apache-2.0 |
+| Weight format | `safetensors` | 0.8.0 (9 Jun 2026) | verify (§8) |
 
-**Método**: **LoRA/QLoRA por defecto**; ajuste completo solo si LoRA con rango suficiente ya se
-ha quedado corto **y está medido**. QLoRA (base cuantizada a 4 bits + adaptador) cuando la VRAM
-manda; asume una penalización de calidad que hay que medir, no suponer.
+**Method**: **LoRA/QLoRA by default**; full fine-tuning only if LoRA with a sufficient rank has already
+fallen short **and it is measured**. QLoRA (4-bit quantised base + adapter) when VRAM
+rules; assume a quality penalty that must be measured, not assumed.
 
-**Variantes**: `peft` documenta hoy LoRA con variantes propias (**DoRA, BD-LoRA, KaSA,
-MonteCLoRA, VeLoRA** en su índice de documentación) además de familias distintas (AdaLoRA, LoHa,
-LoKr, OFT/BOFT, IA3, prompt/prefix tuning y otras). **Criterio: LoRA plano es el punto de
-partida; una variante entra solo con una medición propia que la justifique**, no por ser nueva.
+**Variants**: `peft` today documents LoRA with its own variants (**DoRA, BD-LoRA, KaSA,
+MonteCLoRA, VeLoRA** in its documentation index) as well as different families (AdaLoRA, LoHa,
+LoKr, OFT/BOFT, IA3, prompt/prefix tuning and others). **Criteria: plain LoRA is the starting
+point; a variant enters only with your own measurement justifying it**, not for being new.
 
-## 3. Hiperparámetros que de verdad importan
+## 3. Hyperparameters that really matter
 
-Cuatro decisiones concentran el resultado: **capas objetivo, rango, tasa de aprendizaje y tamaño
-de lote efectivo**. Referencia citable: la guía *"LoRA Without Regret"* de la documentación de
-TRL, que reproduce hallazgos de un artículo de Thinking Machines Lab (Schulman et al., 2025).
-Verbatim de esa guía:
+Four decisions concentrate the result: **target layers, rank, learning rate and effective batch
+size**. Citable reference: the *"LoRA Without Regret"* guide in the TRL
+documentation, which reproduces findings from a Thinking Machines Lab paper (Schulman et al., 2025).
+Verbatim from that guide:
 
 - *"The authors recommend applying LoRA to all weight matrices rather than limiting it to
   attention layers, as increasing the rank does not compensate for this restriction."* →
-  `target_modules="all-linear"` como punto de partida, no solo `q_proj`/`v_proj`.
-- *"For datasets that exceed LoRA capacity, LoRA underperforms FullFT"* → el rango debe cubrir
-  la capacidad que pide el conjunto. La tabla de la guía recomienda rango **256** para SFT a
-  "post-training scale" y **1-32** para RL.
+  `target_modules="all-linear"` as a starting point, not just `q_proj`/`v_proj`.
+- *"For datasets that exceed LoRA capacity, LoRA underperforms FullFT"* → the rank must cover
+  the capacity the dataset demands. The guide's table recommends rank **256** for SFT at
+  "post-training scale" and **1-32** for RL.
 - *"Counterintuitively, the blog post recommends using a higher learning rate than for full
-  fine-tuning"*; en su tabla, 1.0e-5 para LoRA frente a 1.0e-6 para ajuste completo, y *"The
+  fine-tuning"*; in its table, 1.0e-5 for LoRA against 1.0e-6 for full fine-tuning, and *"The
   1/r scaling in LoRA makes the optimal learning rate approximately rank-independent"*.
-- *"In some scenarios, LoRA is less tolerant of large batch sizes than full fine-tuning."* → la
-  guía recomienda lote efectivo < 32.
+- *"In some scenarios, LoRA is less tolerant of large batch sizes than full fine-tuning."* → the
+  guide recommends an effective batch < 32.
 
-**Metodología y límite declarados**: resultados de un artículo de blog de laboratorio
-reproducidos por HuggingFace sobre modelos y datasets concretos (SmolLM3-3B, Llama-3.2-1B/3.1-8B,
-tulu-3-sft-mixture, OpenThoughts-114k, OpenR1-Math-220k); **no es literatura revisada por pares y
-no se generaliza a tu modelo sin medirlo**. Su afirmación de cómputo ("~67% of the compute")
-**no se adopta aquí como cifra**: no trae hardware ni condiciones (§8). `lora_alpha` es escala
-relativa al rango: se fija con él y no se toca a ciegas.
+**Declared methodology and limit**: results from a lab blog post
+reproduced by HuggingFace on specific models and datasets (SmolLM3-3B, Llama-3.2-1B/3.1-8B,
+tulu-3-sft-mixture, OpenThoughts-114k, OpenR1-Math-220k); **it is not peer-reviewed literature and
+does not generalise to your model without measuring it**. Its compute claim ("~67% of the compute")
+**is not adopted here as a figure**: it comes with no hardware or conditions (§8). `lora_alpha` is a scale
+relative to the rank: it is set together with it and not touched blindly.
 
-## 4. Alineación de preferencias
+## 4. Preference alignment
 
-Orden correcto: **SFT primero** (formato y tarea), **preferencias después** (elegir entre
-respuestas válidas). Saltarse el SFT para ir directo a preferencias es el error de secuencia
-habitual.
+Correct order: **SFT first** (format and task), **preferences after** (choosing between
+valid answers). Skipping SFT to go straight to preferences is the usual sequencing
+error.
 
-**Estado real verificado en la documentación de `trl` (índice de docs, ago-2026)**: los
-entrenadores **estables** son **DPO, GRPO, KTO, Reward, RLOO y SFT**. En la sección
-**experimental** conviven, entre otros, **PPO, ORPO, CPO, BCO, Online DPO, Nash-MD, GSPO-token,
-SDPO, A2PO, GMPO, GOLD, GKD, PRM y destilación**.
+**Real status verified in the `trl` documentation (docs index, Aug 2026)**: the
+**stable** trainers are **DPO, GRPO, KTO, Reward, RLOO and SFT**. In the
+**experimental** section live, among others, **PPO, ORPO, CPO, BCO, Online DPO, Nash-MD, GSPO-token,
+SDPO, A2PO, GMPO, GOLD, GKD, PRM and distillation**.
 
-Lectura de criterio: **DPO no está superado ni retirado — sigue siendo un entrenador de primera
-clase**, y junto a él se han consolidado métodos de refuerzo con recompensa verificable (GRPO,
-RLOO), la novedad real del último ciclo; la proliferación de siglas vive en experimental por
-algo. **Criterio: DPO para preferencias por pares; GRPO/RLOO cuando hay recompensa verificable
-(código que compila, test que pasa, resultado numérico correcto); lo demás, solo con medición
-propia.**
+Reading of the criteria: **DPO is neither superseded nor withdrawn — it remains a first-class
+trainer**, and alongside it reinforcement methods with verifiable reward (GRPO,
+RLOO) have consolidated, the real novelty of the last cycle; the proliferation of acronyms lives in experimental for
+a reason. **Criteria: DPO for pairwise preferences; GRPO/RLOO when there is a verifiable reward
+(code that compiles, a test that passes, a correct numerical result); everything else, only with your own
+measurement.**
 
-**Cuándo compensa**: ya tienes SFT decente, existe una preferencia consistente que no sabes
-escribir como instrucción y tienes cientos o miles de comparaciones fiables. Con menos, estás
-metiendo ruido y arriesgando degradación.
+**When it is worth it**: you already have decent SFT, there is a consistent preference you cannot
+write down as an instruction and you have hundreds or thousands of reliable comparisons. With less, you are
+injecting noise and risking degradation.
 
-## 5. Datos y licencias — la parte que decide el resultado
+## 5. Data and licences — the part that decides the result
 
-### 5.1 El conjunto de entrenamiento es el 90 % del resultado
+### 5.1 The training set is 90 % of the result
 
-- **Calidad sobre cantidad.** Cientos o pocos miles de ejemplos **excelentes y consistentes**
-  baten a decenas de miles mediocres; un criterio contradictorio repetido enseña la contradicción.
-- **Consistencia de formato**: los datos son la especificación y cualquier desviación se aprende.
-- **Formato de conversación**: usa la **plantilla de chat del modelo base** (tokens especiales,
-  roles, marcas de fin). El desajuste entre la plantilla de entrenamiento y la de inferencia es
-  la causa número uno de "el modelo ajustado responde raro", y es *train/serve skew*.
-- **Bordes y negativos**: incluye ejemplos donde lo correcto es rechazar, pedir aclaración o
-  decir que no se sabe. Si no los pones, el modelo aprende a inventar.
-- **Contaminación con el eval**: deduplica el corpus contra el conjunto de evaluación **antes**
-  de entrenar, por coincidencia exacta y por similitud. Un eval contaminado no mide nada y no se
-  descontamina a posteriori: hay que reentrenar.
-- **Datos sintéticos**: útiles para volumen y bordes; heredan sesgo y errores del generador,
-  colapsan la diversidad, y **generar con un modelo de terceros para entrenar el tuyo puede
-  violar sus condiciones de uso** (revisa los términos del proveedor, no solo la licencia de los
-  pesos). Etiqueta el origen sintético y revisa una muestra a mano.
-- **PII**: licitud, minimización y retención antes de construir el corpus
-  (`privacy-engineering-standards`). El modelo memoriza: **no hay `DELETE` en unos pesos**.
+- **Quality over quantity.** Hundreds or a few thousand **excellent and consistent** examples
+  beat tens of thousands of mediocre ones; a contradictory criterion repeated teaches the contradiction.
+- **Format consistency**: the data is the specification and any deviation is learned.
+- **Conversation format**: use the **base model's chat template** (special tokens,
+  roles, end markers). A mismatch between the training template and the inference one is
+  the number one cause of "the fine-tuned model answers oddly", and it is *train/serve skew*.
+- **Edges and negatives**: include examples where the correct thing is to refuse, ask for clarification or
+  say it does not know. If you do not put them in, the model learns to make things up.
+- **Contamination with the eval**: deduplicate the corpus against the evaluation set **before**
+  training, by exact match and by similarity. A contaminated eval measures nothing and cannot be
+  decontaminated after the fact: you have to retrain.
+- **Synthetic data**: useful for volume and edges; it inherits bias and errors from the generator,
+  collapses diversity, and **generating with a third-party model to train yours may
+  violate their terms of use** (check the provider's terms, not just the licence of the
+  weights). Label the synthetic origin and review a sample by hand.
+- **PII**: lawfulness, minimisation and retention before building the corpus
+  (`privacy-engineering-standards`). The model memorises: **there is no `DELETE` in a set of weights**.
 
-### 5.2 Licencias de pesos: no son licencias de software
+### 5.2 Weight licences: they are not software licences
 
-**Trampa central del dominio**: la licencia de unos pesos **no** es una licencia de software y
-"open source" aplicado a un modelo casi nunca significa lo que parece. Casos leídos en su texto:
+**Central trap of the domain**: the licence of a set of weights is **not** a software licence and
+"open source" applied to a model almost never means what it seems. Cases read in their text:
 
-| Pesos | Licencia | Restricción real (verbatim del texto) |
+| Weights | Licence | Real restriction (verbatim from the text) |
 |---|---|---|
-| Llama 3.3 (texto leído en crudo; **Llama 4 tiene acuerdo propio**, §8) | *Llama Community License Agreement* (no OSI) | Atribución obligatoria: *"prominently display "Built with Llama""*; renombrado forzoso: *"you shall also include "Llama" at the beginning of any such AI model name"* si entrenas otro modelo con sus materiales o salidas; **límite de usuarios**: *"is greater than 700 million monthly active users in the preceding calendar month, you must request a license from Meta"*; política de uso aceptable incorporada por referencia |
-| Gemma | *Gemma Terms of Use* (no OSI) | *"You must not use any of the Gemma Services: for the restricted uses set forth in the Gemma Prohibited Use Policy"*; propagación obligatoria: *"You must provide all third party recipients of Gemma or Model Derivatives a copy of this Agreement"* e *"include the use restrictions referenced in Section 3.2 as an enforceable provision"*; *"Google reserves the right to restrict (remotely or otherwise) usage of any of the Gemma Services that Google reasonably believes are in violation of this Agreement."* |
-| DeepSeek-V3 | *DeepSeek License Agreement v1.0* (no OSI) | Restricciones de uso en su Anexo A, entre ellas *"For military use in any way"* y *"For fully automated decision making that adversely impacts an individual's legal rights"*; propagación obligatoria a derivados; jurisdicción y ley de la RPC |
-| DeepSeek-R1 | **MIT** (`LICENSE` del repo) | Permisiva de verdad — **misma familia de proveedor, licencia distinta**: se verifica por modelo, nunca por marca |
-| Qwen3 (p. ej. Qwen3-8B) | **Apache-2.0** (`LICENSE` del repo) | Permisiva; conserva aviso y NOTICE |
-| Mistral | **Varía por modelo** (p. ej. `license: apache-2.0` en la ficha de Mistral-Small-3.2-24B-Instruct-2506) | Otros modelos del mismo proveedor se publican bajo licencia de investigación: **verifica el modelo concreto** |
+| Llama 3.3 (text read raw; **Llama 4 has its own agreement**, §8) | *Llama Community License Agreement* (not OSI) | Mandatory attribution: *"prominently display "Built with Llama""*; forced renaming: *"you shall also include "Llama" at the beginning of any such AI model name"* if you train another model with its materials or outputs; **user limit**: *"is greater than 700 million monthly active users in the preceding calendar month, you must request a license from Meta"*; acceptable use policy incorporated by reference |
+| Gemma | *Gemma Terms of Use* (not OSI) | *"You must not use any of the Gemma Services: for the restricted uses set forth in the Gemma Prohibited Use Policy"*; mandatory propagation: *"You must provide all third party recipients of Gemma or Model Derivatives a copy of this Agreement"* and *"include the use restrictions referenced in Section 3.2 as an enforceable provision"*; *"Google reserves the right to restrict (remotely or otherwise) usage of any of the Gemma Services that Google reasonably believes are in violation of this Agreement."* |
+| DeepSeek-V3 | *DeepSeek License Agreement v1.0* (not OSI) | Use restrictions in its Attachment A, among them *"For military use in any way"* and *"For fully automated decision making that adversely impacts an individual's legal rights"*; mandatory propagation to derivatives; PRC jurisdiction and law |
+| DeepSeek-R1 | **MIT** (repo `LICENSE`) | Genuinely permissive — **same provider family, different licence**: it is verified per model, never per brand |
+| Qwen3 (e.g. Qwen3-8B) | **Apache-2.0** (repo `LICENSE`) | Permissive; keep the notice and NOTICE |
+| Mistral | **Varies per model** (e.g. `license: apache-2.0` on the Mistral-Small-3.2-24B-Instruct-2506 card) | Other models from the same provider are published under a research licence: **verify the specific model** |
 
-Reglas que se derivan:
+Rules that follow:
 
-- **Ninguna de las licencias de la columna "no OSI" es software libre ni código abierto**: las
-  restricciones de campo de uso son incompatibles con la definición de código abierto por
-  construcción. Llamarlas "open source" en documentación interna o comercial es un riesgo legal
-  propio.
-- **La licencia del repositorio de código no es la licencia de los pesos.** Ejemplo verificado:
-  el repositorio `google-deepmind/gemma` publica su `LICENSE` bajo Apache-2.0, mientras la ficha
-  del modelo declara `license: gemma` y remite a los *Gemma Terms of Use*. **Se lee el
-  documento que acompaña a los pesos, no el del código.**
-- **Las restricciones se heredan y se propagan**: tu variante ajustada queda sujeta a los
-  términos del base y, en varios de estos casos, estás obligado a imponérselos a quien la reciba.
-- **La licencia del corpus también restringe**: un dataset con cláusula no comercial o de solo
-  investigación contamina el uso del modelo resultante. Se registra licencia de datos y de pesos
-  en la tarjeta del modelo.
-- La política general de licencias, el gate de CI y el SBOM/AIBOM son de
+- **None of the licences in the "not OSI" column is free software or open source**: field-of-use
+  restrictions are incompatible with the open source definition by
+  construction. Calling them "open source" in internal or commercial documentation is a legal risk
+  of its own.
+- **The code repository's licence is not the weights' licence.** Verified example:
+  the `google-deepmind/gemma` repository publishes its `LICENSE` under Apache-2.0, while the model
+  card declares `license: gemma` and points to the *Gemma Terms of Use*. **You read the
+  document that accompanies the weights, not the code's.**
+- **Restrictions are inherited and propagated**: your fine-tuned variant is subject to the
+  base's terms and, in several of these cases, you are obliged to impose them on whoever receives it.
+- **The corpus licence also restricts**: a dataset with a non-commercial or research-only
+  clause contaminates the use of the resulting model. Data and weight licences are recorded
+  in the model card.
+- The general licence policy, the CI gate and the SBOM/AIBOM belong to
   `opensource-licensing-standards`.
 
-## 6. Evaluación obligatoria, antes y después
+## 6. Mandatory evaluation, before and after
 
-- **Línea base de prompt obligatoria.** Sin la métrica del modelo base con el mejor prompt
-  razonable —y, si aplica, con recuperación— no se sabe si el ajuste aportó algo. **Es la puerta
-  de entrada al proyecto, no un informe posterior.**
-- **Dos ejes de medición, siempre**: (1) **tarea objetivo**, con el eval propio no contaminado;
-  (2) **capacidades generales — olvido catastrófico**: el ajuste estrecha el modelo, así que mide
-  antes y después capacidades que **no** son la tarea (seguimiento de instrucciones,
-  razonamiento, idioma, rechazos). Una mejora en la tarea que rompe el idioma o la seguridad no
-  es una mejora.
-- **Comportamiento de seguridad**: el ajuste puede degradar los rechazos del base aunque los
-  datos no sean maliciosos; se mide antes de publicar (`mlsecops-standards` para *red teaming*).
-- **Metodología**: `llm-evaluation-standards`. Aquí solo se fija **qué** se mide y **cuándo**
-  bloquea: si la tarea no mejora significativamente sobre la línea base de prompt, o si las
-  capacidades generales caen por encima de la tolerancia declarada, **el artefacto no se
-  promueve**.
-- Registro del experimento (datos, hiperparámetros, semilla, base exacta por revisión/digest) y
-  promoción del artefacto: `mlops-standards`.
+- **Prompt baseline mandatory.** Without the base model's metric with the best
+  reasonable prompt —and, if applicable, with retrieval— you do not know whether the tuning added anything. **It is the
+  entry gate to the project, not a later report.**
+- **Two measurement axes, always**: (1) **target task**, with your own uncontaminated eval;
+  (2) **general capabilities — catastrophic forgetting**: tuning narrows the model, so measure
+  before and after capabilities that are **not** the task (instruction following,
+  reasoning, language, refusals). An improvement on the task that breaks the language or safety is
+  not an improvement.
+- **Safety behaviour**: tuning can degrade the base's refusals even if the
+  data is not malicious; it is measured before publishing (`mlsecops-standards` for *red teaming*).
+- **Methodology**: `llm-evaluation-standards`. Here only **what** is measured and **when** it
+  blocks is fixed: if the task does not improve significantly over the prompt baseline, or if
+  general capabilities drop above the declared tolerance, **the artifact is not
+  promoted**.
+- Experiment logging (data, hyperparameters, seed, exact base by revision/digest) and
+  artifact promotion: `mlops-standards`.
 
-## 7. Despliegue, sostenibilidad y prohibiciones
+## 7. Deployment, sustainability and prohibitions
 
-- **Fusionar o servir adaptadores**: fusionar (`merge_and_unload`) da un artefacto único, simple
-  de servir y cuantizar, perdiendo modularidad y multiplicando el almacenamiento por variante;
-  servir adaptadores sobre una base compartida permite muchas variantes con una sola copia de los
-  pesos, a cambio de complejidad y ataduras de compatibilidad en el motor. Regla: **una variante
-  → fusiona; varias sobre la misma base → adaptadores.** El motor: `local-inference-standards`.
-- **El coste real de una familia de variantes es el mantenimiento, no el entrenamiento**: cada
-  una necesita eval, tarjeta, reentrenamiento cuando cambie la base y retirada. Antes de la
-  segunda, pregunta si basta con enrutar por prompt.
-- **Cuando sale una versión mejor del modelo base, el trabajo puede quedar obsoleto**: el ajuste
-  fino es perecedero y atado a una base concreta. Planifica con esa caducidad y guarda **el
-  dataset**, que es el activo que sobrevive.
+- **Merge or serve adapters**: merging (`merge_and_unload`) gives a single artifact, simple
+  to serve and quantise, losing modularity and multiplying storage per variant;
+  serving adapters over a shared base allows many variants with a single copy of the
+  weights, at the cost of complexity and compatibility ties in the engine. Rule: **one variant
+  → merge; several over the same base → adapters.** The engine: `local-inference-standards`.
+- **The real cost of a family of variants is maintenance, not training**: each
+  one needs an eval, a card, retraining when the base changes and retirement. Before the
+  second one, ask whether routing by prompt is enough.
+- **When a better version of the base model comes out, the work may become obsolete**: fine-tuning
+  is perishable and tied to a specific base. Plan with that expiry in mind and keep **the
+  dataset**, which is the asset that survives.
 
-**PROHIBIDO**:
+**FORBIDDEN**:
 
-- ❌ **Ajustar para añadir conocimiento factual**. Eso es recuperación (`rag-standards`).
-- ❌ **Ajustar sin línea base de prompt** (y, cuando aplique, sin línea base de recuperación).
-- ❌ **Entrenar sobre datos contaminados con el conjunto de evaluación**.
-- ❌ **Publicar un modelo ajustado sin declarar la licencia del modelo base**, sus restricciones
-  heredadas y la licencia del corpus.
-- ❌ Llamar "open source" a unos pesos con restricciones de uso.
-- ❌ Deducir la licencia de unos pesos de la del repositorio de código, de la marca del
-  proveedor o de un resumen de terceros: se lee el texto que acompaña al modelo.
-- ❌ Publicar sin medir **olvido catastrófico** de capacidades generales y comportamiento de
-  seguridad.
-- ❌ Entrenar con una plantilla de chat distinta de la que usarás en inferencia.
-- ❌ Generar datos sintéticos con un proveedor cuyas condiciones prohíben entrenar modelos
-  competidores, sin haber leído esas condiciones.
-- ❌ Saltarse SFT y aplicar métodos de preferencia directamente sobre el modelo base.
-- ❌ Mantener una familia de variantes sin eval automatizada por variante.
-- ❌ Adoptar una variante de LoRA o un método de preferencia "nuevo" sin medición propia.
+- ❌ **Fine-tuning to add factual knowledge**. That is retrieval (`rag-standards`).
+- ❌ **Fine-tuning without a prompt baseline** (and, where applicable, without a retrieval baseline).
+- ❌ **Training on data contaminated with the evaluation set**.
+- ❌ **Publishing a fine-tuned model without declaring the base model's licence**, its inherited
+  restrictions and the corpus licence.
+- ❌ Calling weights with use restrictions "open source".
+- ❌ Inferring the licence of a set of weights from the code repository's, from the provider's
+  brand or from a third-party summary: you read the text that accompanies the model.
+- ❌ Publishing without measuring **catastrophic forgetting** of general capabilities and safety
+  behaviour.
+- ❌ Training with a chat template different from the one you will use at inference.
+- ❌ Generating synthetic data with a provider whose terms forbid training competing
+  models, without having read those terms.
+- ❌ Skipping SFT and applying preference methods directly on the base model.
+- ❌ Maintaining a family of variants without an automated eval per variant.
+- ❌ Adopting a "new" LoRA variant or preference method without your own measurement.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar por web:
+Before pinning anything in a real project, check on the web:
 
-- Últimas estables y *breaking changes* de `transformers`, `peft`, `trl`, `accelerate`,
-  `datasets` y `bitsandbytes`: **`trl` mueve entrenadores entre estable y experimental entre
-  versiones**, y `transformers` 5.x ya introdujo rupturas de API. Lee el índice de documentación
-  del repo, no un tutorial.
-- **Estado de DPO frente a métodos más recientes**: verifica en la documentación oficial de
-  `trl` qué entrenadores están en `Trainers` (estables) y cuáles en `Experimental`. Lo escrito
-  aquí procede del `_toctree.yml` del repositorio en ago-2026 y **caduca rápido**.
-- **La licencia de CADA modelo de pesos que uses, leída en su texto completo**, incluidas las
-  políticas de uso aceptable incorporadas por referencia y las condiciones del proveedor si usas
-  su API para generar datos. **Huecos declarados**: (a) el texto de la *Llama Community License*
-  citado aquí corresponde a **Llama 3.3** (fecha de versión 6-dic-2024) leído en crudo desde el
-  repositorio `meta-llama/llama-models`; **Llama 4 tiene su propio acuerdo** (fecha efectiva
-  5-abr-2025) que **no se ha leído íntegro en esta redacción** — no asumas que las cláusulas
-  coinciden; (b) las cláusulas de los *Gemma Terms of Use* se obtuvieron por extracción de la
-  página oficial, **no desde un fichero en crudo**: reléelas en `ai.google.dev/gemma/terms`
-  antes de apoyar una decisión legal en ellas; (c) la licencia de `safetensors` no se verificó.
-- **Aprobación OSI**: ninguna de las licencias de pesos con restricciones de uso citadas figura
-  como aprobada por la OSI, y por construcción no puede serlo (las restricciones de campo de uso
-  son incompatibles con la definición). Verifica la lista vigente y el estado de la *Open Source
-  AI Definition* (OSAID) antes de usar la etiqueta "open source" en documentación.
-- **Huecos declarados**: (a) ninguna cifra de calidad, ahorro de cómputo o memoria de LoRA/QLoRA
-  frente a ajuste completo — las disponibles vienen de blogs de laboratorio o reproducciones
-  sobre modelos concretos, sin condiciones homogéneas; (b) ningún tamaño mínimo de dataset — los
-  rangos que circulan ("mil ejemplos bastan") no traen tarea, modelo ni métrica: el número sale
-  de tu curva de evaluación al variar el tamaño.
-- CVEs y estado de mantenimiento de `bitsandbytes` y de los *kernels* de cuantización, y
-  procedencia/firma de los pesos base (`mlsecops-standards`).
+- Latest stable releases and *breaking changes* of `transformers`, `peft`, `trl`, `accelerate`,
+  `datasets` and `bitsandbytes`: **`trl` moves trainers between stable and experimental across
+  versions**, and `transformers` 5.x already introduced API breakage. Read the repo's documentation
+  index, not a tutorial.
+- **Status of DPO against more recent methods**: verify in the official `trl`
+  documentation which trainers are in `Trainers` (stable) and which in `Experimental`. What is written
+  here comes from the repository's `_toctree.yml` in Aug 2026 and **expires fast**.
+- **The licence of EVERY weights model you use, read in its full text**, including the
+  acceptable use policies incorporated by reference and the provider's terms if you use
+  their API to generate data. **Declared gaps**: (a) the text of the *Llama Community License*
+  cited here corresponds to **Llama 3.3** (version date 6 Dec 2024) read raw from the
+  `meta-llama/llama-models` repository; **Llama 4 has its own agreement** (effective date
+  5 Apr 2025) which **has not been read in full in this write-up** — do not assume the clauses
+  match; (b) the *Gemma Terms of Use* clauses were obtained by extraction from the
+  official page, **not from a raw file**: re-read them at `ai.google.dev/gemma/terms`
+  before basing a legal decision on them; (c) the `safetensors` licence was not verified.
+- **OSI approval**: none of the weight licences with use restrictions cited appears
+  as OSI-approved, and by construction it cannot be (field-of-use restrictions
+  are incompatible with the definition). Verify the current list and the status of the *Open Source
+  AI Definition* (OSAID) before using the "open source" label in documentation.
+- **Declared gaps**: (a) no figure for quality, compute saving or memory of LoRA/QLoRA
+  against full fine-tuning — the available ones come from lab blogs or reproductions
+  on specific models, with no homogeneous conditions; (b) no minimum dataset size — the
+  ranges that circulate ("a thousand examples are enough") come with no task, model or metric: the number comes
+  out of your evaluation curve as you vary the size.
+- CVEs and maintenance status of `bitsandbytes` and the quantisation *kernels*, and
+  provenance/signature of the base weights (`mlsecops-standards`).
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

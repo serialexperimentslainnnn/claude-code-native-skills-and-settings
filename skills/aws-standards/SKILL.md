@@ -3,175 +3,175 @@ name: aws-standards
 description: AWS architecture, security and FinOps standards. Use when working with AWS services (Lambda, ECS, EKS, Fargate, S3, RDS, Aurora, DynamoDB, SQS, SNS, EventBridge, VPC, IAM, KMS, GuardDuty, Security Hub, CloudWatch, Organizations, Control Tower), the aws CLI, SAM, or IaC files targeting AWS (CloudFormation templates *.yaml/*.json, CDK cdk.json/*.ts/*.py, Terraform *.tf with provider aws).
 ---
 
-# Estándares AWS
+# AWS standards
 
-Este skill fija CRITERIO para diseñar, revisar y operar en AWS: qué usar por defecto, qué está
-prohibido y qué verificar antes de decidir. Nivel de exigencia: Well-Architected + zero-trust +
-FinOps. Ante conflicto, gana la seguridad; ante empate técnico, gana lo más simple y lo gestionado.
+This skill sets CRITERIA for designing, reviewing and operating on AWS: what to use by default, what is
+forbidden and what to verify before deciding. Bar: Well-Architected + zero-trust +
+FinOps. On conflict, security wins; on a technical tie, the simplest and the managed option wins.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a cualquier tarea que toque AWS: código IaC (CloudFormation/CDK/Terraform/SAM), comandos
-`aws`, diseño de arquitectura, revisión de seguridad, estimación de costes, pipelines que
-despliegan en AWS. Si la tarea es multi-cloud, combinar con los skills `azure-standards` y
-`gcp-standards` y decidir por workload, no por inercia.
+Applies to any task touching AWS: IaC code (CloudFormation/CDK/Terraform/SAM), `aws`
+commands, architecture design, security review, cost estimation, pipelines that
+deploy to AWS. If the task is multi-cloud, combine with the `azure-standards` and
+`gcp-standards` skills and decide per workload, not by inertia.
 
-**No aplica**: ver `iac-standards` (el **cómo** del código Terraform/OpenTofu y Ansible: módulos,
-state, backend, drift — aquí se decide el **qué**: qué servicio y con qué configuración),
-`kubernetes-standards` (manifiestos, charts y workloads que corren **dentro** de EKS; aquí solo el
-control plane, el data plane y su integración con IAM/VPC), `cicd-standards` (la pipeline y la
-federación OIDC desde el runner), `identity-access-management-standards` (IdP de aplicación: OAuth
-2.1/OIDC, SAML, passkeys, SCIM — aquí IAM/Identity Center como control de acceso a la **plataforma**),
-`cryptography-pki-standards` (elección de algoritmos y ciclo de vida de claves; aquí solo KMS como
-servicio), `vulnerability-management-standards` (workflow de triaje y SLA; aquí solo Security Hub /
-Inspector como fuente de hallazgos), `cloud-security-posture-standards` (**lo transversal a las
-tres nubes**: línea base multi-cuenta, permiso efectivo, caminos de ataque y la elección de
-CSPM/CNAPP; **aquí el servicio de AWS concreto y su configuración**),
-`appsec-standards` (seguridad del código de la aplicación),
-`observability-standards` (OTel y Prometheus vendor-neutral; aquí solo CloudWatch y su coste),
-`sre-practice-standards` (SLO, on-call, postmortems), `grc-compliance-standards` (marco normativo y
-evidencia de auditoría), `networking-standards` (redes físicas, on-prem e híbridas; aquí VPC),
-`data-platform-standards` (modelado, índices y tuning del motor; aquí RDS/Aurora como servicio), `finops-standards` (**frontera de método frente a servicio**: **el modelo de precio de cada servicio de AWS, su configuración y las palancas concretas —clase de almacenamiento, familia de instancia, Savings Plans— son de aquí**; **el método es suyo**: unidad económica, política de etiquetas y su gobierno, normalización con FOCUS, reparto de coste compartido, criterio de cobertura de compromisos y showback/chargeback. Regla: *si la respuesta cambia al cambiar de proveedor, es de `finops-standards`; si depende del catálogo de AWS, es de aquí*), `platform-engineering-standards` (la abstracción interna que se ofrece encima de estos servicios).
+**Not applicable**: see `iac-standards` (the **how** of Terraform/OpenTofu and Ansible code: modules,
+state, backend, drift — here the **what** is decided: which service and with what configuration),
+`kubernetes-standards` (manifests, charts and workloads running **inside** EKS; here only the
+control plane, the data plane and their integration with IAM/VPC), `cicd-standards` (the pipeline and
+OIDC federation from the runner), `identity-access-management-standards` (application IdP: OAuth
+2.1/OIDC, SAML, passkeys, SCIM — here IAM/Identity Center as access control to the **platform**),
+`cryptography-pki-standards` (algorithm choice and key lifecycle; here only KMS as a
+service), `vulnerability-management-standards` (triage workflow and SLA; here only Security Hub /
+Inspector as a source of findings), `cloud-security-posture-standards` (**what is cross-cutting to the
+three clouds**: multi-account baseline, effective permission, attack paths and the choice of
+CSPM/CNAPP; **here the specific AWS service and its configuration**),
+`appsec-standards` (security of the application code),
+`observability-standards` (vendor-neutral OTel and Prometheus; here only CloudWatch and its cost),
+`sre-practice-standards` (SLO, on-call, postmortems), `grc-compliance-standards` (regulatory framework and
+audit evidence), `networking-standards` (physical, on-prem and hybrid networks; here VPC),
+`data-platform-standards` (modelling, indexes and engine tuning; here RDS/Aurora as a service), `finops-standards` (**method versus service boundary**: **the pricing model of each AWS service, its configuration and the concrete levers —storage class, instance family, Savings Plans— are ours**; **the method is theirs**: economic unit, tagging policy and its governance, normalisation with FOCUS, shared cost allocation, commitment coverage criteria and showback/chargeback. Rule: *if the answer changes when the provider changes, it belongs to `finops-standards`; if it depends on the AWS catalogue, it belongs here*), `platform-engineering-standards` (the internal abstraction offered on top of these services).
 
-## 2. Decisiones por defecto (servicio de referencia por caso de uso)
+## 2. Default decisions (reference service per use case)
 
-> **Verificar disponibilidad/estado por web antes de fijar cualquier servicio**: región soportada,
-> que no esté en Maintenance/Sunset en https://aws.amazon.com/products/lifecycle/ y precios vigentes.
+> **Verify availability/status on the web before pinning any service**: supported region,
+> that it is not in Maintenance/Sunset at https://aws.amazon.com/products/lifecycle/ and current prices.
 
-| Caso de uso | Default | Alternativa (cuándo) |
+| Use case | Default | Alternative (when) |
 |---|---|---|
-| Cómputo event-driven / picos / <15 min | Lambda (arm64/Graviton) | ECS Fargate si throughput sostenido o >15 min |
-| Contenedores sin requisito K8s | ECS + Fargate | EC2 capacity providers solo con justificación (GPU, coste sostenido) |
-| Kubernetes estratégico (portabilidad, ecosistema) | EKS con Auto Mode (Karpenter) | Fargate profiles para cargas aisladas |
-| API HTTP | API Gateway (HTTP API) + Lambda | ALB + Fargate para servicios always-on |
-| Relacional | Aurora (PostgreSQL) / RDS PostgreSQL | Aurora Serverless v2 para carga variable |
-| Clave-valor / escala masiva | DynamoDB (on-demand por defecto) | Provisioned + auto scaling si patrón estable y probado |
-| Objetos | S3 (SSE por defecto, Block Public Access) | — |
-| Cola / desacoplo | SQS (+ DLQ siempre) | — |
-| Pub/sub y eventos | EventBridge (dominio) / SNS (fan-out simple) | Kinesis / MSK solo para streaming real con orden y replay |
+| Event-driven compute / spikes / <15 min | Lambda (arm64/Graviton) | ECS Fargate if sustained throughput or >15 min |
+| Containers with no K8s requirement | ECS + Fargate | EC2 capacity providers only with justification (GPU, sustained cost) |
+| Strategic Kubernetes (portability, ecosystem) | EKS with Auto Mode (Karpenter) | Fargate profiles for isolated workloads |
+| HTTP API | API Gateway (HTTP API) + Lambda | ALB + Fargate for always-on services |
+| Relational | Aurora (PostgreSQL) / RDS PostgreSQL | Aurora Serverless v2 for variable load |
+| Key-value / massive scale | DynamoDB (on-demand by default) | Provisioned + auto scaling if the pattern is stable and proven |
+| Objects | S3 (SSE by default, Block Public Access) | — |
+| Queue / decoupling | SQS (+ DLQ always) | — |
+| Pub/sub and events | EventBridge (domain) / SNS (simple fan-out) | Kinesis / MSK only for real streaming with ordering and replay |
 | Cache | ElastiCache (Valkey/Redis OSS) | — |
-| Secretos | Secrets Manager (rotación) / SSM Parameter Store (config) | — |
-| Registro de contenedores | ECR (scan on push, immutable tags) | — |
-| IaC nativa | CDK v2 (TypeScript/Python) sobre CloudFormation | Terraform/OpenTofu si el repo/organización ya lo usa — no mezclar en el mismo stack |
-| Landing zone multi-cuenta | Organizations + Control Tower; personalización con LZA (CDK) o CfCT | Nunca cuentas sueltas sin OU ni SCP/RCP |
-| CI/CD | El del repo (GitHub Actions/GitLab) con OIDC hacia AWS | CodePipeline/CodeBuild si todo-AWS es requisito |
+| Secrets | Secrets Manager (rotation) / SSM Parameter Store (config) | — |
+| Container registry | ECR (scan on push, immutable tags) | — |
+| Native IaC | CDK v2 (TypeScript/Python) over CloudFormation | Terraform/OpenTofu if the repo/organisation already uses it — do not mix within the same stack |
+| Multi-account landing zone | Organizations + Control Tower; customisation with LZA (CDK) or CfCT | Never loose accounts with no OU and no SCP/RCP |
+| CI/CD | The repo's own (GitHub Actions/GitLab) with OIDC towards AWS | CodePipeline/CodeBuild if all-AWS is a requirement |
 
-**Deprecados/retirados — PROHIBIDO proponerlos** (cerrados a nuevos clientes desde 2024 o en
-sunset, fuente: AWS Product Lifecycle): CodeCommit (→ GitHub/GitLab), Cloud9 (→ IDE local +
+**Deprecated/retired — FORBIDDEN to propose them** (closed to new customers since 2024 or in
+sunset, source: AWS Product Lifecycle): CodeCommit (→ GitHub/GitLab), Cloud9 (→ local IDE +
 CloudShell), S3 Select (→ Athena), CloudSearch (→ OpenSearch), SimpleDB (→ DynamoDB), Forecast
-(→ SageMaker), Data Pipeline (→ Glue/Step Functions), Kinesis Data Analytics for SQL (apagado
-ene-2026 → Managed Service for Apache Flink), Inspector Classic (→ Inspector), Pinpoint (EOS
-oct-2026 → SES/End User Messaging), Proton (EOS oct-2026), OpsWorks. Ante cualquier servicio
-"raro", consultar la página de lifecycle antes de usarlo.
+(→ SageMaker), Data Pipeline (→ Glue/Step Functions), Kinesis Data Analytics for SQL (shut down
+Jan 2026 → Managed Service for Apache Flink), Inspector Classic (→ Inspector), Pinpoint (EOS
+Oct 2026 → SES/End User Messaging), Proton (EOS Oct 2026), OpsWorks. For any "odd"
+service, check the lifecycle page before using it.
 
-## 3. Identidad y accesos — credenciales efímeras SIEMPRE
+## 3. Identity and access — ephemeral credentials ALWAYS
 
-- **Prohibidas las access keys estáticas** (IAM users con keys) para humanos, CI/CD y workloads.
-  Humanos: IAM Identity Center (SSO federado con el IdP corporativo) + MFA. CI/CD: OIDC federation
-  (p. ej. `token.actions.githubusercontent.com`) con roles de corta duración y `sub` restringido a
-  repo/rama. Workloads: roles de instancia/tarea (instance profile, ECS task role, IRSA/Pod
-  Identity en EKS). Excepción única: sistema externo sin soporte OIDC/rol — documentada, con
-  rotación automática y alerta de uso.
-- Mínimo privilegio real: policies con acciones y recursos concretos, condiciones
-  (`aws:SourceArn`, `aws:PrincipalOrgID`, tags). Prohibido `Action: "*"`, `Resource: "*"` y
-  policies gestionadas `AdministratorAccess`/`PowerUserAccess` fuera de break-glass.
-- Guardrails de organización: SCPs y RCPs (deny de regiones no aprobadas, deny de desactivar
-  CloudTrail/GuardDuty, deny de crear IAM users con keys). Permissions boundaries para roles
-  creados por pipelines.
-- Cuenta de gestión (management account): sin workloads, sin uso diario; acceso break-glass
-  auditado. Cuentas separadas por entorno (prod/no-prod) y por dominio; log-archive y
-  security-tooling dedicadas (las crea Control Tower).
-- Verificar acceso: Access Analyzer (external + unused access) activo en todas las cuentas.
+- **Static access keys forbidden** (IAM users with keys) for humans, CI/CD and workloads.
+  Humans: IAM Identity Center (SSO federated with the corporate IdP) + MFA. CI/CD: OIDC federation
+  (e.g. `token.actions.githubusercontent.com`) with short-lived roles and `sub` restricted to
+  repo/branch. Workloads: instance/task roles (instance profile, ECS task role, IRSA/Pod
+  Identity on EKS). Single exception: an external system with no OIDC/role support — documented, with
+  automatic rotation and a usage alert.
+- Real least privilege: policies with concrete actions and resources, conditions
+  (`aws:SourceArn`, `aws:PrincipalOrgID`, tags). `Action: "*"`, `Resource: "*"` and
+  the `AdministratorAccess`/`PowerUserAccess` managed policies are forbidden outside break-glass.
+- Organisation guardrails: SCPs and RCPs (deny non-approved regions, deny disabling
+  CloudTrail/GuardDuty, deny creating IAM users with keys). Permissions boundaries for roles
+  created by pipelines.
+- Management account: no workloads, no daily use; audited break-glass access. Separate accounts per
+  environment (prod/non-prod) and per domain; dedicated log-archive and
+  security-tooling accounts (Control Tower creates them).
+- Verify access: Access Analyzer (external + unused access) enabled in every account.
 
-## 4. Redes — default-deny, exposición mínima
+## 4. Networks — default-deny, minimal exposure
 
-- VPC propia por workload/entorno; **no usar la VPC default** (eliminarla o dejarla sin uso).
-  Subnets privadas por defecto; públicas solo para ALB/NLB/NAT. IPAM sin solapamientos (RFC1918).
-- Security Groups default-deny: solo ingress imprescindible, referenciando otros SG, no CIDRs
-  amplios. **Prohibido `0.0.0.0/0` en ingress salvo 443 en el borde público justificado** (y
-  entonces detrás de CloudFront/WAF + Shield). Egress también restringido en cargas sensibles.
-- Tráfico a servicios AWS por VPC endpoints (Gateway para S3/DynamoDB — gratis; Interface para el
-  resto) con endpoint policies; evita NAT innecesario (coste) y salida a Internet (seguridad).
-- TLS 1.2+ en todo (ALB security policy moderna, HSTS); mTLS entre servicios cuando el dato lo
-  pida (ECS Service Connect / App Mesh sucesores — verificar estado por web). Acceso administrativo
-  por SSM Session Manager, **nunca SSH abierto ni bastión con 22 público**.
-- Exposición mínima: nada de IPs públicas en instancias/tareas; ALB interno salvo servicio
-  realmente público. Route 53 con registros mínimos; DNSSEC donde aplique.
+- Own VPC per workload/environment; **do not use the default VPC** (delete it or leave it unused).
+  Private subnets by default; public ones only for ALB/NLB/NAT. IPAM with no overlaps (RFC1918).
+- Default-deny Security Groups: only the indispensable ingress, referencing other SGs, not broad
+  CIDRs. **`0.0.0.0/0` on ingress is forbidden except for justified 443 at the public edge** (and
+  then behind CloudFront/WAF + Shield). Egress is restricted too on sensitive workloads.
+- Traffic to AWS services through VPC endpoints (Gateway for S3/DynamoDB — free; Interface for the
+  rest) with endpoint policies; avoids unnecessary NAT (cost) and egress to the Internet (security).
+- TLS 1.2+ everywhere (modern ALB security policy, HSTS); mTLS between services when the data
+  demands it (ECS Service Connect / App Mesh successors — verify status on the web). Administrative access
+  via SSM Session Manager, **never open SSH nor a bastion with public 22**.
+- Minimal exposure: no public IPs on instances/tasks; internal ALB unless the service is
+  genuinely public. Route 53 with minimal records; DNSSEC where applicable.
 
-## 5. Datos — cifrado, backups probados, RTO/RPO
+## 5. Data — encryption, proven backups, RTO/RPO
 
-- Cifrado en reposo en TODO recurso: KMS con claves gestionadas por el cliente (CMK) para datos
-  sensibles (alias por dominio, rotación anual activada, key policies mínimas); SSE-S3/claves AWS
-  gestionadas como suelo mínimo. S3: Block Public Access a nivel de cuenta, versioning en buckets
-  de datos, Object Lock para inmutabilidad (ransomware/compliance).
-- RTO/RPO definidos ANTES de elegir motor y topología; multi-AZ por defecto en prod; multi-región
-  solo si el RTO/RPO lo exige (coste).
-- Backups: AWS Backup centralizado con plan por tags, vault con Vault Lock (inmutable) y copia
-  cross-account/cross-region para escenario de compromiso de cuenta. **Un backup sin restore
-  probado no existe**: game-day de restauración periódico y documentado.
-- Ciclo de vida: S3 lifecycle a IA/Glacier según acceso real (S3 Storage Lens / Intelligent-Tiering
-  para patrones desconocidos); retención y borrado conforme a GDPR (minimización, derecho al olvido).
-- Migraciones de esquema expand/contract; nunca cambios destructivos en el mismo deploy.
+- Encryption at rest on EVERY resource: KMS with customer-managed keys (CMK) for sensitive
+  data (alias per domain, annual rotation enabled, minimal key policies); SSE-S3/AWS-managed
+  keys as the minimum floor. S3: account-level Block Public Access, versioning on data
+  buckets, Object Lock for immutability (ransomware/compliance).
+- RTO/RPO defined BEFORE choosing engine and topology; multi-AZ by default in prod; multi-region
+  only if the RTO/RPO demands it (cost).
+- Backups: centralised AWS Backup with a tag-based plan, vault with Vault Lock (immutable) and a
+  cross-account/cross-region copy for an account-compromise scenario. **A backup with no proven
+  restore does not exist**: periodic, documented restore game-day.
+- Lifecycle: S3 lifecycle to IA/Glacier according to real access (S3 Storage Lens / Intelligent-Tiering
+  for unknown patterns); retention and deletion compliant with GDPR (minimisation, right to erasure).
+- Expand/contract schema migrations; never destructive changes in the same deploy.
 
-## 6. Observabilidad y operación
+## 6. Observability and operation
 
-- CloudTrail organizacional (todas las cuentas/regiones, logs a cuenta log-archive, integridad
-  activada) — innegociable. VPC Flow Logs en VPCs de prod.
-- Logs estructurados (JSON) a CloudWatch Logs con retención explícita (**nunca "Never expire" por
-  defecto** — es coste y ruido); métricas con alarmas accionables sobre síntomas (golden signals),
-  no sobre cada recurso; trazas con X-Ray/ADOT (OpenTelemetry preferido por portabilidad).
-- SLOs con error budget para servicios de negocio; alertas → on-call, no a un buzón.
-- Seguridad operativa: GuardDuty (todas las cuentas, delegated admin, protecciones S3/EKS/RDS
-  según uso), Security Hub para agregación/priorización — **ojo**: desde dic-2025 "Security Hub"
-  es el servicio unificado nuevo (OCSF, APIs v2) y el clásico se llama "Security Hub CSPM" (ASFF);
-  verificar por web cuál aplica antes de escribir automatización, no son intercambiables.
-  Inspector (el actual, no Classic) para vulnerabilidades en ECR/EC2/Lambda. AWS Config con
-  conformance packs (CIS AWS Foundations v5) en todas las cuentas.
-- Todo cambio por pipeline con plan/diff revisado; despliegues canary/rolling con rollback
-  probado (CodeDeploy, feature flags). Runbooks y postmortems sin culpa.
+- Organisational CloudTrail (all accounts/regions, logs to the log-archive account, integrity
+  enabled) — non-negotiable. VPC Flow Logs on prod VPCs.
+- Structured logs (JSON) to CloudWatch Logs with explicit retention (**never "Never expire" by
+  default** — it is cost and noise); metrics with actionable alarms on symptoms (golden signals),
+  not on every resource; traces with X-Ray/ADOT (OpenTelemetry preferred for portability).
+- SLOs with error budget for business services; alerts → on-call, not to a mailbox.
+- Operational security: GuardDuty (all accounts, delegated admin, S3/EKS/RDS protections
+  depending on use), Security Hub for aggregation/prioritisation — **careful**: since Dec 2025 "Security Hub"
+  is the new unified service (OCSF, v2 APIs) and the classic one is called "Security Hub CSPM" (ASFF);
+  verify on the web which one applies before writing automation, they are not interchangeable.
+  Inspector (the current one, not Classic) for vulnerabilities in ECR/EC2/Lambda. AWS Config with
+  conformance packs (CIS AWS Foundations v5) in every account.
+- Every change through a pipeline with a reviewed plan/diff; canary/rolling deployments with proven
+  rollback (CodeDeploy, feature flags). Runbooks and blameless postmortems.
 
-## 7. FinOps — coste como atributo de calidad
+## 7. FinOps — cost as a quality attribute
 
-- **Tagging obligatorio y verificado**: mínimo `owner`, `env`, `project`/`cost-center`,
-  `managed-by` (IaC). Enforzado con tag policies + SCP/Config rule que marca no conformes.
-  Recurso sin tags = recurso huérfano = candidato a borrado.
-- Data Exports en formato **FOCUS** (estándar FinOps Foundation; verificar por web la versión
-  soportada — 1.3 ratificada dic-2025) a S3/Athena; Budgets con alertas por cuenta/proyecto y
-  Cost Anomaly Detection activado desde el día 1.
-- Palancas por defecto: Graviton/arm64 donde el runtime lo soporte, Savings Plans para base
-  estable (decisión con datos de ≥30 días, no de memoria), Spot para cargas tolerantes a fallo,
-  scale-to-zero/off-hours en no-prod, right-sizing con Compute Optimizer.
-- Coste del diseño en la decisión de arquitectura: NAT Gateway, transferencia inter-AZ/región,
-  endpoints Interface, CloudWatch ingest — se estiman antes, no se descubren en factura.
+- **Mandatory and verified tagging**: at minimum `owner`, `env`, `project`/`cost-center`,
+  `managed-by` (IaC). Enforced with tag policies + an SCP/Config rule that flags non-compliant ones.
+  A resource with no tags = an orphan resource = a deletion candidate.
+- Data Exports in **FOCUS** format (FinOps Foundation standard; verify the supported version on the
+  web — 1.3 ratified Dec 2025) to S3/Athena; Budgets with alerts per account/project and
+  Cost Anomaly Detection enabled from day 1.
+- Default levers: Graviton/arm64 where the runtime supports it, Savings Plans for the stable
+  baseline (decision with ≥30 days of data, not from memory), Spot for fault-tolerant workloads,
+  scale-to-zero/off-hours in non-prod, right-sizing with Compute Optimizer.
+- Design cost inside the architecture decision: NAT Gateway, inter-AZ/region transfer,
+  Interface endpoints, CloudWatch ingest — they are estimated up front, not discovered on the bill.
 
-## 8. Sostenibilidad, lock-in y PROHIBICIONES
+## 8. Sustainability, lock-in and PROHIBITIONS
 
-- **Lock-in consciente, no accidental**: servicios propietarios (DynamoDB, EventBridge, Step
-  Functions) solo con beneficio claro; contratos de la app tras interfaces propias; estándares
-  portables donde no cueste (OpenTelemetry, Postgres, S3 API, contenedores OCI).
-- Política de upgrades: versiones de runtime/motor dentro de soporte estándar SIEMPRE (Lambda
-  runtimes, EKS N-2 como máximo, RDS con auto minor upgrade en ventana); el upgrade es trabajo
-  planificado trimestral, no emergencia. Sin extended support pagado salvo decisión explícita.
-- **LISTA DE PROHIBICIONES** (bloquean una review):
-  - Access keys estáticas de IAM user en cualquier sitio (código, CI, `~/.aws` de servidores).
-  - `0.0.0.0/0` en ingress sin justificación escrita; SSH/RDP públicos; recursos con IP pública
-    innecesaria; VPC default en uso.
-  - Recursos sin tags obligatorios; recursos creados por consola en prod (**clickops**) — todo
-    por IaC; drift sin reconciliar.
-  - S3 público o sin Block Public Access; datos sin cifrar; CMK sin rotación; secretos en código,
-    env vars de texto plano en templates, o logs.
-  - Desactivar CloudTrail/GuardDuty/Config; wildcard `*` en policies IAM; cuentas fuera de la
-    organización.
-  - Proponer servicios deprecados (lista sección 2); `latest` como tag de imagen en prod;
-  - Logs sin retención definida; base de datos single-AZ en prod; backup sin restore probado.
+- **Conscious lock-in, not accidental**: proprietary services (DynamoDB, EventBridge, Step
+  Functions) only with a clear benefit; app contracts behind own interfaces; portable
+  standards where they cost nothing (OpenTelemetry, Postgres, S3 API, OCI containers).
+- Upgrade policy: runtime/engine versions within standard support ALWAYS (Lambda
+  runtimes, EKS N-2 at most, RDS with auto minor upgrade in a window); the upgrade is quarterly
+  planned work, not an emergency. No paid extended support except by explicit decision.
+- **LIST OF PROHIBITIONS** (they block a review):
+  - Static IAM user access keys anywhere (code, CI, servers' `~/.aws`).
+  - `0.0.0.0/0` on ingress with no written justification; public SSH/RDP; resources with an unnecessary
+    public IP; the default VPC in use.
+  - Resources without mandatory tags; resources created through the console in prod (**clickops**) — everything
+    through IaC; unreconciled drift.
+  - Public S3 or S3 without Block Public Access; unencrypted data; CMK without rotation; secrets in code,
+    plaintext env vars in templates, or logs.
+  - Disabling CloudTrail/GuardDuty/Config; wildcard `*` in IAM policies; accounts outside the
+    organisation.
+  - Proposing deprecated services (list in section 2); `latest` as an image tag in prod;
+  - Logs with no defined retention; a single-AZ database in prod; a backup with no proven restore.
 
-## 9. Verificación web obligatoria
+## 9. Mandatory web verification
 
-Antes de fijar en código o respuesta cualquier dato concreto de AWS, **buscar en la web** (docs
-oficiales AWS primero): estado del servicio (lifecycle page), disponibilidad regional, versión de
-runtime/motor soportada, límites y cuotas, precios, nombre exacto de APIs/flags (p. ej. Security
-Hub v2 vs CSPM), y novedades re:Invent/re:Inforce del último año. La memoria del modelo NO es
-fuente válida para: precios, fechas EOL, nombres de features recientes, disponibilidad regional.
-Si no se puede verificar, decirlo explícitamente y marcar la decisión como provisional.
+Before pinning any concrete AWS fact in code or in an answer, **search the web** (official AWS
+docs first): service status (lifecycle page), regional availability, supported runtime/engine
+version, limits and quotas, prices, exact names of APIs/flags (e.g. Security
+Hub v2 vs CSPM), and re:Invent/re:Inforce news from the last year. The model's memory is NOT a
+valid source for: prices, EOL dates, recent feature names, regional availability.
+If it cannot be verified, say so explicitly and mark the decision as provisional.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

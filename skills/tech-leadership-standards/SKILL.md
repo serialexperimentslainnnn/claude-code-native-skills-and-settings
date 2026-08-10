@@ -3,310 +3,310 @@ name: tech-leadership-standards
 description: Technical leadership as a set of decisions and artifacts, not a personality trait. Use when defining or applying an engineering career ladder and the IC-versus-manager track, assigning work by Staff+ archetype (tech lead, architect, solver, right hand), writing or reviewing an ADR and classifying a decision as a one-way or two-way door, writing a design document and running a design review with acceptance criteria, deciding who decides and at what level, budgeting technical debt as an explicit business decision, protecting a blameless postmortem under management pressure, running a 1:1 with a report-owned agenda, giving written performance feedback, being asked for individual productivity metrics such as lines of code, commits, velocity or DORA per engineer, citing SPACE or DORA in a measurement argument, sizing a team and its cognitive load in the Team Topologies sense, mapping inter-team dependencies, resolving a technical disagreement and applying disagree-and-commit, deciding whether to adopt coding agents and who pays the organizational cost, or being handed responsibility without authority.
 ---
 
-# Estándares de liderazgo técnico
+# Technical leadership standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre **las decisiones que toma quien lidera técnicamente y los artefactos en los que quedan
-escritas**: vías de carrera y alcance real de cada nivel, arquetipos de rol staff+, quién decide qué
-y a qué velocidad, el registro de decisiones, el documento y la revisión de diseño, la deuda técnica
-como partida presupuestaria, la conversación individual y la evaluación, el dimensionamiento del
-equipo y sus dependencias, y la resolución de desacuerdos técnicos.
+Covers **the decisions taken by whoever leads technically and the artifacts in which they are
+written down**: career tracks and the real scope of each level, staff+ role archetypes, who decides what
+and how fast, the decision record, the design document and the design review, technical debt
+as a budget line, the individual conversation and performance evaluation, team
+sizing and its dependencies, and the resolution of technical disagreements.
 
-Triggers: "career ladder", "escala de niveles", "senior/staff/principal", "IC vs. management",
-"arquetipo staff", "tech lead", "ADR", "registro de decisiones", "puerta de un sentido",
-"reversible", "documento de diseño", "design doc", "revisión de diseño", "RFC técnico", "deuda
-técnica", "presupuesto de refactor", "postmortem sin culpa", "1:1", "feedback", "evaluación de
-desempeño", "métricas de productividad individual", "líneas de código", "commits por persona",
-"DORA por ingeniero", "SPACE", "carga cognitiva", "Team Topologies", "tamaño de equipo",
-"dependencias entre equipos", "desacuerdo técnico", "disagree and commit", "responsabilidad sin
-autoridad".
+Triggers: "career ladder", "level ladder", "senior/staff/principal", "IC vs. management",
+"staff archetype", "tech lead", "ADR", "decision record", "one-way door",
+"reversible", "design document", "design doc", "design review", "technical RFC", "technical
+debt", "refactor budget", "blameless postmortem", "1:1", "feedback", "performance
+review", "individual productivity metrics", "lines of code", "commits per person",
+"DORA per engineer", "SPACE", "cognitive load", "Team Topologies", "team size",
+"inter-team dependencies", "technical disagreement", "disagree and commit", "responsibility without
+authority".
 
-**Principio rector**: **el liderazgo técnico es un conjunto de decisiones y artefactos, no un rasgo
-de carácter.** No se evalúa por cómo se percibe a la persona, sino por lo que existe escrito y por
-lo que el equipo consigue: decisiones registradas con su reversibilidad, diseños revisados antes de
-construir, interfaces entre equipos definidas, deuda con presupuesto asignado y personas con
-feedback específico y fechado. **Test falsable aplicable a cualquier afirmación sobre liderazgo:
-nombra el artefacto que produce, quién lo lee y qué decisión cambia.** Si no se puede nombrar, la
-afirmación es motivacional y no se escribe aquí.
+**Guiding principle**: **technical leadership is a set of decisions and artifacts, not a character
+trait.** It is not evaluated by how the person is perceived, but by what exists in writing and by
+what the team achieves: decisions recorded with their reversibility, designs reviewed before
+building, interfaces between teams defined, debt with an assigned budget and people with
+specific, dated feedback. **A falsifiable test applicable to any claim about leadership:
+name the artifact it produces, who reads it and which decision it changes.** If it cannot be named, the
+claim is motivational and does not get written here.
 
-Corolario duro: **"liderar con el ejemplo", "fomentar la confianza" y frases del mismo género no
-fijan nada.** No son criterio, son adorno. Su equivalente accionable siempre existe y es lo único
-que este documento admite: *"toda decisión de arquitectura vive en un ADR con reversibilidad
-declarada"*, *"el postmortem no nombra personas y el líder lo defiende ante dirección por escrito"*.
+Hard corollary: **"lead by example", "foster trust" and phrases of the same genre fix
+nothing.** They are not criteria, they are decoration. Their actionable equivalent always exists and is the only thing
+this document accepts: *"every architecture decision lives in an ADR with declared
+reversibility"*, *"the postmortem names no people and the leader defends it to management in writing"*.
 
-**No aplica**:
-- `technical-hiring-standards`: **recíproca y estricta**. Aquí se decide **qué perfil hace falta,
-  por qué, y qué hueco del equipo cubre** (§3.7); allí **cómo se mide a un candidato** — rúbrica,
-  formato de prueba, validez del método, sesgo, régimen legal e incorporación. Frontera de una
-  frase: **el liderazgo define el puesto; el proceso de selección es el instrumento de medida.**
-- `project-management-standards` (**ya escrita**): **la entrega, el plan, el compromiso, la
-  estimación, el riesgo y las partes interesadas son suyos**, incluido el registro de decisiones de
-  *gestión*. Aquí la **decisión técnica** y el **desarrollo del equipo**. Frontera: si la pregunta
-  es *"¿cuándo estará y con qué riesgo?"*, es suya; si es *"¿cómo se construye y quién lo decide?"*,
-  es de aquí. **El formato de registro de decisiones es el mismo en ambas** (§3.3) para no bifurcar
-  el repositorio.
-- `product-discovery-standards`: **qué se construye y por qué** — problema,
-  usuario, hipótesis, priorización por valor y decisión de matar una idea. Aquí no se decide el qué.
-- `enterprise-architecture-standards`: gobierno de arquitectura de la
-  organización, hoja de ruta de capacidades y cartera de aplicaciones. Aquí el alcance es el equipo
-  y su vecindad inmediata, no la empresa. Recíproca declarada en su §1.
-- `software-architecture-patterns-standards` y `refactoring-tech-debt-standards` (**ya escritas**):
-  **el criterio técnico es suyo** — qué patrón aplica, cuándo un módulo se refactoriza
-  y con qué técnica. Aquí solo **la decisión de invertir en ello, su presupuesto y cómo se defiende**
-  (§3.5). Ambas ya declaran la recíproca en su §1.
-- `microservices-architecture-standards`: límites de servicio y contratos concretos. Aquí, el
-  reflejo organizativo de esos límites (§3.6).
-- `code-review-standards` (**ya escrita**): **el criterio de revisión es suyo** — qué bloquea, cómo
-  se redacta el comentario, qué exige un cambio de alto riesgo. Aquí solo la regla de que **la
-  revisión no se use como instrumento de poder** (§3.8) y quién arbitra el desacuerdo que la revisión
-  no cierra.
-- `testing-qa-standards`: estrategia de prueba y gates. Aquí, la decisión de financiarla.
-- `sre-practice-standards`: **SLO, *error budget*, guardia, capacidad y las métricas DORA son
-  suyos**. Aquí, únicamente, que **DORA es medida de sistema y su uso individual está prohibido**
+**Not applicable**:
+- `technical-hiring-standards`: **reciprocal and strict**. Here you decide **what profile is needed,
+  why, and which gap in the team it fills** (§3.7); there **how a candidate is measured** — rubric,
+  exercise format, method validity, bias, legal regime and onboarding. One-sentence boundary:
+  **leadership defines the role; the selection process is the measuring instrument.**
+- `project-management-standards` (**already written**): **delivery, the plan, the commitment, the
+  estimate, the risk and the stakeholders are theirs**, including the record of *management*
+  decisions. Here the **technical decision** and **team development**. Boundary: if the question
+  is *"when will it be ready and with what risk?"*, it is theirs; if it is *"how is it built and who decides it?"*,
+  it is ours. **The decision record format is the same in both** (§3.3) so as not to fork
+  the repository.
+- `product-discovery-standards`: **what gets built and why** — problem,
+  user, hypothesis, prioritisation by value and the decision to kill an idea. Here the what is not decided.
+- `enterprise-architecture-standards`: architecture governance for the
+  organisation, capability roadmap and application portfolio. Here the scope is the team
+  and its immediate neighbourhood, not the company. Reciprocal declared in their §1.
+- `software-architecture-patterns-standards` and `refactoring-tech-debt-standards` (**already written**):
+  **the technical criteria are theirs** — which pattern applies, when a module is refactored
+  and with which technique. Here only **the decision to invest in it, its budget and how it is defended**
+  (§3.5). Both already declare the reciprocal in their §1.
+- `microservices-architecture-standards`: service boundaries and concrete contracts. Here, the
+  organisational reflection of those boundaries (§3.6).
+- `code-review-standards` (**already written**): **the review criteria are theirs** — what blocks, how
+  the comment is written, what a high-risk change requires. Here only the rule that **review
+  is not used as an instrument of power** (§3.8) and who arbitrates the disagreement that review
+  does not close.
+- `testing-qa-standards`: test strategy and gates. Here, the decision to fund it.
+- `sre-practice-standards`: **SLOs, *error budget*, on-call, capacity and the DORA metrics are
+  theirs**. Here, solely, that **DORA is a system measure and its individual use is forbidden**
   (§3.9, §7).
-- `incident-management-standards`: **el proceso de incidente y el postmortem sin culpa son suyos**
-  — roles, cronología, acciones. Aquí lo que corresponde al liderazgo y solo eso: **proteger el
-  postmortem sin culpa cuando hay presión de arriba para nombrar un culpable** (§3.10).
-- `platform-engineering-standards` (**ya escrita**): **la plataforma como producto interno**, su
-  camino pavimentado, sus SLO y su adopción. Aquí, la decisión de crear el equipo y qué carga se le
-  transfiere.
-- `itsm-itil-standards`: servicio, catálogo y operación continua.
-- `grc-compliance-standards`: marco normativo, evidencia formal, segregación de funciones.
-- `ai-agent-workflow-standards` (**ya escrita**): **la política de equipo sobre agentes de
-  codificación es suya** — qué tarea se delega, ficheros de instrucciones, permisos, revisión del
-  diff, atribución. Aquí solo **la decisión de adoptarla, quién paga su coste organizativo y qué
-  métricas NO se usan para justificarla** (§3.11).
-- `knowledge-management-standards`: dónde vive la documentación y cómo se
-  mantiene viva. Aquí, la obligación de que la decisión quede escrita.
+- `incident-management-standards`: **the incident process and the blameless postmortem are theirs**
+  — roles, timeline, actions. Here what corresponds to leadership and only that: **protecting the
+  blameless postmortem when there is pressure from above to name a culprit** (§3.10).
+- `platform-engineering-standards` (**already written**): **the platform as an internal product**, its
+  paved road, its SLOs and its adoption. Here, the decision to create the team and what load is
+  transferred to it.
+- `itsm-itil-standards`: service, catalogue and continuous operation.
+- `grc-compliance-standards`: regulatory framework, formal evidence, segregation of duties.
+- `ai-agent-workflow-standards` (**already written**): **the team policy on coding
+  agents is theirs** — which task is delegated, instruction files, permissions, review of the
+  diff, attribution. Here only **the decision to adopt it, who pays its organisational cost and which
+  metrics are NOT used to justify it** (§3.11).
+- `knowledge-management-standards`: where documentation lives and how it is
+  kept alive. Here, the obligation that the decision be written down.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web el estado de las fuentes citadas antes de apoyarse en ellas (§8).
+> Verify on the web the status of the cited sources before relying on them (§8).
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Qué distingue un nivel de otro | **Alcance del impacto, tipo de decisión y horizonte temporal** (§3.1) | Nunca años de experiencia ni dominio de una tecnología |
-| Vía de carrera | **Dos vías con paridad de nivel, ámbito y retribución**, publicadas | Vía única solo en organizaciones < 15 ingenieros, y declarándolo |
-| Asignación de trabajo staff+ | **Por arquetipo declarado** (§3.2), acordado con la persona y revisable | — |
-| Registro de decisiones técnicas | **ADR obligatorio**, formato Nygard, en el repositorio del código afectado | Registro central **solo** si la decisión cruza varios repositorios |
-| Velocidad de decisión | **Derivada de la reversibilidad** (§3.3): reversible → rápida y al nivel más bajo; irreversible → instruida y arriba | — |
-| Antes de construir algo no trivial | **Documento de diseño revisado** con criterios de aceptación (§3.4) | Prototipo desechable con caja de tiempo, si el problema es que no se entiende |
-| Deuda técnica | **Partida presupuestaria explícita y recurrente**, con su unidad de medida (§3.5) | Nunca "cuando haya tiempo" |
-| Medida de un líder técnico | **Resultado del equipo**: entrega, fiabilidad, autonomía, decisiones registradas | — |
-| Contacto del líder con el código | **Mínimo suficiente para juzgar** (§3.8): revisar, leer el diseño, tocar el sistema periódicamente | — |
-| Métrica individual de productividad | **No existe.** Prohibida (§7) | Evaluación cualitativa con evidencia escrita y fechada |
-| Cadencia de 1:1 | **Semanal o quincenal, agenda del subordinado**, nunca informe de estado (§3.9) | — |
-| Tamaño de equipo | **Estable, con carga acotada y dueño único de cada sistema** (§3.6) | — |
-| Desacuerdo técnico | **Se resuelve con datos, con plazo, y se cierra con desacuerdo comprometido** (§3.7) | Escalado **solo** tras agotar el experimento acotado |
+| What distinguishes one level from another | **Scope of impact, type of decision and time horizon** (§3.1) | Never years of experience and never mastery of a technology |
+| Career track | **Two tracks with parity of level, scope and pay**, published | A single track only in organisations with < 15 engineers, and declaring it |
+| Staff+ work assignment | **By declared archetype** (§3.2), agreed with the person and revisable | — |
+| Record of technical decisions | **ADR mandatory**, Nygard format, in the repository of the affected code | A central record **only** if the decision crosses several repositories |
+| Decision speed | **Derived from reversibility** (§3.3): reversible → fast and at the lowest level; irreversible → informed and higher up | — |
+| Before building anything non-trivial | **A reviewed design document** with acceptance criteria (§3.4) | A throwaway prototype with a time box, if the problem is that it is not understood |
+| Technical debt | **An explicit and recurring budget line**, with its unit of measure (§3.5) | Never "when there is time" |
+| Measure of a technical leader | **The team's result**: delivery, reliability, autonomy, recorded decisions | — |
+| The leader's contact with the code | **The minimum sufficient to judge** (§3.8): reviewing, reading the design, touching the system periodically | — |
+| Individual productivity metric | **It does not exist.** Forbidden (§7) | Qualitative evaluation with written and dated evidence |
+| 1:1 cadence | **Weekly or fortnightly, the report's agenda**, never a status report (§3.9) | — |
+| Team size | **Stable, with bounded load and a single owner for each system** (§3.6) | — |
+| Technical disagreement | **Resolved with data, with a deadline, and closed with disagree-and-commit** (§3.7) | Escalation **only** after exhausting the bounded experiment |
 
-### Fuentes: qué se cita y con qué reserva
+### Sources: what is cited and with what caveat
 
-- ✅ **Puertas de un sentido / de dos sentidos.** Fuente primaria: **Jeff Bezos, carta a los
-  accionistas de Amazon de 2015** (`ir.aboutamazon.com`, PDF). **Verbatim** (extraído del PDF
-  oficial, no de un resumen): *"Some decisions are consequential and irreversible or nearly
+- ✅ **One-way / two-way doors.** Primary source: **Jeff Bezos, 2015 letter to Amazon
+  shareholders** (`ir.aboutamazon.com`, PDF). **Verbatim** (extracted from the official PDF,
+  not from a summary): *"Some decisions are consequential and irreversible or nearly
   irreversible – one-way doors – and these decisions must be made methodically, carefully, slowly,
   with great deliberation and consultation. If you walk through and don't like what you see on the
   other side, you can't get back to where you were before. We can call these Type 1 decisions. But
   most decisions aren't like that – they are changeable, reversible – they're two-way doors. If
   you've made a suboptimal Type 2 decision, you don't have to live with the consequences for that
   long. You can reopen the door and go back through. Type 2 decisions can and should be made quickly
-  by high judgment individuals or small groups."* Y el diagnóstico que interesa aquí: *"As
+  by high judgment individuals or small groups."* And the diagnosis that matters here: *"As
   organizations get larger, there seems to be a tendency to use the heavy-weight Type 1
   decision-making process on most decisions, including many Type 2 decisions. The end result of this
   is slowness, unthoughtful risk aversion, failure to experiment sufficiently, and consequently
-  diminished invention."* **Discrepancia declarada**: numerosas fuentes secundarias sitúan el marco
-  en la carta de **2016**; es incorrecto — la terminología Type 1 / Type 2 aparece en la de **2015**.
-  La de 2016 contiene material relacionado (*disagree and commit*), que es otra cosa.
-- ✅ **ADR.** Fuente primaria: **Michael Nygard, "Documenting Architecture Decisions", 15-nov-2011**,
-  publicado originalmente en el blog de Relevance/ThinkRelevance y hoy en `cognitect.com`. Plantilla
-  de cinco secciones: **Título** (frase nominal corta con número secuencial que nunca se reutiliza),
-  **Estado** (propuesto / aceptado / obsoleto / sustituido por ADR-NNNN), **Contexto** (las fuerzas
-  en juego, en lenguaje neutro), **Decisión**, **Consecuencias** (positivas y negativas). Regla
-  derivada: **un ADR aceptado no se edita**; si cambia la conclusión, se escribe uno nuevo que
-  sustituye al anterior y actualiza su estado.
-- ⚠️ **Arquetipos staff+.** Sí existe taxonomía publicada de referencia: **Will Larson, *Staff
-  Engineer: Leadership beyond the management track* (2021)** y su origen en abierto
-  (`lethain.com/staff-engineer-archetypes/`, `staffeng.com/guides/staff-archetypes/`). Cuatro
-  arquetipos: **tech lead**, **architect**, **solver**, **right hand**. **Reserva explícita**: es
-  una **taxonomía descriptiva de observación en empresas tecnológicas de crecimiento rápido, no un
-  resultado de investigación**, y tiene crítica publicada por profesionales (Sean Goedecke: los
-  arquetipos existen pero son mal consejo como objetivo de carrera, porque *solver* y *right hand*
-  dependen de confianza acumulada y no se pueden perseguir directamente; Alex Ewerlöf: no deben
-  usarse como títulos de puesto). **Uso admitido: vocabulario para repartir trabajo y aclarar
-  expectativas. Uso prohibido: convertirlos en niveles, títulos o casillas de una escala.**
-- ⚠️ **Carga cognitiva de equipo.** Fuente original **John Sweller, "Cognitive load during problem
-  solving: Effects on learning", *Cognitive Science* 12(2):257-285 (1988)** — teoría de
-  **aprendizaje individual y diseño instruccional**. Su traslado a equipos es de **Matthew Skelton y
-  Manuel Pais, *Team Topologies* (2019)**. **Trátese como analogía útil, no como medición validada**,
-  exactamente igual que en `platform-engineering-standards` §6.4: la carga cognitiva de equipo **no
-  tiene unidad medible**, la suma de cargas individuales no es un constructo definido en la teoría
-  original, y literatura académica de DevOps señala que el libro **no aporta evidencia científica**
-  y se apoya en experiencia y casos. Sirve para **decidir el reparto de sistemas entre equipos**; no
-  sirve como número en una diapositiva.
+  diminished invention."* **Declared discrepancy**: numerous secondary sources place the framework
+  in the **2016** letter; that is incorrect — the Type 1 / Type 2 terminology appears in the **2015** one.
+  The 2016 one contains related material (*disagree and commit*), which is a different thing.
+- ✅ **ADR.** Primary source: **Michael Nygard, "Documenting Architecture Decisions", 15-Nov-2011**,
+  originally published on the Relevance/ThinkRelevance blog and today at `cognitect.com`. A five-section
+  template: **Title** (a short noun phrase with a sequential number that is never reused),
+  **Status** (proposed / accepted / deprecated / superseded by ADR-NNNN), **Context** (the forces
+  at play, in neutral language), **Decision**, **Consequences** (positive and negative). Derived
+  rule: **an accepted ADR is not edited**; if the conclusion changes, a new one is written that
+  supersedes the previous one and updates its status.
+- ⚠️ **Staff+ archetypes.** A published reference taxonomy does exist: **Will Larson, *Staff
+  Engineer: Leadership beyond the management track* (2021)** and its origin in the open
+  (`lethain.com/staff-engineer-archetypes/`, `staffeng.com/guides/staff-archetypes/`). Four
+  archetypes: **tech lead**, **architect**, **solver**, **right hand**. **Explicit caveat**: it is
+  a **descriptive taxonomy observed in fast-growing technology companies, not a
+  research result**, and it has published criticism from practitioners (Sean Goedecke: the
+  archetypes exist but are bad advice as a career target, because *solver* and *right hand*
+  depend on accumulated trust and cannot be pursued directly; Alex Ewerlöf: they should not
+  be used as job titles). **Permitted use: vocabulary for distributing work and clarifying
+  expectations. Forbidden use: turning them into levels, titles or boxes on a ladder.**
+- ⚠️ **Team cognitive load.** Original source **John Sweller, "Cognitive load during problem
+  solving: Effects on learning", *Cognitive Science* 12(2):257-285 (1988)** — a theory of
+  **individual learning and instructional design**. Its transfer to teams is from **Matthew Skelton and
+  Manuel Pais, *Team Topologies* (2019)**. **Treat it as a useful analogy, not as a validated measurement**,
+  exactly as in `platform-engineering-standards` §6.4: team cognitive load **has
+  no measurable unit**, the sum of individual loads is not a construct defined in the original
+  theory, and DevOps academic literature points out that the book **provides no scientific evidence**
+  and rests on experience and cases. It is useful for **deciding how systems are distributed between teams**; it is
+  not useful as a number on a slide.
 - ✅ **SPACE.** **Nicole Forsgren, Margaret-Anne Storey, Chandra Maddila, Thomas Zimmermann, Brian
-  Houck y Jenna Butler, "The SPACE of Developer Productivity: There's more to it than you think",
-  *ACM Queue* 19(1):20-48 (2021), DOI 10.1145/3454122.3454124** (también en *CACM*). Cinco
-  dimensiones: satisfacción y bienestar, rendimiento, actividad, comunicación y colaboración,
-  eficiencia y flujo. Regla operativa que se toma de ahí: **medir al menos tres dimensiones a la
-  vez, combinando métricas objetivas y encuesta**; la actividad **jamás en aislamiento** para premiar
-  o penalizar. **Discrepancia declarada y advertencia de uso**: circula la afirmación de que "SPACE
-  mide al individuo y DORA al equipo" — **es una lectura errónea**: uno de los mitos que el propio
-  artículo desmonta es que la productividad sea *solo* rendimiento individual, y su tesis central es
-  que no se captura con una sola métrica ni con datos de actividad. **No se ha podido recuperar el
-  texto completo en verbatim** (ACM Queue y CACM devuelven 403 a la descarga automatizada): las
-  formulaciones de arriba proceden de fuentes secundarias concordantes y **deben contrastarse contra
-  el artículo original antes de citarlas literalmente** (§8).
-- ✅ **DORA como medida de sistema.** Las cuatro métricas miden **entrega del equipo y del sistema**,
-  no personas. Informe **2025: *State of AI-assisted Software Development*** (`dora.dev/dora-report-2025/`,
-  ~5.000 profesionales); informe **2026: *The ROI of AI-Assisted Software Development*** (cobertura de
-  InfoQ, may-2026). **Reserva sobre el de 2026**: hay crítica publicada de que, frente al rigor
-  investigador de ediciones anteriores, es en buena parte un conjunto de recomendaciones
-  especulativas. Cítese la edición y el año; **nunca "DORA dice" a secas**.
+  Houck and Jenna Butler, "The SPACE of Developer Productivity: There's more to it than you think",
+  *ACM Queue* 19(1):20-48 (2021), DOI 10.1145/3454122.3454124** (also in *CACM*). Five
+  dimensions: satisfaction and well-being, performance, activity, communication and collaboration,
+  efficiency and flow. The operational rule taken from it: **measure at least three dimensions at
+  once, combining objective metrics and a survey**; activity **never in isolation** to reward
+  or penalise. **Declared discrepancy and usage warning**: the claim circulates that "SPACE
+  measures the individual and DORA the team" — **that is a misreading**: one of the myths the article
+  itself dismantles is that productivity is *only* individual performance, and its central thesis is
+  that it is not captured by a single metric nor by activity data. **It has not been possible to retrieve the
+  full text verbatim** (ACM Queue and CACM return 403 to automated download): the
+  formulations above come from consistent secondary sources and **must be checked against
+  the original article before quoting them literally** (§8).
+- ✅ **DORA as a system measure.** The four metrics measure **team and system delivery**,
+  not people. Report **2025: *State of AI-assisted Software Development*** (`dora.dev/dora-report-2025/`,
+  ~5,000 professionals); report **2026: *The ROI of AI-Assisted Software Development*** (InfoQ
+  coverage, May-2026). **Caveat about the 2026 one**: there is published criticism that, compared with the
+  research rigour of previous editions, it is largely a set of speculative
+  recommendations. Cite the edition and the year; **never a bare "DORA says"**.
 
-### Cifras famosas: qué NO se usa como dato
+### Famous figures: what is NOT used as data
 
-Este dominio está saturado de números que circulan sin estudio primario localizable o con
-metodología desmontada. Se descartan expresamente:
+This domain is saturated with numbers that circulate with no locatable primary study or with
+dismantled methodology. These are expressly discarded:
 
-- ❌ **El "programador 10x".** Origen: **Sackman, Erikson y Grant, "Exploratory Experimental Studies
-  Comparing Online and Offline Programming Performance", *CACM* 11(1):3-11, ene-1968**. Refutación
-  metodológica: **Lutz Prechelt, "The 28:1 Grant/Sackman legend is misleading, or: How large is
-  interpersonal variation really?", Technical Report 1999-18, Universität Karlsruhe, dic-1999**
-  (`page.mi.fu-berlin.de/prechelt/Biblio/varianceTR.pdf`). Fallos del original: **12 sujetos**,
-  tareas triviales y de naturaleza matemática, y **mezcla de programadores en lenguaje de bajo y de
-  alto nivel en el mismo grupo**, lo que infla el cociente mejor/peor. Prechelt reanaliza un conjunto
-  mucho mayor y sostiene que **comparar el mejor con el peor es la comparación equivocada**: contra
-  la mediana del cuartil peor frente a la del mejor, el cociente **rara vez supera 4**, y la razón
-  desviación típica/media ronda **0,5**. **Uso permitido**: "existe variación interpersonal
-  sustancial, del orden de 2-4x según tarea, con distribuciones solapadas". **Uso prohibido**:
-  "10x", y sobre todo **usarlo para justificar retribución, dotación de personal o despidos**.
-- ❌ **"Una interrupción cuesta 23 minutos y 15 segundos".** **No existe el artículo que lo
-  respalda.** El paper que se cita, **Mark, González y Harris, "No Task Left Behind? Examining the
-  Nature of Fragmented Work", CHI '05**, mide la **probabilidad de reanudar una tarea el mismo día**
-  y **no contiene esa cifra**. El otro habitualmente citado, *"The Cost of Interrupted Work: More
-  Speed and Stress"*, encuentra que **los sujetos interrumpidos completaron las tareas más rápido**,
-  con más estrés. La cifra procede de **una entrevista de 2006** con Gloria Mark, no de un artículo
-  revisado. **No se escribe, ni con matices.** Lo defendible sin cifra: la fragmentación tiene coste
-  y **el argumento para proteger bloques de trabajo no necesita un número inventado**.
-- ❌ **"El 70 % de la variación en el compromiso del equipo lo determina el jefe"** (Gallup, *State
-  of the American Manager*, 2015). **Análisis propietario, no revisado por pares, sin datos brutos
-  publicados**, y con dos problemas de interpretación que la difusión ignora: se refiere a varianza
-  **entre equipos** (no es una afirmación de nivel individual), y "efecto del jefe" absorbe todo lo
-  que se agrupa a nivel de equipo (función, ubicación, carga, dotación). **No se usa como dato para
-  justificar una decisión.**
-- ❌ **"La gente deja jefes, no empresas"** (*First, Break All the Rules*, Gallup). Hay refutación
-  publicada por **Culture Amp (2017)** sobre 175 equipos: la gente sí deja malos jefes, pero **no es
-  la primera razón**, y en organizaciones malas **tener buen o mal jefe apenas cambia la decisión de
-  irse**. Se sostiene la versión débil ("la calidad del jefe es *uno* de los factores, condicionado a
-  que la organización sea decente"); el eslogan, no.
-- ❌ **Porcentajes de rotación atribuidos a "mal jefe"** y **el coste de una mala contratación
-  expresado como múltiplo del salario** (§ `technical-hiring-standards`): se descartan por la misma
-  razón, allí con detalle.
+- ❌ **The "10x programmer".** Origin: **Sackman, Erikson and Grant, "Exploratory Experimental Studies
+  Comparing Online and Offline Programming Performance", *CACM* 11(1):3-11, Jan-1968**. Methodological
+  refutation: **Lutz Prechelt, "The 28:1 Grant/Sackman legend is misleading, or: How large is
+  interpersonal variation really?", Technical Report 1999-18, Universität Karlsruhe, Dec-1999**
+  (`page.mi.fu-berlin.de/prechelt/Biblio/varianceTR.pdf`). Flaws in the original: **12 subjects**,
+  trivial tasks of a mathematical nature, and **a mix of low-level and high-level language
+  programmers in the same group**, which inflates the best/worst ratio. Prechelt reanalyses a much
+  larger dataset and argues that **comparing the best with the worst is the wrong comparison**: against
+  the median of the worst quartile versus that of the best, the ratio **rarely exceeds 4**, and the
+  standard deviation/mean ratio is around **0.5**. **Permitted use**: "there is substantial
+  interpersonal variation, of the order of 2-4x depending on the task, with overlapping distributions". **Forbidden use**:
+  "10x", and above all **using it to justify pay, staffing or redundancies**.
+- ❌ **"An interruption costs 23 minutes and 15 seconds".** **The paper that backs it does not
+  exist.** The paper that gets cited, **Mark, González and Harris, "No Task Left Behind? Examining the
+  Nature of Fragmented Work", CHI '05**, measures the **probability of resuming a task on the same day**
+  and **does not contain that figure**. The other one usually cited, *"The Cost of Interrupted Work: More
+  Speed and Stress"*, finds that **interrupted subjects completed the tasks faster**,
+  with more stress. The figure comes from **a 2006 interview** with Gloria Mark, not from a peer-reviewed
+  article. **It is not written, not even with caveats.** What is defensible without a figure: fragmentation has a cost
+  and **the argument for protecting blocks of work does not need an invented number**.
+- ❌ **"70 % of the variance in team engagement is determined by the manager"** (Gallup, *State
+  of the American Manager*, 2015). **Proprietary analysis, not peer reviewed, with no raw data
+  published**, and with two interpretation problems that its diffusion ignores: it refers to variance
+  **between teams** (it is not an individual-level claim), and the "manager effect" absorbs everything
+  that clusters at team level (function, location, load, staffing). **It is not used as data to
+  justify a decision.**
+- ❌ **"People leave managers, not companies"** (*First, Break All the Rules*, Gallup). There is a published
+  refutation from **Culture Amp (2017)** over 175 teams: people do leave bad managers, but **it is not
+  the first reason**, and in bad organisations **having a good or bad manager barely changes the decision to
+  leave**. The weak version holds ("the manager's quality is *one* of the factors, conditional on
+  the organisation being decent"); the slogan does not.
+- ❌ **Turnover percentages attributed to a "bad manager"** and **the cost of a bad hire
+  expressed as a multiple of salary** (§ `technical-hiring-standards`): discarded for the same
+  reason, there in detail.
 
-**Regla general**: **una cifra sin estudio primario, año, muestra y método no entra en un documento,
-una diapositiva ni una petición de presupuesto.** Si el argumento solo se sostiene con la cifra, el
-argumento era malo.
+**General rule**: **a figure with no primary study, year, sample and method does not go into a document,
+a slide or a budget request.** If the argument only stands with the figure, the
+argument was bad.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Vías de carrera: qué cambia realmente
+### 3.1 Career tracks: what actually changes
 
-**Lo que cambia al subir de nivel no es "el nivel": son tres variables observables.**
+**What changes when you move up a level is not "the level": it is three observable variables.**
 
 | Variable | Senior | Staff | Principal |
 |---|---|---|---|
-| **Alcance del impacto** | Su equipo y el sistema del que responde | Varios equipos, o un área crítica de la que depende la organización | La organización de ingeniería o una capacidad transversal |
-| **Tipo de decisión** | Cómo se implementa; elige entre opciones conocidas | Qué opciones existen; define el problema y las interfaces | Qué se deja de hacer; decisiones irreversibles y compromisos entre áreas |
-| **Horizonte temporal** | Semanas a un trimestre | Trimestres a un año | Uno a varios años |
-| **Evidencia exigible** | Sistemas entregados y operables | Diseños ajenos mejorados, decisiones registradas, personas subidas de nivel | Cambios de rumbo que la organización siguió y que se pueden trazar |
+| **Scope of impact** | Their team and the system they answer for | Several teams, or a critical area the organisation depends on | The engineering organisation or a cross-cutting capability |
+| **Type of decision** | How it is implemented; chooses between known options | Which options exist; defines the problem and the interfaces | What is stopped; irreversible decisions and trade-offs between areas |
+| **Time horizon** | Weeks to a quarter | Quarters to a year | One to several years |
+| **Required evidence** | Systems delivered and operable | Other people's designs improved, decisions recorded, people levelled up | Changes of direction the organisation followed and that can be traced |
 
-Reglas duras:
-1. **La escala se publica.** Una escala que solo conoce el jefe no es una escala, es una excusa
-   retroactiva. Existen referencias públicas para no partir de cero — **Rent the Runway (2015, con
-   Camille Fournier como CTO), Dropbox, CircleCI, Square, Kickstarter**, agregadas en
-   `progression.fyi` y `github.com/bmoeskau/engineering-ladders`. **Se adaptan, no se copian**: una
-   escala ajena describe una organización ajena.
-2. **Paridad real entre vías.** La vía de contribuidor individual y la de gestión tienen **el mismo
-   techo de nivel, la misma banda salarial y la misma presencia en los foros de decisión**. Sin las
-   tres, la vía técnica es decorativa y todo el mundo lo sabe a los seis meses.
-3. **Gestionar no es un ascenso, es un cambio de puesto.** El trabajo, la medida y la habilidad son
-   distintos. Corolario operativo: **hay camino de vuelta declarado**, y usarlo no es un fracaso
-   registrable en la evaluación.
-4. **El nivel se asigna por evidencia escrita**, no por antigüedad ni por simpatía. Si no se puede
-   escribir la evidencia con hechos fechados, no hay nivel.
-5. **Ningún nivel se define por tecnología.** "Senior de Kubernetes" no es un nivel, es una
-   dependencia de una herramienta con fecha de caducidad.
+Hard rules:
+1. **The ladder is published.** A ladder only the manager knows is not a ladder, it is a retroactive
+   excuse. Public references exist so as not to start from zero — **Rent the Runway (2015, with
+   Camille Fournier as CTO), Dropbox, CircleCI, Square, Kickstarter**, aggregated at
+   `progression.fyi` and `github.com/bmoeskau/engineering-ladders`. **They are adapted, not copied**: someone
+   else's ladder describes someone else's organisation.
+2. **Real parity between tracks.** The individual contributor track and the management one have **the same
+   level ceiling, the same salary band and the same presence in decision-making forums**. Without those
+   three, the technical track is decorative and everyone knows it within six months.
+3. **Managing is not a promotion, it is a change of job.** The work, the measure and the skill are
+   different. Operational corollary: **there is a declared way back**, and using it is not a failure
+   recordable in the evaluation.
+4. **The level is assigned on written evidence**, not on seniority and not on likeability. If the evidence cannot
+   be written down with dated facts, there is no level.
+5. **No level is defined by a technology.** "Kubernetes senior" is not a level, it is a
+   dependency on a tool with an expiry date.
 
-### 3.2 Arquetipos staff+: para qué sirven realmente
+### 3.2 Staff+ archetypes: what they are really for
 
-Sirven para una sola cosa, y por eso están aquí: **evitar asignar trabajo que la persona no puede
-hacer desde donde está.** Taxonomía y reservas en §2.
+They serve one purpose, and that is why they are here: **avoiding assigning work the person cannot
+do from where they are.** Taxonomy and caveats in §2.
 
-| Arquetipo | Trabajo que le corresponde | Trabajo que le destruye el impacto |
+| Archetype | Work that belongs to them | Work that destroys their impact |
 |---|---|---|
-| **Tech lead** | Aproximación y ejecución de **un** equipo, junto al mánager | Ser el cuello de botella de las decisiones de otros tres equipos |
-| **Architect** | Dirección, calidad y enfoque de **un área crítica**, con horizonte plurianual | Apagar fuegos fuera de su área; hacer que su área dependa de su presencia |
-| **Solver** | Entrar en un problema difícil y acotado y salir con camino resuelto | Convertirse en dueño permanente de lo que arregló |
-| **Right hand** | Extender el alcance de un directivo en una organización grande | Existir en una organización que no lo necesita: reproduce jerarquía sin añadir criterio |
+| **Tech lead** | Approach and execution of **one** team, alongside the manager | Being the bottleneck for the decisions of another three teams |
+| **Architect** | Direction, quality and approach of **one critical area**, with a multi-year horizon | Firefighting outside their area; making their area depend on their presence |
+| **Solver** | Going into a hard, bounded problem and coming out with the path resolved | Becoming the permanent owner of what they fixed |
+| **Right hand** | Extending an executive's reach in a large organisation | Existing in an organisation that does not need one: it reproduces hierarchy without adding judgement |
 
-Reglas:
-- **El arquetipo se acuerda por escrito con la persona y se revisa** (por defecto, cada semestre o
-  al cambiar de proyecto). Un *solver* al que se le adjudica el mantenimiento de todo lo que tocó
-  deja de ser *solver* en un trimestre.
-- **Architect y right hand solo aparecen a cierta escala.** Larson los observa surgiendo en torno a
-  ~100 y ~1.000 ingenieros respectivamente. **Crearlos antes fabrica una capa de decisión sin
-  problema que resolver.**
-- **PROHIBIDO usarlos como títulos** o como niveles de la escala (§7).
+Rules:
+- **The archetype is agreed in writing with the person and is reviewed** (by default, every six months or
+  when the project changes). A *solver* who gets handed the maintenance of everything they touched
+  stops being a *solver* within a quarter.
+- **Architect and right hand only appear at a certain scale.** Larson observes them emerging around
+  ~100 and ~1,000 engineers respectively. **Creating them earlier manufactures a decision layer with no
+  problem to solve.**
+- **FORBIDDEN to use them as titles** or as levels on the ladder (§7).
 
-### 3.3 Decisiones: qué se decide, quién decide y a qué velocidad
+### 3.3 Decisions: what is decided, who decides and how fast
 
-**Quién decide, por defecto:**
+**Who decides, by default:**
 
-| Tipo de decisión | Decide | Se consulta | Se registra en |
+| Type of decision | Decided by | Consulted | Recorded in |
 |---|---|---|---|
-| Implementación dentro de un módulo del propio equipo | **Quien lo implementa** | Revisor del PR | El código y el PR |
-| Elección de biblioteca o patrón dentro del equipo | **El equipo**, tech lead arbitra | — | **ADR del repositorio** |
-| Contrato o interfaz entre dos equipos | **Los dos equipos, conjuntamente** | Arquitecto del área | **ADR + contrato versionado** (`api-design-standards`) |
-| Tecnología nueva en la organización, o retirada de una existente | **Nivel staff+ o arquitectura**, con criterios publicados | Plataforma, seguridad, FinOps | **ADR + inventario** |
-| Compromiso de alcance o fecha | **No es esta skill** | — | `project-management-standards` |
-| Aceptación de un riesgo regulatorio | **Quien tiene la autoridad formal** | — | `grc-compliance-standards` |
+| Implementation inside a module of the team's own | **Whoever implements it** | The PR reviewer | The code and the PR |
+| Choice of library or pattern within the team | **The team**, the tech lead arbitrates | — | **The repository's ADR** |
+| Contract or interface between two teams | **Both teams, jointly** | The area's architect | **ADR + versioned contract** (`api-design-standards`) |
+| A new technology in the organisation, or the retirement of an existing one | **Staff+ level or architecture**, with published criteria | Platform, security, FinOps | **ADR + inventory** |
+| A scope or date commitment | **Not this skill** | — | `project-management-standards` |
+| Acceptance of a regulatory risk | **Whoever has the formal authority** | — | `grc-compliance-standards` |
 
-**El ADR es obligación, no cortesía.** Regla mínima: **si una decisión técnica va a condicionar el
-trabajo de alguien que no estuvo en la conversación, se escribe.** Formato Nygard (§2), en el
-repositorio afectado, numerado y no editable una vez aceptado.
+**The ADR is an obligation, not a courtesy.** Minimum rule: **if a technical decision is going to condition the
+work of someone who was not in the conversation, it gets written.** Nygard format (§2), in the
+affected repository, numbered and not editable once accepted.
 
-**La velocidad la fija la reversibilidad, no la importancia percibida** (Bezos 2015, verbatim en §2):
+**Speed is set by reversibility, not by perceived importance** (Bezos 2015, verbatim in §2):
 
-| | Puerta de un sentido (Tipo 1) | Puerta de dos sentidos (Tipo 2) |
+| | One-way door (Type 1) | Two-way door (Type 2) |
 |---|---|---|
-| Ejemplos típicos | Modelo de datos público, esquema de identidad, formato de API expuesta a terceros, migración con pérdida, elección de proveedor con salida cara | Biblioteca interna, estructura de carpetas, formato de log interno, framework de test |
-| Velocidad | **Lenta, deliberada, instruida**: documento de diseño, alternativas evaluadas, revisión formal | **Rápida**, por la persona o el grupo pequeño más cercano al problema |
-| Nivel que decide | Arriba, con consulta | El más bajo posible |
-| Coste de equivocarse | Alto y permanente | Bajo: se reabre la puerta |
+| Typical examples | Public data model, identity scheme, API format exposed to third parties, lossy migration, choice of a vendor with an expensive exit | Internal library, folder structure, internal log format, test framework |
+| Speed | **Slow, deliberate, informed**: design document, alternatives evaluated, formal review | **Fast**, by the person or the small group closest to the problem |
+| Level that decides | Higher up, with consultation | The lowest possible |
+| Cost of being wrong | High and permanent | Low: the door reopens |
 
-- **Todo ADR lleva un campo `reversibilidad` con valor explícito.** Sin él, la organización trata
-  todo como Tipo 1 y se paraliza — el fallo que la propia carta de 2015 describe.
-- **La clasificación se puede impugnar, pero por escrito y con argumento.** "Esto es irreversible"
-  es una afirmación falsable: se pide el coste estimado de revertirlo.
-- **Una decisión Tipo 2 que lleva tres semanas en discusión ya costó más que equivocarse.** Regla:
-  caja de tiempo, y si vence, decide la persona con la responsabilidad y se registra.
+- **Every ADR carries a `reversibilidad` field with an explicit value.** Without it, the organisation treats
+  everything as Type 1 and grinds to a halt — the failure the 2015 letter itself describes.
+- **The classification can be challenged, but in writing and with an argument.** "This is irreversible"
+  is a falsifiable claim: you ask for the estimated cost of reverting it.
+- **A Type 2 decision that has been under discussion for three weeks already cost more than being wrong.** Rule:
+  a time box, and if it expires, the person with the responsibility decides and it is recorded.
 
-### 3.4 Documento de diseño y revisión de diseño
+### 3.4 Design document and design review
 
-**La revisión de diseño es el punto del ciclo donde un error todavía cuesta barato.** Después hay
-código, dependencias, datos migrados y gente que ya lo defendió en público.
+**The design review is the point in the cycle where a mistake is still cheap.** Afterwards there is
+code, dependencies, migrated data and people who have already defended it in public.
 
-**Cuándo es obligatorio un documento de diseño** (basta con uno):
-- La decisión cruza el límite de un equipo o crea/cambia una interfaz entre equipos.
-- Es una puerta de un sentido (§3.3).
-- Toca datos personales, autenticación, autorización, criptografía o dinero.
-- El esfuerzo estimado supera un umbral que el equipo publica (por defecto: **dos semanas-persona**).
-- Se introduce una tecnología que la organización no opera todavía.
+**When a design document is mandatory** (any one is enough):
+- The decision crosses a team boundary or creates/changes an interface between teams.
+- It is a one-way door (§3.3).
+- It touches personal data, authentication, authorisation, cryptography or money.
+- The estimated effort exceeds a threshold the team publishes (by default: **two person-weeks**).
+- A technology the organisation does not yet operate is introduced.
 
-**Plantilla mínima. Un documento sin las secciones 5, 6 y 8 se devuelve sin revisar.**
+**Minimum template. A document without sections 5, 6 and 8 is sent back unreviewed.**
 
 ```markdown
 # Diseño: <nombre>            Autor: <persona>   Estado: borrador|en revisión|aceptado|sustituido
@@ -321,401 +321,401 @@ código, dependencias, datos migrados y gente que ya lo defendió en público.
 9. Riesgos abiertos    # con dueño
 ```
 
-**Reglas de la revisión:**
-- **Se revisa el problema antes que la solución.** Si los revisores no están de acuerdo en el
-  problema, discutir la solución es tiempo perdido y siempre acaba en estética.
-- **Lectura previa obligatoria, con plazo** (por defecto 48 h). Una reunión donde se lee el documento
-  en directo es una reunión de lectura, no de revisión.
-- **Los comentarios se etiquetan como bloqueantes o no bloqueantes**, igual que en revisión de código
-  (`code-review-standards`). Un revisor que no marca nada como bloqueante ha aprobado.
-- **La revisión termina con una decisión y una fecha, no con "seguimos hablando".** Los estados
-  válidos son: aceptado, aceptado con condiciones listadas, rechazado con motivo, o pospuesto con
-  fecha y con lo que falta por saber.
-- **El documento aceptado se convierte en ADR o lo enlaza.** Un diseño que no deja rastro de decisión
-  se vuelve a discutir en seis meses.
-- **Criterios de aceptación con fecha de comprobación.** Se revisita cuando toca: si no se cumplieron,
-  eso es información sobre cómo diseña el equipo, y es el insumo más barato que existe para mejorar.
+**Review rules:**
+- **The problem is reviewed before the solution.** If the reviewers do not agree on the
+  problem, discussing the solution is wasted time and it always ends in aesthetics.
+- **Mandatory pre-reading, with a deadline** (48 h by default). A meeting where the document is read
+  live is a reading meeting, not a review.
+- **Comments are labelled as blocking or non-blocking**, just as in code review
+  (`code-review-standards`). A reviewer who marks nothing as blocking has approved.
+- **The review ends with a decision and a date, not with "let's keep talking".** The
+  valid states are: accepted, accepted with listed conditions, rejected with a reason, or postponed with
+  a date and with what remains to be found out.
+- **The accepted document becomes an ADR or links to one.** A design that leaves no trace of a decision
+  gets discussed again in six months.
+- **Acceptance criteria with a check date.** They are revisited when due: if they were not met,
+  that is information about how the team designs, and it is the cheapest input there is for improving.
 
-### 3.5 Deuda técnica: decisión de negocio con presupuesto
+### 3.5 Technical debt: a business decision with a budget
 
-El criterio técnico —qué refactorizar, con qué técnica y con qué red de test— es de
-`refactoring-tech-debt-standards` (**ya escrita**). **Aquí solo la decisión de invertir y
-cómo se defiende.**
+The technical criteria —what to refactor, with which technique and with which test net— belong to
+`refactoring-tech-debt-standards` (**already written**). **Here only the decision to invest and
+how it is defended.**
 
-1. **La deuda se registra como cualquier otro trabajo**, en el mismo backlog, con dueño y con el
-   **coste que impone hoy** — no con adjetivos. Formulación admisible: *"cada cambio en el módulo de
-   facturación exige tocar cuatro sitios y en el último trimestre generó 3 de los 7 incidentes"*.
-   Formulación inadmisible: *"el código está mal"*.
-2. **Distinguir deuda deliberada de degradación.** La deliberada se contrajo con una decisión
-   registrada y una fecha de revisión (si no la tiene, no fue una decisión: fue un descuido). La
-   degradación es acumulación silenciosa y se detecta por síntoma, no por opinión.
-3. **Presupuesto explícito y recurrente.** Se declara un porcentaje de capacidad por ciclo, se
-   publica y **se protege como se protege una fecha comprometida**. Un porcentaje que se cancela en
-   el primer trimestre con presión no era un presupuesto: era una intención.
-4. **Cómo se defiende ante quien paga — y esto es lo que falla siempre.** La deuda técnica no se
-   defiende como calidad de código: **se defiende con el coste que ya está pagando el negocio**, en
-   su vocabulario. Argumentos que funcionan porque son verificables:
-   - **Tiempo de entrega**: el mismo cambio tarda X en este módulo y Y en el resto.
-   - **Fiabilidad**: proporción de incidentes que se concentran en el componente
-     (`incident-management-standards` da el dato).
-   - **Coste directo**: infraestructura sobredimensionada, licencias, horas de operación manual
+1. **Debt is recorded like any other work**, in the same backlog, with an owner and with the
+   **cost it imposes today** — not with adjectives. Admissible formulation: *"every change in the
+   billing module requires touching four places and last quarter it generated 3 of the 7 incidents"*.
+   Inadmissible formulation: *"the code is bad"*.
+2. **Distinguish deliberate debt from degradation.** Deliberate debt was incurred with a recorded
+   decision and a review date (if it does not have one, it was not a decision: it was an oversight).
+   Degradation is silent accumulation and is detected by symptom, not by opinion.
+3. **An explicit and recurring budget.** A percentage of capacity per cycle is declared,
+   published and **protected the way a committed date is protected**. A percentage that gets cancelled in
+   the first quarter under pressure was not a budget: it was an intention.
+4. **How it is defended to whoever pays — and this is what always fails.** Technical debt is not
+   defended as code quality: **it is defended with the cost the business is already paying**, in
+   its vocabulary. Arguments that work because they are verifiable:
+   - **Lead time**: the same change takes X in this module and Y in the rest.
+   - **Reliability**: the proportion of incidents concentrated in the component
+     (`incident-management-standards` provides the datum).
+   - **Direct cost**: oversized infrastructure, licences, hours of manual operation
      (`finops-standards`).
-   - **Riesgo con nombre**: dependencia sin soporte, versión sin parches de seguridad
-     (`vulnerability-management-standards`), incumplimiento normativo (`grc-compliance-standards`).
-   - **Opción que se pierde**: qué no se podrá hacer, y cuándo, si no se toca.
-5. **Una petición de refactor sin ninguno de esos cinco argumentos se rechaza**, la haga quien la
-   haga. Y se rechaza aquí, dentro de ingeniería, antes de que la rechace el negocio: **la
-   credibilidad se gasta una vez**.
-6. **Nunca "una release de refactor" que no entrega nada.** El trabajo de deuda se entrega en
-   incrementos con efecto observable; si no se puede trocear, el problema es el diseño de la
-   intervención, no el calendario.
+   - **Risk with a name**: an unsupported dependency, a version with no security patches
+     (`vulnerability-management-standards`), regulatory non-compliance (`grc-compliance-standards`).
+   - **The option that is lost**: what will not be doable, and when, if it is not touched.
+5. **A refactor request with none of those five arguments is rejected**, whoever makes
+   it. And it is rejected here, inside engineering, before the business rejects it: **credibility
+   is spent once**.
+6. **Never "a refactor release" that delivers nothing.** Debt work is delivered in
+   increments with an observable effect; if it cannot be split, the problem is the design of the
+   intervention, not the calendar.
 
-### 3.6 El equipo como sistema
+### 3.6 The team as a system
 
-- **Dueño único por sistema.** Un sistema sin dueño nombrado lo mantiene quien tuvo la mala suerte
-  de tocarlo el último. Dos dueños es cero dueños.
-- **Carga acotada, en el sentido analógico de la carga cognitiva** (§2, con su reserva): un equipo
-  responde de tantos sistemas como pueda **entender, operar y mejorar**. Prueba operativa y
-  falsable, que no requiere métrica inventada: *¿puede el equipo desplegar, diagnosticar en
-  producción y explicar el modelo de datos de cada sistema del que responde, sin depender de una
-  persona concreta?* Si no, la carga excede al equipo — se reduce el alcance o se transfiere carga
-  extraña a la plataforma (`platform-engineering-standards`).
-- **Equipos estables.** Reorganizar equipos reinicia el conocimiento del sistema y las relaciones de
-  confianza. **Toda reorganización se justifica por escrito con el problema que resuelve y su coste
-  esperado**, o no se hace.
-- **Tamaño**: suficientemente pequeño para que todos conozcan el trabajo de todos, suficientemente
-  grande para sostener una guardia sin quemar a nadie (`sre-practice-standards` fija lo segundo).
-  **Añadir personas a un equipo saturado añade coordinación antes que capacidad**
+- **A single owner per system.** A system with no named owner is maintained by whoever had the bad luck
+  of touching it last. Two owners is zero owners.
+- **Bounded load, in the analogical sense of cognitive load** (§2, with its caveat): a team
+  answers for as many systems as it can **understand, operate and improve**. An operational and
+  falsifiable test that requires no invented metric: *can the team deploy, diagnose in
+  production and explain the data model of every system it answers for, without depending on one
+  specific person?* If not, the load exceeds the team — the scope is reduced or extraneous load
+  is transferred to the platform (`platform-engineering-standards`).
+- **Stable teams.** Reorganising teams resets system knowledge and trust
+  relationships. **Every reorganisation is justified in writing with the problem it solves and its expected
+  cost**, or it is not done.
+- **Size**: small enough that everyone knows everyone's work, large enough
+  to sustain an on-call rota without burning anyone (`sre-practice-standards` fixes the latter).
+  **Adding people to a saturated team adds coordination before it adds capacity**
   (`project-management-standards` §6).
-- **Dependencias entre equipos: se gestionan por interfaz, no por reunión.** Preferencia, en orden:
-  (1) eliminar la dependencia, (2) desacoplar con contrato de interfaz y simulador, (3) secuenciar
-  con compromiso mutuo del equipo proveedor, (4) escalar. **Añadir una reunión de sincronización
-  recurrente es admitir que se eligió (4) y llamarlo (3).**
-- **La estructura del equipo y la del sistema convergen** (Conway). Consecuencia práctica: **si se
-  quiere una arquitectura distinta, hay que cambiar los límites de los equipos, no solo el
-  diagrama.**
+- **Inter-team dependencies: they are managed by interface, not by meeting.** Preference, in order:
+  (1) eliminate the dependency, (2) decouple with an interface contract and a simulator, (3) sequence
+  with a mutual commitment from the providing team, (4) escalate. **Adding a recurring
+  sync meeting is choosing (4) and calling it (3).**
+- **The team's structure and the system's converge** (Conway). Practical consequence: **if you
+  want a different architecture, you have to change the team boundaries, not just the
+  diagram.**
 
-### 3.7 Conflicto técnico
+### 3.7 Technical conflict
 
-**Un desacuerdo técnico sin procedimiento se resuelve por jerarquía o por cansancio, y ambas
-producen la peor decisión disponible.** Procedimiento, en este orden y con plazo:
+**A technical disagreement with no procedure gets resolved by hierarchy or by exhaustion, and both
+produce the worst decision available.** Procedure, in this order and with a deadline:
 
-1. **Explicitar el desacuerdo**: cada parte escribe, en un párrafo, qué defiende y **qué evidencia le
-   haría cambiar de opinión**. Quien no puede responder a lo segundo no tiene una posición técnica,
-   tiene una preferencia — y las preferencias no bloquean.
-2. **Buscar el dato**: prototipo, medición, prueba de carga, revisión de un incidente pasado. **Con
-   caja de tiempo fija y acordada de antemano.**
-3. **Si el dato no discrimina** (empate real), decide **quién responde de las consecuencias** —
-   normalmente el dueño del sistema afectado — y se registra en un ADR con las alternativas y el
-   empate declarado.
-4. **Desacuerdo comprometido, como norma explícita del equipo.** Referencia: principio de liderazgo
-   de Amazon **"Have Backbone; Disagree and Commit"** (`amazon.jobs`) — obligación de cuestionar la
-   decisión con respeto aunque sea incómodo, y **compromiso pleno una vez tomada**. El término es
-   anterior a Amazon (Intel, *constructive confrontation*). Regla local, que es lo aplicable:
-   **una vez cerrada la decisión, nadie la sabotea pasivamente ni la reabre en pasillos**; se reabre
-   solo con evidencia nueva y por el mismo cauce.
-5. **Cuándo se escala**: cuando el desacuerdo cruza la frontera de dos equipos y bloquea trabajo más
-   de una semana, o cuando implica riesgo de seguridad, legal o de datos personales. **Escalar no es
-   perder**: escalar tarde sí.
-6. **Un desacuerdo que se repite es un problema de diseño organizativo**, no de las personas: las
-   fronteras de responsabilidad están mal trazadas (§3.6).
+1. **Make the disagreement explicit**: each side writes, in one paragraph, what they defend and **what evidence
+   would make them change their mind**. Whoever cannot answer the second has no technical position,
+   they have a preference — and preferences do not block.
+2. **Find the datum**: prototype, measurement, load test, review of a past incident. **With
+   a fixed time box agreed beforehand.**
+3. **If the datum does not discriminate** (a real tie), **whoever answers for the consequences** decides —
+   normally the owner of the affected system — and it is recorded in an ADR with the alternatives and the
+   tie declared.
+4. **Disagree and commit, as an explicit team rule.** Reference: Amazon's leadership
+   principle **"Have Backbone; Disagree and Commit"** (`amazon.jobs`) — the obligation to challenge the
+   decision respectfully even when it is uncomfortable, and **full commitment once it is taken**. The term is
+   older than Amazon (Intel, *constructive confrontation*). The local rule, which is what applies:
+   **once the decision is closed, nobody passively sabotages it or reopens it in corridors**; it is reopened
+   only with new evidence and through the same channel.
+5. **When it is escalated**: when the disagreement crosses the boundary of two teams and blocks work for more
+   than a week, or when it involves a security, legal or personal-data risk. **Escalating is not
+   losing**: escalating late is.
+6. **A disagreement that repeats is an organisational design problem**, not a people problem: the
+   boundaries of responsibility are badly drawn (§3.6).
 
-### 3.8 El trabajo del líder técnico que no es escribir código
+### 3.8 The technical leader's work that is not writing code
 
-**Su valor se mide en el resultado del equipo, no en su propio *output*.** Consecuencias directas:
-si la persona más productiva del equipo es el líder, el equipo está infraaprovechado; si el líder
-está en el camino crítico de cada entrega, es un SPOF con vacaciones.
+**Their value is measured in the team's result, not in their own *output*.** Direct consequences:
+if the most productive person on the team is the leader, the team is underused; if the leader
+is on the critical path of every delivery, they are a SPOF with holidays.
 
-Trabajo que sí es suyo, y es el que produce apalancamiento:
-- **Desbloquear**: identificar quién está parado y por qué, y quitarlo de en medio. Es la actividad
-  de mayor retorno del puesto y la primera que se sacrifica cuando el líder se pone a programar.
-- **Definir interfaces entre equipos** antes de que dos equipos construyan contra supuestos
-  distintos (§3.6).
-- **Revisar diseños y decisiones ajenas** (§3.4) — no reescribirlos.
-- **Escribir lo que la organización va a necesitar recordar**: ADR, contexto, criterios.
-- **Crear las condiciones para que otro tome la decisión**, y aceptar que la tome distinta a como la
-  habría tomado él si el resultado es aceptable. **El líder que solo delega las decisiones que
-  coincidirían con la suya no ha delegado nada.**
-- **Desarrollar personas** (§3.9): es trabajo con calendario, no un subproducto.
+Work that is theirs, and that produces leverage:
+- **Unblocking**: identifying who is stuck and why, and getting it out of the way. It is the highest-return
+  activity of the job and the first one sacrificed when the leader starts programming.
+- **Defining interfaces between teams** before two teams build against different
+  assumptions (§3.6).
+- **Reviewing other people's designs and decisions** (§3.4) — not rewriting them.
+- **Writing what the organisation will need to remember**: ADRs, context, criteria.
+- **Creating the conditions for someone else to take the decision**, and accepting that they take it differently from how
+  the leader would have taken it if the result is acceptable. **A leader who only delegates the decisions that
+  would have matched their own has delegated nothing.**
+- **Developing people** (§3.9): it is work with a calendar, not a by-product.
 
-**La trampa contraria, y es igual de real: el líder que deja de tocar el código pierde la capacidad
-de juzgar.** Sin contacto con el sistema, las estimaciones ajenas se vuelven incontrastables, los
-diseños se aprueban por confianza en la persona y no por el contenido, y la deuda técnica se vuelve
-un relato sin evidencia. **Mínimo operativo, no negociable:**
-- Revisar código de verdad con regularidad (`code-review-standards`), incluyendo cambios que no
-  entiende del todo, que es donde se aprende dónde está el sistema.
-- **Estar en la rotación de guardia** si el equipo la tiene, o al menos participar de la respuesta a
-  incidentes (`incident-management-standards`).
-- **Coger trabajo real, pero nunca en el camino crítico**: herramientas internas, correcciones,
-  pruebas, la tarea que nadie quiere. **PROHIBIDO adjudicarse la funcionalidad crítica del
-  trimestre**: se convierte en cuello de botella y el equipo se queda sin la parte formativa.
-- Regla de arbitraje entre las dos trampas: **si el equipo entrega igual de bien cuando el líder está
-  dos semanas fuera, el reparto es correcto.** Es la única prueba que importa, y se puede ejecutar
-  literalmente.
+**The opposite trap, and it is just as real: the leader who stops touching the code loses the ability
+to judge.** With no contact with the system, other people's estimates become uncheckable, designs
+get approved out of trust in the person and not because of the content, and technical debt becomes
+a story with no evidence. **Non-negotiable operational minimum:**
+- Review code properly and regularly (`code-review-standards`), including changes they do not
+  fully understand, which is where you learn where the system is.
+- **Be in the on-call rotation** if the team has one, or at least take part in incident
+  response (`incident-management-standards`).
+- **Take real work, but never on the critical path**: internal tooling, fixes,
+  tests, the task nobody wants. **FORBIDDEN to take the quarter's critical feature**:
+  it turns them into a bottleneck and leaves the team without the developmental part.
+- Arbitration rule between the two traps: **if the team delivers just as well when the leader is
+  away for two weeks, the split is correct.** It is the only test that matters, and it can be run
+  literally.
 
-**La revisión de código no se usa como instrumento de poder.** Manifestaciones vetadas: bloquear un
-PR por preferencia estética, exigir la propia solución sin argumento técnico, retener la aprobación
-como palanca en una negociación ajena al diff. El criterio de qué bloquea es de
-`code-review-standards`; **la obligación de que el líder no lo distorsione es de aquí**.
+**Code review is not used as an instrument of power.** Vetoed manifestations: blocking a
+PR out of aesthetic preference, demanding your own solution with no technical argument, withholding approval
+as leverage in a negotiation unrelated to the diff. The criteria for what blocks belong to
+`code-review-standards`; **the obligation that the leader does not distort it belongs here**.
 
-### 3.9 1:1, feedback y evaluación
+### 3.9 1:1s, feedback and evaluation
 
-**El 1:1 es del subordinado.** Reglas concretas:
-- **Agenda la pone quien reporta**, y existe antes de la reunión. Si no hay agenda, la pregunta por
-  defecto no es "¿cómo va X?" sino **"¿qué es lo que más te está estorbando?"**.
-- **PROHIBIDO que sea un informe de estado**: el estado del trabajo está en el sistema de gestión
-  (`project-management-standards`) y consultarlo es responsabilidad del líder, no minutos de la
-  persona.
-- **Cadencia fija y protegida** (semanal o quincenal por defecto). **Cancelarla repetidamente
-  comunica una prioridad con más claridad que cualquier discurso.**
-- **Notas compartidas y compromisos con dueño y fecha.** Un 1:1 sin rastro se repite idéntico durante
-  un año.
-- Al menos una vez por trimestre, el 1:1 es de **carrera**: nivel actual, evidencia que falta,
-  arquetipo (§3.2), qué trabajo hace falta buscar para llegar. Con la escala publicada delante.
+**The 1:1 belongs to the report.** Concrete rules:
+- **The agenda is set by whoever reports**, and it exists before the meeting. If there is no agenda, the default
+  question is not "how is X going?" but **"what is getting in your way most?"**.
+- **FORBIDDEN for it to be a status report**: the state of the work is in the management system
+  (`project-management-standards`) and consulting it is the leader's responsibility, not minutes of the
+  person's time.
+- **A fixed and protected cadence** (weekly or fortnightly by default). **Cancelling it repeatedly
+  communicates a priority more clearly than any speech.**
+- **Shared notes and commitments with an owner and a date.** A 1:1 with no trace repeats identically for
+  a year.
+- At least once a quarter, the 1:1 is about **career**: current level, missing evidence,
+  archetype (§3.2), what work needs to be sought to get there. With the published ladder in front of you.
 
 **Feedback:**
-- **Específico, fechado y sobre conducta observable**, no sobre rasgos. *"En la revisión del diseño de
-  cobros del 12 de mayo cerraste la discusión antes de que Ana expusiera su alternativa"* es
-  accionable. *"Eres poco colaborativo"* no lo es: no se puede corregir lo que no se puede observar.
-- **Cerca del hecho.** Feedback guardado seis meses para la evaluación anual no es feedback: es una
-  emboscada, y destruye la credibilidad del proceso entero.
-- **Sin sorpresas en la evaluación.** Regla falsable: **si algo aparece en la evaluación anual y es
-  la primera vez que la persona lo oye, el fallo es del líder, y se registra como tal.**
-- El feedback difícil se da en privado, por escrito además de en voz, y **con lo que se espera
-  distinto y para cuándo**.
+- **Specific, dated and about observable behaviour**, not about traits. *"In the review of the payments
+  design on 12 May you closed the discussion before Ana presented her alternative"* is
+  actionable. *"You are not very collaborative"* is not: what cannot be observed cannot be corrected.
+- **Close to the event.** Feedback saved for six months for the annual review is not feedback: it is an
+  ambush, and it destroys the credibility of the whole process.
+- **No surprises in the evaluation.** Falsifiable rule: **if something appears in the annual review and it is
+  the first time the person hears it, the failure is the leader's, and it is recorded as such.**
+- Difficult feedback is given in private, in writing as well as verbally, and **with what is expected
+  differently and by when**.
 
-**Por qué las métricas individuales de productividad de ingeniería son contraproducentes** — y esta
-es la parte que hay que poder defender ante dirección con fuente en la mano:
-1. **Posición publicada de la investigación de referencia del sector.** **DORA**: las cuatro métricas
-   miden **entrega del equipo y del sistema** y no deben usarse para evaluar el rendimiento de
-   ingenieros individuales; aplicarlas a personas crea incentivos perversos. **SPACE** (Forsgren et
-   al., 2021, §2) desmonta dos mitos directamente aplicables: que la productividad sea actividad, y
-   que sea **solo** rendimiento individual; y establece que **las métricas de actividad nunca se usan
-   en aislamiento para premiar o penalizar**.
-2. **Son triviales de manipular y la manipulación es racional**: líneas, commits, PRs y puntos son
-   gratis de inflar y el coste de inflarlos lo paga otro (el revisor, el que mantiene).
-3. **Miden lo visible y castigan lo valioso**: revisar, emparejarse, mentorizar, estar de guardia,
-   borrar código y evitar que se construya lo innecesario no dejan rastro en ningún contador.
-4. **El trabajo de ingeniería es interdependiente**: atribuir el resultado a un individuo dentro de
-   un sistema con colas, dependencias y revisión es un error de atribución, no una medición
-   imprecisa.
-5. **Alternativa que sí se usa**: evaluación cualitativa **con evidencia escrita y fechada** contra
-   la escala publicada (§3.1) — diseños, decisiones registradas, incidentes resueltos, personas
-   desarrolladas, sistemas que funcionan sin su autor. **Es más trabajo para el líder. Ese es el
-   coste del puesto.**
+**Why individual engineering productivity metrics are counterproductive** — and this
+is the part you have to be able to defend to management with the source in hand:
+1. **The published position of the sector's reference research.** **DORA**: the four metrics
+   measure **team and system delivery** and must not be used to evaluate the performance of
+   individual engineers; applying them to people creates perverse incentives. **SPACE** (Forsgren et
+   al., 2021, §2) dismantles two directly applicable myths: that productivity is activity, and
+   that it is **only** individual performance; and it establishes that **activity metrics are never used
+   in isolation to reward or penalise**.
+2. **They are trivial to game and gaming them is rational**: lines, commits, PRs and points are
+   free to inflate and the cost of inflating them is paid by someone else (the reviewer, the maintainer).
+3. **They measure the visible and punish the valuable**: reviewing, pairing, mentoring, being on call,
+   deleting code and preventing the unnecessary from being built leave no trace in any counter.
+4. **Engineering work is interdependent**: attributing the result to an individual within
+   a system with queues, dependencies and review is an attribution error, not an imprecise
+   measurement.
+5. **The alternative that is used**: qualitative evaluation **with written and dated evidence** against
+   the published ladder (§3.1) — designs, recorded decisions, incidents resolved, people
+   developed, systems that work without their author. **It is more work for the leader. That is the
+   cost of the job.**
 
-### 3.10 Incidentes: lo que corresponde al liderazgo
+### 3.10 Incidents: what corresponds to leadership
 
-El proceso completo es de `incident-management-standards`. **Aquí solo la parte que solo el
-liderazgo puede hacer, y que es donde la cultura sin culpa se rompe en la práctica:**
-- **Proteger el postmortem sin culpa cuando hay presión de arriba para nombrar a alguien.** La
-  presión es real y llega en forma de pregunta razonable ("¿quién lo desplegó?"). Respuesta
-  estándar, en el mismo idioma de quien pregunta: **el sistema permitió que un error individual
-  llegara a producción; ese es el defecto y es el que se arregla, porque es el único que no se
-  repetirá.** Sustituir a la persona deja el sistema idéntico para el siguiente.
-- **Regla verificable de redacción**: **el postmortem no contiene nombres propios como causa.** Si
-  aparece "X ejecutó Y", se reescribe como "el procedimiento permitía ejecutar Y sin confirmación".
-- **Contraindicación honesta**: sin culpa **no significa sin responsabilidad**. Negligencia
-  reiterada, saltarse controles a sabiendas o actuar sin autorización son un asunto de conducta y se
-  tratan **fuera del postmortem, por otro cauce y con RR. HH.** Mezclarlos destruye ambos.
-- **Las acciones del postmortem se financian.** Un postmortem cuyas acciones no entran en el plan
-  del ciclo siguiente enseña al equipo que el ejercicio es teatro, y a partir de ahí los postmortem
-  se escriben para archivar.
-- **El líder asume públicamente el fallo del equipo y atribuye públicamente el acierto.** Es una
-  regla de conducta con efecto verificable: sin ella, nadie informa de un problema pronto.
+The full process belongs to `incident-management-standards`. **Here only the part that only
+leadership can do, and which is where the blameless culture breaks in practice:**
+- **Protecting the blameless postmortem when there is pressure from above to name someone.** The
+  pressure is real and arrives in the form of a reasonable question ("who deployed it?"). The standard
+  answer, in the same language as whoever asks: **the system allowed an individual error
+  to reach production; that is the defect and that is what gets fixed, because it is the only one that will not
+  recur.** Replacing the person leaves the system identical for the next one.
+- **Verifiable drafting rule**: **the postmortem contains no proper names as a cause.** If
+  "X ran Y" appears, it is rewritten as "the procedure allowed Y to be run without confirmation".
+- **Honest contraindication**: blameless **does not mean without responsibility**. Repeated
+  negligence, knowingly bypassing controls or acting without authorisation are a conduct matter and are
+  handled **outside the postmortem, through another channel and with HR.** Mixing them destroys both.
+- **The postmortem's actions get funded.** A postmortem whose actions do not enter the next
+  cycle's plan teaches the team that the exercise is theatre, and from then on postmortems
+  are written to be filed.
+- **The leader publicly owns the team's failure and publicly attributes the success.** It is a
+  conduct rule with a verifiable effect: without it, nobody reports a problem early.
 
-### 3.11 Agentes de codificación: qué decide el liderazgo
+### 3.11 Coding agents: what leadership decides
 
-La política concreta —qué tarea se delega, ficheros de instrucciones, permisos, revisión del diff,
-atribución— es de `ai-agent-workflow-standards`. **Aquí, tres decisiones y una prohibición:**
-- **Decisión de adoptar**: se toma como cualquier otra decisión técnica, con ADR y reversibilidad
-  declarada. Y con lo que casi nunca se declara: **qué pasa con el coste de revisión**. Un agente
-  desplaza esfuerzo de escribir a **revisar**, y la capacidad de revisión del equipo es finita y no
-  aumenta sola.
-- **Quién paga el coste organizativo**: formación, tiempo de revisión, gobierno de permisos y
-  respuesta a incidentes de calidad. Si no se asigna capacidad explícita, se financia recortando
-  revisión — que es exactamente el control que la adopción vuelve más necesario.
-- **Efecto sobre el desarrollo de las personas junior**: si el trabajo formativo se automatiza
-  entero, la organización deja de fabricar seniors. **Se decide y se declara qué trabajo se reserva
-  para aprender**, no se descubre a los dos años.
-- ❌ **PROHIBIDO justificar la adopción con métricas individuales de aceptación o volumen generado**
-  (§3.9, §7). La evidencia admisible es de sistema y se cita con su edición y su año
-  (`ai-agent-workflow-standards` mantiene el estado de la evidencia).
+The concrete policy —which task is delegated, instruction files, permissions, review of the diff,
+attribution— belongs to `ai-agent-workflow-standards`. **Here, three decisions and one prohibition:**
+- **The decision to adopt**: it is taken like any other technical decision, with an ADR and declared
+  reversibility. And with what almost never gets declared: **what happens to the review cost**. An agent
+  shifts effort from writing to **reviewing**, and the team's review capacity is finite and does not
+  grow by itself.
+- **Who pays the organisational cost**: training, review time, permission governance and
+  response to quality incidents. If explicit capacity is not assigned, it is funded by cutting
+  review — which is exactly the control that adoption makes more necessary.
+- **The effect on junior people's development**: if the developmental work is fully automated,
+  the organisation stops manufacturing seniors. **You decide and declare what work is reserved
+  for learning**, you do not discover it two years later.
+- ❌ **FORBIDDEN to justify adoption with individual acceptance or generated-volume metrics**
+  (§3.9, §7). Admissible evidence is system-level and is cited with its edition and its year
+  (`ai-agent-workflow-standards` maintains the state of the evidence).
 
-## 4. Controles verificables sobre el sistema de liderazgo
+## 4. Verifiable controls over the leadership system
 
-Controles auditables, no encuestas de clima. Se ejecutan con cadencia fija; **su fallo abre trabajo
-con dueño, no genera un informe**.
+Auditable controls, not climate surveys. They are run on a fixed cadence; **their failure opens work
+with an owner, it does not generate a report**.
 
-| Control | Falla si | Acción |
+| Control | It fails if | Action |
 |---|---|---|
-| Decisión sin registrar | existe una decisión técnica en producción sin ADR que la explique | Escribirlo retroactivamente y nombrar al decisor |
-| ADR sin reversibilidad | campo `reversibilidad` ausente | Rechazar el ADR |
-| Puerta de un sentido decidida en una reunión | sin documento de diseño ni alternativas | Revertir el proceso: se instruye y se decide de nuevo |
-| Diseño sin alternativas descartadas | sección 5 vacía | Devolver sin revisar |
-| Criterios de aceptación no revisitados | fecha de comprobación vencida sin evaluar | Evaluar y registrar el resultado, se cumpliera o no |
-| Escala no publicada | la escala de niveles no es accesible a todo el equipo | Bloquear cualquier promoción hasta publicarla |
-| Sorpresa en la evaluación | un punto aparece por primera vez en la evaluación | Registrar como fallo del líder; no computa para la persona |
-| 1:1 cancelado | > 2 cancelaciones seguidas por parte del líder | Escalar al nivel superior |
-| Deuda sin presupuesto | 0 % de capacidad asignada en el ciclo | Declararlo por escrito como decisión, con su motivo y fecha de revisión |
-| Postmortem con nombre propio como causa | aparece una persona como causa raíz | Reescribir; el que lo aprobó responde |
-| Acciones de postmortem sin financiar | no están en el plan del ciclo siguiente | Escalar: el postmortem pierde su función |
-| Sistema sin dueño | un sistema en producción sin equipo dueño nombrado | Asignarlo o retirarlo |
-| Líder en el camino crítico | el equipo se bloquea cuando el líder se ausenta | Redistribuir; es un defecto de diseño del equipo |
-| Métrica individual en circulación | existe un panel que ordena personas por commits, líneas, PRs o puntos | Retirarlo; §7 |
+| Unrecorded decision | there is a technical decision in production with no ADR explaining it | Write it retroactively and name the decider |
+| ADR with no reversibility | the `reversibilidad` field is absent | Reject the ADR |
+| One-way door decided in a meeting | with no design document and no alternatives | Reverse the process: it is informed and decided again |
+| Design with no discarded alternatives | section 5 empty | Send back unreviewed |
+| Acceptance criteria not revisited | the check date has passed without evaluation | Evaluate and record the result, met or not |
+| Unpublished ladder | the level ladder is not accessible to the whole team | Block any promotion until it is published |
+| Surprise in the evaluation | a point appears for the first time in the review | Record as the leader's failure; it does not count against the person |
+| Cancelled 1:1 | > 2 consecutive cancellations by the leader | Escalate to the level above |
+| Debt with no budget | 0 % of capacity assigned in the cycle | Declare it in writing as a decision, with its reason and review date |
+| Postmortem with a proper name as a cause | a person appears as a root cause | Rewrite; whoever approved it answers for it |
+| Unfunded postmortem actions | they are not in the next cycle's plan | Escalate: the postmortem loses its function |
+| System with no owner | a system in production with no named owning team | Assign it or retire it |
+| Leader on the critical path | the team blocks when the leader is away | Redistribute; it is a team design defect |
+| Individual metric in circulation | there is a dashboard ranking people by commits, lines, PRs or points | Remove it; §7 |
 
-**Prueba de ausencia, aplicable literalmente**: el equipo debe entregar y operar con normalidad
-durante dos semanas de ausencia del líder. **Es el único indicador de liderazgo técnico que no se
-puede simular.**
+**Absence test, applicable literally**: the team must deliver and operate normally
+during two weeks of the leader's absence. **It is the only indicator of technical leadership that cannot
+be faked.**
 
-## 5. Seguridad, riesgo y ética del rol
+## 5. Security, risk and ethics of the role
 
-- **Autoridad y responsabilidad viajan juntas.** Asignar a alguien la responsabilidad de un resultado
-  sin la autoridad para tomar las decisiones que lo determinan (presupuesto, prioridad, personas,
-  arquitectura) **no es delegar: es transferir culpa**. Regla: **al delegar se escribe qué decide la
-  persona sin consultar, qué consulta y qué escala.** Sin ese reparto escrito, no hay delegación.
-- **El líder es un objetivo de ingeniería social y un punto de acumulación de privilegio.** Revisar
-  periódicamente qué accesos tiene y por qué (`identity-access-management-standards`); acceso a
-  producción **solo si su rol lo exige de hecho**, no por precaución. Un líder con permisos de todo
-  "por si acaso" es un único compromiso de cuenta con alcance total.
-- **Información de personas**: notas de 1:1, evaluaciones, retribución y salud son **datos
-  personales, algunos de categoría especial**. Control de acceso, plazo de conservación y
-  eliminación (`privacy-engineering-standards`). **PROHIBIDO** en canales de chat de equipo, en
-  tickets o en documentos con enlace abierto.
-- **Presión para actuar contra el criterio técnico** (saltarse una revisión de seguridad, desplegar
-  sin control, ocultar un incidente): se responde **por escrito**, con el riesgo nombrado y la
-  decisión atribuida a quien tiene autoridad para asumirla. **Aceptar riesgo verbalmente es aceptarlo
-  en solitario**; la formalización de la aceptación es de `grc-compliance-standards`.
-- **Obligaciones de notificación**: un incidente puede activar plazos legales
+- **Authority and responsibility travel together.** Assigning someone responsibility for a result
+  without the authority to take the decisions that determine it (budget, priority, people,
+  architecture) **is not delegating: it is transferring blame**. Rule: **when delegating you write down what the
+  person decides without consulting, what they consult on and what they escalate.** Without that written split, there is no delegation.
+- **The leader is a social engineering target and a point where privilege accumulates.** Review
+  periodically what accesses they have and why (`identity-access-management-standards`); production
+  access **only if their role actually requires it**, not as a precaution. A leader with permissions for everything
+  "just in case" is a single account compromise with total reach.
+- **Information about people**: 1:1 notes, evaluations, pay and health are **personal
+  data, some of it special category**. Access control, retention period and
+  deletion (`privacy-engineering-standards`). **FORBIDDEN** in team chat channels, in
+  tickets or in documents with an open link.
+- **Pressure to act against technical judgement** (skipping a security review, deploying
+  without control, hiding an incident): you respond **in writing**, with the risk named and the
+  decision attributed to whoever has the authority to accept it. **Accepting risk verbally is accepting it
+  alone**; the formalisation of the acceptance belongs to `grc-compliance-standards`.
+- **Notification obligations**: an incident can trigger legal deadlines
   (`incident-response-forensics-standards`, `grc-compliance-standards`, `privacy-engineering-standards`).
-  **El líder no decide si se notifica**: escala inmediatamente al que sí decide. Silenciar es la
-  única respuesta que agrava el problema en todos los escenarios.
-- **Retención por presión** (contraofertas, "no puedes irte ahora"): la salida ordenada se planifica
-  — traspaso de sistemas, revocación de accesos, entrevista de salida cuyo contenido se usa. Las
-  bajas y altas de acceso son de `identity-access-management-standards`; el proceso, de
+  **The leader does not decide whether to notify**: they escalate immediately to whoever does decide. Staying silent is the
+  only response that makes the problem worse in every scenario.
+- **Retention through pressure** (counteroffers, "you can't leave now"): an orderly exit is planned
+  — handover of systems, revocation of accesses, an exit interview whose content is used. Access
+  provisioning and deprovisioning belong to `identity-access-management-standards`; the process, to
   `technical-hiring-standards`.
 
-## 6. Sostenibilidad del propio rol y del equipo
+## 6. Sustainability of the role itself and of the team
 
-*(La §6 canónica —rendimiento y operabilidad— no aplica a un dominio de proceso; **se sustituye
-declarándolo** por la operabilidad del rol y la del equipo como sistema.)*
+*(The canonical §6 —performance and operability— does not apply to a process domain; **it is replaced,
+declaring it so**, by the operability of the role and that of the team as a system.)*
 
-- **Sucesión declarada.** Para cada responsabilidad crítica del líder existe alguien que ya la ha
-  ejercido, no alguien que "podría". Se prueba ejerciéndola: rotar quien dirige la revisión de
-  diseño, quien responde de incidentes, quien lleva la relación con otro equipo.
-- **Bus factor por sistema y por decisión.** Un sistema que solo una persona sabe operar es un riesgo
-  operativo con nombre; una decisión que solo una persona sabe justificar es la misma discusión
-  otra vez dentro de un año. Ambos se corrigen con documento, no con confianza.
-- **Carga de guardia y horario**: la operación fuera de horario es de `sre-practice-standards`, pero
-  **la decisión de sostener una guardia con dotación insuficiente es de liderazgo, y es una decisión
-  de riesgo**: se declara por escrito con su fecha de revisión, como cualquier riesgo aceptado.
-- **La urgencia no es un método de gestión.** Un equipo en urgencia permanente no puede distinguir lo
-  importante, deja de invertir en lo que reduciría la urgencia, y deja de creer las urgencias reales.
-  **Indicador falsable**: proporción de trabajo no planificado en el ciclo (`sre-practice-standards`
-  lo define). Si supera de forma sostenida el umbral que el equipo publique, **la causa está en la
-  planificación o en el sistema, y esa es la conversación**, no exigir más esfuerzo.
-- **Tiempo del líder auditado como cualquier recurso**: si más del ~50 % se va en reuniones sin
-  decisión asociada, se aplica el test de §1 a cada reunión recurrente y se elimina lo que no lo pase.
-- **Cadencia mínima de revisión**: escala y niveles, anual; arquetipos y asignaciones staff+,
-  semestral; presupuesto de deuda, por ciclo de planificación; ADR con fecha de revisión vencida,
-  trimestral; fronteras de equipo y dependencias, semestral o ante reorganización.
+- **Declared succession.** For every critical responsibility of the leader there is someone who has already
+  exercised it, not someone who "could". It is proven by exercising it: rotating who runs the design
+  review, who answers for incidents, who handles the relationship with another team.
+- **Bus factor per system and per decision.** A system only one person knows how to operate is an operational
+  risk with a name; a decision only one person can justify is the same discussion
+  again in a year. Both are fixed with a document, not with trust.
+- **On-call load and hours**: out-of-hours operation belongs to `sre-practice-standards`, but
+  **the decision to sustain an on-call rota with insufficient staffing is a leadership decision, and it is a risk
+  decision**: it is declared in writing with its review date, like any accepted risk.
+- **Urgency is not a management method.** A team in permanent urgency cannot distinguish what is
+  important, stops investing in what would reduce the urgency, and stops believing the real urgencies.
+  **Falsifiable indicator**: the proportion of unplanned work in the cycle (`sre-practice-standards`
+  defines it). If it sustainedly exceeds the threshold the team publishes, **the cause is in the
+  planning or in the system, and that is the conversation**, not demanding more effort.
+- **The leader's time audited like any other resource**: if more than ~50 % goes on meetings with no
+  associated decision, the §1 test is applied to every recurring meeting and whatever does not pass is eliminated.
+- **Minimum review cadence**: ladder and levels, annually; archetypes and staff+ assignments,
+  half-yearly; debt budget, per planning cycle; ADRs with an expired review date,
+  quarterly; team boundaries and dependencies, half-yearly or on a reorganisation.
 
-## 7. Sostenibilidad a largo plazo y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-**Deprecación de norma de equipo**: toda regla que el líder introduzca se introduce **con la
-condición que la haría innecesaria**. Sin condición de retirada, una norma es permanente por
-omisión, y así se acumula el proceso que nadie defendió nunca explícitamente.
+**Deprecation of a team norm**: every rule the leader introduces is introduced **with the
+condition that would make it unnecessary**. With no retirement condition, a norm is permanent by
+omission, and that is how the process nobody ever explicitly defended accumulates.
 
-**Traspaso del rol**: un líder que cambia de puesto entrega escrito el mapa de decisiones abiertas,
-los compromisos con otros equipos, el estado de desarrollo de cada persona y las decisiones
-pendientes con su fecha. **Sin ese documento, el sucesor descubre los problemas por la vía del
-incidente.**
+**Handover of the role**: a leader who changes job hands over in writing the map of open decisions,
+the commitments with other teams, the development state of each person and the pending
+decisions with their dates. **Without that document, the successor discovers the problems by way of the
+incident.**
 
-PROHIBIDO:
-- ❌ **Decidir sin registrar.** Si condiciona a alguien que no estuvo en la sala, se escribe (§3.3).
-  Una decisión no registrada se vuelve a discutir, y la segunda discusión es más cara.
-- ❌ **ADR sin campo de reversibilidad**, y **tratar toda decisión como irreversible**: es la causa
-  documentada de parálisis organizativa (Bezos 2015, §2).
-- ❌ **Medir a personas por líneas de código, commits, PRs, puntos, *velocity* o métricas DORA
-  individuales**, ni en evaluaciones, ni en paneles, ni "solo para verlo". Contradice la posición
-  publicada de DORA y de SPACE (§3.9) y se manipula el día que se publica.
-- ❌ **Clasificar personas con el vocabulario del "10x"** o con cualquier cociente de productividad
-  individual: la cifra fundacional está desmontada (Prechelt 1999, §2).
-- ❌ **Usar cifras sin estudio primario, muestra y método** en un documento, una diapositiva o una
-  petición de presupuesto (§2). Aplica en particular a los minutos por interrupción y a los
-  porcentajes de rotación por mal jefe.
-- ❌ **Usar la urgencia como método de gestión.** Todo urgente = nada priorizado, y el equipo deja de
-  creer la siguiente urgencia, que será la de verdad.
-- ❌ **Ser el cuello de botella de todas las decisiones.** Si nada avanza sin el líder, el problema
-  es el reparto de autoridad, no la capacidad del equipo (§3.8, prueba de ausencia en §4).
-- ❌ **Delegar responsabilidad sin autoridad** (§5). Es transferencia de culpa, y se detecta porque
-  la persona no puede nombrar ni una decisión que pueda tomar sin consultar.
-- ❌ **Adjudicarse el líder la funcionalidad crítica del trimestre**: crea un SPOF y desactiva la
-  parte formativa del trabajo.
-- ❌ **Dejar de tocar el sistema por completo.** Sin contacto no hay criterio: los diseños se aprueban
-  por confianza en la persona en vez de por su contenido (§3.8).
-- ❌ **Usar la revisión de código como palanca de poder**: bloquear por estética, imponer la propia
-  solución sin argumento, o retener aprobación para negociar otra cosa.
-- ❌ **Nombrar personas como causa raíz en un postmortem**, y **ceder a la presión de arriba para
-  identificar un culpable** (§3.10).
-- ❌ **Cerrar un postmortem cuyas acciones no entran en el plan del ciclo siguiente.**
-- ❌ **Arquetipos staff+ convertidos en títulos, niveles o casillas** de la escala (§3.2): la propia
-  taxonomía es descriptiva y tiene crítica publicada.
-- ❌ **Escala de niveles no publicada**, o promoción sin evidencia escrita contra ella.
-- ❌ **Sorpresas en la evaluación de desempeño**: si es la primera vez que la persona lo oye, el fallo
-  es del líder.
-- ❌ **1:1 convertido en informe de estado**, o cancelado sistemáticamente por el líder.
-- ❌ **Definir un nivel por una tecnología** ("senior de X"): caduca con la herramienta.
-- ❌ **Reorganizar equipos sin problema declarado por escrito y sin coste esperado.**
-- ❌ **"Release de refactor" que no entrega nada observable**, y **peticiones de refactor sin coste
-  de negocio cuantificado** (§3.5).
-- ❌ **Adoptar agentes de codificación sin asignar capacidad de revisión** ni declarar qué trabajo se
-  reserva para el aprendizaje de los junior (§3.11).
-- ❌ **Escribir en esta skill —o en cualquier documento de liderazgo del equipo— una frase que no
-  decide nada.** "Fomentar la confianza", "liderar con el ejemplo", "cultura de excelencia": si no
-  nombra artefacto, umbral o prohibición, sobra.
+FORBIDDEN:
+- ❌ **Deciding without recording.** If it conditions someone who was not in the room, it gets written (§3.3).
+  An unrecorded decision gets discussed again, and the second discussion is more expensive.
+- ❌ **An ADR with no reversibility field**, and **treating every decision as irreversible**: it is the
+  documented cause of organisational paralysis (Bezos 2015, §2).
+- ❌ **Measuring people by lines of code, commits, PRs, points, *velocity* or individual DORA
+  metrics**, not in evaluations, not in dashboards, and not "just to look at it". It contradicts the published
+  position of DORA and of SPACE (§3.9) and it gets gamed the day it is published.
+- ❌ **Classifying people with the "10x" vocabulary** or with any individual productivity
+  ratio: the founding figure has been dismantled (Prechelt 1999, §2).
+- ❌ **Using figures with no primary study, sample and method** in a document, a slide or a
+  budget request (§2). It applies in particular to the minutes per interruption and to the
+  turnover percentages attributed to a bad manager.
+- ❌ **Using urgency as a management method.** Everything urgent = nothing prioritised, and the team stops
+  believing the next urgency, which will be the real one.
+- ❌ **Being the bottleneck for every decision.** If nothing moves without the leader, the problem
+  is the distribution of authority, not the team's capability (§3.8, absence test in §4).
+- ❌ **Delegating responsibility without authority** (§5). It is a transfer of blame, and it is detected because
+  the person cannot name a single decision they can take without consulting.
+- ❌ **The leader taking the quarter's critical feature**: it creates a SPOF and switches off the
+  developmental part of the work.
+- ❌ **Stopping touching the system entirely.** With no contact there is no judgement: designs get approved
+  out of trust in the person instead of because of their content (§3.8).
+- ❌ **Using code review as a lever of power**: blocking on aesthetics, imposing your own
+  solution with no argument, or withholding approval to negotiate something else.
+- ❌ **Naming people as a root cause in a postmortem**, and **giving in to pressure from above to
+  identify a culprit** (§3.10).
+- ❌ **Closing a postmortem whose actions do not enter the next cycle's plan.**
+- ❌ **Staff+ archetypes turned into titles, levels or boxes** on the ladder (§3.2): the
+  taxonomy itself is descriptive and has published criticism.
+- ❌ **An unpublished level ladder**, or a promotion with no written evidence against it.
+- ❌ **Surprises in the performance review**: if it is the first time the person hears it, the failure
+  is the leader's.
+- ❌ **A 1:1 turned into a status report**, or systematically cancelled by the leader.
+- ❌ **Defining a level by a technology** ("senior in X"): it expires with the tool.
+- ❌ **Reorganising teams with no problem declared in writing and no expected cost.**
+- ❌ **A "refactor release" that delivers nothing observable**, and **refactor requests with no quantified
+  business cost** (§3.5).
+- ❌ **Adopting coding agents without assigning review capacity** or declaring what work is
+  reserved for junior learning (§3.11).
+- ❌ **Writing in this skill —or in any of the team's leadership documents— a sentence that decides
+  nothing.** "Foster trust", "lead by example", "culture of excellence": if it does not
+  name an artifact, a threshold or a prohibition, it is superfluous.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquiera de estos puntos:
+Before fixing any of these points:
 
-1. **SPACE — hueco declarado.** El texto completo **no se ha podido recuperar en verbatim**: ACM
-   Queue (`queue.acm.org/detail.cfm?id=3454124`) y CACM devuelven **403** a la descarga
-   automatizada, y `dl.acm.org` está tras muro. Las formulaciones de §2 y §3.9 proceden de fuentes
-   secundarias concordantes. **Antes de citar literalmente el artículo, obtener el PDF por una vía
-   con acceso** (biblioteca institucional, la página de publicación de Microsoft Research) y
-   confirmar la redacción exacta de los mitos y de la recomendación de medir ≥ 3 dimensiones.
-2. **DORA**: edición vigente y su título en `dora.dev`. A ago-2026: **2025 = *State of AI-assisted
-   Software Development***; **2026 = *The ROI of AI-Assisted Software Development*** (según cobertura
-   de InfoQ, may-2026, **no confirmado contra `dora.dev` en esta verificación** — confirmarlo).
-   Existe crítica publicada al informe de 2026 por apoyarse en recomendaciones especulativas frente
-   al rigor investigador previo: **verificar el método declarado antes de citarlo como evidencia**.
-   Confirmar también que sigue vigente la posición de no usar las métricas a nivel individual.
-3. **Arquetipos staff+**: si `staffeng.com` / `lethain.com` mantienen los cuatro arquetipos y los
-   umbrales de escala (~100 / ~1.000 ingenieros), y si ha aparecido crítica o taxonomía alternativa
-   con mejor base. **Nunca presentarlos como resultado de investigación.**
-4. **Carga cognitiva y topologías de equipo**: comprobar si ha aparecido **evidencia empírica**
-   (instrumento validado, réplica) que permita subir el estatus de la analogía. Hasta entonces se
-   cita como analogía, no como medición, coherente con `platform-engineering-standards` §6.4.
-5. **Carta de Bezos 2015**: el verbatim de §2 se extrajo del PDF oficial. Si se vuelve a citar,
-   **extraerlo del PDF, no de un resumen** — la mayoría de fuentes secundarias lo fecha mal en 2016.
-6. **ADR**: si `adr.github.io` recomienda otro formato por defecto y si la plantilla Nygard sigue
-   siendo la de referencia; herramientas (`adr-tools` y sucesores) y su mantenimiento real —
-   **leer el `LICENSE` en crudo** antes de adoptar ninguna.
-7. **Cualquier cifra sobre personas, productividad, rotación o interrupciones**: localizar estudio
-   primario, año, muestra y método **antes** de usarla. Si no aparece, o si la metodología está
-   cuestionada (10x/Sackman, los 23 minutos, el 70 % de Gallup — §2), **no se usa**. Este es el
-   dominio del catálogo con mayor densidad de cifras folclóricas.
-8. **Escalas de carrera públicas**: `progression.fyi` y `github.com/bmoeskau/engineering-ladders`
-   siguen vivos y qué escalas mantienen. Comprobar la fecha de cada una: varias son de 2015-2019 y
-   describen organizaciones que ya no existen en esa forma.
-9. **Marco laboral aplicable** a evaluación, retribución, clasificación profesional y despido en la
-   jurisdicción concreta (en España: convenio aplicable y Estatuto de los Trabajadores). **Este
-   documento fija criterio de ingeniería, no asesoramiento laboral**: la parte con efectos jurídicos
-   se contrasta con asesoría legal y con RR. HH.
-10. **Uso de IA en decisiones sobre personas** (evaluación, promoción, asignación): régimen legal en
-    evolución — `ai-governance-standards` y `technical-hiring-standards` §5 mantienen el estado del
-    **AI Act** y sus fechas. Verificarlo antes de introducir cualquier herramienta que puntúe
-    personas.
+1. **SPACE — declared gap.** The full text **could not be retrieved verbatim**: ACM
+   Queue (`queue.acm.org/detail.cfm?id=3454124`) and CACM return **403** to automated
+   download, and `dl.acm.org` is behind a wall. The formulations in §2 and §3.9 come from consistent
+   secondary sources. **Before quoting the article literally, obtain the PDF through a route
+   with access** (institutional library, the Microsoft Research publication page) and
+   confirm the exact wording of the myths and of the recommendation to measure ≥ 3 dimensions.
+2. **DORA**: the current edition and its title at `dora.dev`. As of Aug 2026: **2025 = *State of AI-assisted
+   Software Development***; **2026 = *The ROI of AI-Assisted Software Development*** (per InfoQ
+   coverage, May-2026, **not confirmed against `dora.dev` in this verification** — confirm it).
+   There is published criticism of the 2026 report for resting on speculative recommendations rather
+   than the previous research rigour: **verify the declared method before citing it as evidence**.
+   Also confirm that the position of not using the metrics at an individual level still holds.
+3. **Staff+ archetypes**: whether `staffeng.com` / `lethain.com` still maintain the four archetypes and the
+   scale thresholds (~100 / ~1,000 engineers), and whether criticism or an alternative taxonomy
+   with a better basis has appeared. **Never present them as a research result.**
+4. **Cognitive load and team topologies**: check whether **empirical evidence** has appeared
+   (a validated instrument, a replication) that would allow the analogy's status to be raised. Until then it is
+   cited as an analogy, not as a measurement, consistent with `platform-engineering-standards` §6.4.
+5. **Bezos's 2015 letter**: the verbatim in §2 was extracted from the official PDF. If it is cited again,
+   **extract it from the PDF, not from a summary** — most secondary sources misdate it to 2016.
+6. **ADR**: whether `adr.github.io` recommends a different default format and whether the Nygard template is still
+   the reference; tools (`adr-tools` and successors) and their real maintenance —
+   **read the raw `LICENSE`** before adopting any of them.
+7. **Any figure about people, productivity, turnover or interruptions**: locate the primary
+   study, year, sample and method **before** using it. If it does not appear, or if the methodology is
+   contested (10x/Sackman, the 23 minutes, Gallup's 70 % — §2), **it is not used**. This is the
+   catalogue's domain with the highest density of folkloric figures.
+8. **Public career ladders**: whether `progression.fyi` and `github.com/bmoeskau/engineering-ladders`
+   are still alive and which ladders they maintain. Check the date of each one: several are from 2015-2019 and
+   describe organisations that no longer exist in that form.
+9. **The applicable employment framework** for evaluation, pay, professional classification and dismissal in the
+   specific jurisdiction (in Spain: the applicable collective agreement and the Estatuto de los Trabajadores). **This
+   document fixes engineering criteria, not employment advice**: the part with legal effects
+   is checked with legal counsel and with HR.
+10. **Use of AI in decisions about people** (evaluation, promotion, assignment): a legal regime in
+    evolution — `ai-governance-standards` and `technical-hiring-standards` §5 maintain the state of the
+    **AI Act** and its dates. Verify it before introducing any tool that scores
+    people.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

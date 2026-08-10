@@ -3,137 +3,137 @@ name: haskell-fp-standards
 description: Haskell production engineering standards. Trigger on .hs/.lhs files, .cabal files, cabal.project/cabal.project.freeze, stack.yaml/stack.yaml.lock, package.yaml (hpack), hie.yaml, fourmolu.yaml/.ormolu, .hlint.yaml, ghcup/GHC toolchain pins, Stackage resolvers, and packages like base, text, bytestring, containers, aeson, servant, persistent, conduit, streaming, mtl, effectful, cleff, fused-effects, relude, rio, hspec, tasty, QuickCheck, hedgehog, criterion, async, stm. Apply when writing, reviewing or setting up CI for Haskell, and when deciding whether a team should adopt Haskell at all.
 ---
 
-# Estándares Haskell en producción
+# Haskell in production standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a todo trabajo en Haskell: `.hs`/`.lhs`, ficheros `.cabal`, `cabal.project` y `cabal.project.freeze`, `stack.yaml`/`stack.yaml.lock`, `package.yaml` (hpack), `hie.yaml`, `fourmolu.yaml`, `.hlint.yaml`, pins de GHCup y resolvers de Stackage, y las pipelines que compilan/testean Haskell. Cubre servicios backend, CLIs, compiladores/DSLs y librerías publicadas en Hackage.
+Applies to all Haskell work: `.hs`/`.lhs`, `.cabal` files, `cabal.project` and `cabal.project.freeze`, `stack.yaml`/`stack.yaml.lock`, `package.yaml` (hpack), `hie.yaml`, `fourmolu.yaml`, `.hlint.yaml`, GHCup pins and Stackage resolvers, and the pipelines that build/test Haskell. Covers backend services, CLIs, compilers/DSLs and libraries published on Hackage.
 
-**El eje de esta skill: adoptar Haskell en producción es una decisión de equipo antes que técnica.** El lenguaje no es el riesgo — el riesgo es el *bus factor*, la curva de entrada, el mercado de contratación y los tiempos de compilación. Un servicio Haskell bien escrito por una persona que se va es un pasivo, no un activo. Antes de escribir la primera línea hay que poder responder: ¿hay ≥3 personas que puedan operar y modificar esto?, ¿el equipo acepta un CI de 10-30 min en un build limpio?, ¿existe presupuesto de formación? Si la respuesta es no, la decisión correcta es otro lenguaje (§7). Donde Haskell gana de verdad: compiladores/parsers/DSLs, lógica de negocio con invariantes densas, transformación de datos correcta-por-construcción, y equipos que ya lo dominan. Donde no gana: CRUD sin invariantes, glue de infraestructura, código que rotará entre muchas manos.
+**The axis of this skill: adopting Haskell in production is a team decision before it is a technical one.** The language is not the risk — the risk is the *bus factor*, the learning curve, the hiring market and the compile times. A Haskell service written well by one person who leaves is a liability, not an asset. Before writing the first line you must be able to answer: are there ≥3 people who can operate and modify this?, does the team accept a 10-30 min CI on a clean build?, is there a training budget? If the answer is no, the right decision is another language (§7). Where Haskell genuinely wins: compilers/parsers/DSLs, business logic with dense invariants, correct-by-construction data transformation, and teams that already master it. Where it does not win: CRUD without invariants, infrastructure glue, code that will rotate through many hands.
 
-**No aplica**: ver `ocaml-fsharp-standards` (los ML estrictos — la frontera es **pereza frente a evaluación estricta** y la clase de sistema de tipos: type classes + higher-kinded types + `IO` monádico aquí, módulos/functores y efectos por *handlers* allí; no "los dos son funcionales"), `scala-standards` (el otro funcional con type classes: la frontera es el **runtime JVM** y la interop Java como requisito de diseño, más su elección de ecosistema Typelevel/ZIO; `cats-effect`/`fs2` son suyos aunque el estilo se parezca), `rust-standards` (comparte ADTs y linaje ML: la frontera es el **modelo de memoria** —ownership/sin GC frente a GC + pereza— y el propósito: sistemas y latencia acotada frente a corrección de la lógica), `jvm-spring-standards` (solo si el problema entra por JVM/Spring), `iac-standards` (**Nix como gestor de infraestructura/despliegue es suyo; Nix como toolchain reproducible de este proyecto Haskell —`flake.nix`, `haskell.nix`, shells de desarrollo— es de esta skill**), `cicd-standards` (la pipeline que ejecuta los gates y su caché), `kubernetes-standards` (imagen OCI y despliegue del binario), `api-design-standards` (el contrato HTTP/gRPC — aquí solo su implementación con servant/wai), `appsec-standards` (modelado de amenazas y clases de vulnerabilidad agnósticas; aquí solo los sinks concretos de Haskell), `vulnerability-management-standards` (triaje y SLA de CVEs; aquí solo `cabal audit`/advisory-db en el gate), `secrets-management-standards` (dónde viven los secretos; aquí solo no filtrarlos por `Show`), `observability-standards` (pipeline OTel y SLOs; aquí solo la instrumentación y las métricas del RTS), `sql-standards` (el SQL que generen persistent/esqueleto/hasql), `python-standards`/`go-standards`/`typescript-standards` (la alternativa real cuando §7 dice que no toca Haskell).
+**Not applicable**: see `ocaml-fsharp-standards` (the strict MLs — the boundary is **laziness versus strict evaluation** and the class of type system: type classes + higher-kinded types + monadic `IO` here, modules/functors and effects via *handlers* there; not "both are functional"), `scala-standards` (the other functional language with type classes: the boundary is the **JVM runtime** and Java interop as a design requirement, plus its Typelevel/ZIO ecosystem choice; `cats-effect`/`fs2` are theirs even if the style looks similar), `rust-standards` (shares ADTs and ML lineage: the boundary is the **memory model** —ownership/no GC versus GC + laziness— and the purpose: systems and bounded latency versus correctness of the logic), `jvm-spring-standards` (only if the problem comes in through JVM/Spring), `iac-standards` (**Nix as an infrastructure/deployment manager is theirs; Nix as this Haskell project's reproducible toolchain —`flake.nix`, `haskell.nix`, development shells— belongs to this skill**), `cicd-standards` (the pipeline that runs the gates and its cache), `kubernetes-standards` (OCI image and deployment of the binary), `api-design-standards` (the HTTP/gRPC contract — here only its implementation with servant/wai), `appsec-standards` (threat modelling and agnostic vulnerability classes; here only the concrete Haskell sinks), `vulnerability-management-standards` (CVE triage and SLA; here only `cabal audit`/advisory-db in the gate), `secrets-management-standards` (where secrets live; here only not leaking them through `Show`), `observability-standards` (OTel pipeline and SLOs; here only the instrumentation and the RTS metrics), `sql-standards` (the SQL generated by persistent/esqueleto/hasql), `python-standards`/`go-standards`/`typescript-standards` (the real alternative when §7 says Haskell is not the fit).
 
-## 2. Toolchain por defecto
+## 2. Default toolchain
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8). Lo de abajo es el estado verificado a **ago-2026**.
+> Verify the latest version on the web before pinning it in a real project (§8). What follows is the state verified as of **Aug 2026**.
 
-| Pieza | Elección | Estado verificado (ago-2026) | Criterio |
+| Piece | Choice | Verified state (Aug 2026) | Criteria |
 |---|---|---|---|
-| Instalador | **GHCup** | único soportado; Haskell Platform muerto hace años | Nunca GHC del gestor de paquetes de la distro |
-| Compilador | **GHC 9.14.x (primera release LTS)** | 9.14.1 publicada 2025-12-19; 9.14.2-rc1 en curso | LTS ⇒ ≥2 años de bugfixes; **no la más nueva, la LTS** |
-| GHC vivos | 9.14 (LTS), 9.12.4, 9.10.3, 9.8.4, 9.6.7 | 9.4 y anteriores **EOL** | ≤9.4 en producción = sin parches |
-| Edición | **`GHC2024`** declarada explícitamente | introducida en GHC 9.10.1; **el default sigue siendo `GHC2021`** | El default puede cambiar: fijar la edición siempre |
-| Build | **cabal-install 3.18.x** | 3.18.1.0 (2026-07-29) | Default sobrio: GHCup + cabal |
-| Build alt. | **Stack 3.11.x** | 3.11.1 (2026-06-15) — **activo, no abandonado** | Solo si se quiere el conjunto curado como modelo de build |
-| Conjunto de deps | **Stackage LTS** como oráculo de compatibilidad | LTS 24.x ⇒ ghc-9.10.3; Nightly 2026-08-01 ⇒ ghc-9.12.4 | Ver la discrepancia LTS-de-GHC vs LTS-de-Stackage abajo |
-| IDE | **HLS (haskell-language-server)** | 2.14.0.0 (2026-04-27) | Instalado por GHCup, versión atada al GHC |
-| Formatter | **fourmolu** | 0.20.0.0 (2026-06-18), BSD-3-Clause | `ormolu` si se quiere cero configuración; uno solo por repo |
-| Linter | **hlint** | 3.10 (2025-02-02), BSD-3-Clause | Cadencia baja: útil pero **verificar antes de fijarlo como gate duro** |
-| Efectos | **`ReaderT Env IO`** | — | `effectful` 2.6.1.0 (2025-08-30, BSD-3) si el default no basta |
-| Tests | **hspec** o **tasty** + **QuickCheck**/**Hedgehog** | verificar versiones (§8) | Property-based no es opcional (§4) |
+| Installer | **GHCup** | the only supported one; Haskell Platform dead for years | Never the distro package manager's GHC |
+| Compiler | **GHC 9.14.x (first LTS release)** | 9.14.1 published 2025-12-19; 9.14.2-rc1 in progress | LTS ⇒ ≥2 years of bugfixes; **not the newest, the LTS** |
+| Live GHCs | 9.14 (LTS), 9.12.4, 9.10.3, 9.8.4, 9.6.7 | 9.4 and earlier **EOL** | ≤9.4 in production = no patches |
+| Edition | **`GHC2024`** declared explicitly | introduced in GHC 9.10.1; **the default is still `GHC2021`** | The default can change: always pin the edition |
+| Build | **cabal-install 3.18.x** | 3.18.1.0 (2026-07-29) | Sober default: GHCup + cabal |
+| Alt. build | **Stack 3.11.x** | 3.11.1 (2026-06-15) — **active, not abandoned** | Only if you want the curated set as the build model |
+| Dependency set | **Stackage LTS** as the compatibility oracle | LTS 24.x ⇒ ghc-9.10.3; Nightly 2026-08-01 ⇒ ghc-9.12.4 | See the GHC-LTS vs Stackage-LTS discrepancy below |
+| IDE | **HLS (haskell-language-server)** | 2.14.0.0 (2026-04-27) | Installed by GHCup, version tied to the GHC |
+| Formatter | **fourmolu** | 0.20.0.0 (2026-06-18), BSD-3-Clause | `ormolu` if you want zero configuration; only one per repo |
+| Linter | **hlint** | 3.10 (2025-02-02), BSD-3-Clause | Low cadence: useful but **verify before pinning it as a hard gate** |
+| Effects | **`ReaderT Env IO`** | — | `effectful` 2.6.1.0 (2025-08-30, BSD-3) if the default is not enough |
+| Tests | **hspec** or **tasty** + **QuickCheck**/**Hedgehog** | verify versions (§8) | Property-based is not optional (§4) |
 
-**Discrepancia declarada (importante).** Hay **dos nociones de "LTS" que no coinciden**: la LTS de GHC (9.14, desde dic-2025) y la LTS de Stackage (serie 24, construida sobre ghc-9.10.3 a ago-2026). Adoptar GHC 9.14 hoy significa **salir del conjunto curado de Stackage** y resolver dependencias con el solver de cabal + freeze propio. Decisión por defecto: **el GHC lo fija la disponibilidad de un snapshot curado que compile tus dependencias**, no el número más alto. Documentar la elección en un ADR y revisarla cuando Stackage promocione una LTS sobre 9.14.
+**Declared discrepancy (important).** There are **two notions of "LTS" that do not coincide**: the GHC LTS (9.14, since Dec 2025) and the Stackage LTS (series 24, built on ghc-9.10.3 as of Aug 2026). Adopting GHC 9.14 today means **leaving Stackage's curated set** and resolving dependencies with cabal's solver + your own freeze. Default decision: **the GHC is pinned by the availability of a curated snapshot that builds your dependencies**, not by the highest number. Document the choice in an ADR and revisit it when Stackage promotes an LTS on 9.14.
 
-**Política de upgrade de GHC.** LTS-a-LTS. Las no-LTS salen ~cada 6 meses con vida corta; el solapamiento entre LTS consecutivas es de ~6 meses, y esa es la ventana de migración real. Adoptar una `.1` en producción es innecesario: esperar a `.2`/`.3`. Cada salto se prueba primero en una rama de CI con la matriz completa (`-Wall -Werror` incluido) porque **`-Wall` gana warnings nuevos entre versiones** — ejemplo verificado: `-Wincomplete-record-selectors` entró en `-Wall` en GHC 9.14, y las librerías con `-Werror` rompen por eso.
+**GHC upgrade policy.** LTS-to-LTS. The non-LTS releases come out ~every 6 months with a short life; the overlap between consecutive LTSs is ~6 months, and that is the real migration window. Adopting a `.1` in production is unnecessary: wait for `.2`/`.3`. Each jump is tested first on a CI branch with the full matrix (`-Wall -Werror` included) because **`-Wall` gains new warnings between versions** — verified example: `-Wincomplete-record-selectors` entered `-Wall` in GHC 9.14, and libraries with `-Werror` break because of it.
 
-**GHCup / Stack / Cabal / Nix — criterio real, no catálogo.**
-- **GHCup + cabal**: default. Menos piezas, es lo que asume el resto del ecosistema y HLS.
-- **Stack**: elegir solo si el valor es *el conjunto curado como modelo de build* (equipo grande, muchos repos, deseo de "un resolver y punto"). Sigue activo (3.11.1, jun-2026) — no es una decisión de legado. No mezclar los dos en el mismo repo.
-- **Nix** (`flake.nix` + `haskell.nix` o `nixpkgs`): solo cuando el requisito es **bit-reproducibilidad o dependencias de sistema no-Haskell no triviales** (libpq, ICU, ffmpeg, cross-compilación). Nix multiplica por dos la superficie de tooling que el equipo debe saber depurar; entra con un dueño designado o no entra. Si entra, entra para todos: nada de "unos con Nix y otros con cabal" — el `shell.nix`/devShell es el entorno canónico y CI usa el mismo.
+**GHCup / Stack / Cabal / Nix — real criteria, not a catalogue.**
+- **GHCup + cabal**: the default. Fewer pieces, it is what the rest of the ecosystem and HLS assume.
+- **Stack**: choose it only if the value is *the curated set as the build model* (large team, many repos, a desire for "one resolver and done"). Still active (3.11.1, Jun 2026) — it is not a legacy decision. Do not mix the two in the same repo.
+- **Nix** (`flake.nix` + `haskell.nix` or `nixpkgs`): only when the requirement is **bit-reproducibility or non-trivial non-Haskell system dependencies** (libpq, ICU, ffmpeg, cross-compilation). Nix doubles the tooling surface the team must be able to debug; it comes in with a designated owner or it does not come in. If it comes in, it comes in for everyone: none of this "some with Nix and others with cabal" — the `shell.nix`/devShell is the canonical environment and CI uses the same one.
 
-**Stackage frente a Hackage — cómo se fija un conjunto reproducible.**
-- **Hackage** es el registro (sin curar, cualquiera publica). **Stackage** es un conjunto de versiones *verificadas por compilar juntas* contra un GHC concreto; los snapshots son **inmutables** una vez publicados.
-- Con Stack: `resolver: lts-XX.YY` + `stack.yaml.lock` versionado. Extra-deps de Hackage con hash, y cada una es deuda a justificar.
-- Con cabal: `cabal.project` puede importar el snapshot de Stackage como `import: https://www.stackage.org/lts-XX.YY/cabal.config` y **además** se versiona `cabal.project.freeze` (`cabal freeze`). Sin freeze no hay build reproducible: el solver resolverá distinto mañana.
-- Regla: **el lockfile/freeze se versiona siempre**, también en librerías (para su CI; la librería publica rangos, no pins).
-- Dependencia fuera del snapshot ⇒ decisión explícita: mirar mantenimiento, licencia y árbol transitivo. Ningún `git:` sin `--sha256`/rev fijado.
+**Stackage versus Hackage — how a reproducible set is pinned.**
+- **Hackage** is the registry (uncurated, anyone publishes). **Stackage** is a set of versions *verified to build together* against a specific GHC; the snapshots are **immutable** once published.
+- With Stack: `resolver: lts-XX.YY` + a versioned `stack.yaml.lock`. Extra-deps from Hackage with a hash, and each one is debt to justify.
+- With cabal: `cabal.project` can import the Stackage snapshot as `import: https://www.stackage.org/lts-XX.YY/cabal.config` and **in addition** `cabal.project.freeze` is versioned (`cabal freeze`). Without a freeze there is no reproducible build: the solver will resolve differently tomorrow.
+- Rule: **the lockfile/freeze is always versioned**, in libraries too (for their CI; the library publishes ranges, not pins).
+- A dependency outside the snapshot ⇒ an explicit decision: look at maintenance, licence and transitive tree. No `git:` without a pinned `--sha256`/rev.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- Layout: `src/` (librería), `app/` (ejecutable fino), `test/`, `bench/`. **Toda la lógica vive en la librería**; el ejecutable solo parsea CLI, construye el `Env` y llama a `main`. Esto es lo que hace testeable y reusable el código, y lo que evita el `Main.hs` de 2000 líneas.
-- Multipaquete desde que hay dos límites reales: `cabal.project` con `packages: ./pkg-*`. `common` stanzas en el `.cabal` para no repetir `ghc-options`/`default-extensions`.
-- Módulos por **dominio**, no por tipo técnico (`Billing.Invoice`, no `Types`/`Utils`). Listas de exportación explícitas en todo módulo: la API es una decisión, no un accidente.
-- Tipos primero: newtypes sobre primitivos (`newtype UserId = UserId UUID`), *smart constructors* que validan en el borde, estados imposibles irrepresentables con ADTs. `NonEmpty` en vez de "lista que nunca está vacía". El sistema de tipos es la primera capa de tests.
-- Campos de records **estrictos por defecto** (`!Int`) en tipos de datos de dominio; `StrictData` por módulo cuando el tipo es un contenedor de datos.
-- `deriving stock`/`newtype`/`anyclass` **siempre explícito** (`DerivingStrategies` ya viene en `GHC2024`): el deriving implícito es ambiguo al leer.
+- Layout: `src/` (library), `app/` (thin executable), `test/`, `bench/`. **All the logic lives in the library**; the executable only parses the CLI, builds the `Env` and calls `main`. This is what makes the code testable and reusable, and what avoids the 2000-line `Main.hs`.
+- Multi-package as soon as there are two real boundaries: `cabal.project` with `packages: ./pkg-*`. `common` stanzas in the `.cabal` to avoid repeating `ghc-options`/`default-extensions`.
+- Modules by **domain**, not by technical type (`Billing.Invoice`, not `Types`/`Utils`). Explicit export lists in every module: the API is a decision, not an accident.
+- Types first: newtypes over primitives (`newtype UserId = UserId UUID`), *smart constructors* that validate at the boundary, impossible states unrepresentable with ADTs. `NonEmpty` instead of "a list that is never empty". The type system is the first layer of tests.
+- Record fields **strict by default** (`!Int`) in domain data types; `StrictData` per module when the type is a data container.
+- `deriving stock`/`newtype`/`anyclass` **always explicit** (`DerivingStrategies` already comes in `GHC2024`): implicit deriving is ambiguous when reading.
 
-### Extensiones de lenguaje
+### Language extensions
 
-- **Declarar `default-language: GHC2024`** en el `.cabal`. Verificado: `GHC2024` se introdujo en GHC 9.10.1 y **añade sobre `GHC2021`**: `DataKinds`, `DerivingStrategies`, `DisambiguateRecordFields`, `ExplicitNamespaces`, `GADTs`, `MonoLocalBinds`, `LambdaCase`, `RoleAnnotations`. El default de GHC sin declarar nada **sigue siendo `GHC2021`** (por compatibilidad), por eso se declara.
-- Si el proyecto está atado a GHC <9.10: `GHC2021` + `default-extensions` mínimas.
-- Añadidos habitualmente sanos por proyecto: `OverloadedStrings`, `StrictData`, `DerivingVia`, `TypeFamilies` (si el diseño lo pide).
-- **Vetadas por coste de mantenimiento** (requieren ADR y dueño): `UndecidableInstances`, `IncoherentInstances`, `OverlappingInstances`/`{-# OVERLAPPING #-}` a granel, `AllowAmbiguousTypes` como parche a un diseño confuso, `ImpredicativeTypes`, `TemplateHaskell` fuera de lo que ya lo exige (aeson/persistent/lens) — TH cuesta tiempo de compilación, rompe cross-compilación y es opaco al depurar. `CPP` solo para bandas de compatibilidad de versión, nunca para lógica.
-- `unsafeCoerce` y `GeneralizedNewtypeDeriving` sobre clases con métodos peligrosos: PROHIBIDO sin justificación escrita (§7).
+- **Declare `default-language: GHC2024`** in the `.cabal`. Verified: `GHC2024` was introduced in GHC 9.10.1 and **adds on top of `GHC2021`**: `DataKinds`, `DerivingStrategies`, `DisambiguateRecordFields`, `ExplicitNamespaces`, `GADTs`, `MonoLocalBinds`, `LambdaCase`, `RoleAnnotations`. GHC's default with nothing declared **is still `GHC2021`** (for compatibility), which is why it is declared.
+- If the project is tied to GHC <9.10: `GHC2021` + minimal `default-extensions`.
+- Commonly sane additions per project: `OverloadedStrings`, `StrictData`, `DerivingVia`, `TypeFamilies` (if the design calls for it).
+- **Banned for maintenance cost** (require an ADR and an owner): `UndecidableInstances`, `IncoherentInstances`, `OverlappingInstances`/`{-# OVERLAPPING #-}` in bulk, `AllowAmbiguousTypes` as a patch over a confused design, `ImpredicativeTypes`, `TemplateHaskell` beyond what already requires it (aeson/persistent/lens) — TH costs compile time, breaks cross-compilation and is opaque when debugging. `CPP` only for version compatibility bands, never for logic.
+- `unsafeCoerce` and `GeneralizedNewtypeDeriving` over classes with dangerous methods: FORBIDDEN without written justification (§7).
 
 ### `String` / `Text` / `ByteString`
 
-- **`String = [Char]` es un bug de rendimiento por defecto**: lista enlazada de caracteres boxed, un cons-cell por carácter. No es una elección de estilo.
-- **`Text`** (`text`, UTF-8 desde text-2.0) para **todo texto humano**. **`ByteString`** para **bytes** (I/O, red, binario, ficheros). `String` solo en la frontera con APIs antiguas (`FilePath`, `Show`, algunas de `base`) y se convierte de inmediato.
-- `OverloadedStrings` activado; literales sin `pack` disperso.
-- Lazy frente a strict: `Data.Text` / `Data.ByteString` estrictos por defecto; las variantes `.Lazy` solo para *streaming* de datos grandes que no caben en memoria, y entonces con criterio explícito.
-- Decodificación de bytes a texto **siempre con manejo de error explícito** (`decodeUtf8'`/`decodeUtf8With`), nunca `decodeUtf8` sobre entrada no confiable: lanza excepción imposible de capturar en código puro.
-- Rutas de fichero: `OsPath`/`OsString` cuando el proyecto toque rutas no-ASCII o binarias; `FilePath = String` es la trampa clásica.
+- **`String = [Char]` is a performance bug by default**: a linked list of boxed characters, one cons-cell per character. It is not a style choice.
+- **`Text`** (`text`, UTF-8 since text-2.0) for **all human text**. **`ByteString`** for **bytes** (I/O, network, binary, files). `String` only at the boundary with old APIs (`FilePath`, `Show`, some in `base`) and converted immediately.
+- `OverloadedStrings` enabled; literals without scattered `pack`.
+- Lazy versus strict: `Data.Text` / `Data.ByteString` strict by default; the `.Lazy` variants only for *streaming* large data that does not fit in memory, and then with explicit reasoning.
+- Decoding bytes to text **always with explicit error handling** (`decodeUtf8'`/`decodeUtf8With`), never `decodeUtf8` over untrusted input: it throws an exception impossible to catch in pure code.
+- File paths: `OsPath`/`OsString` when the project touches non-ASCII or binary paths; `FilePath = String` is the classic trap.
 
-### Pereza y fugas de espacio — categoría de bug de primera clase
+### Laziness and space leaks — a first-class bug category
 
-La pereza es la característica distintiva del lenguaje y la **primera fuente de incidentes de producción**: un thunk acumulado no falla en tests, falla a las 6 horas con el heap lleno.
+Laziness is the language's distinctive feature and the **primary source of production incidents**: an accumulated thunk does not fail in tests, it fails 6 hours in with a full heap.
 
-- **`foldl` está vetado.** Usar `foldl'`. Verificado: `foldl'` se exporta desde `Prelude` a partir de **base-4.20 (GHC 9.10)** (CLC #167) — antes hay que importarlo de `Data.List`/`Data.Foldable`. En GHC <9.10 el import explícito es obligatorio; nada de "es que no estaba a mano".
-- Acumuladores estrictos: `BangPatterns` (`go !acc x = ...`), `seq`/`force` (`deepseq`) donde el acumulador sea estructurado.
-- Estructuras: `Data.Map.Strict` y `Data.IntMap.Strict` por defecto — la variante lazy solo con motivo. `modifyIORef'`/`atomicModifyIORef'`, nunca las versiones lazy. `foldl'` sobre `Map`, no `foldr` acumulando.
-- Campos de record que acumulan estado: **estrictos** (`!`) o `StrictData`. `State` lazy es un generador de fugas: usar `Control.Monad.State.Strict`.
-- **Perfilado de heap como herramienta rutinaria, no de emergencia**: build con `-prof -fprof-auto`, ejecutar con `+RTS -hc -hy -hb -l-au`, visualizar con `eventlog2html`/`hp2ps`; `ghc-debug` para inspeccionar el heap de un proceso vivo. Todo servicio de larga vida se perfila **antes** de salir a producción, no después del primer OOM.
-- Métrica operativa: `live bytes` del RTS con tendencia creciente y sostenida = fuga hasta que se demuestre lo contrario (§6).
-- `-Wall` no detecta fugas de espacio. No hay linter que sustituya al perfilado.
+- **`foldl` is banned.** Use `foldl'`. Verified: `foldl'` is exported from `Prelude` starting with **base-4.20 (GHC 9.10)** (CLC #167) — before that you must import it from `Data.List`/`Data.Foldable`. On GHC <9.10 the explicit import is mandatory; none of this "it just wasn't at hand".
+- Strict accumulators: `BangPatterns` (`go !acc x = ...`), `seq`/`force` (`deepseq`) where the accumulator is structured.
+- Structures: `Data.Map.Strict` and `Data.IntMap.Strict` by default — the lazy variant only with a reason. `modifyIORef'`/`atomicModifyIORef'`, never the lazy versions. `foldl'` over a `Map`, not `foldr` accumulating.
+- Record fields that accumulate state: **strict** (`!`) or `StrictData`. Lazy `State` is a leak generator: use `Control.Monad.State.Strict`.
+- **Heap profiling as a routine tool, not an emergency one**: build with `-prof -fprof-auto`, run with `+RTS -hc -hy -hb -l-au`, visualise with `eventlog2html`/`hp2ps`; `ghc-debug` to inspect the heap of a live process. Every long-lived service is profiled **before** going to production, not after the first OOM.
+- Operational metric: RTS `live bytes` with a sustained upward trend = a leak until proven otherwise (§6).
+- `-Wall` does not detect space leaks. There is no linter that replaces profiling.
 
-### `Prelude` alternativo
+### Alternative `Prelude`
 
-- Default: **`Prelude` estándar**. Un `Prelude` custom es una barrera de entrada para cada persona nueva y una fuente de fricción con ejemplos y librerías.
-- **`relude`**: elegible en un proyecto nuevo y greenfield donde el equipo lo acuerde — quita las funciones parciales, usa `Text` por defecto, trae `NonEmpty`. Se declara con `mixins`/`NoImplicitPrelude` de forma uniforme en todo el repo.
-- **`rio`**: elegible si además se adopta su arquitectura (`RIO env`, logging, manejo de recursos) como un todo. Adoptar `rio` solo por el Prelude es pagar el coste sin el beneficio.
-- Regla dura: **cero o uno**. Nunca dos preludios distintos en el mismo árbol, ni un módulo `MyProject.Prelude` casero que crezca sin dueño.
+- Default: **the standard `Prelude`**. A custom `Prelude` is an entry barrier for every new person and a source of friction with examples and libraries.
+- **`relude`**: eligible in a new greenfield project where the team agrees — it removes the partial functions, uses `Text` by default, brings `NonEmpty`. It is declared with `mixins`/`NoImplicitPrelude` uniformly across the whole repo.
+- **`rio`**: eligible if its architecture (`RIO env`, logging, resource handling) is adopted as a whole as well. Adopting `rio` just for the Prelude is paying the cost without the benefit.
+- Hard rule: **zero or one**. Never two different preludes in the same tree, nor a homemade `MyProject.Prelude` module that grows without an owner.
 
-### Manejo de errores
+### Error handling
 
-- Dos ejes distintos que no hay que mezclar: **fallos esperables del dominio** frente a **fallos excepcionales/de infraestructura**.
-- Dominio ⇒ **tipos**: `Either MiError a`, `ExceptT MiError` en la capa que lo necesite, ADT de error por operación. El llamante hace pattern matching y el compilador comprueba la exhaustividad.
-- Infraestructura (I/O, red, disco, timeouts, `bracket`) ⇒ **excepciones de `IO`**, que en Haskell son inevitables (async exceptions incluidas). Capturar con `safe-exceptions` (o `Control.Exception` con criterio): **`bracket`/`finally` para todo recurso**, nunca `catch` sobre `SomeException` que trague también las asíncronas (`ThreadKilled`, timeouts).
-- **PROHIBIDOS en código de producción**: `error`, `head`, `tail`, `init`, `last`, `fromJust`, `read`, `(!!)`, `maximum`/`minimum` sobre listas posiblemente vacías, `undefined`. Alternativas: pattern matching, `uncons`, `listToMaybe`, `NonEmpty`, `lookup`, `readMaybe`.
-- Estado verificado de `base`: **`head` y `tail` de `Data.List` llevan `{-# WARNING #-}` con categoría `x-partial` desde base-4.19 (GHC 9.8)**, código `[GHC-63394]`. Matices que hay que conocer: (a) **es un warning, no una deprecación** — la CLC lo dejó explícitamente fuera de deprecar/eliminar; (b) **`init` y `last` NO están marcadas**, así que el warning no cubre la clase entera; (c) se silencia con `-Wno-x-partial` y hay presión en GHC para sacarlo de `-Wdefault`. **Conclusión operativa: no delegar la prohibición al compilador.** El gate real es `hlint` + revisión + `-Werror`, y `-Wno-x-partial` está prohibido en este catálogo.
-- Nunca se silencia un error convirtiéndolo en valor por defecto (`fromMaybe 0` sobre un fallo real). El error se propaga con contexto o se decide explícitamente.
+- Two distinct axes that must not be mixed: **expected domain failures** versus **exceptional/infrastructure failures**.
+- Domain ⇒ **types**: `Either MyError a`, `ExceptT MyError` in the layer that needs it, an error ADT per operation. The caller pattern matches and the compiler checks exhaustiveness.
+- Infrastructure (I/O, network, disk, timeouts, `bracket`) ⇒ **`IO` exceptions**, which in Haskell are unavoidable (async exceptions included). Catch with `safe-exceptions` (or `Control.Exception` with judgement): **`bracket`/`finally` for every resource**, never `catch` over `SomeException` that also swallows the asynchronous ones (`ThreadKilled`, timeouts).
+- **FORBIDDEN in production code**: `error`, `head`, `tail`, `init`, `last`, `fromJust`, `read`, `(!!)`, `maximum`/`minimum` over possibly empty lists, `undefined`. Alternatives: pattern matching, `uncons`, `listToMaybe`, `NonEmpty`, `lookup`, `readMaybe`.
+- Verified state of `base`: **`head` and `tail` from `Data.List` carry a `{-# WARNING #-}` with category `x-partial` since base-4.19 (GHC 9.8)**, code `[GHC-63394]`. Nuances you must know: (a) **it is a warning, not a deprecation** — the CLC explicitly left it out of deprecating/removing; (b) **`init` and `last` are NOT marked**, so the warning does not cover the whole class; (c) it is silenced with `-Wno-x-partial` and there is pressure in GHC to take it out of `-Wdefault`. **Operational conclusion: do not delegate the prohibition to the compiler.** The real gate is `hlint` + review + `-Werror`, and `-Wno-x-partial` is forbidden in this catalogue.
+- An error is never silenced by turning it into a default value (`fromMaybe 0` over a real failure). The error is propagated with context or decided explicitly.
 
-### Arquitectura de efectos — criterio, no catálogo
+### Effect architecture — criteria, not a catalogue
 
-Orden de decisión, de menos a más maquinaria. **No subir de nivel sin un problema concreto que el nivel anterior no resuelva.**
+Decision order, from less to more machinery. **Do not go up a level without a concrete problem the previous level does not solve.**
 
-1. **`ReaderT Env IO` (patrón `ReaderT` sobre `IO`) — default sobrio.** Un record `Env` con las capacidades (conexión de BD, logger, cliente HTTP, config) inyectado por `ReaderT`. Testable sustituyendo el `Env`. Rendimiento predecible, errores del compilador legibles, cualquiera lo entiende en una tarde. **La inmensa mayoría de los servicios no necesita nada más.**
-2. **`mtl`** (`MonadReader`/`MonadState`/`MonadError` como constraints): útil para funciones polimórficas en la capa de dominio. Coste: el problema *n²* de instancias al añadir transformadores propios, y mensajes de error que empeoran rápido. Aceptable en dosis pequeñas sobre el patrón (1).
-3. **Sistema de efectos** (`effectful` como opción por defecto de esta categoría — 2.6.1.0, ago-2025, BSD-3-Clause; `cleff`, `fused-effects` como alternativas): solo cuando hay **varios efectos ortogonales que se necesitan interpretar de más de una forma** (real / mock / dry-run / instrumentado) y eso ya duele. Coste real: una dependencia estructural en todo el código, una curva más para cada persona nueva, y ecosistema fragmentado. `effectful` se elige por rendimiento (`IO` + `ReaderT` por debajo) y por errores de tipo tolerables; `polysemy` está fuera del default por su coste de rendimiento e inferencia salvo que se demuestre lo contrario hoy (§8).
-- Decidir **una** y documentarla en un ADR. Un repo con `ReaderT` en un módulo, `mtl` en otro y `effectful` en un tercero es el peor resultado posible.
-- Regla transversal: la capa de dominio es **pura y sin efectos**; los efectos viven en el borde. Eso es lo que da el valor, no el framework.
+1. **`ReaderT Env IO` (the `ReaderT` pattern over `IO`) — the sober default.** An `Env` record with the capabilities (DB connection, logger, HTTP client, config) injected through `ReaderT`. Testable by swapping the `Env`. Predictable performance, readable compiler errors, anyone understands it in an afternoon. **The vast majority of services need nothing more.**
+2. **`mtl`** (`MonadReader`/`MonadState`/`MonadError` as constraints): useful for polymorphic functions in the domain layer. Cost: the *n²* instance problem when adding your own transformers, and error messages that degrade quickly. Acceptable in small doses on top of pattern (1).
+3. **An effect system** (`effectful` as this category's default option — 2.6.1.0, Aug 2025, BSD-3-Clause; `cleff`, `fused-effects` as alternatives): only when there are **several orthogonal effects that need to be interpreted in more than one way** (real / mock / dry-run / instrumented) and that already hurts. Real cost: a structural dependency across all the code, one more curve for every new person, and a fragmented ecosystem. `effectful` is chosen for performance (`IO` + `ReaderT` underneath) and for tolerable type errors; `polysemy` is outside the default for its performance and inference cost unless proven otherwise today (§8).
+- Decide on **one** and document it in an ADR. A repo with `ReaderT` in one module, `mtl` in another and `effectful` in a third is the worst possible outcome.
+- Cross-cutting rule: the domain layer is **pure and effect-free**; effects live at the boundary. That is what delivers the value, not the framework.
 
-### Concurrencia
+### Concurrency
 
-- Hilos ligeros de GHC (`forkIO`): baratos, miles de ellos son normales. No hay pool que gestionar.
-- **Nada de `forkIO` desnudo**: todo hilo tiene dueño. `async` (`withAsync`, `concurrently`, `race`, `mapConcurrently`) o `ki` para *structured concurrency*; el hilo padre observa la excepción del hijo. Un `forkIO` cuyo error nadie ve es una pérdida silenciosa de trabajo.
-- **STM por defecto para estado compartido**: `TVar`/`TQueue`/`TBQueue` componen; `MVar` solo para exclusión mutua simple o *empty-full* explícito; `IORef` solo para estado sin contención (y con `atomicModifyIORef'`). Prohibido I/O dentro de `atomically` (el tipo ya lo impide — no burlarlo con `unsafePerformIO`).
-- Colas **acotadas** (`TBQueue`, no `TQueue`) por defecto: backpressure explícita.
-- `timeout` en toda operación de red; excepciones asíncronas respetadas: `bracket`/`bracketOnError` para liberar recursos aunque llegue `ThreadKilled`; `uninterruptibleMask` solo en el hueco mínimo y documentado.
-- Ojo con los thunks compartidos entre hilos: un `TVar` lazy acumula el trabajo hasta que alguien lo fuerza — `modifyTVar'`, siempre la prima.
+- GHC's lightweight threads (`forkIO`): cheap, thousands of them are normal. There is no pool to manage.
+- **No bare `forkIO`**: every thread has an owner. `async` (`withAsync`, `concurrently`, `race`, `mapConcurrently`) or `ki` for *structured concurrency*; the parent thread observes the child's exception. A `forkIO` whose error nobody sees is a silent loss of work.
+- **STM by default for shared state**: `TVar`/`TQueue`/`TBQueue` compose; `MVar` only for simple mutual exclusion or explicit *empty-full*; `IORef` only for state without contention (and with `atomicModifyIORef'`). I/O inside `atomically` is forbidden (the type already prevents it — do not circumvent it with `unsafePerformIO`).
+- **Bounded** queues (`TBQueue`, not `TQueue`) by default: explicit backpressure.
+- `timeout` on every network operation; asynchronous exceptions respected: `bracket`/`bracketOnError` to release resources even if `ThreadKilled` arrives; `uninterruptibleMask` only in the minimum documented gap.
+- Watch out for thunks shared between threads: a lazy `TVar` accumulates the work until someone forces it — `modifyTVar'`, always the primed one.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-### Formato y lint
+### Formatting and lint
 
-- **fourmolu** (0.20.0.0, BSD-3-Clause) con `fourmolu.yaml` versionado, o **ormolu** si se prefiere cero configuración. Uno solo por repo; no se debate el estilo, lo decide la herramienta.
-- **hlint** con `.hlint.yaml` versionado. Verificado: última release **3.10 (feb-2025)** — cadencia baja; sigue siendo el estándar de facto pero **verificar su estado antes de convertirlo en gate bloqueante** (§8). Reglas propias para prohibir las funciones parciales que `base` no marca (`init`, `last`, `fromJust`, `(!!)`, `read`) — el linter cubre el hueco del compilador.
-- **HLS** en todos los puestos, con la versión atada al GHC del proyecto vía GHCup.
+- **fourmolu** (0.20.0.0, BSD-3-Clause) with a versioned `fourmolu.yaml`, or **ormolu** if zero configuration is preferred. Only one per repo; style is not debated, the tool decides it.
+- **hlint** with a versioned `.hlint.yaml`. Verified: latest release **3.10 (Feb 2025)** — low cadence; it is still the de facto standard but **verify its state before turning it into a blocking gate** (§8). Custom rules to forbid the partial functions that `base` does not mark (`init`, `last`, `fromJust`, `(!!)`, `read`) — the linter covers the compiler's gap.
+- **HLS** on every workstation, with the version tied to the project's GHC via GHCup.
 
-### Warnings: `-Wall -Werror` y cuáles
+### Warnings: `-Wall -Werror` and which ones
 
-- `ghc-options` base en la `common` stanza:
+- Base `ghc-options` in the `common` stanza:
 
 ```cabal
 common warnings
@@ -150,128 +150,128 @@ common warnings
     -Wunused-packages
 ```
 
-- **`-Werror` en CI, nunca en el `.cabal` de una librería publicada** (rompe el build de terceros con un GHC más nuevo). En CI se pasa por flag: `cabal build --ghc-options=-Werror`.
-- `-Wincomplete-patterns` (dentro de `-Wall`) es **el gate más valioso del lenguaje**: un match no exhaustivo es un `error` en tiempo de ejecución. Como error, sin excepciones.
-- Advertencia verificada: `-Wall` **cambia de contenido entre versiones de GHC** (`-Wincomplete-record-selectors` entró en `-Wall` en 9.14). Cada upgrade de GHC se hace en una rama con `-Werror` activo y se triaña lo nuevo; nunca `-Wno-*` a granel para "que compile".
-- `{-# OPTIONS_GHC -Wno-... #-}` siempre a nivel de fichero, con lint concreto y comentario-motivo. `-Wno-x-partial` está **PROHIBIDO** (§3).
+- **`-Werror` in CI, never in the `.cabal` of a published library** (it breaks third-party builds with a newer GHC). In CI it is passed by flag: `cabal build --ghc-options=-Werror`.
+- `-Wincomplete-patterns` (inside `-Wall`) is **the most valuable gate in the language**: a non-exhaustive match is a runtime `error`. As an error, no exceptions.
+- Verified warning: `-Wall` **changes content between GHC versions** (`-Wincomplete-record-selectors` entered `-Wall` in 9.14). Every GHC upgrade is done on a branch with `-Werror` on and the new items are triaged; never `-Wno-*` in bulk "to make it build".
+- `{-# OPTIONS_GHC -Wno-... #-}` always at file level, with a specific lint and a reason comment. `-Wno-x-partial` is **FORBIDDEN** (§3).
 
 ### Testing
 
-- Framework: **hspec** (BDD, buen output) o **tasty** (agrega múltiples tipos de suite). Uno por repo.
-- **Property-based testing es el valor diferencial de Haskell y no es opcional** en código con invariantes. **QuickCheck** (generación aleatoria, shrinking por tipo) o **Hedgehog** (generadores integrados con shrinking, mejor por defecto en propiedades con precondiciones). Propiedades obligatorias donde apliquen: round-trip de serialización (`decode . encode == id` para JSON/binario/DB), leyes algebraicas de las instancias propias (`Functor`, `Monoid`, `Ord` — con `quickcheck-classes` o equivalente), idempotencia, invariantes de estructuras de datos propias.
-- **Modelo de estado** (`quickcheck-state-machine`, `hedgehog` state machines) para lógica concurrente o con estado: es la única forma práctica de encontrar carreras.
-- Tests unitarios convencionales para el camino feliz y los **bordes y errores**: listas vacías, límites numéricos, decodificación inválida, timeouts, cancelación.
-- **Golden tests** (`tasty-golden`) para salidas grandes y estables (renders, SQL generado, specs).
-- Integración con dependencias reales (`testcontainers-hs` o Docker Compose en CI) con la **misma versión de motor que producción**; mockear las fronteras propias, no el mundo.
-- `doctest` en librerías publicadas: los ejemplos del Haddock se verifican.
-- Todo bugfix deja test de regresión que falla antes del fix. Test flaky: se arregla o se borra.
+- Framework: **hspec** (BDD, good output) or **tasty** (aggregates multiple suite types). One per repo.
+- **Property-based testing is Haskell's differential value and it is not optional** in code with invariants. **QuickCheck** (random generation, shrinking by type) or **Hedgehog** (integrated generators with shrinking, better by default for properties with preconditions). Mandatory properties where they apply: serialisation round-trip (`decode . encode == id` for JSON/binary/DB), algebraic laws of your own instances (`Functor`, `Monoid`, `Ord` — with `quickcheck-classes` or equivalent), idempotence, invariants of your own data structures.
+- **State modelling** (`quickcheck-state-machine`, `hedgehog` state machines) for concurrent or stateful logic: it is the only practical way to find races.
+- Conventional unit tests for the happy path and the **edges and errors**: empty lists, numeric limits, invalid decoding, timeouts, cancellation.
+- **Golden tests** (`tasty-golden`) for large, stable outputs (renders, generated SQL, specs).
+- Integration with real dependencies (`testcontainers-hs` or Docker Compose in CI) with the **same engine version as production**; mock your own boundaries, not the world.
+- `doctest` in published libraries: the Haddock examples are verified.
+- Every bugfix leaves a regression test that fails before the fix. A flaky test: it is fixed or it is deleted.
 
-### Gates de CI (rompen el build, en orden de coste)
+### CI gates (they break the build, in order of cost)
 
 ```
 fourmolu --mode check $(git ls-files '*.hs')
 hlint .
 cabal build all --ghc-options=-Werror        # -Wall -Werror + -Wunused-packages
 cabal test all
-cabal check                                   # sanidad del .cabal (paquetes publicables)
-cabal haddock all                             # los docs compilan
-cabal audit / cabal-audit contra security-advisories   # verificar nombre y estado (§8)
+cabal check                                   # .cabal sanity (publishable packages)
+cabal haddock all                             # the docs build
+cabal audit / cabal-audit against security-advisories   # verify name and state (§8)
 ```
 
-Main siempre verde. Matriz de GHC en CI: **el GHC de producción como obligatorio** + el siguiente como *allowed-to-fail* (así el upgrade no es un big bang). No compilar contra 5 versiones "porque sí": cada una es minutos de CI.
+Main always green. GHC matrix in CI: **the production GHC as mandatory** + the next one as *allowed-to-fail* (so the upgrade is not a big bang). Do not build against 5 versions "just because": each one is minutes of CI.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **`unsafePerformIO` — PROHIBIDO.** Rompe la transparencia referencial, y con ella todo razonamiento del compilador: el optimizador puede duplicar, eliminar o reordenar el efecto. Excepción única: bindings FFI encapsulados en una API pura demostrablemente pura, con `{-# NOINLINE #-}`, comentario `-- SAFETY:` que justifique la invariante y test dedicado. `unsafeDupablePerformIO`, `unsafeInterleaveIO`, `unsafeCoerce` y `accursedUnutterablePerformIO`: la misma regla, endurecida.
-- **`Text.Read.read` sobre entrada no confiable — PROHIBIDO.** `read` lanza una excepción imposible de manejar en código puro y su parser no está pensado como frontera de confianza. Usar `readMaybe` y, para formatos reales, un parser (`attoparsec`, `megaparsec`) con límites de tamaño y profundidad.
-- **Dependencias de Hackage sin curar**: Hackage no revisa nada. Toda dependencia fuera del snapshot de Stackage es una decisión de confianza: mirar último release, número de mantenedores, licencia (fichero `LICENSE` real, no el campo del `.cabal`) y árbol transitivo (`cabal-plan`). Recordar que **`Setup.hs` y Template Haskell ejecutan código arbitrario en tiempo de build** con los permisos del runner de CI — cada dependencia nueva es superficie de supply chain, no un import gratis.
-- SCA: la **Haskell Security Response Team** mantiene `security-advisories` (advisory-db) y hay herramienta de auditoría; **verificar el nombre exacto, la integración y su estado antes de fijarla como gate** (§8). Ejecutar en cada PR y además de forma programada.
-- **Deserialización**: JSON con `aeson` y tipos concretos + `FromJSON` derivado, nunca decodificar a `Value` y navegar a mano. Límites de tamaño de payload en el borde HTTP (`wai` middleware / servant) y de profundidad de anidamiento. Nada de deserialización que instancie tipos arbitrarios.
-- **SQL solo parametrizado**: `persistent`/`esqueleto`, `hasql`/`rel8` o `postgresql-simple` con placeholders. Prohibido construir SQL concatenando `Text`; `rawSql` solo con parámetros.
-- **Secretos**: nunca en `Show`/`Generic`-derived. Envolver credenciales en un newtype con `Show` manual que redacta, o usar una librería de secretos; los logs derivan de `Show` con más frecuencia de la que se cree. Nada de secretos en el `.cabal`, en el árbol o en el eventlog.
-- **Cripto**: `crypton`/`cryptonite`-sucesor y `tls`/`crypton-connection` mantenidos; verificar estado de mantenimiento antes de fijar (§8). AES-GCM, ChaCha20-Poly1305, Argon2/bcrypt, TLS 1.2+. Aleatoriedad de seguridad con un CSPRNG (`crypton`'s `getRandomBytes`), **nunca `System.Random`**.
-- **Contenedores**: build multi-stage, binario enlazado y despojado (`-split-sections`, `strip`), imagen distroless o `scratch` si es estático, **non-root**, FS read-only. Comprobar que las librerías C dinámicas (libgmp, libpq) están en la imagen final — el fallo clásico.
-- Servicios de larga vida: **cerrar `-rtsopts` en el binario de producción** o limitar los flags aceptados. `+RTS` desde una variable de entorno controlada por el atacante es ejecución de configuración arbitraria del runtime.
+- **`unsafePerformIO` — FORBIDDEN.** It breaks referential transparency, and with it all the compiler's reasoning: the optimiser can duplicate, eliminate or reorder the effect. Single exception: FFI bindings encapsulated in a demonstrably pure API, with `{-# NOINLINE #-}`, a `-- SAFETY:` comment justifying the invariant and a dedicated test. `unsafeDupablePerformIO`, `unsafeInterleaveIO`, `unsafeCoerce` and `accursedUnutterablePerformIO`: the same rule, hardened.
+- **`Text.Read.read` over untrusted input — FORBIDDEN.** `read` throws an exception impossible to handle in pure code and its parser is not designed as a trust boundary. Use `readMaybe` and, for real formats, a parser (`attoparsec`, `megaparsec`) with size and depth limits.
+- **Uncurated Hackage dependencies**: Hackage reviews nothing. Every dependency outside the Stackage snapshot is a trust decision: look at the latest release, number of maintainers, licence (the real `LICENSE` file, not the `.cabal` field) and transitive tree (`cabal-plan`). Remember that **`Setup.hs` and Template Haskell run arbitrary code at build time** with the CI runner's permissions — every new dependency is supply chain surface, not a free import.
+- SCA: the **Haskell Security Response Team** maintains `security-advisories` (advisory-db) and there is an audit tool; **verify the exact name, the integration and its state before pinning it as a gate** (§8). Run it on every PR and on a schedule as well.
+- **Deserialisation**: JSON with `aeson` and concrete types + derived `FromJSON`, never decoding to `Value` and navigating by hand. Payload size limits at the HTTP boundary (`wai` middleware / servant) and nesting depth limits. No deserialisation that instantiates arbitrary types.
+- **Parameterised SQL only**: `persistent`/`esqueleto`, `hasql`/`rel8` or `postgresql-simple` with placeholders. Building SQL by concatenating `Text` is forbidden; `rawSql` only with parameters.
+- **Secrets**: never in `Show`/`Generic`-derived. Wrap credentials in a newtype with a manual `Show` that redacts, or use a secrets library; logs derive from `Show` more often than people think. No secrets in the `.cabal`, in the tree or in the eventlog.
+- **Crypto**: `crypton`/`cryptonite`-successor and `tls`/`crypton-connection` maintained; verify maintenance state before pinning (§8). AES-GCM, ChaCha20-Poly1305, Argon2/bcrypt, TLS 1.2+. Security randomness from a CSPRNG (`crypton`'s `getRandomBytes`), **never `System.Random`**.
+- **Containers**: multi-stage build, linked and stripped binary (`-split-sections`, `strip`), distroless image or `scratch` if it is static, **non-root**, read-only FS. Check that the dynamic C libraries (libgmp, libpq) are in the final image — the classic failure.
+- Long-lived services: **close `-rtsopts` in the production binary** or restrict the accepted flags. `+RTS` from an environment variable controlled by the attacker is arbitrary runtime configuration execution.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **RTS flags: se compilan y se justifican, no se copian.** Compilar con `-threaded -rtsopts "-with-rtsopts=..."`. Puntos de partida a **medir**, no a asumir:
-  - `-N` con capacidades **explícitas y ajustadas al límite de CPU del contenedor** (`-N4`), no `-N` a secas: en K8s, `getNumProcessors` ve la máquina física y sobre-suscribe. Este es el error de operación número uno de Haskell en contenedores.
-  - `-A` (nursery) mayor que el default para reducir GCs menores en servicios con mucha asignación (p. ej. `-A64m`) — medir latencia p99 antes y después.
-  - `-M` (heap máximo) alineado con el límite de memoria del pod, para que el proceso muera con error de heap diagnosticable en vez de por OOM-kill del kernel.
-  - `--nonmoving-gc` como opción para latencia de pausa acotada en heaps grandes: **solo con medición**, no por defecto.
-- **Observabilidad**: métricas del RTS exportadas siempre (`GHC.Stats`/`getRTSStats` con `-T`), vía exporter Prometheus o EKG; **verificar el estado de mantenimiento de la librería concreta antes de fijarla** (§8). Series mínimas: live bytes, GC wall/cpu time y pausa máxima, hilos vivos, capacidades. La **tendencia de live bytes es el detector de fugas en producción**.
-- Logs estructurados (`katip`, `co-log`, o el logger de `rio`) en JSON; trazas con OpenTelemetry cuando el ecosistema del proyecto lo soporte (verificar madurez del binding — §8). **Prohibido `putStrLn`/`print`/`trace` en código de servicio**; `Debug.Trace` no se mergea.
-- **Timeouts y límites en todo borde**: cliente HTTP (`http-client` con `responseTimeout` explícito — el default no basta), pool de BD acotado, `timeout` en llamadas a servicios, límite de tamaño de request. Sin timeout definido = bug.
-- **Graceful shutdown obligatorio**: handler de `SIGTERM` que deja de aceptar conexiones, drena las en curso con deadline y cierra recursos con `bracket`. `warp` con `setInstallShutdownHandler`/`setGracefulShutdownTimeout`. Sin esto no hay rolling deploy fiable.
-- Health endpoints separados: liveness trivial, readiness que comprueba dependencias.
-- **Perfilar antes de optimizar**: `-prof -fprof-auto` + `+RTS -p` para tiempo, `-h*` para heap, eventlog + `ghc-events`/`eventlog2html` para concurrencia y GC. `criterion`/`tasty-bench` para microbenchmarks comparables. Ojo: el build con profiling **cambia el código generado** — confirmar hallazgos en el binario normal.
-- Optimización: `-O2` en producción (`-O0`/`-O1` en desarrollo por velocidad de build). `INLINABLE`/`SPECIALIZE` en funciones polimórficas de hot path (GHC 9.14 mejoró bastante la especialización); fusión de listas/`vector`/`text` es real pero se rompe con facilidad — verificar con `-ddump-simpl` antes de afirmar que ocurre.
+- **RTS flags: they are compiled in and justified, not copied.** Build with `-threaded -rtsopts "-with-rtsopts=..."`. Starting points to **measure**, not to assume:
+  - `-N` with **explicit capabilities matched to the container's CPU limit** (`-N4`), not a bare `-N`: on K8s, `getNumProcessors` sees the physical machine and oversubscribes. This is Haskell's number one operational mistake in containers.
+  - `-A` (nursery) larger than the default to reduce minor GCs in services with heavy allocation (e.g. `-A64m`) — measure p99 latency before and after.
+  - `-M` (max heap) aligned with the pod's memory limit, so the process dies with a diagnosable heap error instead of by the kernel's OOM-kill.
+  - `--nonmoving-gc` as an option for bounded pause latency on large heaps: **only with measurement**, not by default.
+- **Observability**: RTS metrics always exported (`GHC.Stats`/`getRTSStats` with `-T`), via a Prometheus exporter or EKG; **verify the maintenance state of the specific library before pinning it** (§8). Minimum series: live bytes, GC wall/cpu time and maximum pause, live threads, capabilities. The **live bytes trend is the leak detector in production**.
+- Structured logs (`katip`, `co-log`, or `rio`'s logger) in JSON; traces with OpenTelemetry when the project's ecosystem supports it (verify the binding's maturity — §8). **`putStrLn`/`print`/`trace` are forbidden in service code**; `Debug.Trace` does not get merged.
+- **Timeouts and limits at every boundary**: HTTP client (`http-client` with an explicit `responseTimeout` — the default is not enough), bounded DB pool, `timeout` on service calls, request size limit. No defined timeout = bug.
+- **Graceful shutdown mandatory**: a `SIGTERM` handler that stops accepting connections, drains in-flight ones with a deadline and closes resources with `bracket`. `warp` with `setInstallShutdownHandler`/`setGracefulShutdownTimeout`. Without this there is no reliable rolling deploy.
+- Separate health endpoints: trivial liveness, readiness that checks dependencies.
+- **Profile before optimising**: `-prof -fprof-auto` + `+RTS -p` for time, `-h*` for heap, eventlog + `ghc-events`/`eventlog2html` for concurrency and GC. `criterion`/`tasty-bench` for comparable microbenchmarks. Careful: the profiling build **changes the generated code** — confirm findings on the normal binary.
+- Optimisation: `-O2` in production (`-O0`/`-O1` in development for build speed). `INLINABLE`/`SPECIALIZE` on polymorphic hot-path functions (GHC 9.14 improved specialisation considerably); list/`vector`/`text` fusion is real but breaks easily — verify with `-ddump-simpl` before claiming it happens.
 
-### Tiempos de compilación y CI — riesgo operativo, no molestia
+### Compile times and CI — an operational risk, not an annoyance
 
-Los tiempos de build son **el coste recurrente más subestimado de Haskell** y la razón habitual de que el equipo deje de correr el CI completo.
+Build times are **Haskell's most underestimated recurring cost** and the usual reason a team stops running the full CI.
 
-- Presupuesto explícito: build limpio y build incremental medidos y vigilados; si el incremental supera ~2 min, es un bug de arquitectura del proyecto.
-- Palancas, en orden: **caché de CI del store de cabal/stack y de `dist-newstyle`** (con clave por GHC + plan de dependencias); dividir en paquetes para paralelizar y acotar la recompilación; **eliminar `TemplateHaskell` innecesario** (invalida caché agresivamente y bloquea cross-compilación); recortar `-O2` fuera de release; `-j` alineado con los cores del runner; `-fwrite-ide-info` solo donde se use.
-- `-Wunused-packages` activado: dependencias muertas que siguen costando minutos.
-- Runners con RAM suficiente: GHC con `-O2` y TH consume gigas; un OOM de compilador se diagnostica mal y se sufre semanas.
+- Explicit budget: clean build and incremental build measured and watched; if the incremental one exceeds ~2 min, it is an architectural bug of the project.
+- Levers, in order: **CI caching of the cabal/stack store and of `dist-newstyle`** (with a key by GHC + dependency plan); splitting into packages to parallelise and bound recompilation; **removing unnecessary `TemplateHaskell`** (it invalidates the cache aggressively and blocks cross-compilation); dropping `-O2` outside release; `-j` matched to the runner's cores; `-fwrite-ide-info` only where it is used.
+- `-Wunused-packages` enabled: dead dependencies that keep costing minutes.
+- Runners with enough RAM: GHC with `-O2` and TH consumes gigabytes; a compiler OOM is misdiagnosed and suffered for weeks.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-**Es la sección que decide si el proyecto sobrevive.** El riesgo dominante en Haskell no es técnico.
+**This is the section that decides whether the project survives.** The dominant risk in Haskell is not technical.
 
-- **Bus factor ≥3 como requisito de entrada**, no como aspiración. Con 1 persona que domine el código, un servicio Haskell es un pasivo desde el día en que esa persona rota. Antes de aprobar el stack: nombrar por escrito quién más puede desplegar, depurar una fuga de espacio y subir de GHC.
-- **Contratación**: el mercado es pequeño y caro, pero de calidad alta; contratar "gente buena que aprenda Haskell" funciona mejor que buscar haskellers. Presupuestar **3-6 meses** hasta productividad plena para alguien senior sin experiencia previa en FP tipada. La curva no está en la sintaxis: está en pereza, `IO`/efectos y en leer errores de tipo de librerías con tipos elaborados.
-- **Documentación como mitigación de bus factor**: Haddock en toda API pública, ADRs de las decisiones estructurales (efectos, Prelude, build tool, Nix sí/no) y un `CONTRIBUTING` que arranque de cero con GHCup. El código Haskell es autoexplicativo para quien ya sabe Haskell — para nadie más.
-- **Cadencia de upgrades**: LTS de GHC a LTS de GHC, aprovechando el solape de ~6 meses. Point releases (`.2`, `.3`) sin demora. Dependencias con Renovate/Dependabot agrupado; majors a mano con changelog. Snapshot de Stackage: subir de LTS trimestralmente o al menos cada semestre — dejar el snapshot congelado dos años convierte el upgrade en un proyecto.
-- **Librerías publicadas**: PVP (no SemVer: en Haskell el versionado es `A.B.C.D` con `A.B` como major) y `cabal check` en el gate. Bandas de versión en las dependencias, `Cabal.project.freeze` solo para el CI propio.
-- **Deuda consciente**: todo atajo con `-- TODO(usuario): motivo — issue`. Nada de `-Wno-*` ni `hlint: ignore` sin comentario y enlace.
+- **Bus factor ≥3 as an entry requirement**, not as an aspiration. With 1 person who masters the code, a Haskell service is a liability from the day that person rotates out. Before approving the stack: name in writing who else can deploy, debug a space leak and upgrade GHC.
+- **Hiring**: the market is small and expensive, but high quality; hiring "good people who will learn Haskell" works better than looking for haskellers. Budget **3-6 months** to full productivity for a senior with no prior typed FP experience. The curve is not in the syntax: it is in laziness, `IO`/effects and in reading type errors from libraries with elaborate types.
+- **Documentation as bus factor mitigation**: Haddock on every public API, ADRs for the structural decisions (effects, Prelude, build tool, Nix yes/no) and a `CONTRIBUTING` that starts from zero with GHCup. Haskell code is self-explanatory to someone who already knows Haskell — to nobody else.
+- **Upgrade cadence**: GHC LTS to GHC LTS, taking advantage of the ~6 month overlap. Point releases (`.2`, `.3`) without delay. Dependencies with grouped Renovate/Dependabot; majors by hand with a changelog. Stackage snapshot: move up an LTS quarterly or at least every six months — leaving the snapshot frozen for two years turns the upgrade into a project.
+- **Published libraries**: PVP (not SemVer: in Haskell versioning is `A.B.C.D` with `A.B` as major) and `cabal check` in the gate. Version bands on dependencies, `Cabal.project.freeze` only for your own CI.
+- **Conscious debt**: every shortcut with `-- TODO(user): reason — issue`. No `-Wno-*` nor `hlint: ignore` without a comment and a link.
 
-**PROHIBICIONES (requieren ADR y aprobación para excepcionar).**
-- ❌ `error`, `undefined`, `head`, `tail`, `init`, `last`, `fromJust`, `read`, `(!!)`, `maximum`/`minimum` sobre listas — en producción. Los warnings de `base` cubren solo `head`/`tail`: el gate es hlint + revisión.
-- ❌ `unsafePerformIO`, `unsafeDupablePerformIO`, `unsafeInterleaveIO`, `unsafeCoerce`, `Obj`-tricks vía FFI — salvo la excepción documentada de §5.
-- ❌ `foldl` (usar `foldl'`), `Data.Map` lazy y `Control.Monad.State` lazy por inercia, `modifyIORef` sin prima, `TQueue` no acotada como bus de trabajo.
-- ❌ `String` como tipo de texto en código nuevo; `decodeUtf8` sin manejo de error sobre entrada no confiable.
-- ❌ `catch`/`handle` sobre `SomeException` que trague excepciones asíncronas; recursos sin `bracket`; `forkIO` sin dueño ni observación del resultado.
-- ❌ `-Wno-x-partial` y `-Wno-*` a granel; `-Werror` en el `.cabal` de una librería publicada; CI sin `-Werror`.
-- ❌ Mezclar Stack y cabal en el mismo repo; lockfile/freeze fuera del VCS; `git:` sin rev y hash; dependencias fuera del snapshot sin justificación.
-- ❌ Dos Preludios alternativos en el mismo árbol; un `Prelude` casero sin dueño.
-- ❌ Más de una arquitectura de efectos en la misma base de código; subir a un effect system sin un problema que `ReaderT Env IO` no resuelva.
-- ❌ `UndecidableInstances`/`IncoherentInstances`/`ImpredicativeTypes`/`AllowAmbiguousTypes` sin ADR; `TemplateHaskell` nuevo sin medir su coste de compilación.
-- ❌ `putStrLn`/`print`/`Debug.Trace` en servicios; secretos alcanzables por `Show` derivado.
-- ❌ `-N` sin capacidades explícitas en contenedor; binario de producción con `-rtsopts` abierto; desplegar un servicio de larga vida sin haber perfilado el heap.
-- ❌ GHC fuera de soporte (hoy: ≤9.4) en producción; adoptar una `.1` de GHC en producción.
-- ❌ Un solo humano capaz de mantener el servicio.
+**PROHIBITIONS (require an ADR and approval to make an exception).**
+- ❌ `error`, `undefined`, `head`, `tail`, `init`, `last`, `fromJust`, `read`, `(!!)`, `maximum`/`minimum` over lists — in production. The `base` warnings cover only `head`/`tail`: the gate is hlint + review.
+- ❌ `unsafePerformIO`, `unsafeDupablePerformIO`, `unsafeInterleaveIO`, `unsafeCoerce`, `Obj`-tricks via FFI — except for the documented exception in §5.
+- ❌ `foldl` (use `foldl'`), lazy `Data.Map` and lazy `Control.Monad.State` out of inertia, `modifyIORef` without the prime, an unbounded `TQueue` as a work bus.
+- ❌ `String` as the text type in new code; `decodeUtf8` without error handling over untrusted input.
+- ❌ `catch`/`handle` over `SomeException` that swallows asynchronous exceptions; resources without `bracket`; `forkIO` without an owner or observation of the result.
+- ❌ `-Wno-x-partial` and `-Wno-*` in bulk; `-Werror` in the `.cabal` of a published library; CI without `-Werror`.
+- ❌ Mixing Stack and cabal in the same repo; lockfile/freeze outside the VCS; `git:` without rev and hash; dependencies outside the snapshot without justification.
+- ❌ Two alternative Preludes in the same tree; a homemade `Prelude` without an owner.
+- ❌ More than one effect architecture in the same codebase; moving up to an effect system without a problem that `ReaderT Env IO` does not solve.
+- ❌ `UndecidableInstances`/`IncoherentInstances`/`ImpredicativeTypes`/`AllowAmbiguousTypes` without an ADR; new `TemplateHaskell` without measuring its compile cost.
+- ❌ `putStrLn`/`print`/`Debug.Trace` in services; secrets reachable through derived `Show`.
+- ❌ `-N` without explicit capabilities in a container; a production binary with `-rtsopts` open; deploying a long-lived service without having profiled the heap.
+- ❌ GHC out of support (today: ≤9.4) in production; adopting a GHC `.1` in production.
+- ❌ A single human capable of maintaining the service.
 
-**Cuándo NO elegir Haskell (prohibición honesta).**
-- ❌ Cuando el equipo no puede sostener bus factor ≥3 ni presupuestar la curva. Esto solo ya descarta el stack.
-- ❌ CRUD y glue sin invariantes que el tipo capture: el retorno de la inversión no aparece, y sí aparece el coste.
-- ❌ Requisitos de **latencia dura o tiempo real**: hay GC, y las pausas no son acotables de forma trivial → `rust-standards`.
-- ❌ Trabajo que dependa de un ecosistema donde Haskell es débil: ML/ciencia de datos (→ `python-standards`), frontend web y móvil nativo, ecosistemas cloud SDK-céntricos (→ `go-standards`/`typescript-standards`).
-- ❌ Entornos con rotación alta de personal o entrega por proveedores externos intercambiables.
-- ❌ "Porque el equipo quiere aprender Haskell" en un servicio de producción. Aprender está bien; el vehículo no es un sistema con SLA.
+**When NOT to choose Haskell (honest prohibition).**
+- ❌ When the team cannot sustain a bus factor ≥3 nor budget the curve. This alone rules the stack out.
+- ❌ CRUD and glue without invariants the type captures: the return on investment does not appear, and the cost does.
+- ❌ **Hard latency or real-time** requirements: there is a GC, and the pauses are not trivially boundable → `rust-standards`.
+- ❌ Work that depends on an ecosystem where Haskell is weak: ML/data science (→ `python-standards`), web frontend and native mobile, SDK-centric cloud ecosystems (→ `go-standards`/`typescript-standards`).
+- ❌ Environments with high staff turnover or delivery by interchangeable external vendors.
+- ❌ "Because the team wants to learn Haskell" on a production service. Learning is fine; the vehicle is not a system with an SLA.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar versión, flag o afirmar el estado del ecosistema, **verificar por web** (no de memoria):
+Before pinning a version or flag, or claiming the state of the ecosystem, **verify on the web** (not from memory):
 
-1. **GHC vigente y política LTS**: `haskell.org/ghc` y `discourse.haskell.org` (anuncio de calendario/LTS en `haskell.org/ghc/blog/20250702-ghc-release-schedules.html`); resumen de EOL en `endoflife.date/ghc`. ¿Sigue 9.14 siendo la LTS? ¿Ha salido la siguiente LTS preanunciada? ¿Qué versiones han entrado en EOL?
-2. **Qué trae la edición de lenguaje**: users guide oficial, `exts/control.html` de la versión concreta. ¿Ha cambiado el default de `GHC2021` a `GHC2024`? ¿Hay `GHC20xx` nueva?
-3. **`-Wall` de la versión destino**: release notes del GHC concreto — los warnings nuevos que entran en `-Wall` rompen builds con `-Werror`.
-4. **Estado de las funciones parciales en `base`**: `hackage.haskell.org/package/base/changelog` y las issues de `haskell/core-libraries-committee`. ¿Sigue `x-partial` en `-Wdefault` (hay presión para sacarlo, GHC #24322)? ¿Se han marcado `init`/`last`? ¿Ha habido deprecación real?
-5. **Snapshot de Stackage**: `stackage.org/snapshots` — última LTS, su GHC y si ya existe una LTS sobre el GHC que quieres. **Aquí se resuelve la discrepancia declarada en §2.**
-6. **Herramientas de build**: releases de `commercialhaskell/stack` y `haskell/cabal` (feeds `/releases.atom`; la API de GitHub puede devolver 403 sin auth). Comprobar que Stack sigue con releases recientes antes de repetir el mito de que está abandonado — a ago-2026 lo está: 3.11.1, jun-2026.
-7. **Calidad**: `hlint` (última release verificada 3.10, feb-2025 — **comprobar si sigue viva antes de hacerla gate bloqueante**), `fourmolu`/`ormolu`, HLS y su matriz de GHC soportados (`haskell-language-server.readthedocs.io/en/latest/support/ghc-version-support.html`).
-8. **Advisories y auditoría**: `github.com/haskell/security-advisories` — nombre exacto de la herramienta de auditoría (`cabal audit` integrado frente a `cabal-audit` externo), su estado y cómo se integra en CI. **No verificado a ago-2026 en detalle: hueco.**
-9. **Licencias y mantenimiento** de toda librería que se fije como default, leyendo el `LICENSE` en crudo (`raw.githubusercontent.com`), no el campo del `.cabal`. Precedentes del catálogo: herramientas que cambian de licencia (Trivy) o se declaran *feature complete* con acción comercial (gitleaks v2). **Verificado a ago-2026: hlint BSD-3-Clause, fourmolu BSD-3-Clause, effectful BSD-3-Clause. Sin verificar: ormolu, relude, rio, aeson, servant, crypton, katip.**
+1. **Current GHC and LTS policy**: `haskell.org/ghc` and `discourse.haskell.org` (schedule/LTS announcement at `haskell.org/ghc/blog/20250702-ghc-release-schedules.html`); EOL summary at `endoflife.date/ghc`. Is 9.14 still the LTS? Has the next pre-announced LTS come out? Which versions have entered EOL?
+2. **What the language edition brings**: the official users guide, `exts/control.html` for the specific version. Has the default changed from `GHC2021` to `GHC2024`? Is there a new `GHC20xx`?
+3. **The target version's `-Wall`**: release notes for the specific GHC — the new warnings that enter `-Wall` break builds with `-Werror`.
+4. **State of the partial functions in `base`**: `hackage.haskell.org/package/base/changelog` and the `haskell/core-libraries-committee` issues. Is `x-partial` still in `-Wdefault` (there is pressure to take it out, GHC #24322)? Have `init`/`last` been marked? Has there been a real deprecation?
+5. **Stackage snapshot**: `stackage.org/snapshots` — the latest LTS, its GHC and whether an LTS on the GHC you want already exists. **This is where the discrepancy declared in §2 is resolved.**
+6. **Build tools**: releases of `commercialhaskell/stack` and `haskell/cabal` (`/releases.atom` feeds; the GitHub API may return 403 without auth). Check that Stack still has recent releases before repeating the myth that it is abandoned — as of Aug 2026 it does: 3.11.1, Jun 2026.
+7. **Quality**: `hlint` (latest verified release 3.10, Feb 2025 — **check whether it is still alive before making it a blocking gate**), `fourmolu`/`ormolu`, HLS and its matrix of supported GHCs (`haskell-language-server.readthedocs.io/en/latest/support/ghc-version-support.html`).
+8. **Advisories and auditing**: `github.com/haskell/security-advisories` — the exact name of the audit tool (integrated `cabal audit` versus external `cabal-audit`), its state and how it is integrated into CI. **Not verified in detail as of Aug 2026: gap.**
+9. **Licences and maintenance** of every library pinned as a default, reading the raw `LICENSE` (`raw.githubusercontent.com`), not the `.cabal` field. Precedents from the catalogue: tools that change licence (Trivy) or declare themselves *feature complete* with a commercial move (gitleaks v2). **Verified as of Aug 2026: hlint BSD-3-Clause, fourmolu BSD-3-Clause, effectful BSD-3-Clause. Not verified: ormolu, relude, rio, aeson, servant, crypton, katip.**
 
-**Huecos declarados (no verificados a ago-2026, no rellenar de memoria):**
-- Versión y tag `recommended` actual de **GHCup** (el tag lo define su metadata; comprobar con `ghcup list -t ghc`).
-- Versiones y estado de mantenimiento de **hspec, tasty, QuickCheck, Hedgehog, aeson, servant, persistent/esqueleto, hasql, conduit, warp, http-client**.
-- Estado de **EKG** y de los exporters de métricas del RTS (varios candidatos, mantenimiento desigual) y madurez del binding **OpenTelemetry** para Haskell.
-- Estado comparativo actual de **`cleff`, `fused-effects`, `polysemy`** (el juicio de §3 sobre `polysemy` es histórico y debe reconfirmarse).
-- Estado de **`crypton`/`tls`** y de `testcontainers-hs`.
-- Fecha exacta de la próxima LTS de GHC (el plan publicado apuntaba a 9.22 hacia 2028; es plan, no compromiso).
+**Declared gaps (not verified as of Aug 2026, do not fill from memory):**
+- Current version and `recommended` tag of **GHCup** (the tag is defined by its metadata; check with `ghcup list -t ghc`).
+- Versions and maintenance state of **hspec, tasty, QuickCheck, Hedgehog, aeson, servant, persistent/esqueleto, hasql, conduit, warp, http-client**.
+- State of **EKG** and of the RTS metrics exporters (several candidates, uneven maintenance) and maturity of the **OpenTelemetry** binding for Haskell.
+- Current comparative state of **`cleff`, `fused-effects`, `polysemy`** (the §3 judgement on `polysemy` is historical and must be reconfirmed).
+- State of **`crypton`/`tls`** and of `testcontainers-hs`.
+- Exact date of the next GHC LTS (the published plan pointed to 9.22 around 2028; it is a plan, not a commitment).
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

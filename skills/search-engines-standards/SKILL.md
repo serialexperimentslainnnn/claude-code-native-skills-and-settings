@@ -3,535 +3,535 @@ name: search-engines-standards
 description: Text search and document indexing engines as infrastructure. Use when deciding between PostgreSQL full-text and a search cluster, comparing Elasticsearch, OpenSearch, Meilisearch, Typesense, Manticore, Vespa, Solr or Quickwit and their licences (Elastic License 2.0, SSPL, AGPLv3, BUSL enterprise editions, GPL), writing elasticsearch.yml, opensearch.yml, solrconfig.xml or a managed-schema, designing an explicit index mapping instead of dynamic mapping, analyzers, tokenizers, ascii folding and per-language stemming including Spanish, keyword versus text fields, the reindex API and index aliases for zero-downtime schema change, relevance tuning with field boosting, synonyms and judgment lists, shard and replica sizing and the too-many-small-shards trap, index lifecycle management with hot/warm/cold tiers, snapshot repositories and restore, major-version upgrades that force a reindex, deep pagination with search_after, wildcard-prefix and deep-aggregation query cost, or a search endpoint exposed to the internet without authentication or TLS.
 ---
 
-# Estándares de motores de búsqueda de texto
+# Text search engine standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **elegir, modelar, operar, ajustar y asegurar** un motor de búsqueda de texto e indexación
-documental: la decisión previa de si hace falta uno, la elección de producto **y de licencia**, el
-modelado del índice y los analizadores, la relevancia y su medición, la operación del cluster
-(shards, réplicas, ciclo de vida, snapshots, upgrades) y el rendimiento de las consultas.
+Applies when **choosing, modelling, operating, tuning and securing** a text search and document
+indexing engine: the prior decision of whether one is needed at all, the choice of product **and of
+licence**, index and analyzer modelling, relevance and its measurement, cluster operation
+(shards, replicas, lifecycle, snapshots, upgrades) and query performance.
 
-Triggers: "buscador interno", "búsqueda del catálogo", "autocompletado", "facetas", "el buscador
-devuelve cualquier cosa", "ajustar la relevancia", "sinónimos", "stemming", "acentos y búsqueda",
-"analizador en español", `elasticsearch.yml`, `opensearch.yml`, `solrconfig.xml`, `managed-schema`,
-"mapeo dinámico", "mapping explícito", "`keyword` o `text`", "reindexar", "alias de índice",
-"demasiados shards", "shards pequeños", "ILM", "hot/warm/cold", "snapshot repository", "restaurar un
-índice", "upgrade de versión mayor", "paginación profunda", `search_after`, "comodín al principio",
-"agregación profunda", "licencia de Elasticsearch", "OpenSearch", "Meilisearch", "Typesense",
-"Manticore", "Vespa", "Solr", "Quickwit", "el buscador está expuesto".
+Triggers: "internal search", "catalogue search", "autocomplete", "facets", "the search returns
+rubbish", "tune relevance", "synonyms", "stemming", "accents and search",
+"Spanish analyzer", `elasticsearch.yml`, `opensearch.yml`, `solrconfig.xml`, `managed-schema`,
+"dynamic mapping", "explicit mapping", "`keyword` or `text`", "reindex", "index alias",
+"too many shards", "small shards", "ILM", "hot/warm/cold", "snapshot repository", "restore an
+index", "major version upgrade", "deep pagination", `search_after`, "leading wildcard",
+"deep aggregation", "Elasticsearch licence", "OpenSearch", "Meilisearch", "Typesense",
+"Manticore", "Vespa", "Solr", "Quickwit", "the search engine is exposed".
 
-**Tesis del dominio**: **un índice de búsqueda no es una tabla, y reindexar es la operación normal,
-no la excepción.** Un mapeo es inmutable en lo esencial: cambiar el tipo de un campo, su analizador o
-su tokenización obliga a reconstruir el índice entero. Todo lo demás de esta skill —alias, ILM,
-versionado, capacidad— existe para que reindexar sea barato y aburrido. **Si reindexar te da miedo,
-tu diseño está mal.**
+**Thesis of the domain**: **a search index is not a table, and reindexing is the normal operation,
+not the exception.** A mapping is immutable in essence: changing a field's type, its analyzer or
+its tokenization forces a full rebuild of the index. Everything else in this skill —aliases, ILM,
+versioning, capacity— exists to make reindexing cheap and boring. **If reindexing scares you,
+your design is wrong.**
 
-**No aplica**:
+**Not applicable**:
 
-- `data-platform-standards` — **skill madre**: PostgreSQL, **su full-text (`tsvector`, GIN,
-  `websearch_to_tsquery`) y JSONB**, y el principio rector **"un almacén por necesidad, no por
-  moda"**. **Arbitraje**: el criterio de si PostgreSQL te basta (§2.1) se decide aquí, pero **la
-  implementación del full-text en PostgreSQL es suya**. Si la respuesta es "sí, te basta", cierras
-  esta skill y trabajas allí.
-- `observability-standards` — **Loki, el pipeline de logs, OTel, retención y cardinalidad son
-  suyos**, y su criterio explícito es no meter Elastic/OpenSearch sin necesidad real de búsqueda
-  full-text sobre logs. Aquí **solo el motor** cuando ya se ha decidido que se usa un buscador:
-  modelado del índice, shards, ILM, snapshots. **La decisión de qué backend de logs usar es suya.**
-- `detection-engineering-standards` — **el SIEM: reglas Sigma, detecciones, normalización ECS/OCSF,
-  triaje y cobertura ATT&CK son suyos**, incluida la capa Elastic Security sobre Elasticsearch. Aquí
-  el motor por debajo: cluster, índices, retención física, rendimiento. **Frontera por propósito: si
-  el artefacto es una regla o una alerta, es suyo; si es un shard o un snapshot, es de aquí.**
-- **`rag-standards`** — recuperación para alimentar a un LLM: chunking, embeddings, **recuperación
-  híbrida densa + léxica y su fusión (RRF)**, reranking, `recall@k`. **La búsqueda híbrida cruza tres
-  skills y la regla es única: el criterio de fusión vive en `rag-standards` para el caso RAG; aquí
-  solo la parte léxica y la implementación de la fusión dentro del motor de texto cuando el motor la
-  ofrece nativamente. No se duplica.**
-- `vector-db-standards` — el motor vectorial como infraestructura: memoria del índice ANN,
-  cuantización, filtrado previo/posterior, snapshots, multi-tenancy, usos no-RAG. **Varios motores de
-  texto también hacen kNN**: si el cluster ya existe por su capacidad léxica, añadir vectores es de
-  aquí; si el despliegue se justifica **por** los vectores, es de allí.
-- `nosql-standards` — **frontera muy próxima: un motor documental y un buscador se parecen mucho por
-  fuera y no son la misma pieza.** Regla: si el acceso es **por clave o por patrón conocido de
-  acceso, con lectura consistente y el dato es la fuente de verdad**, es un almacén documental (suyo).
-  Si el acceso es **por texto libre con ranking por relevancia, facetas y agregaciones sobre una
-  proyección derivada**, es un buscador (aquí). **Un buscador no es tu base de datos primaria** (§3.1).
-- `data-engineering-standards` (el pipeline que alimenta el índice), `streaming-cdc-standards`
-  (CDC desde la fuente de verdad hacia el índice),
+- `data-platform-standards` — **parent skill**: PostgreSQL, **its full-text (`tsvector`, GIN,
+  `websearch_to_tsquery`) and JSONB**, and the guiding principle **"one store per need, not per
+  fashion"**. **Arbitration**: whether PostgreSQL is enough for you (§2.1) is decided here, but **the
+  implementation of full-text in PostgreSQL is theirs**. If the answer is "yes, it is enough", you
+  close this skill and work there.
+- `observability-standards` — **Loki, the log pipeline, OTel, retention and cardinality are
+  theirs**, and their explicit criteria is not to bring in Elastic/OpenSearch without a real need for
+  full-text search over logs. Here **only the engine** once it has been decided that a search engine
+  is used: index modelling, shards, ILM, snapshots. **The decision of which log backend to use is theirs.**
+- `detection-engineering-standards` — **the SIEM: Sigma rules, detections, ECS/OCSF normalisation,
+  triage and ATT&CK coverage are theirs**, including the Elastic Security layer on top of Elasticsearch. Here
+  the engine underneath: cluster, indices, physical retention, performance. **Boundary by purpose: if
+  the artifact is a rule or an alert, it is theirs; if it is a shard or a snapshot, it belongs here.**
+- **`rag-standards`** — retrieval to feed an LLM: chunking, embeddings, **hybrid dense + lexical
+  retrieval and its fusion (RRF)**, reranking, `recall@k`. **Hybrid search crosses three
+  skills and the rule is single: the fusion criteria lives in `rag-standards` for the RAG case; here
+  only the lexical part and the implementation of fusion inside the text engine when the engine
+  offers it natively. It is not duplicated.**
+- `vector-db-standards` — the vector engine as infrastructure: ANN index memory,
+  quantization, pre/post filtering, snapshots, multi-tenancy, non-RAG uses. **Several text engines
+  also do kNN**: if the cluster already exists for its lexical capability, adding vectors belongs
+  here; if the deployment is justified **by** the vectors, it belongs there.
+- `nosql-standards` — **a very close boundary: a document store and a search engine look very much
+  alike from the outside and are not the same piece.** Rule: if access is **by key or by a known access
+  pattern, with consistent reads and the data is the source of truth**, it is a document store (theirs).
+  If access is **by free text with relevance ranking, facets and aggregations over a derived
+  projection**, it is a search engine (here). **A search engine is not your primary database** (§3.1).
+- `data-engineering-standards` (the pipeline that feeds the index), `streaming-cdc-standards`
+  (CDC from the source of truth into the index),
   `data-governance-quality-standards`, `analytics-bi-standards`, `lakehouse-standards`,
   `graph-db-standards`, `timeseries-db-standards`, `message-brokers-standards`,
   `caching-cdn-standards`.
-- `privacy-engineering-standards`: **dato personal dentro del índice, su retención y el derecho de
-  supresión** — un índice de búsqueda es una copia más del dato (§5.4).
-- `api-design-standards`: el contrato de tu API de búsqueda hacia fuera. **No expongas la query DSL
-  del motor a tus clientes** (§5.2).
-- `kubernetes-standards` (StatefulSets, operadores), `linux-storage-standards` (el bloque y el
-  planificador de E/S bajo el motor), `object-storage-standards` (repositorio de snapshots),
+- `privacy-engineering-standards`: **personal data inside the index, its retention and the right to
+  erasure** — a search index is one more copy of the data (§5.4).
+- `api-design-standards`: the contract of your search API to the outside. **Do not expose the engine's
+  query DSL to your clients** (§5.2).
+- `kubernetes-standards` (StatefulSets, operators), `linux-storage-standards` (the block layer and the
+  I/O scheduler under the engine), `object-storage-standards` (snapshot repository),
   `backup-recovery-standards`, `bcdr-standards`, `sre-practice-standards`, `iac-standards`,
   `cicd-standards`.
-- `identity-access-management-standards` (SSO/OIDC contra el motor y su panel),
-  `secrets-management-standards`, `cryptography-pki-standards` (TLS y certificados de transporte),
-  `firewall-policy-standards` (exponer el puerto), `networking-standards`,
-  `vulnerability-management-standards` (CVE y EOL), `grc-compliance-standards`.
-- `aws-standards` / `azure-standards` / `gcp-standards`: los servicios gestionados equivalentes.
-- Skills de lenguaje: los clientes oficiales y su versionado.
+- `identity-access-management-standards` (SSO/OIDC against the engine and its dashboard),
+  `secrets-management-standards`, `cryptography-pki-standards` (TLS and transport certificates),
+  `firewall-policy-standards` (exposing the port), `networking-standards`,
+  `vulnerability-management-standards` (CVEs and EOL), `grc-compliance-standards`.
+- `aws-standards` / `azure-standards` / `gcp-standards`: the equivalent managed services.
+- Language skills: the official clients and their versioning.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar versión, **licencia** y estado por web antes de fijar nada (§8). **En este sector la
-> licencia ha cambiado varias veces y es el dato que decide**: lo verificado aquí es de agosto de
-> 2026, contra ficheros `LICENSE` de repositorio y feeds Atom de releases.
+> Verify version, **licence** and status on the web before committing to anything (§8). **In this sector the
+> licence has changed several times and it is the datum that decides**: what is verified here is as of August
+> 2026, against repository `LICENSE` files and release Atom feeds.
 
-### 2.1 La pregunta previa: ¿te basta el full-text de PostgreSQL?
+### 2.1 The prior question: is PostgreSQL full-text enough for you?
 
-**Para la mayoría de catálogos, buscadores internos, documentación y back-offices, sí.** Y evita
-operar un cluster entero, con su ciclo de vida, su respaldo, sus upgrades y su superficie de ataque.
+**For most catalogues, internal search, documentation and back-offices, yes.** And it avoids
+operating a whole cluster, with its lifecycle, its backups, its upgrades and its attack surface.
 
-| Necesidad | ¿PostgreSQL basta? |
+| Need | Is PostgreSQL enough? |
 |---|---|
-| Buscar en un catálogo de miles o pocos millones de filas, con filtros SQL | **Sí.** `tsvector` + índice GIN. Y el filtro por permisos, precio o estado es un `WHERE` transaccional y consistente |
-| Búsqueda que debe estar **inmediatamente** consistente con la escritura | **Sí, y es su mayor ventaja**: no hay retraso de indexación ni pipeline que se caiga |
-| El dato buscable ya vive en PostgreSQL y no hay otra fuente | **Sí.** Añadir un buscador es añadir una copia, un pipeline y un modo de fallo |
-| Facetas y agregaciones ligeras | **Sí**, con `GROUP BY` mientras el volumen lo permita |
-| Fuzzy y sugerencias básicas | **Sí**: `pg_trgm`, `unaccent` |
-| Relevancia realmente ajustable, boosting por campo, sinónimos gestionados | **No.** `ts_rank` es rudimentario y no se ajusta como BM25 |
-| Facetas y agregaciones sobre decenas de millones de documentos con latencia baja | **No** |
-| Volumen de consulta muy alto que compite con la carga OLTP | **No** (o réplica dedicada como paso intermedio) |
-| Corpus de documentos, no de filas: PDFs, adjuntos, texto largo multilingüe | **No** |
-| Autocompletado con latencia de decenas de ms y tolerancia a erratas | **No** salvo casos simples |
+| Searching a catalogue of thousands or a few million rows, with SQL filters | **Yes.** `tsvector` + GIN index. And filtering by permissions, price or status is a transactional and consistent `WHERE` |
+| Search that must be **immediately** consistent with the write | **Yes, and it is its greatest advantage**: there is no indexing lag and no pipeline to fall over |
+| The searchable data already lives in PostgreSQL and there is no other source | **Yes.** Adding a search engine means adding a copy, a pipeline and a failure mode |
+| Light facets and aggregations | **Yes**, with `GROUP BY` as long as the volume allows it |
+| Basic fuzzy matching and suggestions | **Yes**: `pg_trgm`, `unaccent` |
+| Genuinely tunable relevance, field boosting, managed synonyms | **No.** `ts_rank` is rudimentary and cannot be tuned like BM25 |
+| Facets and aggregations over tens of millions of documents with low latency | **No** |
+| Very high query volume competing with the OLTP load | **No** (or a dedicated replica as an intermediate step) |
+| A corpus of documents, not of rows: PDFs, attachments, long multilingual text | **No** |
+| Autocomplete with tens-of-ms latency and typo tolerance | **No**, except in simple cases |
 
-**Regla de decisión**: **empieza en PostgreSQL. Da el salto cuando midas que no llega** —latencia,
-carga sobre el OLTP, o una necesidad de relevancia/faceting que `ts_rank` no cubre— **y escríbelo en
-un ADR con el coste operativo asumido.** Hay un paso intermedio que casi nadie considera: **una
-réplica de lectura de PostgreSQL dedicada a búsqueda** resuelve el problema de contención sin
-introducir una pieza nueva. (Extensiones tipo ParadeDB/`pg_search` traen BM25 a PostgreSQL: son una
-opción, con su propio coste de dependencia — verifícalas, §8.)
+**Decision rule**: **start on PostgreSQL. Make the jump when you measure that it does not reach** —latency,
+load on the OLTP, or a relevance/faceting need that `ts_rank` does not cover— **and write it in
+an ADR with the operational cost accepted.** There is an intermediate step almost nobody considers: **a
+PostgreSQL read replica dedicated to search** solves the contention problem without
+introducing a new piece. (Extensions such as ParadeDB/`pg_search` bring BM25 to PostgreSQL: they are an
+option, with their own dependency cost — verify them, §8.)
 
-### 2.2 Elección de motor — y el lío de licencias
+### 2.2 Choice of engine — and the licence mess
 
-**Esta es la decisión principal del dominio, y es jurídica antes que técnica.** Estado verificado a
-agosto de 2026:
+**This is the main decision of the domain, and it is legal before it is technical.** Status verified as of
+August 2026:
 
-| Motor | Versión | Licencia (verificada) | Criterio |
+| Engine | Version | Licence (verified) | Criteria |
 |---|---|---|---|
-| **Elasticsearch** | **9.4.4** (jul-2026); mantenidas 9.3.8 y 8.19.19 | **Triple**, verbatim del `LICENSE.txt`: *"a triple license under the 'GNU Affero General Public License v3.0 only', 'the Server Side Public License, v 1', and the 'Elastic License 2.0'"* | Ecosistema y capacidades máximas. **AGPLv3 se añadió como tercera opción a partir de 8.16** tras el episodio SSPL/ELv2 de 2021. ⚠️ **Ver la advertencia sobre binarios abajo** |
-| **OpenSearch** | **3.7.0** (jun-2026); LTS **2.19.6** | **Apache-2.0**, sin ambigüedad | **Default cuando la licencia importa.** Gobernanza: propiedad transferida de Amazon a la **OpenSearch Software Foundation**, proyecto de la **Linux Foundation**, anunciada el **16-sep-2024**. Es el motor con la gobernanza más limpia del sector |
-| **Meilisearch** | **1.52.0** (ago-2026) | ⚠️ **`MIT AND BUSL-1.1`** — verbatim del `LICENSE`: la **Enterprise Edition** (ficheros bajo `enterprise_editions`) es **BSL 1.1**, uso en producción **solo con contrato comercial**; el resto MIT. Change License MIT a 4 años | Buscador de producto, muy buena experiencia de desarrollo. **Ya no es "MIT y punto": audita qué módulos usas.** Muy activo |
-| **Typesense** | **30.2** (abr-2026); rama `v31` activa (jul-2026) | **GPL-3.0** | Alternativa ligera, tipada, sin JVM. **GPL-3 es una decisión consciente** si lo integras o distribuyes |
-| **Manticore Search** | **28.6.6** (jul-2026) | **GPL-3.0** | Heredero de Sphinx. Muy activo, muy eficiente en recursos; ecosistema pequeño |
-| **Vespa** | **8.731.x** (jul-2026) | **Apache-2.0** | Búsqueda + ranking con ML + vectores en un solo motor, a gran escala. **Curva de aprendizaje y coste operativo altos**: se justifica por relevancia avanzada, no por buscar texto |
-| **Apache Solr** | **10.0.0** (mar-2026); 9.11-beta | **Apache-2.0** (ASF) | Maduro, gobernanza de fundación. Ecosistema en declive frente a ES/OS; elección razonable si ya lo operas |
-| **Quickwit** | **0.9.0** (jul-2026), repo activo en ago-2026 | **Apache-2.0** | **Adquirido por Datadog (ene-2025)** y relicenciado a Apache-2.0; **no está abandonado**, sigue publicando. Nicho: búsqueda sobre object storage para **logs y trazas** — y ahí la decisión de backend es de `observability-standards` |
+| **Elasticsearch** | **9.4.4** (Jul 2026); 9.3.8 and 8.19.19 maintained | **Triple**, verbatim from `LICENSE.txt`: *"a triple license under the 'GNU Affero General Public License v3.0 only', 'the Server Side Public License, v 1', and the 'Elastic License 2.0'"* | Maximum ecosystem and capabilities. **AGPLv3 was added as a third option from 8.16 onwards** after the SSPL/ELv2 episode of 2021. ⚠️ **See the warning about binaries below** |
+| **OpenSearch** | **3.7.0** (Jun 2026); LTS **2.19.6** | **Apache-2.0**, unambiguous | **Default when the licence matters.** Governance: ownership transferred from Amazon to the **OpenSearch Software Foundation**, a **Linux Foundation** project, announced on **16-Sep-2024**. It is the engine with the cleanest governance in the sector |
+| **Meilisearch** | **1.52.0** (Aug 2026) | ⚠️ **`MIT AND BUSL-1.1`** — verbatim from the `LICENSE`: the **Enterprise Edition** (files under `enterprise_editions`) is **BSL 1.1**, production use **only with a commercial contract**; the rest MIT. Change License MIT after 4 years | Product search engine, very good developer experience. **It is no longer "MIT and that's it": audit which modules you use.** Very active |
+| **Typesense** | **30.2** (Apr 2026); `v31` branch active (Jul 2026) | **GPL-3.0** | Lightweight, typed alternative, no JVM. **GPL-3 is a conscious decision** if you embed or distribute it |
+| **Manticore Search** | **28.6.6** (Jul 2026) | **GPL-3.0** | Heir to Sphinx. Very active, very resource-efficient; small ecosystem |
+| **Vespa** | **8.731.x** (Jul 2026) | **Apache-2.0** | Search + ML ranking + vectors in a single engine, at large scale. **Steep learning curve and high operational cost**: justified by advanced relevance, not by searching text |
+| **Apache Solr** | **10.0.0** (Mar 2026); 9.11-beta | **Apache-2.0** (ASF) | Mature, foundation governance. Ecosystem in decline against ES/OS; a reasonable choice if you already operate it |
+| **Quickwit** | **0.9.0** (Jul 2026), repo active as of Aug 2026 | **Apache-2.0** | **Acquired by Datadog (Jan 2025)** and relicensed to Apache-2.0; **not abandoned**, still publishing. Niche: search over object storage for **logs and traces** — and there the backend decision belongs to `observability-standards` |
 
-**⚠️ La advertencia que decide de verdad en Elasticsearch**: el `LICENSE.txt` del repositorio es
-triple, pero **hay reportes consistentes de que las distribuciones binarias oficiales se entregan
-bajo Elastic License 2.0**, no bajo AGPLv3. **Si tu razón para elegir Elasticsearch es "ya es open
-source otra vez", verifica el fichero de licencia del artefacto concreto que descargas o de la imagen
-que despliegas, no el del repositorio.** Es un hueco declarado (§8): no lo des por resuelto.
+**⚠️ The warning that really decides on Elasticsearch**: the repository's `LICENSE.txt` is
+triple, but **there are consistent reports that the official binary distributions are shipped
+under Elastic License 2.0**, not under AGPLv3. **If your reason for choosing Elasticsearch is "it is open
+source again", verify the licence file of the specific artifact you download or of the image
+you deploy, not the one in the repository.** This is a declared gap (§8): do not take it as settled.
 
-**Criterio por defecto**:
+**Default criteria**:
 
-1. **No usas nada**: PostgreSQL (§2.1).
-2. **Necesitas un buscador y la licencia importa** (SaaS, producto, distribución, política de
-   empresa): **OpenSearch**. Apache-2.0 y fundación neutral.
-3. **Necesitas el ecosistema Elastic y aceptas ELv2 en los binarios**: **Elasticsearch**.
-4. **Buscador de producto, equipo pequeño, sin JVM**: **Meilisearch** (auditando la frontera BSL) o
-   **Typesense** (aceptando GPL-3).
-5. **Relevancia avanzada con ML a gran escala**: **Vespa**, con ADR que reconozca su coste.
-6. **Ya operas Solr**: no migres sin motivo.
+1. **You use nothing**: PostgreSQL (§2.1).
+2. **You need a search engine and the licence matters** (SaaS, product, distribution, company
+   policy): **OpenSearch**. Apache-2.0 and a neutral foundation.
+3. **You need the Elastic ecosystem and accept ELv2 on the binaries**: **Elasticsearch**.
+4. **Product search engine, small team, no JVM**: **Meilisearch** (auditing the BSL boundary) or
+   **Typesense** (accepting GPL-3).
+5. **Advanced relevance with ML at large scale**: **Vespa**, with an ADR acknowledging its cost.
+6. **You already operate Solr**: do not migrate without a reason.
 
-**Vetado sin ADR firmado**: elegir un motor sin haber leído su fichero de licencia **este
-trimestre**; asumir que un motor sigue teniendo la licencia que tenía la última vez que lo miraste.
+**Vetoed without a signed ADR**: choosing an engine without having read its licence file **this
+quarter**; assuming an engine still has the licence it had the last time you looked.
 
-## 3. Modelado del índice
+## 3. Index modelling
 
-### 3.1 Reglas fundacionales
+### 3.1 Foundational rules
 
-- **El buscador no es la fuente de verdad.** Es una **proyección derivada** de un almacén durable.
-  Consecuencia práctica: puedes borrar el índice entero y reconstruirlo; su respaldo es una
-  optimización de RTO, no una necesidad de durabilidad. **Si no puedes reconstruir tu índice desde el
-  origen, tienes un problema de arquitectura, no de búsqueda.**
-- **Un índice se modela por consulta, no por entidad.** Desnormaliza: incrusta lo que la consulta
-  necesita mostrar y filtrar. Las uniones son caras o inexistentes.
-- **Todo índice se sirve tras un alias**, nunca por su nombre real. El alias es lo que hace posible
-  reindexar y conmutar sin caída, y su ausencia es lo que convierte un cambio de mapeo en una
-  ventana de mantenimiento.
-- **Nombra los índices con versión** (`productos_v7`) y trata el mapeo como código versionado en el
-  repositorio, revisado en PR.
+- **The search engine is not the source of truth.** It is a **derived projection** of a durable store.
+  Practical consequence: you can delete the whole index and rebuild it; backing it up is an
+  RTO optimisation, not a durability need. **If you cannot rebuild your index from the
+  source, you have an architecture problem, not a search problem.**
+- **An index is modelled per query, not per entity.** Denormalise: embed what the query
+  needs to display and filter on. Joins are expensive or non-existent.
+- **Every index is served behind an alias**, never by its real name. The alias is what makes it possible to
+  reindex and switch over with no downtime, and its absence is what turns a mapping change into
+  a maintenance window.
+- **Name indices with a version** (`productos_v7`) and treat the mapping as code versioned in the
+  repository, reviewed in a PR.
 
-### 3.2 Mapeo explícito — el mapeo dinámico en producción es una bomba
+### 3.2 Explicit mapping — dynamic mapping in production is a bomb
 
-**Regla dura: mapeo explícito y `dynamic: strict` (o el equivalente de tu motor) en producción.**
+**Hard rule: explicit mapping and `dynamic: strict` (or your engine's equivalent) in production.**
 
-Lo que hace el mapeo dinámico y por qué explota:
+What dynamic mapping does and why it blows up:
 
-- **El tipo lo decide el primer documento que llega.** Un campo que llega como `"1"` se mapea a
-  `text`; el siguiente documento con `1` numérico puede fallar o quedar inservible para rangos y
-  ordenación. **El error aparece meses después, en un documento cualquiera, y ya no se puede
-  arreglar sin reindexar.**
-- **Explosión de campos**: un objeto con claves dinámicas (IDs, nombres de usuario, atributos
-  libres) genera un campo nuevo por clave. El mapeo crece sin límite, el estado del cluster se
-  hincha y **el cluster se degrada entero**. Usa tipos pensados para esto (`flattened`, pares
-  clave/valor como *nested*) o normaliza a `[{clave, valor}]`.
-- **Indexas lo que no buscas**: campos que nadie consulta cuestan espacio, memoria y tiempo de
-  indexación. Declara `index: false` para lo que solo se muestra, y no almacenes el documento
-  original completo si ya lo tienes en la fuente de verdad.
+- **The type is decided by the first document that arrives.** A field that arrives as `"1"` is mapped to
+  `text`; the next document with a numeric `1` may fail or become useless for ranges and
+  sorting. **The error shows up months later, in some arbitrary document, and by then it cannot be
+  fixed without reindexing.**
+- **Field explosion**: an object with dynamic keys (IDs, user names, free-form
+  attributes) generates a new field per key. The mapping grows without bound, the cluster state
+  bloats and **the whole cluster degrades**. Use types designed for this (`flattened`, key/value
+  pairs as *nested*) or normalise to `[{key, value}]`.
+- **You index what you do not search**: fields nobody queries cost space, memory and indexing
+  time. Declare `index: false` for what is only displayed, and do not store the complete
+  original document if you already have it in the source of truth.
 
-### 3.3 `keyword` frente a `text` — el error de modelado más frecuente
+### 3.3 `keyword` versus `text` — the most frequent modelling mistake
 
-- **`text` se analiza**: se trocea, se normaliza, sirve para **buscar**. **No sirve** para agrupar,
-  ordenar ni facetar de forma fiable.
-- **`keyword` no se analiza**: es el valor exacto. Sirve para **filtrar, facetar, agregar y
-  ordenar**. No sirve para buscar dentro.
-- **Casi siempre quieres los dos**: el campo como `text` y un subcampo `keyword`. Modelarlo mal es
-  la causa número uno de "las facetas salen troceadas" y de "no puedo ordenar por nombre".
-- **Identificadores, SKUs, códigos, enums, estados, emails, rutas y etiquetas son `keyword`**, no
-  `text`. Analizarlos rompe la búsqueda exacta que es justo lo que se quiere de ellos.
+- **`text` is analyzed**: it is split, normalised, and serves to **search**. It does **not** serve to group,
+  sort or facet reliably.
+- **`keyword` is not analyzed**: it is the exact value. It serves to **filter, facet, aggregate and
+  sort**. It does not serve to search inside.
+- **Almost always you want both**: the field as `text` and a `keyword` subfield. Modelling this wrong is
+  the number one cause of "the facets come out shredded" and of "I cannot sort by name".
+- **Identifiers, SKUs, codes, enums, statuses, emails, paths and tags are `keyword`**, not
+  `text`. Analyzing them breaks the exact search that is precisely what you want from them.
 
-### 3.4 Analizadores, tokenización y stemming — y el español
+### 3.4 Analyzers, tokenization and stemming — and Spanish
 
-Un analizador es **tokenizador + filtros**, y **el de indexación y el de consulta deben ser
-coherentes**. Un desajuste aquí no da error: da cero resultados para consultas obviamente correctas.
+An analyzer is **tokenizer + filters**, and **the indexing one and the query one must be
+coherent**. A mismatch here does not raise an error: it gives zero results for obviously correct queries.
 
-Criterio para el español (y aplicable a cualquier idioma flexivo):
+Criteria for Spanish (and applicable to any inflected language):
 
-- **Un analizador por idioma, no uno para todo.** Un campo multilingüe con analizador inglés
-  destroza la recuperación en español sin emitir un solo aviso. Si el corpus es multilingüe:
-  **subcampo por idioma** (`titulo.es`, `titulo.en`) y detección de idioma en la ingesta.
-- **Stemming**: los *stemmers* Snowball para español son **agresivos** y sobre-derivan (raíces
-  distintas colapsan en la misma), lo que mete ruido. La variante ligera (*light Spanish*) suele dar
-  mejor precisión en catálogos y nombres propios. **Elige midiendo (§4.2), no por defecto.**
-- **Acentos**: `asciifolding` (o `unaccent`) es casi obligatorio —el usuario escribe "arbol"— pero
-  **destruye distinciones reales**: `año`/`ano`, `papa`/`papá`, `esta`/`está`. **Patrón correcto: un
-  campo plegado para recuperar y un campo sin plegar con más peso para desempatar**, de modo que la
-  forma acentuada correcta gane en el ranking sin dejar de encontrar la sin acentuar.
-- **Stopwords**: la lista estándar del español elimina `no` y `sin`. En un corpus donde la negación
-  importa (clínico, legal, especificaciones técnicas) **eso invierte el significado de la consulta**.
-  Revisa la lista; a menudo lo correcto es no usarla.
-- **`ñ`, diéresis, mayúsculas, guiones y apóstrofos**: normalización explícita y probada, no
-  heredada del ejemplo de un blog.
-- **Ojo con la tokenización de referencias**: SKUs, matrículas, versiones (`v1.2.3`) y códigos con
-  guiones se parten en trozos inútiles con el tokenizador estándar. Modélalos como `keyword` (§3.3)
-  o con un tokenizador propio.
-- **Números, fechas y unidades**: normaliza en la ingesta, no en la consulta.
+- **One analyzer per language, not one for everything.** A multilingual field with an English analyzer
+  destroys retrieval in Spanish without emitting a single warning. If the corpus is multilingual:
+  **a subfield per language** (`titulo.es`, `titulo.en`) and language detection at ingestion.
+- **Stemming**: the Snowball *stemmers* for Spanish are **aggressive** and over-stem (distinct roots
+  collapse into the same one), which introduces noise. The light variant (*light Spanish*) usually gives
+  better precision on catalogues and proper nouns. **Choose by measuring (§4.2), not by default.**
+- **Accents**: `asciifolding` (or `unaccent`) is nearly mandatory —the user types "arbol"— but
+  **it destroys real distinctions**: `año`/`ano`, `papa`/`papá`, `esta`/`está`. **Correct pattern: a
+  folded field to retrieve and an unfolded field with more weight to break ties**, so that the
+  correct accented form wins in the ranking while still finding the unaccented one.
+- **Stopwords**: the standard Spanish list removes `no` and `sin`. In a corpus where negation
+  matters (clinical, legal, technical specifications) **that inverts the meaning of the query**.
+  Review the list; often the right thing is not to use it.
+- **`ñ`, diaeresis, uppercase, hyphens and apostrophes**: explicit and tested normalisation, not
+  inherited from a blog example.
+- **Careful with the tokenization of references**: SKUs, registration numbers, versions (`v1.2.3`) and codes with
+  hyphens are split into useless pieces by the standard tokenizer. Model them as `keyword` (§3.3)
+  or with a custom tokenizer.
+- **Numbers, dates and units**: normalise at ingestion, not at query time.
 
-**Cambiar un analizador exige reindexar.** No es un ajuste en caliente: es la operación de §3.5.
+**Changing an analyzer requires reindexing.** It is not a hot adjustment: it is the operation of §3.5.
 
-### 3.5 Reindexar es la operación normal
+### 3.5 Reindexing is the normal operation
 
-El procedimiento estándar, que debe estar automatizado y ensayado **antes** de necesitarlo:
+The standard procedure, which must be automated and rehearsed **before** you need it:
 
 ```
-1. crear   productos_v8  con el mapeo nuevo
-2. poblar  productos_v8  (reindex desde v7, o desde la fuente de verdad — preferible)
-3. doble escritura a v7 y v8 mientras dura el proceso
-4. comparar: nº de documentos, y relevancia sobre el conjunto de juicios (§4.2)
-5. conmutar el alias 'productos' de v7 a v8 (atómico)
-6. dejar v7 disponible N días para rollback; borrar después
+1. create   productos_v8  with the new mapping
+2. populate productos_v8  (reindex from v7, or from the source of truth — preferable)
+3. dual write to v7 and v8 while the process lasts
+4. compare: document count, and relevance over the judgment set (§4.2)
+5. switch the 'productos' alias from v7 to v8 (atomic)
+6. leave v7 available N days for rollback; delete afterwards
 ```
 
-- **Reindexar desde la fuente de verdad es mejor que reindexar desde el índice viejo**: el índice
-  viejo puede haber perdido información que el analizador anterior descartó.
-- **Cronometra el reindexado completo.** Es tu RTO real y el límite de cuántos cambios de mapeo
-  puedes permitirte por trimestre.
-- **Un cambio de mapeo sin alias y sin plan de reindexado es una incidencia programada.**
+- **Reindexing from the source of truth is better than reindexing from the old index**: the old
+  index may have lost information that the previous analyzer discarded.
+- **Time the full reindex.** It is your real RTO and the limit on how many mapping changes
+  you can afford per quarter.
+- **A mapping change without an alias and without a reindex plan is a scheduled incident.**
 
-## 4. Relevancia y gates
+## 4. Relevance and gates
 
-### 4.1 Ajuste de la relevancia
+### 4.1 Relevance tuning
 
-- **BM25 es el ranking por defecto de todos los motores serios**, y sus parámetros (saturación de
-  frecuencia de término y normalización por longitud del documento) **rara vez son el problema**:
-  antes de tocarlos, revisa analizadores, campos y pesos. Tocar BM25 primero es optimizar el último
-  eslabón.
-- **Boosting por campo** (título pesa más que cuerpo) es la palanca más efectiva y la primera que se
-  prueba. **Se ajusta midiendo, no discutiendo en una reunión.**
-- **Señales de negocio** (popularidad, novedad, stock, margen) se combinan con la relevancia textual
-  de forma explícita y documentada. **Sepáralas del ranking textual**: mezclarlas hasta que nadie
-  sepa por qué sale lo que sale es como mueren los buscadores.
-- **Sinónimos**: gestiónalos como datos versionados, no como configuración suelta. **Aplícalos en
-  consulta, no en indexación**, siempre que puedas: así cambiarlos no obliga a reindexar. Cuidado con
-  los multi-palabra y con los sinónimos que amplían demasiado y arruinan la precisión.
-- **Búsqueda híbrida (léxica + vectorial)**: la parte léxica es de esta skill, la vectorial de
-  `vector-db-standards`, y **el criterio de fusión de `rag-standards`** cuando el destino es un LLM.
-  Si tu motor implementa la fusión nativamente, úsala en vez de fusionar en la aplicación. **No la
-  adoptes sin medir: para muchos catálogos, léxico bien analizado gana a híbrido mal medido.**
+- **BM25 is the default ranking of every serious engine**, and its parameters (term frequency
+  saturation and document length normalisation) **are rarely the problem**:
+  before touching them, review analyzers, fields and weights. Touching BM25 first is optimising the last
+  link.
+- **Field boosting** (title weighs more than body) is the most effective lever and the first one to
+  try. **It is tuned by measuring, not by arguing in a meeting.**
+- **Business signals** (popularity, recency, stock, margin) are combined with textual relevance
+  explicitly and documented. **Keep them separate from the textual ranking**: mixing them until nobody
+  knows why what comes out comes out is how search engines die.
+- **Synonyms**: manage them as versioned data, not as loose configuration. **Apply them at
+  query time, not at indexing time**, whenever you can: that way changing them does not force a reindex. Careful with
+  multi-word ones and with synonyms that broaden too much and ruin precision.
+- **Hybrid search (lexical + vector)**: the lexical part belongs to this skill, the vector part to
+  `vector-db-standards`, and **the fusion criteria to `rag-standards`** when the destination is an LLM.
+  If your engine implements the fusion natively, use it instead of fusing in the application. **Do not
+  adopt it without measuring: for many catalogues, well-analyzed lexical beats badly-measured hybrid.**
 
-### 4.2 Cómo se evalúa la relevancia de verdad
+### 4.2 How relevance is really evaluated
 
-**"A mí me sale bien" no es una medición.** Es el sesgo del que conoce el corpus consultando lo que
-ya sabe que está.
+**"It works for me" is not a measurement.** It is the bias of someone who knows the corpus querying what
+they already know is there.
 
-- **Lista de juicios (*judgment list*)**: consultas reales de tus usuarios etiquetadas con qué
-  documentos son relevantes y en qué grado. **50-200 consultas mínimas, versionadas en el
-  repositorio, revisadas en PR como cualquier otro código.** Es el activo más valioso del sistema:
-  sobrevive a cambios de motor, de mapeo y de equipo.
-- **Sácalas de los logs de búsqueda**: las consultas más frecuentes, y sobre todo **las que dan cero
-  resultados** y **aquellas en las que el usuario no hace clic en nada**. Ahí está tu backlog de
-  relevancia entero, gratis.
-- **Cobertura de bordes obligatoria**: erratas, sinónimos, singular/plural, con y sin acentos,
-  identificadores y SKUs exactos, consultas de una sola letra, consultas larguísimas, cada idioma del
-  corpus, y **consultas cuya respuesta correcta es "no hay nada"**.
-- **Métricas offline** sobre esa lista, y **online** después (tasa de cero resultados, clics en las
-  primeras posiciones, abandono, reformulación). **La métrica offline te dice si has roto algo; la
-  online, si has mejorado.** La maquinaria de métricas de recuperación y su interpretación está en
+- **Judgment list**: real user queries labelled with which
+  documents are relevant and to what degree. **50-200 queries minimum, versioned in the
+  repository, reviewed in a PR like any other code.** It is the most valuable asset of the system:
+  it survives changes of engine, of mapping and of team.
+- **Get them out of the search logs**: the most frequent queries, and above all **the ones that return zero
+  results** and **those in which the user clicks on nothing**. That is your entire relevance backlog,
+  free.
+- **Mandatory edge coverage**: typos, synonyms, singular/plural, with and without accents,
+  exact identifiers and SKUs, single-letter queries, extremely long queries, every language in the
+  corpus, and **queries whose correct answer is "there is nothing"**.
+- **Offline metrics** over that list, and **online** ones afterwards (zero-result rate, clicks in the
+  top positions, abandonment, reformulation). **The offline metric tells you whether you broke something; the
+  online one, whether you improved.** The machinery of retrieval metrics and their interpretation is in
   `rag-standards` §4.1.
-- **Ningún cambio de relevancia entra sin comparación A/B contra la configuración actual.** Un ajuste
-  que mejora tres consultas y empeora treinta es el resultado por defecto de tocar a ojo.
+- **No relevance change ships without an A/B comparison against the current configuration.** A tweak
+  that improves three queries and worsens thirty is the default result of tuning by eye.
 
-### 4.3 Gates que rompen el build
+### 4.3 Gates that break the build
 
-| # | Gate | Rompe si |
+| # | Gate | Breaks if |
 |---|---|---|
-| 1 | Mapeo explícito versionado; **`dynamic: strict`** en producción | Hay mapeo dinámico permisivo |
-| 2 | Todo índice se sirve **tras un alias** | Se consulta el índice por su nombre real |
-| 3 | Analizador de indexación y de consulta **coherentes**, con prueba que lo verifica sobre casos reales | Divergen |
-| 4 | **Evaluación de relevancia sobre la lista de juicios con umbral de no-regresión** si el diff toca mapeo, analizadores, sinónimos o pesos | Regresión |
-| 5 | Prueba de casos de borde del idioma (acentos, plurales, erratas, SKUs) | Falla |
-| 6 | **Reindexado completo ensayado y cronometrado** al menos una vez por trimestre | No ensayado |
-| 7 | **Snapshot restaurado en entorno limpio y consultado**, con tiempo registrado | No se restaura |
-| 8 | **Petición anónima al endpoint devuelve `401`/`403`**, y el transporte es TLS | Devuelve `200` |
-| 9 | **Aislamiento entre tenants/roles**: un usuario no recupera documentos que no le corresponden | Fuga. **Innegociable** |
-| 10 | Ninguna consulta de la aplicación usa comodín inicial ni paginación por `from`/`offset` profundo (§6.3) | Aparece una |
-| 11 | Número de shards por índice justificado frente al tamaño real (§6.1) | Shards enanos o gigantes |
-| 12 | **Revisión de licencia del motor y de sus plugins** registrada y vigente (§2.2) | Caducada |
-| 13 | CVEs y EOL del motor (§5.3) | Crítica sin mitigar |
+| 1 | Explicit versioned mapping; **`dynamic: strict`** in production | There is permissive dynamic mapping |
+| 2 | Every index is served **behind an alias** | The index is queried by its real name |
+| 3 | Indexing and query analyzers **coherent**, with a test that verifies it on real cases | They diverge |
+| 4 | **Relevance evaluation over the judgment list with a non-regression threshold** if the diff touches mapping, analyzers, synonyms or weights | Regression |
+| 5 | Language edge-case test (accents, plurals, typos, SKUs) | Fails |
+| 6 | **Full reindex rehearsed and timed** at least once per quarter | Not rehearsed |
+| 7 | **Snapshot restored in a clean environment and queried**, with the time recorded | It does not restore |
+| 8 | **Anonymous request to the endpoint returns `401`/`403`**, and the transport is TLS | It returns `200` |
+| 9 | **Isolation between tenants/roles**: a user does not retrieve documents that are not theirs | Leak. **Non-negotiable** |
+| 10 | No application query uses a leading wildcard or deep `from`/`offset` pagination (§6.3) | One appears |
+| 11 | Number of shards per index justified against the real size (§6.1) | Dwarf or giant shards |
+| 12 | **Licence review of the engine and its plugins** recorded and current (§2.2) | Expired |
+| 13 | CVEs and EOL of the engine (§5.3) | Critical unmitigated |
 
-## 5. Seguridad
+## 5. Security
 
-### 5.1 Autenticación y TLS: históricamente desactivados, y el resultado se conoce
+### 5.1 Authentication and TLS: historically disabled, and the result is well known
 
-**Los buscadores expuestos a Internet son una fuente crónica de fugas de datos**, con más de una
-década de incidentes documentados. El patrón es siempre el mismo: un índice con datos reales,
-alcanzable, sin autenticación, encontrado por escaneo masivo.
+**Search engines exposed to the Internet are a chronic source of data leaks**, with more than a
+decade of documented incidents. The pattern is always the same: an index with real data,
+reachable, without authentication, found by mass scanning.
 
-Estado verificado (ago-2026):
+Status verified (Aug 2026):
 
-| Motor | Estado por defecto | Nota |
+| Engine | Default state | Note |
 |---|---|---|
-| **Elasticsearch** | Seguridad **autoconfigurada desde 8.0**, verbatim de la doc: *"Elasticsearch automatically enables security features on first startup when the node is not part of an existing cluster and none of the incompatible settings have been explicitly configured"* | **Léelo con cuidado: hay casos en los que la configuración automática se salta.** Verifícalo, no lo asumas |
-| **OpenSearch** | Plugin de seguridad con **configuración de demo instalada automáticamente**, incluidos **certificados de demo**; desde 2.12 exige `OPENSEARCH_INITIAL_ADMIN_PASSWORD` | Hay auth, pero **con certificados de demo que hay que sustituir**. Un cluster en producción con los certificados de demo no está protegido |
-| **Apache Solr** | **Sin autenticación por defecto** y escuchando en todas las interfaces. La seguridad se activa con `security.json`; **si `blockUnknown` no aparece, vale `false`, que equivale a no exigir autenticación** | El caso más peligroso de la lista. Solr ha acumulado incidentes de exposición y RCE |
-| **Meilisearch / Typesense / Manticore** | Requieren clave configurada explícitamente; sin ella la instancia queda abierta | Meilisearch **no arranca protegido si no le pasas `--master-key`/`MEILI_MASTER_KEY`** |
+| **Elasticsearch** | Security **auto-configured since 8.0**, verbatim from the docs: *"Elasticsearch automatically enables security features on first startup when the node is not part of an existing cluster and none of the incompatible settings have been explicitly configured"* | **Read it carefully: there are cases in which the automatic configuration is skipped.** Verify it, do not assume it |
+| **OpenSearch** | Security plugin with **demo configuration installed automatically**, including **demo certificates**; since 2.12 it requires `OPENSEARCH_INITIAL_ADMIN_PASSWORD` | There is auth, but **with demo certificates that have to be replaced**. A production cluster with the demo certificates is not protected |
+| **Apache Solr** | **No authentication by default** and listening on all interfaces. Security is enabled with `security.json`; **if `blockUnknown` does not appear, it is `false`, which is equivalent to not requiring authentication** | The most dangerous case on the list. Solr has accumulated exposure and RCE incidents |
+| **Meilisearch / Typesense / Manticore** | They require an explicitly configured key; without it the instance is left open | Meilisearch **does not start protected if you do not pass it `--master-key`/`MEILI_MASTER_KEY`** |
 
-**Reglas**:
+**Rules**:
 
-- **Ningún buscador se expone a Internet.** Red privada, firewall por defecto-denegar
-  (`firewall-policy-standards`). Si un cliente necesita buscar, **habla con tu API, no con el
-  motor** (§5.2).
-- **Autenticación y TLS obligatorios en todo entorno alcanzable por red**, incluido el transporte
-  entre nodos y el panel de administración. Gate 8 de §4.3.
-- **Sustituye los certificados de demo** antes de que el cluster tenga un solo documento real.
-- Autorización por rol/índice/campo, con el mínimo privilegio: la aplicación que consulta **no
-  necesita permisos de gestión del cluster**. Identidad y federación:
-  `identity-access-management-standards`; la clave, en un gestor de secretos.
+- **No search engine is exposed to the Internet.** Private network, default-deny firewall
+  (`firewall-policy-standards`). If a client needs to search, **it talks to your API, not to the
+  engine** (§5.2).
+- **Authentication and TLS mandatory in every network-reachable environment**, including the transport
+  between nodes and the administration dashboard. Gate 8 of §4.3.
+- **Replace the demo certificates** before the cluster holds a single real document.
+- Authorization by role/index/field, with least privilege: the application that queries **does not
+  need cluster management permissions**. Identity and federation:
+  `identity-access-management-standards`; the key, in a secrets manager.
 
-### 5.2 No expongas la query DSL
+### 5.2 Do not expose the query DSL
 
-Dejar que el cliente envíe una consulta arbitraria al motor equivale a dejarle ejecutar SQL: puede
-leer índices y campos que no le corresponden, y puede tumbar el cluster con una agregación profunda o
-un comodín inicial (§6.3). **Tu API expone parámetros acotados y construye la consulta en servidor**
-(`api-design-standards`). Toda entrada de usuario se escapa según la sintaxis del motor; una consulta
-construida por concatenación de texto de usuario es inyección.
+Letting the client send an arbitrary query to the engine is equivalent to letting them run SQL: they can
+read indices and fields that are not theirs, and they can bring down the cluster with a deep aggregation or
+a leading wildcard (§6.3). **Your API exposes bounded parameters and builds the query on the server**
+(`api-design-standards`). Every user input is escaped according to the engine's syntax; a query
+built by concatenating user text is injection.
 
-### 5.3 Superficie de ataque y parcheo
+### 5.3 Attack surface and patching
 
-- El motor entra en el ciclo de parcheo como cualquier otra pieza. Precedentes verificados en 2026:
-  **CVE-2026-63140** (aserción alcanzable: un usuario **autenticado con pocos privilegios** tumba el
-  nodo con una consulta preparada; en cluster, una petición por nodo) y **CVE-2026-63144** (recursión
-  no controlada), **ambos corregidos en Elasticsearch 8.19.19, 9.3.8 y 9.4.4** (jul-2026), junto con
-  agotamiento de recursos vía ES|QL.
-- **Lección de esas CVEs**: *"solo usuarios autenticados"* no es mitigación cuando el permiso mínimo
-  de lectura basta. **Reduce quién tiene permiso de búsqueda y limita la complejidad de consulta.**
-- Plugins y extensiones: superficie extra y freno a los upgrades. Cada plugin necesita justificación
-  y revisión de licencia.
-- SBOM, imágenes por digest, y seguimiento de EOL de la versión mayor
+- The engine enters the patching cycle like any other piece. Precedents verified in 2026:
+  **CVE-2026-63140** (reachable assertion: an **authenticated low-privilege user** brings down the
+  node with a crafted query; on a cluster, one request per node) and **CVE-2026-63144** (uncontrolled
+  recursion), **both fixed in Elasticsearch 8.19.19, 9.3.8 and 9.4.4** (Jul 2026), together with
+  resource exhaustion via ES|QL.
+- **Lesson from those CVEs**: *"only authenticated users"* is not a mitigation when the minimum read
+  permission is enough. **Reduce who has search permission and limit query complexity.**
+- Plugins and extensions: extra surface and a brake on upgrades. Every plugin needs justification
+  and a licence review.
+- SBOM, images by digest, and tracking the EOL of the major version
   (`vulnerability-management-standards`).
 
-### 5.4 Dato personal en el índice
+### 5.4 Personal data in the index
 
-- **El índice es una copia del dato**: entra en el inventario, en la clasificación, en la retención y
-  en el derecho de supresión (`privacy-engineering-standards`).
-- **El borrado debe propagarse** al índice, a las réplicas, a los snapshots vigentes según su política
-  y a las cachés. Un documento borrado del origen que sigue indexado se sigue devolviendo.
-- **Los snapshots contienen el dato**: su retención y su cifrado son parte del plan de borrado.
-- **Filtra por permisos en la consulta al motor, no después de recibir los resultados.** Filtrar
-  después rompe el top-k y cualquier camino que olvide el filtro es una fuga (criterio compartido con
+- **The index is a copy of the data**: it goes into the inventory, the classification, the retention and
+  the right to erasure (`privacy-engineering-standards`).
+- **Deletion must propagate** to the index, to the replicas, to the snapshots in force according to their policy
+  and to the caches. A document deleted at the source that remains indexed keeps being returned.
+- **Snapshots contain the data**: their retention and their encryption are part of the erasure plan.
+- **Filter by permissions in the query to the engine, not after receiving the results.** Filtering
+  afterwards breaks the top-k and any path that forgets the filter is a leak (criteria shared with
   `rag-standards` §5.1).
-- **Los logs de búsqueda son dato personal**: contienen lo que la gente escribe. Retención acotada.
+- **Search logs are personal data**: they contain what people type. Bounded retention.
 
-## 6. Operación y rendimiento
+## 6. Operation and performance
 
-### 6.1 Shards y réplicas — el error clásico
+### 6.1 Shards and replicas — the classic mistake
 
-**El error clásico es tener demasiados shards pequeños.** Cada shard es un índice invertido completo
-con su coste fijo de memoria, ficheros, hilos y metadatos en el estado del cluster. Un cluster con
-miles de shards enanos va lento, arranca despacio y se cae por presión de memoria en el nodo maestro
-— **sin que ninguna consulta concreta parezca cara**.
+**The classic mistake is having too many small shards.** Each shard is a complete inverted index
+with its fixed cost in memory, files, threads and metadata in the cluster state. A cluster with
+thousands of dwarf shards runs slow, starts up slowly and falls over from memory pressure on the master node
+— **without any particular query looking expensive**.
 
-- **Menos shards y más grandes** es el sesgo correcto. La consulta se abanica a todos los shards y
-  el p99 lo marca el más lento: más shards **no** significa más rápido.
-- **El número de shards primarios de un índice se fija al crearlo.** Cambiarlo exige reindexar (§3.5)
-  o dividir/encoger. Piénsalo al diseñar.
-- **Réplicas**: disponibilidad y capacidad de lectura. Cada réplica es una copia completa: cuesta
-  disco y memoria. **Cero réplicas en producción es pérdida de datos garantizada** ante un fallo de
-  nodo.
-- **Índices por tiempo** (logs, eventos) en lugar de un índice gigante: hacen barato borrar por
-  retención (borrar un índice es instantáneo; borrar por consulta es carísimo) y permiten el ciclo de
-  vida de §6.2. Con *rollover* por tamaño o edad, no por intuición.
-- **El tamaño objetivo por shard se mide en tu hardware con tus documentos.** Las cifras que circulan
-  son heurísticas de la documentación de un motor concreto, en una versión concreta.
-- **Roles de nodo separados** en cualquier cluster que importe: maestros dedicados (número impar, sin
-  carga de datos), nodos de datos, nodos de coordinación/ingesta. Un maestro que también sirve
-  consultas se cae cuando llega el pico.
+- **Fewer and larger shards** is the correct bias. The query fans out to all shards and
+  the p99 is set by the slowest: more shards does **not** mean faster.
+- **The number of primary shards of an index is fixed at creation.** Changing it requires reindexing (§3.5)
+  or split/shrink. Think about it at design time.
+- **Replicas**: availability and read capacity. Each replica is a full copy: it costs
+  disk and memory. **Zero replicas in production is guaranteed data loss** on a node
+  failure.
+- **Time-based indices** (logs, events) instead of one giant index: they make deletion by
+  retention cheap (deleting an index is instantaneous; deleting by query is extremely expensive) and enable the
+  lifecycle of §6.2. With *rollover* by size or age, not by intuition.
+- **The target shard size is measured on your hardware with your documents.** The figures that circulate
+  are heuristics from the documentation of a specific engine, in a specific version.
+- **Separate node roles** in any cluster that matters: dedicated masters (odd number, without
+  data load), data nodes, coordinating/ingest nodes. A master that also serves
+  queries falls over when the peak arrives.
 
-### 6.2 Ciclo de vida, snapshots y upgrades
+### 6.2 Lifecycle, snapshots and upgrades
 
-- **Ciclo de vida por temperatura** (caliente / templado / frío / congelado) para datos con patrón
-  temporal: hardware caro solo para lo reciente. **Automatizado por política, no por cron artesanal.**
-  El caso concreto de logs es de `observability-standards`.
-- **Snapshots incrementales a repositorio de object storage**, versionado, cifrado y con inmutabilidad
-  (`object-storage-standards`, `backup-recovery-standards`). **Un snapshot sin restore probado y
-  cronometrado no existe** (gate 7).
-- **Compatibilidad de snapshots entre versiones mayores es limitada**: un snapshot no siempre restaura
-  en la versión que tienes hoy. Anota la versión con el snapshot.
-- **Actualizaciones de versión mayor**: el punto duro del dominio. Suelen soportar leer índices de la
-  mayor anterior, **pero no de dos atrás**. Consecuencia: **un índice viejo obliga a reindexar antes
-  de poder saltar de versión**, y si nunca reindexas acumulas deuda hasta que un upgrade se vuelve un
-  proyecto. **Reindexar periódicamente no es higiene opcional: es lo que mantiene el cluster
-  actualizable.**
-- Ensaya el upgrade en un entorno con datos representativos, con rollback definido, y **nunca saltes a
-  una `.0` en producción** (criterio heredado de `data-platform-standards`).
+- **Lifecycle by temperature** (hot / warm / cold / frozen) for data with a temporal pattern:
+  expensive hardware only for the recent. **Automated by policy, not by artisanal cron.**
+  The specific case of logs belongs to `observability-standards`.
+- **Incremental snapshots to an object storage repository**, versioned, encrypted and with immutability
+  (`object-storage-standards`, `backup-recovery-standards`). **A snapshot without a tested and
+  timed restore does not exist** (gate 7).
+- **Snapshot compatibility across major versions is limited**: a snapshot does not always restore
+  on the version you have today. Record the version with the snapshot.
+- **Major version upgrades**: the hard point of the domain. They usually support reading indices from
+  the previous major, **but not from two back**. Consequence: **an old index forces a reindex before
+  you can jump versions**, and if you never reindex you accumulate debt until an upgrade becomes a
+  project. **Reindexing periodically is not optional hygiene: it is what keeps the cluster
+  upgradable.**
+- Rehearse the upgrade in an environment with representative data, with a defined rollback, and **never jump to
+  a `.0` in production** (criteria inherited from `data-platform-standards`).
 
-### 6.3 Consultas caras — las que hay que prohibir
+### 6.3 Expensive queries — the ones to forbid
 
-| Patrón | Por qué es caro | Alternativa |
+| Pattern | Why it is expensive | Alternative |
 |---|---|---|
-| **Comodín al principio** (`*texto`) | Obliga a recorrer el diccionario de términos entero | Índice invertido de sufijos, n-gramas al indexar, o campo `keyword` normalizado |
-| **Paginación profunda con `from`/`offset` grande** | Cada shard debe ordenar y devolver `from+size` resultados, y el coordinador fusionarlos: coste que crece con la profundidad, y **puede tumbar el nodo** | **`search_after`** (cursor sobre la clave de ordenación) para navegación; *scroll*/PIT o *point-in-time* para exportación masiva. **La paginación profunda casi siempre es un requisito de producto mal planteado**: nadie va a la página 400 |
-| **Agregaciones profundas y de alta cardinalidad** | Memoria proporcional al número de *buckets*; agrupar por un campo casi único revienta el nodo | Limitar cardinalidad, precalcular, o mover la pregunta al almacén analítico |
-| **Ordenar o agregar por un campo `text`** | Requiere estructuras de datos que se construyen en memoria y son enormes | Subcampo `keyword` (§3.3) |
-| **Consultas con `script` en el camino caliente** | Se ejecutan por documento | Precalcular en la ingesta |
-| **Consultas sin timeout ni límite** | Una sola puede degradar el cluster para todos | Timeouts, límites, *circuit breakers* y aislamiento de cargas |
+| **Leading wildcard** (`*texto`) | Forces a scan of the entire term dictionary | Inverted index of suffixes, n-grams at indexing time, or a normalised `keyword` field |
+| **Deep pagination with a large `from`/`offset`** | Each shard must sort and return `from+size` results, and the coordinator merge them: a cost that grows with depth, and **it can bring the node down** | **`search_after`** (cursor over the sort key) for navigation; *scroll*/PIT or *point-in-time* for bulk export. **Deep pagination is almost always a badly-framed product requirement**: nobody goes to page 400 |
+| **Deep, high-cardinality aggregations** | Memory proportional to the number of *buckets*; grouping by an almost-unique field blows up the node | Limit cardinality, precompute, or move the question to the analytical store |
+| **Sorting or aggregating on a `text` field** | Requires data structures that are built in memory and are enormous | `keyword` subfield (§3.3) |
+| **Queries with a `script` on the hot path** | They run per document | Precompute at ingestion |
+| **Queries without timeout or limit** | A single one can degrade the cluster for everybody | Timeouts, limits, *circuit breakers* and workload isolation |
 
-**Caché**: los motores cachean a varios niveles (consulta, filtro, petición, y el *page cache* del
-sistema operativo, que suele ser el más importante). Consecuencias: **deja RAM libre para el sistema
-operativo en vez de dársela toda a la JVM**, y **las consultas con timestamps precisos —`now`, ahora
-mismo— no cachean**: redondea las ventanas temporales y el ratio de acierto cambia radicalmente.
+**Cache**: engines cache at several levels (query, filter, request, and the operating system's
+*page cache*, which is usually the most important). Consequences: **leave RAM free for the operating
+system instead of giving it all to the JVM**, and **queries with precise timestamps —`now`, right
+now— do not cache**: round the time windows and the hit ratio changes radically.
 
-### 6.4 Frescura, observabilidad y runbook
+### 6.4 Freshness, observability and runbook
 
-- **El índice va con retraso respecto a la fuente de verdad**, y ese retraso es un requisito de
-  producto: mídelo, ponle SLO si el negocio depende de él, y **alerta cuando el pipeline de
-  indexación se para** — el fallo silencioso característico es un buscador que devuelve resultados
-  perfectamente creíbles pero de hace tres días.
-- Instrumenta (transporte y backend: `observability-standards`): salud del cluster y shards sin
-  asignar, latencia p95/p99 de búsqueda **por tipo de consulta**, retraso de indexación, presión de
-  memoria y pausas de GC, uso de disco (**un nodo que cruza el umbral de espacio se pone en solo
-  lectura y la escritura muere en silencio**), rechazos por cola llena, **tasa de consultas con cero
-  resultados** (métrica de producto, no de infraestructura) y consultas lentas.
-- Runbook mínimo: shards sin asignar tras un reinicio; disco lleno y cluster en solo lectura; pipeline
-  de indexación parado; consulta que degrada el cluster; nodo maestro inestable; reindexado a medias
-  con el alias en el índice equivocado; snapshot que no restaura en la versión actual; buscador
-  descubierto expuesto sin autenticación (**incidente de seguridad**:
+- **The index lags behind the source of truth**, and that lag is a product
+  requirement: measure it, give it an SLO if the business depends on it, and **alert when the indexing
+  pipeline stops** — the characteristic silent failure is a search engine returning results
+  that are perfectly plausible but three days old.
+- Instrument (transport and backend: `observability-standards`): cluster health and unassigned
+  shards, p95/p99 search latency **by query type**, indexing lag, memory pressure
+  and GC pauses, disk usage (**a node that crosses the space threshold goes read-only and writes
+  die silently**), rejections from a full queue, **zero-result query rate**
+  (a product metric, not an infrastructure one) and slow queries.
+- Minimum runbook: unassigned shards after a restart; full disk and cluster read-only; indexing
+  pipeline stopped; a query that degrades the cluster; unstable master node; half-finished reindex
+  with the alias on the wrong index; a snapshot that does not restore on the current version; a search engine
+  discovered exposed without authentication (**security incident**:
   `incident-response-forensics-standards`).
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia de revisión: 3 meses** (la licencia y los CVEs mandan; el resto se mueve más despacio).
+**Review cadence: 3 months** (the licence and the CVEs set the pace; the rest moves more slowly).
 
-- Revisar: **licencia del motor y de sus plugins**, versión y EOL de la mayor, CVEs, y si la lista de
-  juicios sigue representando el tráfico real de búsqueda.
-- **La lista de juicios y el mapeo versionado son los activos que sobreviven al motor.** Si mañana
-  migras de Elasticsearch a OpenSearch, son lo único que se conserva.
-- Deuda consciente registrada: mapeo dinámico pendiente de cerrar, reindexado nunca ensayado,
-  relevancia sin medir, certificados de demo aún en uso.
+- Review: **the engine's licence and that of its plugins**, version and EOL of the major, CVEs, and whether the
+  judgment list still represents real search traffic.
+- **The judgment list and the versioned mapping are the assets that outlive the engine.** If tomorrow
+  you migrate from Elasticsearch to OpenSearch, they are the only thing that is preserved.
+- Conscious debt recorded: dynamic mapping pending closure, reindex never rehearsed,
+  relevance unmeasured, demo certificates still in use.
 
-**PROHIBIDO**
+**FORBIDDEN**
 
-- ❌ Desplegar un cluster de búsqueda sin haber comprobado que el full-text de PostgreSQL no llegaba,
-  y sin ADR con el coste operativo asumido.
-- ❌ **Elegir motor sin leer su fichero de licencia**, o asumir la licencia que tenía la última vez.
-- ❌ Asumir que un binario de Elasticsearch te llega bajo AGPLv3 sin comprobar el artefacto (§2.2).
-- ❌ Usar módulos Enterprise de Meilisearch en producción sin contrato comercial (BSL 1.1).
-- ❌ **Mapeo dinámico permisivo en producción.** Ningún objeto de claves libres sin acotar.
-- ❌ Modelar identificadores, SKUs, códigos, enums o emails como `text`.
-- ❌ Ordenar, facetar o agregar sobre un campo `text`.
-- ❌ Consultar un índice por su nombre real en vez de por un alias.
-- ❌ Un solo analizador para un corpus multilingüe.
-- ❌ Aplicar `asciifolding` sin campo sin plegar que desempate, o usar la lista de stopwords estándar
-  del español en un corpus donde la negación importa.
-- ❌ Divergencia entre analizador de indexación y de consulta.
-- ❌ Cambiar mapeo, analizadores o sinónimos **sin evaluación de relevancia** contra la lista de juicios.
-- ❌ **"A mí me sale bien" como validación de relevancia.** Sin lista de juicios no hay medición.
-- ❌ Tocar los parámetros de BM25 antes de revisar analizadores, campos y pesos.
-- ❌ Aplicar sinónimos en indexación cuando podían aplicarse en consulta.
-- ❌ **Tratar el buscador como fuente de verdad**, o no poder reconstruirlo desde el origen.
-- ❌ Miles de shards pequeños; o cero réplicas en producción.
-- ❌ Índice único gigante para datos con patrón temporal en lugar de índices por tiempo con retención.
-- ❌ Snapshot sin restore probado y cronometrado; upgrade de versión mayor sin ensayo ni rollback;
-  saltar a una `.0` en producción.
-- ❌ Acumular índices sin reindexar hasta que el upgrade de versión mayor sea imposible.
-- ❌ **Exponer el motor a Internet**, o **exponer su query DSL a clientes**.
-- ❌ Arrancar sin autenticación ni TLS en cualquier entorno alcanzable por red; dejar los
-  certificados o contraseñas de demo.
-- ❌ Filtrar permisos después de recibir los resultados en vez de en la consulta al motor.
-- ❌ Comodín inicial, `from`/`offset` profundo, agregaciones de alta cardinalidad sin límite, o
-  consultas sin timeout, en el camino caliente.
-- ❌ Usar esta skill para decidir el backend de logs (es de `observability-standards`) o para escribir
-  reglas de SIEM (es de `detection-engineering-standards`).
-- ❌ Duplicar aquí el criterio de fusión híbrida de `rag-standards` o el de operación del índice
-  vectorial de `vector-db-standards`.
-- ❌ Fijar de memoria una versión, una licencia, un tamaño de shard o una cifra de rendimiento (§8).
+- ❌ Deploying a search cluster without having checked that PostgreSQL full-text did not reach,
+  and without an ADR with the operational cost accepted.
+- ❌ **Choosing an engine without reading its licence file**, or assuming the licence it had the last time.
+- ❌ Assuming that an Elasticsearch binary reaches you under AGPLv3 without checking the artifact (§2.2).
+- ❌ Using Meilisearch Enterprise modules in production without a commercial contract (BSL 1.1).
+- ❌ **Permissive dynamic mapping in production.** No free-key object without bounds.
+- ❌ Modelling identifiers, SKUs, codes, enums or emails as `text`.
+- ❌ Sorting, faceting or aggregating on a `text` field.
+- ❌ Querying an index by its real name instead of by an alias.
+- ❌ A single analyzer for a multilingual corpus.
+- ❌ Applying `asciifolding` without an unfolded field to break ties, or using the standard Spanish
+  stopword list in a corpus where negation matters.
+- ❌ Divergence between the indexing and the query analyzer.
+- ❌ Changing mapping, analyzers or synonyms **without a relevance evaluation** against the judgment list.
+- ❌ **"It works for me" as relevance validation.** Without a judgment list there is no measurement.
+- ❌ Touching the BM25 parameters before reviewing analyzers, fields and weights.
+- ❌ Applying synonyms at indexing time when they could have been applied at query time.
+- ❌ **Treating the search engine as the source of truth**, or not being able to rebuild it from the source.
+- ❌ Thousands of small shards; or zero replicas in production.
+- ❌ A single giant index for data with a temporal pattern instead of time-based indices with retention.
+- ❌ A snapshot without a tested and timed restore; a major version upgrade without a rehearsal or rollback;
+  jumping to a `.0` in production.
+- ❌ Accumulating indices without reindexing until the major version upgrade becomes impossible.
+- ❌ **Exposing the engine to the Internet**, or **exposing its query DSL to clients**.
+- ❌ Starting without authentication or TLS in any network-reachable environment; leaving the
+  demo certificates or passwords.
+- ❌ Filtering permissions after receiving the results instead of in the query to the engine.
+- ❌ A leading wildcard, deep `from`/`offset`, high-cardinality aggregations without a limit, or
+  queries without a timeout, on the hot path.
+- ❌ Using this skill to decide the log backend (that belongs to `observability-standards`) or to write
+  SIEM rules (that belongs to `detection-engineering-standards`).
+- ❌ Duplicating here the hybrid fusion criteria of `rag-standards` or the vector index operation
+  criteria of `vector-db-standards`.
+- ❌ Pinning a version, a licence, a shard size or a performance figure from memory (§8).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-1. **Licencia de cada motor** — el dato que decide, y el que más ha cambiado. Verificado a ago-2026
-   leyendo los ficheros `LICENSE` del repositorio (no resúmenes de páginas HTML, que **inventan
-   fechas y llegan a invertir el sentido de una frase**): Elasticsearch **triple AGPLv3-only / SSPL
-   v1 / Elastic License 2.0**; OpenSearch **Apache-2.0**; Meilisearch **`MIT AND BUSL-1.1`** con
-   Enterprise Edition bajo BSL; Typesense **GPL-3.0**; Manticore **GPL-3.0**; Vespa, Solr y Quickwit
-   **Apache-2.0**. **Reverifica cada trimestre.**
-2. **Versiones**, vía feeds Atom de releases: Elasticsearch **9.4.4** (jul-2026), OpenSearch **3.7.0**
-   (jun-2026) y **2.19.6**, Meilisearch **1.52.0** (ago-2026), Typesense **30.2** (abr-2026, rama
-   `v31` activa), Manticore **28.6.6** (jul-2026), Vespa **8.731.x**, Solr **10.0.0** (mar-2026),
-   Quickwit **0.9.0** (jul-2026).
-3. **Gobernanza de OpenSearch**: **OpenSearch Software Foundation**, proyecto de la **Linux
-   Foundation**, propiedad transferida desde Amazon, anunciada el **16-sep-2024**. Confirma que no ha
-   cambiado.
-4. **Estado de proyecto**: Quickwit **adquirido por Datadog (ene-2025)**, relicenciado a Apache-2.0 y
-   **con actividad confirmada en ago-2026**. Comprueba si algún otro ha sido adquirido o abandonado.
-5. **CVEs y EOL**: Elasticsearch **CVE-2026-63140** y **CVE-2026-63144** corregidos en 8.19.19 / 9.3.8
-   / 9.4.4 (jul-2026). Consulta los boletines del motor y de sus plugins antes de fijar versión.
-6. **Autenticación por defecto** de la versión concreta que despliegas (§5.1). Verificado verbatim en
-   documentación oficial para Elasticsearch, OpenSearch y Solr.
-7. **Compatibilidad de snapshots y de índices entre versiones mayores** antes de planificar un
+1. **Licence of each engine** — the datum that decides, and the one that has changed the most. Verified as of Aug 2026
+   by reading the repositories' `LICENSE` files (not summaries from HTML pages, which **invent
+   dates and go as far as inverting the meaning of a sentence**): Elasticsearch **triple AGPLv3-only / SSPL
+   v1 / Elastic License 2.0**; OpenSearch **Apache-2.0**; Meilisearch **`MIT AND BUSL-1.1`** with
+   the Enterprise Edition under BSL; Typesense **GPL-3.0**; Manticore **GPL-3.0**; Vespa, Solr and Quickwit
+   **Apache-2.0**. **Re-verify every quarter.**
+2. **Versions**, via release Atom feeds: Elasticsearch **9.4.4** (Jul 2026), OpenSearch **3.7.0**
+   (Jun 2026) and **2.19.6**, Meilisearch **1.52.0** (Aug 2026), Typesense **30.2** (Apr 2026, `v31`
+   branch active), Manticore **28.6.6** (Jul 2026), Vespa **8.731.x**, Solr **10.0.0** (Mar 2026),
+   Quickwit **0.9.0** (Jul 2026).
+3. **OpenSearch governance**: **OpenSearch Software Foundation**, a **Linux
+   Foundation** project, ownership transferred from Amazon, announced on **16-Sep-2024**. Confirm it has not
+   changed.
+4. **Project status**: Quickwit **acquired by Datadog (Jan 2025)**, relicensed to Apache-2.0 and
+   **with activity confirmed as of Aug 2026**. Check whether any other has been acquired or abandoned.
+5. **CVEs and EOL**: Elasticsearch **CVE-2026-63140** and **CVE-2026-63144** fixed in 8.19.19 / 9.3.8
+   / 9.4.4 (Jul 2026). Consult the bulletins of the engine and of its plugins before pinning a version.
+6. **Default authentication** of the specific version you deploy (§5.1). Verified verbatim in
+   official documentation for Elasticsearch, OpenSearch and Solr.
+7. **Snapshot and index compatibility across major versions** before planning an
    upgrade.
-8. **Analizadores de español disponibles** en la versión de tu motor y su comportamiento — los
-   nombres y el comportamiento por defecto cambian entre versiones mayores.
-9. **Servicios gestionados equivalentes** y su modelo de licencia y precio (`aws-standards`,
+8. **Spanish analyzers available** in your engine's version and their behaviour — the
+   names and the default behaviour change between major versions.
+9. **Equivalent managed services** and their licensing and pricing model (`aws-standards`,
    `azure-standards`, `gcp-standards`).
 
-**Huecos declarados — NO rellenar de memoria**:
+**Declared gaps — do NOT fill from memory**:
 
-- **Licencia efectiva de las distribuciones binarias de Elasticsearch**: **el hueco más importante de
-  este documento.** El repositorio es triple, pero hay reportes consistentes de que los artefactos
-  descargables y las imágenes oficiales se entregan bajo **Elastic License 2.0**. **No verificado de
-  forma concluyente en esta revisión.** Si tu decisión depende de poder usar AGPLv3, comprueba el
-  fichero de licencia del artefacto concreto antes de comprometerte.
-- **Qué módulos concretos de Meilisearch caen bajo BSL 1.1**: el `LICENSE` remite a los ficheros
-  marcados como Enterprise Edition bajo `enterprise_editions`. **La lista exacta no se fija aquí**:
-  audítala en la versión que despliegues.
-- **Tamaños objetivo de shard, número de shards y umbrales de memoria**: **deliberadamente no
-  fijados.** Dependen del hardware, del tamaño de documento y del patrón de consulta; cualquier cifra
-  concreta es la heurística de la documentación de otro motor en otra versión. Se miden.
-- **Parámetros de BM25 y pesos de boosting**: no fijados. Se determinan con la lista de juicios (§4.2).
-- **Benchmarks comparativos entre motores**: no fijados. Los públicos son casi siempre de proveedor.
-- **Estado de auth por defecto de Vespa y Quickwit**: no verificado en esta revisión. Confírmalo en su
-  documentación antes de desplegar.
-- **Estado y madurez de las extensiones BM25 para PostgreSQL** (ParadeDB / `pg_search`): mencionadas
-  como opción, **no verificadas** en versión ni licencia en esta revisión.
+- **Effective licence of the Elasticsearch binary distributions**: **the most important gap in
+  this document.** The repository is triple, but there are consistent reports that the downloadable
+  artifacts and the official images are shipped under **Elastic License 2.0**. **Not verified
+  conclusively in this review.** If your decision depends on being able to use AGPLv3, check the
+  licence file of the specific artifact before committing.
+- **Which specific Meilisearch modules fall under BSL 1.1**: the `LICENSE` refers to the files
+  marked as Enterprise Edition under `enterprise_editions`. **The exact list is not pinned here**:
+  audit it in the version you deploy.
+- **Target shard sizes, number of shards and memory thresholds**: **deliberately not
+  pinned.** They depend on the hardware, the document size and the query pattern; any specific
+  figure is the heuristic of another engine's documentation in another version. They are measured.
+- **BM25 parameters and boosting weights**: not pinned. They are determined with the judgment list (§4.2).
+- **Comparative benchmarks between engines**: not pinned. The public ones are almost always from vendors.
+- **Default auth status of Vespa and Quickwit**: not verified in this review. Confirm it in their
+  documentation before deploying.
+- **Status and maturity of the BM25 extensions for PostgreSQL** (ParadeDB / `pg_search`): mentioned
+  as an option, **not verified** in version or licence in this review.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

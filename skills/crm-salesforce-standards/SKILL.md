@@ -3,384 +3,388 @@ name: crm-salesforce-standards
 description: Salesforce and configurable business SaaS - governor limits as an architectural constraint, clicks versus code, and licence cost as a design input. Use when working with Apex classes and triggers (.cls, .trigger), Lightning Web Components (.js-meta.xml, lwc/ directories), Visualforce, Flow Builder and .flow-meta.xml, Process Builder or Workflow Rule end of support and Migrate to Flow, SOQL and SOSL, Apex governor limits (100 SOQL, 150 DML, 10000 ms CPU, 6 MB heap) and bulkification, custom objects and __c / __r fields, record types, validation rules, profiles, permission sets and permission set groups, organization-wide defaults, role hierarchy, sharing rules and Apex managed sharing, WITH USER_MODE, WITH SECURITY_ENFORCED, Security.stripInaccessible and without sharing classes, sfdx-project.json, package.xml, Metadata API, Salesforce CLI (sf project deploy), scratch orgs, unlocked and managed packages, sandbox types and refresh intervals, change sets, AppExchange package due diligence and the security review, Salesforce API request allocations per edition, data and file storage allocations, Sales Cloud or Service Cloud edition pricing, or a Salesforce renewal negotiation.
 ---
 
-# Estándares de CRM Salesforce y SaaS de negocio configurable
+# CRM Salesforce and configurable business SaaS standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Salesforce como **plataforma multi-inquilino configurable**: los límites que impone y que no se
-negocian, el criterio de configuración frente a código, el modelo de datos y su coste, la seguridad
-de registro y de campo —que es donde se filtran los datos—, el gobierno de entornos y despliegue, la
-*due diligence* de un paquete de AppExchange, y **la licencia y el coste como entrada de diseño, no
-como partida de compras**.
+Salesforce as a **configurable multi-tenant platform**: the limits it imposes and that are not
+negotiable, the criteria for configuration versus code, the data model and its cost, record-level
+and field-level security —which is where data leaks—, environment and deployment governance, the
+*due diligence* of an AppExchange package, and **the licence and its cost as a design input, not
+as a procurement line item**.
 
 Triggers: `.cls`, `.trigger`, `lwc/`, `.js-meta.xml`, Visualforce, Flow Builder, `.flow-meta.xml`,
-Migrate to Flow, SOQL/SOSL, límites de gobernador, *bulkification*, objetos y campos `__c`/`__r`,
-tipos de registro, reglas de validación, perfiles, conjuntos de permisos y grupos de conjuntos,
-OWD, jerarquía de roles, reglas de compartición, `WITH USER_MODE`, `WITH SECURITY_ENFORCED`,
+Migrate to Flow, SOQL/SOSL, governor limits, *bulkification*, `__c`/`__r` objects and fields,
+record types, validation rules, profiles, permission sets and permission set groups,
+OWD, role hierarchy, sharing rules, `WITH USER_MODE`, `WITH SECURITY_ENFORCED`,
 `Security.stripInaccessible`, `without sharing`, `sfdx-project.json`, `package.xml`, Metadata API,
-`sf project deploy`, *scratch orgs*, paquetes desbloqueados y gestionados, *sandboxes* y su intervalo
-de refresco, *change sets*, AppExchange, cuota de API por edición, almacenamiento de datos y de
-ficheros, ediciones y renovación.
+`sf project deploy`, *scratch orgs*, unlocked and managed packages, *sandboxes* and their refresh
+interval, *change sets*, AppExchange, API allocation per edition, data and file storage,
+editions and renewal.
 
-**Tesis de la skill: en Salesforce no eliges tu arquitectura, eliges cómo vives dentro de la de
-otro.** Los límites de gobernador, el calendario de tres releases al año, el modelo de compartición y
-la lista de precios son constantes externas. Todo el diseño consiste en **acomodarse a ellas antes de
-construir**, porque descubrirlas después no produce un refactor: produce un rediseño con datos ya en
-producción. Corolario que ordena el documento: **cualquier decisión que multiplique registros,
-llamadas a API, almacenamiento o asientos es una decisión de coste**, y el coste se estima en el
-diseño, no en la factura.
+**Thesis of this skill: in Salesforce you do not choose your architecture, you choose how you live
+inside someone else's.** Governor limits, the three-releases-a-year calendar, the sharing model and
+the price list are external constants. The whole of design consists of **accommodating them before
+building**, because discovering them afterwards does not produce a refactor: it produces a redesign
+with data already in production. Corollary that orders this document: **any decision that multiplies
+records, API calls, storage or seats is a cost decision**, and cost is estimated at design time,
+not on the invoice.
 
-**No aplica**: ver `api-design-standards` (**frontera dura**: el **contrato** de la integración —
-OpenAPI, versionado, paginación, `Idempotency-Key`, formato de error, firma de webhook. Aquí solo
-**cuánto consume ese contrato de tu cuota** y qué límite de plataforma lo rompe),
-`identity-access-management-standards` (SSO/SAML/OIDC, MFA, aprovisionamiento SCIM, ciclo
-joiner-mover-leaver. Aquí la **autorización dentro de la org** —perfiles, permisos, compartición— que
-es cosa distinta: quién entra es suyo, qué ve una vez dentro es de aquí), `cicd-standards` (el
-*pipeline*, sus *gates*, OIDC y firma de artefacto. Aquí **qué se despliega y desde dónde**, y por qué
-un cambio en producción es el pecado original de la plataforma), `privacy-engineering-standards`
-(**recíproca declarada y de uso constante**: la obligación de minimizar, retener y suprimir, el DSAR
-y la anonimización de entornos no productivos. Aquí, **su implementación en esta plataforma** y el
-hecho de que el almacenamiento sea una partida creciente),
-`data-governance-quality-standards` (propiedad del dato, catálogo, dimensiones de calidad),
-`data-platform-standards` y `analytics-bi-standards` (la analítica fuera del CRM; sacar datos del CRM
-a un almacén es casi siempre la respuesta correcta, y su diseño es suyo),
-`opensource-licensing-standards` (licencias de software libre; aquí licencia **comercial de SaaS**),
-`erp-sap-standards` (**recíproca del bloque**: allí el ERP como sistema de registro y su
-licenciamiento por documento — y ojo, **un CRM que crea pedidos en un SAP dispara acceso indirecto**:
-esa decisión se valora allí antes de construirse aquí), `appsec-standards` (metodología de amenazas y
-triaje), `testing-qa-standards` (estrategia de prueba general), `frontend-frameworks-standards` (LWC
-usa estándares web, pero su ciclo de vida y sus límites son de esta plataforma),
-`ai-governance-standards` (gobierno de los agentes y copilotos que se despliegan sobre el CRM).
+**Not applicable**: see `api-design-standards` (**hard boundary**: the integration **contract** —
+OpenAPI, versioning, pagination, `Idempotency-Key`, error format, webhook signature. Here only
+**how much that contract consumes of your allocation** and which platform limit breaks it),
+`identity-access-management-standards` (SSO/SAML/OIDC, MFA, SCIM provisioning,
+joiner-mover-leaver lifecycle. Here the **authorisation inside the org** —profiles, permissions,
+sharing— which is a different thing: who gets in is theirs, what they see once inside is
+ours), `cicd-standards` (the *pipeline*, its *gates*, OIDC and artifact signing. Here **what is
+deployed and from where**, and why a change in production is the platform's original sin),
+`privacy-engineering-standards` (**declared reciprocal, in constant use**: the obligation to
+minimise, retain and delete, the DSAR and the anonymisation of non-production environments. Here,
+**its implementation on this platform** and the fact that storage is a growing line item),
+`data-governance-quality-standards` (data ownership, catalogue, quality dimensions),
+`data-platform-standards` and `analytics-bi-standards` (analytics outside the CRM; getting data out
+of the CRM into a warehouse is almost always the right answer, and its design is theirs),
+`opensource-licensing-standards` (free software licences; here **commercial SaaS** licensing),
+`erp-sap-standards` (**reciprocal of the block**: there the ERP as system of record and its
+per-document licensing — and beware, **a CRM that creates orders in an SAP triggers indirect
+access**: that decision is assessed there before it is built here), `appsec-standards` (threat
+methodology and triage), `testing-qa-standards` (general test strategy), `frontend-frameworks-standards` (LWC
+uses web standards, but its lifecycle and its limits belong to this platform),
+`ai-governance-standards` (governance of the agents and copilots deployed on top of the CRM).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web antes de fijarlo (§8): límites, ediciones, precios y nombres de producto de
-> Salesforce **cambian cada release** (tres al año) y los precios subieron en 2025.
+> Verify on the web before committing to it (§8): Salesforce limits, editions, prices and product
+> names **change every release** (three a year) and prices went up in 2025.
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Automatización nueva | **Flow** (record-triggered), uno por objeto y por contexto | Apex si hay lógica que Flow no expresa o requiere pruebas unitarias serias |
-| Lógica en trigger | **Un trigger por objeto**, delegando a una clase manejadora | Nunca varios triggers sobre el mismo objeto |
-| Consulta y DML | **Siempre en bloque** (fuera de bucles), sin excepción | No hay |
-| Modo de ejecución de Apex | **Modo usuario** (`WITH USER_MODE` / `AccessLevel.USER_MODE`) | `SYSTEM_MODE` explícito, documentado y revisado |
-| Compartición por defecto | **OWD `Private`** y abrir con permisos/reglas | `Public Read` solo si el dato no es sensible y se justifica |
-| Asignación de permisos | **Conjuntos de permisos y grupos**; perfil mínimo | El perfil como contenedor de permisos es legado |
-| UI nueva | **LWC** | Visualforce solo para mantener lo existente |
-| Despliegue | **Metadata en control de versiones + Salesforce CLI** | *Change sets* solo como parche de emergencia registrado |
-| Empaquetado interno | **Paquetes desbloqueados** con dependencias explícitas | Metadata suelta si el dominio es pequeño y está claro |
-| Entorno de desarrollo | *Scratch org* o Developer sandbox por persona | Compartir un sandbox de desarrollo es fuente de colisiones |
-| Entorno de UAT | **Partial Copy** con plantilla y datos enmascarados | Full solo para regresión final y prueba de carga |
-| Datos históricos y analítica | **Fuera de la org**, en el almacén | Dentro solo si el proceso operativo lo necesita |
+| New automation | **Flow** (record-triggered), one per object and per context | Apex if there is logic Flow cannot express or it requires serious unit tests |
+| Logic in a trigger | **One trigger per object**, delegating to a handler class | Never several triggers on the same object |
+| Query and DML | **Always in bulk** (outside loops), no exceptions | None |
+| Apex execution mode | **User mode** (`WITH USER_MODE` / `AccessLevel.USER_MODE`) | Explicit `SYSTEM_MODE`, documented and reviewed |
+| Default sharing | **OWD `Private`** and open up with permissions/rules | `Public Read` only if the data is not sensitive and it is justified |
+| Permission assignment | **Permission sets and groups**; minimal profile | The profile as a permission container is legacy |
+| New UI | **LWC** | Visualforce only to maintain what exists |
+| Deployment | **Metadata in version control + Salesforce CLI** | *Change sets* only as a recorded emergency patch |
+| Internal packaging | **Unlocked packages** with explicit dependencies | Loose metadata if the domain is small and clear |
+| Development environment | *Scratch org* or Developer sandbox per person | Sharing a development sandbox is a source of collisions |
+| UAT environment | **Partial Copy** with template and masked data | Full only for final regression and load testing |
+| Historical data and analytics | **Outside the org**, in the warehouse | Inside only if the operational process needs it |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Límites de gobernador: restricción arquitectónica, no detalle
+### 3.1 Governor limits: an architectural constraint, not a detail
 
-Verificados en la *Apex Developer Guide* (ago-2026, §8). **Por transacción**:
+Verified in the *Apex Developer Guide* (Aug 2026, §8). **Per transaction**:
 
-| Límite | Síncrono | Asíncrono |
+| Limit | Synchronous | Asynchronous |
 |---|---|---|
-| Consultas SOQL emitidas | **100** | **200** |
-| Registros recuperados por SOQL | **50 000** | 50 000 |
-| Sentencias DML | **150** | 150 |
-| Registros procesados por DML | **10 000** | 10 000 |
-| Tiempo de CPU | **10 000 ms** | **60 000 ms** |
-| Tamaño de *heap* | **6 MB** | **12 MB** |
-| Llamadas salientes (callouts) | 100 | 100 |
-| Timeout acumulado de callouts | 120 s | 120 s |
+| SOQL queries issued | **100** | **200** |
+| Records retrieved by SOQL | **50,000** | 50,000 |
+| DML statements | **150** | 150 |
+| Records processed by DML | **10,000** | 10,000 |
+| CPU time | **10,000 ms** | **60,000 ms** |
+| *Heap* size | **6 MB** | **12 MB** |
+| Outbound calls (callouts) | 100 | 100 |
+| Cumulative callout timeout | 120 s | 120 s |
 | `sendEmail` | 10 | 10 |
-| Duración máxima de la transacción | 10 min | 10 min |
-| Profundidad de pila de triggers recursivos | 16 | 16 |
+| Maximum transaction duration | 10 min | 10 min |
+| Recursive trigger stack depth | 16 | 16 |
 
-**Lo que esto obliga, y es la consecuencia entera:** el disparador no se ejecuta una vez por registro,
-se ejecuta **una vez por lote**. Todo código se escribe asumiendo 200 registros de entrada:
-- **Ninguna consulta ni DML dentro de un bucle.** Es la causa del 90 % de las excepciones de límite.
-- Colecciones (`Map`, `Set`) para relacionar en memoria en vez de consultar por registro.
-- **Nada de recursión sin guarda**: un trigger que actualiza el mismo objeto se reentra.
-- Lo que no cabe en una transacción va a **asíncrono** (`Queueable`, Batch) **por diseño desde el
-  principio**, no como parche cuando revienta. Convertir síncrono en asíncrono tarde cambia la
-  semántica visible para el usuario.
-- **El límite de CPU es el que más sorprende**: no lo consume la base de datos, lo consumen los bucles
-  anidados y las cadenas de *flows* y triggers encadenados. Un límite de CPU agotado en producción y
-  no en el sandbox suele significar **volumen de datos**, no un cambio de código.
-- **Las pruebas deben ejercitar el volumen**: un test con un registro no prueba nada sobre el límite.
-  Test obligatorio con 200 registros para cualquier trigger o flujo de registro.
+**What this forces, and it is the whole consequence:** the trigger does not run once per record,
+it runs **once per batch**. All code is written assuming 200 input records:
+- **No query or DML inside a loop.** It is the cause of 90 % of limit exceptions.
+- Collections (`Map`, `Set`) to relate in memory instead of querying per record.
+- **No recursion without a guard**: a trigger that updates the same object re-enters.
+- What does not fit in one transaction goes **asynchronous** (`Queueable`, Batch) **by design from
+  the start**, not as a patch when it blows up. Converting synchronous into asynchronous late
+  changes the semantics visible to the user.
+- **The CPU limit is the one that surprises most**: it is not consumed by the database, it is
+  consumed by nested loops and by chains of *flows* and chained triggers. A CPU limit exhausted in
+  production and not in the sandbox usually means **data volume**, not a code change.
+- **Tests must exercise volume**: a test with one record proves nothing about the limit.
+  Mandatory test with 200 records for any trigger or record-triggered flow.
 
-### 3.2 Clics o código: el criterio honesto
+### 3.2 Clicks or code: the honest criteria
 
-Falso debate mal planteado. El criterio no es "declarativo siempre que se pueda" sino **quién podrá
-entenderlo y cambiarlo dentro de tres años, y con qué red de seguridad**.
+A false, badly posed debate. The criteria is not "declarative whenever possible" but **who will be
+able to understand it and change it three years from now, and with what safety net**.
 
-| Elige **configuración** cuando | Elige **código** cuando |
+| Choose **configuration** when | Choose **code** when |
 |---|---|
-| La lógica cabe en una decisión con pocas ramas | Hay lógica compleja, bucles reales o algoritmo |
-| El dueño funcional necesita cambiarla sin desplegar | Necesitas pruebas unitarias con aserciones serias |
-| No hay requisito de rendimiento en bloque | Procesas miles de registros o consumes CPU |
-| El comportamiento es visible y auditable en la UI | Hace falta control de errores y transaccionalidad fina |
+| The logic fits into a decision with few branches | There is complex logic, real loops or an algorithm |
+| The functional owner needs to change it without deploying | You need unit tests with serious assertions |
+| There is no bulk performance requirement | You process thousands of records or consume CPU |
+| The behaviour is visible and auditable in the UI | Fine-grained error handling and transactionality are needed |
 
-**Lo que se paga por el lado declarativo y casi nadie contabiliza:**
-- **La deuda del flujo que nadie sabe que existe.** Un Flow no aparece en un `grep`, no lo revisa
-  nadie en un PR si no está en el repositorio, y se dispara desde un cambio de registro cualquiera.
-  Cinco flujos sobre el mismo objeto producen un orden de ejecución que **nadie puede razonar**.
-  Regla dura: **el metadato declarativo vive en el control de versiones igual que el código**, y todo
-  Flow tiene descripción, dueño y motivo. Un Flow activo sin dueño se desactiva.
-- **La cadena declarativa es CPU.** Flujos que se disparan entre sí agotan el mismo límite que Apex,
-  y el error resultante señala a un sitio que no es la causa.
-- **Legado ya sin soporte**: Salesforce **terminó el soporte de Workflow Rules y Process Builder el
-  31-dic-2025**. No es una retirada —lo activo sigue ejecutándose— pero **no hay soporte ni
-  correcciones**, y ya no se pueden crear nuevos. Tratar la migración a Flow como **deuda técnica
-  urgente con fecha vencida**, no como tarea de mantenimiento. Ojo con las automatizaciones legadas
-  **dentro de paquetes gestionados**: no las puedes editar; las tiene que migrar el proveedor, y ese
-  es un punto de la *due diligence* de §3.6.
+**What the declarative side costs and almost nobody accounts for:**
+- **The debt of the flow nobody knows exists.** A Flow does not show up in a `grep`, nobody reviews
+  it in a PR if it is not in the repository, and it fires from any record change.
+  Five flows on the same object produce an execution order **nobody can reason about**.
+  Hard rule: **declarative metadata lives in version control just like code**, and every
+  Flow has a description, an owner and a reason. An active Flow without an owner is deactivated.
+- **The declarative chain is CPU.** Flows that trigger each other exhaust the same limit as Apex,
+  and the resulting error points at a place that is not the cause.
+- **Legacy already out of support**: Salesforce **ended support for Workflow Rules and Process
+  Builder on 31 Dec 2025**. It is not a retirement —what is active keeps running— but **there is no
+  support and no fixes**, and new ones can no longer be created. Treat migration to Flow as
+  **urgent technical debt past its due date**, not as a maintenance task. Beware of legacy
+  automations **inside managed packages**: you cannot edit them; the vendor has to migrate them, and
+  that is a point in the *due diligence* of §3.6.
 
-**Regla de oro transversal**: si la solución declarativa requiere quince pasos, dos subflujos y una
-fórmula ilegible, ya no es declarativa: es código escrito con el ratón, y sin pruebas.
+**Cross-cutting golden rule**: if the declarative solution requires fifteen steps, two subflows and
+an unreadable formula, it is no longer declarative: it is code written with the mouse, and untested.
 
-### 3.3 Modelo de datos y su coste
+### 3.3 Data model and its cost
 
-- **Objetos estándar antes que personalizados.** Un objeto `__c` que duplica `Opportunity` pierde
-  informes, previsiones, apps móviles y todo lo que la plataforma da gratis.
-- **Los límites de objetos, campos y relaciones dependen de la edición** y son duros: verifícalos
-  antes de diseñar (§8). Un modelo que no cabe en la edición contratada no es un problema de
-  presupuesto, es un rediseño.
-- **Relaciones maestro-detalle vs. lookup**: la primera hereda compartición y borrado en cascada — es
-  una decisión de **seguridad y de ciclo de vida**, no de modelado. Cambiarla con datos cargados es
-  costoso.
-- **Campos de fórmula y roll-up**: se evalúan al vuelo y consumen; un informe sobre fórmulas cruzadas
-  es la causa habitual de un tiempo de espera que nadie explica.
-- **Almacenamiento como partida creciente, y es el coste que sorprende:** asignación (verificada,
-  ago-2026, fuente secundaria — §8) de **10 GB de datos por org** más **20 MB por usuario**, y
-  **10 GB de ficheros por org** más **2 GB por licencia** en Enterprise/Performance/Unlimited. Un
-  registro cuenta ~**2 KB** con independencia de lo lleno que esté. Consecuencias:
-  - **El histórico de actividad, correos y campos de auditoría es lo que llena la org**, no los datos
-    de negocio. Diez millones de registros de actividad son ~20 GB que pagas cada año.
-  - **Política de archivado y retención desde el día uno**, con destino fuera de la org y borrado
-    programado. Sin ella, el coste crece monótonamente y solo se descubre en la renovación.
-  - **Adjuntos**: el patrón por defecto es almacenar el fichero fuera (almacén de objetos) y guardar
-    la referencia, salvo requisito explícito.
+- **Standard objects before custom ones.** A `__c` object that duplicates `Opportunity` loses
+  reports, forecasts, mobile apps and everything the platform gives for free.
+- **Object, field and relationship limits depend on the edition** and are hard: verify them
+  before designing (§8). A model that does not fit in the contracted edition is not a budget
+  problem, it is a redesign.
+- **Master-detail versus lookup relationships**: the former inherits sharing and cascade delete — it
+  is a **security and lifecycle** decision, not a modelling one. Changing it with data loaded is
+  expensive.
+- **Formula and roll-up fields**: they are evaluated on the fly and consume; a report over
+  cross-referenced formulas is the usual cause of a timeout nobody can explain.
+- **Storage as a growing line item, and it is the cost that surprises:** allocation (verified,
+  Aug 2026, secondary source — §8) of **10 GB of data per org** plus **20 MB per user**, and
+  **10 GB of files per org** plus **2 GB per licence** in Enterprise/Performance/Unlimited. A
+  record counts ~**2 KB** regardless of how full it is. Consequences:
+  - **Activity history, emails and audit fields are what fill the org**, not business
+    data. Ten million activity records are ~20 GB you pay for every year.
+  - **Archiving and retention policy from day one**, with a destination outside the org and
+    scheduled deletion. Without it, cost grows monotonically and is only discovered at renewal.
+  - **Attachments**: the default pattern is to store the file outside (object storage) and keep
+    the reference, unless there is an explicit requirement.
 
-### 3.4 Seguridad: es donde se filtran los datos
+### 3.4 Security: this is where data leaks
 
-**Modelo en capas, y hay que entender que se suman:** organización → objeto (perfil/permisos) →
-campo (FLS) → registro (OWD, roles, reglas de compartición) → código.
+**A layered model, and you have to understand that they add up:** organisation → object
+(profile/permissions) → field (FLS) → record (OWD, roles, sharing rules) → code.
 
-- **OWD `Private` por defecto** y se abre hacia arriba con jerarquía de roles, reglas de compartición
-  y compartición manual. Empezar abierto y cerrar después es imposible en la práctica: nadie sabe
-  quién dependía de qué.
-- **Perfiles al mínimo, todo lo demás en conjuntos de permisos y grupos de conjuntos.** El perfil como
-  contenedor de todo produce N perfiles casi idénticos que nadie puede auditar.
-- **Permisos que se revisan uno por uno, siempre**: `Modify All Data`, `View All Data`,
-  `Author Apex`, `Manage Users`, `Customize Application`, `API Enabled`, exportación de informes.
-  Cada uno es una vía de exfiltración completa. Lista nominal de quién los tiene, revisada
-  trimestralmente.
-- **Apex y la seguridad — el cambio grande de 2026, verbatim de la documentación**: *"In API version
+- **OWD `Private` by default** and it is opened upwards with the role hierarchy, sharing rules
+  and manual sharing. Starting open and closing later is impossible in practice: nobody knows
+  who depended on what.
+- **Profiles to the minimum, everything else in permission sets and permission set groups.** The
+  profile as a container for everything produces N nearly identical profiles nobody can audit.
+- **Permissions reviewed one by one, always**: `Modify All Data`, `View All Data`,
+  `Author Apex`, `Manage Users`, `Customize Application`, `API Enabled`, report export.
+  Each one is a complete exfiltration path. A named list of who has them, reviewed
+  quarterly.
+- **Apex and security — the big change of 2026, verbatim from the documentation**: *"In API version
   67.0 and later, Apex runs in user context by default, meaning that the current user's permissions
   and field-level security (FLS) are enforced during code execution. In API version 66.0 and earlier,
-  system mode is the default."* Consecuencias operativas, y son dos en direcciones opuestas:
-  1. **Código nuevo**: se escribe en modo usuario y punto. `SYSTEM_MODE` es una excepción explícita,
-     comentada con el motivo y revisada por alguien más.
-  2. **Código existente**: subir la versión de API de una clase antigua **puede romperla** al empezar
-     a aplicarse FLS y compartición. Subir versión de API es un cambio funcional, **se prueba**.
-- **`WITH USER_MODE` frente a `WITH SECURITY_ENFORCED`**: el segundo es el mecanismo antiguo y tiene
-  agujeros conocidos — **solo aplica a las cláusulas `SELECT` y `FROM`**, de modo que un campo sin
-  acceso usado en `WHERE` u `ORDER BY` **no da error**, y no cubre DML. Por defecto: **`WITH
-  USER_MODE`**, que además respeta reglas de restricción y de alcance. `Security.stripInaccessible`
-  cuando el requisito es **degradar** (quitar los campos inaccesibles y seguir) en vez de fallar.
-- **`without sharing`** solo con justificación escrita en el propio código. Una clase `without
-  sharing` invocada desde un componente accesible por cualquier usuario es un IDOR de manual.
-- **Sitios públicos y Experience Cloud**: el usuario invitado es el vector clásico de filtración
-  masiva. Sus permisos y su OWD se revisan aparte y con lupa; cualquier objeto accesible por el
-  usuario invitado se declara y se justifica.
-- **SOQL con concatenación de cadenas** (`Database.query`) sin `String.escapeSingleQuotes` o *bind*
-  es inyección SOQL. Metodología en `appsec-standards`; aquí el veto (§7).
-- **Datos personales**: el CRM es, por definición, un almacén de datos personales. Retención, borrado
-  y DSAR se diseñan desde el principio (cruza con `privacy-engineering-standards`) y **alcanzan a los
-  sandboxes**: una copia Full de producción en un entorno de pruebas es una brecha con nombre.
+  system mode is the default."* Operational consequences, and there are two in opposite directions:
+  1. **New code**: it is written in user mode, full stop. `SYSTEM_MODE` is an explicit exception,
+     commented with the reason and reviewed by someone else.
+  2. **Existing code**: raising the API version of an old class **may break it** as FLS and sharing
+     start being enforced. Raising the API version is a functional change, **it gets tested**.
+- **`WITH USER_MODE` versus `WITH SECURITY_ENFORCED`**: the latter is the old mechanism and has
+  known holes — **it only applies to the `SELECT` and `FROM` clauses**, so a field with no
+  access used in `WHERE` or `ORDER BY` **does not error out**, and it does not cover DML. By
+  default: **`WITH USER_MODE`**, which also respects restriction and scoping rules.
+  `Security.stripInaccessible` when the requirement is to **degrade** (strip the inaccessible fields
+  and carry on) instead of failing.
+- **`without sharing`** only with justification written in the code itself. A `without
+  sharing` class invoked from a component accessible to any user is a textbook IDOR.
+- **Public sites and Experience Cloud**: the guest user is the classic vector for massive
+  leaks. Its permissions and its OWD are reviewed separately and under a magnifying glass; any
+  object accessible to the guest user is declared and justified.
+- **SOQL with string concatenation** (`Database.query`) without `String.escapeSingleQuotes` or a
+  *bind* is SOQL injection. Methodology in `appsec-standards`; here the veto (§7).
+- **Personal data**: the CRM is, by definition, a store of personal data. Retention, deletion
+  and DSAR are designed from the start (crosses with `privacy-engineering-standards`) and **reach
+  the sandboxes**: a Full copy of production in a test environment is a breach with a name.
 
-### 3.5 Entornos y despliegue: el pecado original
+### 3.5 Environments and deployment: the original sin
 
-**El cambio directo en producción es el modo de fallo estructural de la plataforma**, porque la
-plataforma lo permite y lo hace cómodo. La consecuencia no es que se rompa algo hoy: es que **nadie
-puede reconstruir cómo llegó la org a su estado actual**, y a partir de ahí ningún entorno inferior
-representa la realidad.
+**Changing directly in production is the platform's structural failure mode**, because the
+platform allows it and makes it convenient. The consequence is not that something breaks today: it
+is that **nobody can reconstruct how the org reached its current state**, and from then on no lower
+environment represents reality.
 
-Reglas:
-- **La fuente de verdad es el repositorio**, no la org. Metadato en git, revisado en PR — incluido el
-  declarativo (§3.2).
-- **Producción es de solo lectura para humanos** salvo un conjunto cerrado y documentado de cambios
-  (parámetros operativos, usuarios). Todo lo demás llega desplegado.
-- **Excepción de emergencia**: existe, se registra con motivo y autor, y **se devuelve al repositorio
-  en menos de 24 h**. Un *hotfix* no reconciliado es una divergencia permanente.
-- **Tipos de sandbox y su restricción real** (verificado, ago-2026 — fuente secundaria, §8):
+Rules:
+- **The source of truth is the repository**, not the org. Metadata in git, reviewed in a PR —
+  including the declarative kind (§3.2).
+- **Production is read-only for humans** except for a closed and documented set of changes
+  (operational parameters, users). Everything else arrives deployed.
+- **Emergency exception**: it exists, it is recorded with reason and author, and **it is returned to
+  the repository within 24 h**. An unreconciled *hotfix* is a permanent divergence.
+- **Sandbox types and their real constraint** (verified, Aug 2026 — secondary source, §8):
 
-  | Tipo | Almacenamiento | Datos | Refresco mínimo |
+  | Type | Storage | Data | Minimum refresh |
   |---|---|---|---|
-  | Developer | 200 MB | Solo metadatos | 1 día |
-  | Developer Pro | 1 GB | Solo metadatos | 1 día |
-  | Partial Copy | 5 GB | Muestra por plantilla | 5 días |
-  | Full | Igual que producción | Todos los registros y adjuntos | **29 días** |
+  | Developer | 200 MB | Metadata only | 1 day |
+  | Developer Pro | 1 GB | Metadata only | 1 day |
+  | Partial Copy | 5 GB | Sample by template | 5 days |
+  | Full | Same as production | All records and attachments | **29 days** |
 
-  **El intervalo de 29 días del Full es una restricción de planificación, no un detalle**: si tu plan
-  de release necesita un Full recién refrescado dos veces al mes, tu plan no es ejecutable. Y el Full
-  es el **único** entorno válido para prueba de rendimiento y carga, además de una partida de coste
-  propia (suele venderse aparte o venir contado por edición).
-- **Datos en no productivos**: Partial Copy con plantilla y **enmascarado**. Copiar producción entera
-  a UAT "para probar bien" es la práctica que convierte una prueba en un incidente de privacidad.
-- **Paquetes desbloqueados** para modularizar metadato propio con dependencias explícitas; *change
-  sets* solo como parche registrado. La mecánica del pipeline es de `cicd-standards`.
+  **The Full sandbox's 29-day interval is a planning constraint, not a detail**: if your release
+  plan needs a freshly refreshed Full twice a month, your plan is not executable. And the Full
+  is the **only** valid environment for performance and load testing, as well as a cost line item
+  of its own (it is usually sold separately or comes counted per edition).
+- **Data in non-production**: Partial Copy with a template and **masked**. Copying all of production
+  into UAT "to test properly" is the practice that turns a test into a privacy incident.
+- **Unlocked packages** to modularise your own metadata with explicit dependencies; *change
+  sets* only as a recorded patch. The mechanics of the pipeline belong to `cicd-standards`.
 
-### 3.6 AppExchange: un paquete gestionado corre con tus datos
+### 3.6 AppExchange: a managed package runs with your data
 
-Instalar un paquete gestionado es **dar ejecución dentro de tu org a código que no puedes leer**.
-Salesforce lo dice sin rodeos en su propia documentación (verbatim): *"Notwithstanding any security
+Installing a managed package is **granting execution inside your org to code you cannot read**.
+Salesforce says so bluntly in its own documentation (verbatim): *"Notwithstanding any security
 review of a Partner Application, Salesforce makes no guarantees regarding the quality or security of
-any Partner Application."* La revisión de seguridad es una condición para publicar, **no una garantía
-para ti**.
+any Partner Application."* The security review is a condition for publishing, **not a guarantee
+for you**.
 
-Lista mínima antes de instalar, y ninguna es opcional:
-1. **Qué permisos pide** el paquete y qué objetos toca. Si pide `Modify All Data`, la respuesta por
-   defecto es no.
-2. **Si hace llamadas salientes**, a dónde y con qué dato. Sitios remotos autorizados, revisados.
-3. **Qué consume**: llamadas a API, almacenamiento, límites de objetos y campos personalizados — que
-   son finitos por edición y **el paquete los gasta de tu cuota**.
-4. **Estado de sus automatizaciones legadas** (Workflow/Process Builder sin soporte desde
-   dic-2025): no las puedes tocar tú.
-5. **Salida**: qué queda al desinstalar, dónde van los datos que creó y si te los llevas.
-6. **Viabilidad del proveedor** y su calendario frente a las tres releases anuales de Salesforce.
-7. **Instalación primero en sandbox**, siempre, con revisión de lo que aparece en la org.
+Minimum list before installing, and none of it is optional:
+1. **What permissions it asks for** and what objects it touches. If it asks for `Modify All Data`,
+   the default answer is no.
+2. **Whether it makes outbound calls**, where to and with what data. Authorised remote sites,
+   reviewed.
+3. **What it consumes**: API calls, storage, custom object and field limits — which
+   are finite per edition and **the package spends them out of your allocation**.
+4. **The state of its legacy automations** (Workflow/Process Builder unsupported since
+   Dec 2025): you cannot touch them yourself.
+5. **Exit**: what is left after uninstalling, where the data it created goes and whether you take it
+   with you.
+6. **Vendor viability** and its calendar against Salesforce's three annual releases.
+7. **Install in a sandbox first**, always, with a review of what shows up in the org.
 
-### 3.7 Licencia y coste: la renovación es el único momento de negociar
+### 3.7 Licence and cost: renewal is the only moment to negotiate
 
-- **La cuota de API es por edición y por licencia** (verificado, ago-2026): Enterprise y Professional
-  con acceso a API, **1 000 llamadas por licencia**; Unlimited y Performance, **5 000**; total =
-  **100 000 + (licencias × llamadas por tipo) + add-ons comprados**. Developer Edition, **15 000**.
-  Full sandbox, **5 000 000**. **Concurrencia**: 25 peticiones concurrentes de larga duración en
-  producción y sandbox, 5 en Developer/trial.
-  - **Consecuencia de diseño**: una integración que sondea cada minuto consume ~43 200 llamadas/día
-    **de tu cuota compartida**, y cuando la agota **fallan todas las integraciones, no solo la
-    culpable**. Por defecto: eventos y APIs en bloque (Bulk/Composite) frente a sondeo por registro.
-    El límite de concurrencia obliga además a acotar consultas largas: 25 no es un número grande.
-- **Ediciones y precio**: la lista pública de Salesforce cambia y **subió en 2025**. En ago-2026 las
-  fuentes secundarias sitúan Sales Cloud en Starter Suite 25 $, Pro Suite 100 $, Enterprise 175 $,
-  Unlimited 350 $ y el nivel superior (Agentforce 1 Sales, antes Einstein 1) 550 $ por usuario y mes
-  con facturación anual. **`salesforce.com` devolvió 403 a la verificación automatizada: trátalo como
-  orden de magnitud y confírmalo en la página oficial antes de usarlo (§8).** Muchas páginas siguen
-  citando la lista anterior (165 $/330 $): **cifra sin fecha, cifra inservible**.
-- **Lo que no está en el precio por asiento** y hay que presupuestar aparte: sandboxes adicionales
-  (señaladamente el Full), llamadas de API adicionales, almacenamiento por encima de la asignación,
-  planes de soporte superiores (un porcentaje sobre la licencia neta), y las licencias de los
-  paquetes de AppExchange.
-- **La renovación es el único momento con palanca real.** Prepararla **seis meses antes**, con:
-  inventario de asientos **realmente usados** (login en los últimos 90 días), tipos de licencia
-  ajustados a la tarea, consumo medido de API y almacenamiento, y lista de módulos contratados que
-  nadie usa. Sin ese dato, la renovación es aceptar la propuesta del proveedor.
-- **Auditoría del propio uso, trimestral**: asientos inactivos, permisos administrativos, paquetes
-  instalados, integraciones activas. En SaaS el coste no crece por decisión, crece por acumulación.
+- **The API allocation is per edition and per licence** (verified, Aug 2026): Enterprise and
+  Professional with API access, **1,000 calls per licence**; Unlimited and Performance, **5,000**;
+  total = **100,000 + (licences × calls per type) + purchased add-ons**. Developer Edition,
+  **15,000**. Full sandbox, **5,000,000**. **Concurrency**: 25 concurrent long-running requests in
+  production and sandbox, 5 in Developer/trial.
+  - **Design consequence**: an integration that polls every minute consumes ~43,200 calls/day
+    **from your shared allocation**, and when it exhausts it **all integrations fail, not just the
+    guilty one**. By default: events and bulk APIs (Bulk/Composite) over per-record polling.
+    The concurrency limit also forces you to bound long queries: 25 is not a big number.
+- **Editions and price**: Salesforce's public list changes and **went up in 2025**. As of Aug 2026,
+  secondary sources put Sales Cloud at Starter Suite $25, Pro Suite $100, Enterprise $175,
+  Unlimited $350 and the top tier (Agentforce 1 Sales, formerly Einstein 1) $550 per user per month
+  billed annually. **`salesforce.com` returned 403 to automated verification: treat it as an
+  order of magnitude and confirm it on the official page before using it (§8).** Many pages still
+  quote the previous list ($165/$330): **a figure without a date is a useless figure**.
+- **What is not in the per-seat price** and has to be budgeted separately: additional sandboxes
+  (notably the Full one), additional API calls, storage above the allocation,
+  higher support plans (a percentage of the net licence), and the licences for
+  AppExchange packages.
+- **Renewal is the only moment with real leverage.** Prepare it **six months ahead**, with:
+  an inventory of seats **actually used** (login in the last 90 days), licence types
+  matched to the job, measured API and storage consumption, and a list of contracted modules
+  nobody uses. Without that data, renewal is accepting the vendor's proposal.
+- **Audit of your own usage, quarterly**: inactive seats, administrative permissions, installed
+  packages, active integrations. In SaaS cost does not grow by decision, it grows by accumulation.
 
-## 4. Calidad y verificación
+## 4. Quality and verification
 
-En orden de coste creciente; los tres primeros son gates que rompen el build:
-1. **Análisis estático** con el escáner de código de Salesforce (Code Analyzer / PMD con el ruleset
-   de Apex) sobre reglas duras: DML o SOQL en bucle, `without sharing` sin justificar, SOQL dinámica
-   sin escapar, ausencia de aserciones.
-2. **Pruebas Apex con aserciones reales.** El mínimo del **75 % de cobertura para desplegar es un
-   umbral de la plataforma, no un objetivo de calidad**: un test sin `Assert` cubre líneas y no
-   comprueba nada. Prohibido `SeeAllData=true` (§7); los datos los crea el test.
-3. **Prueba en bloque obligatoria**: 200 registros por trigger y por flujo de registro. Un test de un
-   registro no dice nada sobre los límites de §3.1.
-4. **Prueba negativa de permisos**: ejecutar como usuario de perfil restringido (`System.runAs`) y
-   comprobar que **no** ve lo que no debe. Es el único test que detecta la fuga de §3.4.
-5. **Despliegue validado contra Full sandbox** antes de producción, con el conjunto de pruebas local.
-6. **Regresión de proceso de negocio de extremo a extremo** en cada una de las **tres releases
-   anuales** de Salesforce: la actualización llega tanto si estás listo como si no. La ventana de
-   *preview* del sandbox existe para esto y se usa.
+In order of increasing cost; the first three are gates that break the build:
+1. **Static analysis** with Salesforce's code scanner (Code Analyzer / PMD with the Apex
+   ruleset) over hard rules: DML or SOQL in a loop, unjustified `without sharing`, dynamic SOQL
+   without escaping, absence of assertions.
+2. **Apex tests with real assertions.** The **75 % coverage minimum to deploy is a platform
+   threshold, not a quality goal**: a test without an `Assert` covers lines and checks nothing.
+   `SeeAllData=true` is forbidden (§7); the test creates its data.
+3. **Mandatory bulk test**: 200 records per trigger and per record-triggered flow. A one-record
+   test says nothing about the limits of §3.1.
+4. **Negative permission test**: run as a restricted-profile user (`System.runAs`) and
+   check that it does **not** see what it must not. It is the only test that detects the leak of §3.4.
+5. **Deployment validated against a Full sandbox** before production, with the local test suite.
+6. **End-to-end business process regression** on each of Salesforce's **three annual
+   releases**: the update arrives whether you are ready or not. The sandbox
+   *preview* window exists for this and gets used.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-Cubierto en §3.4 (modelo de permisos y modo de ejecución) y §3.6 (paquetes). Añadidos:
-- **Registro de eventos y monitorización**: exportación de informes, descargas masivas y accesos de
-  API se vigilan. La exfiltración típica no es un exploit: es un usuario legítimo exportando un
-  informe completo. Requiere edición/complemento concreto — verifica qué te da el tuyo.
-- **Cuentas de integración**: una por integración, con conjunto de permisos mínimo, sin interfaz de
-  usuario y con credenciales en gestor de secretos. Jamás la cuenta de un administrador humano.
-- **Restricción de IP y políticas de sesión** para perfiles administrativos y de integración.
-- **La cuenta del administrador es objetivo prioritario**: MFA obligatorio, número mínimo de
-  administradores, revisión nominal. Detalle de identidad en `identity-access-management-standards`.
-- **Secretos en el metadato**: prohibido. Ni en fórmulas, ni en configuración personalizada visible,
-  ni en Flows. Named Credentials y Protected Custom Metadata.
+Covered in §3.4 (permission model and execution mode) and §3.6 (packages). Additions:
+- **Event logging and monitoring**: report exports, bulk downloads and API accesses
+  are watched. Typical exfiltration is not an exploit: it is a legitimate user exporting a
+  complete report. It requires a specific edition/add-on — verify what yours gives you.
+- **Integration accounts**: one per integration, with a minimal permission set, no user
+  interface and with credentials in a secrets manager. Never a human administrator's account.
+- **IP restriction and session policies** for administrative and integration profiles.
+- **The administrator account is a priority target**: mandatory MFA, minimum number of
+  administrators, named review. Identity detail in `identity-access-management-standards`.
+- **Secrets in metadata**: forbidden. Not in formulas, nor in visible custom settings,
+  nor in Flows. Named Credentials and Protected Custom Metadata.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **El rendimiento depende del volumen de datos, no del código**: un objeto con millones de registros
-  degrada informes y consultas. Se diseña con **índices** (campos únicos, externos, `Salesforce`
-  estándar) y **desviación de propiedad** controlada (muchos registros del mismo dueño degradan el
-  cálculo de compartición).
-- **Archivado**: la política de §3.3 es también una política de rendimiento.
-- **Errores en integraciones**: reintento con backoff y **contrapresión**. Un cliente que reintenta en
-  bucle contra el límite de API deja fuera al resto de la empresa.
-- **Observabilidad**: el estado de la plataforma lo publica el proveedor y hay que consumirlo; lo tuyo
-  es medir errores de tus integraciones, consumo de cuota de API y de almacenamiento **con alerta
-  antes del umbral**, no cuando ya falla.
-- **Salida (exit)**: exportación periódica y probada de datos y metadatos fuera de la plataforma. Una
-  exportación que nunca se ha restaurado en ningún sitio no es una salida, es un fichero.
+- **Performance depends on data volume, not on code**: an object with millions of records
+  degrades reports and queries. It is designed with **indexes** (unique, external, standard
+  `Salesforce` fields) and controlled **ownership skew** (many records with the same owner degrade
+  the sharing calculation).
+- **Archiving**: the policy in §3.3 is also a performance policy.
+- **Errors in integrations**: retry with backoff and **backpressure**. A client retrying in
+  a loop against the API limit locks the rest of the company out.
+- **Observability**: platform status is published by the vendor and has to be consumed; your part
+  is measuring your integrations' errors, API allocation consumption and storage **with an alert
+  before the threshold**, not when it is already failing.
+- **Exit**: periodic and tested export of data and metadata out of the platform. An
+  export that has never been restored anywhere is not an exit, it is a file.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- ❌ **PROHIBIDO** SOQL o DML dentro de un bucle. Sin excepciones.
-- ❌ **PROHIBIDO** más de un trigger por objeto, y triggers con lógica dentro.
-- ❌ **PROHIBIDO** `@isTest(SeeAllData=true)` y los tests sin aserciones. La cobertura del 75 % es un
-  peaje de la plataforma, no una medida de calidad.
-- ❌ **PROHIBIDO** `without sharing` sin justificación escrita en el propio código y revisada.
-- ❌ **PROHIBIDO** SOQL dinámica con concatenación de entrada sin escapar o *bind*.
-- ❌ **PROHIBIDO** cambiar configuración o metadato **directamente en producción** fuera del conjunto
-  cerrado y documentado, y prohibido dejar un *hotfix* sin reconciliar con el repositorio.
-- ❌ **PROHIBIDO** copiar producción a un sandbox sin enmascarar datos personales.
-- ❌ **PROHIBIDO** instalar un paquete de AppExchange directamente en producción o sin la lista de
-  §3.6. La revisión de seguridad de Salesforce **no es una garantía**, y ellos lo dicen por escrito.
-- ❌ **PROHIBIDO** crear un objeto personalizado que duplique un objeto estándar sin decisión
-  registrada.
-- ❌ **PROHIBIDO** dar `Modify All Data` o `View All Data` por comodidad, y prohibido que un perfil
-  administrativo carezca de MFA.
-- ❌ **PROHIBIDO** una integración por sondeo por registro cuando existe API en bloque o evento.
-- ❌ **PROHIBIDO** dejar un Flow activo sin dueño, sin descripción y fuera del control de versiones.
-- ❌ **PROHIBIDO** citar un precio de Salesforce sin fecha y sin fuente: la lista cambió en 2025 y
-  medio internet cita la anterior.
-- **Cadencia**: las **tres releases anuales** son obligatorias y no se posponen — cada una tiene una
-  ventana de *preview* en sandbox que se usa para la regresión de §4. Revisión trimestral de asientos,
-  permisos administrativos, paquetes instalados e integraciones activas. Revisión de contrato **seis
-  meses antes** de la renovación.
-- **Deuda característica del dominio**: la org que acumula quince años de configuración de gente que
-  ya no está. Se combate con una sola disciplina — **nada activo sin dueño nombrado**: ni Flow, ni
-  campo, ni informe, ni integración, ni paquete. Lo que no tiene dueño se desactiva tras aviso, y lo
-  desactivado que nadie reclama en un trimestre se borra.
+- ❌ **FORBIDDEN** SOQL or DML inside a loop. No exceptions.
+- ❌ **FORBIDDEN** more than one trigger per object, and triggers with logic inside them.
+- ❌ **FORBIDDEN** `@isTest(SeeAllData=true)` and tests without assertions. The 75 % coverage is a
+  platform toll, not a quality measure.
+- ❌ **FORBIDDEN** `without sharing` without justification written in the code itself and reviewed.
+- ❌ **FORBIDDEN** dynamic SOQL with concatenated input without escaping or a *bind*.
+- ❌ **FORBIDDEN** changing configuration or metadata **directly in production** outside the closed
+  and documented set, and forbidden to leave a *hotfix* unreconciled with the repository.
+- ❌ **FORBIDDEN** copying production into a sandbox without masking personal data.
+- ❌ **FORBIDDEN** installing an AppExchange package directly in production or without the list in
+  §3.6. Salesforce's security review **is not a guarantee**, and they say so in writing.
+- ❌ **FORBIDDEN** creating a custom object that duplicates a standard object without a recorded
+  decision.
+- ❌ **FORBIDDEN** granting `Modify All Data` or `View All Data` for convenience, and forbidden for an
+  administrative profile to lack MFA.
+- ❌ **FORBIDDEN** a per-record polling integration when a bulk API or an event exists.
+- ❌ **FORBIDDEN** leaving an active Flow without an owner, without a description and outside version
+  control.
+- ❌ **FORBIDDEN** quoting a Salesforce price without a date and without a source: the list changed in
+  2025 and half the internet quotes the previous one.
+- **Cadence**: the **three annual releases** are mandatory and are not postponed — each has a
+  *preview* window in a sandbox that is used for the regression in §4. Quarterly review of seats,
+  administrative permissions, installed packages and active integrations. Contract review **six
+  months before** renewal.
+- **Debt characteristic of the domain**: the org that accumulates fifteen years of configuration by
+  people who are no longer there. It is fought with a single discipline — **nothing active without a
+  named owner**: no Flow, no field, no report, no integration, no package. What has no owner is
+  deactivated after notice, and what is deactivated and nobody claims within a quarter is deleted.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier dato de este documento:
+Before committing to any datum in this document:
 
-1. **Límites de gobernador**: la tabla de §3.1 se verificó verbatim en la *Apex Developer Guide*
-   (`developer.salesforce.com`, `apex_gov_limits.htm`). **Revalidar por release**: Salesforce publica
-   tres al año y los límites por edición varían.
-2. **Modo de ejecución por defecto**: la cita de la v67.0 procede verbatim de
-   `apex_classes_perms_enforcing.htm`. Verifica la versión de API de **tus** clases antes de asumir
-   qué modo aplica.
-3. **Cuotas de API y de almacenamiento**: la cuota de API se verificó en la *Salesforce Developer
-   Limits Cheat Sheet*. **La asignación de almacenamiento y la tabla de sandboxes de §3.3 y §3.5
-   proceden de fuentes secundarias coincidentes** —`help.salesforce.com` no se dejó recuperar de forma
-   automatizada (página renderizada por JavaScript)—: **hueco declarado**, confírmalas en la ayuda
-   oficial o en Setup de tu propia org, que es la fuente definitiva.
-4. **Precios y ediciones**: **hueco declarado** — `salesforce.com/sales/pricing` devolvió **403** a la
-   verificación automatizada en ago-2026; las cifras de §3.7 vienen de fuentes secundarias
-   posteriores a la subida de 2025. **El único precio que te aplica es el de tu contrato**, y los
-   descuentos no se publican.
-5. **Fin de soporte y retiradas**: Workflow Rules y Process Builder (31-dic-2025) y cualquier
-   retirada anunciada en las notas de la release vigente. Comprueba también qué versiones de API
-   están marcadas como retiradas: Salesforce retira versiones antiguas y eso **rompe integraciones**.
-6. **Nombres de producto y empaquetado**: Salesforce renombra con frecuencia (Einstein 1 →
-   Agentforce). Verifica el nombre exacto antes de escribirlo en un contrato o un documento.
-7. **Notas de la release** de las tres entregas del año, para límites nuevos, cambios de seguridad por
-   defecto y funciones que cambian de edición.
+1. **Governor limits**: the table in §3.1 was verified verbatim in the *Apex Developer Guide*
+   (`developer.salesforce.com`, `apex_gov_limits.htm`). **Revalidate per release**: Salesforce publishes
+   three a year and limits per edition vary.
+2. **Default execution mode**: the v67.0 quote comes verbatim from
+   `apex_classes_perms_enforcing.htm`. Verify the API version of **your** classes before assuming
+   which mode applies.
+3. **API and storage allocations**: the API allocation was verified in the *Salesforce Developer
+   Limits Cheat Sheet*. **The storage allocation and the sandbox table in §3.3 and §3.5
+   come from matching secondary sources** —`help.salesforce.com` could not be retrieved in an
+   automated way (JavaScript-rendered page)—: **declared gap**, confirm them in the official
+   help or in your own org's Setup, which is the definitive source.
+4. **Prices and editions**: **declared gap** — `salesforce.com/sales/pricing` returned **403** to
+   automated verification in Aug 2026; the figures in §3.7 come from secondary sources
+   later than the 2025 increase. **The only price that applies to you is the one in your contract**, and
+   discounts are not published.
+5. **End of support and retirements**: Workflow Rules and Process Builder (31 Dec 2025) and any
+   retirement announced in the notes of the current release. Also check which API versions
+   are marked as retired: Salesforce retires old versions and that **breaks integrations**.
+6. **Product names and packaging**: Salesforce renames frequently (Einstein 1 →
+   Agentforce). Verify the exact name before writing it into a contract or a document.
+7. **Release notes** for the three deliveries of the year, for new limits, changes to security
+   defaults and features that change edition.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

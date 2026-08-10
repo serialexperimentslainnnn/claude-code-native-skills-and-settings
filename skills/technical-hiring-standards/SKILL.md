@@ -3,123 +3,123 @@ name: technical-hiring-standards
 description: A hiring process is a measuring instrument and is judged by its validity and reliability. Use when writing a role definition or job description before interviewing, building a scoring rubric and scorecard before seeing the first candidate, choosing between a work sample, a walkthrough of the candidate's own code, live problem solving, a system design interview or a structured behavioural interview, setting a take-home exercise and its time limit or deciding to pay for it, running an interview loop and a debrief, calibrating interviewers, citing predictive validity of selection methods (Schmidt & Hunter 1998, Sackett Zhang Berry & Lievens 2022), replacing "culture fit" with observable values, offering reasonable adjustments and alternative formats to a candidate, publishing stages, timelines and feedback, designing a technical test when candidates use AI assistants, screening applicants with an automated employment decision tool or a resume screener, NYC Local Law 144 bias audits, Illinois HB 3773 or the Colorado AI Act, pay transparency under Directive (EU) 2023/970 and salary ranges in job ads, retaining or deleting candidate data, or measuring hiring by post-hire performance and retention rather than time-to-fill.
 ---
 
-# Estándares de contratación técnica
+# Technical hiring standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre **el diseño y la ejecución del proceso de selección técnica como instrumento de medida**:
-definición del puesto, rúbrica, elección de formatos de evaluación y su evidencia, estructura de la
-entrevista, calibración de entrevistadores, decisión, experiencia del candidato, uso de IA por ambas
-partes, y la incorporación como última etapa del proceso.
+Covers **the design and execution of the technical selection process as a measuring instrument**:
+role definition, rubric, choice of assessment formats and their evidence, interview
+structure, interviewer calibration, decision, candidate experience, use of AI by both
+parties, and onboarding as the last stage of the process.
 
-Triggers: "descripción del puesto", "job description", "rúbrica", "scorecard", "criterios de
-evaluación", "muestra de trabajo", "work sample", "prueba técnica", "take-home", "tarea para casa",
-"pair programming en entrevista", "entrevista de diseño de sistemas", "entrevista de
-comportamiento", "STAR", "entrevista estructurada", "calibración de entrevistadores", "debrief",
-"encaje cultural", "culture fit", "ajustes razonables", "experiencia del candidato", "feedback al
-candidato", "IA en la entrevista", "cribado automático de CV", "ATS", "AEDT", "bias audit", "AI
-Act empleo", "transparencia salarial", "banda salarial en la oferta", "datos del candidato",
-"onboarding", "time to fill", "permanencia".
+Triggers: "role definition", "job description", "rubric", "scorecard", "assessment
+criteria", "work sample", "technical test", "take-home", "homework exercise",
+"pair programming in an interview", "system design interview", "behavioural
+interview", "STAR", "structured interview", "interviewer calibration", "debrief",
+"culture fit", "culture add", "reasonable adjustments", "candidate experience", "candidate
+feedback", "AI in the interview", "automated CV screening", "ATS", "AEDT", "bias audit", "AI
+Act employment", "pay transparency", "salary range in the ad", "candidate data",
+"onboarding", "time to fill", "retention".
 
-**Principio rector**: **un proceso de contratación es un instrumento de medida, y como tal se evalúa
-por su validez y su fiabilidad, no por lo bien que se siente.** *Validez*: ¿mide lo que predice el
-desempeño en **este** puesto? *Fiabilidad*: ¿dos entrevistadores distintos, o el mismo en dos días
-distintos, llegan a la misma conclusión? **Un proceso que no puede responder a esas dos preguntas no
-está seleccionando: está registrando impresiones y llamándolas datos.** Test falsable aplicable a
-cualquier etapa propuesta: **nombra qué señal produce, con qué rúbrica se puntúa, y qué decisión
-cambiaría si esa etapa no existiera.** Lo que no lo supere, se elimina — cada etapa cuesta tiempo
-del equipo y candidatos que abandonan.
+**Guiding principle**: **a hiring process is a measuring instrument, and as such it is judged
+by its validity and its reliability, not by how good it feels.** *Validity*: does it measure what predicts
+performance in **this** role? *Reliability*: do two different interviewers, or the same one on two
+different days, reach the same conclusion? **A process that cannot answer those two questions is not
+selecting: it is recording impressions and calling them data.** A falsifiable test applicable to
+any proposed stage: **name what signal it produces, with which rubric it is scored, and what decision
+would change if that stage did not exist.** Whatever does not pass it is removed — every stage costs team
+time and candidates who drop out.
 
-**Aviso de alcance — léase antes de aplicar nada de este documento.** Contratar tiene **obligaciones
-legales reales**: no discriminación, protección de los datos personales de los candidatos y
-**normativa específica sobre el uso de IA en decisiones de empleo**. Este documento fija **criterio
-de ingeniería y de proceso**; **no es asesoramiento jurídico ni de recursos humanos**. Toda decisión
-con efecto jurídico —redacción de ofertas, preguntas admisibles, bases legales de tratamiento,
-despliegue de una herramienta de cribado automatizado, política retributiva— **se contrasta con
-asesoría legal y con la función de RR. HH. de la organización antes de aplicarse**, y en la
-jurisdicción concreta. Las referencias normativas de §5 son un mapa de por dónde preguntar, no un
-dictamen.
+**Scope warning — read before applying anything in this document.** Hiring carries **real
+legal obligations**: non-discrimination, protection of candidates' personal data and
+**specific rules on the use of AI in employment decisions**. This document fixes **engineering
+and process criteria**; **it is not legal or HR advice**. Every decision
+with legal effect —wording of job ads, admissible questions, legal bases for processing,
+deployment of an automated screening tool, pay policy— **is checked with
+legal counsel and with the organisation's HR function before being applied**, and in the
+specific jurisdiction. The regulatory references in §5 are a map of where to ask, not a
+ruling.
 
-**No aplica**:
-- `tech-leadership-standards` (**ya escrita**): **recíproca y estricta**. Allí se decide **qué perfil
-  hace falta, por qué, qué hueco del equipo cubre y qué nivel de la escala corresponde**; aquí,
-  **cómo se mide a un candidato contra esa definición**. Frontera de una frase: **el liderazgo
-  define el puesto; este proceso es el instrumento de medida.** También son suyos el desarrollo
-  posterior, la evaluación de desempeño y la salida del equipo.
-- `privacy-engineering-standards`: **los datos personales de candidatos son suyos** — base legal,
-  minimización, plazos de conservación, derechos del interesado, borrado y DPIA. Aquí solo la
-  obligación de que el proceso los respete y **la prohibición de guardar lo que no se va a usar**
+**Not applicable**:
+- `tech-leadership-standards` (**already written**): **reciprocal and strict**. There it is decided **which profile
+  is needed, why, which gap in the team it fills and which level of the ladder it corresponds to**; here,
+  **how a candidate is measured against that definition**. One-sentence boundary: **leadership
+  defines the role; this process is the measuring instrument.** Also theirs are subsequent
+  development, performance evaluation and departure from the team.
+- `privacy-engineering-standards`: **candidates' personal data is theirs** — legal basis,
+  minimisation, retention periods, data subject rights, erasure and DPIA. Here only the
+  obligation that the process respects them and **the prohibition on keeping what is not going to be used**
   (§5).
-- `grc-compliance-standards`: **el marco normativo aplicable y la evidencia formal** — qué norma
-  obliga, cómo se demuestra el cumplimiento ante un auditor, registro de riesgos regulatorios.
-- `ai-governance-standards`: **el uso de IA en decisiones que afectan a personas y su clasificación
-  de riesgo son suyos** — inventario de sistemas, condición de proveedor o responsable del
-  despliegue, evaluación de impacto en derechos fundamentales, supervisión humana significativa.
-  Aquí, **la práctica concreta del proceso de selección** (§5): qué se puede automatizar, qué exige
-  persona, y qué se le dice al candidato.
-- `accessibility-standards` (**ya escrita**): **conformidad y ajustes son suyos** — WCAG, EN 301 549,
-  formatos accesibles. Aquí, la obligación de ofrecerlos en cada etapa y de no penalizar por
-  pedirlos (§3.7).
-- `identity-access-management-standards`: **altas y bajas de acceso** en la incorporación y en la
-  salida — provisión, mínimo privilegio, revocación con fecha. Aquí solo que el plan de
-  incorporación las incluya y que la revocación sea verificable (§6).
-- `knowledge-management-standards`: **la documentación que hace posible una
-  incorporación rápida** — dónde vive, quién la mantiene, cómo se detecta que está obsoleta. Aquí
-  solo que la primera semana de un recién incorporado es el mejor auditor que tendrá esa
-  documentación (§6).
-- `code-review-standards`: el criterio de revisión de un diff real. Se **reutiliza** al evaluar el
-  código de un candidato, no se reinventa aquí.
-- `project-management-standards`: la contratación como proyecto con plazos y partes interesadas.
-- `ai-agent-workflow-standards` (**ya escrita**): la política de equipo sobre agentes de codificación
-  en el trabajo diario. Aquí, **qué implica para el diseño de la prueba** que el candidato use uno
+- `grc-compliance-standards`: **the applicable regulatory framework and the formal evidence** — which rule
+  obliges, how compliance is demonstrated to an auditor, register of regulatory risks.
+- `ai-governance-standards`: **the use of AI in decisions affecting people and its risk
+  classification are theirs** — system inventory, status as provider or deployer,
+  fundamental rights impact assessment, meaningful human oversight.
+  Here, **the concrete practice of the selection process** (§5): what can be automated, what requires
+  a person, and what the candidate is told.
+- `accessibility-standards` (**already written**): **conformance and adjustments are theirs** — WCAG, EN 301 549,
+  accessible formats. Here, the obligation to offer them at every stage and not to penalise anyone for
+  asking for them (§3.7).
+- `identity-access-management-standards`: **access provisioning and deprovisioning** at onboarding and at
+  departure — provisioning, least privilege, dated revocation. Here only that the onboarding
+  plan includes them and that revocation is verifiable (§6).
+- `knowledge-management-standards`: **the documentation that makes a fast
+  onboarding possible** — where it lives, who maintains it, how staleness is detected. Here
+  only that the first week of a new joiner is the best auditor that documentation will ever
+  have (§6).
+- `code-review-standards`: the criteria for reviewing a real diff. It is **reused** when evaluating a
+  candidate's code, it is not reinvented here.
+- `project-management-standards`: hiring as a project with deadlines and stakeholders.
+- `ai-agent-workflow-standards` (**already written**): the team policy on coding agents
+  in day-to-day work. Here, **what it implies for test design** that the candidate uses one
   (§5.1).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web el estado de las fuentes y de la normativa citadas antes de aplicarlas (§8).
+> Verify on the web the status of the sources and of the rules cited before applying them (§8).
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Antes de publicar la oferta | **Definición escrita del puesto**: problema que resuelve, evidencia que lo demostraría, nivel de la escala (§3.1) | — |
-| Rúbrica | **Escrita y acordada antes de ver al primer candidato** (§3.2) | Nunca "después de las primeras entrevistas, cuando sepamos qué buscamos" |
-| Estructura de la entrevista | **Estructurada**: mismas preguntas, mismo orden, misma escala, para todos los candidatos del mismo puesto | — |
-| Formato de evaluación principal | **Muestra de trabajo** o **recorrido del código propio del candidato** (§3.3) | Resolución de problemas en vivo con enunciado realista |
-| Acertijos de algoritmos con pizarra | **No se usan** salvo que el puesto los requiera de hecho (§3.3, §7) | — |
-| Tarea para casa | **≤ 2-3 h declaradas y respetadas**, o **se paga** (§3.4) | Sustituirla por sesión guiada de la misma duración |
-| Diseño de sistemas | Solo si el puesto diseña sistemas; con un problema del dominio real | — |
-| Comportamiento / experiencia | **Entrevista estructurada de comportamiento** con preguntas fijas y ancla conductual | — |
-| "Encaje cultural" | **Prohibido como criterio** (§3.6, §7). Se sustituye por **valores y comportamientos observables** con ancla | — |
-| Puntuación | **Cada entrevistador escribe su evidencia y su nota ANTES del debate** (§3.5) | — |
-| Decisión | **Contra la rúbrica, con evidencia citada**; empate = no se contrata y se revisa el proceso | — |
-| Número de etapas | **El mínimo que produce señal distinta en cada una** (por defecto ≤ 3-4 contactos) | Más etapas solo con señal nueva demostrable |
-| Cribado con IA | **Nunca decide**: como mucho ordena o etiqueta, con persona que revisa y registro (§5.2) | — |
-| Transparencia salarial | **Banda publicada en la oferta** (§5.3) | — |
-| Métrica de cabecera | **Desempeño y permanencia posteriores** (§6), no tiempo hasta cubrir | — |
+| Before publishing the ad | **Written role definition**: problem it solves, evidence that would demonstrate it, level of the ladder (§3.1) | — |
+| Rubric | **Written and agreed before seeing the first candidate** (§3.2) | Never "after the first interviews, once we know what we are looking for" |
+| Interview structure | **Structured**: same questions, same order, same scale, for every candidate for the same role | — |
+| Main assessment format | **Work sample** or **walkthrough of the candidate's own code** (§3.3) | Live problem solving with a realistic brief |
+| Whiteboard algorithm puzzles | **Not used** unless the role actually requires them (§3.3, §7) | — |
+| Take-home exercise | **≤ 2-3 h declared and respected**, or **it is paid for** (§3.4) | Replace it with a guided session of the same duration |
+| System design | Only if the role designs systems; with a problem from the real domain | — |
+| Behaviour / experience | **Structured behavioural interview** with fixed questions and behavioural anchors | — |
+| "Culture fit" | **Forbidden as a criterion** (§3.6, §7). Replaced by **observable values and behaviours** with anchors | — |
+| Scoring | **Each interviewer writes their evidence and their score BEFORE the discussion** (§3.5) | — |
+| Decision | **Against the rubric, with evidence cited**; a tie = no hire and the process is reviewed | — |
+| Number of stages | **The minimum that produces a distinct signal at each one** (by default ≤ 3-4 contacts) | More stages only with demonstrable new signal |
+| AI screening | **Never decides**: at most it ranks or labels, with a person reviewing and a record (§5.2) | — |
+| Pay transparency | **Range published in the ad** (§5.3) | — |
+| Headline metric | **Subsequent performance and retention** (§6), not time to fill | — |
 
-### Evidencia sobre métodos de selección: las dos fuentes, y por qué hacen falta las dos
+### Evidence on selection methods: the two sources, and why both are needed
 
-**Este es el punto donde más se cita mal en toda la ingeniería.** Hay un meta-análisis clásico muy
-citado y una revisión posterior que corrigió sus cifras **a la baja**. Citar solo el primero es
-citar una estimación que sus propios sucesores consideran inflada; citar solo el segundo, sin la
-crítica que lo motiva, es dar un número sin su historia.
+**This is the point most frequently miscited in all of engineering.** There is a heavily
+cited classic meta-analysis and a later review that corrected its figures **downwards**. Citing only the first is
+citing an estimate that its own successors consider inflated; citing only the second, without the
+critique that motivated it, is giving a number without its history.
 
-**(A) El clásico.** **Frank L. Schmidt y John E. Hunter, "The validity and utility of selection
+**(A) The classic.** **Frank L. Schmidt and John E. Hunter, "The validity and utility of selection
 methods in personnel psychology: Practical and theoretical implications of 85 years of research
 findings", *Psychological Bulletin* 124(2):262-274 (1998)**, DOI 10.1037/0033-2909.124.2.262.
-Sintetiza la validez de **19 procedimientos** para predecir desempeño en el puesto y en formación.
-Valores más citados: **capacidad mental general ≈ .51**, **entrevista estructurada ≈ .51**,
-**entrevista no estructurada ≈ .38**; combinación de entrevista estructurada + capacidad ≈ .63.
-**Método, que es lo que casi nunca se cita**: son correlaciones **corregidas** por error de medida
-en el criterio (normalmente valoraciones del supervisor) y por **restricción de rango**. Esa
-corrección es exactamente lo que se puso en cuestión después.
+It synthesises the validity of **19 procedures** for predicting job and training performance.
+Most-cited values: **general mental ability ≈ .51**, **structured interview ≈ .51**,
+**unstructured interview ≈ .38**; combination of structured interview + ability ≈ .63.
+**The method, which is what almost nobody cites**: these are correlations **corrected** for measurement error
+in the criterion (usually supervisor ratings) and for **range restriction**. That
+correction is exactly what was later called into question.
 
-**(B) La revisión que las corrigió a la baja.** **Paul R. Sackett, Charlene Zhang, Christopher M.
-Berry y Filip Lievens, "Revisiting meta-analytic estimates of validity in personnel selection:
+**(B) The review that corrected them downwards.** **Paul R. Sackett, Charlene Zhang, Christopher M.
+Berry and Filip Lievens, "Revisiting meta-analytic estimates of validity in personnel selection:
 Addressing systematic overcorrection for restriction of range", *Journal of Applied Psychology*
-107(11):2040-2068 (2022)**, DOI 10.1037/apl0000994 (en línea 30-dic-2021). **Verbatim del resumen**,
-extraído del PDF, no de un comentario: *"After outlining and critiquing five approaches that have
+107(11):2040-2068 (2022)**, DOI 10.1037/apl0000994 (online 30-Dec-2021). **Verbatim from the abstract**,
+extracted from the PDF, not from a commentary: *"After outlining and critiquing five approaches that have
 commonly been used to create and apply range restriction artifact distributions, we conclude that
 each has significant issues that often result in substantial overcorrection and that therefore the
 validity of many selection procedures for predicting job performance has been substantially
@@ -130,619 +130,619 @@ emerged as the top-ranked selection procedure. […] We conclude that our select
 useful, but selection predictor–criterion relationships are considerably lower than previously
 thought."*
 
-Estimaciones revisadas de validez operativa **extraídas del propio artículo** (con su método al
-lado, porque sin él la cifra no significa nada):
+Revised operational validity estimates **extracted from the article itself** (with their method
+alongside, because without it the figure means nothing):
 
-| Método | Sackett et al. (2022) | Procedencia declarada en el artículo |
+| Method | Sackett et al. (2022) | Provenance declared in the article |
 |---|---|---|
-| **Entrevista estructurada** | **.42** | Media ponderada por N de McDaniel et al. (1994) y Huffcutt et al. (2014), corregida solo por fiabilidad del criterio (.60), **sin corrección por restricción de rango** |
-| Entrevista **no** estructurada | **.19** | Igual procedencia |
-| Test de conocimiento del puesto | **.40** | Dye et al. (1993), subconjunto de tests específicos del puesto; corrección solo por fiabilidad |
-| Capacidad mental general | **≈ .31** | Validez observada media .236; sin corrección por restricción de rango considerada defendible |
-| Test de juicio situacional (SJT) | **.26** | McDaniel et al. (2007); .20 observada, corregida por fiabilidad .60 |
-| Test de integridad | **.31** | **Media ponderada de dos meta-análisis irreconciliables (ver discrepancia)** |
+| **Structured interview** | **.42** | N-weighted mean of McDaniel et al. (1994) and Huffcutt et al. (2014), corrected only for criterion reliability (.60), **without correction for range restriction** |
+| **Un**structured interview | **.19** | Same provenance |
+| Job knowledge test | **.40** | Dye et al. (1993), subset of job-specific tests; correction only for reliability |
+| General mental ability | **≈ .31** | Mean observed validity .236; no correction for range restriction considered defensible |
+| Situational judgment test (SJT) | **.26** | McDaniel et al. (2007); .20 observed, corrected for reliability .60 |
+| Integrity test | **.31** | **Weighted mean of two irreconcilable meta-analyses (see discrepancy)** |
 
-Cambio agregado, **verbatim del artículo**: *"The mean across Schmidt and Hunter's top five was .49,
-while the mean across our top five is .37."* La reordenación importa: **la entrevista estructurada
-pasa a ser el predictor más fuerte** —Schmidt-Hunter situaba la capacidad cognitiva como predictor
-focal— y *"the strongest predictors in our re-analysis (structured interviews, job knowledge tests,
+Aggregate change, **verbatim from the article**: *"The mean across Schmidt and Hunter's top five was .49,
+while the mean across our top five is .37."* The reordering matters: **the structured interview
+becomes the strongest predictor** —Schmidt-Hunter placed cognitive ability as the focal predictor—
+and *"the strongest predictors in our re-analysis (structured interviews, job knowledge tests,
 empirically keyed biodata, and work samples) are all job-specific measures"*.
 
-**Discrepancias declaradas, tal como el propio artículo las declara:**
-- **Tests de integridad**: dos meta-análisis de alta calidad dan **.44 y .18**. Sackett y Schmitt
-  (2012) intentaron reconciliarlos y **no lo consiguieron**; los datos brutos de uno de ellos no
-  están disponibles. El **.31** de la tabla es una **media ponderada de dos resultados que nadie
-  sabe reconciliar**, no un consenso. Consecuencia práctica: **no se apoya una decisión de proceso
-  en tests de integridad**.
-- **La media no aplica a tu organización.** El artículo insiste en ello: publica una desviación
-  típica residual precisamente como *"an essential reminder that a given employer cannot count on
-  the mean value as applicable to their organization"*. **Una validez media de .42 no significa que
-  tu entrevista estructurada valga .42**; significa que el método puede llegar ahí si está bien
-  construido.
-- **Validez y diversidad no van juntas.** El artículo empareja validez con diferencias medias entre
-  subgrupos: dentro de su "top cinco", **muestras de trabajo, tests de conocimiento y tests
-  cognitivos presentan diferencias sustanciales**, mientras que **entrevista estructurada, biodata e
-  integridad las presentan mucho menores**. Trabajo relacionado de los mismos autores concluye que
-  **excluir los tests cognitivos apenas afecta a la validez y reduce sustancialmente el impacto
-  adverso**. Esto es criterio de diseño del proceso, no una nota al pie.
-- **Muestras de trabajo**: siguen en el "top cinco" y bajan respecto de Schmidt-Hunter, pero **el
-  valor exacto revisado no se extrajo en esta verificación** — hueco declarado en §8. **No se
-  escribe una cifra para muestras de trabajo hasta confirmarla en el artículo.**
-- **Actualización intermedia**: Schmidt, Oh y Shaffer (2016) ya rebajaba las muestras de trabajo
-  respecto de 1998 y añadía predictores nuevos. Existe además Sackett et al. (2023), *Industrial and
-  Organizational Psychology* 16(3):283-300, con las implicaciones aplicadas.
+**Declared discrepancies, exactly as the article itself declares them:**
+- **Integrity tests**: two high-quality meta-analyses give **.44 and .18**. Sackett and Schmitt
+  (2012) tried to reconcile them and **failed**; the raw data of one of them are not
+  available. The **.31** in the table is a **weighted mean of two results nobody
+  knows how to reconcile**, not a consensus. Practical consequence: **do not base a process decision
+  on integrity tests**.
+- **The mean does not apply to your organisation.** The article insists on this: it publishes a residual
+  standard deviation precisely as *"an essential reminder that a given employer cannot count on
+  the mean value as applicable to their organization"*. **A mean validity of .42 does not mean that
+  your structured interview is worth .42**; it means the method can get there if it is well
+  built.
+- **Validity and diversity do not go together.** The article pairs validity with mean differences between
+  subgroups: within its "top five", **work samples, knowledge tests and cognitive
+  tests show substantial differences**, whereas **structured interviews, biodata and
+  integrity show much smaller ones**. Related work by the same authors concludes that
+  **excluding cognitive tests barely affects validity and substantially reduces
+  adverse impact**. This is process design criteria, not a footnote.
+- **Work samples**: they remain in the "top five" and drop relative to Schmidt-Hunter, but **the
+  exact revised value was not extracted in this verification** — a declared gap in §8. **No figure is
+  written for work samples until it is confirmed in the article.**
+- **Intermediate update**: Schmidt, Oh and Shaffer (2016) already lowered work samples
+  relative to 1998 and added new predictors. There is also Sackett et al. (2023), *Industrial and
+  Organizational Psychology* 16(3):283-300, with the applied implications.
 
-**Cómo se usan estas cifras, y esto es lo único que importa operativamente:**
-1. **Como orden de preferencia entre métodos**, no como predicción de resultado. La conclusión
-   robusta a través de ambas fuentes: **estructurar la entrevista es el cambio de mayor impacto
-   disponible** — el mismo formato, estructurado o no, va de ~.42 a ~.19 (2022) o de ~.51 a ~.38
-   (1998). **Ninguna otra intervención barata mueve tanto.**
-2. **Nunca como número en una oferta, una diapositiva o una discusión con dirección** sin su año, su
-   corrección y su intervalo. Una correlación de .42 explica una fracción modesta de la varianza:
-   **un proceso excelente sigue equivocándose a menudo**, y un proceso que promete lo contrario
-   miente.
-3. **Prohibido citar solo Schmidt-Hunter 1998.** Sus propias cifras están corregidas a la baja por
-   la literatura posterior (§7).
+**How these figures are used, and this is the only thing that matters operationally:**
+1. **As an order of preference between methods**, not as a prediction of outcome. The conclusion
+   robust across both sources: **structuring the interview is the highest-impact change
+   available** — the same format, structured or not, goes from ~.42 to ~.19 (2022) or from ~.51 to ~.38
+   (1998). **No other cheap intervention moves the needle as much.**
+2. **Never as a number in a job ad, a slide or a discussion with management** without its year, its
+   correction and its interval. A correlation of .42 explains a modest fraction of the variance:
+   **an excellent process still gets it wrong often**, and a process that promises otherwise
+   is lying.
+3. **Citing only Schmidt-Hunter 1998 is forbidden.** Its own figures have been corrected downwards by
+   the later literature (§7).
 
-### Cifras famosas: qué NO se usa como dato
+### Famous figures: what is NOT used as data
 
-- ❌ **"El coste de una mala contratación es 1,5 veces el salario"** (y sus variantes: 30 % de las
-  retribuciones del primer año "según el Departamento de Trabajo de EE. UU.", 213 %, 240.000 $).
-  **No hay estudio primario localizable.** Lo que hay es deriva de citación: datos de la SBA sobre
-  el coste de **contratar** (1,25-1,4× la base) convertidos en coste de una **mala** contratación;
-  rangos de SHRM citados de forma inconsistente entre sí (½-2×, 50-200 %, tramos por nivel); un 30 %
-  atribuido al DOL **sin título de informe, año ni metodología**; el 213 % que en realidad procede de
-  un meta-análisis del Center for American Progress (2012) sobre **rotación**, no sobre malas
-  contrataciones; una encuesta autodeclarada de CareerBuilder (2011); y una cifra de 240.000 $ que
-  es **la estimación de un reclutador**. Añádase que casi todas las fuentes que la difunden **venden
-  servicios de contratación**. **No se escribe.** Si hace falta un número para decidir, **se
-  construye de abajo arriba con datos propios**: gasto de selección, salario pagado, tiempo de rampa
-  y coste de repetir el proceso.
-- ❌ **Porcentajes de rotación atribuidos a "mal jefe"** y **"la gente deja jefes, no empresas"**:
-  descartados con su refutación en `tech-leadership-standards` §2.
-- ❌ **Cualquier cifra de "los mejores ingenieros son 10x"** usada para justificar una banda salarial
-  o un listón de contratación: la cifra fundacional está desmontada
+- ❌ **"The cost of a bad hire is 1.5 times the salary"** (and its variants: 30 % of
+  first-year compensation "according to the US Department of Labor", 213 %, $240,000).
+  **There is no locatable primary study.** What there is, is citation drift: SBA data on
+  the cost of **hiring** (1.25-1.4× base) turned into the cost of a **bad** hire;
+  SHRM ranges cited inconsistently with each other (½-2×, 50-200 %, bands by level); a 30 %
+  attributed to the DOL **with no report title, year or methodology**; the 213 % that actually comes
+  from a Center for American Progress (2012) meta-analysis on **turnover**, not on bad
+  hires; a self-reported CareerBuilder survey (2011); and a $240,000 figure that
+  is **one recruiter's estimate**. Add that almost all the sources spreading it **sell
+  hiring services**. **It is not written.** If a number is needed to decide, **it is
+  built bottom-up with your own data**: recruitment spend, salary paid, ramp-up time
+  and the cost of repeating the process.
+- ❌ **Turnover percentages attributed to "a bad boss"** and **"people leave managers, not companies"**:
+  discarded with their refutation in `tech-leadership-standards` §2.
+- ❌ **Any "the best engineers are 10x" figure** used to justify a salary band
+  or a hiring bar: the foundational figure is dismantled
   (`tech-leadership-standards` §2, Prechelt 1999).
-- ❌ **Estadísticas de conversión y de "candidatos por oferta" de proveedores de ATS** sin muestra ni
-  método publicados.
+- ❌ **Conversion and "candidates per opening" statistics from ATS vendors** without a published sample or
+  method.
 
-**Regla general**: **cifra con fuente primaria, año, muestra y método, o no se escribe.**
+**General rule**: **a figure with a primary source, year, sample and method, or it is not written.**
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Definir el puesto antes de entrevistar
+### 3.1 Define the role before interviewing
 
-**No se abre un proceso sin este documento.** Tres preguntas, respondidas por escrito por quien
-lidera técnicamente (`tech-leadership-standards`):
+**No process is opened without this document.** Three questions, answered in writing by whoever
+leads technically (`tech-leadership-standards`):
 
-1. **¿Qué problema resuelve esta persona en los próximos 12 meses?** Concreto y verificable. *"Hacer
-   que el servicio de cobros pueda cambiarse sin miedo: hoy concentra 3 de cada 7 incidentes"*, no
-   *"reforzar el equipo de backend"*.
-2. **¿Qué evidencia demostraría que sabe hacerlo?** De aquí salen las etapas del proceso. Si una
-   etapa propuesta no produce evidencia de esta lista, **sobra**.
-3. **¿Qué nivel de la escala publicada es, y en qué banda retributiva?** Decidido **antes** de
-   conocer candidatos. Ajustar el nivel al candidato que apareció es cómo se construyen agravios
-   internos y desigualdades retributivas que después hay que auditar.
+1. **What problem does this person solve over the next 12 months?** Concrete and verifiable. *"Make
+   the billing service safe to change: today it accounts for 3 out of every 7 incidents"*, not
+   *"strengthen the backend team"*.
+2. **What evidence would demonstrate that they can do it?** The stages of the process come out of this. If a
+   proposed stage does not produce evidence from this list, **it is surplus**.
+3. **Which level of the published ladder is it, and in which pay band?** Decided **before**
+   meeting candidates. Adjusting the level to the candidate who turned up is how internal grievances
+   and pay inequities get built — the ones you then have to audit.
 
-Reglas:
-- **Separar requisitos de deseos.** Un requisito es algo sin lo cual la persona **no puede** hacer el
-  trabajo desde el primer mes. Todo lo demás es deseable y **no filtra**. Las listas infladas de
-  requisitos reducen el conjunto de candidatos de forma asimétrica y sin ganar señal.
-- **Prohibido pedir años de experiencia como sustituto de competencia** (§7). "5 años de X" no es
-  una habilidad; es un dato que se correlaciona mal y que excluye trayectorias no lineales. Se pide
-  la capacidad y se mide.
-- **Prohibido pedir experiencia en una tecnología por más tiempo del que esa tecnología existe**
-  — el error clásico, y es un indicador fiable de que nadie leyó la oferta.
-- **La oferta declara**: banda salarial (§5.3), modalidad de trabajo, etapas del proceso con su
-  duración, y quién decide. **La ausencia de banda es una señal para el candidato, y es la correcta.**
+Rules:
+- **Separate requirements from wishes.** A requirement is something without which the person **cannot** do the
+  job from the first month. Everything else is desirable and **does not filter**. Inflated
+  requirement lists shrink the candidate pool asymmetrically and without gaining signal.
+- **Asking for years of experience as a substitute for competence is forbidden** (§7). "5 years of X" is not
+  a skill; it is a datum that correlates poorly and that excludes non-linear trajectories. You ask for
+  the capability and you measure it.
+- **Asking for experience in a technology for longer than that technology has existed is forbidden**
+  — the classic mistake, and a reliable indicator that nobody read the ad.
+- **The ad declares**: pay band (§5.3), working arrangement, the process stages with their
+  duration, and who decides. **The absence of a band is a signal to the candidate, and it is the correct one.**
 
-### 3.2 La rúbrica: escrita antes del primer candidato
+### 3.2 The rubric: written before the first candidate
 
-**Si no hay rúbrica escrita antes de ver al primer candidato, no se está midiendo competencia: se
-está midiendo impresión personal, y después se buscará justificación.** No es una opinión sobre
-estilo: es la diferencia entre entrevista estructurada y no estructurada, que es el factor con más
-efecto documentado sobre la validez (§2).
+**If there is no written rubric before seeing the first candidate, you are not measuring competence: you
+are measuring personal impression, and justification will be sought afterwards.** This is not an opinion about
+style: it is the difference between a structured and an unstructured interview, which is the factor with the
+largest documented effect on validity (§2).
 
-Formato mínimo por competencia:
+Minimum format per competency:
 
 ```yaml
-competencia: Diseño de sistemas bajo restricciones reales
-por_que_importa: "El puesto define interfaces entre 3 equipos; un mal contrato cuesta trimestres"
-se_evalua_en: [ejercicio de diseño, recorrido del código propio]
-escala:
-  1_no_cumple:  "Propone una solución sin preguntar por restricciones ni volumen"
-  2_parcial:    "Pregunta por restricciones; no razona sobre fallo ni sobre evolución"
-  3_cumple:     "Declara supuestos, razona sobre fallo y coste, propone una alternativa y la descarta con motivo"
-  4_supera:     "Además identifica el compromiso que el enunciado ocultaba y propone cómo validarlo barato"
-evidencia_requerida: "Cita textual o descripción de lo que la persona hizo o dijo. Sin cita, la nota no computa"
+competency: Systems design under real constraints
+why_it_matters: "The role defines interfaces between 3 teams; a bad contract costs quarters"
+assessed_in: [design exercise, walkthrough of own code]
+scale:
+  1_does_not_meet: "Proposes a solution without asking about constraints or volume"
+  2_partial:       "Asks about constraints; does not reason about failure or evolution"
+  3_meets:         "States assumptions, reasons about failure and cost, proposes an alternative and rejects it with a reason"
+  4_exceeds:       "Also identifies the trade-off the brief was hiding and proposes how to validate it cheaply"
+evidence_required: "Verbatim quote or description of what the person did or said. Without a quote, the score does not count"
 ```
 
-- **Anclas conductuales, no adjetivos.** "Buena comunicación" no es una ancla. "Explicó una decisión
-  técnica a alguien sin contexto y comprobó que se había entendido" sí lo es.
-- **Escala par (1-4)** para forzar decisión; el punto medio de una escala impar absorbe la mitad de
-  las notas y destruye la señal.
-- **La rúbrica es la misma para todos los candidatos del puesto**, y se archiva con el proceso.
-- **Cambiar la rúbrica a mitad de proceso invalida las comparaciones anteriores.** Si hay que
-  cambiarla, se declara, y los candidatos ya evaluados se reevalúan o se descartan del conjunto de
-  comparación — **no se mezclan**.
-- **Cada entrevistador sabe qué competencias le tocan y cuáles no.** Dos entrevistadores midiendo lo
-  mismo es una etapa desperdiciada; una competencia sin dueño es un hueco que se rellenará con
-  intuición.
+- **Behavioural anchors, not adjectives.** "Good communication" is not an anchor. "Explained a
+  technical decision to someone without context and checked that it had been understood" is.
+- **Even scale (1-4)** to force a decision; the midpoint of an odd scale absorbs half the
+  scores and destroys the signal.
+- **The rubric is the same for every candidate for the role**, and it is archived with the process.
+- **Changing the rubric mid-process invalidates the previous comparisons.** If it has to be
+  changed, it is declared, and the candidates already assessed are re-assessed or dropped from the
+  comparison set — **they are not mixed**.
+- **Every interviewer knows which competencies are theirs and which are not.** Two interviewers measuring
+  the same thing is a wasted stage; a competency with no owner is a gap that will be filled with
+  intuition.
 
-### 3.3 Formatos: para qué sirve cada uno
+### 3.3 Formats: what each one is for
 
-| Formato | Qué mide realmente | Cuándo se usa | Fallo típico |
+| Format | What it really measures | When it is used | Typical failure |
 |---|---|---|---|
-| **Muestra de trabajo** (tarea representativa del puesto, en entorno realista) | Capacidad de hacer el trabajo | Casi siempre; es el formato con mejor correspondencia conducta-criterio | Se convierte en un examen artificial y deja de ser una muestra |
-| **Recorrido del código propio del candidato** (o de un proyecto suyo) | Criterio técnico, capacidad de explicar decisiones, honestidad sobre compromisos | **Excelente alternativa cuando la persona tiene material propio**; coste casi nulo para el candidato | Penaliza a quien no puede enseñar código (NDA, sector, sin tiempo libre): **debe existir alternativa equivalente** |
-| **Resolución de problemas en vivo** sobre un enunciado realista, con acompañamiento | Cómo piensa cuando no sabe, cómo pregunta, cómo depura | Cuando importa el proceso más que el resultado | Se convierte en examen con público; el entrevistador habla más que el candidato |
-| **Diseño de sistemas** | Razonamiento sobre restricciones, fallo, evolución y coste | Solo si el puesto diseña sistemas | Se puntúa por coincidir con la solución del entrevistador en vez de por la calidad del razonamiento |
-| **Entrevista estructurada de comportamiento** (situaciones pasadas, preguntas fijas, ancla conductual) | Conducta pasada en situaciones análogas | Siempre; es el formato mejor situado en la evidencia revisada (§2) | Se desestructura sobre la marcha y vuelve a ser charla |
-| **Acertijo de algoritmos en pizarra** | **Mayormente preparación específica para ese tipo de examen** | **Solo si el puesto exige de hecho ese trabajo** (compiladores, motores, cripto, sistemas embebidos) | Se usa por defecto para todo, filtra por tiempo libre para prepararse y por familiaridad con el formato, no por capacidad |
+| **Work sample** (task representative of the role, in a realistic environment) | Ability to do the job | Almost always; it is the format with the best behaviour-criterion correspondence | It turns into an artificial exam and stops being a sample |
+| **Walkthrough of the candidate's own code** (or of a project of theirs) | Technical judgement, ability to explain decisions, honesty about trade-offs | **Excellent alternative when the person has their own material**; near-zero cost to the candidate | Penalises anyone who cannot show code (NDA, sector, no free time): **an equivalent alternative must exist** |
+| **Live problem solving** on a realistic brief, with support | How they think when they do not know, how they ask, how they debug | When the process matters more than the result | It turns into an exam with an audience; the interviewer talks more than the candidate |
+| **System design** | Reasoning about constraints, failure, evolution and cost | Only if the role designs systems | It is scored by matching the interviewer's solution instead of by the quality of the reasoning |
+| **Structured behavioural interview** (past situations, fixed questions, behavioural anchors) | Past behaviour in analogous situations | Always; it is the best-placed format in the revised evidence (§2) | It becomes unstructured on the fly and reverts to a chat |
+| **Whiteboard algorithm puzzle** | **Mostly specific preparation for that kind of exam** | **Only if the role actually demands that work** (compilers, engines, crypto, embedded systems) | It is used by default for everything, filtering by free time to prepare and by familiarity with the format, not by ability |
 
-Reglas transversales:
-- **El enunciado se parece al trabajo.** Cuanto más se aleja la prueba de la tarea real, más mide
-  otra cosa — y esa otra cosa suele correlacionar con acceso, tiempo libre y familiaridad cultural
-  con el formato.
-- **Se permite consultar documentación**, como en el trabajo real. Prohibir buscar mide memoria,
-  que no es la habilidad del puesto.
-- **La misma prueba para todos los candidatos del puesto.** Cambiar la dificultad "según se ve al
-  candidato" destruye la comparabilidad y es la vía silenciosa por la que entra el sesgo.
-- **Nadie entrevista sin haber hecho la prueba** que va a poner. Descubrir que la prueba de "45
-  minutos" lleva dos horas debe pasarle al entrevistador, no al candidato.
-- **Los acertijos de algoritmos no se prohíben por ser difíciles**, sino porque **miden
-  mayoritariamente preparación específica**: el mismo candidato puntúa muy distinto antes y después
-  de dos meses practicando un formato que no volverá a usar. Eso es exactamente lo contrario de un
-  instrumento válido para el puesto.
+Cross-cutting rules:
+- **The brief resembles the work.** The further the test is from the real task, the more it measures
+  something else — and that something else usually correlates with access, free time and cultural familiarity
+  with the format.
+- **Consulting documentation is allowed**, as in real work. Forbidding search measures memory,
+  which is not the skill of the role.
+- **The same test for every candidate for the role.** Changing the difficulty "depending on how the
+  candidate looks" destroys comparability and is the silent route by which bias enters.
+- **Nobody interviews without having done the test** they are going to set. Discovering that the "45
+  minute" test takes two hours must happen to the interviewer, not to the candidate.
+- **Algorithm puzzles are not forbidden for being hard**, but because **they mostly
+  measure specific preparation**: the same candidate scores very differently before and after
+  two months practising a format they will never use again. That is exactly the opposite of a
+  valid instrument for the role.
 
-### 3.4 Tareas para casa: el límite de tiempo es una cuestión ética
+### 3.4 Take-home exercises: the time limit is an ethical question
 
-Una tarea para casa traslada el coste del proceso al candidato, que ya está trabajando en otro
-sitio. Es admisible **con condiciones duras**:
+A take-home exercise shifts the cost of the process onto the candidate, who is already working somewhere
+else. It is admissible **with hard conditions**:
 
-1. **Límite de tiempo declarado y real** (por defecto **2-3 horas**), **verificado por alguien del
-   equipo que la ha hecho**. Si el equipo tarda tres horas, el candidato tardará más.
-2. **El límite se respeta al evaluar.** Prohibido premiar al que se pasó del límite: hacerlo
-   convierte el límite en una trampa y **selecciona por disponibilidad de tiempo libre**, que
-   discrimina por cuidados, salud, segundo empleo y situación económica.
-3. **Alcance acotado y enunciado cerrado.** "Haz lo que puedas" no se puede puntuar y garantiza que
-   cada candidato entregue algo incomparable.
-4. **Alternativa siempre disponible**: sesión guiada de la misma duración con el equipo, o recorrido
-   del código propio (§3.3). **Nunca una única vía.**
-5. **Si la tarea supera unas pocas horas, se paga a tarifa de mercado**, con contrato o factura.
-   **No hay tercera opción**: o es corta, o se paga. Un ejercicio largo no remunerado es trabajo
-   gratis para un desconocido.
-6. **PROHIBIDO usar trabajo de candidatos en producción**, aunque no se contrate. Si el enunciado
-   resuelve un problema real del producto, ya no es una prueba: es un encargo.
-7. **Se devuelve feedback** sobre la tarea. Quien ha invertido tres horas tiene derecho a saber qué
-   falló, aunque sea en tres líneas.
+1. **A declared and real time limit** (by default **2-3 hours**), **verified by someone on the
+   team who has done it**. If the team takes three hours, the candidate will take longer.
+2. **The limit is respected when assessing.** Rewarding whoever went over the limit is forbidden: doing so
+   turns the limit into a trap and **selects by availability of free time**, which
+   discriminates by caring responsibilities, health, a second job and financial situation.
+3. **Bounded scope and a closed brief.** "Do what you can" cannot be scored and guarantees that
+   every candidate delivers something incomparable.
+4. **An alternative always available**: a guided session of the same duration with the team, or a walkthrough
+   of their own code (§3.3). **Never a single route.**
+5. **If the exercise exceeds a few hours, it is paid at market rate**, with a contract or an invoice.
+   **There is no third option**: either it is short, or it is paid. A long unpaid exercise is free work
+   for a stranger.
+6. **FORBIDDEN to use candidates' work in production**, even if they are not hired. If the brief
+   solves a real product problem, it is no longer a test: it is a commission.
+7. **Feedback is returned** on the exercise. Whoever has invested three hours has the right to know what
+   went wrong, even if in three lines.
 
-### 3.5 Estructura, calibración y decisión
+### 3.5 Structure, calibration and decision
 
-**Entrevista estructurada frente a no estructurada: el cambio de mayor impacto disponible** (§2). Y
-es barato — no requiere herramienta, presupuesto ni consultora, solo escribir las preguntas antes.
+**Structured versus unstructured interview: the highest-impact change available** (§2). And
+it is cheap — it requires no tool, no budget and no consultancy, just writing the questions beforehand.
 
-- **Estructurada** significa las cuatro cosas a la vez: **mismas preguntas**, **mismo orden**, **misma
-  escala con anclas**, y **notas escritas con evidencia**. Faltando una, no es estructurada.
-- **Preguntas de seguimiento acotadas**: se permite profundizar, pero desde una lista preparada. El
-  seguimiento libre es la puerta por la que la entrevista se desestructura sin que nadie lo note.
+- **Structured** means all four things at once: **same questions**, **same order**, **same
+  scale with anchors**, and **written notes with evidence**. If one is missing, it is not structured.
+- **Bounded follow-up questions**: probing is allowed, but from a prepared list. Free
+  follow-up is the door through which the interview becomes unstructured without anyone noticing.
 
-**Calibración de entrevistadores** — sin esto la rúbrica es un documento, no un instrumento:
-- **Nadie entrevista solo antes de haber acompañado** varias entrevistas y haber sido acompañado
-  puntuando en paralelo.
-- **Ejercicio de calibración periódico**: dos o tres entrevistadores puntúan la **misma** grabación o
-  el mismo ejercicio y comparan. **Divergencia sistemática de un entrevistador = se recalibra o sale
-  del panel.** Es literalmente la fiabilidad entre observadores del instrumento.
-- **Panel diverso en la medida de lo posible**, y **siempre más de una persona por decisión**.
+**Interviewer calibration** — without this the rubric is a document, not an instrument:
+- **Nobody interviews alone before having shadowed** several interviews and having been shadowed
+  scoring in parallel.
+- **Periodic calibration exercise**: two or three interviewers score the **same** recording or
+  the same exercise and compare. **Systematic divergence by one interviewer = they are recalibrated or leave
+  the panel.** It is literally the inter-rater reliability of the instrument.
+- **A panel as diverse as possible**, and **always more than one person per decision**.
 
-**Decisión — la regla que más resultados cambia y la más incumplida:**
-> **Cada entrevistador escribe su evidencia y su puntuación ANTES de la reunión de debate y sin ver
-> la de los demás.**
+**Decision — the rule that changes the most outcomes and the most broken one:**
+> **Each interviewer writes their evidence and their score BEFORE the discussion meeting and without seeing
+> anyone else's.**
 
-Sin esto, el debate no agrega información: la primera opinión enunciada arrastra a las demás y el
-resultado es **una opinión con formato de consenso**. Reglas del debate:
-- Se discuten **desacuerdos**, no se recorre todo. Un desacuerdo obliga a citar la evidencia
-  concreta que sostiene cada nota.
-- **Un "no" con evidencia contra la rúbrica pesa más que tres "sí" sin ella.** Y al revés: un "no"
-  sin evidencia **no bloquea**.
-- **Empate o duda razonable → no se contrata**, y **se revisa qué etapa no produjo señal**. Contratar
-  en la duda es cómo se llega a la separación difícil y cara seis meses después.
-- **La decisión se registra** con la evidencia citada: es lo que permite defenderla, revisarla y —
-  si algún día hace falta — demostrar que el criterio fue el mismo para todos.
-- **Prohibido reabrir la decisión por presión de calendario** ("llevamos tres meses buscando"). La
-  urgencia de cubrir un puesto no es evidencia sobre el candidato.
+Without this, the discussion does not aggregate information: the first opinion stated drags the rest along and
+the result is **an opinion in the shape of a consensus**. Rules of the discussion:
+- **Disagreements** are discussed, not everything is walked through. A disagreement forces the citation of the
+  specific evidence supporting each score.
+- **A "no" with evidence against the rubric weighs more than three "yes" without it.** And the other way round: a "no"
+  without evidence **does not block**.
+- **A tie or reasonable doubt → no hire**, and **which stage failed to produce signal is reviewed**. Hiring
+  in doubt is how you get to the difficult and expensive separation six months later.
+- **The decision is recorded** with the evidence cited: it is what allows it to be defended, reviewed and —
+  if one day it is needed — to demonstrate that the criteria were the same for everyone.
+- **Reopening the decision under calendar pressure is forbidden** ("we have been searching for three months"). The
+  urgency of filling a role is not evidence about the candidate.
 
-### 3.6 Sesgo, y la trampa del "encaje cultural"
+### 3.6 Bias, and the "culture fit" trap
 
-- **"Encaje cultural" es la vía de entrada del sesgo mejor documentada y la más socialmente
-  aceptada**, porque no suena a discriminación: suena a criterio. En la práctica se puntúa
-  similitud —origen, clase, aficiones, forma de hablar, escuela— y se etiqueta como cultura. Efecto:
-  homogeneiza el equipo y reduce exactamente la diversidad cognitiva que se dice buscar. **Se
-  prohíbe como criterio** (§7).
-- **Se sustituye por valores y comportamientos observables**, con ancla y con evidencia, igual que
-  cualquier otra competencia. Ejemplos utilizables: *"describe una vez que cambiaste de opinión ante
-  un dato"* (evidencia: cita el dato y qué hizo después); *"cuenta un desacuerdo técnico y cómo
-  terminó"* (evidencia: procedimiento, no desenlace favorable). **Lo que se mide es la conducta, no
-  la afinidad.**
-- **Si el equipo quiere medir "aporta algo que no tenemos"**, eso se llama *culture add* y **también
-  necesita ancla escrita**, o es el mismo sesgo con nombre nuevo.
-- **Otras entradas de sesgo con contramedida concreta**:
-  - *Efecto halo* de un nombre de empresa o universidad en el CV → **cribado sin esos campos** cuando
-    el proceso lo permita, y rúbrica que no los puntúa.
-  - *Anclaje* por la primera impresión → puntuación escrita antes del debate (§3.5).
-  - *Sesgo de similitud* → panel diverso y anclas conductuales.
-  - *Prueba desigual* → mismo enunciado y mismo tiempo para todos.
-- **Preguntas ilegales o irrelevantes**: edad, origen, situación familiar, embarazo, salud,
-  discapacidad, religión, orientación, afiliación sindical, y **el salario anterior** (§5.3).
-  **Prohibidas**, también "por conversación informal" y también en el café previo (§7). Si un
-  entrevistador no sabe qué puede preguntar, no entrevista hasta que lo sepa: la formación es
-  responsabilidad de quien monta el panel, en coordinación con RR. HH.
+- **"Culture fit" is the best-documented and most socially accepted route for bias to
+  enter**, because it does not sound like discrimination: it sounds like criteria. In practice
+  similarity is scored —background, class, hobbies, way of speaking, school— and labelled as culture. Effect:
+  it homogenises the team and reduces exactly the cognitive diversity it claims to seek. **It is
+  forbidden as a criterion** (§7).
+- **It is replaced by observable values and behaviours**, with anchors and with evidence, just like
+  any other competency. Usable examples: *"describe a time you changed your mind because of
+  a piece of data"* (evidence: cite the datum and what they did next); *"tell me about a technical disagreement and how
+  it ended"* (evidence: the procedure, not a favourable outcome). **What is measured is behaviour, not
+  affinity.**
+- **If the team wants to measure "brings something we do not have"**, that is called *culture add* and **it also
+  needs a written anchor**, or it is the same bias with a new name.
+- **Other bias entry points with a concrete countermeasure**:
+  - *Halo effect* from a company or university name on the CV → **screening without those fields** when
+    the process allows it, and a rubric that does not score them.
+  - *Anchoring* from the first impression → scoring written before the discussion (§3.5).
+  - *Similarity bias* → a diverse panel and behavioural anchors.
+  - *Unequal test* → the same brief and the same time for everyone.
+- **Illegal or irrelevant questions**: age, origin, family situation, pregnancy, health,
+  disability, religion, orientation, trade union membership, and **previous salary** (§5.3).
+  **Forbidden**, including "as informal conversation" and including in the coffee beforehand (§7). If an
+  interviewer does not know what they may ask, they do not interview until they do: training is the
+  responsibility of whoever assembles the panel, in coordination with HR.
 
-### 3.7 Accesibilidad e inclusión del proceso
+### 3.7 Accessibility and inclusion of the process
 
-El criterio de conformidad es de `accessibility-standards`. **Aquí, las obligaciones del proceso:**
-- **Ofrecer ajustes razonables de forma proactiva y en cada etapa**, en el mensaje de invitación, no
-  solo si el candidato pregunta. Redacción operativa: *"Si necesitas algún ajuste de formato, tiempo
-  o herramienta, dínoslo y lo organizamos; no influye en la evaluación."*
-- **PROHIBIDO que pedir un ajuste influya en la evaluación**, y prohibido registrarlo en la ficha de
-  evaluación: es dato de salud (§5.4, `privacy-engineering-standards`).
-- **Formatos alternativos por defecto**, no como excepción: tarea para casa ↔ sesión guiada; código
-  propio ↔ ejercicio; entrevista por vídeo ↔ por voz o por escrito.
-- **La plataforma de evaluación también se evalúa.** Un editor de código online que no funciona con
-  lector de pantalla, o un test cronometrado sin posibilidad de tiempo extra, excluye candidatos
-  antes de medir nada. Se comprueba antes de adoptarlo.
-- **Neurodivergencia**: las señales que muchos entrevistadores puntúan sin declararlo —contacto
-  visual, fluidez social, respuesta rápida bajo presión— **no están en la rúbrica y no son el
-  trabajo**. Puntuarlas es medir otra cosa. Enviar las preguntas o el enunciado por adelantado
-  mejora la señal para todo el mundo y **no es una ventaja injusta**: es reducir ruido.
+The conformance criteria belong to `accessibility-standards`. **Here, the obligations of the process:**
+- **Offer reasonable adjustments proactively and at every stage**, in the invitation message, not
+  only if the candidate asks. Operational wording: *"If you need any adjustment to format, timing
+  or tooling, tell us and we will arrange it; it does not affect the assessment."*
+- **FORBIDDEN for asking for an adjustment to influence the assessment**, and forbidden to record it in the
+  assessment record: it is health data (§5.4, `privacy-engineering-standards`).
+- **Alternative formats by default**, not as an exception: take-home ↔ guided session; own
+  code ↔ exercise; video interview ↔ voice or written.
+- **The assessment platform is also assessed.** An online code editor that does not work with
+  a screen reader, or a timed test with no possibility of extra time, excludes candidates
+  before measuring anything. It is checked before adopting it.
+- **Neurodivergence**: the signals many interviewers score without declaring them —eye
+  contact, social fluency, quick response under pressure— **are not in the rubric and are not the
+  job**. Scoring them is measuring something else. Sending the questions or the brief in advance
+  improves the signal for everybody and **is not an unfair advantage**: it is reducing noise.
 
-### 3.8 Experiencia del candidato
+### 3.8 Candidate experience
 
-Un candidato es un profesional del sector que hablará del proceso con sus colegas. **El coste de un
-proceso interminable es reputacional y se paga en las contrataciones siguientes**, no en esta.
+A candidate is a professional in the sector who will talk about the process with their colleagues. **The cost of an
+interminable process is reputational and is paid in the next hires**, not in this one.
 
-- **Etapas y duración publicadas** en la oferta, y respetadas. Si cambian, se avisa.
-- **Plazos comprometidos**: respuesta tras cada etapa en un plazo declarado (por defecto ≤ 5 días
-  laborables). **Superarlo sin avisar es incumplir un compromiso, no un descuido administrativo.**
-- **Nadie queda sin respuesta.** El silencio tras una prueba de tres horas es el fallo de proceso más
-  citado por candidatos y el más barato de corregir.
-- **Retroalimentación específica a quien completó una prueba**, aunque sea breve. Prohibido el
-  "hemos decidido continuar con otros perfiles" a quien invirtió horas.
-- **Número de etapas acotado.** Cada etapa adicional debe producir **señal distinta** (§1); si no,
-  solo produce abandono, y el abandono no es aleatorio: se van antes los que tienen alternativas.
-- **La persona que decide aparece en el proceso.** Un candidato que nunca habla con quien será su
-  responsable no puede evaluar la oferta, y la evaluación es mutua.
+- **Stages and duration published** in the ad, and respected. If they change, notice is given.
+- **Committed timelines**: a reply after each stage within a declared window (by default ≤ 5 working
+  days). **Exceeding it without notice is breaking a commitment, not an administrative slip.**
+- **Nobody is left without a reply.** Silence after a three-hour test is the process failure most
+  cited by candidates and the cheapest to fix.
+- **Specific feedback to whoever completed a test**, even if brief. The
+  "we have decided to proceed with other profiles" to someone who invested hours is forbidden.
+- **Bounded number of stages.** Each additional stage must produce **distinct signal** (§1); if not,
+  it only produces drop-out, and drop-out is not random: those with alternatives leave first.
+- **The person who decides appears in the process.** A candidate who never speaks with their future
+  manager cannot assess the offer, and the assessment is mutual.
 
-## 4. Calidad del instrumento: controles verificables
+## 4. Instrument quality: verifiable controls
 
-*(Esta sección sustituye a la §4 canónica de testing: aquí lo que se somete a control **es el propio
-proceso de selección**.)*
+*(This section replaces the canonical §4 on testing: here what is subjected to control **is the selection
+process itself**.)*
 
-Controles auditables sobre el proceso, con cadencia fija. **Su fallo detiene el proceso o abre
-trabajo con dueño; no genera un informe.**
+Auditable controls over the process, with a fixed cadence. **Their failure stops the process or opens
+work with an owner; it does not generate a report.**
 
-| Control | Falla si | Acción |
+| Control | Fails if | Action |
 |---|---|---|
-| Puesto sin definir | no existe el documento de §3.1 antes de publicar | No se publica la oferta |
-| Rúbrica tardía | la rúbrica no existía antes del primer candidato | Se detiene el proceso y se reevalúa a los ya vistos |
-| Etapa sin señal | una etapa no puntúa ninguna competencia de la rúbrica | Se elimina la etapa |
-| Nota sin evidencia | una puntuación sin cita ni descripción de conducta | No computa |
-| Contaminación del debate | alguien puntúa después de oír a otros | La nota se descarta |
-| Entrevistador no calibrado | entrevista en solitario sin haber calibrado | Se retira del panel |
-| Divergencia sistemática | un entrevistador se desvía persistentemente del panel | Recalibración obligatoria |
-| Prueba desigual | dos candidatos del mismo puesto con enunciado o tiempo distintos | Se anula la comparación |
-| Tarea sobre el límite | la tarea excede el tiempo declarado medido por el equipo | Se recorta o se paga |
-| Ajuste no ofrecido | la invitación no menciona ajustes razonables | Se corrige la plantilla |
-| Plazo incumplido | respuesta fuera del plazo publicado sin aviso | Se avisa y se registra como fallo del proceso |
-| Criterio prohibido | aparece "encaje cultural", "actitud", "energía" o similar en una ficha | Se anula esa nota y se recalibra al entrevistador |
-| Cribado automatizado sin persona | un candidato descartado sin revisión humana | Se revierte y se revisa la herramienta (§5.2) |
-| Datos fuera de plazo | CV o notas conservados más allá del plazo declarado | Borrado y registro del incidente |
-| Sin dato posterior | no se mide desempeño ni permanencia a 6-12 meses | El proceso no se puede mejorar: se instrumenta (§6) |
+| Role undefined | the §3.1 document does not exist before publishing | The ad is not published |
+| Late rubric | the rubric did not exist before the first candidate | The process is stopped and those already seen are re-assessed |
+| Stage without signal | a stage scores no competency in the rubric | The stage is removed |
+| Score without evidence | a score without a quote or a description of behaviour | It does not count |
+| Contaminated discussion | someone scores after hearing others | The score is discarded |
+| Uncalibrated interviewer | interviews alone without having calibrated | They are withdrawn from the panel |
+| Systematic divergence | an interviewer persistently deviates from the panel | Mandatory recalibration |
+| Unequal test | two candidates for the same role with different briefs or times | The comparison is voided |
+| Exercise over the limit | the exercise exceeds the declared time as measured by the team | It is cut down or paid for |
+| Adjustment not offered | the invitation does not mention reasonable adjustments | The template is fixed |
+| Missed deadline | a reply outside the published window without notice | Notice is given and it is recorded as a process failure |
+| Forbidden criterion | "culture fit", "attitude", "energy" or similar appears in a record | That score is voided and the interviewer is recalibrated |
+| Automated screening without a person | a candidate rejected without human review | It is reversed and the tool is reviewed (§5.2) |
+| Data past its window | CVs or notes kept beyond the declared window | Erasure and recording of the incident |
+| No subsequent data | performance and retention at 6-12 months are not measured | The process cannot be improved: it is instrumented (§6) |
 
-**Prueba de fiabilidad del instrumento, ejecutable literalmente**: dar el mismo material (grabación,
-ejercicio entregado) a dos entrevistadores independientes. **Si sus notas no coinciden dentro de un
-punto de la escala, el problema no es el candidato: es la rúbrica o la calibración.**
+**Instrument reliability test, literally executable**: give the same material (recording,
+submitted exercise) to two independent interviewers. **If their scores do not agree within one
+point of the scale, the problem is not the candidate: it is the rubric or the calibration.**
 
-## 5. IA en la contratación, régimen legal y datos de candidatos
+## 5. AI in hiring, legal regime and candidate data
 
-**Sección obligatoria y con fecha de caducidad corta.** El marco legal se mueve; §8 obliga a
-reverificarlo antes de aplicarlo.
+**A mandatory section with a short expiry date.** The legal framework moves; §8 requires
+re-verifying it before applying it.
 
-### 5.1 Candidatos que usan asistentes de IA en la prueba técnica
+### 5.1 Candidates who use AI assistants in the technical test
 
-**Punto de partida realista: prohibirlo no es aplicable ni deseable.** No se puede verificar de forma
-fiable sin vigilancia intrusiva —que tiene su propio problema legal y de datos— y además **prohíbe
-la herramienta que la persona usará el primer día de trabajo**.
+**Realistic starting point: forbidding it is neither enforceable nor desirable.** It cannot be verified
+reliably without intrusive surveillance —which has its own legal and data problem— and it also **forbids
+the tool the person will use on their first day of work**.
 
-Consecuencias para el **diseño** de la prueba, que es lo que sí se controla:
-- **Si la prueba la resuelve un modelo de propósito general en dos minutos, la prueba estaba midiendo
-  lo que ya no hace falta medir.** No es un problema de trampas: es un problema de validez del
-  instrumento, y se arregla cambiando la prueba.
-- **Se desplaza la señal hacia lo que el asistente no aporta**: **juicio** (por qué esta opción y no
-  la otra), **crítica de la salida** (dado este código, qué está mal y qué falta), **restricciones
-  del dominio real** (el enunciado que exige preguntar), **depuración de un fallo no evidente**, y
-  **capacidad de explicar y defender lo entregado**.
-- **Formato robusto por defecto**: entrega + **conversación sobre la entrega**. Quien no puede
-  explicar una decisión de su propio código, no la tomó. Es la prueba más barata y no requiere
-  vigilancia de nada.
-- **Política declarada al candidato, por escrito y por adelantado**: si se permite usar asistentes
-  (recomendado), se dice; si en alguna etapa concreta no —y debe haber motivo—, se dice **antes**.
-  **PROHIBIDO evaluar en secreto si el candidato usó IA**, y prohibido descartar por sospecha sin
-  evidencia (§7).
-- ❌ **PROHIBIDA la vigilancia remota intrusiva del candidato** (control del escritorio, captura de
-  pantalla continua, seguimiento ocular, análisis biométrico). Además de su régimen legal, mide
-  ansiedad y equipamiento, no competencia.
+Consequences for the **design** of the test, which is what you actually control:
+- **If the test is solved by a general-purpose model in two minutes, the test was measuring
+  what no longer needs measuring.** It is not a cheating problem: it is a validity problem of
+  the instrument, and it is fixed by changing the test.
+- **The signal shifts towards what the assistant does not provide**: **judgement** (why this option and not
+  the other), **critique of the output** (given this code, what is wrong and what is missing), **constraints
+  of the real domain** (the brief that requires asking), **debugging a non-obvious failure**, and
+  **the ability to explain and defend what was delivered**.
+- **Robust format by default**: submission + **a conversation about the submission**. Whoever cannot
+  explain a decision in their own code did not make it. It is the cheapest test and it requires no
+  surveillance of anything.
+- **A policy declared to the candidate, in writing and in advance**: if assistants are allowed
+  (recommended), it is said; if at some specific stage they are not —and there must be a reason—, it is said **beforehand**.
+  **FORBIDDEN to assess in secret whether the candidate used AI**, and forbidden to reject on suspicion without
+  evidence (§7).
+- ❌ **FORBIDDEN intrusive remote surveillance of the candidate** (desktop monitoring, continuous screen
+  capture, eye tracking, biometric analysis). Beyond its legal regime, it measures
+  anxiety and equipment, not competence.
 
-### 5.2 Uso de IA para cribar candidatos, y su régimen legal
+### 5.2 Use of AI to screen candidates, and its legal regime
 
-**Regla de proceso, que es independiente de la jurisdicción: un modelo puede ordenar o etiquetar;
-no descarta.** Todo descarte lo confirma una persona con nombre, contra la rúbrica y con registro.
-Sin validación local y sin supervisión humana efectiva, una herramienta de cribado es un sesgo
-histórico automatizado y escalado.
+**A process rule, which is independent of jurisdiction: a model may rank or label;
+it does not reject.** Every rejection is confirmed by a named person, against the rubric and with a record.
+Without local validation and without effective human oversight, a screening tool is historical
+bias automated and scaled.
 
-**Unión Europea — Reglamento de IA (AI Act).** El empleo es **caso de alto riesgo**: el **Anexo III,
-punto 4** cubre los sistemas de IA destinados a la contratación o selección (entre otros, publicar
-anuncios dirigidos, analizar y filtrar solicitudes y evaluar candidatos), así como decisiones de
-promoción, extinción, asignación de tareas y seguimiento del desempeño.
+**European Union — AI Regulation (AI Act).** Employment is a **high-risk case**: **Annex III,
+point 4** covers AI systems intended for recruitment or selection (among others, targeted job
+advertising, analysing and filtering applications and evaluating candidates), as well as decisions on
+promotion, termination, task allocation and performance monitoring.
 
-**Fechas de aplicación — verificadas y con la corrección que casi nadie ha incorporado:**
-- Calendario **original**: obligaciones de alto riesgo del **Anexo III desde el 2-ago-2026**; Anexo I
-  (IA embebida en productos regulados) desde el **2-ago-2027**.
-- **Ese calendario se ha aplazado.** Tras la propuesta de la Comisión de **19-nov-2025** (*Digital
-  Omnibus* sobre IA), hubo **acuerdo político entre Consejo y Parlamento el 7-may-2026** y
-  confirmación del Consejo el **29-jun-2026**: **Anexo III (incluido empleo) pasa al 2-dic-2027**
-  (prórroga de 16 meses) y **Anexo I al 2-ago-2028** (12 meses).
-- **Lo que NO se ha movido**: las **prácticas prohibidas del artículo 5** y el deber de
-  **alfabetización en IA del artículo 4**, aplicables **desde el 2-feb-2025**; las obligaciones de
-  modelos de propósito general **desde el 2-ago-2025**; y las obligaciones de transparencia del
-  **artículo 50**.
-- **Prohibición directamente relevante para la selección: el artículo 5 prohíbe los sistemas de
-  reconocimiento de emociones en el lugar de trabajo y en centros educativos, salvo por razones
-  médicas o de seguridad.** Consecuencia práctica: **el análisis de expresión facial, tono de voz o
-  "engagement" en una entrevista en vídeo está en terreno prohibido o en su frontera inmediata**, y
-  la delimitación exacta respecto de un candidato externo es una cuestión jurídica que **se consulta
-  con asesoría legal antes de contratar la herramienta**, no después.
-- **Advertencia de estado — no es un dato cerrado**: el aplazamiento requiere **adopción formal y
-  publicación en el DOUE** para producir efectos. `ai-governance-standards` lo referencia como
-  **Reglamento (UE) 2026/1744**. **Antes de planificar contra la fecha de dic-2027, confirmar la
-  publicación en el DOUE y el número de reglamento** (§8): si no llegó a publicarse antes del
-  2-ago-2026, aplica el calendario original tal como estaba escrito.
-- **Postura de ingeniería, independientemente de la fecha**: 16 meses más son **margen, no
-  cancelación**. Las obligaciones —gestión de riesgos, documentación técnica, registro de eventos,
-  supervisión humana, evaluación de conformidad y registro del sistema— **llegan igual**, con menos
-  tiempo si se aparcan.
+**Application dates — verified and with the correction almost nobody has taken on board:**
+- **Original** timetable: high-risk obligations of **Annex III from 2-Aug-2026**; Annex I
+  (AI embedded in regulated products) from **2-Aug-2027**.
+- **That timetable has been postponed.** After the Commission's proposal of **19-Nov-2025** (*Digital
+  Omnibus* on AI), there was a **political agreement between Council and Parliament on 7-May-2026** and
+  confirmation by the Council on **29-Jun-2026**: **Annex III (including employment) moves to 2-Dec-2027**
+  (a 16-month extension) and **Annex I to 2-Aug-2028** (12 months).
+- **What has NOT moved**: the **prohibited practices of Article 5** and the duty of
+  **AI literacy of Article 4**, applicable **from 2-Feb-2025**; the obligations for
+  general-purpose models **from 2-Aug-2025**; and the transparency obligations of
+  **Article 50**.
+- **A prohibition directly relevant to selection: Article 5 prohibits emotion
+  recognition systems in the workplace and in educational institutions, except for
+  medical or safety reasons.** Practical consequence: **the analysis of facial expression, tone of voice or
+  "engagement" in a video interview is in forbidden territory or on its immediate boundary**, and
+  the exact delimitation with respect to an external candidate is a legal question that **is consulted
+  with legal counsel before contracting the tool**, not afterwards.
+- **Status warning — this is not a settled datum**: the postponement requires **formal adoption and
+  publication in the OJEU** to take effect. `ai-governance-standards` references it as
+  **Regulation (EU) 2026/1744**. **Before planning against the Dec-2027 date, confirm the
+  publication in the OJEU and the regulation number** (§8): if it was not published before
+  2-Aug-2026, the original timetable applies exactly as written.
+- **Engineering stance, regardless of the date**: 16 more months are **headroom, not
+  cancellation**. The obligations —risk management, technical documentation, event logging,
+  human oversight, conformity assessment and system registration— **arrive all the same**, with less
+  time if they are parked.
 
-**Estados Unidos — normas locales ya vigentes**, relevantes si se contrata allí:
-- **Nueva York, Local Law 144** (en vigor 1-ene-2023, aplicación desde 5-jul-2023): **auditoría de
-  sesgo del AEDT realizada como máximo un año antes de su uso**, **publicación del resumen de la
-  auditoría** en la web, y **aviso al candidato con al menos 10 días hábiles** de antelación
-  indicando que se usará, cómo y qué datos se recogen. Sanciones de **500 a 1.500 $ por día**.
-  **Dato incómodo y verificado**: una auditoría del Contralor del Estado de **2-dic-2025** concluyó
-  que la aplicación de la ley por el DCWP era **ineficaz**; y un estudio publicado (*Null
-  Compliance*, arXiv) encontró que **de 391 empleadores examinados solo 18 publicaron el informe de
-  auditoría y 13 el aviso de transparencia**. **Lectura correcta: baja probabilidad de sanción no es
-  cumplimiento, y el escrutinio va a subir.**
-- **Illinois, HB 3773** (enmienda a la *Human Rights Act*), firmada 9-ago-2024, **en vigor
-  1-ene-2026**: aviso al candidato cuando se usa IA en decisiones de empleo, prohibición de usar el
-  código postal como aproximación de una característica protegida, y prohibición de usos con
-  resultado discriminatorio. **El reglamento de desarrollo está inestable**: el IDHR publicó
-  propuesta el 15-may-2026 y **la retiró temporalmente**, cancelando la audiencia de 10-jun-2026.
-  **Las obligaciones legales siguen vigentes** pese a ello.
-- **Colorado**: la ley original (SB 24-205) quedó **con la aplicación suspendida por orden judicial**
-  (27-abr-2026) y ha sido **sustituida por SB 26-189**, firmada el 14-may-2026, con efecto
-  **1-ene-2027** y requisitos recortados. **El empleo sigue cubierto en ambas.** Es el marco más
-  volátil de los tres: **no se planifica contra él sin verificar el estado del mes en curso.**
+**United States — local rules already in force**, relevant if you hire there:
+- **New York, Local Law 144** (in force 1-Jan-2023, enforcement from 5-Jul-2023): **a bias
+  audit of the AEDT carried out no more than one year before its use**, **publication of the summary of the
+  audit** on the website, and **notice to the candidate at least 10 business days** in advance
+  stating that it will be used, how and what data are collected. Penalties of **$500 to $1,500 per day**.
+  **An uncomfortable and verified datum**: an audit by the State Comptroller of **2-Dec-2025** concluded
+  that enforcement of the law by the DCWP was **ineffective**; and a published study (*Null
+  Compliance*, arXiv) found that **out of 391 employers examined only 18 published the audit
+  report and 13 the transparency notice**. **The correct reading: a low probability of a penalty is not
+  compliance, and scrutiny is going to increase.**
+- **Illinois, HB 3773** (an amendment to the *Human Rights Act*), signed 9-Aug-2024, **in force
+  1-Jan-2026**: notice to the candidate when AI is used in employment decisions, a prohibition on using the
+  ZIP code as a proxy for a protected characteristic, and a prohibition on uses with a
+  discriminatory outcome. **The implementing regulation is unstable**: the IDHR published a
+  proposal on 15-May-2026 and **temporarily withdrew it**, cancelling the hearing of 10-Jun-2026.
+  **The legal obligations remain in force** notwithstanding.
+- **Colorado**: the original law (SB 24-205) had **its application suspended by court order**
+  (27-Apr-2026) and has been **replaced by SB 26-189**, signed on 14-May-2026, effective
+  **1-Jan-2027** and with trimmed requirements. **Employment remains covered in both.** It is the most
+  volatile framework of the three: **do not plan against it without verifying the status in the current month.**
 
-**España**, además del AI Act:
-- **Artículo 64.4.d) del Estatuto de los Trabajadores** (introducido por la *Ley Rider*, **Ley
-  12/2021**, con origen en el RDL 9/2021). **Verbatim del derecho reconocido a la representación
-  legal**: *"ser informado por la empresa de los parámetros, reglas e instrucciones en los que se
+**Spain**, in addition to the AI Act:
+- **Article 64.4.d) of the Estatuto de los Trabajadores** (introduced by the *Ley Rider*, **Ley
+  12/2021**, originating in RDL 9/2021). **Verbatim of the right granted to worker
+  representatives**: *"ser informado por la empresa de los parámetros, reglas e instrucciones en los que se
   basan los algoritmos o sistemas de inteligencia artificial que afectan a la toma de decisiones que
   pueden incidir en las condiciones de trabajo, el acceso y mantenimiento del empleo, incluida la
-  elaboración de perfiles"*. **"Acceso al empleo" y "elaboración de perfiles" alcanzan de lleno al
-  cribado de candidatos.** Hay pronunciamiento judicial que ha considerado que **no informar vulnera
-  el derecho fundamental de libertad sindical**, con indemnización; se cita como indicio de que el
-  derecho es exigible, **no como doctrina consolidada** — su alcance exacto se consulta con asesoría
-  laboral.
-- **Decisiones automatizadas y RGPD** (art. 22) e información al interesado:
+  elaboración de perfiles"*. **"Access to employment" and "profiling" cover candidate screening
+  squarely.** There is a court ruling that has held that **failing to inform infringes
+  the fundamental right to freedom of association**, with compensation; it is cited as an indication that
+  the right is enforceable, **not as settled doctrine** — its exact scope is checked with employment
+  counsel.
+- **Automated decisions and the GDPR** (art. 22) and information to the data subject:
   `privacy-engineering-standards`.
 
-### 5.3 Transparencia salarial
+### 5.3 Pay transparency
 
-- **Banda salarial en la oferta, por defecto.** No es solo cumplimiento: reduce el número de procesos
-  que terminan en desencuentro económico tras cinco etapas, que es puro coste para ambas partes.
-- **Directiva (UE) 2023/970**, de 10-may-2023, sobre refuerzo de la igualdad retributiva mediante
-  transparencia. Publicada en el DOUE el **17-may-2023**, en vigor el **6-jun-2023**, **plazo de
-  transposición hasta el 7-jun-2026** (arts. 34 y 36). Entre sus exigencias: **información sobre la
-  retribución inicial o su banda a los candidatos antes de la entrevista**, **prohibición de
-  preguntar al candidato por su salario anterior**, derecho de la plantilla a conocer niveles
-  retributivos medios desglosados por sexo, y **evaluación retributiva conjunta cuando la brecha
-  supera el 5 % sin justificación**.
-- **Estado en España a ago-2026: NO transpuesta.** El plazo del 7-jun-2026 **venció sin
-  transposición**; el Ministerio de Trabajo abrió consulta pública previa del real decreto de
-  transposición, cerrada el **8-may-2026**, sin pasos posteriores conocidos. España parte del **Real
-  Decreto 902/2020** de igualdad retributiva (registro retributivo obligatorio y auditoría
-  retributiva), que **sí está vigente**. **El retraso no elimina el principio de igualdad
-  retributiva**, ya reconocido en el ordenamiento.
-- **Calendario de reporte anunciado** (según fuentes secundarias, **contrastar con el texto de la
-  directiva antes de planificar**, §8): empresas de **≥ 250 personas**, anual, **primer informe antes
-  del 7-jun-2027**; **150-249**, cada tres años, primer informe también en jun-2027; **100-149**, más
-  adelante.
-- **Criterio de ingeniería, aplicable ya y con independencia de la transposición**: **banda publicada,
-  no preguntar por el salario anterior, y oferta construida sobre el nivel del puesto (§3.1), no
-  sobre lo que la persona ganaba antes.** Anclar la oferta al salario previo **importa desigualdades
-  de otras organizaciones** y las perpetúa dentro de la propia.
+- **A pay band in the ad, by default.** It is not only compliance: it reduces the number of processes
+  that end in a financial mismatch after five stages, which is pure cost for both parties.
+- **Directive (EU) 2023/970**, of 10-May-2023, on strengthening equal pay through
+  transparency. Published in the OJEU on **17-May-2023**, in force on **6-Jun-2023**, with a **transposition
+  deadline of 7-Jun-2026** (arts. 34 and 36). Among its requirements: **information about
+  the starting pay or its range to candidates before the interview**, **a prohibition on
+  asking the candidate about their previous salary**, the workforce's right to know average pay
+  levels broken down by sex, and **a joint pay assessment when the gap
+  exceeds 5 % without justification**.
+- **Status in Spain as of Aug 2026: NOT transposed.** The 7-Jun-2026 deadline **passed without
+  transposition**; the Ministry of Labour opened a prior public consultation on the transposing royal
+  decree, closed on **8-May-2026**, with no known subsequent steps. Spain starts from **Real
+  Decreto 902/2020** on equal pay (mandatory pay register and pay
+  audit), which **is in force**. **The delay does not eliminate the principle of equal
+  pay**, already recognised in the legal order.
+- **Announced reporting timetable** (according to secondary sources, **check against the text of the
+  directive before planning**, §8): companies of **≥ 250 people**, annually, **first report before
+  7-Jun-2027**; **150-249**, every three years, first report also in Jun 2027; **100-149**, later
+  on.
+- **Engineering criteria, applicable now and regardless of transposition**: **a published band,
+  do not ask about previous salary, and an offer built on the level of the role (§3.1), not
+  on what the person earned before.** Anchoring the offer to previous salary **imports inequities
+  from other organisations** and perpetuates them inside your own.
 
-### 5.4 Datos de candidatos
+### 5.4 Candidate data
 
-El criterio completo —base legal, minimización, plazos, derechos y borrado— es de
-`privacy-engineering-standards`. **Reglas que este proceso debe cumplir sí o sí:**
-- **Base legal declarada** para tratar los datos, y **plazo de conservación declarado al candidato**
-  desde el primer contacto. Conservar un CV "por si acaso" sin base ni plazo es tratamiento sin
-  amparo.
-- **Consentimiento separado y verificable** para conservar la candidatura para procesos futuros, con
-  **plazo y borrado automático al vencer**. Un consentimiento sin fecha de caducidad no es un
-  consentimiento: es un archivo permanente.
-- **Minimización**: no se piden fecha de nacimiento, foto, estado civil, nacionalidad ni datos de
-  salud. Si el ATS los pide por defecto, **se configura para que no lo haga**.
-- **Las notas de entrevista son datos personales** y son accesibles al interesado. Corolario
-  operativo: **se escriben como si el candidato fuera a leerlas** — evidencia conductual, sin juicios
-  sobre la persona. Es además la mejor disciplina de rúbrica que existe.
-- **PROHIBIDO** almacenar datos de candidatos en hojas de cálculo personales, canales de chat o
-  unidades compartidas fuera del sistema con control de acceso y traza.
-- **Los ajustes solicitados (§3.7) son datos de salud**: tratamiento restringido, fuera de la ficha
-  de evaluación, y borrado cuando dejan de ser necesarios.
-- **Verificación de referencias**: solo con conocimiento del candidato y sobre hechos verificables
-  relacionados con el puesto. **Prohibido contactar con su empleador actual sin permiso explícito.**
+The full criteria —legal basis, minimisation, windows, rights and erasure— belong to
+`privacy-engineering-standards`. **Rules this process must comply with no matter what:**
+- **A declared legal basis** for processing the data, and a **retention window declared to the candidate**
+  from first contact. Keeping a CV "just in case" without a basis or a window is processing without
+  cover.
+- **Separate and verifiable consent** to keep the application for future processes, with a
+  **window and automatic erasure on expiry**. A consent with no expiry date is not a
+  consent: it is a permanent archive.
+- **Minimisation**: date of birth, photo, marital status, nationality and health data are not
+  requested. If the ATS asks for them by default, **it is configured not to**.
+- **Interview notes are personal data** and are accessible to the data subject. Operational
+  corollary: **they are written as if the candidate were going to read them** — behavioural evidence, without judgements
+  about the person. It is also the best rubric discipline there is.
+- **FORBIDDEN** to store candidate data in personal spreadsheets, chat channels or
+  shared drives outside the system with access control and an audit trail.
+- **The adjustments requested (§3.7) are health data**: restricted processing, outside the assessment
+  record, and erased when they are no longer necessary.
+- **Reference checking**: only with the candidate's knowledge and about verifiable facts
+  related to the role. **Contacting their current employer without explicit permission is forbidden.**
 
-## 6. Incorporación y la métrica correcta
+## 6. Onboarding and the right metric
 
-*(La §6 canónica —rendimiento y operabilidad— no aplica a un dominio de proceso; **se sustituye
-declarándolo** por la última etapa del proceso y por su medición.)*
+*(The canonical §6 —performance and operability— does not apply to a process domain; **it is replaced,
+declaring it so**, by the last stage of the process and by its measurement.)*
 
-**La incorporación es parte del proceso de contratación, no lo que viene después.** Un proceso que
-selecciona bien y luego abandona a la persona ha desperdiciado su propio resultado.
+**Onboarding is part of the hiring process, not what comes afterwards.** A process that
+selects well and then abandons the person has wasted its own result.
 
-- **Todo se prepara antes del primer día**: accesos y equipos (`identity-access-management-standards`,
-  con **mínimo privilegio desde el día uno**, no "todo y ya lo iremos quitando"), persona de
-  referencia nombrada, y **una primera contribución realista para la primera semana**.
-- **Objetivos escritos a 30 / 60 / 90 días**, acordados y revisados en el 1:1
+- **Everything is prepared before day one**: access and equipment (`identity-access-management-standards`,
+  with **least privilege from day one**, not "everything and we will take it away later"), a named
+  reference person, and **a realistic first contribution for the first week**.
+- **Written 30 / 60 / 90 day objectives**, agreed and reviewed in the 1:1
   (`tech-leadership-standards` §3.9).
-- **El recién incorporado es el mejor auditor de la documentación que tendrá el equipo**, y solo lo
-  es una vez: **su lista de "esto no estaba escrito" se convierte en tickets el mismo mes**
-  (`knowledge-management-standards`). Desaprovechar esa ventana es tirar el único punto de
-  vista externo disponible.
-- **Métrica de la incorporación**: **tiempo hasta la primera contribución en producción** y **tiempo
-  hasta la primera guardia en autonomía** (si el equipo tiene guardia). Ambas dicen más del sistema
-  de la organización que de la persona.
-- **Revocación verificable a la salida**: accesos, credenciales, dispositivos y llaves, con lista y
-  fecha (`identity-access-management-standards`). Una salida sin revocación registrada es una cuenta
-  huérfana con permisos.
+- **The new joiner is the best auditor of the documentation the team will ever have**, and they only
+  are one once: **their list of "this was not written down" turns into tickets in the same month**
+  (`knowledge-management-standards`). Wasting that window is throwing away the only external
+  point of view available.
+- **Onboarding metric**: **time to the first contribution in production** and **time
+  to the first on-call shift in autonomy** (if the team has on-call). Both say more about the
+  organisation's system than about the person.
+- **Verifiable revocation on departure**: access, credentials, devices and keys, with a list and
+  a date (`identity-access-management-standards`). A departure without recorded revocation is an orphaned
+  account with permissions.
 
-**La métrica del proceso de contratación, y esta es la corrección que hay que sostener ante quien
-mide otra cosa:**
+**The metric of the hiring process, and this is the correction to hold against whoever
+measures something else:**
 
-| Métrica | Qué es | Uso |
+| Metric | What it is | Use |
 |---|---|---|
-| ❌ **Tiempo hasta cubrir el puesto** (*time to fill*) | Velocidad del proceso | **No es medida de calidad.** Se optimiza bajando el listón; es la métrica que empeora el resultado más rápido |
-| ❌ Número de candidatos entrevistados, CV recibidos | Actividad | Ruido |
-| ✅ **Desempeño posterior** a 6-12 meses, evaluado contra la rúbrica original | Validez del instrumento | **La medida principal.** Es la única que cierra el bucle |
-| ✅ **Permanencia** a 12 y 24 meses, y **motivo declarado de salida** | Validez y honestidad de la oferta | Salidas tempranas concentradas = el proceso vendió otra cosa, o midió otra cosa |
-| ✅ **Correlación entre la nota del proceso y el desempeño posterior** | Validez predictiva **local** | Es lo que convierte la evidencia general de §2 en un dato propio |
-| ✅ Fiabilidad entre entrevistadores (§4) | Fiabilidad del instrumento | Se corrige con calibración |
-| ✅ Tasa de abandono por etapa | Coste que el proceso impone | Una etapa con abandono alto se rediseña |
-| ✅ % de ofertas aceptadas y motivo del rechazo | Competitividad y experiencia | Con motivo, o es un número sin acción |
+| ❌ **Time to fill the role** (*time to fill*) | Speed of the process | **It is not a quality measure.** It is optimised by lowering the bar; it is the metric that worsens the outcome fastest |
+| ❌ Number of candidates interviewed, CVs received | Activity | Noise |
+| ✅ **Subsequent performance** at 6-12 months, assessed against the original rubric | Validity of the instrument | **The main measure.** It is the only one that closes the loop |
+| ✅ **Retention** at 12 and 24 months, and the **stated reason for leaving** | Validity and honesty of the offer | Concentrated early departures = the process sold something else, or measured something else |
+| ✅ **Correlation between the process score and subsequent performance** | **Local** predictive validity | It is what turns the general evidence of §2 into your own datum |
+| ✅ Inter-rater reliability (§4) | Reliability of the instrument | Corrected with calibration |
+| ✅ Drop-out rate per stage | The cost the process imposes | A stage with high drop-out is redesigned |
+| ✅ % of offers accepted and reason for rejection | Competitiveness and experience | With a reason, or it is a number with no action |
 
-- **Cerrar el bucle es obligatorio.** Una organización que no compara la nota del proceso con el
-  desempeño posterior **no sabe si su proceso funciona**, lleve veinte años usándolo o dos. Es
-  exactamente la validación local que §2 exige y que ninguna cifra de meta-análisis sustituye.
-- **Muestra pequeña, conclusiones prudentes.** Con 10 contrataciones al año no hay potencia
-  estadística: **sirve para detectar fallos gruesos** (una etapa que nunca discrimina, un
-  entrevistador que siempre diverge), no para afinar coeficientes. **Decirlo en voz alta evita el
-  siguiente error**, que es tratar el dato propio con más confianza de la que soporta.
+- **Closing the loop is mandatory.** An organisation that does not compare the process score with
+  subsequent performance **does not know whether its process works**, whether it has been using it for twenty years or two. It is
+  exactly the local validation that §2 demands and that no meta-analysis figure replaces.
+- **Small sample, prudent conclusions.** With 10 hires a year there is no statistical
+  power: **it serves to detect gross failures** (a stage that never discriminates, an
+  interviewer who always diverges), not to fine-tune coefficients. **Saying it out loud avoids the
+  next mistake**, which is treating your own data with more confidence than it can bear.
 
-## 7. Sostenibilidad a largo plazo y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-**Cadencia**: rúbrica revisada al abrir cada proceso; calibración de entrevistadores al menos
-semestral y siempre que entre alguien nuevo al panel; etapas y su señal, semestral (test de §1);
-plazos de conservación de datos, trimestral; **régimen legal de IA en empleo y transparencia
-salarial, antes de cada cambio de herramienta y como mínimo semestral** (§8) — es lo que más se
-mueve.
+**Cadence**: rubric reviewed when opening each process; interviewer calibration at least
+half-yearly and whenever someone new joins the panel; stages and their signal, half-yearly (the §1 test);
+data retention windows, quarterly; **the legal regime for AI in employment and pay
+transparency, before every tool change and at minimum half-yearly** (§8) — it is what moves
+the most.
 
-**Deprecación**: toda etapa se introduce con la condición que la haría innecesaria. Un proceso crece
-por acumulación —una etapa por cada mala contratación recordada— y **nadie retira nunca nada**, hasta
-que el proceso dura dos meses y solo lo terminan quienes no tienen alternativas.
+**Deprecation**: every stage is introduced with the condition that would make it unnecessary. A process grows
+by accumulation —one stage for every remembered bad hire— and **nobody ever removes anything**, until
+the process takes two months and only those with no alternatives finish it.
 
-PROHIBIDO:
-- ❌ **Entrevistar sin rúbrica escrita antes del primer candidato.** Sin ella no se mide competencia,
-  se mide impresión y luego se justifica.
-- ❌ **Decidir por impresión**: "buenas vibraciones", "actitud", "energía", "no me convence" sin
-  evidencia conductual citada contra la rúbrica.
-- ❌ **Usar el "encaje cultural" como criterio** (§3.6). Se sustituye por valores y comportamientos
-  observables con ancla.
-- ❌ **Puntuar después de oír a los demás.** La evidencia y la nota se escriben antes del debate.
-- ❌ **Pruebas de más de un límite razonable de tiempo sin pagarlas** (§3.4), y **premiar a quien se
-  pasó del límite declarado**.
-- ❌ **Usar el trabajo de un candidato en producción.**
-- ❌ **Preguntas ilegales o irrelevantes**: edad, origen, situación familiar, embarazo, salud,
-  discapacidad, religión, orientación, afiliación sindical — y **el salario anterior**. Tampoco "en
-  confianza" ni fuera de la sala.
-- ❌ **Cribar con un modelo sin validación local ni supervisión humana efectiva**, ni descartar a
-  nadie sin que una persona con nombre lo confirme contra la rúbrica (§5.2).
-- ❌ **Análisis de emociones, expresión facial, tono de voz o "engagement" del candidato**: prohibido
-  en el lugar de trabajo por el artículo 5 del AI Act y, en todo caso, sin validez demostrada para
-  el puesto (§5.2).
-- ❌ **Vigilancia remota intrusiva durante una prueba** (captura continua de pantalla, seguimiento
-  ocular, biometría).
-- ❌ **Evaluar en secreto si el candidato usó IA**, o descartarlo por sospecha sin evidencia (§5.1).
-- ❌ **Acertijos de algoritmos como filtro por defecto** para puestos que no hacen ese trabajo:
-  miden mayoritariamente preparación específica para el formato (§3.3).
-- ❌ **Cambiar la prueba o su dificultad según el candidato**: destruye la comparabilidad y es la vía
-  silenciosa del sesgo.
-- ❌ **Citar Schmidt-Hunter (1998) sin la corrección posterior**, o **dar una cifra de validez sin su
-  año, su corrección y la advertencia de que la media no aplica a tu organización** (§2).
-- ❌ **Usar "el coste de una mala contratación es 1,5× el salario"** o cualquier variante: sin estudio
-  primario localizable (§2).
-- ❌ **Optimizar el proceso por tiempo hasta cubrir el puesto** (§6). Se mejora bajando el listón.
-- ❌ **Contratar en la duda por presión de calendario.** El empate es un "no", y una señal sobre el
-  proceso.
-- ❌ **Dejar candidatos sin respuesta**, o incumplir los plazos publicados sin avisar.
-- ❌ **Guardar datos de candidatos sin base legal y sin plazo declarado**, o fuera del sistema con
-  control de acceso.
-- ❌ **Que pedir un ajuste razonable influya en la evaluación**, o quede registrado en la ficha.
-- ❌ **Contactar con el empleador actual del candidato sin permiso explícito.**
-- ❌ **Anclar la oferta al salario anterior del candidato** en lugar de al nivel del puesto (§5.3).
-- ❌ **Publicar una oferta sin banda salarial** cuando la banda existe internamente.
-- ❌ **Entrevistar sin haber hecho antes la prueba que se pone.**
-- ❌ **Aplicar este documento como si fuera asesoramiento jurídico o de RR. HH.** (§1). Lo que tiene
-  efecto legal se contrasta con asesoría legal y con RR. HH. antes de aplicarse.
+FORBIDDEN:
+- ❌ **Interviewing without a written rubric before the first candidate.** Without it you do not measure competence,
+  you measure impression and then justify it.
+- ❌ **Deciding by impression**: "good vibes", "attitude", "energy", "I am not convinced" without
+  behavioural evidence cited against the rubric.
+- ❌ **Using "culture fit" as a criterion** (§3.6). It is replaced by observable values and behaviours
+  with anchors.
+- ❌ **Scoring after hearing the others.** The evidence and the score are written before the discussion.
+- ❌ **Tests beyond a reasonable time limit without paying for them** (§3.4), and **rewarding whoever went
+  over the declared limit**.
+- ❌ **Using a candidate's work in production.**
+- ❌ **Illegal or irrelevant questions**: age, origin, family situation, pregnancy, health,
+  disability, religion, orientation, trade union membership — and **previous salary**. Not
+  "off the record" either, nor outside the room.
+- ❌ **Screening with a model without local validation or effective human oversight**, nor rejecting
+  anyone without a named person confirming it against the rubric (§5.2).
+- ❌ **Analysis of emotions, facial expression, tone of voice or candidate "engagement"**: forbidden
+  in the workplace by Article 5 of the AI Act and, in any case, without demonstrated validity for
+  the role (§5.2).
+- ❌ **Intrusive remote surveillance during a test** (continuous screen capture, eye
+  tracking, biometrics).
+- ❌ **Assessing in secret whether the candidate used AI**, or rejecting them on suspicion without evidence (§5.1).
+- ❌ **Algorithm puzzles as a default filter** for roles that do not do that work:
+  they mostly measure specific preparation for the format (§3.3).
+- ❌ **Changing the test or its difficulty depending on the candidate**: it destroys comparability and is the
+  silent route of bias.
+- ❌ **Citing Schmidt-Hunter (1998) without the later correction**, or **giving a validity figure without its
+  year, its correction and the warning that the mean does not apply to your organisation** (§2).
+- ❌ **Using "the cost of a bad hire is 1.5× the salary"** or any variant: without a locatable
+  primary study (§2).
+- ❌ **Optimising the process for time to fill** (§6). It is improved by lowering the bar.
+- ❌ **Hiring in doubt under calendar pressure.** A tie is a "no", and a signal about the
+  process.
+- ❌ **Leaving candidates without a reply**, or missing the published deadlines without notice.
+- ❌ **Keeping candidate data without a legal basis and without a declared window**, or outside the system with
+  access control.
+- ❌ **Letting the request for a reasonable adjustment influence the assessment**, or be recorded in the record.
+- ❌ **Contacting the candidate's current employer without explicit permission.**
+- ❌ **Anchoring the offer to the candidate's previous salary** instead of to the level of the role (§5.3).
+- ❌ **Publishing an ad without a pay band** when the band exists internally.
+- ❌ **Interviewing without having done beforehand the test you are setting.**
+- ❌ **Applying this document as if it were legal or HR advice** (§1). Anything with
+  legal effect is checked with legal counsel and with HR before being applied.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquiera de estos puntos en un proceso real:
+Before committing to any of these points in a real process:
 
-1. **AI Act y su aplazamiento — el punto más volátil.** Confirmar en **EUR-Lex / DOUE**: (a) que el
-   *Digital Omnibus* se **publicó formalmente** y su número exacto de reglamento
-   (`ai-governance-standards` lo referencia como **Reglamento (UE) 2026/1744**: **verificar**);
-   (b) que la fecha de aplicación del **Anexo III, punto 4 (empleo)** es efectivamente el
-   **2-dic-2027** y la del **Anexo I** el **2-ago-2028**; (c) que **artículo 5 (prohibiciones) y
-   artículo 4 (alfabetización) siguen aplicándose desde el 2-feb-2025**. **Si el aplazamiento no
-   llegó a publicarse antes del 2-ago-2026, rige el calendario original.** Citar siempre el texto
-   del reglamento, **no un resumen de despacho**.
-2. **Reconocimiento de emociones y frontera del artículo 5**: si las **directrices de la Comisión
-   sobre prácticas prohibidas** se han actualizado, y **cómo delimitan "lugar de trabajo" respecto de
-   un candidato externo**. Es la duda concreta que decide si una herramienta de vídeo-entrevista es
-   legal: **se resuelve con asesoría legal, no con este documento.**
-3. **Transparencia retributiva**: estado de la **transposición española** de la **Directiva (UE)
-   2023/970** (a ago-2026: **plazo vencido el 7-jun-2026 sin transponer**, con consulta pública
-   previa cerrada el 8-may-2026). Verificar si se ha aprobado el real decreto, si se ha abierto
-   procedimiento de infracción, y **contrastar el calendario de reporte por tamaño de empresa contra
-   el texto de la directiva**, no contra artículos de despacho — las fechas de §5.3 proceden de
-   fuentes secundarias.
-4. **Normas locales sobre IA en empleo**, si se contrata fuera de la UE: **NYC Local Law 144**
-   (auditoría de sesgo, publicación, aviso de 10 días hábiles; y si el DCWP ha endurecido la
-   aplicación tras la auditoría del Contralor de dic-2025), **Illinois HB 3773** (vigente desde
-   1-ene-2026; estado del reglamento del IDHR, retirado en may-2026) y **Colorado** (SB 24-205
-   suspendida judicialmente; **SB 26-189 con efecto 1-ene-2027**). **Este bloque caduca rápido:
-   verificar el estado del mes en curso antes de cualquier despliegue.**
-5. **España**: vigencia y redacción del **art. 64.4.d) ET** y estado de la jurisprudencia sobre el
-   derecho de información algorítmica; y el **RD 902/2020** de igualdad retributiva.
-6. **Validez predictiva — hueco declarado.** El **valor revisado de las muestras de trabajo** en
-   Sackett et al. (2022) **no se extrajo en esta verificación** y por eso **no aparece cifrado en
-   §2**. Obtenerlo de la **Tabla 3 del artículo original** antes de usarlo. Verificar igualmente si
-   ha aparecido meta-análisis posterior a 2022-2023 que revise de nuevo estas estimaciones, y si el
-   debate sobre la corrección por restricción de rango ha producido réplica publicada. **Nunca dar
-   una cifra sin su método y su año.**
-7. **Cualquier cifra sobre coste de contratación, rotación o productividad**: localizar estudio
-   primario, año, muestra y método. Si no aparece, o si la cadena de citas termina en un blog
-   comercial (caso del "1,5×" y del "30 % del DOL", §2), **no se usa**.
-8. **Herramientas**: ATS y plataformas de evaluación — dónde alojan los datos, subencargados,
-   transferencias internacionales, si realizan cribado automatizado y si publican auditoría de
-   sesgo; accesibilidad real de la plataforma de código (§3.7). Para lo *open source*, **leer el
-   `LICENSE` en crudo del repositorio**.
-9. **Marco laboral y de no discriminación** de la jurisdicción concreta (en España, Estatuto de los
-   Trabajadores, LO 3/2007 y convenio aplicable): qué preguntas son admisibles, qué obligaciones de
-   igualdad aplican por tamaño de empresa y qué debe registrarse. **Con asesoría legal y con RR. HH.,
-   siempre** (§1).
+1. **The AI Act and its postponement — the most volatile point.** Confirm in **EUR-Lex / OJEU**: (a) that the
+   *Digital Omnibus* was **formally published** and its exact regulation number
+   (`ai-governance-standards` references it as **Regulation (EU) 2026/1744**: **verify**);
+   (b) that the application date of **Annex III, point 4 (employment)** is indeed
+   **2-Dec-2027** and that of **Annex I** is **2-Aug-2028**; (c) that **Article 5 (prohibitions) and
+   Article 4 (literacy) still apply from 2-Feb-2025**. **If the postponement was not published before
+   2-Aug-2026, the original timetable governs.** Always cite the text
+   of the regulation, **not a law-firm summary**.
+2. **Emotion recognition and the boundary of Article 5**: whether the **Commission's guidelines
+   on prohibited practices** have been updated, and **how they delimit "workplace" with respect to
+   an external candidate**. It is the specific doubt that decides whether a video-interview tool is
+   legal: **it is resolved with legal counsel, not with this document.**
+3. **Pay transparency**: status of the **Spanish transposition** of **Directive (EU)
+   2023/970** (as of Aug 2026: **deadline expired on 7-Jun-2026 without transposition**, with a prior public
+   consultation closed on 8-May-2026). Verify whether the royal decree has been approved, whether
+   infringement proceedings have been opened, and **check the reporting timetable by company size against
+   the text of the directive**, not against law-firm articles — the dates in §5.3 come from
+   secondary sources.
+4. **Local rules on AI in employment**, if you hire outside the EU: **NYC Local Law 144**
+   (bias audit, publication, 10-business-day notice; and whether the DCWP has tightened
+   enforcement after the Comptroller's audit of Dec 2025), **Illinois HB 3773** (in force since
+   1-Jan-2026; status of the IDHR regulation, withdrawn in May 2026) and **Colorado** (SB 24-205
+   suspended by the courts; **SB 26-189 effective 1-Jan-2027**). **This block expires fast:
+   verify the status in the current month before any deployment.**
+5. **Spain**: the validity and wording of **art. 64.4.d) ET** and the status of the case law on the
+   right to algorithmic information; and **RD 902/2020** on equal pay.
+6. **Predictive validity — a declared gap.** The **revised value for work samples** in
+   Sackett et al. (2022) **was not extracted in this verification** and that is why **it does not appear as a figure in
+   §2**. Obtain it from **Table 3 of the original article** before using it. Verify likewise whether
+   a meta-analysis later than 2022-2023 has appeared that revises these estimates again, and whether the
+   debate about the correction for range restriction has produced a published reply. **Never give
+   a figure without its method and its year.**
+7. **Any figure on hiring cost, turnover or productivity**: locate the primary
+   study, year, sample and method. If it does not appear, or if the citation chain ends in a commercial
+   blog (the case of the "1.5×" and of the "30 % from the DOL", §2), **it is not used**.
+8. **Tools**: ATS and assessment platforms — where they host the data, subprocessors,
+   international transfers, whether they perform automated screening and whether they publish a bias
+   audit; the real accessibility of the coding platform (§3.7). For *open source*, **read the
+   raw `LICENSE` of the repository**.
+9. **Employment and non-discrimination framework** of the specific jurisdiction (in Spain, the Estatuto de los
+   Trabajadores, LO 3/2007 and the applicable collective agreement): which questions are admissible, which equality
+   obligations apply by company size and what must be recorded. **With legal counsel and with HR,
+   always** (§1).
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

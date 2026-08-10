@@ -3,29 +3,29 @@ name: oracle-dba-standards
 description: Use when operating Oracle Database — sqlplus, RMAN, dgmgrl and Data Guard, srvctl/crsctl/asmcmd and ASM disk groups, lsnrctl with listener.ora/tnsnames.ora/sqlnet.ora, CDB/PDB multitenant and MAX_PDBS, Real Application Clusters, AWR/ASH/ADDM and awrrpt.sql, v$session/v$active_session_history wait events, SQL plan baselines and DBMS_SPM, DBMS_STATS, Flashback Database, unified auditing, TDE wallets and Advanced Security, DBA_FEATURE_USAGE_STATISTICS and CONTROL_MANAGEMENT_PACK_ACCESS as audit exposure, processor core factor and Named User Plus metrics, Standard Edition 2 socket and thread caps, Oracle AI Database 26ai / 23ai / 19c upgrades and Release Updates, quarterly Critical Patch Updates, or ora2pg / orafce / oracle_fdw migration off Oracle to PostgreSQL.
 ---
 
-# Estándares de administración de Oracle Database
+# Oracle Database administration standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-> **Tesis del documento**: en Oracle, **la licencia es la primera decisión de arquitectura, no una
-> nota al pie**. Casi ninguna otra plataforma tiene la propiedad de que *ejecutar una consulta*
-> —un `SELECT` sobre una vista de rendimiento— cree una deuda económica retroactiva. Aquí sí.
-> Todo lo que sigue se ordena por esa asimetría: primero qué te puedes permitir usar, después
-> cómo usarlo bien.
+> **Thesis of the document**: in Oracle, **the licence is the first architecture decision, not a
+> footnote**. Almost no other platform has the property that *running a query*
+> —a `SELECT` over a performance view— creates a retroactive financial debt. Here it does.
+> Everything that follows is ordered by that asymmetry: first what you can afford to use, then
+> how to use it well.
 >
-> **Segunda tesis, incómoda**: la mayoría de los Oracle que se encuentran en producción están
-> **sobredimensionados y sobrelicenciados** — Enterprise Edition con opciones caras compradas y
-> sin usar, o peor, usadas sin comprar. El trabajo honesto empieza por medir qué se usa de verdad.
+> **Second thesis, an uncomfortable one**: most of the Oracle installations found in production are
+> **oversized and over-licensed** — Enterprise Edition with expensive options bought and
+> unused, or worse, used without being bought. Honest work starts by measuring what is really used.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a diseñar, licenciar, operar, diagnosticar y **salir de** Oracle Database: modelo de
-licenciamiento y su impacto en el diseño, arquitectura multitenant e instancia/almacenamiento,
-RAC, Data Guard, respaldo con RMAN y Flashback, diagnóstico de rendimiento por modelo de espera,
-PL/SQL con criterio, actualizaciones y parcheo trimestral, seguridad del motor y del *listener*,
-y la conversación de migración a PostgreSQL.
+Applies to designing, licensing, operating, diagnosing and **exiting** Oracle Database: the licensing
+model and its impact on design, multitenant architecture and instance/storage,
+RAC, Data Guard, backup with RMAN and Flashback, performance diagnosis by the wait model,
+PL/SQL with judgement, upgrades and quarterly patching, engine and *listener* security,
+and the migration-to-PostgreSQL conversation.
 
-Disparadores: `sqlplus`, `rman`, `dgmgrl`, `srvctl`, `crsctl`, `asmcmd`, `lsnrctl`, `adrci`,
+Triggers: `sqlplus`, `rman`, `dgmgrl`, `srvctl`, `crsctl`, `asmcmd`, `lsnrctl`, `adrci`,
 `expdp`/`impdp`, `sqlldr`, `orapwd`, `dbca`, `AutoUpgrade`/`autoupgrade.jar`, `opatch`/`opatchauto`,
 `listener.ora`, `tnsnames.ora`, `sqlnet.ora`, `init.ora`/`spfile`, `ORACLE_HOME`, `ORACLE_SID`,
 `CDB`/`PDB`, `PDB$SEED`, `MAX_PDBS`, `ALTER PLUGGABLE DATABASE`, `ASM`, `+DATA`/`+FRA`,
@@ -35,650 +35,649 @@ Disparadores: `sqlplus`, `rman`, `dgmgrl`, `srvctl`, `crsctl`, `asmcmd`, `lsnrct
 `ORA-01555`, `ORA-00060`, `ORA-04031`, "core factor", "Named User Plus", "Standard Edition 2",
 "Critical Patch Update", "Release Update", `ora2pg`, `orafce`, `oracle_fdw`.
 
-**No aplica**: ver
-- `data-platform-standards` (**skill madre**: PostgreSQL como default, modelado relacional,
-  migraciones expand/contract, clasificación y retención del dato, principios de respaldo. Su
-  principio rector —*un almacén por necesidad, no por moda*— sigue mandando: **esta skill no
-  justifica elegir Oracle**, cubre operarlo bien cuando ya está ahí por decisión histórica,
-  por requisito de un producto de terceros o por un contrato vivo).
-- `sqlserver-dba-standards` (el otro motor propietario del catálogo; motores y proveedores
-  distintos, mismo patrón: **el licenciamiento decide la arquitectura**. No compiten).
-- `backup-recovery-standards` y `bcdr-standards` — **frontera crítica, regla de arbitraje
-  espejada palabra por palabra desde `backup-recovery-standards` §1**:
-  > **"¿cómo se hace la copia?" es de `backup-recovery`** (herramienta, repositorio, 3-2-1, GFS,
-  > dedup, cifrado del repo, integridad, catálogo, procedimiento de restore); **"¿cuánto podemos
-  > perder, en qué orden lo levantamos y quién lo decide?" es de `bcdr`**.
-- `plsql-oracle-forms-standards`: **PL/SQL como lenguaje de programa** —paquetes,
-  `BULK COLLECT`/`FORALL`, manejo de excepciones, SQL dinámico y sus *binds*, `AUTHID`, utPLSQL— y
-  **Oracle Forms/Reports como capa de aplicación** son suyos; **aquí el motor**: parámetros,
-  optimizador y estadísticas, RMAN y Data Guard, licenciamiento y el camino de salida hacia
-  PostgreSQL. Dos avisos que ambas sostienen: **Oracle Forms NO está desoportado** —lo que aprieta
-  es el calendario de la rama 12.2.x—, y **Reports sí está deprecado** aunque se siga empaquetando.
-- `sql-standards` (**el lenguaje SQL**; regla de arbitraje espejada desde su §1: *si la pregunta
-  cambia cómo se escribe la consulta o el DDL, es de `sql-standards`; si cambia qué motor se
-  elige, cómo se dimensiona, respalda, replica o restaura, es de aquí*). Suyas son las
-  peculiaridades de dialecto que **cambian el código** —`MERGE`, `CONNECT BY` frente a `WITH
-  RECURSIVE`, el `DUAL` histórico, la equivalencia entre cadena vacía y `NULL`, el `ROWNUM`
-  frente a `FETCH FIRST`— y el criterio de PL/SQL como **lenguaje**. De aquí, todo lo que decide
-  la ejecución: optimizador, estadísticas, *hints*, planes fijados, AWR/ASH, particionado y
-  licenciamiento de las opciones que una construcción SQL pueda activar sin querer
-  (**comprobar siempre si la cláusula que se escribe factura**).
+**Not applicable**: see
+- `data-platform-standards` (**the parent skill**: PostgreSQL as the default, relational modelling,
+  expand/contract migrations, data classification and retention, backup principles. Its
+  guiding principle —*one store per need, not per fashion*— still rules: **this skill does not
+  justify choosing Oracle**, it covers operating it well when it is already there by historical
+  decision, by a third-party product requirement or by a live contract).
+- `sqlserver-dba-standards` (the catalogue's other proprietary engine; different engines and
+  vendors, the same pattern: **licensing decides the architecture**. They do not compete).
+- `backup-recovery-standards` and `bcdr-standards` — **a critical boundary, an arbitration rule
+  mirrored word for word from `backup-recovery-standards` §1**:
+  > **"how is the copy made?" belongs to `backup-recovery`** (tool, repository, 3-2-1, GFS,
+  > dedup, repo encryption, integrity, catalogue, restore procedure); **"how much can we
+  > lose, in what order do we bring things up and who decides?" belongs to `bcdr`**.
+- `plsql-oracle-forms-standards`: **PL/SQL as a program language** —packages,
+  `BULK COLLECT`/`FORALL`, exception handling, dynamic SQL and its *binds*, `AUTHID`, utPLSQL— and
+  **Oracle Forms/Reports as an application layer** are theirs; **here the engine**: parameters,
+  optimiser and statistics, RMAN and Data Guard, licensing and the exit path towards
+  PostgreSQL. Two warnings both skills uphold: **Oracle Forms is NOT unsupported** —what presses
+  is the calendar of the 12.2.x branch—, and **Reports IS deprecated** even though it is still packaged.
+- `sql-standards` (**the SQL language**; an arbitration rule mirrored from its §1: *if the question
+  changes how the query or the DDL is written, it belongs to `sql-standards`; if it changes which
+  engine is chosen, how it is sized, backed up, replicated or restored, it belongs here*). Theirs are
+  the dialect peculiarities that **change the code** —`MERGE`, `CONNECT BY` versus `WITH
+  RECURSIVE`, the historical `DUAL`, the equivalence between an empty string and `NULL`, `ROWNUM`
+  versus `FETCH FIRST`— and the criteria for PL/SQL as a **language**. Ours is everything that decides
+  execution: optimiser, statistics, *hints*, pinned plans, AWR/ASH, partitioning and
+  the licensing of the options a SQL construct may activate unintentionally
+  (**always check whether the clause you write bills**).
 
-  Extensión propia de este documento: **lo específico del motor es de aquí** — RMAN (estrategia
-  incremental, `VALIDATE`, catálogo de recuperación, FRA), Flashback, el PITR con `SCN`/`RESETLOGS`
-  y Data Guard como mecanismo. **El repositorio donde aterrizan esas piezas, su inmutabilidad y
-  la cadencia del restore de prueba son de `backup-recovery`**; **el RPO/RTO que justifica el modo
-  de protección de Data Guard y el ejercicio de conmutación como parte del plan son de `bcdr`**.
-- `ha-clustering-standards` (**Pacemaker/Corosync, quórum y fencing genérico son suyos**; aquí
-  Oracle Clusterware/Grid Infrastructure y RAC, que traen su propio quórum y su propio fencing
-  —*node eviction* por voting disk y network heartbeat— y **no se mezclan con Pacemaker**).
-- `linux-storage-standards` y `zfs-standards` (multipath, LUNs, alineación, filesystem por debajo
-  de ASM), `onprem-standards` (el hierro, energía, capacidad), `linux-hardening-standards`
-  (bastionado del SO que hospeda `ORACLE_HOME`), `selinux-standards`.
-- `proxmox-ve-standards` y `libvirt-kvm-standards` (**relevantes aquí por el licenciamiento**: la
-  política de particionado de Oracle convierte una decisión de hipervisor en una decisión de
-  coste — §2.4).
-- `vulnerability-management-standards` (**el ciclo de CVE, triaje y ventana de parcheo es suyo**;
-  aquí solo el calendario y la mecánica de Oracle: RU/CPU/CSPU, `opatch`).
-- `cryptography-pki-standards` (algoritmos, TLS y ciclo de vida de las claves en que se apoya TDE
-  y el *wallet*), `secrets-management-standards` (dónde vive la contraseña del wallet y de los
-  usuarios de servicio), `identity-access-management-standards` (identidad corporativa),
-  `grc-compliance-standards` y `privacy-engineering-standards` (marco normativo y datos personales).
+  This document's own extension: **what is engine-specific belongs here** — RMAN (incremental
+  strategy, `VALIDATE`, recovery catalogue, FRA), Flashback, PITR with `SCN`/`RESETLOGS`
+  and Data Guard as a mechanism. **The repository where those pieces land, its immutability and
+  the cadence of the test restore belong to `backup-recovery`**; **the RPO/RTO that justifies the
+  Data Guard protection mode and the switchover exercise as part of the plan belong to `bcdr`**.
+- `ha-clustering-standards` (**Pacemaker/Corosync, quorum and generic fencing are theirs**; here
+  Oracle Clusterware/Grid Infrastructure and RAC, which bring their own quorum and their own fencing
+  —*node eviction* by voting disk and network heartbeat— and **are not mixed with Pacemaker**).
+- `linux-storage-standards` and `zfs-standards` (multipath, LUNs, alignment, the filesystem beneath
+  ASM), `onprem-standards` (the iron, power, capacity), `linux-hardening-standards`
+  (hardening the OS that hosts `ORACLE_HOME`), `selinux-standards`.
+- `proxmox-ve-standards` and `libvirt-kvm-standards` (**relevant here because of licensing**: Oracle's
+  partitioning policy turns a hypervisor decision into a cost decision — §2.4).
+- `vulnerability-management-standards` (**the CVE cycle, triage and patching window are theirs**;
+  here only Oracle's calendar and mechanics: RU/CPU/CSPU, `opatch`).
+- `cryptography-pki-standards` (algorithms, TLS and the key lifecycle that TDE and the *wallet*
+  rely on), `secrets-management-standards` (where the wallet's and the service users'
+  passwords live), `identity-access-management-standards` (corporate identity),
+  `grc-compliance-standards` and `privacy-engineering-standards` (regulatory framework and personal data).
 - `aws-standards`/`azure-standards`/`gcp-standards` (RDS for Oracle, OCI, *Authorized Cloud
-  Environments*: los servicios gestionados y su facturación; **el criterio de licencia BYOL es de
-  aquí**).
-- `streaming-cdc-standards` (**la captura es suya**: LogMiner, GoldenGate, Debezium; **el impacto
-  en el motor es de aquí**: `supplemental logging`, retención de redo, coste en el LGWR).
-- `jvm-spring-standards`/`python-standards`/`dotnet-standards` (driver, pool y ORM desde el código),
-  `observability-standards` (la plataforma de métricas y alertas donde aterrizan estos SLI).
-- `mysql-mariadb-dba-standards` (el tercer motor relacional del catálogo; open source, sin la
-  variable de licencia que domina aquí), `timeseries-db-standards`, `message-brokers-standards`,
-  `nosql-standards`, `search-engines-standards`, `caching-cdn-standards` (otros almacenes
-  especializados).
+  Environments*: the managed services and their billing; **the BYOL licensing criteria belong
+  here**).
+- `streaming-cdc-standards` (**the capture is theirs**: LogMiner, GoldenGate, Debezium; **the impact
+  on the engine belongs here**: `supplemental logging`, redo retention, cost in the LGWR).
+- `jvm-spring-standards`/`python-standards`/`dotnet-standards` (driver, pool and ORM from the code),
+  `observability-standards` (the metrics and alerting platform where these SLIs land).
+- `mysql-mariadb-dba-standards` (the catalogue's third relational engine; open source, without the
+  licensing variable that dominates here), `timeseries-db-standards`, `message-brokers-standards`,
+  `nosql-standards`, `search-engines-standards`, `caching-cdn-standards` (other specialised
+  stores).
 
-## 2. Licenciamiento: la decisión dominante
+## 2. Licensing: the dominant decision
 
-> **Aviso de alcance, no negociable**: este documento fija **criterio técnico**, no asesoramiento
-> contractual. Cualquier decisión con impacto económico se valida contra el **Licensing Information
-> User Manual de la versión concreta**, el *ordering document* firmado y el **gestor de licencias
-> de la organización** (o un asesor independiente). Los datos de abajo están verificados en
-> agosto 2026 y **caducan sin aviso**: Oracle republica sus tablas sin notificación (§8).
+> **Scope warning, non-negotiable**: this document sets **technical criteria**, not contractual
+> advice. Any decision with financial impact is validated against the **Licensing Information
+> User Manual of the specific version**, the signed *ordering document* and the organisation's
+> **licence manager** (or an independent adviser). The data below is verified as of
+> August 2026 and **expires without notice**: Oracle republishes its tables without notification (§8).
 
-### 2.1 Ediciones vigentes
+### 2.1 Current editions
 
-| Edición | Estado agosto 2026 | Límite duro |
+| Edition | Status August 2026 | Hard limit |
 |---|---|---|
-| **Enterprise Edition (EE)** | Única edición con GA on-prem de **Oracle AI Database 26ai** (Linux x86-64, anunciada 27-ene-2026) | Sin límite de sockets; todas las opciones **de pago aparte** |
-| **Standard Edition 2 (SE2)** | Vigente en 19c; para 26ai **solo disponible sobre Oracle Database Appliance** en el momento de esta verificación (§8, hueco) | **Máx. 2 sockets ocupados** por servidor y **cap interno de 16 hilos de CPU**; sin opciones EE |
-| **Free** (sucesora de Express Edition/XE) | Vigente (`Oracle AI Database 26ai Free`) | **2 CPUs, 2 GB de RAM, 12 GB de datos de usuario**; **sin soporte y sin parches, tampoco de seguridad** |
-| **21c** | *Innovation Release*: no es LTS y **no es elegible para Extended Support** | No usar como destino de una migración |
+| **Enterprise Edition (EE)** | The only edition with on-prem GA of **Oracle AI Database 26ai** (Linux x86-64, announced 27 Jan 2026) | No socket limit; all options **charged separately** |
+| **Standard Edition 2 (SE2)** | Current in 19c; for 26ai **only available on Oracle Database Appliance** at the time of this verification (§8, gap) | **Max. 2 occupied sockets** per server and an **internal cap of 16 CPU threads**; no EE options |
+| **Free** (successor to Express Edition/XE) | Current (`Oracle AI Database 26ai Free`) | **2 CPUs, 2 GB of RAM, 12 GB of user data**; **no support and no patches, not even security ones** |
+| **21c** | *Innovation Release*: not LTS and **not eligible for Extended Support** | Do not use as the target of a migration |
 
-Consecuencias de diseño, no de compras:
-- **SE2 no es "Oracle barato": es otro producto.** Sin particionado, sin compresión avanzada, sin
-  TDE, sin Active Data Guard, sin packs de diagnóstico. Un diseño que asuma cualquiera de esas
-  piezas y aterrice en SE2 no funciona; uno que las use en EE sin licenciarlas es deuda de auditoría.
-- **El cap de 16 hilos de SE2 es del motor, no del contrato**: añadir hardware no da capacidad a
-  una única base SE2. Dimensionar en consecuencia, no descubrirlo en producción.
-- **Free no va a producción.** Cero parches de seguridad es incompatible con
-  `vulnerability-management-standards`. Sirve para desarrollo, CI y pruebas de migración.
+Design consequences, not procurement ones:
+- **SE2 is not "cheap Oracle": it is a different product.** No partitioning, no advanced compression, no
+  TDE, no Active Data Guard, no diagnostic packs. A design that assumes any of those
+  pieces and lands on SE2 does not work; one that uses them on EE without licensing them is audit debt.
+- **SE2's 16-thread cap is the engine's, not the contract's**: adding hardware does not give capacity to
+  a single SE2 database. Size accordingly, do not discover it in production.
+- **Free does not go to production.** Zero security patches is incompatible with
+  `vulnerability-management-standards`. It serves for development, CI and migration testing.
 
-### 2.2 Métricas de licencia
+### 2.2 Licence metrics
 
-- **Processor**: `cores físicos × core factor`, redondeando **hacia arriba**. El *core factor* de
-  x86 (Intel/AMD) es **0.5** (verificar en la *Processor Core Factor Table* vigente: Oracle la
-  republica sin aviso, y **la que aplica es la del día de la firma del ordering document** —
-  archivar el PDF fechado junto al contrato). El *hyperthreading* no cuenta: se cuentan **cores
-  físicos**.
-- **Named User Plus (NUP)**: cuenta **personas y dispositivos**, con mínimos por procesador —
-  **25 NUP por procesador en EE**, **10 por servidor en SE2**. El core factor **no reduce NUP**:
-  solo fija el número de procesadores sobre el que se calcula el mínimo. NUP solo sale a cuenta
-  con población de usuarios pequeña, cerrada y **demostrable**; una aplicación web pública es
-  Processor por definición.
-- **En *Authorized Cloud Environments* la tabla de core factor no aplica**: se cuenta por vCPU
-  bajo la política de nube de Oracle. **No trasladar el 0.5 a un caso de negocio en nube.**
-- La licencia de una **opción** debe usar la **misma métrica y el mismo conteo** que la base de
-  datos que la ejecuta. No existe "licenciar el pack solo en la instancia que lo usa un martes".
+- **Processor**: `physical cores × core factor`, rounding **up**. The x86 (Intel/AMD) *core factor*
+  is **0.5** (verify in the current *Processor Core Factor Table*: Oracle republishes it
+  without notice, and **the one that applies is the one of the day the ordering document was signed** —
+  archive the dated PDF alongside the contract). *Hyperthreading* does not count: **physical
+  cores** are counted.
+- **Named User Plus (NUP)**: it counts **people and devices**, with minimums per processor —
+  **25 NUP per processor in EE**, **10 per server in SE2**. The core factor **does not reduce NUP**:
+  it only sets the number of processors on which the minimum is calculated. NUP only pays off
+  with a small, closed and **demonstrable** user population; a public web application is
+  Processor by definition.
+- **In *Authorized Cloud Environments* the core factor table does not apply**: counting is by vCPU
+  under Oracle's cloud policy. **Do not carry the 0.5 into a cloud business case.**
+- The licence of an **option** must use the **same metric and the same count** as the database
+  that runs it. There is no such thing as "licensing the pack only on the instance that uses it on a Tuesday".
 
-### 2.3 Qué se licencia aparte (y la trampa de auditoría)
+### 2.3 What is licensed separately (and the audit trap)
 
-Verificado contra el *Licensing Information User Manual* de **Oracle AI Database 26ai**
-(docs.oracle.com, tablas de disponibilidad por edición). En EE, la columna de notas dice
-literalmente **"Extra cost option"** para:
+Verified against the *Licensing Information User Manual* of **Oracle AI Database 26ai**
+(docs.oracle.com, availability-by-edition tables). In EE, the notes column says
+literally **"Extra cost option"** for:
 
-| Componente | Nota del manual (26ai) | Riesgo real |
+| Component | Manual note (26ai) | Real risk |
 |---|---|---|
-| **Partitioning** | EE: *extra cost option* | Se activa creando **una** tabla particionada. Un desarrollador puede facturarlo sin saberlo |
-| **Advanced Compression** | EE: *extra cost option* | `COMPRESS FOR OLTP`, compresión de RMAN avanzada, Data Pump comprimido |
-| **Advanced Security** (TDE de columnas y de tablespaces) | EE: *requires the Oracle Advanced Security option* | Cifrar en reposo con TDE en EE **es una compra**. Planificarlo antes de prometerlo en un diseño |
-| **Diagnostics Pack** (AWR, ASH, ADDM) | EE: *extra cost option* | **La trampa clásica** — ver abajo |
-| **Tuning Pack** (SQL Tuning Advisor, SQL Access Advisor, Real-Time SQL Monitoring) | EE: *extra cost option, also requires Oracle Diagnostics Pack* | Nunca se compra solo: arrastra Diagnostics |
-| **Real Application Clusters** | EE: *extra cost option* | Ver §4 |
-| **Active Data Guard** | EE: *extra cost option; license included with Oracle GoldenGate* | Data Guard **básico** sí está en EE; abrir la standby en lectura, no |
-| **Database In-Memory** | EE: *extra cost option* | `INMEMORY` en una tabla es la activación |
-| **Multitenant** | 3 PDB de usuario sin licencia; hasta **252 PDB** en EE con la opción | Ver §3.1 |
+| **Partitioning** | EE: *extra cost option* | It is activated by creating **one** partitioned table. A developer can bill it without knowing |
+| **Advanced Compression** | EE: *extra cost option* | `COMPRESS FOR OLTP`, advanced RMAN compression, compressed Data Pump |
+| **Advanced Security** (column and tablespace TDE) | EE: *requires the Oracle Advanced Security option* | Encrypting at rest with TDE in EE **is a purchase**. Plan it before promising it in a design |
+| **Diagnostics Pack** (AWR, ASH, ADDM) | EE: *extra cost option* | **The classic trap** — see below |
+| **Tuning Pack** (SQL Tuning Advisor, SQL Access Advisor, Real-Time SQL Monitoring) | EE: *extra cost option, also requires Oracle Diagnostics Pack* | It is never bought alone: it drags in Diagnostics |
+| **Real Application Clusters** | EE: *extra cost option* | See §4 |
+| **Active Data Guard** | EE: *extra cost option; license included with Oracle GoldenGate* | **Basic** Data Guard is in EE; opening the standby for reading is not |
+| **Database In-Memory** | EE: *extra cost option* | `INMEMORY` on a table is the activation |
+| **Multitenant** | 3 user PDBs with no licence; up to **252 PDBs** in EE with the option | See §3.1 |
 
-**La trampa clásica, explícita**: en Enterprise Edition el parámetro
-`CONTROL_MANAGEMENT_PACK_ACCESS` viene **por defecto en `DIAGNOSTIC+TUNING`**. Consultar una vista
-`DBA_HIST_*`, lanzar `awrrpt.sql`, mirar `v$active_session_history` o abrir la pestaña de
-rendimiento de Enterprise Manager **usa el Diagnostics Pack** y genera exposición de auditoría
-retroactiva, aunque nadie firmara nada. Regla de operación:
+**The classic trap, spelled out**: in Enterprise Edition the parameter
+`CONTROL_MANAGEMENT_PACK_ACCESS` comes **by default as `DIAGNOSTIC+TUNING`**. Querying a
+`DBA_HIST_*` view, running `awrrpt.sql`, looking at `v$active_session_history` or opening Enterprise
+Manager's performance tab **uses the Diagnostics Pack** and generates retroactive audit
+exposure, even if nobody signed anything. Operating rule:
 
-- Si **no** hay licencia de packs: `CONTROL_MANAGEMENT_PACK_ACCESS=NONE` **fijado en el spfile y
-  verificado en CI/inventario**, y diagnóstico con Statspack o con las vistas `V$` que no
-  pertenecen al pack. Prohibido "solo esta vez para depurar".
-- Si **sí** la hay: documentado, con la misma métrica y conteo que la base.
-- **Revisión periódica obligatoria** de `DBA_FEATURE_USAGE_STATISTICS` (y del histórico
-  `DBA_FEATURE_USAGE_STATISTICS` por instancia) como control preventivo, **no** como reacción a
-  una carta de auditoría. Es el mismo inventario que usará Oracle.
+- If there is **no** pack licence: `CONTROL_MANAGEMENT_PACK_ACCESS=NONE` **set in the spfile and
+  verified in CI/inventory**, and diagnosis with Statspack or with the `V$` views that do not
+  belong to the pack. Forbidden "just this once to debug".
+- If there **is** one: documented, with the same metric and count as the database.
+- **Mandatory periodic review** of `DBA_FEATURE_USAGE_STATISTICS` (and of the historical
+  `DBA_FEATURE_USAGE_STATISTICS` per instance) as a preventive control, **not** as a reaction to
+  an audit letter. It is the same inventory Oracle will use.
 
-**Escepticismo obligatorio**: la revisión de uso corta en los dos sentidos. Si el inventario
-demuestra que se paga Partitioning, In-Memory o Active Data Guard y **nadie los usa**, eso es un
-hallazgo de FinOps que se reporta igual que un incumplimiento — con la advertencia de que
-*desinstalar* una opción no siempre reduce la factura hasta la renovación del soporte.
+**Mandatory scepticism**: the usage review cuts both ways. If the inventory
+shows that Partitioning, In-Memory or Active Data Guard are being paid for and **nobody uses them**, that is a
+FinOps finding that gets reported just like a non-compliance — with the warning that
+*uninstalling* an option does not always reduce the bill until support renewal.
 
-### 2.4 Virtualización y particionado blando
+### 2.4 Virtualisation and soft partitioning
 
-Oracle clasifica las tecnologías en *hard partitioning*, *soft partitioning* y *Oracle Trusted
-Partitions*. La frase que decide el coste, tal como aparece reproducida de forma consistente en la
-literatura de licenciamiento a partir del documento **"Oracle Partitioning Policy"**
+Oracle classifies technologies into *hard partitioning*, *soft partitioning* and *Oracle Trusted
+Partitions*. The sentence that decides the cost, as it appears consistently reproduced in the
+licensing literature derived from the document **"Oracle Partitioning Policy"**
 (`oracle.com/us/corporate/pricing/partitioning-070609.pdf`):
 
 > "Unless explicitly stated elsewhere in this document, soft partitioning (including features/
 > functionality of any technologies listed as examples above) is not permitted as a means to
 > determine or limit the number of software licenses required for any given server"
 
-**Hueco declarado (§8)**: oracle.com devolvió **HTTP 403** a la descarga automatizada de ese PDF en
-esta verificación. La cita anterior procede de fuentes secundarias coincidentes y **debe
-confirmarse abriendo el PDF a mano** antes de usarla para decidir nada. Además, el propio documento
-se publica con etiqueta de carácter informativo y **no forma parte del contrato de licencia**: lo
-que obliga es el *ordering document* firmado, no la política. Esa distinción es exactamente la que
-discuten los asesores de licencias — **no la resuelve un DBA, y este documento no la resuelve**.
+**Declared gap (§8)**: oracle.com returned **HTTP 403** to the automated download of that PDF in
+this verification. The quote above comes from concurring secondary sources and **must
+be confirmed by opening the PDF by hand** before using it to decide anything. In addition, the document itself
+is published with an informational-purposes label and **is not part of the licence contract**: what
+binds is the signed *ordering document*, not the policy. That distinction is exactly the one
+licensing advisers argue about — **a DBA does not resolve it, and this document does not resolve it**.
 
-Criterio técnico que sí se fija aquí:
-- **VMware, Hyper-V, KVM/Proxmox y contenedores se tratan por defecto como particionado blando**:
-  presupuestar que hay que licenciar **todos los cores del host físico** —y, en clústeres con
-  migración en vivo, de todos los hosts a los que la VM pueda moverse— hasta que el gestor de
-  licencias diga lo contrario **por escrito**.
-- Si Oracle debe convivir con un clúster virtualizado general, **aislar el hierro**: clúster
-  dedicado, sin DRS ni migración hacia hosts no licenciados, y **evidencia conservada** (logs,
-  configuración, capturas fechadas) de dónde ha corrido la instancia. Esa evidencia es la defensa
-  de auditoría; se recoge de forma continua, no cuando llega la carta.
-- Preferir **hierro dedicado y pequeño** a un clúster grande compartido: en Oracle, la
-  consolidación que ahorra en el resto del catálogo **multiplica** la factura.
-- La cláusula de "core factor no aplica en nube" (§2.2) convierte *lift-and-shift* a IaaS en un
-  ejercicio de recálculo, no de traslado.
+The technical criteria that are set here:
+- **VMware, Hyper-V, KVM/Proxmox and containers are treated by default as soft partitioning**:
+  budget for licensing **all the cores of the physical host** —and, in clusters with
+  live migration, of all the hosts the VM can move to— until the licence manager says
+  otherwise **in writing**.
+- If Oracle must coexist with a general virtualised cluster, **isolate the iron**: a dedicated
+  cluster, with no DRS and no migration to unlicensed hosts, and **evidence preserved** (logs,
+  configuration, dated captures) of where the instance has run. That evidence is the audit
+  defence; it is collected continuously, not when the letter arrives.
+- Prefer **dedicated, small iron** to a large shared cluster: in Oracle, the
+  consolidation that saves money everywhere else in the catalogue **multiplies** the bill.
+- The "core factor does not apply in the cloud" clause (§2.2) turns a *lift-and-shift* to IaaS into an
+  exercise in recalculation, not relocation.
 
-### 2.5 Nube
+### 2.5 Cloud
 
-- **BYOL a IaaS de terceros (AWS/Azure/GCP)**: sigue siendo Oracle autogestionado. Las **opciones y
-  packs se licencian igual**; lo único que cambia es el conteo (vCPU, política de *Authorized Cloud
-  Environments*).
-- **Servicios gestionados de Oracle (OCI Base Database, Exadata Database Service, Autonomous)**:
-  incluyen opciones según el nivel contratado — el manual de licencias lo tabula por columnas
-  (`BaseDB EE-HP`, `BaseDB EE-EP`, `ExaDB`). Ahí sí desaparece parte del riesgo de auditoría, a
-  cambio de acoplamiento al proveedor: **decisión de ADR**.
-- Ningún número de precio se fija en este documento. **Prohibido citar precios de memoria**: solo
-  vale la lista de precios vigente de Oracle en el momento de la decisión.
+- **BYOL to third-party IaaS (AWS/Azure/GCP)**: it is still self-managed Oracle. The **options and
+  packs are licensed the same**; the only thing that changes is the counting (vCPU, *Authorized Cloud
+  Environments* policy).
+- **Oracle managed services (OCI Base Database, Exadata Database Service, Autonomous)**:
+  they include options according to the tier contracted — the licensing manual tabulates it by columns
+  (`BaseDB EE-HP`, `BaseDB EE-EP`, `ExaDB`). There part of the audit risk does disappear, in
+  exchange for coupling to the provider: **an ADR decision**.
+- No price figure is set in this document. **Forbidden to quote prices from memory**: only
+  Oracle's current price list at the time of the decision counts.
 
-## 3. Arquitectura
+## 3. Architecture
 
-### 3.1 Multitenant (CDB/PDB) es el modelo, no una opción de diseño
+### 3.1 Multitenant (CDB/PDB) is the model, not a design option
 
-- **La arquitectura no-CDB está desoportada**: 19c fue la última versión que la admitió; 21c en
-  adelante —y por tanto 23ai y 26ai— **solo existen como CDB**. Un plan de actualización desde 19c
-  no-CDB **incluye la conversión a PDB**, y la conversión **es irreversible** (ni Flashback Database
-  la deshace): el rollback es "restaurar la copia previa", y hay que dimensionar la ventana en
-  consecuencia.
-- **3 PDB de usuario por CDB sin licencia de Multitenant** (`PDB$SEED` no cuenta). La cuarta es una
-  compra. Nada impide técnicamente crearla en EE, así que **`MAX_PDBS` se fija como salvaguarda**
-  en todo CDB sin la opción: es un control de licencia implementado como parámetro.
-- Criterio de agrupación: un CDB por **entorno y ciclo de parcheo compartido**, no por conveniencia
-  de nombres. Todo lo que comparte CDB comparte ventana de mantenimiento, versión y fallo de
-  instancia — el aislamiento que da un PDB es lógico, no de disponibilidad.
-- Local *undo*, `PDB$SEED` limpio y clonado por *refreshable clone* para provisionar entornos:
-  es la mejor pieza del modelo y la más infrautilizada.
+- **The non-CDB architecture is unsupported**: 19c was the last version that allowed it; 21c
+  onwards —and therefore 23ai and 26ai— **exist only as CDB**. An upgrade plan from 19c
+  non-CDB **includes the conversion to a PDB**, and the conversion **is irreversible** (not even Flashback
+  Database undoes it): the rollback is "restore the previous copy", and the window has to be sized
+  accordingly.
+- **3 user PDBs per CDB without a Multitenant licence** (`PDB$SEED` does not count). The fourth is a
+  purchase. Nothing technically prevents creating it in EE, so **`MAX_PDBS` is set as a safeguard**
+  in every CDB without the option: it is a licence control implemented as a parameter.
+- Grouping criterion: one CDB per **environment and shared patching cycle**, not for naming
+  convenience. Everything that shares a CDB shares the maintenance window, the version and instance
+  failure — the isolation a PDB gives is logical, not availability.
+- Local *undo*, a clean `PDB$SEED` and cloning via *refreshable clone* to provision environments:
+  it is the best piece of the model and the most underused.
 
-### 3.2 Instancia frente a base de datos
+### 3.2 Instance versus database
 
-Distinción operativa, no académica: la **instancia** es memoria (SGA/PGA) y procesos; la **base de
-datos** son los ficheros. RAC es *N* instancias sobre **una** base de datos; Data Guard es *N* bases
-de datos distintas. Casi todo malentendido de HA en Oracle nace de confundir ambas:
-**RAC protege de la caída de un nodo; no protege del borrado de un fichero ni de la pérdida del
-sitio.** Eso es Data Guard y RMAN.
+An operational distinction, not an academic one: the **instance** is memory (SGA/PGA) and processes; the
+**database** is the files. RAC is *N* instances over **one** database; Data Guard is *N* different
+databases. Almost every HA misunderstanding in Oracle comes from confusing the two:
+**RAC protects against a node going down; it does not protect against a file being deleted or the site
+being lost.** That is Data Guard and RMAN.
 
-### 3.3 Tablespaces y organización
+### 3.3 Tablespaces and organisation
 
-- Separar por **ciclo de vida y política**, no por capricho: datos, índices grandes, temporal, undo,
-  y un tablespace por conjunto con retención o cifrado propios. `SYSTEM`/`SYSAUX` **nunca** alojan
-  objetos de aplicación.
-- **Bigfile tablespaces** por defecto sobre ASM para datos de aplicación (menos ficheros que
-  gestionar); *smallfile* cuando haga falta granularidad de restauración.
-- Gestión local de extents y **ASSM**; nada de gestión manual de segmentos en diseños nuevos.
-- **Autoextend con `MAXSIZE` explícito**: un datafile sin techo convierte un bug de aplicación en un
-  llenado de cabina.
-- El particionado de tablas es **decisión de diseño con factura** (§2.3): si no hay licencia, se
-  diseña sin él —vistas, tablas por rango gestionadas por la aplicación, purga por lotes— y se
-  documenta la limitación. **Prohibido** particionar "porque es lo correcto" sin verificar licencia.
+- Separate by **lifecycle and policy**, not by whim: data, large indexes, temp, undo,
+  and one tablespace per set with its own retention or encryption. `SYSTEM`/`SYSAUX` **never** host
+  application objects.
+- **Bigfile tablespaces** by default over ASM for application data (fewer files to
+  manage); *smallfile* when restore granularity is needed.
+- Local extent management and **ASSM**; no manual segment management in new designs.
+- **Autoextend with an explicit `MAXSIZE`**: a datafile with no ceiling turns an application bug into a
+  filled array.
+- Table partitioning is a **design decision with a bill** (§2.3): if there is no licence, you
+  design without it —views, range tables managed by the application, batch purging— and
+  you document the limitation. **Forbidden** to partition "because it is the right thing" without verifying the licence.
 
-### 3.4 ASM frente a filesystem
+### 3.4 ASM versus filesystem
 
-- **ASM por defecto** en instalaciones on-prem con almacenamiento en bloque compartido o múltiple:
-  *striping*, rebalanceo en caliente, `ASMLib`/`AFD` o `udev` para persistencia de nombres, y es el
-  único camino razonable para RAC.
-- **Redundancia**: `EXTERNAL` cuando la cabina ya replica y su fiabilidad está demostrada;
-  `NORMAL`/`HIGH` cuando ASM es quien protege. Decidir con `linux-storage-standards`, no por
-  costumbre.
-- Grupos de discos mínimos y con propósito (`+DATA`, `+RECO`, `+GRID`); discos del mismo tamaño y
-  rendimiento dentro de un grupo — el desequilibrio se paga en latencia.
-- **Filesystem (xfs/ext4 sobre LVM) es aceptable** en instancias únicas, sin RAC, sobre
-  almacenamiento fiable: menos piezas, menos operación (KISS). No se adopta ASM "por ser Oracle".
-- ZFS o almacenamiento con *copy-on-write* bajo datafiles: ver `zfs-standards`; cuidar
-  `recordsize`/alineación con el `db_block_size` o el rendimiento se desploma.
+- **ASM by default** in on-prem installations with shared or multiple block storage:
+  *striping*, hot rebalancing, `ASMLib`/`AFD` or `udev` for name persistence, and it is the
+  only reasonable path for RAC.
+- **Redundancy**: `EXTERNAL` when the array already replicates and its reliability is proven;
+  `NORMAL`/`HIGH` when ASM is the one protecting. Decide with `linux-storage-standards`, not by
+  habit.
+- Minimal, purposeful disk groups (`+DATA`, `+RECO`, `+GRID`); disks of the same size and
+  performance within a group — the imbalance is paid in latency.
+- **A filesystem (xfs/ext4 over LVM) is acceptable** on single instances, without RAC, over
+  reliable storage: fewer pieces, less operation (KISS). ASM is not adopted "because it is Oracle".
+- ZFS or *copy-on-write* storage under datafiles: see `zfs-standards`; mind
+  `recordsize`/alignment with the `db_block_size` or performance collapses.
 
-## 4. RAC: qué resuelve de verdad
+## 4. RAC: what it really solves
 
-- **RAC resuelve disponibilidad frente a la caída de una instancia o un nodo, y escala lecturas
-  con esfuerzo. No da rendimiento lineal**: la caché global (*Cache Fusion*) tiene coste, y una
-  carga con bloques calientes compartidos puede ir **más lenta** en RAC que en un nodo. Cualquier
-  promesa de "el doble de nodos, el doble de TPS" es falsa por defecto.
-- **Coste**: opción de pago (§2.3) **sobre todos los nodos**, Grid Infrastructure, almacenamiento
-  compartido, interconexión dedicada y redundante, y un salto grande de complejidad operativa —
-  precisamente lo que `ha-clustering-standards` advierte: *un clúster mal operado tiene peor
-  disponibilidad que un servicio simple bien monitorizado*.
-- **Alternativas más simples, en este orden**, antes de proponer RAC:
-  1. Instancia única bien dimensionada + **Data Guard con failover rápido** (cubre nodo, sitio y
-     corrupción; RTO de minutos).
-  2. Instancia única sobre virtualización con reinicio automático en otro host (RTO de minutos,
-     coste cercano a cero).
-  3. **Oracle Restart** (Grid Infrastructure en un nodo) para reiniciar instancia y listener.
-  4. RAC **solo** cuando el RTO exigido —derivado por `bcdr-standards`, no inventado— sea de
-     segundos y esté presupuestado.
-- Si hay RAC: servicios (`srvctl add service`) como unidad de conexión de la aplicación, con
-  preferencias y *TAF*/*Application Continuity* configurados; conexión por **SCAN**, jamás por VIP
-  de nodo en cadenas de conexión. Nodos idénticos en hardware y parcheo.
-- **El quórum y el fencing de RAC son de Oracle Clusterware** (voting disks, network heartbeat,
-  *node eviction*): **no se combina con Pacemaker/Corosync**. `ha-clustering-standards` describe la
-  disciplina general de fencing; su implementación aquí es la de Oracle y solo la de Oracle.
-- **Prohibido justificar RAC como sustituto de backup o de DR.** Un `DROP TABLE` se replica
-  instantáneamente a todos los nodos.
+- **RAC solves availability against an instance or node going down, and it scales reads
+  with effort. It does not give linear performance**: the global cache (*Cache Fusion*) has a cost, and a
+  workload with shared hot blocks can be **slower** on RAC than on a single node. Any
+  promise of "twice the nodes, twice the TPS" is false by default.
+- **Cost**: a paid option (§2.3) **on every node**, Grid Infrastructure, shared
+  storage, a dedicated and redundant interconnect, and a large jump in operational complexity —
+  precisely what `ha-clustering-standards` warns about: *a badly operated cluster has worse
+  availability than a well-monitored simple service*.
+- **Simpler alternatives, in this order**, before proposing RAC:
+  1. A well-sized single instance + **Data Guard with fast failover** (it covers node, site and
+     corruption; RTO in minutes).
+  2. A single instance on virtualisation with automatic restart on another host (RTO in minutes,
+     cost close to zero).
+  3. **Oracle Restart** (Grid Infrastructure on one node) to restart the instance and the listener.
+  4. RAC **only** when the required RTO —derived by `bcdr-standards`, not invented— is in
+     seconds and is budgeted.
+- If there is RAC: services (`srvctl add service`) as the application's unit of connection, with
+  preferences and *TAF*/*Application Continuity* configured; connection via **SCAN**, never via a node
+  VIP in connection strings. Nodes identical in hardware and patching.
+- **RAC's quorum and fencing belong to Oracle Clusterware** (voting disks, network heartbeat,
+  *node eviction*): **it is not combined with Pacemaker/Corosync**. `ha-clustering-standards` describes the
+  general discipline of fencing; its implementation here is Oracle's and only Oracle's.
+- **Forbidden to justify RAC as a substitute for backup or DR.** A `DROP TABLE` replicates
+  instantly to every node.
 
-## 5. Data Guard y continuidad
+## 5. Data Guard and continuity
 
-- **Física (redo apply) por defecto**: copia bloque a bloque, simple, cubre todo el contenido.
-  **Lógica (SQL apply)** solo para casos concretos (versiones distintas, subconjunto de esquemas,
-  actualización rodada) y asumiendo sus limitaciones de tipos de datos.
-- **Modos de protección** — elegir desde el RPO derivado por `bcdr-standards`:
+- **Physical (redo apply) by default**: a block-by-block copy, simple, covering all the content.
+  **Logical (SQL apply)** only for specific cases (different versions, a subset of schemas, a rolling
+  upgrade) and accepting its data type limitations.
+- **Protection modes** — choose from the RPO derived by `bcdr-standards`:
 
-| Modo | RPO | Coste |
+| Mode | RPO | Cost |
 |---|---|---|
-| `MAX PERFORMANCE` (asíncrono) | > 0, variable con el lag | Ninguno sobre la primaria |
-| `MAX AVAILABILITY` (síncrono con degradación) | 0 mientras la standby responde | Latencia de commit; degrada a asíncrono ante fallo |
-| `MAX PROTECTION` | 0 estricto | **Para la primaria** si no puede confirmar. Solo con ≥2 standby y con esa consecuencia aceptada por escrito |
+| `MAX PERFORMANCE` (asynchronous) | > 0, varying with the lag | None on the primary |
+| `MAX AVAILABILITY` (synchronous with degradation) | 0 while the standby responds | Commit latency; degrades to asynchronous on failure |
+| `MAX PROTECTION` | Strictly 0 | **It stops the primary** if it cannot confirm. Only with ≥2 standbys and with that consequence accepted in writing |
 
-- **Switchover ≠ failover**: *switchover* es planificado, reversible y sin pérdida — es la operación
-  que se ensaya. *Failover* es la reacción a la pérdida de la primaria, potencialmente con pérdida
-  de datos, y **deja la antigua primaria fuera del rol** hasta reinstanciarla (`FLASHBACK DATABASE`
-  la recupera sin copia completa si estaba habilitado: razón principal para tenerlo activo).
-- **Broker (`dgmgrl`) obligatorio** frente a la gestión manual de parámetros: menos superficie de
-  error humano, `VALIDATE DATABASE` como comprobación previa, y observabilidad del *apply lag* y
-  *transport lag* — ambos son **SLI de primera clase** con alerta.
-- **El ensayo es obligatorio y calendarizado**: un *switchover* completo con la aplicación
-  reconectando (no solo el motor) al menos con la cadencia que fije `bcdr-standards`. Un Data Guard
-  que nunca ha conmutado es un supuesto, no un control.
-- **Active Data Guard es opción de pago** (§2.3). Sin ella, la standby **no se abre en lectura**.
-  Un diseño que planifique "descargar los informes a la réplica" está comprando, aunque no lo sepa.
-  Snapshot Standby (abrir la standby en lectura-escritura para pruebas y luego revertirla) sí está
-  en EE, y es la forma barata de probar sobre datos reales — con la clasificación del dato
-  respetada (`privacy-engineering-standards`).
+- **Switchover ≠ failover**: a *switchover* is planned, reversible and lossless — it is the operation
+  you rehearse. A *failover* is the reaction to losing the primary, potentially with data
+  loss, and it **leaves the old primary out of the role** until it is reinstantiated (`FLASHBACK DATABASE`
+  recovers it without a full copy if it was enabled: the main reason to have it active).
+- **The Broker (`dgmgrl`) is mandatory** over manual parameter management: less human error
+  surface, `VALIDATE DATABASE` as a prior check, and observability of the *apply lag* and
+  *transport lag* — both are **first-class SLIs** with alerting.
+- **The rehearsal is mandatory and scheduled**: a full *switchover* with the application
+  reconnecting (not just the engine) at least at the cadence set by `bcdr-standards`. A Data Guard
+  that has never switched over is an assumption, not a control.
+- **Active Data Guard is a paid option** (§2.3). Without it, the standby **is not opened for reading**.
+  A design that plans to "offload the reports to the replica" is buying, even if it does not know it.
+  Snapshot Standby (opening the standby read-write for testing and then reverting it) is
+  in EE, and it is the cheap way to test on real data — with the data classification
+  respected (`privacy-engineering-standards`).
 
-## 6. Respaldo: RMAN y Flashback
+## 6. Backup: RMAN and Flashback
 
-> **Invariante compartido con `backup-recovery-standards` y `bcdr-standards`, sin matices:**
-> **un backup sin restore probado no existe.** Un `RMAN> backup` que terminó en verde no es prueba
-> de nada.
+> **An invariant shared with `backup-recovery-standards` and `bcdr-standards`, with no nuance:**
+> **a backup without a tested restore does not exist.** An `RMAN> backup` that finished green is not proof
+> of anything.
 
-- **RMAN es el mecanismo**, no una opción: respaldos consistentes en bloque, reconocimiento de
-  corrupción, y `RESTORE`/`RECOVER` guiados por el catálogo. Los volcados `expdp` **no son un
-  backup**: son movimiento lógico de datos, sin PITR ni recuperación de instancia.
-- **Estrategia por defecto**: nivel 0 semanal + incrementales nivel 1 diarios con **block change
-  tracking** activado (reduce drásticamente el escaneo), archivado de redo continuo, y `FRA`
-  dimensionada con política de retención explícita (`CONFIGURE RETENTION POLICY`). Incrementales
-  *merge* (imagen actualizada) cuando el RTO exige restaurar rápido y hay espacio.
-- **Catálogo de recuperación** en base de datos separada cuando hay más de un puñado de instancias:
-  el `controlfile` solo retiene metadatos limitados y **se pierde con el sitio**. El catálogo se
-  respalda también.
-- **Verificación como control de ingeniería**, no como confianza:
-  - `RESTORE ... VALIDATE` y `BACKUP VALIDATE CHECK LOGICAL` con cadencia programada.
-  - **Restore real periódico a un host distinto**, cronometrado, con `RECOVER` hasta un SCN y
-    validación de datos por la aplicación. La cadencia y el registro del ejercicio los fija
-    `backup-recovery-standards`; **el procedimiento Oracle es de aquí**.
-  - `V$DATABASE_BLOCK_CORRUPTION` vigilada; `DB_BLOCK_CHECKSUM`/`DB_BLOCK_CHECKING` activos salvo
-    coste medido que lo desaconseje.
-- **Flashback es una red de seguridad distinta, no un backup**: `FLASHBACK QUERY`/`FLASHBACK TABLE`
-  (dependen del *undo* y su retención) y `FLASHBACK DATABASE` (depende de los *flashback logs*) sólo
-  cubren errores lógicos recientes dentro de su ventana y **desaparecen con el almacenamiento
-  primario**. Se habilitan porque acortan el RTO del error humano y porque son requisito práctico
-  para reinstanciar tras un failover — nunca como sustituto de la copia.
-- **Recycle bin**: activo por defecto, no es un control de recuperación (un `PURGE` o presión de
-  espacio lo vacía). No incluirlo en un runbook como red de seguridad.
-- El destino de las copias, su cifrado, inmutabilidad y regla 3-2-1 son de `backup-recovery-standards`.
-  Nota específica: **el cifrado de backups de RMAN por clave/wallet depende de Advanced Security**
-  en algunos modos — verificar la licencia antes de prometer "backups cifrados por el motor";
-  cifrar en el repositorio es la alternativa sin factura.
+- **RMAN is the mechanism**, not an option: block-consistent backups, corruption
+  detection, and `RESTORE`/`RECOVER` guided by the catalogue. `expdp` dumps **are not a
+  backup**: they are logical data movement, with no PITR and no instance recovery.
+- **Default strategy**: a weekly level 0 + daily level 1 incrementals with **block change
+  tracking** enabled (it drastically reduces the scan), continuous redo archiving, and an `FRA`
+  sized with an explicit retention policy (`CONFIGURE RETENTION POLICY`). *Merge* incrementals
+  (an updated image) when the RTO demands a fast restore and there is space.
+- **A recovery catalogue** in a separate database when there is more than a handful of instances:
+  the `controlfile` only retains limited metadata and **is lost with the site**. The catalogue is
+  backed up too.
+- **Verification as an engineering control**, not as trust:
+  - `RESTORE ... VALIDATE` and `BACKUP VALIDATE CHECK LOGICAL` on a scheduled cadence.
+  - **A real periodic restore to a different host**, timed, with `RECOVER` to an SCN and
+    data validation by the application. The cadence and the record of the exercise are set by
+    `backup-recovery-standards`; **the Oracle procedure belongs here**.
+  - `V$DATABASE_BLOCK_CORRUPTION` watched; `DB_BLOCK_CHECKSUM`/`DB_BLOCK_CHECKING` active unless
+    a measured cost advises otherwise.
+- **Flashback is a different safety net, not a backup**: `FLASHBACK QUERY`/`FLASHBACK TABLE`
+  (they depend on *undo* and its retention) and `FLASHBACK DATABASE` (it depends on the *flashback logs*) only
+  cover recent logical errors within their window and **disappear with the primary
+  storage**. They are enabled because they shorten the RTO of human error and because they are a practical
+  requirement for reinstantiating after a failover — never as a substitute for the copy.
+- **Recycle bin**: on by default, it is not a recovery control (a `PURGE` or space
+  pressure empties it). Do not include it in a runbook as a safety net.
+- The destination of the copies, their encryption, immutability and the 3-2-1 rule belong to `backup-recovery-standards`.
+  A specific note: **encrypting RMAN backups by key/wallet depends on Advanced Security**
+  in some modes — verify the licence before promising "backups encrypted by the engine";
+  encrypting in the repository is the alternative with no bill.
 
-## 7. Rendimiento: el modelo de espera
+## 7. Performance: the wait model
 
-- **Método, no adivinanza**: en Oracle se diagnostica por **eventos de espera** — dónde se va el
-  tiempo de la sesión, no qué contador parece alto. La secuencia es siempre: *sesión → tiempo →
-  evento de espera dominante → SQL responsable → plan → causa*. Cualquier propuesta de cambio de
-  parámetro que no venga de esa cadena está prohibida.
-- **Herramientas y su factura** (§2.3): AWR, ASH y ADDM **son Diagnostics Pack**. Sin licencia:
-  `V$SESSION` (con `event`, `blocking_session`, `sql_id`), `V$SESSION_WAIT`, `V$SYSTEM_EVENT`,
-  `V$SQL`, `DBMS_XPLAN`, SQL trace (`10046`) + `tkprof`, y **Statspack** como alternativa histórica
-  soportada. Con licencia: ASH es la herramienta más rentable del producto — muestreo por segundo
-  que responde "qué estaba pasando a las 03:14" sin reproducir el problema.
-- **Clases de espera y su lectura** (guía de triaje, no receta): esperas de **E/S de usuario**
-  (`db file sequential read`) suelen ser plan o índice, no disco lento; **concurrencia**
-  (`buffer busy waits`, `enq: TX - row lock contention`) es diseño de datos o transacciones largas;
-  **configuración** (`log file sync`) apunta a commits por operación o a latencia del redo;
-  **CPU** alta con `library cache: mutex X` o cifras enormes de *hard parse* apunta al antipatrón
-  de literales; en RAC, esperas `gc *` son el coste de Cache Fusion.
-- **Planes y su estabilidad**:
-  - Leer el plan **real** (`DBMS_XPLAN.DISPLAY_CURSOR` con `ALLSTATS LAST`), no el estimado.
-  - **SQL Plan Baselines (`DBMS_SPM`)** como mecanismo de estabilidad por defecto para el SQL
-    crítico: se acepta un plan bueno conocido y la evolución de planes nuevos pasa por
-    verificación. Los *SQL Profiles* son producto del Tuning Pack (**factura**); las baselines, no.
-  - **Hints en el código de aplicación: último recurso**, con comentario que explique por qué y
-    fecha de revisión. Un hint es deuda que sobrevive al cambio de versión y de datos.
-- **Estadísticas del optimizador**:
-  - `DBMS_STATS` con la tarea automática **activa**; se interviene a mano cuando hay carga masiva,
-    tabla volátil o histograma que engaña, no por rutina.
-  - **Recoger justo después de cargas grandes** y antes de que la aplicación consulte; para tablas
-    intermedias muy volátiles, considerar estadísticas fijadas o *dynamic sampling* deliberado.
-  - **Prohibido borrar estadísticas o desactivar la recogida** como "solución" a un plan malo: eso
-    no arregla el plan, elimina la información.
-- **Antipatrones clásicos, vetados**:
-  - **SQL sin variables ligadas** (literales concatenados): *hard parse* masivo, contención de
-    library cache y, de paso, inyección SQL. Es el fallo nº1 de rendimiento en Oracle y el nº1 de
-    seguridad a la vez. `CURSOR_SHARING=FORCE` es una **tirita** de emergencia, no una solución.
-  - **Índices que nadie usa**: cuestan en cada DML. Revisión periódica con monitorización de uso y
-    retirada (invisibles primero, `DROP` después) — la misma higiene que exige la skill madre.
-  - Funciones sobre la columna en el `WHERE` (invalidan el índice salvo índice basado en función),
-    tipos implícitamente convertidos (`VARCHAR2` vs `NUMBER`), y `SELECT *` en interfaces.
-  - Bucles fila a fila desde la aplicación (*row-by-row*, "slow-by-slow") donde cabía una operación
-    de conjunto.
-  - Transacciones largas y `undo` insuficiente → `ORA-01555`. Se arregla acortando transacciones,
-    no subiendo `UNDO_RETENTION` a ciegas.
-- **Parámetros**: cambios uno a uno, con medición antes/después, en `spfile` versionado y con
-  justificación escrita. Los parámetros ocultos (`_`) **solo** con Service Request de Oracle que los
-  respalde. `MEMORY_TARGET`/`SGA_TARGET` gestionados, `hugepages` configuradas en Linux para SGA
-  grandes (y `MEMORY_TARGET` es incompatible con hugepages: elegir conscientemente).
+- **A method, not guesswork**: in Oracle you diagnose by **wait events** — where the session's
+  time goes, not which counter looks high. The sequence is always: *session → time →
+  dominant wait event → responsible SQL → plan → cause*. Any proposal to change a
+  parameter that does not come from that chain is forbidden.
+- **Tools and their bill** (§2.3): AWR, ASH and ADDM **are the Diagnostics Pack**. Without a licence:
+  `V$SESSION` (with `event`, `blocking_session`, `sql_id`), `V$SESSION_WAIT`, `V$SYSTEM_EVENT`,
+  `V$SQL`, `DBMS_XPLAN`, SQL trace (`10046`) + `tkprof`, and **Statspack** as the supported historical
+  alternative. With a licence: ASH is the most cost-effective tool in the product — per-second
+  sampling that answers "what was happening at 03:14" without reproducing the problem.
+- **Wait classes and how to read them** (a triage guide, not a recipe): **user I/O** waits
+  (`db file sequential read`) are usually the plan or an index, not a slow disk; **concurrency**
+  (`buffer busy waits`, `enq: TX - row lock contention`) is data design or long transactions;
+  **configuration** (`log file sync`) points at commits per operation or redo latency;
+  high **CPU** with `library cache: mutex X` or huge *hard parse* figures points at the literals
+  antipattern; in RAC, `gc *` waits are the cost of Cache Fusion.
+- **Plans and their stability**:
+  - Read the **real** plan (`DBMS_XPLAN.DISPLAY_CURSOR` with `ALLSTATS LAST`), not the estimated one.
+  - **SQL Plan Baselines (`DBMS_SPM`)** as the default stability mechanism for critical
+    SQL: a known good plan is accepted and the evolution of new plans goes through
+    verification. *SQL Profiles* are a Tuning Pack product (**a bill**); baselines are not.
+  - **Hints in application code: a last resort**, with a comment explaining why and a
+    review date. A hint is debt that survives version and data changes.
+- **Optimiser statistics**:
+  - `DBMS_STATS` with the automatic task **active**; you intervene by hand when there is a bulk load,
+    a volatile table or a misleading histogram, not as routine.
+  - **Gather right after large loads** and before the application queries; for very volatile
+    intermediate tables, consider locked statistics or deliberate *dynamic sampling*.
+  - **Forbidden to delete statistics or disable gathering** as a "solution" to a bad plan: that
+    does not fix the plan, it removes the information.
+- **Classic antipatterns, vetoed**:
+  - **SQL without bind variables** (concatenated literals): massive *hard parse*, library cache
+    contention and, incidentally, SQL injection. It is the no. 1 performance failure in Oracle and the no. 1
+    security one at the same time. `CURSOR_SHARING=FORCE` is an emergency **sticking plaster**, not a solution.
+  - **Indexes nobody uses**: they cost on every DML. Periodic review with usage monitoring and
+    withdrawal (invisible first, `DROP` afterwards) — the same hygiene the parent skill demands.
+  - Functions over the column in the `WHERE` (they invalidate the index unless there is a function-based index),
+    implicitly converted types (`VARCHAR2` vs `NUMBER`), and `SELECT *` in interfaces.
+  - Row-by-row loops from the application (*row-by-row*, "slow-by-slow") where a set operation
+    would have fitted.
+  - Long transactions and insufficient `undo` → `ORA-01555`. It is fixed by shortening transactions,
+    not by blindly raising `UNDO_RETENTION`.
+- **Parameters**: changes one at a time, with before/after measurement, in a versioned `spfile` and with
+  written justification. Hidden parameters (`_`) **only** with an Oracle Service Request backing
+  them. `MEMORY_TARGET`/`SGA_TARGET` managed, `hugepages` configured on Linux for large
+  SGAs (and `MEMORY_TARGET` is incompatible with hugepages: choose consciously).
 
-## 8. PL/SQL con criterio
+## 8. PL/SQL with judgement
 
-- **Sí**: lógica que debe estar junto al dato por rendimiento (procesamiento masivo con `BULK
-  COLLECT`/`FORALL`), integridad que no puede confiarse a un cliente, APIs de paquete que
-  encapsulan acceso a tablas, y trabajos programados del propio motor.
-- **No**: reglas de negocio completas enterradas en paquetes — **es lógica de negocio sin tests,
-  sin revisión de código y sin portabilidad**, y es el principal ancla que convierte "migrar de
-  Oracle" en un proyecto de años (§11). Si se escribe, se escribe **como código**: en el
-  repositorio, versionado, con migraciones versionadas (mismo criterio que
-  `data-platform-standards`), con `utPLSQL` u equivalente en CI, y compilado con
-  `PLSQL_WARNINGS` tratados como errores en el build.
-- **Prohibido**: DDL dinámico y `EXECUTE IMMEDIATE` con entrada concatenada (usar
-  `DBMS_ASSERT` y bind variables); `AUTHID DEFINER` sin pensarlo en paquetes que reciben entrada
-  externa; triggers que hacen efectos laterales no evidentes (los triggers en cascada son la
-  causa de incidentes más difícil de diagnosticar del motor); `COMMIT` dentro de triggers
-  (`PRAGMA AUTONOMOUS_TRANSACTION` solo para auditoría, con la pérdida de atomicidad asumida).
+- **Yes**: logic that must sit next to the data for performance (bulk processing with `BULK
+  COLLECT`/`FORALL`), integrity that cannot be entrusted to a client, package APIs that
+  encapsulate table access, and scheduled jobs of the engine itself.
+- **No**: complete business rules buried in packages — **it is business logic with no tests,
+  no code review and no portability**, and it is the main anchor that turns "migrating off
+  Oracle" into a multi-year project (§11). If it is written, it is written **as code**: in the
+  repository, versioned, with versioned migrations (the same criteria as
+  `data-platform-standards`), with `utPLSQL` or equivalent in CI, and compiled with
+  `PLSQL_WARNINGS` treated as errors in the build.
+- **Forbidden**: dynamic DDL and `EXECUTE IMMEDIATE` with concatenated input (use
+  `DBMS_ASSERT` and bind variables); `AUTHID DEFINER` without thinking in packages that receive
+  external input; triggers with non-obvious side effects (cascading triggers are the
+  hardest-to-diagnose cause of incidents in the engine); `COMMIT` inside triggers
+  (`PRAGMA AUTONOMOUS_TRANSACTION` only for auditing, with the loss of atomicity accepted).
 
-## 9. Versiones, parcheo y actualizaciones
+## 9. Versions, patching and upgrades
 
-Estado verificado a agosto de 2026 (**re-verificar en MOS Doc ID 742060.1**, que es la fuente
-autoritativa y **requiere cuenta de soporte** — este documento no ha podido leerla, §12):
+State verified as of August 2026 (**re-verify in MOS Doc ID 742060.1**, which is the
+authoritative source and **requires a support account** — this document has not been able to read it, §12):
 
-| Versión | Estado | Fechas (verificar) |
+| Version | Status | Dates (verify) |
 |---|---|---|
-| **Oracle AI Database 26ai** | Release vigente. GA on-prem Linux x86-64 anunciada el **27-ene-2026** (EE). Numeración de RU: **23.26.1** (ene-2026), **23.26.2** (abr-2026), **23.26.3** (jul-2026) — confirmado en docs.oracle.com | Premier Support hasta **31-dic-2031** (fuente secundaria); Extended **TBD** |
-| **23ai** | Misma línea de código; para quien ya estaba en 23ai en OCI o *engineered systems*, pasar a 26ai es un RU | Ver 26ai |
-| **19c** | LTS de referencia del parque instalado | Premier hasta **31-dic-2029**; Extended hasta **31-dic-2032** |
-| **21c** | *Innovation Release*, **sin Extended Support** | Premier hasta **31-jul-2027** (verificar) |
+| **Oracle AI Database 26ai** | The current release. On-prem GA for Linux x86-64 announced on **27 Jan 2026** (EE). RU numbering: **23.26.1** (Jan 2026), **23.26.2** (Apr 2026), **23.26.3** (Jul 2026) — confirmed on docs.oracle.com | Premier Support until **31 Dec 2031** (secondary source); Extended **TBD** |
+| **23ai** | The same code line; for whoever was already on 23ai in OCI or on *engineered systems*, moving to 26ai is an RU | See 26ai |
+| **19c** | The reference LTS of the installed estate | Premier until **31 Dec 2029**; Extended until **31 Dec 2032** |
+| **21c** | *Innovation Release*, **no Extended Support** | Premier until **31 Jul 2027** (verify) |
 
-**La letra pequeña de 19c que cambia decisiones**: a partir del **1-mayo-2027** el soporte de 19c
-**excluye** —según la política de soporte y su *statement of changes*— librerías BSAFE, Java y
-productos relacionados, **TLS**, **Native Network Encryption**, **Transparent Data Encryption**,
-`DBMS_CRYPTO`, utilidades C y Java, y cumplimiento **FIPS**. Consecuencia operativa directa:
-**si el sistema depende de TDE, TCPS/TLS, cifrado nativo de red o validación FIPS, el horizonte real
-de 19c es mayo de 2027, no 2029 ni 2032.** Verificar el alcance exacto en la fuente primaria antes
-de construir un plan sobre ello (§12).
+**The 19c small print that changes decisions**: from **1 May 2027** onwards 19c support
+**excludes** —according to the support policy and its *statement of changes*— BSAFE libraries, Java and
+related products, **TLS**, **Native Network Encryption**, **Transparent Data Encryption**,
+`DBMS_CRYPTO`, C and Java utilities, and **FIPS** compliance. Direct operational consequence:
+**if the system depends on TDE, TCPS/TLS, native network encryption or FIPS validation, the real horizon
+for 19c is May 2027, not 2029 or 2032.** Verify the exact scope in the primary source before
+building a plan on it (§12).
 
-**Parcheo** — el calendario cambió en 2026 y es el dato que más se afirma de memoria mal:
-- **Critical Patch Update (CPU)**: trimestral, **tercer martes de enero, abril, julio y octubre**.
-  Último publicado: **21-jul-2026**. Próximos anunciados: **20-oct-2026**, **19-ene-2027**,
-  **20-abr-2027**.
-- **Critical Security Patch Update (CSPU)**: **novedad de 2026** — vía **mensual** intercalada, el
-  tercer martes de **febrero, marzo, mayo, junio, agosto, septiembre, noviembre y diciembre**
-  (el primero se publicó el **28-mayo-2026**). **No sustituye al CPU: lo complementa.**
-- **Release Update (RU)** trimestral para funcionalidad y correcciones acumuladas: **ir siempre por
-  RU, no por parches sueltos**; un *one-off* solo con SR abierto y con plan de reabsorción en el
-  siguiente RU.
-- El triaje, la ventana y el SLA de aplicación los fija `vulnerability-management-standards`. Aquí
-  la regla mínima: **el retraso de parcheo se mide y se justifica por escrito**, no se acumula en
-  silencio. Aplicar con `opatchauto` sobre `ORACLE_HOME` clonado y **rollback probado**.
+**Patching** — the calendar changed in 2026 and it is the datum most often misstated from memory:
+- **Critical Patch Update (CPU)**: quarterly, the **third Tuesday of January, April, July and October**.
+  Last published: **21 Jul 2026**. Announced next ones: **20 Oct 2026**, **19 Jan 2027**,
+  **20 Apr 2027**.
+- **Critical Security Patch Update (CSPU)**: **new in 2026** — an interleaved **monthly** track, the
+  third Tuesday of **February, March, May, June, August, September, November and December**
+  (the first was published on **28 May 2026**). **It does not replace the CPU: it complements it.**
+- **Release Update (RU)**, quarterly for functionality and cumulative fixes: **always go by
+  RU, not by loose patches**; a *one-off* only with an open SR and with a plan for reabsorption in the
+  next RU.
+- The triage, the window and the application SLA are set by `vulnerability-management-standards`. Here
+  the minimum rule: **patching delay is measured and justified in writing**, it does not accumulate in
+  silence. Apply with `opatchauto` over a cloned `ORACLE_HOME` and with a **tested rollback**.
 
-**Ruta de actualización**:
-1. Inventario previo obligatorio: edición, opciones **realmente en uso**
-   (`DBA_FEATURE_USAGE_STATISTICS`), tamaño, no-CDB vs CDB, dependencias de aplicación y drivers.
-2. **AutoUpgrade** (`autoupgrade.jar`) es la herramienta soportada; `analyze` y `fixups` antes de
-   `deploy`. Nada de recetas manuales heredadas.
-3. Desde 19c no-CDB: **conversión a PDB obligatoria** e irreversible (§3.1) — ensayo completo sobre
-   copia con datos representativos y ventana de rollback = restaurar.
-4. Estadísticas y planes: capturar baselines **antes** de actualizar; una regresión de plan tras el
-   upgrade es el fallo más común y el más recuperable si hay baselines.
-5. Nunca en producción sin haber ensayado el mismo camino en preproducción con volumen real.
+**Upgrade path**:
+1. A mandatory prior inventory: edition, options **actually in use**
+   (`DBA_FEATURE_USAGE_STATISTICS`), size, non-CDB vs CDB, application dependencies and drivers.
+2. **AutoUpgrade** (`autoupgrade.jar`) is the supported tool; `analyze` and `fixups` before
+   `deploy`. No inherited manual recipes.
+3. From 19c non-CDB: **conversion to a PDB is mandatory** and irreversible (§3.1) — a full rehearsal on
+   a copy with representative data and a rollback window = restore.
+4. Statistics and plans: capture baselines **before** upgrading; a plan regression after the
+   upgrade is the most common failure and the most recoverable one if there are baselines.
+5. Never in production without having rehearsed the same path in preproduction with real volume.
 
-## 10. Seguridad
+## 10. Security
 
-- **Usuarios y roles**: cuentas de aplicación **sin** `DBA`, sin `SELECT ANY TABLE`, sin
-  `CREATE ANY *`. Privilegios de sistema especialmente peligrosos, prohibidos fuera de
-  administración justificada y auditada: `SYSDBA`/`SYSOPER`, `ALTER SYSTEM`, `CREATE ANY
+- **Users and roles**: application accounts **without** `DBA`, without `SELECT ANY TABLE`, without
+  `CREATE ANY *`. Especially dangerous system privileges, forbidden outside justified and
+  audited administration: `SYSDBA`/`SYSOPER`, `ALTER SYSTEM`, `CREATE ANY
   PROCEDURE`/`EXECUTE ANY PROCEDURE`, `GRANT ANY *`, `BECOME USER`, `CREATE DATABASE LINK`
-  (un *database link* es un puente de confianza permanente entre sistemas: inventariado y revisado).
-- **Cuentas por defecto**: bloqueadas y con contraseña expirada salvo las estrictamente necesarias.
-  Contraseñas desde `secrets-management-standards`, nunca en `tnsnames.ora`, scripts ni jobs.
-  `SEC_CASE_SENSITIVE_LOGON` y perfiles de contraseña activos.
-- **Auditoría unificada** (`unified auditing`) por defecto en versiones actuales: políticas
-  orientadas a lo que importa (uso de privilegios administrativos, cambios de estructura, accesos a
-  tablas clasificadas), **no** "auditar todo" — eso llena SYSAUX y nadie lo lee. Los registros salen
-  del host hacia el SIEM (ver `detection-engineering-standards` para su explotación). El
-  `AUDIT_TRAIL` tradicional se considera legado.
-- **Cifrado**: TLS/TCPS en el listener con certificados gestionados (`cryptography-pki-standards`).
-  **TDE requiere Advanced Security en EE** (§2.3): si no está licenciado, el cifrado en reposo se
-  resuelve **por debajo** (cifrado de volumen/cabina) y se documenta la diferencia de modelo de
-  amenaza. El *wallet*/keystore **jamás** en el mismo backup que los datos, y su contraseña bajo el
-  gestor de secretos — el mismo criterio de custodia de claves que exige `bcdr-standards`.
-- **Superficie del listener**: en una interfaz interna, **nunca** expuesto a Internet ni a la red de
-  usuarios; `ADMIN_RESTRICTIONS_<listener>=ON`; sin `EXTPROC` si no se usa; *valid node checking*
-  (`TCP.VALIDNODE_CHECKING` en `sqlnet.ora`) o, mejor, filtrado en `firewall-policy-standards`; y
-  **nunca** el puerto 1521 abierto "temporalmente" para una prueba. El listener sin contraseña no es
-  un defecto de configuración: es el diseño moderno — la protección es de red y de SO.
-- **Superficie del SO**: `ORACLE_HOME` y ficheros propiedad del usuario `oracle`, permisos
-  restrictivos, `orapwd` protegido, `linux-hardening-standards` y `selinux-standards` para el resto.
-- **Datos personales**: clasificación, retención y enmascaramiento en entornos no productivos son de
-  `privacy-engineering-standards` y `data-platform-standards`. Nota de licencia: **Data Masking and
-  Subsetting** y **Database Vault** son productos aparte — copiar producción a preproducción "y
-  luego anonimizamos" no es aceptable con o sin ellos.
+  (a *database link* is a permanent trust bridge between systems: inventoried and reviewed).
+- **Default accounts**: locked and with an expired password except for the strictly necessary ones.
+  Passwords from `secrets-management-standards`, never in `tnsnames.ora`, scripts or jobs.
+  `SEC_CASE_SENSITIVE_LOGON` and password profiles active.
+- **Unified auditing** (`unified auditing`) by default in current versions: policies
+  aimed at what matters (use of administrative privileges, structural changes, access to
+  classified tables), **not** "audit everything" — that fills SYSAUX and nobody reads it. The records leave
+  the host towards the SIEM (see `detection-engineering-standards` for their exploitation). The
+  traditional `AUDIT_TRAIL` is considered legacy.
+- **Encryption**: TLS/TCPS on the listener with managed certificates (`cryptography-pki-standards`).
+  **TDE requires Advanced Security in EE** (§2.3): if it is not licensed, encryption at rest is
+  solved **underneath** (volume/array encryption) and the difference in threat model is documented.
+  The *wallet*/keystore **never** in the same backup as the data, and its password under the
+  secrets manager — the same key custody criteria `bcdr-standards` demands.
+- **Listener surface**: on an internal interface, **never** exposed to the Internet or to the user
+  network; `ADMIN_RESTRICTIONS_<listener>=ON`; no `EXTPROC` if it is not used; *valid node checking*
+  (`TCP.VALIDNODE_CHECKING` in `sqlnet.ora`) or, better, filtering per `firewall-policy-standards`; and
+  **never** port 1521 open "temporarily" for a test. A listener with no password is not
+  a configuration defect: it is the modern design — the protection is network and OS.
+- **OS surface**: `ORACLE_HOME` and files owned by the `oracle` user, restrictive
+  permissions, `orapwd` protected, `linux-hardening-standards` and `selinux-standards` for the rest.
+- **Personal data**: classification, retention and masking in non-production environments belong to
+  `privacy-engineering-standards` and `data-platform-standards`. Licensing note: **Data Masking and
+  Subsetting** and **Database Vault** are separate products — copying production to preproduction "and
+  then we anonymise" is not acceptable with or without them.
 
-## 11. Salir de Oracle: la conversación real
+## 11. Leaving Oracle: the real conversation
 
-No es una recomendación por defecto ni una migración gratuita. Es una decisión de ADR con coste
-grande y beneficio grande, que se plantea **cuando el coste de licencia y la exposición de auditoría
-superan el coste de reescribir** — no por preferencia tecnológica.
+It is not a default recommendation nor a free migration. It is an ADR decision with a big cost
+and a big benefit, raised **when the licensing cost and the audit exposure
+exceed the cost of rewriting** — not out of technological preference.
 
-**Qué se rompe de verdad** (por orden de dolor real, no de volumen de código):
-1. **PL/SQL de negocio**: paquetes grandes, transacciones autónomas, `COMMIT` dentro de rutinas
-   (PostgreSQL no puede confirmar dentro de una función, y una `PROCEDURE` no controla transacción
-   si la llaman dentro de un bloque). Es el 80 % del esfuerzo.
-2. **Semántica que cambia en silencio**: Oracle trata la **cadena vacía como `NULL`**; PostgreSQL
-   no. Es la fuente nº1 de bugs post-migración y **no la detecta ningún conversor**: exige auditar
-   toda comparación con `NULL` y toda concatenación.
-3. **`DATE` de Oracle incluye hora** → mapear a `timestamp`, nunca a `date`.
-4. `ROWID` (`ctid` **no** es un sustituto: cambia con `VACUUM` — se añade clave primaria real),
-   `ROWNUM`, `CONNECT BY`, jerárquicas, `MERGE`, secuencias con `NEXTVAL` fuera de estado replicado.
-5. Tipos y funciones propietarias, *hints*, `DBMS_*`, jobs del *scheduler*, database links.
+**What really breaks** (in order of real pain, not of code volume):
+1. **Business PL/SQL**: large packages, autonomous transactions, `COMMIT` inside routines
+   (PostgreSQL cannot commit inside a function, and a `PROCEDURE` does not control the transaction
+   if it is called inside a block). It is 80 % of the effort.
+2. **Semantics that change silently**: Oracle treats the **empty string as `NULL`**; PostgreSQL
+   does not. It is the no. 1 source of post-migration bugs and **no converter detects it**: it requires auditing
+   every comparison with `NULL` and every concatenation.
+3. **Oracle's `DATE` includes a time** → map to `timestamp`, never to `date`.
+4. `ROWID` (`ctid` is **not** a substitute: it changes with `VACUUM` — a real primary key is added),
+   `ROWNUM`, `CONNECT BY`, hierarchical queries, `MERGE`, sequences with `NEXTVAL` outside replicated state.
+5. Proprietary types and functions, *hints*, `DBMS_*`, *scheduler* jobs, database links.
 
-**Herramientas vigentes** (verificar versión y mantenimiento antes de adoptarlas, §12):
-- **ora2pg** (GPLv3, rama 25.x): conversión de esquema, datos y PL/SQL, y —lo más valioso— su
-  **informe de complejidad de migración**, que se ejecuta **primero**, antes de comprometer nada.
-  Su salida **no va a producción sin revisión**: deja marcas `TODO`/`FIXME` por diseño.
-- **orafce**: extensión que reimplementa funciones y paquetes de Oracle en PostgreSQL. Reduce
-  trabajo; **no da compatibilidad completa** y sus propios autores lo dicen.
-- **oracle_fdw**: puente para cutover incremental — mantener ambos motores mientras se trasladan
-  servicios, en vez de un *big bang*.
-- **IvorySQL** (modo de compatibilidad Oracle sobre PostgreSQL) como alternativa; **no mezclar modo
-  Oracle y modo PostgreSQL en la misma base**.
-- **AWS DMS Schema Conversion** (AWS recomienda ya la vía gestionada frente al cliente descargable
-  **AWS SCT**), **pgloader**, **credativ-pg-migrator**.
-- **Corrección explícita**: **Babelfish NO sirve para Oracle** — es la capa de compatibilidad con
-  **SQL Server**. Confundirlo es un error que aparece con frecuencia en material de migración.
+**Current tools** (verify version and maintenance before adopting them, §12):
+- **ora2pg** (GPLv3, 25.x branch): conversion of schema, data and PL/SQL, and —most valuable— its
+  **migration complexity report**, which is run **first**, before committing to anything.
+  Its output **does not go to production without review**: it leaves `TODO`/`FIXME` markers by design.
+- **orafce**: an extension that reimplements Oracle functions and packages in PostgreSQL. It reduces
+  work; **it does not give full compatibility** and its own authors say so.
+- **oracle_fdw**: a bridge for an incremental cutover — keeping both engines while
+  services are moved, instead of a *big bang*.
+- **IvorySQL** (an Oracle compatibility mode on PostgreSQL) as an alternative; **do not mix Oracle
+  mode and PostgreSQL mode in the same database**.
+- **AWS DMS Schema Conversion** (AWS now recommends the managed route over the downloadable
+  **AWS SCT** client), **pgloader**, **credativ-pg-migrator**.
+- **Explicit correction**: **Babelfish is NO use for Oracle** — it is the compatibility layer for
+  **SQL Server**. Confusing it is a mistake that appears frequently in migration material.
 
-Criterio: migrar **por dominios**, empezando por lo periférico (reporting, aplicaciones internas de
-bajo riesgo), con `data-platform-standards` fijando el destino y la disciplina de migraciones, y
-`streaming-cdc-standards` si hace falta convivencia con captura de cambios. La migración de datos
-sin la migración de la lógica es una trampa: se entrega un PostgreSQL con la mitad de las reglas.
+Criteria: migrate **by domains**, starting with the peripheral (reporting, low-risk internal
+applications), with `data-platform-standards` setting the destination and the migration discipline, and
+`streaming-cdc-standards` if coexistence with change capture is needed. Migrating the data
+without migrating the logic is a trap: you deliver a PostgreSQL with half the rules.
 
-## 12. Calidad y gates
+## 12. Quality and gates
 
-Gates que **rompen el build o bloquean la puesta en producción**, en orden de coste creciente:
+Gates that **break the build or block going to production**, in increasing order of cost:
 
-1. **Gate de licencia (el primero, siempre)**: ningún diseño, script de despliegue ni migración se
-   aprueba sin declarar qué opciones y packs usa. Comprobación automatizable:
-   `CONTROL_MANAGEMENT_PACK_ACCESS` conforme a lo contratado, `MAX_PDBS` fijado si no hay
-   Multitenant, y **revisión programada de `DBA_FEATURE_USAGE_STATISTICS`** cuyo resultado se
-   archiva con fecha. Un uso de opción no contratada es un **fallo de build**, no una observación.
-2. **Lint y revisión de SQL/PL/SQL**: sin literales concatenados (bind variables obligatorias),
-   sin `SELECT *` en interfaces, `PLSQL_WARNINGS` como error de compilación.
-3. **Migraciones versionadas** en repositorio y aplicadas solo por pipeline (mismo criterio que
-   `data-platform-standards`); DDL manual en producción **prohibido**.
-4. **Tests de PL/SQL** (`utPLSQL` o equivalente) sobre camino feliz, bordes y errores, contra una
-   base Oracle real de la misma versión mayor — nunca contra un motor "compatible".
-5. **Pruebas de plan con volumen representativo**: un plan sobre 1 000 filas no predice 100 M.
-   Capturar baselines del SQL crítico antes de cualquier upgrade o cambio de estadísticas.
-6. **Restore de prueba superado** (§6) como gate periódico de la plataforma: si el último restore
-   validado es más antiguo que la cadencia acordada, la plataforma está en incumplimiento.
-7. **Switchover de Data Guard ensayado** con la cadencia de `bcdr-standards`, con la aplicación
-   dentro del ejercicio.
-8. **Parcheo**: RU/CPU/CSPU aplicados dentro de la ventana de `vulnerability-management-standards`;
-   el retraso se registra con motivo y fecha objetivo.
+1. **The licensing gate (the first, always)**: no design, deployment script or migration is
+   approved without declaring which options and packs it uses. Automatable check:
+   `CONTROL_MANAGEMENT_PACK_ACCESS` conforming to what is contracted, `MAX_PDBS` set if there is no
+   Multitenant, and a **scheduled review of `DBA_FEATURE_USAGE_STATISTICS`** whose result is
+   archived with a date. Use of an uncontracted option is a **build failure**, not an observation.
+2. **SQL/PL/SQL lint and review**: no concatenated literals (bind variables mandatory),
+   no `SELECT *` in interfaces, `PLSQL_WARNINGS` as a compilation error.
+3. **Versioned migrations** in the repository and applied only by pipeline (the same criteria as
+   `data-platform-standards`); manual DDL in production **forbidden**.
+4. **PL/SQL tests** (`utPLSQL` or equivalent) over the happy path, edges and errors, against a
+   real Oracle database of the same major version — never against a "compatible" engine.
+5. **Plan testing with representative volume**: a plan over 1,000 rows does not predict 100 M.
+   Capture baselines of the critical SQL before any upgrade or statistics change.
+6. **A passed test restore** (§6) as a periodic platform gate: if the last validated
+   restore is older than the agreed cadence, the platform is in breach.
+7. **A rehearsed Data Guard switchover** at the cadence of `bcdr-standards`, with the application
+   inside the exercise.
+8. **Patching**: RU/CPU/CSPU applied within the `vulnerability-management-standards` window;
+   the delay is recorded with a reason and a target date.
 
-## 13. Operabilidad y SLI
+## 13. Operability and SLIs
 
-- **SLI mínimos con alerta accionable y runbook** (la plataforma donde viven es de
+- **Minimum SLIs with an actionable alert and a runbook** (the platform where they live belongs to
   `observability-standards`):
-  - Disponibilidad de instancia y de **servicio** (no solo "el proceso vive"): conexión real y
-    consulta de prueba.
-  - Espacio: tablespaces y **FRA** (una FRA llena **para la base de datos** — es la caída
-    autoinfligida más frecuente de Oracle), ASM por grupo de discos, `ORACLE_BASE`/diag.
-  - Redo: frecuencia de cambio de log, `log file sync`, archivado **con retraso vigilado** (fallo de
-    archivado = parada inminente).
-  - Data Guard: *transport lag* y *apply lag*, estado del broker.
-  - Sesiones: bloqueos (`blocking_session`), `ORA-00060` (deadlocks), sesiones inactivas con
-    transacción abierta.
-  - Errores: `ORA-01555`, `ORA-04031`, corrupción de bloque, alertas del `alert.log` y de `adrci`
-    filtradas por severidad (no volcar el log entero al SIEM).
-  - Backups: éxito y duración del backup **y del restore de prueba**, y **edad del último restore
-    validado** como SLI de primera clase.
-  - Licencia: fecha de la última revisión de `DBA_FEATURE_USAGE_STATISTICS`.
-- **Capacidad**: proyectar crecimiento de datafiles, redo por segundo, IOPS y CPU con datos, y
-  revisarlo trimestralmente. En Oracle la capacidad es **también** una proyección de coste de
-  licencia: añadir cores es una compra.
-- **Todo cambio de configuración es código**: `spfile` exportado y versionado, `listener.ora`,
-  `sqlnet.ora`, `tnsnames.ora` y jobs bajo control de versiones con detección de *drift*
-  (`iac-standards`). Cero cambios manuales en producción.
+  - Availability of the instance and of the **service** (not just "the process is alive"): a real connection and
+    a test query.
+  - Space: tablespaces and the **FRA** (a full FRA **stops the database** — it is the most frequent
+    self-inflicted Oracle outage), ASM per disk group, `ORACLE_BASE`/diag.
+  - Redo: log switch frequency, `log file sync`, archiving **with the lag watched** (an archiving
+    failure = an imminent halt).
+  - Data Guard: *transport lag* and *apply lag*, broker status.
+  - Sessions: blocking (`blocking_session`), `ORA-00060` (deadlocks), idle sessions with
+    an open transaction.
+  - Errors: `ORA-01555`, `ORA-04031`, block corruption, `alert.log` and `adrci` alerts
+    filtered by severity (do not dump the whole log into the SIEM).
+  - Backups: success and duration of the backup **and of the test restore**, and the **age of the last
+    validated restore** as a first-class SLI.
+  - Licensing: the date of the last `DBA_FEATURE_USAGE_STATISTICS` review.
+- **Capacity**: project datafile growth, redo per second, IOPS and CPU with data, and
+  review it quarterly. In Oracle, capacity is **also** a projection of licensing cost:
+  adding cores is a purchase.
+- **Every configuration change is code**: the `spfile` exported and versioned, `listener.ora`,
+  `sqlnet.ora`, `tnsnames.ora` and jobs under version control with *drift* detection
+  (`iac-standards`). Zero manual changes in production.
 
-## 14. Sostenibilidad y prohibiciones
+## 14. Sustainability and prohibitions
 
-- Revisión **semestral** de: edición y opciones usadas vs. contratadas, versión y fechas de soporte,
-  parcheo aplicado, índices y objetos muertos, database links vivos, y coste total por instancia.
-- **ADR obligatorio** para: edición y métrica de licencia, plataforma de virtualización que hospeda
-  Oracle, adopción de cualquier opción de pago, adopción de RAC, modo de protección de Data Guard,
-  destino de una migración de salida.
-- Retirar es parte del trabajo: instancias que nadie usa siguen facturando soporte.
+- A **half-yearly** review of: edition and options used vs. contracted, version and support dates,
+  patching applied, dead indexes and objects, live database links, and total cost per instance.
+- **A mandatory ADR** for: the edition and licence metric, the virtualisation platform that hosts
+  Oracle, adoption of any paid option, adoption of RAC, the Data Guard protection mode,
+  the destination of an exit migration.
+- Decommissioning is part of the job: instances nobody uses keep billing support.
 
-### Lista de prohibiciones
+### List of prohibitions
 
-- ❌ **Usar AWR/ASH/ADDM, SQL Tuning Advisor, Real-Time SQL Monitoring o cualquier vista
-  `DBA_HIST_*` sin la licencia del pack correspondiente** — ni "solo para depurar", ni una vez.
-  Sin licencia: `CONTROL_MANAGEMENT_PACK_ACCESS=NONE` y fin de la discusión.
-- ❌ Crear tablas particionadas, marcar tablas `INMEMORY`, activar compresión avanzada, abrir una
-  standby en lectura o crear la cuarta PDB **sin verificar la licencia primero**.
-- ❌ Fijar **precios, métricas o límites de edición de memoria**. Si no está verificado contra la
-  documentación del fabricante o el contrato: se declara el hueco y se remite al gestor de
-  licencias (§2, §15).
-- ❌ Desplegar Oracle en un clúster de virtualización compartido asumiendo que "solo se licencian
-  los hosts donde corre" (§2.4).
-- ❌ Producción sobre **Free** (sin parches de seguridad) o sobre una versión fuera de soporte sin
-  compensación documentada y aceptada por riesgo.
-- ❌ Arquitectura **no-CDB** en un diseño nuevo (desoportada) y conversión a PDB sin ensayo previo.
-- ❌ Justificar **RAC** por rendimiento, o como sustituto de backup o de DR.
-- ❌ `MAX PROTECTION` sin ≥2 standby y sin aceptación escrita de que la primaria se detiene.
-- ❌ Considerar `expdp` un backup, o el *recycle bin* un control de recuperación.
-- ❌ Dar por bueno un backup por el `RMAN>` en verde: **sin restore probado no existe**.
-- ❌ SQL con literales concatenados (rendimiento **e** inyección) y `EXECUTE IMMEDIATE` sobre
-  entrada no validada.
-- ❌ Cambiar parámetros ocultos (`_*`) sin Service Request que los respalde; tocar más de un
-  parámetro a la vez sin medición.
-- ❌ Borrar o congelar estadísticas como remedio a un plan malo.
-- ❌ Hints regados por el código como estrategia de estabilidad (usar *baselines*).
-- ❌ Listener expuesto fuera de la red de servicio, `EXTPROC` activo sin uso, o contraseñas en
+- ❌ **Using AWR/ASH/ADDM, SQL Tuning Advisor, Real-Time SQL Monitoring or any
+  `DBA_HIST_*` view without the corresponding pack licence** — not "just to debug", not once.
+  Without a licence: `CONTROL_MANAGEMENT_PACK_ACCESS=NONE` and end of discussion.
+- ❌ Creating partitioned tables, marking tables `INMEMORY`, enabling advanced compression, opening a
+  standby for reading or creating the fourth PDB **without verifying the licence first**.
+- ❌ Setting **prices, metrics or edition limits from memory**. If it is not verified against the
+  vendor's documentation or the contract: the gap is declared and the matter is referred to the licence
+  manager (§2, §15).
+- ❌ Deploying Oracle on a shared virtualisation cluster assuming that "only the hosts where it runs
+  get licensed" (§2.4).
+- ❌ Production on **Free** (no security patches) or on an out-of-support version without
+  documented and risk-accepted compensation.
+- ❌ A **non-CDB** architecture in a new design (unsupported) and conversion to a PDB without a prior rehearsal.
+- ❌ Justifying **RAC** by performance, or as a substitute for backup or DR.
+- ❌ `MAX PROTECTION` without ≥2 standbys and without written acceptance that the primary stops.
+- ❌ Treating `expdp` as a backup, or the *recycle bin* as a recovery control.
+- ❌ Accepting a backup as good because of a green `RMAN>`: **without a tested restore it does not exist**.
+- ❌ SQL with concatenated literals (performance **and** injection) and `EXECUTE IMMEDIATE` over
+  unvalidated input.
+- ❌ Changing hidden parameters (`_*`) without a Service Request backing them; touching more than one
+  parameter at a time without measurement.
+- ❌ Deleting or locking statistics as a remedy for a bad plan.
+- ❌ Hints sprayed through the code as a stability strategy (use *baselines*).
+- ❌ A listener exposed outside the service network, `EXTPROC` active without use, or passwords in
   `tnsnames.ora`/scripts.
-- ❌ Cuenta de aplicación con `DBA`, `SELECT ANY TABLE` o `GRANT ANY *`.
-- ❌ Wallet de TDE respaldado junto a los datos que cifra.
-- ❌ Copiar producción con datos personales a entornos no productivos sin enmascarar.
-- ❌ Mezclar Pacemaker/Corosync con Oracle Clusterware para el mismo recurso.
-- ❌ Presentar la migración a PostgreSQL como conversión automática: el PL/SQL de negocio y la
-  semántica de `NULL`/cadena vacía no los resuelve ninguna herramienta.
-- ❌ Proponer Babelfish para migrar Oracle (es de SQL Server).
+- ❌ An application account with `DBA`, `SELECT ANY TABLE` or `GRANT ANY *`.
+- ❌ A TDE wallet backed up alongside the data it encrypts.
+- ❌ Copying production with personal data to non-production environments without masking.
+- ❌ Mixing Pacemaker/Corosync with Oracle Clusterware for the same resource.
+- ❌ Presenting the migration to PostgreSQL as an automatic conversion: business PL/SQL and the
+  semantics of `NULL`/empty string are not solved by any tool.
+- ❌ Proposing Babelfish to migrate Oracle (it is for SQL Server).
 
-## 15. Verificación web obligatoria
+## 15. Mandatory web verification
 
-Todo dato de esta skill con impacto económico o de soporte **caduca**. Antes de fijar nada:
+Every datum in this skill with a financial or support impact **expires**. Before pinning anything:
 
-1. **Versión y soporte**: MOS **Doc ID 742060.1** ("Release Schedule of Current Database Releases")
-   y el *Oracle Lifetime Support Policy: Technology Products* (PDF) — Premier/Extended de 19c, 21c,
-   23ai y **26ai**, y **el alcance exacto de las exclusiones de 19c a partir del 1-mayo-2027**
+1. **Version and support**: MOS **Doc ID 742060.1** ("Release Schedule of Current Database Releases")
+   and the *Oracle Lifetime Support Policy: Technology Products* (PDF) — Premier/Extended for 19c, 21c,
+   23ai and **26ai**, and **the exact scope of the 19c exclusions from 1 May 2027**
    (BSAFE, Java, TLS, Native Network Encryption, TDE, `DBMS_CRYPTO`, FIPS).
-2. **Licenciamiento por edición**: *Licensing Information User Manual* de la versión exacta
-   desplegada (tablas "Consolidation", "High Availability", "Manageability", "Performance",
-   "Scalability", "Security", "VLDB") — qué es *extra cost option* **hoy** y si algo cambió de
-   edición.
-3. **Disponibilidad de Standard Edition 2 para 26ai** fuera de Oracle Database Appliance: era un
-   **hueco abierto** en esta verificación.
-4. *Processor Core Factor Table* vigente y política de *Authorized Cloud Environments*.
-5. **Oracle Partitioning Policy** (PDF): confirmar la cita verbatim de §2.4 abriendo el documento
-   —oracle.com bloqueó la descarga automatizada— y su estado contractual.
-6. Límites de **Oracle AI Database Free** y política de parches.
-7. Calendario de **CPU y CSPU** vigente y CVEs del último trimestre que afecten a la versión
-   desplegada; triaje según `vulnerability-management-standards`.
-8. Estado y mantenimiento de **ora2pg**, **orafce**, **oracle_fdw**, **IvorySQL**,
-   **credativ-pg-migrator** y de la vía de conversión de AWS antes de recomendarlos.
+2. **Licensing by edition**: the *Licensing Information User Manual* of the exact version
+   deployed (tables "Consolidation", "High Availability", "Manageability", "Performance",
+   "Scalability", "Security", "VLDB") — what is an *extra cost option* **today** and whether anything changed
+   edition.
+3. **Availability of Standard Edition 2 for 26ai** outside Oracle Database Appliance: it was an
+   **open gap** in this verification.
+4. The current *Processor Core Factor Table* and the *Authorized Cloud Environments* policy.
+5. **Oracle Partitioning Policy** (PDF): confirm the verbatim quote in §2.4 by opening the document
+   —oracle.com blocked the automated download— and its contractual status.
+6. The limits of **Oracle AI Database Free** and its patching policy.
+7. The current **CPU and CSPU** calendar and the CVEs of the last quarter affecting the version
+   deployed; triage per `vulnerability-management-standards`.
+8. The status and maintenance of **ora2pg**, **orafce**, **oracle_fdw**, **IvorySQL**,
+   **credativ-pg-migrator** and of the AWS conversion route before recommending them.
 
-### Huecos declarados en esta verificación (agosto 2026)
+### Declared gaps in this verification (August 2026)
 
-- **MOS Doc ID 742060.1**: requiere cuenta de My Oracle Support. **No leído**. Las fechas de
-  soporte de §9 provienen de fuentes secundarias coincidentes (comunicados de Oracle recogidos por
-  terceros) salvo la tabla de Release Updates, que sí se leyó en docs.oracle.com. **Confirmar en MOS
-  antes de planificar un upgrade.**
-- **Oracle Partitioning Policy (PDF)**: oracle.com devolvió **HTTP 403** a la descarga automatizada.
-  La cita de §2.4 no está verificada contra la fuente primaria.
-- **Processor Core Factor Table (PDF)**: mismo bloqueo. El valor 0.5 para x86 procede de fuentes
-  secundarias; **verificar el PDF vigente y archivar copia fechada**.
-- **Precios**: **ninguno** en este documento, deliberadamente. No hay cifra de lista verificada y
-  **no se aproxima ninguna**.
-- **Standard Edition 2 sobre 26ai fuera de ODA**: no encontrada confirmación de disponibilidad
-  general. Tratar como "no disponible" hasta confirmarlo con Oracle.
-- **RAC bajo SE2**: las fuentes secundarias **se contradicen** (unas lo dan por eliminado desde 19c,
-  otras por incluido dentro del cap de 2 sockets). **No se fija criterio aquí**: verificar en el
-  Licensing Information User Manual de la versión concreta antes de diseñar sobre ello.
-- **Fechas de Premier Support de 21c y 26ai**: fuente secundaria únicamente.
+- **MOS Doc ID 742060.1**: it requires a My Oracle Support account. **Not read**. The support dates
+  of §9 come from concurring secondary sources (Oracle announcements picked up by
+  third parties) except the Release Updates table, which was read on docs.oracle.com. **Confirm in MOS
+  before planning an upgrade.**
+- **Oracle Partitioning Policy (PDF)**: oracle.com returned **HTTP 403** to the automated download.
+  The quote in §2.4 is not verified against the primary source.
+- **Processor Core Factor Table (PDF)**: the same block. The 0.5 value for x86 comes from secondary
+  sources; **verify the current PDF and archive a dated copy**.
+- **Prices**: **none** in this document, deliberately. There is no verified list figure and
+  **none is approximated**.
+- **Standard Edition 2 on 26ai outside ODA**: no confirmation of general availability
+  found. Treat as "not available" until confirmed with Oracle.
+- **RAC under SE2**: secondary sources **contradict each other** (some give it as removed since 19c,
+  others as included within the 2-socket cap). **No criterion is set here**: verify in the
+  Licensing Information User Manual of the specific version before designing on it.
+- **Premier Support dates for 21c and 26ai**: secondary source only.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

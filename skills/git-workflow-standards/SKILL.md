@@ -3,108 +3,108 @@ name: git-workflow-standards
 description: Git branching, commit and release process standards. Use when working with branching strategy, Conventional Commits, rebase vs merge, PR size limits, CODEOWNERS, protected branches or rulesets, SemVer tagging, CHANGELOG, release-please/changesets/semantic-release/goreleaser, git-filter-repo, Git LFS, or GPG/SSH commit signing.
 ---
 
-# Estándares de Git y proceso de release
+# Git and release process standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al definir o revisar cómo se usa el repositorio y cómo sale una versión: estrategia de ramas, naming y vida de ramas, mensajes de commit y `commitlint.config.*`, política rebase/merge/squash, tamaño de PR y checklist de revisión, `CODEOWNERS`, ramas protegidas y rulesets, `.gitattributes`/`.gitignore`, tags y versionado semántico, `CHANGELOG.md`, configuración de `release-please`/`changesets`/`semantic-release`/`.goreleaser.yaml`, monorepo vs polyrepo y su tooling, higiene de historia (`git-filter-repo`, BFG, Git LFS), firma de commits y tags, `git bisect`/`blame`, y procedimientos de hotfix, revert y rollback.
+Applies when defining or reviewing how the repository is used and how a version ships: branching strategy, branch naming and lifetime, commit messages and `commitlint.config.*`, rebase/merge/squash policy, PR size and review checklist, `CODEOWNERS`, protected branches and rulesets, `.gitattributes`/`.gitignore`, tags and semantic versioning, `CHANGELOG.md`, configuration of `release-please`/`changesets`/`semantic-release`/`.goreleaser.yaml`, monorepo vs polyrepo and their tooling, history hygiene (`git-filter-repo`, BFG, Git LFS), commit and tag signing, `git bisect`/`blame`, and hotfix, revert and rollback procedures.
 
-Principio rector: **la historia de Git es infraestructura de diagnóstico y de auditoría**, no un registro accidental de lo que pasó. Se diseña para que dentro de dos años alguien pueda responder "por qué está esta línea así" con `blame` y "qué commit lo rompió" con `bisect`; todo lo demás (estilo de merge, formato de mensaje, tamaño de PR) es consecuencia de eso.
+Guiding principle: **Git history is diagnostic and audit infrastructure**, not an accidental record of what happened. It is designed so that two years from now someone can answer "why is this line like this" with `blame` and "which commit broke it" with `bisect`; everything else (merge style, message format, PR size) follows from that.
 
-**No aplica**: ver `cicd-standards` (la pipeline en sí — jobs, runners, OIDC, SBOM, firma y verificación de artefactos, despliegue: asume el repo ya gobernado por esta skill), `api-design-standards` (versionado del **contrato** de la API, que es independiente del SemVer del paquete), `appsec-standards` (triaje de los hallazgos que produzcan los escáneres), `cryptography-pki-standards` (elección de algoritmos, gestión de claves y ciclo de vida de la PKI; aquí solo la aplicación concreta a commits y tags), las skills de lenguaje (publicación en el registro del ecosistema: npm, PyPI, crates.io, Maven), `developer-workstation-standards` (**la política de firma —qué se firma, con qué formato y qué se exige en las ramas protegidas— es de aquí**; **dónde vive la clave y cómo se custodia es suyo**: clave en hardware, `verify-required`, y la versión mínima de OpenSSH que la firma SSH de Git exige), `code-review-standards` (**frontera fina, regla de arbitraje**: **aquí manda todo lo mecánico y configurable del repositorio** —estrategia de ramas, formato de commit, `CODEOWNERS`, ramas protegidas y *rulesets*, número de aprobaciones exigidas, el límite de tamaño de PR como regla—; **allí manda el criterio humano**: qué se busca al revisar y en qué orden, cómo se redacta un comentario y qué lo hace bloqueante o sugerencia, qué cambios exigen revisor especialista, y cómo se revisa un diff generado por IA. En una frase: **el número lo pone esta skill, el juicio lo pone la suya**. Lo que esta skill dice sobre tamaño de PR, SLA de revisión, el prefijo `nit:` y "aprobar sin haber leído es una firma falsa" se conserva como convención del repo, pero **su criterio vive allí y allí manda si hay discrepancia**).
+**Not applicable**: see `cicd-standards` (the pipeline itself — jobs, runners, OIDC, SBOM, artifact signing and verification, deployment: it assumes the repo is already governed by this skill), `api-design-standards` (versioning of the API **contract**, which is independent of the package's SemVer), `appsec-standards` (triage of the findings the scanners produce), `cryptography-pki-standards` (algorithm choice, key management and PKI lifecycle; here only the concrete application to commits and tags), the language skills (publishing to the ecosystem registry: npm, PyPI, crates.io, Maven), `developer-workstation-standards` (**the signing policy —what gets signed, in which format and what is required on protected branches— belongs here**; **where the key lives and how it is custodied is theirs**: key in hardware, `verify-required`, and the minimum OpenSSH version Git's SSH signing requires), `code-review-standards` (**fine boundary, arbitration rule**: **everything mechanical and configurable about the repository belongs here** —branching strategy, commit format, `CODEOWNERS`, protected branches and *rulesets*, number of approvals required, the PR size limit as a rule—; **human judgement belongs there**: what to look for when reviewing and in which order, how to word a comment and what makes it blocking or a suggestion, which changes require a specialist reviewer, and how to review an AI-generated diff. In one sentence: **this skill sets the number, theirs supplies the judgement**. What this skill says about PR size, review SLA, the `nit:` prefix and "approving without having read is a false signature" is kept as a repo convention, but **its criteria live there and there they win if there is a discrepancy**).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Ámbito | Default | Alternativa justificable |
+| Area | Default | Justifiable alternative |
 |---|---|---|
-| Modelo de ramas | **Trunk-based**: `main` siempre desplegable + ramas de vida corta | GitHub Flow (equivalente con PR obligatorio); **GitFlow solo** con releases versionadas y varias versiones mayores soportadas en paralelo (software instalable, firmware) |
-| Vida máxima de rama | **≤ 2 días**, idealmente < 1 | Hasta 1 semana con rebase diario documentado |
-| Integración de trabajo grande | **Feature flags** + merge continuo a `main` | Rama larga solo con ADR que lo justifique |
-| Política de merge a `main` | **Squash** (una unidad lógica por PR) con título Conventional Commit | Rebase + fast-forward si los commits del PR ya son atómicos y limpios; merge commit en repos con integración de ramas de release |
-| Formato de mensaje | **Conventional Commits 1.0.0** | Formato propio solo si no usas automatización de release |
-| Versionado | **SemVer 2.0.0**, tags `vX.Y.Z` anotados y firmados | CalVer en productos sin API pública (servicios internos, infra) |
-| Automatización de release | **release-please** (políglota, monorepo, PR de release revisable) | `changesets` en monorepos JS/TS; `semantic-release` para publicación totalmente automática; `goreleaser` para artefactos Go |
-| Firma | **SSH con clave `ed25519-sk` en YubiKey** (§5) | GPG con applet OpenPGP si necesitas revocación real o cadena de confianza existente |
-| Protección de `main` | **Rulesets** de GitHub (aplican a admins por defecto) | Branch protection clásica solo en repos ya configurados con ella |
-| Estrategia de repo | **Polyrepo** por defecto; monorepo cuando los cambios cruzan sistemáticamente varios repos | — |
-| Reescritura de historia | **git-filter-repo** | — |
-| Binarios grandes | **Git LFS** con `.gitattributes` versionado | — |
+| Branching model | **Trunk-based**: `main` always deployable + short-lived branches | GitHub Flow (equivalent, with mandatory PR); **GitFlow only** with versioned releases and several major versions supported in parallel (installable software, firmware) |
+| Maximum branch lifetime | **≤ 2 days**, ideally < 1 | Up to 1 week with a documented daily rebase |
+| Integrating large work | **Feature flags** + continuous merge to `main` | A long-lived branch only with an ADR justifying it |
+| Merge policy into `main` | **Squash** (one logical unit per PR) with a Conventional Commit title | Rebase + fast-forward if the PR's commits are already atomic and clean; merge commit in repos that integrate release branches |
+| Message format | **Conventional Commits 1.0.0** | A bespoke format only if you do not use release automation |
+| Versioning | **SemVer 2.0.0**, annotated and signed `vX.Y.Z` tags | CalVer for products with no public API (internal services, infra) |
+| Release automation | **release-please** (polyglot, monorepo, reviewable release PR) | `changesets` in JS/TS monorepos; `semantic-release` for fully automatic publishing; `goreleaser` for Go artifacts |
+| Signing | **SSH with an `ed25519-sk` key on a YubiKey** (§5) | GPG with the OpenPGP applet if you need real revocation or an existing chain of trust |
+| Protection of `main` | GitHub **rulesets** (they apply to admins by default) | Classic branch protection only in repos already configured with it |
+| Repo strategy | **Polyrepo** by default; monorepo when changes systematically cross several repos | — |
+| History rewriting | **git-filter-repo** | — |
+| Large binaries | **Git LFS** with a versioned `.gitattributes` | — |
 
-## 3. Ramas, commits y revisión
+## 3. Branches, commits and review
 
-### 3.1 Ramas
+### 3.1 Branches
 
-- Naming: `<tipo>/<id-ticket>-<slug-corto>` (`feat/PROJ-412-cursor-pagination`, `fix/PROJ-508-null-etag`). Minúsculas, guiones, sin nombres personales (`juan/pruebas`) ni genéricos (`temp`, `wip`, `test2`).
-- **Una rama = una unidad de valor revisable**. Si al describirla necesitas una "y", son dos ramas.
-- Sincronización con `main` **a diario** por rebase mientras la rama no esté publicada/compartida. Una rama que lleva una semana sin rebase ya no se está integrando: se está bifurcando.
-- Borrado automático de la rama al mergear. Las ramas muertas en el remoto son ruido y confunden el `bisect`.
-- `main` protegida; ramas de release (`release/1.x`) solo en el modelo GitFlow y con la misma protección.
+- Naming: `<type>/<ticket-id>-<short-slug>` (`feat/PROJ-412-cursor-pagination`, `fix/PROJ-508-null-etag`). Lowercase, hyphens, no personal names (`juan/pruebas`) and no generic ones (`temp`, `wip`, `test2`).
+- **One branch = one reviewable unit of value**. If describing it requires an "and", it is two branches.
+- Sync with `main` **daily** by rebase while the branch is not published/shared. A branch that has gone a week without a rebase is no longer integrating: it is forking.
+- Automatic branch deletion on merge. Dead branches on the remote are noise and confuse `bisect`.
+- `main` protected; release branches (`release/1.x`) only in the GitFlow model and with the same protection.
 
 ### 3.2 Commits
 
-- **Atómicos**: un commit compila, pasa tests y hace *una* cosa. Refactor y cambio de comportamiento **siempre en commits separados** — mezclarlos hace la revisión imposible y el `bisect` inútil.
-- Conventional Commits 1.0.0: `<tipo>[ámbito opcional]: <descripción>`. La spec solo exige `feat` y `fix`; el resto (`docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`) es convención del equipo y **no** afecta al bump de versión salvo que lleve breaking change. Breaking: `!` tras el tipo/ámbito **o** footer `BREAKING CHANGE:` — mapea a mayor.
-- Asunto en imperativo, ≤ 72 caracteres, sin punto final. **El cuerpo explica el porqué**, no el qué (el diff ya dice el qué): contexto, alternativas descartadas, consecuencias. Footer con referencia al ticket y `Co-authored-by:` cuando aplique.
-- Prohibido: `wip`, `fix`, `.`, `asdf`, "arreglos varios". Si el commit necesita ese mensaje, aún no está terminado — usa `git commit --fixup`/`--squash` + `rebase --autosquash`, o `git history fixup` si tu versión de Git lo trae (experimental desde 2.55).
-- Commits generados o asistidos: la autoría real se refleja en `Co-authored-by`; el mensaje sigue siendo responsabilidad de quien firma.
+- **Atomic**: a commit compiles, passes tests and does *one* thing. Refactor and behaviour change **always in separate commits** — mixing them makes review impossible and `bisect` useless.
+- Conventional Commits 1.0.0: `<type>[optional scope]: <description>`. The spec only requires `feat` and `fix`; the rest (`docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`) is team convention and does **not** affect the version bump unless it carries a breaking change. Breaking: `!` after the type/scope **or** a `BREAKING CHANGE:` footer — maps to major.
+- Subject in the imperative, ≤ 72 characters, no trailing full stop. **The body explains the why**, not the what (the diff already says the what): context, discarded alternatives, consequences. Footer with the ticket reference and `Co-authored-by:` where applicable.
+- Forbidden: `wip`, `fix`, `.`, `asdf`, "various fixes". If the commit needs that message, it is not finished yet — use `git commit --fixup`/`--squash` + `rebase --autosquash`, or `git history fixup` if your Git version ships it (experimental since 2.55).
+- Generated or assisted commits: real authorship is reflected in `Co-authored-by`; the message is still the responsibility of whoever signs it.
 
 ### 3.3 Rebase vs merge
 
-- **Rebase** para poner al día una rama propia no publicada y para limpiar la historia antes del PR.
-- **PROHIBIDO rebase/force-push sobre ramas compartidas o publicadas** (incluida `main`). Si hay que corregir algo ya publicado: `git revert`, nunca reescritura. Excepción única: eliminación de un secreto o de datos personales (§5.3), y con coordinación explícita de todo el equipo.
-- Si necesitas force-push en tu propia rama, **`--force-with-lease`** (idealmente `--force-if-includes`), nunca `--force` a secas.
-- Squash al mergear: mantiene `main` legible y con un commit por unidad de valor. Consecuencia obligatoria: **el título del PR debe cumplir Conventional Commits** y se lintea en CI, porque es el mensaje que queda en la historia.
-- Con `--first-parent` en `log`/`bisect`, `main` con squash es una secuencia lineal de cambios completos: es lo que hace `git bisect` barato.
+- **Rebase** to bring an unpublished branch of your own up to date and to clean up history before the PR.
+- **FORBIDDEN to rebase/force-push on shared or published branches** (including `main`). If something already published must be corrected: `git revert`, never a rewrite. Single exception: removal of a secret or of personal data (§5.3), and with explicit coordination across the whole team.
+- If you need a force-push on your own branch, **`--force-with-lease`** (ideally `--force-if-includes`), never a bare `--force`.
+- Squash on merge: keeps `main` readable and with one commit per unit of value. Mandatory consequence: **the PR title must comply with Conventional Commits** and is linted in CI, because it is the message that stays in history.
+- With `--first-parent` in `log`/`bisect`, a squashed `main` is a linear sequence of complete changes: that is what makes `git bisect` cheap.
 
-### 3.4 Pull requests y revisión
+### 3.4 Pull requests and review
 
-- **Tamaño**: objetivo ≤ 400 líneas de diff neto, máximo duro ~800 salvo cambios mecánicos (generados, renombrados masivos, lockfiles) declarados en la descripción. Por encima, la revisión deja de detectar defectos y pasa a ser un trámite. PR grande ⇒ trocearlo o revisar por commits atómicos.
-- Descripción con: qué cambia y por qué, cómo se ha verificado, riesgo y plan de rollback, capturas o salidas si aplica. Enlace al ticket. Un PR que no explica el porqué no está listo para revisión.
-- Checklist del revisor: corrección y bordes; seguridad (entradas, authz, secretos, dependencias nuevas); tests significativos que cubran el fallo, no solo el camino feliz; observabilidad del cambio; migraciones compatibles hacia atrás; documentación y ADR si la decisión es one-way.
-- **Etiqueta y SLA**: primera respuesta en **≤ 1 día laborable** (el PR bloqueado es inventario que se deprecia). Comentarios sobre el código, no sobre la persona; distingue lo bloqueante de la sugerencia (prefijo `nit:`); si son más de 3 idas y vueltas, la conversación pasa a síncrono. Aprobar sin haber leído es una firma falsa.
-- **CODEOWNERS** en `.github/CODEOWNERS` para las zonas críticas: workflows de CI, IaC, migraciones, autenticación, contratos de API. La última regla que casa es la que manda — el orden importa. Revisión de owner obligatoria en esas rutas.
+- **Size**: target ≤ 400 lines of net diff, hard maximum ~800 except for mechanical changes (generated, mass renames, lockfiles) declared in the description. Above that, review stops detecting defects and becomes a formality. Large PR ⇒ split it or review it commit by atomic commit.
+- Description with: what changes and why, how it was verified, risk and rollback plan, screenshots or outputs where applicable. Link to the ticket. A PR that does not explain the why is not ready for review.
+- Reviewer checklist: correctness and edges; security (inputs, authz, secrets, new dependencies); meaningful tests covering the failure, not just the happy path; observability of the change; backwards-compatible migrations; documentation and an ADR if the decision is one-way.
+- **Etiquette and SLA**: first response within **≤ 1 working day** (a blocked PR is depreciating inventory). Comments about the code, not about the person; distinguish blocking from suggestion (`nit:` prefix); if there are more than 3 round trips, the conversation moves to synchronous. Approving without having read is a false signature.
+- **CODEOWNERS** in `.github/CODEOWNERS` for critical areas: CI workflows, IaC, migrations, authentication, API contracts. The last matching rule wins — order matters. Owner review mandatory on those paths.
 
-### 3.5 Ramas protegidas y rulesets
+### 3.5 Protected branches and rulesets
 
-En `main` (y en las ramas de release), como mínimo:
-- PR obligatorio con ≥ 1 aprobación (2 en código sensible), revisión de CODEOWNERS donde aplique, y descarte de aprobaciones al hacer push nuevo.
-- **Required status checks** con la lista explícita de jobs, y "up to date before merging" o merge queue. Ojo: los checks se referencian **por nombre**; renombrar un job en CI desactiva el gate en silencio.
-- Historia lineal requerida (coherente con squash/rebase), sin force-push, sin borrado de la rama.
-- **Commits firmados obligatorios** (§5.1). Matiz verificado: con rulesets, al crear una rama solo se comprueban los commits no alcanzables desde otras ramas; la branch protection clásica no verifica firmas al crear rama salvo que restrinjas quién puede crearlas.
-- Prefiere **rulesets** a la protección clásica: aplican a los administradores por defecto, se pueden definir a nivel de organización y son evaluables/auditables en conjunto.
+On `main` (and on release branches), at minimum:
+- Mandatory PR with ≥ 1 approval (2 on sensitive code), CODEOWNERS review where applicable, and dismissal of approvals on a new push.
+- **Required status checks** with the explicit list of jobs, and "up to date before merging" or a merge queue. Careful: checks are referenced **by name**; renaming a job in CI silently disables the gate.
+- Linear history required (consistent with squash/rebase), no force-push, no branch deletion.
+- **Mandatory signed commits** (§5.1). Verified nuance: with rulesets, when creating a branch only the commits not reachable from other branches are checked; classic branch protection does not verify signatures on branch creation unless you restrict who can create branches.
+- Prefer **rulesets** over classic protection: they apply to administrators by default, they can be defined at the organisation level, and they are evaluable/auditable as a whole.
 
-## 4. Versionado, release y monorepo
+## 4. Versioning, release and monorepo
 
-### 4.1 SemVer y changelog
+### 4.1 SemVer and changelog
 
-- SemVer 2.0.0 sobre el **contrato público** del artefacto: mayor = ruptura, menor = funcionalidad compatible, patch = corrección. `0.x` es explícitamente "sin garantías" — sal de `0.x` cuando haya consumidores reales.
-- Tags **anotados y firmados** (`git tag -s vX.Y.Z -m`), inmutables. **Prohibido mover un tag publicado**: si la release está mal, se publica `X.Y.Z+1` y se marca la anterior como *yanked* en el registro.
-- `CHANGELOG.md` **generado** desde los commits (Keep a Changelog como formato), nunca escrito a mano en paralelo. Sección de breaking changes con instrucciones de migración: un breaking change sin guía de migración es una release incompleta.
-- La release incluye: tag firmado, notas, artefactos y su verificación. La construcción, firma y publicación de esos artefactos es `cicd-standards`.
+- SemVer 2.0.0 over the artifact's **public contract**: major = breakage, minor = compatible functionality, patch = fix. `0.x` is explicitly "no guarantees" — leave `0.x` once there are real consumers.
+- **Annotated and signed** tags (`git tag -s vX.Y.Z -m`), immutable. **Moving a published tag is forbidden**: if the release is wrong, publish `X.Y.Z+1` and mark the previous one as *yanked* in the registry.
+- `CHANGELOG.md` **generated** from the commits (Keep a Changelog as the format), never hand-written in parallel. Breaking-changes section with migration instructions: a breaking change without a migration guide is an incomplete release.
+- The release includes: signed tag, notes, artifacts and their verification. Building, signing and publishing those artifacts is `cicd-standards`.
 
-### 4.2 Herramientas
+### 4.2 Tooling
 
-- **release-please**: lee Conventional Commits, abre un **PR de release** (checkpoint humano), soporta múltiples ecosistemas y monorepos con versionado independiente o enlazado. Default cuando quieres revisar antes de publicar.
-- **changesets**: fichero de cambio escrito por el contribuidor (no deducido del commit) — encaja en monorepos JS/TS con muchos paquetes y colaboración externa. Limitado al ecosistema JS.
-- **semantic-release**: publica directamente desde CI sin checkpoint. Solo con suite de tests fiable y equipo cómodo con release continua.
-- **goreleaser**: artefactos Go (binarios multiplataforma, Homebrew, contenedores). **No crea tags**: se combina con release-please/semantic-release/`svu` para la versión.
-- Sin enforcement de Conventional Commits, estas herramientas **ignoran en silencio** los commits que no cumplen: el cambio se queda sin publicar. El lint del mensaje es parte del sistema de release, no cosmética.
+- **release-please**: reads Conventional Commits, opens a **release PR** (human checkpoint), supports multiple ecosystems and monorepos with independent or linked versioning. Default when you want to review before publishing.
+- **changesets**: change file written by the contributor (not inferred from the commit) — fits JS/TS monorepos with many packages and external collaboration. Limited to the JS ecosystem.
+- **semantic-release**: publishes straight from CI with no checkpoint. Only with a reliable test suite and a team comfortable with continuous release.
+- **goreleaser**: Go artifacts (cross-platform binaries, Homebrew, containers). **It does not create tags**: combine it with release-please/semantic-release/`svu` for the version.
+- Without enforcement of Conventional Commits, these tools **silently ignore** non-compliant commits: the change simply never ships. Message linting is part of the release system, not cosmetics.
 
 ### 4.3 Monorepo vs polyrepo
 
-- **Polyrepo por defecto**. Monorepo cuando los cambios cruzan repos de forma sistemática (cambio atómico multi-paquete), o cuando compartes tooling y quieres un único grafo de dependencias. El monorepo cambia el problema de coordinación por un problema de tooling de build.
-- Si monorepo: build con grafo y caché (Nx, Turborepo, Bazel/Buck2 según escala), ejecución **solo de lo afectado** en CI, `CODEOWNERS` por directorio, versionado por paquete (independiente o enlazado) y `sparse-checkout`/`--filter=blob:none` para clones parciales en repos grandes. Sin "solo lo afectado" y sin caché, el monorepo es un impuesto sobre cada PR.
-- La decisión es **one-way en la práctica** (migrar cuesta meses): ADR obligatorio.
+- **Polyrepo by default**. Monorepo when changes systematically cross repos (atomic multi-package change), or when you share tooling and want a single dependency graph. The monorepo trades a coordination problem for a build-tooling problem.
+- If monorepo: build with a graph and cache (Nx, Turborepo, Bazel/Buck2 depending on scale), running **only what is affected** in CI, `CODEOWNERS` per directory, per-package versioning (independent or linked) and `sparse-checkout`/`--filter=blob:none` for partial clones in large repos. Without "only what is affected" and without caching, the monorepo is a tax on every PR.
+- The decision is **one-way in practice** (migrating takes months): ADR mandatory.
 
-## 5. Seguridad e higiene del repositorio
+## 5. Repository security and hygiene
 
-### 5.1 Firma con SSH respaldada por YubiKey (configuración concreta)
+### 5.1 SSH signing backed by a YubiKey (concrete configuration)
 
-Requisitos verificados: Git ≥ 2.34 (firma SSH), OpenSSH ≥ 8.2 (claves FIDO2 `-sk`), ≥ 8.4 para `-O verify-required`. YubiKey serie 5/Bio/Security Key; las claves *resident* exigen PIN FIDO2 configurado.
+Verified requirements: Git ≥ 2.34 (SSH signing), OpenSSH ≥ 8.2 (FIDO2 `-sk` keys), ≥ 8.4 for `-O verify-required`. YubiKey series 5/Bio/Security Key; *resident* keys require a configured FIDO2 PIN.
 
 ```bash
 ssh-keygen -t ed25519-sk -O resident -O application=ssh:git -O verify-required \
@@ -125,83 +125,83 @@ ssh-keygen -t ed25519-sk -O resident -O application=ssh:git -O verify-required \
     gpgsign = true
 ```
 
-`~/.config/git/allowed_signers` (formato documentado en `ssh-keygen(1)`, sección ALLOWED SIGNERS):
+`~/.config/git/allowed_signers` (format documented in `ssh-keygen(1)`, ALLOWED SIGNERS section):
 
 ```
 dev@digitalexperiments.dev namespaces="git" valid-after="20260101" sk-ssh-ed25519@openssh.com AAAA...
 ```
 
-Reglas y trampas concretas:
-- **No generes la clave con `-O no-touch-required`**: hay verificadores (GitLab, y GitHub vía la librería `ssh_data`) que marcan como *unverified* las firmas de claves `-sk` con esa opción. El *touch* por commit es el precio de la resistencia a extracción; si molesta, agrupa con `--fixup` + `rebase --autosquash` en vez de desactivarlo.
-- En GitHub la clave debe subirse con tipo **Signing Key** — es un registro distinto del de Authentication Key, aunque sea el mismo material. Además, el email del **committer** debe ser un email verificado de la cuenta o el badge no aparece. Y ojo: la firma verifica al *committer*, no al *author*.
-- **Rotación y revocación**: GitHub no revoca claves de firma SSH (la verificación queda registrada y persiste). Localmente, `valid-after`/`valid-before` en `allowed_signers` invalida a partir de una fecha manteniendo válida la historia previa; `revocationFile` invalida **también los commits históricos** — úsalo solo ante compromiso real de la clave.
-- Verificación local: `git log --show-signature`, `git verify-commit <sha>`, `git verify-tag <tag>`. Sin `allowedSignersFile` configurado, `verify-commit` falla con error de configuración, no con "firma inválida": no confundas ambos.
-- Segunda YubiKey de respaldo enrolada **desde el principio** (una llave perdida sin backup = identidad de firma perdida) y ambas claves públicas en `allowed_signers` y en el forge.
-- Alternativa GPG con applet OpenPGP de la YubiKey: válida y con revocación real (certificado de revocación offline), a costa de gestionar `gpg-agent`, pinentry y touch policy con `ykman` (verifica sintaxis exacta, §8). No mezcles ambos formatos en el mismo repo.
-- **gitsign/Sigstore** (firma keyless por OIDC, ideal para bots en CI): mantenido y con releases recientes, pero **GitHub no muestra sus firmas como Verified** — su raíz no está en el trust root del forge. Úsalo para trazabilidad en CI, no para el badge.
-- Del lado del servidor: rulesets con "require signed commits" en GitHub; en GitLab, push rule **Reject unsigned commits** (Premium/Ultimate) — que además bloquea los commits desde el Web IDE salvo que un admin desactive el feature flag correspondiente, y que ha dado falsos rechazos con firmas de bots.
+Concrete rules and traps:
+- **Do not generate the key with `-O no-touch-required`**: there are verifiers (GitLab, and GitHub via the `ssh_data` library) that mark signatures from `-sk` keys with that option as *unverified*. The per-commit *touch* is the price of extraction resistance; if it annoys you, batch with `--fixup` + `rebase --autosquash` instead of disabling it.
+- On GitHub the key must be uploaded as a **Signing Key** — a separate record from the Authentication Key, even if it is the same material. Also, the **committer** email must be a verified email on the account or the badge does not appear. And careful: the signature verifies the *committer*, not the *author*.
+- **Rotation and revocation**: GitHub does not revoke SSH signing keys (the verification is recorded and persists). Locally, `valid-after`/`valid-before` in `allowed_signers` invalidates from a given date onwards while keeping prior history valid; `revocationFile` invalidates **historical commits as well** — use it only in the event of a real key compromise.
+- Local verification: `git log --show-signature`, `git verify-commit <sha>`, `git verify-tag <tag>`. Without `allowedSignersFile` configured, `verify-commit` fails with a configuration error, not with "invalid signature": do not confuse the two.
+- A second backup YubiKey enrolled **from the start** (a lost key with no backup = signing identity lost) and both public keys in `allowed_signers` and in the forge.
+- GPG alternative with the YubiKey's OpenPGP applet: valid and with real revocation (offline revocation certificate), at the cost of managing `gpg-agent`, pinentry and touch policy with `ykman` (verify the exact syntax, §8). Do not mix both formats in the same repo.
+- **gitsign/Sigstore** (keyless signing via OIDC, ideal for bots in CI): maintained and with recent releases, but **GitHub does not display its signatures as Verified** — its root is not in the forge's trust root. Use it for CI traceability, not for the badge.
+- Server side: rulesets with "require signed commits" on GitHub; on GitLab, the **Reject unsigned commits** push rule (Premium/Ultimate) — which also blocks commits from the Web IDE unless an admin disables the corresponding feature flag, and which has produced false rejections with bot signatures.
 
-### 5.2 Secretos
+### 5.2 Secrets
 
-- **Prevención primero**: secret scanning con push protection en el forge + hook local + gate en CI. El scanning es la última red, no la política. La **elección del escáner y su licencia** son de `secrets-management-standards` (a ago-2026 `gitleaks` está *feature complete* y su action de GitHub exige licencia comercial para organizaciones: verifica antes de fijarlo); el **procedimiento tras la fuga** también vive allí — el secreto está quemado aunque reescribas el historial: se rota primero y se limpia después.
-- Un secreto que llegó al repo **está comprometido**: el orden es *rotar → revocar → invalidar → después limpiar la historia*. Borrar el commit sin rotar es teatro: hay forks, clones, caché del forge y logs de CI.
-- Nada de `.env` con valores reales versionado; `.env.example` con claves vacías, `.gitignore` que cubra artefactos, credenciales y dumps, y `.gitattributes` para evitar mangling de binarios.
+- **Prevention first**: secret scanning with push protection in the forge + local hook + CI gate. Scanning is the last net, not the policy. The **choice of scanner and its licence** belong to `secrets-management-standards` (as of Aug 2026 `gitleaks` is *feature complete* and its GitHub action requires a commercial licence for organisations: verify before pinning it); the **post-leak procedure** also lives there — the secret is burned even if you rewrite history: you rotate first and clean up afterwards.
+- A secret that reached the repo **is compromised**: the order is *rotate → revoke → invalidate → then clean history*. Deleting the commit without rotating is theatre: there are forks, clones, forge caches and CI logs.
+- No `.env` with real values committed; `.env.example` with empty keys, a `.gitignore` covering artifacts, credentials and dumps, and `.gitattributes` to avoid mangling binaries.
 
-### 5.3 Reescritura de historia y ficheros grandes
+### 5.3 History rewriting and large files
 
-- **`git-filter-repo`** es la herramienta (Git desaconseja oficialmente `filter-branch`: lento, lleno de trampas y con manglings no obvios). BFG sigue publicado pero sin releases recientes; su continuación comunitaria es `bfg-ish`.
-- Reescribir historia publicada es una operación coordinada: aviso previo, ventana acordada, todos reclonan (`git pull --rebase` no basta), forks del forge invalidados y soporte del proveedor contactado para purgar caché y PRs viejos.
-- Binarios y ficheros grandes: **Git LFS** con `.gitattributes` versionado, decidido **antes** del primer commit (migrar después implica reescritura). Alternativa: no versionarlos y publicarlos como artefactos de release. Un repo que arrastra binarios es un repo que nadie clona en menos de 10 minutos.
-- Git LFS: usa **≥ 3.7.1**, que corrige CVE-2025-26625 (escritura fuera del working tree por colisión de symlinks/hardlinks con rutas LFS en `checkout` y `pull`).
+- **`git-filter-repo`** is the tool (Git officially discourages `filter-branch`: slow, full of traps and with non-obvious manglings). BFG is still published but with no recent releases; its community continuation is `bfg-ish`.
+- Rewriting published history is a coordinated operation: advance notice, agreed window, everyone re-clones (`git pull --rebase` is not enough), forge forks invalidated and the provider's support contacted to purge caches and old PRs.
+- Binaries and large files: **Git LFS** with a versioned `.gitattributes`, decided **before** the first commit (migrating later means a rewrite). Alternative: do not version them and publish them as release artifacts. A repo dragging binaries around is a repo nobody clones in under 10 minutes.
+- Git LFS: use **≥ 3.7.1**, which fixes CVE-2025-26625 (writes outside the working tree through symlink/hardlink collisions with LFS paths in `checkout` and `pull`).
 
-## 6. Diagnóstico y procedimientos de emergencia
+## 6. Diagnostics and emergency procedures
 
-- **`git bisect`** es la razón por la que exiges commits atómicos y verdes. `git bisect start/bad/good` + `git bisect run <script>` automatiza la búsqueda; con `main` lineal (squash) y `--first-parent`, el espacio de búsqueda es una unidad de valor por paso.
-- **`git blame`** útil requiere no contaminar la historia con reformateos: los cambios masivos de formato van en su propio commit y ese SHA se registra en `.git-blame-ignore-revs` (+ `blame.ignoreRevsFile` en la config del repo).
-- Útiles al depurar: `git log -S<cadena>` (pickaxe, cuándo apareció/desapareció un texto), `git log -L` (evolución de un rango de líneas), `git reflog` (recuperar lo que creías perdido: casi nada se pierde de verdad en 90 días).
-- **Revert**: `git revert <sha>` es el mecanismo por defecto para deshacer en `main`. Si el commit era un merge, `-m 1`; documenta en el mensaje qué se revierte y por qué, y abre el ticket de la corrección — un revert no es el arreglo, es la contención.
-- **Hotfix**: rama desde el tag de producción (no desde `main` si `main` ha avanzado), cambio mínimo, mismos gates de CI (nunca `--no-verify` ni merge de admin saltándose checks), tag de patch firmado, y **backport a `main` en el mismo día** con verificación de que existe. El hotfix que nunca vuelve a `main` reaparece en la siguiente release.
-- **Rollback** de producción es un evento de despliegue (promoción del artefacto anterior), no de Git; revertir el commit sin desplegar no arregla nada. Ver `cicd-standards`.
-- Postmortem sin culpa cuando la causa fue de proceso (rama larga, PR gigante, gate desactivado): la acción de seguimiento es un cambio en estas reglas, no un aviso a una persona.
+- **`git bisect`** is the reason you require atomic, green commits. `git bisect start/bad/good` + `git bisect run <script>` automates the search; with a linear `main` (squash) and `--first-parent`, the search space is one unit of value per step.
+- A useful **`git blame`** requires not polluting history with reformatting: mass formatting changes go in their own commit and that SHA is recorded in `.git-blame-ignore-revs` (+ `blame.ignoreRevsFile` in the repo config).
+- Useful when debugging: `git log -S<string>` (pickaxe, when a piece of text appeared/disappeared), `git log -L` (evolution of a line range), `git reflog` (recover what you thought was lost: almost nothing is truly lost within 90 days).
+- **Revert**: `git revert <sha>` is the default mechanism for undoing on `main`. If the commit was a merge, `-m 1`; document in the message what is being reverted and why, and open the ticket for the fix — a revert is not the fix, it is the containment.
+- **Hotfix**: branch from the production tag (not from `main` if `main` has moved on), minimal change, same CI gates (never `--no-verify` nor an admin merge bypassing checks), signed patch tag, and **backport to `main` the same day** with verification that it exists. A hotfix that never returns to `main` reappears in the next release.
+- Production **rollback** is a deployment event (promoting the previous artifact), not a Git one; reverting the commit without deploying fixes nothing. See `cicd-standards`.
+- Blameless postmortem when the cause was process (long-lived branch, giant PR, disabled gate): the follow-up action is a change to these rules, not a word with a person.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia**
-- Semanal: revisión de PRs abiertos > 3 días y de ramas sin actividad > 1 semana (se cierran o se rescatan).
-- Mensual: revisión de reglas de protección y required checks (¿siguen existiendo esos jobs con ese nombre?), y de la versión del tooling de release.
-- Trimestral: `git maintenance` / `gc` en repos grandes, revisión del tamaño del repo y de patrones LFS, auditoría de claves de firma activas y de accesos con permiso de escritura.
-- Por versión de Git: los defaults van a cambiar en **Git 3.0** (SHA-256 por defecto en repos nuevos, reftable como backend de referencias, rama por defecto `main`, `safe.bareRepository=explicit`, Rust obligatorio; eliminación de grafts, `git-pack-redundant`, `git whatchanged`, `name-rev --stdin`). Sin fecha anunciada: no dependas de comportamientos que ya están marcados para cambiar.
+**Cadence**
+- Weekly: review of open PRs > 3 days and of branches with no activity for > 1 week (they are closed or rescued).
+- Monthly: review of protection rules and required checks (do those jobs still exist under that name?), and of the release tooling version.
+- Quarterly: `git maintenance` / `gc` in large repos, review of repo size and LFS patterns, audit of active signing keys and of write-permission access.
+- Per Git version: the defaults are going to change in **Git 3.0** (SHA-256 by default in new repos, reftable as the reference backend, default branch `main`, `safe.bareRepository=explicit`, Rust mandatory; removal of grafts, `git-pack-redundant`, `git whatchanged`, `name-rev --stdin`). No announced date: do not depend on behaviours already marked for change.
 
-**PROHIBIDO**
-- ❌ Push directo a `main` (incluidos admins y bots) o merge saltándose gates.
-- ❌ `--no-verify`, `[skip ci]` o desactivar un check "temporalmente" sin issue, motivo y fecha de caducidad.
-- ❌ Rebase o force-push sobre ramas compartidas; `--force` sin `--force-with-lease`.
-- ❌ Reescribir historia publicada salvo por secretos o datos personales, y sin coordinación explícita.
-- ❌ Mover, reutilizar o borrar un tag ya publicado.
-- ❌ Ramas de vida larga sin ADR; ramas de release paralelas "porque sí".
-- ❌ Commits que mezclan refactor y cambio de comportamiento; commits que no compilan o rompen tests.
-- ❌ Mensajes vacíos de contenido (`wip`, `fix`, `.`) en `main`.
-- ❌ PR sin descripción, sin verificación declarada o por encima del límite de tamaño sin justificar.
-- ❌ Aprobar un PR sin revisarlo, o autoaprobación en rutas con CODEOWNERS.
-- ❌ Secretos, credenciales, dumps de datos o binarios grandes versionados sin LFS.
-- ❌ Borrar un secreto de la historia **sin rotarlo** antes.
-- ❌ Commits o tags sin firmar en repos con firma obligatoria; claves `-sk` con `no-touch-required`; clave de firma sin respaldo enrolado.
-- ❌ `CHANGELOG.md` escrito a mano en paralelo al generado.
-- ❌ Release manual desde el portátil de alguien (sin tag firmado, sin pipeline, sin trazabilidad).
-- ❌ `git filter-branch` en repos nuevos (usa `git-filter-repo`).
-- ❌ Hotfix que no vuelve a `main`.
+**FORBIDDEN**
+- ❌ Pushing directly to `main` (including admins and bots) or merging around the gates.
+- ❌ `--no-verify`, `[skip ci]` or disabling a check "temporarily" without an issue, a reason and an expiry date.
+- ❌ Rebase or force-push on shared branches; `--force` without `--force-with-lease`.
+- ❌ Rewriting published history except for secrets or personal data, and without explicit coordination.
+- ❌ Moving, reusing or deleting an already-published tag.
+- ❌ Long-lived branches without an ADR; parallel release branches "just because".
+- ❌ Commits mixing refactor and behaviour change; commits that do not compile or break tests.
+- ❌ Content-free messages (`wip`, `fix`, `.`) in `main`.
+- ❌ A PR without a description, without declared verification or above the size limit without justification.
+- ❌ Approving a PR without reviewing it, or self-approval on paths with CODEOWNERS.
+- ❌ Secrets, credentials, data dumps or large binaries committed without LFS.
+- ❌ Deleting a secret from history **without rotating it** first.
+- ❌ Unsigned commits or tags in repos with mandatory signing; `-sk` keys with `no-touch-required`; a signing key with no enrolled backup.
+- ❌ A `CHANGELOG.md` hand-written in parallel with the generated one.
+- ❌ A manual release from somebody's laptop (no signed tag, no pipeline, no traceability).
+- ❌ `git filter-branch` in new repos (use `git-filter-repo`).
+- ❌ A hotfix that never returns to `main`.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier dato de este documento, **búscalo — no lo recuerdes**:
+Before pinning any data point from this document, **look it up — do not recall it**:
 
-1. **Versión de Git** vigente y sus release notes (a ago-2026, la doc oficial de `BreakingChanges` referenciaba **2.55.0**, jun-2026; 2.54 introdujo `git history` experimental con `reword`/`split` y hooks por configuración, y 2.55 añadió `git history fixup`). Comprueba `git-scm.com/docs/BreakingChanges` para el estado real de Git 3.0 y sus defaults.
-2. **CVEs de Git y Git LFS** y versión mínima parcheada antes de fijar un requisito de versión (Git LFS ≥ 3.7.1 por CVE-2025-26625).
-3. **Firma**: soporte y matices actuales de claves `-sk` como *signing key* en GitHub y GitLab, comportamiento de `no-touch-required`, y la sintaxis exacta de `ykman openpgp keys set-touch` si vas por la vía GPG. Versión estable de OpenSSH y GnuPG.
-4. **Rulesets vs branch protection** en GitHub: nombres exactos de las reglas disponibles, estado de la protección clásica (a ago-2026 documentada como activa, no formalmente deprecada) y estado de merge queue. En GitLab, si "Reject unsigned commits" sigue siendo Premium/Ultimate y el estado del feature flag del Web IDE.
-5. **Tooling de release**: versión y salud de `release-please`, `changesets` (`@changesets/cli` 2.x), `semantic-release` (24.x; su documentación se movió a `semantic-release.org`, la de GitBook está discontinuada) y `goreleaser` (línea 2.x, con edición Pro de pago).
-6. **Specs**: Conventional Commits (1.0.0 vigente en `conventionalcommits.org`) y SemVer (2.0.0 en `semver.org`).
-7. **Monorepo**: versiones y **licencias** vigentes de Nx, Turborepo y Bazel antes de comprometer una elección — no asumas que siguen siendo las de tu última lectura.
-8. **Higiene**: última versión de `git-filter-repo` (2.47.x en jun-2026) y estado de mantenimiento de BFG/`bfg-ish`; límites vigentes de tamaño de fichero y repo del forge que uses.
+1. **Current Git version** and its release notes (as of Aug 2026, the official `BreakingChanges` doc referenced **2.55.0**, Jun 2026; 2.54 introduced experimental `git history` with `reword`/`split` and hooks by configuration, and 2.55 added `git history fixup`). Check `git-scm.com/docs/BreakingChanges` for the real state of Git 3.0 and its defaults.
+2. **Git and Git LFS CVEs** and the minimum patched version before pinning a version requirement (Git LFS ≥ 3.7.1 because of CVE-2025-26625).
+3. **Signing**: current support and nuances for `-sk` keys as a *signing key* on GitHub and GitLab, behaviour of `no-touch-required`, and the exact syntax of `ykman openpgp keys set-touch` if you go the GPG route. Stable version of OpenSSH and GnuPG.
+4. **Rulesets vs branch protection** on GitHub: exact names of the available rules, status of classic protection (as of Aug 2026 documented as active, not formally deprecated) and status of merge queue. On GitLab, whether "Reject unsigned commits" is still Premium/Ultimate and the status of the Web IDE feature flag.
+5. **Release tooling**: version and health of `release-please`, `changesets` (`@changesets/cli` 2.x), `semantic-release` (24.x; its documentation moved to `semantic-release.org`, the GitBook one is discontinued) and `goreleaser` (2.x line, with a paid Pro edition).
+6. **Specs**: Conventional Commits (1.0.0 current at `conventionalcommits.org`) and SemVer (2.0.0 at `semver.org`).
+7. **Monorepo**: current versions and **licences** of Nx, Turborepo and Bazel before committing to a choice — do not assume they are still the ones from your last read.
+8. **Hygiene**: latest version of `git-filter-repo` (2.47.x in Jun 2026) and maintenance status of BFG/`bfg-ish`; current file and repo size limits of the forge you use.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,31 +3,31 @@ name: sqlserver-dba-standards
 description: Use when operating Microsoft SQL Server — sqlcmd, SSMS, T-SQL, DBCC CHECKDB, tempdb file configuration, recovery models and transaction log growth, BACKUP DATABASE/DIFFERENTIAL/LOG and a broken log chain, RESTORE WITH NORECOVERY or WITH STANDBY, backup to URL, Always On availability groups, basic availability groups, failover cluster instances on WSFC, CLUSTER_TYPE EXTERNAL with Pacemaker on Linux, Query Store, sys.dm_os_wait_stats and wait statistics, plan regression and forced plans, clustered versus nonclustered and covering indexes, index fragmentation, RCSI and snapshot isolation, deadlock graphs and blocking, SQL Server Agent jobs, Ola Hallengren MaintenanceSolution, First Responder Kit sp_Blitz, dbatools, TDE, mssql-conf and mssql-server containers, edition core and memory limits, core versus Server+CAL licensing and Software Assurance failover rights, or SQL Server 2016/2017/2019/2022/2025 support dates and cumulative updates.
 ---
 
-# Estándares de administración de Microsoft SQL Server
+# Microsoft SQL Server administration standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-> **Tesis del documento**: en SQL Server **la edición es una decisión de arquitectura**, no una
-> línea de pedido. Cambiar de Standard a Enterprise para conseguir grupos de disponibilidad
-> completos o reconstrucción de índices en línea es una compra de seis cifras en instalaciones
-> medianas; diseñar una solución que solo funciona en Enterprise y aterrizarla en Standard es un
-> proyecto fallido. **La edición se fija antes del diseño, y el diseño la respeta.**
+> **Thesis of this document**: in SQL Server **the edition is an architecture decision**, not a
+> purchase-order line. Moving from Standard to Enterprise to obtain full availability groups
+> or online index rebuilds is a six-figure purchase in medium-sized installations;
+> designing a solution that only works on Enterprise and landing it on Standard is a
+> failed project. **The edition is fixed before the design, and the design respects it.**
 >
-> **Segunda tesis**: la mayoría de las instancias que se encuentran en producción están
-> **sobredimensionadas** (Enterprise para una carga que cabe holgada en Standard) y a la vez
-> **mal configuradas** en lo que sí es gratis: `tempdb`, `MAXDOP`, modelo de recuperación, RCSI y
-> mantenimiento. Casi siempre hay más rendimiento en corregir eso que en subir de edición.
+> **Second thesis**: most of the instances found in production are
+> **oversized** (Enterprise for a workload that fits comfortably in Standard) and at the same time
+> **misconfigured** in what is actually free: `tempdb`, `MAXDOP`, the recovery model, RCSI and
+> maintenance. There is almost always more performance in fixing that than in moving up an edition.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a diseñar, licenciar, operar, respaldar, dar alta disponibilidad, diagnosticar y mantener
-SQL Server on-prem, en Linux y en contenedores: ediciones y límites, arquitectura de instancia y
-bases del sistema, `tempdb`, modelos de recuperación y cadena de log, respaldo y restauración
-nativos, Always On (AG y FCI), rendimiento por estadísticas de espera y Query Store, índices,
-bloqueo y aislamiento, T-SQL con criterio, trabajos de mantenimiento, seguridad del motor y
-versiones/soporte.
+Applies to designing, licensing, operating, backing up, making highly available, diagnosing and maintaining
+SQL Server on-prem, on Linux and in containers: editions and limits, instance architecture and
+system databases, `tempdb`, recovery models and the log chain, native backup and restore,
+Always On (AG and FCI), performance through wait statistics and Query Store, indexes,
+blocking and isolation, T-SQL with judgement, maintenance jobs, engine security and
+versions/support.
 
-Disparadores: `sqlcmd`, `SSMS`, `bcp`, `mssql-conf`, `mssql-cli`, `dbatools`, `T-SQL`,
+Triggers: `sqlcmd`, `SSMS`, `bcp`, `mssql-conf`, `mssql-cli`, `dbatools`, `T-SQL`,
 `DBCC CHECKDB`, `DBCC SHOW_STATISTICS`, `tempdb`, `master`/`model`/`msdb`,
 `RECOVERY FULL|SIMPLE|BULK_LOGGED`, `log_reuse_wait_desc`, `BACKUP DATABASE`, `BACKUP LOG`,
 `RESTORE ... WITH NORECOVERY|STANDBY`, `RESTORE VERIFYONLY`, `BACKUP TO URL`, `msdb.dbo.backupset`,
@@ -37,669 +37,668 @@ Disparadores: `sqlcmd`, `SSMS`, `bcp`, `mssql-conf`, `mssql-cli`, `dbatools`, `T
 `sp_WhoIsActive`, `sp_Blitz`, `sp_BlitzIndex`, `sp_QuickieStore`, `MaintenanceSolution.sql`,
 `READ_COMMITTED_SNAPSHOT`, `ALLOW_SNAPSHOT_ISOLATION`, `deadlock graph`, `MAXDOP`,
 `cost threshold for parallelism`, `max server memory`, `SQL Server Agent`, `TDE`, `sysadmin`,
-`mssql/server` (contenedor), "cumulative update", "edición Standard", "Software Assurance".
+`mssql/server` (container), "cumulative update", "Standard edition", "Software Assurance".
 
-**No aplica**: ver
-- `data-platform-standards` (**skill madre**: PostgreSQL como default, modelado relacional,
-  migraciones expand/contract, clasificación y retención del dato. Su principio —*un almacén por
-  necesidad, no por moda*— sigue mandando: **esta skill no justifica elegir SQL Server**, cubre
-  operarlo bien cuando ya está por decisión histórica, por un producto de terceros que lo exige o
-  por un ecosistema .NET/Windows consolidado).
-- `windows-server-ad-standards` (**frontera crítica, delegación total**: bosque/dominio/OU, GPO,
-  **Kerberos y NTLM**, SPN, delegación, **gMSA/dMSA**, modelo Tier 0, PAW, recuperación del bosque
-  y endurecimiento de Windows Server son **suyos**. La autenticación integrada de SQL Server
-  *se apoya* en todo eso: **aquí solo se dice qué exige el motor** —cuenta de servicio, SPN
-  correcto para Kerberos, roles del servidor— y **se delega el cómo**. **Prohibido duplicar aquí
-  criterio de AD.**).
-- `ha-clustering-standards` (**Pacemaker/Corosync, quórum, fencing/STONITH y su disciplina son
-  suyos**). Frontera declarada explícitamente: **WSFC es el clúster de Windows y es de esta
-  skill** (es inseparable de FCI y de los AG en Windows); **cuando SQL Server corre en Linux, el
-  gestor de clúster es Pacemaker y manda `ha-clustering-standards`** —incluido el fencing, que sin
-  él no hay HA— y aquí solo vive lo que es del motor: `CLUSTER_TYPE = EXTERNAL`,
-  `FAILOVER_MODE = EXTERNAL`, el recurso de AG y el paquete `mssql-server-ha`.
-- `backup-recovery-standards` y `bcdr-standards` — **regla de arbitraje espejada palabra por
-  palabra desde `backup-recovery-standards` §1**:
-  > **"¿cómo se hace la copia?" es de `backup-recovery`** (herramienta, repositorio, 3-2-1, GFS,
-  > dedup, cifrado del repo, integridad, catálogo, procedimiento de restore); **"¿cuánto podemos
-  > perder, en qué orden lo levantamos y quién lo decide?" es de `bcdr`**.
-- `sql-standards` (**el lenguaje SQL**; regla de arbitraje espejada desde su §1: *si la pregunta
-  cambia cómo se escribe la consulta o el DDL, es de `sql-standards`; si cambia qué motor se
-  elige, cómo se dimensiona, respalda, replica o restaura, es de aquí*). Suyas son las
-  peculiaridades de T-SQL que **cambian el código** —`MERGE` y sus condiciones de uso seguro,
-  `OUTPUT`, `TOP`, `APPLY`, `OFFSET/FETCH`, el efecto de la colación en la comparación de
-  cadenas—; de aquí, todo lo que decide la ejecución: Query Store, planes forzados, niveles de
-  compatibilidad, `READ_COMMITTED_SNAPSHOT`, estadísticas, DBCC y el licenciamiento por core de
-  las características que una construcción pueda requerir.
+**Not applicable**: see
+- `data-platform-standards` (**parent skill**: PostgreSQL as the default, relational modelling,
+  expand/contract migrations, data classification and retention. Its principle —*a store by
+  need, not by fashion*— still rules: **this skill does not justify choosing SQL Server**, it covers
+  operating it well when it is already there by historical decision, because a third-party product requires it or
+  because of a consolidated .NET/Windows ecosystem).
+- `windows-server-ad-standards` (**critical boundary, total delegation**: forest/domain/OU, GPO,
+  **Kerberos and NTLM**, SPN, delegation, **gMSA/dMSA**, Tier 0 model, PAW, forest recovery
+  and Windows Server hardening are **theirs**. SQL Server's integrated authentication
+  *rests* on all of that: **here it is only stated what the engine requires** —service account, correct
+  SPN for Kerberos, server roles— and **the how is delegated**. **Forbidden to duplicate AD
+  criteria here.**).
+- `ha-clustering-standards` (**Pacemaker/Corosync, quorum, fencing/STONITH and their discipline are
+  theirs**). Boundary declared explicitly: **WSFC is the Windows cluster and it belongs to this
+  skill** (it is inseparable from FCI and from AGs on Windows); **when SQL Server runs on Linux, the
+  cluster manager is Pacemaker and `ha-clustering-standards` rules** —including fencing, without
+  which there is no HA— and here only what belongs to the engine lives: `CLUSTER_TYPE = EXTERNAL`,
+  `FAILOVER_MODE = EXTERNAL`, the AG resource and the `mssql-server-ha` package.
+- `backup-recovery-standards` and `bcdr-standards` — **arbitration rule mirrored word for
+  word from `backup-recovery-standards` §1**:
+  > **"how is the copy made?" belongs to `backup-recovery`** (tool, repository, 3-2-1, GFS,
+  > dedup, repo encryption, integrity, catalogue, restore procedure); **"how much can we
+  > lose, in what order do we bring it back and who decides?" belongs to `bcdr`**.
+- `sql-standards` (**the SQL language**; arbitration rule mirrored from its §1: *if the question
+  changes how the query or the DDL is written, it belongs to `sql-standards`; if it changes which engine is
+  chosen, how it is sized, backed up, replicated or restored, it belongs here*). Theirs are the
+  T-SQL peculiarities that **change the code** —`MERGE` and its conditions for safe use,
+  `OUTPUT`, `TOP`, `APPLY`, `OFFSET/FETCH`, the effect of collation on string
+  comparison—; from here, everything that decides execution: Query Store, forced plans, compatibility
+  levels, `READ_COMMITTED_SNAPSHOT`, statistics, DBCC and the per-core licensing of
+  the features a construct may require.
 
-  Extensión propia: **lo específico del motor es de aquí** — modelos de recuperación, cadena de
-  log y cómo se rompe, backup completo/diferencial/de log, `RESTORE ... WITH STANDBY`,
-  `RESTORE VERIFYONLY`/`CHECKSUM`, backup a URL y el papel de los AG en el RPO. **El repositorio,
-  su inmutabilidad y la cadencia del restore de prueba son de `backup-recovery`**; **el RPO/RTO
-  que justifica el modo síncrono y el ejercicio de conmutación son de `bcdr`**.
-- `oracle-dba-standards` (el otro motor propietario del catálogo; distinto proveedor, mismo
-  patrón: **el licenciamiento decide la arquitectura**. No compiten).
-- `dotnet-standards` (**el código C#/EF Core que consume esta base de datos es suyo**: driver,
-  pool, `Microsoft.Data.SqlClient`, migraciones desde la aplicación).
-- `streaming-cdc-standards` (**la captura es suya**: CDC, change tracking, change event streaming,
-  Debezium; **el coste en el motor es de aquí**: retención del log, trabajos de captura, impacto
-  en el modelo de recuperación).
+  Its own extension: **what is engine-specific belongs here** — recovery models, the log
+  chain and how it breaks, full/differential/log backups, `RESTORE ... WITH STANDBY`,
+  `RESTORE VERIFYONLY`/`CHECKSUM`, backup to URL and the role of AGs in the RPO. **The repository,
+  its immutability and the cadence of the test restore belong to `backup-recovery`**; **the RPO/RTO
+  that justifies synchronous mode and the failover exercise belong to `bcdr`**.
+- `oracle-dba-standards` (the catalogue's other proprietary engine; a different vendor, the same
+  pattern: **licensing decides the architecture**. They do not compete).
+- `dotnet-standards` (**the C#/EF Core code that consumes this database is theirs**: driver,
+  pool, `Microsoft.Data.SqlClient`, migrations from the application).
+- `streaming-cdc-standards` (**capture is theirs**: CDC, change tracking, change event streaming,
+  Debezium; **the cost in the engine belongs here**: log retention, capture jobs, impact
+  on the recovery model).
 - `azure-standards` (Azure SQL Database, Managed Instance, Arc, Azure Hybrid Benefit),
   `aws-standards`/`gcp-standards` (RDS for SQL Server, Cloud SQL for SQL Server).
-- `vulnerability-management-standards` (**el ciclo de CVE y la ventana de parcheo es suyo**; aquí
-  solo la mecánica de CU y su cadencia), `identity-access-management-standards`,
-  `cryptography-pki-standards` (TLS y las claves en que se apoya TDE), `secrets-management-standards`,
-  `linux-hardening-standards` y `podman-systemd-containers-standards`/`kubernetes-standards`
-  (el SO y el runtime cuando SQL Server corre fuera de Windows),
+- `vulnerability-management-standards` (**the CVE cycle and the patching window are theirs**; here
+  only the mechanics of CUs and their cadence), `identity-access-management-standards`,
+  `cryptography-pki-standards` (TLS and the keys TDE rests on), `secrets-management-standards`,
+  `linux-hardening-standards` and `podman-systemd-containers-standards`/`kubernetes-standards`
+  (the OS and the runtime when SQL Server runs outside Windows),
   `observability-standards`, `grc-compliance-standards`, `privacy-engineering-standards`,
-  `iac-standards`, `firewall-policy-standards` (exposición del puerto 1433).
-- `mysql-mariadb-dba-standards` (el tercer motor relacional del catálogo; open source, sin la
-  variable de edición que domina aquí), `timeseries-db-standards`, `message-brokers-standards`,
-  `nosql-standards`, `search-engines-standards`, `caching-cdn-standards` (otros almacenes
-  especializados).
+  `iac-standards`, `firewall-policy-standards` (exposure of port 1433).
+- `mysql-mariadb-dba-standards` (the catalogue's third relational engine; open source, without the
+  edition variable that dominates here), `timeseries-db-standards`, `message-brokers-standards`,
+  `nosql-standards`, `search-engines-standards`, `caching-cdn-standards` (other specialised
+  stores).
 
-## 2. Ediciones y licenciamiento: la decisión dominante
+## 2. Editions and licensing: the dominant decision
 
-> **Aviso de alcance, no negociable**: aquí se fija **criterio técnico**, no asesoramiento
-> contractual. Toda decisión con impacto económico se valida contra la **guía de licenciamiento de
-> SQL Server**, los **Product Terms** vigentes y el **gestor de licencias de la organización**.
-> Ningún precio aparece en este documento (§8).
+> **Scope warning, non-negotiable**: what is set here is **technical criteria**, not contractual
+> advice. Every decision with an economic impact is validated against the **SQL Server licensing
+> guide**, the current **Product Terms** and the organisation's **licence manager**.
+> No price appears in this document (§8).
 
-### 2.1 Límites reales de Standard — verificados en SQL Server 2025 (17.x)
+### 2.1 Standard's real limits — verified on SQL Server 2025 (17.x)
 
-Fuente primaria: *Editions and supported features of SQL Server 2025*, learn.microsoft.com
-(comprobado también contra el markdown del repositorio `MicrosoftDocs/sql-docs`).
+Primary source: *Editions and supported features of SQL Server 2025*, learn.microsoft.com
+(also checked against the markdown of the `MicrosoftDocs/sql-docs` repository).
 
-| Límite | Enterprise | **Standard** | Express |
+| Limit | Enterprise | **Standard** | Express |
 |---|---|---|---|
-| Cómputo máximo por instancia (motor) | Máximo del SO | **Menor de 4 sockets o 32 núcleos** | Menor de 1 socket o 4 núcleos |
-| Memoria máxima de *buffer pool* por instancia | Máximo del SO | **256 GB** | 1 410 MB |
-| Caché de segmento columnstore | Ilimitada | 32 GB | 352 MB |
-| Datos *memory-optimized* por base | Ilimitada | 32 GB | 352 MB |
+| Maximum compute per instance (engine) | OS maximum | **Lesser of 4 sockets or 32 cores** | Lesser of 1 socket or 4 cores |
+| Maximum *buffer pool* memory per instance | OS maximum | **256 GB** | 1,410 MB |
+| Columnstore segment cache | Unlimited | 32 GB | 352 MB |
+| *Memory-optimized* data per database | Unlimited | 32 GB | 352 MB |
 
-**Cambio que sí mueve un diseño** — nota al pie 2 del propio documento: *"In SQL Server 2022 (16.x)
-and earlier versions, the limit is the lesser of 4 sockets or 24 cores."* Es decir: **Standard pasó
-de 24 a 32 núcleos y su buffer pool subió a 256 GB en la versión 2025**. Un dimensionamiento hecho
-sobre "Standard son 24 cores y 128 GB" está desfasado y puede estar justificando un Enterprise
-innecesario. **Verificar siempre contra la página de la versión concreta**: los límites son por
-versión.
+**A change that does move a design** — footnote 2 of the document itself: *"In SQL Server 2022 (16.x)
+and earlier versions, the limit is the lesser of 4 sockets or 24 cores."* That is: **Standard went
+from 24 to 32 cores and its buffer pool rose to 256 GB in the 2025 version**. A sizing exercise done
+on "Standard is 24 cores and 128 GB" is out of date and may be justifying an unnecessary
+Enterprise. **Always verify against the page for the specific version**: the limits are per
+version.
 
-### 2.2 Qué separa Enterprise de Standard (lo que decide la arquitectura)
+### 2.2 What separates Enterprise from Standard (what decides the architecture)
 
-Solo Enterprise (verificado en la tabla de 2025):
-- **Always On availability groups** completos, **contained AG**, **distributed AG**, reencaminado
-  automático de conexión lectura/escritura. **Standard solo tiene *basic availability groups***:
-  *"A basic availability group supports two replicas, with one database."* — dos réplicas, **una
-  sola base de datos**, sin réplica legible.
-- **FCI**: Enterprise hasta **16 nodos**; Standard **2 nodos**.
-- **Reconstrucción y creación de índices en línea** (y su versión *resumable*), **cambio de esquema
-  en línea**, **restauración de página y fichero en línea**, *fast recovery*, backups reflejados.
-- Casi todo *Intelligent Query Processing* avanzado (batch mode on rowstore, adaptive joins,
-  memory grant feedback, cardinality feedback, DOP feedback, *automatic tuning*), **Query Store en
-  réplicas secundarias**, mantenimiento paralelo de índices, `CHECKDB` paralelo, vistas
-  particionadas distribuidas.
+Enterprise only (verified in the 2025 table):
+- Full **Always On availability groups**, **contained AG**, **distributed AG**, automatic
+  read/write connection redirection. **Standard only has *basic availability groups***:
+  *"A basic availability group supports two replicas, with one database."* — two replicas, **a
+  single database**, with no readable replica.
+- **FCI**: Enterprise up to **16 nodes**; Standard **2 nodes**.
+- **Online index rebuild and create** (and its *resumable* version), **online schema
+  change**, **online page and file restore**, *fast recovery*, mirrored backups.
+- Almost all advanced *Intelligent Query Processing* (batch mode on rowstore, adaptive joins,
+  memory grant feedback, cardinality feedback, DOP feedback, *automatic tuning*), **Query Store on
+  secondary replicas**, parallel index maintenance, parallel `CHECKDB`, distributed partitioned
+  views.
 
-**En Standard, y esto es lo que suele sorprender** (y desmonta muchos "necesitamos Enterprise"):
-**TDE**, **cifrado de backups**, **compresión de backups**, **particionado de tablas e índices**,
-**compresión de datos**, **columnstore**, **In-Memory OLTP**, **Query Store**, **Always Encrypted**
-(también con *secure enclaves*), **row-level security**, **dynamic data masking**, **auditoría**,
-**Change Data Capture**, **Accelerated Database Recovery**, **optimized locking**, **backup y
-restore a almacenamiento objeto compatible con S3**, **AG sin clúster** (*clusterless*) y
-—**novedad de 2025**— **Resource Governor**, que era exclusivo de Enterprise.
+**In Standard, and this is what usually surprises people** (and dismantles many "we need Enterprise"):
+**TDE**, **backup encryption**, **backup compression**, **table and index partitioning**,
+**data compression**, **columnstore**, **In-Memory OLTP**, **Query Store**, **Always Encrypted**
+(also with *secure enclaves*), **row-level security**, **dynamic data masking**, **auditing**,
+**Change Data Capture**, **Accelerated Database Recovery**, **optimized locking**, **backup and
+restore to S3-compatible object storage**, **clusterless AG** and
+—**new in 2025**— **Resource Governor**, which used to be Enterprise-only.
 
-Regla de decisión: **se justifica Enterprise por HA real (AG multi-base o multi-réplica),
-mantenimiento en línea 24×7 o techo de cómputo**; no por funcionalidades que ya están en Standard.
-Cualquier propuesta de Enterprise se acompaña de cuál de esas tres razones aplica.
+Decision rule: **Enterprise is justified by real HA (a multi-database or multi-replica AG),
+24×7 online maintenance or a compute ceiling**; not by features that are already in Standard.
+Every Enterprise proposal is accompanied by which of those three reasons applies.
 
-Otros hechos de edición verificados en 2025: **Express** llega hasta 1 socket/4 núcleos y ahora
-incluye lo que antes era *Express with Advanced Services*; existen **Enterprise Developer** y
-**Standard Developer** como ediciones separadas (Developer = funcionalidad completa de su edición,
-**licenciada solo para desarrollo y pruebas — nunca en producción**); la edición **Web** se retira
-a partir de 2025 (2022 es la última que la incluye); *Reporting Services* on-prem se consolida bajo
+Other edition facts verified in 2025: **Express** goes up to 1 socket/4 cores and now
+includes what used to be *Express with Advanced Services*; **Enterprise Developer** and
+**Standard Developer** exist as separate editions (Developer = the full functionality of its edition,
+**licensed only for development and testing — never in production**); the **Web** edition is withdrawn
+from 2025 onwards (2022 is the last one that includes it); on-prem *Reporting Services* is consolidated under
 **Power BI Report Server**.
 
-### 2.3 Modelo de licencia
+### 2.3 Licensing model
 
-- **Por núcleo**: se cuentan **núcleos físicos** (el *hyperthreading* no cuenta), con mínimo por
-  procesador y venta en paquetes de 2. Es el único modelo disponible para Enterprise en acuerdos
-  nuevos.
-- **Servidor + CAL**: solo Standard. Deja de compensar a partir de cierto número de usuarios; el
-  umbral depende del acuerdo — **calcularlo, no estimarlo**.
-- **Enterprise con Server+CAL** (heredado, no disponible para acuerdos nuevos) está **limitado a
-  20 núcleos por instancia** (nota al pie 1 del documento de ediciones): un contrato antiguo puede
-  estar poniendo un techo de rendimiento que nadie recuerda.
-- **Virtualización**: con **Software Assurance**, Enterprise ofrece virtualización ilimitada sobre
-  un host completamente licenciado; sin SA, se licencia por VM. Contar VMs sobre un host
-  compartido sin SA es la vía rápida a un hallazgo de auditoría.
+- **Per core**: **physical cores** are counted (*hyperthreading* does not count), with a per-processor
+  minimum and sale in packs of 2. It is the only model available for Enterprise in new
+  agreements.
+- **Server + CAL**: Standard only. It stops paying off beyond a certain number of users; the
+  threshold depends on the agreement — **calculate it, do not estimate it**.
+- **Enterprise with Server+CAL** (legacy, not available for new agreements) is **limited to
+  20 cores per instance** (footnote 1 of the editions document): an old contract may
+  be imposing a performance ceiling nobody remembers.
+- **Virtualisation**: with **Software Assurance**, Enterprise offers unlimited virtualisation on
+  a fully licensed host; without SA, you license per VM. Counting VMs on a shared
+  host without SA is the fast route to an audit finding.
 
-### 2.4 Software Assurance y su papel en alta disponibilidad — **la trampa cara**
+### 2.4 Software Assurance and its role in high availability — **the expensive trap**
 
-**Los derechos de conmutación por error son un beneficio de Software Assurance (o de licencia por
-suscripción). Sin SA, una réplica pasiva se licencia por completo, aunque nunca sirva una
-consulta.** Con SA, por cada OSE licenciada se pueden ejecutar réplicas pasivas en anticipación de
-un failover (típicamente una para HA, una para DR y una en Azure), **siempre que no sirvan datos ni
-ejecuten trabajo activo** y que no excedan la licencia de la primaria.
+**Failover rights are a Software Assurance (or subscription licence) benefit.
+Without SA, a passive replica is fully licensed, even if it never serves a
+query.** With SA, for each licensed OSE you can run passive replicas in anticipation of
+a failover (typically one for HA, one for DR and one in Azure), **provided they neither serve data nor
+run active work** and do not exceed the primary's licence.
 
-Consecuencias directas de diseño, no de compras:
-- Un **secundario legible** en un AG **deja de ser pasivo**: se licencia. "Descargar los informes a
-  la réplica" es una compra. Lo mismo vale para ejecutar backups o `CHECKDB` sobre el secundario
-  según los términos vigentes: **verificarlo antes de diseñarlo**.
-- El coste de HA en SQL Server no es el clúster: **es la licencia del segundo nodo si no hay SA**.
-- **Verificar los Product Terms vigentes**: los derechos de failover se han redefinido más de una
-  vez. Aquí no se fija su redacción; se fija la obligación de comprobarla.
+Direct design consequences, not procurement ones:
+- A **readable secondary** in an AG **stops being passive**: it is licensed. "Offloading the reports to
+  the replica" is a purchase. The same goes for running backups or `CHECKDB` on the secondary
+  under the current terms: **verify it before designing it**.
+- The cost of HA in SQL Server is not the cluster: **it is the second node's licence if there is no SA**.
+- **Verify the current Product Terms**: failover rights have been redefined more than
+  once. Their wording is not fixed here; what is fixed is the obligation to check it.
 
-## 3. Arquitectura de instancia
+## 3. Instance architecture
 
-- **Una instancia por host como default.** Instancias con nombre múltiples reparten memoria y CPU
-  entre motores que compiten y complican el parcheo; separar por contenedor o por VM es más limpio
-  y más fácil de licenciar. Consolidar en **bases de datos dentro de una instancia**, no en
-  instancias dentro de un host.
-- **Bases del sistema**: `master` (configuración e inicios de sesión) y `msdb` (Agent, historial de
-  backups, planes) **entran en la estrategia de respaldo** — perderlas cuesta la reconstrucción del
-  entorno; `model` es la plantilla de toda base nueva (fijar allí el modelo de recuperación y los
-  tamaños de fichero por defecto evita sorpresas); `tempdb` se recrea al arrancar y **no se
-  respalda**.
-- **Memoria**: `max server memory` **siempre fijado** dejando margen al SO (y a otros consumidores
-  del host); nunca por defecto. `min server memory` solo si hay competencia real. En Linux, límites
-  vía `mssql-conf` y **cgroup v2** (respetado a partir de SQL Server 2025 y de 2022 CU 20 —
-  antes, un contenedor con límite de memoria podía morir por OOM porque el motor lo ignoraba).
-- **Paralelismo**: `MAXDOP` y `cost threshold for parallelism` **explícitos** desde el día uno. El
-  valor por defecto de `cost threshold` (5) es de los años noventa y paraleliza consultas triviales:
-  subirlo es uno de los cambios con mejor relación beneficio/riesgo del producto. `MAXDOP` según
-  número de núcleos y NUMA, con la excepción documentada por carga.
-- **Almacenamiento**: datos, log y `tempdb` en volúmenes con perfiles de E/S distintos; el log de
-  transacciones es **escritura secuencial y sensible a latencia** — es el primer sitio donde poner
-  el almacenamiento rápido. Formato NTFS con unidad de asignación de 64 KB en Windows salvo criterio
-  del fabricante de la cabina (`linux-storage-standards`/`onprem-standards` para el resto).
-- **Autocrecimiento**: en incrementos **fijos y grandes**, nunca en porcentaje, y con
-  *Instant File Initialization* habilitada (privilegio *Perform Volume Maintenance Tasks*) para que
-  el crecimiento de datos no congele la instancia. El autocrecimiento es una **red de seguridad**,
-  no una estrategia de capacidad: los ficheros se predimensionan.
+- **One instance per host as the default.** Multiple named instances split memory and CPU
+  between competing engines and complicate patching; separating by container or by VM is cleaner
+  and easier to license. Consolidate into **databases within one instance**, not into
+  instances within a host.
+- **System databases**: `master` (configuration and logins) and `msdb` (Agent, backup
+  history, plans) **are part of the backup strategy** — losing them costs a rebuild of the
+  environment; `model` is the template for every new database (setting the recovery model and default
+  file sizes there avoids surprises); `tempdb` is recreated at startup and **is not
+  backed up**.
+- **Memory**: `max server memory` **always set**, leaving headroom for the OS (and for other consumers
+  on the host); never left at the default. `min server memory` only if there is real competition. On Linux, limits
+  via `mssql-conf` and **cgroup v2** (honoured from SQL Server 2025 and from 2022 CU 20 —
+  before that, a container with a memory limit could die of OOM because the engine ignored it).
+- **Parallelism**: `MAXDOP` and `cost threshold for parallelism` **explicit** from day one. The
+  default value of `cost threshold` (5) is from the nineties and parallelises trivial queries:
+  raising it is one of the product's best benefit/risk changes. `MAXDOP` according to
+  core count and NUMA, with the exception documented per workload.
+- **Storage**: data, log and `tempdb` on volumes with different I/O profiles; the transaction
+  log is **sequential write and latency-sensitive** — it is the first place to put
+  fast storage. NTFS formatted with a 64 KB allocation unit on Windows unless the array vendor's
+  criteria say otherwise (`linux-storage-standards`/`onprem-standards` for the rest).
+- **Autogrowth**: in **fixed and large** increments, never as a percentage, and with
+  *Instant File Initialization* enabled (the *Perform Volume Maintenance Tasks* privilege) so that
+  data growth does not freeze the instance. Autogrowth is a **safety net**,
+  not a capacity strategy: files are pre-sized.
 
-### 3.1 `tempdb` — el ajuste con más impacto real
+### 3.1 `tempdb` — the setting with the most real impact
 
-- **Múltiples ficheros de datos, todos del mismo tamaño y con el mismo autocrecimiento**: la
-  contención de páginas de asignación en `tempdb` es el cuello de botella clásico de instancias
-  ocupadas, y solo desaparece si los ficheros son simétricos (el asignador es *round-robin*
-  proporcional al espacio libre: un fichero desigual se lleva todo el trabajo). El instalador
-  moderno propone un número razonable según núcleos; **revisarlo, no aceptarlo a ciegas**, y
-  **nunca** dejar un solo fichero en un servidor con varios núcleos.
-- **Predimensionar** para que no crezca en caliente; volumen dedicado y rápido; *memory-optimized
-  tempdb metadata* solo en Enterprise y con la carga que lo justifique.
-- `tempdb` es **compartida por toda la instancia**: una consulta con un `sort` monstruoso o un
-  `snapshot isolation` mal usado afecta a todas las bases. Vigilarla como recurso global.
-- En Linux se admite `tempdb` sobre **tmpfs**: opción real de rendimiento, con la consecuencia de
-  consumo de RAM asumida.
+- **Multiple data files, all of the same size and with the same autogrowth**: allocation
+  page contention in `tempdb` is the classic bottleneck of busy instances, and it only
+  disappears if the files are symmetric (the allocator is *round-robin* proportional to free
+  space: an unequal file takes all the work). The modern installer proposes a reasonable
+  number based on cores; **review it, do not accept it blindly**, and **never**
+  leave a single file on a server with several cores.
+- **Pre-size** so that it does not grow while hot; a dedicated and fast volume; *memory-optimized
+  tempdb metadata* only on Enterprise and with a workload that justifies it.
+- `tempdb` is **shared by the whole instance**: a query with a monstrous `sort` or a badly used
+  `snapshot isolation` affects every database. Watch it as a global resource.
+- On Linux, `tempdb` on **tmpfs** is supported: a real performance option, with the consequent
+  RAM consumption accepted.
 
-### 3.2 Modelos de recuperación y su consecuencia directa
+### 3.2 Recovery models and their direct consequence
 
-| Modelo | Qué implica | Punto de recuperación |
+| Model | What it implies | Recovery point |
 |---|---|---|
-| **SIMPLE** | El log se trunca automáticamente en cada *checkpoint*. **No hay backup de log** | Solo el último completo/diferencial. **RPO = horas**, se quiera o no |
-| **FULL** | El log se retiene **hasta que se respalda**. Obligatorio para AG y *log shipping* | PITR al minuto/segundo, si y solo si hay backups de log periódicos |
-| **BULK_LOGGED** | Registro mínimo de ciertas operaciones masivas | **Rompe el PITR dentro del intervalo** que contiene la operación masiva: se recupera al final del backup de log, no a un instante |
+| **SIMPLE** | The log is truncated automatically at each *checkpoint*. **There is no log backup** | Only the last full/differential. **RPO = hours**, like it or not |
+| **FULL** | The log is retained **until it is backed up**. Mandatory for AGs and *log shipping* | PITR to the minute/second, if and only if there are periodic log backups |
+| **BULK_LOGGED** | Minimal logging of certain bulk operations | **It breaks PITR within the interval** containing the bulk operation: you recover to the end of the log backup, not to an instant |
 
-**La consecuencia que se olvida**: poner una base en **FULL sin programar backups de log** no da
-mejor recuperación — hace que **el log crezca hasta llenar el disco** y tumbe la instancia. Es el
-incidente autoinfligido más frecuente del producto. Regla operativa:
+**The consequence that gets forgotten**: putting a database in **FULL without scheduling log backups** does not give
+better recovery — it makes **the log grow until it fills the disk** and takes the instance down. It is the
+product's most frequent self-inflicted incident. Operational rule:
 
-- El modelo lo determina el **RPO derivado por `bcdr-standards`**, y **FULL implica backups de log
-  programados el mismo día que se activa**. No hay medias tintas.
-- Diagnóstico obligatorio ante log que crece: `sys.databases.log_reuse_wait_desc` dice **por qué**
-  no se puede reutilizar (`LOG_BACKUP`, `ACTIVE_TRANSACTION`, `AVAILABILITY_REPLICA`,
-  `REPLICATION`…). Se lee **antes** de tocar nada.
-- **Prohibido** `DBCC SHRINKFILE` sobre el log como rutina, y prohibido cualquier receta de
-  Internet que pase por poner la base en SIMPLE para "limpiar el log": **rompe la cadena de log**
-  (§4) y con ella el punto de recuperación.
-- **VLF**: crecer el log en incrementos grandes y pocos; miles de VLF ralentizan el arranque y la
-  recuperación.
+- The model is determined by the **RPO derived by `bcdr-standards`**, and **FULL implies scheduled log
+  backups on the same day it is enabled**. There are no half measures.
+- Mandatory diagnosis when the log grows: `sys.databases.log_reuse_wait_desc` says **why**
+  it cannot be reused (`LOG_BACKUP`, `ACTIVE_TRANSACTION`, `AVAILABILITY_REPLICA`,
+  `REPLICATION`…). It is read **before** touching anything.
+- **Forbidden**: `DBCC SHRINKFILE` on the log as a routine, and forbidden any Internet
+  recipe that goes through putting the database into SIMPLE to "clean the log": **it breaks the log chain**
+  (§4) and with it the recovery point.
+- **VLF**: grow the log in large and few increments; thousands of VLFs slow down startup and
+  recovery.
 
-## 4. Respaldo nativo y restauración
+## 4. Native backup and restore
 
-- **Tres piezas**: **completo** (base de la cadena), **diferencial** (todo lo cambiado desde el
-  último completo — no desde el diferencial anterior) y **de log** (los cambios desde el backup de
-  log anterior, y **solo** en FULL/BULK_LOGGED).
-- **La cadena de log** es el activo: una secuencia ininterrumpida de backups de log desde un
-  completo. **Se rompe con**: pasar la base a SIMPLE (aunque se vuelva a FULL, hace falta un nuevo
-  completo), un backup de log con `TRUNCATE_ONLY` de versiones antiguas, o un **backup fuera de
-  banda** hecho por otra herramienta que no use `COPY_ONLY`. De ahí la regla:
-  **todo backup ad-hoc se hace con `COPY_ONLY`** — un completo normal desde una herramienta ajena
-  reinicia la base del diferencial y deja los diferenciales programados sin sentido.
-- **Verificación**: `WITH CHECKSUM` en el backup y `RESTORE VERIFYONLY WITH CHECKSUM` como mínimo
-  automático. Eso **no** es un restore: solo dice que el fichero es legible.
-- **`RESTORE ... WITH NORECOVERY`** para encadenar diferencial y logs; **`WITH STANDBY`** deja la
-  base **legible entre aplicaciones de log** (fichero de deshacer) — es la herramienta adecuada
-  para *log shipping* con secundario consultable, y la forma barata de tener una copia legible
-  con retardo sin licenciar réplicas legibles.
-- **Restauración a un instante**: `RESTORE ... WITH STOPAT` (o `STOPATMARK`) sobre la cadena de log.
-  Ensayarlo antes de necesitarlo: el error humano se recupera con esto, no con un AG.
-- **Backup a URL** (almacenamiento de objetos): soportado a *block blobs* con SAS; en 2025 también
-  **a almacenamiento compatible con S3 vía REST**, en Enterprise **y Standard**. Es un destino, no
-  una política — **el repositorio, la inmutabilidad y la regla 3-2-1 son de
-  `backup-recovery-standards`**. En Linux, *backup to URL* con *page blob* no está soportado.
-- **Cifrado**: `BACKUP ... WITH ENCRYPTION` disponible en Standard y Enterprise; el **certificado o
-  clave asimétrica se respalda y se custodia fuera del sistema respaldado** (custodia de claves,
-  `bcdr-standards`). Un backup cifrado cuyo certificado se perdió con el servidor es una copia
-  inservible: **es la forma más común de descubrir que no había DR**.
-- **Catálogo**: `msdb.dbo.backupset`/`backupmediafamily` es el registro de qué existe. Se consulta
-  para detectar **huecos de cobertura** y se respalda con `msdb`.
+- **Three pieces**: **full** (the base of the chain), **differential** (everything changed since the
+  last full — not since the previous differential) and **log** (the changes since the previous log
+  backup, and **only** in FULL/BULK_LOGGED).
+- **The log chain** is the asset: an uninterrupted sequence of log backups since a
+  full. **It is broken by**: putting the database into SIMPLE (even if it goes back to FULL, a new
+  full is needed), a log backup with `TRUNCATE_ONLY` from old versions, or an **out-of-band
+  backup** taken by another tool that does not use `COPY_ONLY`. Hence the rule:
+  **every ad-hoc backup is taken with `COPY_ONLY`** — a normal full from an external tool
+  resets the differential base and leaves the scheduled differentials meaningless.
+- **Verification**: `WITH CHECKSUM` on the backup and `RESTORE VERIFYONLY WITH CHECKSUM` as the automatic
+  minimum. That is **not** a restore: it only says the file is readable.
+- **`RESTORE ... WITH NORECOVERY`** to chain the differential and the logs; **`WITH STANDBY`** leaves the
+  database **readable between log applications** (an undo file) — it is the right tool
+  for *log shipping* with a queryable secondary, and the cheap way to have a readable delayed
+  copy without licensing readable replicas.
+- **Restore to a point in time**: `RESTORE ... WITH STOPAT` (or `STOPATMARK`) over the log chain.
+  Rehearse it before needing it: human error is recovered with this, not with an AG.
+- **Backup to URL** (object storage): supported to *block blobs* with SAS; in 2025 also
+  **to S3-compatible storage via REST**, on Enterprise **and Standard**. It is a destination, not
+  a policy — **the repository, immutability and the 3-2-1 rule belong to
+  `backup-recovery-standards`**. On Linux, *backup to URL* with a *page blob* is not supported.
+- **Encryption**: `BACKUP ... WITH ENCRYPTION` available in Standard and Enterprise; the **certificate or
+  asymmetric key is backed up and held outside the system being backed up** (key custody,
+  `bcdr-standards`). An encrypted backup whose certificate was lost with the server is a useless
+  copy: **it is the most common way of discovering there was no DR**.
+- **Catalogue**: `msdb.dbo.backupset`/`backupmediafamily` is the record of what exists. It is queried
+  to detect **coverage gaps** and it is backed up with `msdb`.
 
-> **Invariante compartido, sin matices**: **un backup sin restore probado no existe.** El gate no es
-> "el job terminó en verde", es "restauramos, cronometramos y validamos". La cadencia y el registro
-> del ejercicio los fija `backup-recovery-standards`; el procedimiento del motor es de aquí.
+> **Shared invariant, with no nuance**: **a backup without a tested restore does not exist.** The gate is not
+> "the job finished green", it is "we restored, timed it and validated it". The cadence and the record
+> of the exercise are set by `backup-recovery-standards`; the engine's procedure belongs here.
 
-## 5. Alta disponibilidad
+## 5. High availability
 
-- **Availability Groups (AG)**: replicación a nivel de **base de datos** por envío de log.
-  - **Síncrono** = RPO 0 y failover automático posible, **a costa de latencia en cada commit**
-    (la primaria espera el endurecido en la secundaria). **Asíncrono** = sin impacto en latencia,
-    con pérdida potencial y **solo failover manual forzado, con pérdida de datos**. La elección la
-    dicta el RPO de `bcdr-standards`, no la comodidad.
-  - **Listener**: la aplicación se conecta al *listener*, nunca al nombre de un nodo, y la cadena de
-    conexión declara `MultiSubnetFailover=True` cuando hay subredes distintas. Sin eso, el failover
-    "funciona" y la aplicación no vuelve.
-  - **Réplica legible**: no es gratis en dos sentidos. **Licencia** (§2.4: deja de ser pasiva) y
-    **rendimiento** — las consultas de solo lectura toman *snapshot isolation* de forma implícita,
-    lo que genera **versionado de filas en la primaria** (14 bytes por fila modificada) y aumenta el
-    uso de `tempdb` en la secundaria; además, el `REDO` puede bloquearse contra consultas largas y
-    disparar el *redo lag*, que es RPO real perdido. Se monitoriza.
-  - En Enterprise, según la documentación de 2025: hasta **8 réplicas secundarias**. **Standard solo
-    tiene *basic AG***: 2 réplicas, **1 base de datos**, sin secundario legible (§2.2).
-- **FCI (instancia de clúster de conmutación)**: comparte **almacenamiento**; protege del fallo del
-  nodo, **no del fallo del dato** (una LUN corrupta lo está para todos). Requiere clúster
-  (WSFC/Pacemaker) y almacenamiento compartido. Enterprise 16 nodos, Standard 2.
-- **AG vs FCI, en una línea**: FCI protege el servidor con una sola copia del dato; AG protege el
-  dato con varias copias y permite separación geográfica. **Se combinan** (FCI como réplica de un
-  AG) solo con una razón escrita: la complejidad se multiplica.
-- **Frontera de clúster, declarada**:
-  - **Windows** → **WSFC** es el sustrato de FCI y de los AG (salvo *clusterless*). Su quórum
-    (testigo de disco, de fichero, en la nube), su modelo de votos y su operación son **de esta
-    skill**. El dominio, las cuentas y el DNS sobre los que se apoya son de
+- **Availability Groups (AG)**: replication at the **database** level via log shipping.
+  - **Synchronous** = RPO 0 and automatic failover possible, **at the cost of latency on every commit**
+    (the primary waits for the hardening on the secondary). **Asynchronous** = no latency impact,
+    with potential loss and **only forced manual failover, with data loss**. The choice is
+    dictated by `bcdr-standards`'s RPO, not by convenience.
+  - **Listener**: the application connects to the *listener*, never to a node's name, and the
+    connection string declares `MultiSubnetFailover=True` when there are different subnets. Without that, the failover
+    "works" and the application does not come back.
+  - **Readable replica**: it is not free in two senses. **Licensing** (§2.4: it stops being passive) and
+    **performance** — read-only queries implicitly take *snapshot isolation*,
+    which generates **row versioning on the primary** (14 bytes per modified row) and increases
+    `tempdb` usage on the secondary; besides, the `REDO` can block against long queries and
+    trigger *redo lag*, which is real RPO lost. It is monitored.
+  - On Enterprise, per the 2025 documentation: up to **8 secondary replicas**. **Standard only
+    has *basic AG***: 2 replicas, **1 database**, with no readable secondary (§2.2).
+- **FCI (failover cluster instance)**: it shares **storage**; it protects against node
+  failure, **not against data failure** (a corrupt LUN is corrupt for everyone). It requires a cluster
+  (WSFC/Pacemaker) and shared storage. Enterprise 16 nodes, Standard 2.
+- **AG vs FCI, in one line**: FCI protects the server with a single copy of the data; AG protects the
+  data with several copies and allows geographic separation. **They are combined** (an FCI as a replica of an
+  AG) only with a written reason: the complexity multiplies.
+- **Cluster boundary, declared**:
+  - **Windows** → **WSFC** is the substrate of FCI and of AGs (except *clusterless*). Its quorum
+    (disk, file share or cloud witness), its vote model and its operation belong **to this
+    skill**. The domain, the accounts and the DNS it rests on belong to
     `windows-server-ad-standards`.
-  - **Linux** → el gestor es **Pacemaker/Corosync** y manda **`ha-clustering-standards`**,
-    incluido su invariante: **sin fencing probado no hay HA, hay corrupción diferida**. Del motor
-    es: `CLUSTER_TYPE = EXTERNAL` con `FAILOVER_MODE = EXTERNAL` (única combinación con failover
-    automático), el paquete **`mssql-server-ha`** —con agente HA v2 a partir de **SQL Server 2025
-    CU 3**— y los recursos de AG y de IP.
-  - **`CLUSTER_TYPE = NONE`** (AG sin clúster): **solo failover manual**, pensado para *read-scale*
-    y actualizaciones rodadas. **No es alta disponibilidad**: no venderlo como tal.
-  - **Un AG o FCI no puede abarcar WSFC y Pacemaker.** Para escenarios mixtos, solo hay dos vías,
-    ambas basadas en AG: `CLUSTER_TYPE = NONE` o un **AG distribuido**.
-- **Ensayo obligatorio**: el failover se prueba con la aplicación dentro del ejercicio (reconexión,
-  pool, DNS, `MultiSubnetFailover`), con la cadencia de `bcdr-standards`. Un AG que nunca ha
-  conmutado es un supuesto.
-- **Prohibido**: *database mirroring* en diseños nuevos (**deprecado**), y presentar un AG como
-  sustituto del respaldo — un `DELETE` se replica en milisegundos.
+  - **Linux** → the manager is **Pacemaker/Corosync** and **`ha-clustering-standards`** rules,
+    including its invariant: **without tested fencing there is no HA, there is deferred corruption**. What belongs to the engine
+    is: `CLUSTER_TYPE = EXTERNAL` with `FAILOVER_MODE = EXTERNAL` (the only combination with automatic
+    failover), the **`mssql-server-ha`** package —with HA agent v2 from **SQL Server 2025
+    CU 3**— and the AG and IP resources.
+  - **`CLUSTER_TYPE = NONE`** (clusterless AG): **manual failover only**, intended for *read-scale*
+    and rolling upgrades. **It is not high availability**: do not sell it as such.
+  - **An AG or FCI cannot span WSFC and Pacemaker.** For mixed scenarios there are only two routes,
+    both AG-based: `CLUSTER_TYPE = NONE` or a **distributed AG**.
+- **Mandatory rehearsal**: failover is tested with the application inside the exercise (reconnection,
+  pool, DNS, `MultiSubnetFailover`), at `bcdr-standards`'s cadence. An AG that has never
+  failed over is an assumption.
+- **Forbidden**: *database mirroring* in new designs (**deprecated**), and presenting an AG as
+  a substitute for backup — a `DELETE` replicates in milliseconds.
 
-## 6. SQL Server en Linux y en contenedores
+## 6. SQL Server on Linux and in containers
 
-Es un despliegue de primera clase, **con recortes conocidos**. No soportado en Linux (verificado en
-la documentación de 2025): **merge replication**, **FILESTREAM y FileTable**, **procedimientos
-extendidos del sistema (`xp_cmdshell`)**, **servidores vinculados a orígenes que no sean SQL
-Server** (usar PolyBase), **ensamblados CLR `EXTERNAL_ACCESS`/`UNSAFE`**, **Buffer Pool Extension**,
-**database mirroring**, **Always Encrypted con enclaves seguros**, **EKM** (salvo con Azure Key
-Vault desde 2022 CU 12), **autenticación integrada de Windows para servidores vinculados y para
-endpoints de AG** (los endpoints usan autenticación por certificado), **Analysis Services**,
-**Reporting Services**, varios subsistemas del Agent (CmdExec, PowerShell, SSIS, SSAS, SSRS),
-**alertas del Agent** y *Managed Backup*. Además: **una sola instancia por host** (no hay SQL
-Browser ni instancias con nombre) y **los despliegues en Linux no son FIPS compliant**. A partir de
-SQL Server 2025, **SLES deja de estar soportado**.
+It is a first-class deployment, **with known cutbacks**. Not supported on Linux (verified in
+the 2025 documentation): **merge replication**, **FILESTREAM and FileTable**, **extended
+system procedures (`xp_cmdshell`)**, **linked servers to non-SQL Server sources**
+(use PolyBase), **`EXTERNAL_ACCESS`/`UNSAFE` CLR assemblies**, **Buffer Pool Extension**,
+**database mirroring**, **Always Encrypted with secure enclaves**, **EKM** (except with Azure Key
+Vault from 2022 CU 12), **integrated Windows authentication for linked servers and for
+AG endpoints** (the endpoints use certificate authentication), **Analysis Services**,
+**Reporting Services**, several Agent subsystems (CmdExec, PowerShell, SSIS, SSAS, SSRS),
+**Agent alerts** and *Managed Backup*. In addition: **a single instance per host** (there is no SQL
+Browser and no named instances) and **Linux deployments are not FIPS compliant**. From
+SQL Server 2025, **SLES is no longer supported**.
 
-Contenedores: imagen oficial `mssql/server`. Criterios:
-- Fijar la imagen **por digest**, `MSSQL_PID` explícito, contraseña `sa` desde el gestor de
-  secretos (jamás en el `Dockerfile`, el `compose` ni la línea de comandos), y **volúmenes
-  persistentes** para datos, log y backups — un contenedor de base de datos sin volumen es una
-  pérdida de datos programada.
-- **cgroup v2** honrado desde 2025 (y 2022 CU 20). Con límite de CPU por cgroup v2, el motor sigue
-  informando de las CPU del host: alinear con `ALTER SERVER CONFIGURATION SET PROCESS AFFINITY` y
-  el *trace flag* 8002 para que las decisiones de paralelismo no se tomen sobre un recuento falso.
-- Las funcionalidades que dependen del agente de **Azure Arc** (Entra ID, Purview, pago por uso,
-  Defender) **no están soportadas en contenedores**.
-- En Kubernetes, `kubernetes-standards` manda para el resto; la HA del contenedor por *statefulset*
-  y reinicio **no es un AG**: es un reinicio, con su RTO.
+Containers: the official `mssql/server` image. Criteria:
+- Pin the image **by digest**, explicit `MSSQL_PID`, the `sa` password from the secrets
+  manager (never in the `Dockerfile`, the `compose` file or the command line), and **persistent
+  volumes** for data, log and backups — a database container with no volume is
+  scheduled data loss.
+- **cgroup v2** honoured from 2025 (and 2022 CU 20). With a cgroup v2 CPU limit, the engine keeps
+  reporting the host's CPUs: align it with `ALTER SERVER CONFIGURATION SET PROCESS AFFINITY` and
+  *trace flag* 8002 so that parallelism decisions are not taken on a false count.
+- Features that depend on the **Azure Arc** agent (Entra ID, Purview, pay-as-you-go,
+  Defender) **are not supported in containers**.
+- On Kubernetes, `kubernetes-standards` rules for the rest; container HA via a *statefulset*
+  and restart **is not an AG**: it is a restart, with its own RTO.
 
-## 7. Rendimiento
+## 7. Performance
 
-### 7.1 Método: estadísticas de espera y Query Store
+### 7.1 Method: wait statistics and Query Store
 
-- **Se diagnostica por esperas**, no por corazonadas: `sys.dm_os_wait_stats` (acumulado desde el
-  arranque — **medir por delta entre dos instantes**, nunca el acumulado en bruto),
-  `sys.dm_exec_requests`/`sys.dm_exec_session_wait_stats` para lo que ocurre ahora, y
-  `sp_WhoIsActive` como herramienta de primera línea. Ignorar las esperas benignas de fondo antes
-  de sacar conclusiones.
-- **Query Store es la herramienta que cambió el diagnóstico** y está en **todas las ediciones**
-  (activado por defecto en bases nuevas desde 2022): guarda consultas, planes y estadísticas de
-  ejecución **con historia**, de modo que "ayer iba bien y hoy no" pasa de anécdota a evidencia.
-  Criterio: **activado en toda base de producción**, con modo de captura y retención dimensionados
-  (`AUTO` en general), y **vigilando que no se llene** —si el almacén pasa a `READ_ONLY` deja de
-  capturar en silencio—. `sp_QuickieStore` para consultarlo sin escribir SQL a mano.
-- **Regresión de plan**: identificar con Query Store la consulta con varios planes y forzar el bueno
-  (`sys.sp_query_store_force_plan`) como **medida de contención temporal**, con fecha de revisión y
-  causa investigada después. Un plan forzado que nadie revisa es deuda: el motor puede dejar de
-  poder aplicarlo y nadie se entera. En Enterprise existe *automatic tuning* para corregir
-  regresiones automáticamente — **con supervisión**, no como piloto automático.
-- **Estadísticas**: `AUTO_CREATE_STATISTICS` y `AUTO_UPDATE_STATISTICS` activadas; actualización
-  manual tras cargas masivas y en tablas grandes donde el umbral automático llega tarde.
-  `AUTO_UPDATE_STATISTICS_ASYNC` con criterio. La causa nº1 de un plan malo es una estadística
-  vieja, no el optimizador.
-- **Sniffing de parámetros**: síntoma clásico (mismo procedimiento, rendimiento errático). Se ataca
-  en este orden: estadísticas → reescritura de la consulta → `OPTIMIZE FOR`/`RECOMPILE` puntual →
-  *Query Store hints* (preferibles a tocar el código) → separación de rutas de código.
-  `WITH RECOMPILE` global es una tirita cara.
+- **Diagnose by waits**, not by hunches: `sys.dm_os_wait_stats` (cumulative since
+  startup — **measure by delta between two instants**, never the raw cumulative),
+  `sys.dm_exec_requests`/`sys.dm_exec_session_wait_stats` for what is happening now, and
+  `sp_WhoIsActive` as the first-line tool. Ignore the benign background waits before
+  drawing conclusions.
+- **Query Store is the tool that changed diagnosis** and it is in **every edition**
+  (enabled by default on new databases from 2022): it stores queries, plans and execution
+  statistics **with history**, so that "yesterday it was fine and today it is not" goes from anecdote to evidence.
+  Criteria: **enabled on every production database**, with the capture mode and retention sized
+  (`AUTO` in general), and **watching that it does not fill up** —if the store goes `READ_ONLY` it stops
+  capturing silently—. `sp_QuickieStore` to query it without writing SQL by hand.
+- **Plan regression**: identify with Query Store the query with several plans and force the good one
+  (`sys.sp_query_store_force_plan`) as a **temporary containment measure**, with a review date and the
+  cause investigated afterwards. A forced plan nobody reviews is debt: the engine may stop
+  being able to apply it and nobody finds out. On Enterprise there is *automatic tuning* to fix
+  regressions automatically — **with supervision**, not as an autopilot.
+- **Statistics**: `AUTO_CREATE_STATISTICS` and `AUTO_UPDATE_STATISTICS` enabled; manual
+  updates after bulk loads and on large tables where the automatic threshold arrives late.
+  `AUTO_UPDATE_STATISTICS_ASYNC` with judgement. The number 1 cause of a bad plan is an old
+  statistic, not the optimiser.
+- **Parameter sniffing**: a classic symptom (the same procedure, erratic performance). It is attacked
+  in this order: statistics → rewriting the query → targeted `OPTIMIZE FOR`/`RECOMPILE` →
+  *Query Store hints* (preferable to touching the code) → separating code paths.
+  A global `WITH RECOMPILE` is an expensive sticking plaster.
 
-### 7.2 Índices
+### 7.2 Indexes
 
-- **Un índice agrupado (*clustered*) por tabla, casi siempre**: la tabla *es* el índice agrupado.
-  Clave **estrecha, creciente, única e inmutable** (un `int/bigint identity` o un `sequence`);
-  **un GUID aleatorio como clave agrupada** fragmenta y ensancha todos los índices no agrupados
-  (que la incluyen como puntero) — vetado salvo justificación medida. Un *heap* (tabla sin índice
-  agrupado) es la excepción, no el default.
-- **No agrupados**: por patrón de consulta real, con `INCLUDE` para lograr **cobertura** medida, y
-  **filtrados** para subconjuntos calientes. Cada índice se justifica con un plan; cada índice
-  cuesta en cada `INSERT`/`UPDATE`/`DELETE` y en cada backup.
-- **Retirada**: `sys.dm_db_index_usage_stats` para detectar índices sin lecturas y con escrituras.
-  Antes de borrar, **deshabilitar** y observar. Cuidado: las estadísticas de uso se reinician con la
-  instancia — no decidir sobre una ventana corta.
-- **Índices que faltan**: los DMV de *missing indexes* son una **pista**, no una orden. Aplicar sus
-  sugerencias en bloque es una de las peores prácticas frecuentes: solapan, duplican y engordan la
-  tabla. Consolidar a mano (`sp_BlitzIndex` ayuda).
-- **Fragmentación y el mito del mantenimiento por rutina**: reorganizar o reconstruir índices cada
-  noche **por costumbre** es, en almacenamiento moderno (SSD/NVMe/cabina con caché), casi siempre
-  trabajo inútil que genera **toneladas de log** (y por tanto backups de log enormes, tráfico de AG
-  y presión de E/S) para una mejora marginal. Criterio:
-  - Lo que casi siempre importa es **la actualización de estadísticas**, no la desfragmentación.
-  - Reconstruir con umbrales altos y solo en índices grandes y realmente fragmentados;
-    **`ONLINE = ON` es Enterprise** — en Standard, una reconstrucción **bloquea**: planificarla en
-    ventana o no hacerla.
-  - Vigilar el `FILLFACTOR` global: bajarlo "para reducir fragmentación" desperdicia memoria y E/S
-    en todas las lecturas.
+- **One *clustered* index per table, almost always**: the table *is* the clustered index.
+  A **narrow, increasing, unique and immutable** key (an `int/bigint identity` or a `sequence`);
+  **a random GUID as the clustered key** fragments and widens every nonclustered index
+  (which includes it as a pointer) — vetoed unless justified by measurement. A *heap* (a table without a clustered
+  index) is the exception, not the default.
+- **Nonclustered**: by real query pattern, with `INCLUDE` to achieve measured **coverage**, and
+  **filtered** for hot subsets. Every index is justified with a plan; every index
+  costs on every `INSERT`/`UPDATE`/`DELETE` and on every backup.
+- **Retirement**: `sys.dm_db_index_usage_stats` to detect indexes with no reads and with writes.
+  Before dropping, **disable** and observe. Careful: usage statistics reset with the
+  instance — do not decide on a short window.
+- **Missing indexes**: the *missing indexes* DMVs are a **hint**, not an order. Applying their
+  suggestions wholesale is one of the worst frequent practices: they overlap, duplicate and fatten
+  the table. Consolidate by hand (`sp_BlitzIndex` helps).
+- **Fragmentation and the myth of routine maintenance**: reorganising or rebuilding indexes every
+  night **out of habit** is, on modern storage (SSD/NVMe/array with cache), almost always
+  useless work that generates **tonnes of log** (and therefore huge log backups, AG traffic
+  and I/O pressure) for a marginal improvement. Criteria:
+  - What almost always matters is **updating the statistics**, not defragmentation.
+  - Rebuild with high thresholds and only on large and genuinely fragmented indexes;
+    **`ONLINE = ON` is Enterprise** — on Standard, a rebuild **blocks**: schedule it in a
+    window or do not do it.
+  - Watch the global `FILLFACTOR`: lowering it "to reduce fragmentation" wastes memory and I/O
+    on every read.
 
-### 7.3 Bloqueo, aislamiento y **por qué RCSI suele ser la respuesta**
+### 7.3 Blocking, isolation and **why RCSI is usually the answer**
 
-- El default de SQL Server es `READ COMMITTED` **con bloqueos**: los lectores bloquean a escritores
-  y viceversa. De ahí nace la mayor parte del bloqueo que se atribuye a "la base va lenta", y de ahí
-  nace el antipatrón `WITH (NOLOCK)`, que **no es una optimización: es leer datos sucios**, con
-  lecturas duplicadas o ausentes y, en casos reales, errores 601. **Prohibido como práctica general.**
-- **`READ_COMMITTED_SNAPSHOT ON` (RCSI)** cambia el nivel por defecto de la base a versionado de
-  filas: **los lectores dejan de bloquear a los escritores** sin cambiar una línea de código de
-  aplicación. Es, en la práctica, la respuesta correcta para la inmensa mayoría de cargas OLTP —
-  el comportamiento al que ya está acostumbrado quien viene de PostgreSQL u Oracle. **Su coste,
-  declarado**: versionado de filas en `tempdb` (dimensionarla), 14 bytes extra por fila versionada,
-  y un cambio semántico real —desaparecen ciertos bloqueos que hoy serializan de forma accidental,
-  así que hay lógica de aplicación que confiaba en ellos sin saberlo. Por eso: **se activa con
-  pruebas**, no en caliente un viernes, y requiere acceso exclusivo momentáneo a la base.
-- `ALLOW_SNAPSHOT_ISOLATION` (aislamiento *snapshot* explícito) es distinto: transacción con vista
-  consistente completa y **conflictos de actualización** que la aplicación debe reintentar. Se usa
-  donde se necesita, no por defecto.
-- **Interbloqueos (*deadlocks*)**: se **capturan**, no se adivinan — la sesión de eventos extendidos
-  `system_health` los registra por defecto; leer el **grafo de interbloqueo** para saber qué
-  recursos y en qué orden. Solución por orden de preferencia: **orden de acceso consistente** →
-  índices que reduzcan el alcance del bloqueo → transacciones más cortas → nivel de aislamiento →
-  **reintento con backoff en la aplicación** (siempre, como red: un interbloqueo es un error
-  recuperable, no un fallo de la petición del usuario).
-- **Transacciones cortas y sin interacción externa dentro**: nada de llamadas HTTP ni de esperas de
-  usuario con una transacción abierta. Fijar `LOCK_TIMEOUT` y timeouts de comando en la aplicación.
-- **`Optimized locking`** (2022+, y en Standard en 2025) reduce la escalada y el número de bloqueos:
-  evaluarlo, con la misma disciplina de medición antes/después.
+- SQL Server's default is `READ COMMITTED` **with locks**: readers block writers
+  and vice versa. That is where most of the blocking attributed to "the database is slow" comes from, and where
+  the `WITH (NOLOCK)` antipattern comes from, which **is not an optimisation: it is reading dirty data**, with
+  duplicated or missing reads and, in real cases, error 601. **Forbidden as a general practice.**
+- **`READ_COMMITTED_SNAPSHOT ON` (RCSI)** changes the database's default level to row
+  versioning: **readers stop blocking writers** without changing a line of application
+  code. It is, in practice, the right answer for the vast majority of OLTP workloads —
+  the behaviour anyone coming from PostgreSQL or Oracle is already used to. **Its cost,
+  declared**: row versioning in `tempdb` (size it), 14 extra bytes per versioned row,
+  and a real semantic change —certain locks that today serialise accidentally disappear,
+  so there is application logic that relied on them without knowing. Hence: **it is enabled with
+  testing**, not hot on a Friday, and it requires momentary exclusive access to the database.
+- `ALLOW_SNAPSHOT_ISOLATION` (explicit *snapshot* isolation) is different: a transaction with a fully
+  consistent view and **update conflicts** the application must retry. It is used
+  where it is needed, not by default.
+- ***Deadlocks***: they are **captured**, not guessed — the `system_health` extended events
+  session records them by default; read the **deadlock graph** to know which
+  resources and in what order. Solution in order of preference: **consistent access order** →
+  indexes that reduce the scope of the lock → shorter transactions → isolation level →
+  **retry with backoff in the application** (always, as a net: a deadlock is a recoverable
+  error, not a failure of the user's request).
+- **Short transactions with no external interaction inside**: no HTTP calls and no waiting for
+  a user with an open transaction. Set `LOCK_TIMEOUT` and command timeouts in the application.
+- **`Optimized locking`** (2022+, and in Standard in 2025) reduces escalation and the number of locks:
+  evaluate it, with the same before/after measurement discipline.
 
-### 7.4 T-SQL: antipatrones que matan planes
+### 7.4 T-SQL: antipatterns that kill plans
 
-- **Predicados no *SARGable***: función sobre la columna (`WHERE YEAR(fecha)=2026`,
-  `WHERE UPPER(col)=…`), cálculo sobre la columna, `LIKE '%algo'`. Reescribir a rangos.
-- **Conversión implícita de tipos** (`nvarchar` contra `varchar`, texto contra número): invalida el
-  índice de forma silenciosa. Es el bug de rendimiento más caro y más fácil de arreglar.
-- **Funciones escalares definidas por el usuario** en `SELECT`/`WHERE`: históricamente ejecución fila
-  a fila. Existe *scalar UDF inlining* (todas las ediciones), pero no cubre todos los casos:
-  preferir funciones en línea con tabla (`iTVF`) o expresiones.
-- **Cursores y bucles `WHILE`** donde cabía una operación de conjunto.
-- **`SELECT *`** en interfaces y vistas; **vistas anidadas sobre vistas** (el optimizador acaba
-  con planes imposibles de razonar).
-- **`sp_executesql` con literales concatenados**: recompilación masiva **e inyección SQL**.
-  Parámetros siempre. Es un veto de seguridad además de rendimiento.
-- `MERGE`: usar con cautela (histórico largo de errores y de bloqueo). `INSERT`/`UPDATE`
-  explícitos con `ON CONFLICT` lógico suelen ser más predecibles.
-- **Triggers** con efectos laterales no evidentes y sin manejo de conjuntos (`inserted`/`deleted`
-  tienen **varias filas**): fuente crónica de corrupción lógica.
-- Tratar `NULL`, `ANSI_NULLS` y `SET` options con conciencia: cambian los planes y afectan a índices
-  filtrados e indexados.
+- **Non-*SARGable* predicates**: a function on the column (`WHERE YEAR(date)=2026`,
+  `WHERE UPPER(col)=…`), a computation on the column, `LIKE '%something'`. Rewrite to ranges.
+- **Implicit type conversion** (`nvarchar` against `varchar`, text against number): it invalidates the
+  index silently. It is the most expensive and easiest-to-fix performance bug.
+- **User-defined scalar functions** in `SELECT`/`WHERE`: historically row-by-row
+  execution. *Scalar UDF inlining* exists (all editions), but it does not cover every case:
+  prefer inline table-valued functions (`iTVF`) or expressions.
+- **Cursors and `WHILE` loops** where a set-based operation would fit.
+- **`SELECT *`** in interfaces and views; **views nested on views** (the optimiser ends up
+  with plans impossible to reason about).
+- **`sp_executesql` with concatenated literals**: massive recompilation **and SQL injection**.
+  Parameters always. It is a security veto as well as a performance one.
+- `MERGE`: use with caution (a long history of bugs and blocking). Explicit `INSERT`/`UPDATE`
+  with logical `ON CONFLICT` handling is usually more predictable.
+- **Triggers** with non-obvious side effects and without set handling (`inserted`/`deleted`
+  have **several rows**): a chronic source of logical corruption.
+- Treat `NULL`, `ANSI_NULLS` and `SET` options consciously: they change plans and affect filtered
+  and indexed indexes.
 
-## 8. Mantenimiento: lo que toda instancia necesita
+## 8. Maintenance: what every instance needs
 
-Cuatro trabajos, ni uno menos, todos con **alerta cuando fallan** (un job de mantenimiento que
-falla en silencio es peor que no tenerlo):
+Four jobs, not one fewer, all with an **alert when they fail** (a maintenance job that
+fails silently is worse than not having it):
 
-1. **Integridad**: `DBCC CHECKDB` con `DATA_PURITY`, con cadencia semanal como mínimo en bases que
-   importan. **Es el único control que detecta corrupción**; sin él, la corrupción se descubre el
-   día que se restaura. En Enterprise hay comprobación paralela; en bases grandes, repartir por
-   tablas/filegroups o ejecutarlo sobre una copia restaurada —lo cual, de paso, **prueba el
-   restore**: dos controles por el precio de uno.
-2. **Estadísticas** (prioritario) e **índices** (con umbrales altos, §7.2).
-3. **Backups** completos/diferenciales/log según el modelo de recuperación (§4).
-4. **Purga de historial**: `msdb` (historial de backups y de jobs), Query Store, sesiones de eventos
-   extendidos, ficheros de backup antiguos. Un `msdb` sin purgar degrada el propio Agent.
+1. **Integrity**: `DBCC CHECKDB` with `DATA_PURITY`, at a weekly cadence at minimum on databases that
+   matter. **It is the only control that detects corruption**; without it, corruption is discovered the
+   day you restore. On Enterprise there is parallel checking; on large databases, split by
+   tables/filegroups or run it on a restored copy —which, incidentally, **tests the
+   restore**: two controls for the price of one.
+2. **Statistics** (priority) and **indexes** (with high thresholds, §7.2).
+3. **Backups** full/differential/log according to the recovery model (§4).
+4. **History purge**: `msdb` (backup and job history), Query Store, extended event
+   sessions, old backup files. An unpurged `msdb` degrades the Agent itself.
 
-**Soluciones comunitarias de referencia — estado verificado en agosto de 2026**:
+**Reference community solutions — status verified in August 2026**:
 - **Ola Hallengren, *SQL Server Maintenance Solution*** (`MaintenanceSolution.sql`,
-  `DatabaseBackup`, `DatabaseIntegrityCheck`, `IndexOptimize`): **viva y actualizada**, con soporte
-  declarado para SQL Server 2017, 2019, 2022 y **2025** más Azure SQL MI. **Es el default**: no se
-  escriben scripts propios de backup y mantenimiento salvo razón documentada. Se distribuye por
-  versiones fechadas, no por semver: descargar la última de `ola.hallengren.com`.
-- **dbatools** (PowerShell, >500 comandos): **viva** — 2.8.2 publicada en la PowerShell Gallery en
-  mayo de 2026, con actividad continua en `dataplat/dbatools`. Es la vía correcta para automatizar
-  (`Install-DbaMaintenanceSolution`, migraciones, inventario) frente a GUI y scripts a mano.
-- **First Responder Kit** (`sp_Blitz`, `sp_BlitzIndex`, `sp_BlitzCache`, `sp_BlitzFirst`): **viva**,
-  con release *"The First Responder Kit 2026"* (2026-07-08) y modelo de versiones anuales. Avisos
-  reales del propio autor: desde abril de 2026 **solo soporta SQL Server 2016 SP2 y posteriores**,
-  `sp_Blitz` **exige `sp_ineachdb`**, varios scripts quedaron deprecados (`sp_BlitzQueryStore` →
-  `sp_QuickieStore`), y hubo una release marcada por el autor como poco fiable por contener mucho
-  código editado con IA. **Probar antes de desplegar**, especialmente con collation sensible a
-  mayúsculas.
-- **`sp_WhoIsActive`** (Adam Machanic) para diagnóstico en vivo.
-- Regla transversal: **cualquier script de terceros que se instale en una instancia de producción se
-  revisa línea a línea** — se ejecuta con privilegios altos dentro del motor.
+  `DatabaseBackup`, `DatabaseIntegrityCheck`, `IndexOptimize`): **alive and updated**, with declared support
+  for SQL Server 2017, 2019, 2022 and **2025** plus Azure SQL MI. **It is the default**: you do not
+  write your own backup and maintenance scripts unless there is a documented reason. It is distributed by
+  dated versions, not by semver: download the latest from `ola.hallengren.com`.
+- **dbatools** (PowerShell, >500 commands): **alive** — 2.8.2 published on the PowerShell Gallery in
+  May 2026, with continuous activity in `dataplat/dbatools`. It is the right way to automate
+  (`Install-DbaMaintenanceSolution`, migrations, inventory) rather than GUIs and hand-written scripts.
+- **First Responder Kit** (`sp_Blitz`, `sp_BlitzIndex`, `sp_BlitzCache`, `sp_BlitzFirst`): **alive**,
+  with the *"The First Responder Kit 2026"* release (2026-07-08) and an annual versioning model. Real warnings
+  from the author himself: since April 2026 **it only supports SQL Server 2016 SP2 and later**,
+  `sp_Blitz` **requires `sp_ineachdb`**, several scripts were deprecated (`sp_BlitzQueryStore` →
+  `sp_QuickieStore`), and there was a release marked by the author as unreliable for containing a lot of
+  AI-edited code. **Test before deploying**, especially with case-sensitive collation.
+- **`sp_WhoIsActive`** (Adam Machanic) for live diagnosis.
+- Cross-cutting rule: **any third-party script installed on a production instance is
+  reviewed line by line** — it runs with high privileges inside the engine.
 
-## 9. Seguridad
+## 9. Security
 
-- **Autenticación**: modo **integrado (Windows/Kerberos) por defecto**; autenticación SQL solo
-  cuando no hay alternativa (Linux, contenedores, terceros), con contraseñas desde el gestor de
-  secretos. **Todo lo relativo a Kerberos, SPN, delegación, cuentas de servicio gestionadas
-  (gMSA/dMSA), GPO y Tier 0 se delega íntegramente en `windows-server-ad-standards`** — aquí solo
-  se declara qué exige el motor: cuenta de servicio dedicada y sin privilegios de dominio, **SPN
-  correcto** (sin él la conexión cae a NTLM en silencio y se pierden Kerberos y la delegación),
-  y ninguna cuenta administrativa de dominio ejecutando el servicio.
-- **`sa`**: deshabilitada y renombrada; **nunca** como cuenta de aplicación. Ningún inicio de sesión
-  de aplicación en `sysadmin` ni en `db_owner`: permisos mínimos por esquema, idealmente vía
-  procedimientos o roles de base de datos definidos.
-- **Roles**: usar roles de servidor y de base de datos (incluidos roles de servidor definidos por el
-  usuario) en vez de conceder a principales individuales. Revisar periódicamente `sysadmin`,
-  `securityadmin`, `CONTROL SERVER` y la pertenencia a `db_owner` — es la revisión de accesos que
-  nadie hace hasta la auditoría.
-- **Superficie**: `xp_cmdshell` **deshabilitado** (y ausente en Linux); *CLR* deshabilitado salvo
-  necesidad y nunca `UNSAFE`; *Ad Hoc Distributed Queries* deshabilitado; **SQL Browser** apagado
-  donde no haga falta; **el puerto 1433 nunca expuesto a Internet ni a la red de usuarios**
-  (`firewall-policy-standards`), y **cifrado en tránsito obligatorio** (`Encrypt=True` con
-  validación de certificado en la cadena de conexión — un `TrustServerCertificate=True` en
-  producción anula la protección).
-- **Servidores vinculados**: puentes de confianza permanentes. Inventariados, con la cuenta de menor
-  privilegio y revisados; jamás mapeando a una cuenta administrativa.
-- **Cifrado en reposo**: **TDE está disponible en Standard y Enterprise** (no en Express) — el mito
-  de "TDE es solo Enterprise" está desfasado y ha justificado compras innecesarias. TDE protege
-  ficheros y backups **en reposo**, no de un usuario con permisos. **El certificado/DEK se respalda
-  y se custodia fuera del servidor**: perderlo es perder los datos (§4). Para dato sensible a nivel
-  de columna, **Always Encrypted** (también en Standard, incluso con enclaves seguros en Windows),
-  con la clave fuera del motor — es la única protección frente al propio DBA. Las claves y su ciclo
-  de vida, en `cryptography-pki-standards`/`secrets-management-standards`.
-- **Auditoría**: *SQL Server Audit* (auditoría de servidor y de base de datos, disponible en todas
-  las ediciones en 2025) sobre lo que importa —cambios de permisos, accesos a datos clasificados,
-  uso de cuentas privilegiadas—, con salida hacia el SIEM. No auditarlo todo: nadie lo lee y cuesta.
-- **Parcheo**: SQL Server se sirve por **Cumulative Update** (desde 2017 no hay Service Packs).
-  Aplicar CU con cadencia, en ventana, con rollback previsto; los boletines de seguridad llegan
-  por Patch Tuesday. En 2026 se han publicado vulnerabilidades relevantes del motor —entre ellas
-  RCE críticas por deserialización que alcanzan desde SQL Server 2016 SP3 hasta 2025, y elevación
-  de privilegios a `sysadmin`— lo que refuerza dos cosas: **parchear** y **no dar privilegios que
-  conviertan una elevación en un desastre**. El triaje y la ventana los fija
+- **Authentication**: **integrated mode (Windows/Kerberos) by default**; SQL authentication only
+  when there is no alternative (Linux, containers, third parties), with passwords from the secrets
+  manager. **Everything relating to Kerberos, SPN, delegation, managed service accounts
+  (gMSA/dMSA), GPO and Tier 0 is delegated entirely to `windows-server-ad-standards`** — here only
+  what the engine requires is declared: a dedicated service account with no domain privileges, a **correct
+  SPN** (without it the connection silently falls back to NTLM and Kerberos and delegation are lost),
+  and no domain administrative account running the service.
+- **`sa`**: disabled and renamed; **never** as an application account. No application login
+  in `sysadmin` or in `db_owner`: minimum permissions per schema, ideally via
+  procedures or defined database roles.
+- **Roles**: use server and database roles (including user-defined server roles) instead of granting to
+  individual principals. Periodically review `sysadmin`,
+  `securityadmin`, `CONTROL SERVER` and `db_owner` membership — it is the access review that
+  nobody does until the audit.
+- **Surface**: `xp_cmdshell` **disabled** (and absent on Linux); *CLR* disabled unless
+  needed and never `UNSAFE`; *Ad Hoc Distributed Queries* disabled; **SQL Browser** off
+  where it is not needed; **port 1433 never exposed to the Internet or to the user network**
+  (`firewall-policy-standards`), and **encryption in transit mandatory** (`Encrypt=True` with
+  certificate validation in the connection string — a `TrustServerCertificate=True` in
+  production voids the protection).
+- **Linked servers**: permanent trust bridges. Inventoried, with the least-privileged
+  account and reviewed; never mapping to an administrative account.
+- **Encryption at rest**: **TDE is available in Standard and Enterprise** (not in Express) — the myth
+  that "TDE is Enterprise only" is out of date and has justified unnecessary purchases. TDE protects
+  files and backups **at rest**, not from a user with permissions. **The certificate/DEK is backed up
+  and held outside the server**: losing it is losing the data (§4). For column-level sensitive
+  data, **Always Encrypted** (also in Standard, even with secure enclaves on Windows),
+  with the key outside the engine — it is the only protection against the DBA themselves. Keys and their
+  lifecycle, in `cryptography-pki-standards`/`secrets-management-standards`.
+- **Auditing**: *SQL Server Audit* (server and database auditing, available in all
+  editions in 2025) over what matters —permission changes, access to classified data,
+  use of privileged accounts—, with output to the SIEM. Do not audit everything: nobody reads it and it costs.
+- **Patching**: SQL Server is served through **Cumulative Updates** (since 2017 there are no Service Packs).
+  Apply CUs on a cadence, in a window, with a planned rollback; security bulletins arrive
+  through Patch Tuesday. In 2026 significant engine vulnerabilities have been published —among them
+  critical deserialisation RCEs reaching from SQL Server 2016 SP3 through 2025, and elevation
+  of privilege to `sysadmin`— which reinforces two things: **patch** and **do not grant privileges that
+  turn an elevation into a disaster**. Triage and the window are set by
   `vulnerability-management-standards`.
 
-## 10. Versiones y soporte — verificado en fuente primaria
+## 10. Versions and support — verified in a primary source
 
-Datos tomados de las páginas de ciclo de vida de learn.microsoft.com (agosto 2026). **Es el dato
-que más envejece: re-verificar siempre.**
+Data taken from the lifecycle pages on learn.microsoft.com (August 2026). **It is the data
+that ages fastest: always re-verify.**
 
-| Versión | Inicio | Fin de soporte estándar (*mainstream*) | Fin de soporte extendido |
+| Version | Start | End of *mainstream* support | End of extended support |
 |---|---|---|---|
-| SQL Server 2016 | 2016-06-01 | 2021-07-13 | **2026-07-14 — ya vencido** |
+| SQL Server 2016 | 2016-06-01 | 2021-07-13 | **2026-07-14 — already expired** |
 | SQL Server 2017 | 2017-09-29 | 2022-10-11 | **2027-10-12** |
 | SQL Server 2019 | 2019-11-04 | 2025-02-28 | **2030-01-08** |
 | SQL Server 2022 | 2022-11-16 | **2028-01-11** | 2033-01-11 |
 | **SQL Server 2025** (17.x) | **2025-11-18** | **2031-01-06** | **2036-01-06** |
 
-Lecturas obligadas de esa tabla:
-- **SQL Server 2016 está fuera de soporte desde el 14 de julio de 2026.** Existen **Extended
-  Security Updates** de pago: Año 1 (2026-07-15 → 2027-07-13), Año 2 (2027-07-14 → 2028-07-18),
-  Año 3 (2028-07-19 → 2029-07-17). Un 2016 sin ESU en producción es un riesgo aceptado
-  explícitamente o un incumplimiento — no hay tercera opción. Coincidencia que ilustra el punto:
-  el mismo mes de su fin de soporte se publicó una RCE crítica que le afectaba.
-- **2017 tiene poco más de un año de vida** (octubre de 2027): cualquier plan a 2027 debe incluirlo.
-- **2019 está fuera de soporte estándar desde febrero de 2025**: recibe seguridad hasta 2030, pero
-  **no correcciones funcionales**. No es el destino de una migración nueva.
-- Destino recomendado hoy: **2022 o 2025**, según madurez de CU y compatibilidad de la aplicación.
+Mandatory readings of that table:
+- **SQL Server 2016 has been out of support since 14 July 2026.** There are paid **Extended
+  Security Updates**: Year 1 (2026-07-15 → 2027-07-13), Year 2 (2027-07-14 → 2028-07-18),
+  Year 3 (2028-07-19 → 2029-07-17). A 2016 without ESU in production is an explicitly accepted
+  risk or a breach — there is no third option. A coincidence that illustrates the point:
+  the same month as its end of support, a critical RCE affecting it was published.
+- **2017 has little more than a year of life left** (October 2027): any plan reaching 2027 must include it.
+- **2019 has been out of mainstream support since February 2025**: it receives security fixes until 2030, but
+  **no functional fixes**. It is not the destination of a new migration.
+- Recommended destination today: **2022 or 2025**, depending on CU maturity and application compatibility.
 
-**Actualizar**: `compatibility level` es una palanca **independiente** de la versión — se sube
-**después** del upgrade, con Query Store activo para capturar la línea base y poder revertir un plan
-regresivo. Es la red de seguridad que convierte un upgrade arriesgado en uno reversible.
+**Upgrading**: `compatibility level` is a lever **independent** of the version — it is raised
+**after** the upgrade, with Query Store enabled to capture the baseline and be able to revert a regressed
+plan. It is the safety net that turns a risky upgrade into a reversible one.
 
-## 11. Calidad y gates
+## 11. Quality and gates
 
-Gates que bloquean la puesta en producción, en orden de coste creciente:
+Gates that block go-live, in increasing order of cost:
 
-1. **Gate de edición y licencia (el primero)**: todo diseño declara la edición objetivo y qué
-   funcionalidad exclusiva usa. Un diseño que use AG completos, indexado en línea o *automatic
-   tuning* sobre Standard **no pasa**. Toda réplica no pasiva y toda VM adicional se declaran ante
-   el gestor de licencias (§2.4).
-2. **Configuración base verificada** como código: `max server memory`, `MAXDOP`,
-   `cost threshold for parallelism`, ficheros de `tempdb` simétricos, autocrecimiento fijo, modelo
-   de recuperación coherente con los backups programados, RCSI decidido conscientemente,
-   Query Store activo. Comprobable con `dbatools` en CI/inventario.
-3. **Migraciones de esquema versionadas** en repositorio y aplicadas solo por pipeline (criterio de
-   `data-platform-standards`); DDL manual en producción **prohibido**.
-4. **Revisión de T-SQL** contra los antipatrones de §7.4; consultas parametrizadas obligatorias.
-5. **Pruebas con volumen representativo** y comparación de planes antes/después; validar
-   compatibilidad N-1 durante despliegues rodados.
-6. **`DBCC CHECKDB` en verde** como condición de salud de la instancia; su fallo es un incidente.
-7. **Restore de prueba superado** dentro de la cadencia acordada (§4).
-8. **Failover ensayado** (AG o FCI) con la aplicación dentro (§5).
-9. **CU aplicada** dentro de la ventana de `vulnerability-management-standards`.
+1. **Edition and licence gate (the first one)**: every design declares the target edition and which
+   exclusive feature it uses. A design that uses full AGs, online indexing or *automatic
+   tuning* on Standard **does not pass**. Every non-passive replica and every additional VM is declared to
+   the licence manager (§2.4).
+2. **Base configuration verified** as code: `max server memory`, `MAXDOP`,
+   `cost threshold for parallelism`, symmetric `tempdb` files, fixed autogrowth, a recovery
+   model consistent with the scheduled backups, RCSI consciously decided,
+   Query Store enabled. Checkable with `dbatools` in CI/inventory.
+3. **Schema migrations versioned** in a repository and applied only by pipeline (a
+   `data-platform-standards` criterion); manual DDL in production **forbidden**.
+4. **T-SQL review** against the antipatterns of §7.4; parameterised queries mandatory.
+5. **Testing with a representative volume** and comparing plans before/after; validate
+   N-1 compatibility during rolling deployments.
+6. **`DBCC CHECKDB` green** as a health condition of the instance; its failure is an incident.
+7. **Test restore passed** within the agreed cadence (§4).
+8. **Failover rehearsed** (AG or FCI) with the application inside (§5).
+9. **CU applied** within `vulnerability-management-standards`'s window.
 
-## 12. Operabilidad y SLI
+## 12. Operability and SLIs
 
-- **SLI mínimos con alerta accionable y runbook** (la plataforma es de `observability-standards`):
-  - Disponibilidad de instancia **y de base** (una base `SUSPECT` o `RECOVERY_PENDING` con el
-    servicio arriba no la detecta un check de puerto).
-  - Espacio: datos, **log de transacciones** con `log_reuse_wait_desc`, `tempdb`, y disco de
-    backups.
-  - Backups: éxito y duración del completo/diferencial/log, **antigüedad del último backup de log**
-    (es el RPO real), y **edad del último restore validado** como SLI de primera clase.
-  - AG: estado de sincronización, **send/redo queue** y *redo lag* por réplica, estado del listener,
-    salud del WSFC (o del recurso de Pacemaker en Linux).
-  - Rendimiento: esperas dominantes por delta, bloqueo (sesiones bloqueadas y duración), deadlocks
-    por hora, expectativa de vida de página, uso de CPU y de `tempdb`.
-  - Mantenimiento: última ejecución correcta de `CHECKDB`, de estadísticas y de la purga.
-  - Errores: log de errores del motor filtrado por severidad (≥16, y **823/824/825** de E/S — el
-    825 es la advertencia temprana de un disco que empieza a fallar y casi nadie la vigila).
-- **Capacidad**: crecimiento de datos y log, IOPS y latencia de escritura del log, conexiones,
-  proyectados con datos y revisados trimestralmente. Añadir núcleos es **una compra** (§2.3): el
-  dimensionamiento es también FinOps.
-- **Configuración como código**: parámetros de instancia, jobs del Agent, alertas, sesiones de
-  eventos extendidos e inicios de sesión, versionados y con detección de *drift* (`iac-standards`,
-  `dbatools`). Cero cambios manuales en producción.
+- **Minimum SLIs with an actionable alert and a runbook** (the platform belongs to `observability-standards`):
+  - Availability of the instance **and of the database** (a `SUSPECT` or `RECOVERY_PENDING` database with the
+    service up is not detected by a port check).
+  - Space: data, the **transaction log** with `log_reuse_wait_desc`, `tempdb`, and the backup
+    disk.
+  - Backups: success and duration of the full/differential/log, **the age of the last log backup**
+    (it is the real RPO), and **the age of the last validated restore** as a first-class SLI.
+  - AG: synchronisation state, **send/redo queue** and *redo lag* per replica, listener state,
+    WSFC health (or that of the Pacemaker resource on Linux).
+  - Performance: dominant waits by delta, blocking (blocked sessions and duration), deadlocks
+    per hour, page life expectancy, CPU and `tempdb` usage.
+  - Maintenance: last successful run of `CHECKDB`, of statistics and of the purge.
+  - Errors: the engine error log filtered by severity (≥16, and I/O **823/824/825** — the
+    825 is the early warning of a disk starting to fail and almost nobody watches it).
+- **Capacity**: data and log growth, IOPS and log write latency, connections,
+  projected with data and reviewed quarterly. Adding cores is **a purchase** (§2.3):
+  sizing is also FinOps.
+- **Configuration as code**: instance parameters, Agent jobs, alerts, extended
+  event sessions and logins, versioned and with *drift* detection (`iac-standards`,
+  `dbatools`). Zero manual changes in production.
 
-## 13. Sostenibilidad y prohibiciones
+## 13. Sustainability and prohibitions
 
-- Revisión **semestral**: versión y fechas de soporte, CU aplicadas, edición vs funcionalidad
-  realmente usada, réplicas y VMs frente a licencias, índices muertos, jobs que fallan en silencio,
-  bases sin dueño.
-- **ADR obligatorio** para: edición y modelo de licencia, topología de HA (AG vs FCI vs ninguna),
-  modelo de recuperación por base, activación de RCSI, contratación de Software Assurance como
-  requisito de la arquitectura de HA, y adopción de servicios gestionados en nube.
-- Retirar es parte del trabajo: instancias y bases que nadie usa siguen costando licencia, backup y
-  superficie de ataque.
+- **Half-yearly review**: version and support dates, CUs applied, edition vs functionality
+  actually used, replicas and VMs against licences, dead indexes, jobs failing silently,
+  databases with no owner.
+- **Mandatory ADR** for: edition and licensing model, HA topology (AG vs FCI vs none),
+  recovery model per database, enabling RCSI, contracting Software Assurance as
+  a requirement of the HA architecture, and adoption of managed cloud services.
+- Retiring is part of the job: instances and databases nobody uses still cost licence, backup and
+  attack surface.
 
-### Lista de prohibiciones
+### List of prohibitions
 
-- ❌ **Diseñar sobre funcionalidad de Enterprise sin confirmar la edición** (AG completos, réplica
-  legible, indexado en línea, restauración de página, IQP avanzado).
-- ❌ **Asumir que la réplica pasiva es gratis**: sin Software Assurance, se licencia (§2.4). Y un
-  secundario legible **no es pasivo**.
-- ❌ Fijar **precios, límites de edición o derechos de licencia de memoria**. Si no está verificado
-  contra la documentación de Microsoft o el contrato: hueco declarado y consulta al gestor de
-  licencias.
-- ❌ **Edición Developer o Evaluation en producción.**
-- ❌ Producción sobre **SQL Server 2016 sin ESU** (fuera de soporte desde 2026-07-14) o sobre
-  cualquier versión vencida sin riesgo aceptado por escrito.
-- ❌ Base en **FULL sin backups de log programados**; `DBCC SHRINKFILE` del log como rutina; pasar a
-  SIMPLE para "limpiar" el log.
-- ❌ Backup ad-hoc **sin `COPY_ONLY`** (rompe la cadena de diferenciales) o con otra herramienta que
-  interfiera con la cadena de log.
-- ❌ Dar por bueno un backup por `RESTORE VERIFYONLY`: **sin restore probado no existe**.
-- ❌ Certificado de TDE o de cifrado de backup custodiado en el mismo servidor o en el mismo
-  repositorio que respalda.
-- ❌ **`WITH (NOLOCK)` como práctica general** (lecturas sucias, duplicadas o ausentes). Si el
-  problema es bloqueo, la respuesta es **RCSI**, índices y transacciones cortas.
-- ❌ **Un solo fichero de `tempdb`** en un servidor multinúcleo, o ficheros de tamaños desiguales.
-- ❌ `max server memory` por defecto, `MAXDOP` sin fijar, `cost threshold for parallelism` en 5.
-- ❌ Autocrecimiento en porcentaje, o ficheros que crecen en caliente como estrategia de capacidad.
-- ❌ Aplicar en bloque las sugerencias de índices faltantes de los DMV.
-- ❌ Reconstruir todos los índices cada noche por rutina (log, E/S y tráfico de AG a cambio de nada),
-  y reconstruir sin `ONLINE` en Standard fuera de ventana.
-- ❌ Instancia sin `DBCC CHECKDB` periódico.
-- ❌ SQL dinámico concatenado (`EXEC`/`sp_executesql` con literales): rendimiento **e** inyección.
-- ❌ `xp_cmdshell` habilitado, CLR `UNSAFE`, `sa` activa o cuenta de aplicación en `sysadmin`.
-- ❌ Puerto 1433 accesible desde Internet o desde la red de usuarios; `TrustServerCertificate=True`
-  en producción.
-- ❌ *Database mirroring* en un diseño nuevo (deprecado).
-- ❌ Presentar `CLUSTER_TYPE = NONE` como alta disponibilidad (solo failover manual).
-- ❌ Intentar un AG o FCI que abarque WSFC y Pacemaker.
-- ❌ Duplicar aquí criterio de Active Directory: **eso es de `windows-server-ad-standards`**.
-- ❌ Instalar scripts de terceros en producción sin revisarlos línea a línea.
-- ❌ Contenedor de SQL Server sin volumen persistente, o con la contraseña `sa` en el manifiesto.
+- ❌ **Designing on Enterprise functionality without confirming the edition** (full AGs, readable
+  replica, online indexing, page restore, advanced IQP).
+- ❌ **Assuming the passive replica is free**: without Software Assurance, it is licensed (§2.4). And a
+  readable secondary **is not passive**.
+- ❌ Pinning **prices, edition limits or memory licensing rights**. If it is not verified
+  against Microsoft's documentation or the contract: a declared gap and a query to the licence
+  manager.
+- ❌ **Developer or Evaluation edition in production.**
+- ❌ Production on **SQL Server 2016 without ESU** (out of support since 2026-07-14) or on
+  any expired version without a risk accepted in writing.
+- ❌ A database in **FULL with no scheduled log backups**; `DBCC SHRINKFILE` of the log as a routine; switching to
+  SIMPLE to "clean" the log.
+- ❌ An ad-hoc backup **without `COPY_ONLY`** (it breaks the differential chain) or with another tool that
+  interferes with the log chain.
+- ❌ Accepting a backup as good on the basis of `RESTORE VERIFYONLY`: **without a tested restore it does not exist**.
+- ❌ A TDE or backup encryption certificate held on the same server or in the same
+  repository it backs up.
+- ❌ **`WITH (NOLOCK)` as a general practice** (dirty, duplicated or missing reads). If the
+  problem is blocking, the answer is **RCSI**, indexes and short transactions.
+- ❌ **A single `tempdb` file** on a multi-core server, or files of unequal sizes.
+- ❌ `max server memory` at the default, `MAXDOP` unset, `cost threshold for parallelism` at 5.
+- ❌ Autogrowth as a percentage, or files growing while hot as a capacity strategy.
+- ❌ Applying the missing-index suggestions from the DMVs wholesale.
+- ❌ Rebuilding every index every night out of routine (log, I/O and AG traffic in exchange for nothing),
+  and rebuilding without `ONLINE` on Standard outside a window.
+- ❌ An instance without periodic `DBCC CHECKDB`.
+- ❌ Concatenated dynamic SQL (`EXEC`/`sp_executesql` with literals): performance **and** injection.
+- ❌ `xp_cmdshell` enabled, `UNSAFE` CLR, `sa` active or an application account in `sysadmin`.
+- ❌ Port 1433 reachable from the Internet or from the user network; `TrustServerCertificate=True`
+  in production.
+- ❌ *Database mirroring* in a new design (deprecated).
+- ❌ Presenting `CLUSTER_TYPE = NONE` as high availability (manual failover only).
+- ❌ Attempting an AG or FCI spanning WSFC and Pacemaker.
+- ❌ Duplicating Active Directory criteria here: **that belongs to `windows-server-ad-standards`**.
+- ❌ Installing third-party scripts in production without reviewing them line by line.
+- ❌ A SQL Server container with no persistent volume, or with the `sa` password in the manifest.
 
-## 14. Verificación web obligatoria
+## 14. Mandatory web verification
 
-Antes de fijar cualquier dato de este documento en un entregable:
+Before committing any fact from this document to a deliverable:
 
-1. **Fechas de soporte**: `learn.microsoft.com/lifecycle/products/sql-server-<año>` para cada
-   versión viva, y el estado de los **ESU de SQL Server 2016**.
-2. **Límites y funcionalidades por edición**: *Editions and supported features* **de la versión
-   exacta** (los límites cambiaron en 2025: 32 núcleos y 256 GB en Standard). Comprobar si algo más
-   se ha movido de Enterprise a Standard desde entonces.
-3. **Licenciamiento**: guía de licenciamiento de SQL Server y **Product Terms** vigentes —
-   modelo por núcleo vs Servidor+CAL, virtualización y **derechos de conmutación por error con
-   Software Assurance**. Cualquier decisión con coste, al gestor de licencias.
-4. **Versión y CU actual** (`Latest updates and version history for SQL Server`) y **CVE del último
-   trimestre**; triaje según `vulnerability-management-standards`.
-5. **SQL Server en Linux y contenedores**: lista de funcionalidades no soportadas y distribuciones
-   admitidas (**SLES dejó de estarlo en 2025**); estado del agente HA de Pacemaker
+1. **Support dates**: `learn.microsoft.com/lifecycle/products/sql-server-<year>` for each
+   live version, and the status of the **SQL Server 2016 ESUs**.
+2. **Limits and features by edition**: *Editions and supported features* **of the exact
+   version** (the limits changed in 2025: 32 cores and 256 GB in Standard). Check whether anything else
+   has moved from Enterprise to Standard since then.
+3. **Licensing**: the SQL Server licensing guide and the current **Product Terms** —
+   per-core model vs Server+CAL, virtualisation and **failover rights with
+   Software Assurance**. Any decision with a cost goes to the licence manager.
+4. **Current version and CU** (`Latest updates and version history for SQL Server`) and **CVEs from the last
+   quarter**; triage according to `vulnerability-management-standards`.
+5. **SQL Server on Linux and in containers**: the list of unsupported features and the supported
+   distributions (**SLES stopped being one in 2025**); the status of the Pacemaker HA agent
    (`mssql-server-ha`).
-6. **Herramientas comunitarias**: última versión y actividad de **Ola Hallengren
-   `MaintenanceSolution.sql`**, **dbatools** y **First Responder Kit** —incluida su versión mínima
-   de SQL Server soportada— antes de instalarlas.
+6. **Community tools**: latest version and activity of **Ola Hallengren's
+   `MaintenanceSolution.sql`**, **dbatools** and the **First Responder Kit** —including its minimum
+   supported SQL Server version— before installing them.
 
-### Huecos y discrepancias declarados (agosto 2026)
+### Declared gaps and discrepancies (August 2026)
 
-- **Precios**: **ninguno** en este documento, deliberadamente. No hay cifra verificada y **no se
-  aproxima ninguna**.
-- **Redacción exacta de los derechos de failover con Software Assurance**: descrita aquí en términos
-  generales a partir de fuentes de licenciamiento; **no verificada contra los Product Terms
-  originales**. Antes de decidir sobre réplicas pasivas, leerlos.
-- **Umbral de rentabilidad Servidor+CAL vs por núcleo**: depende del acuerdo. **No se fija número.**
-- **Discrepancia en la propia documentación de Microsoft**, detectada en esta verificación y **no
-  resuelta**:
-  - *Máximo tamaño de base relacional en Express*: la página de ediciones de **Windows** dice
-    **50 GB**; la de **Linux** de la misma versión dice **10 GB**. Verificar contra la página de la
-    plataforma concreta antes de dimensionar cualquier cosa sobre Express.
-  - *Réplicas secundarias síncronas en Enterprise*: la página de **Windows** indica hasta 8
-    secundarias **incluyendo 5 síncronas**; la de **Linux**, hasta 8 **incluyendo 2 síncronas**.
-    Confirmar para la plataforma de destino.
-- **Cadencia y contenido de las CU de SQL Server 2025** posteriores a CU 3: no verificados en
-  detalle.
+- **Prices**: **none** in this document, deliberately. There is no verified figure and **none is
+  approximated**.
+- **The exact wording of the failover rights with Software Assurance**: described here in general
+  terms from licensing sources; **not verified against the original Product
+  Terms**. Before deciding on passive replicas, read them.
+- **The break-even threshold for Server+CAL vs per core**: it depends on the agreement. **No number is fixed.**
+- **A discrepancy in Microsoft's own documentation**, detected in this verification and **not
+  resolved**:
+  - *Maximum relational database size in Express*: the **Windows** editions page says
+    **50 GB**; the **Linux** one for the same version says **10 GB**. Verify against the page for the
+    specific platform before sizing anything on Express.
+  - *Synchronous secondary replicas in Enterprise*: the **Windows** page indicates up to 8
+    secondaries **including 5 synchronous**; the **Linux** one, up to 8 **including 2 synchronous**.
+    Confirm for the target platform.
+- **Cadence and content of the SQL Server 2025 CUs** after CU 3: not verified in
+  detail.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.
