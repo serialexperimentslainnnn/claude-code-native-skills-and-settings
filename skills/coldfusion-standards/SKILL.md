@@ -3,247 +3,253 @@ name: coldfusion-standards
 description: CFML applications on Adobe ColdFusion, Lucee or BoxLang - a commercial runtime with a heavy exploitation history, and the migrate-or-freeze decision. Use when working with .cfm, .cfc and .cfml files, Application.cfc and Application.cfm, cfscript blocks and tag-based CFML, cfquery and cfqueryparam, cfoutput, cfloop, cfinclude, cfmodule, cfinvoke, cffile and cfftp, cfhttp, cfexecute, cfdocument and cfpdf, cfmail, cflock, cfthread, cfform, CFCs with access="remote" methods, application-scope and session-scope variables, evaluate() and iif() dynamic evaluation, serializeJSON and deserializeJSON, the CFIDE/administrator and cf_scripts directories, WEB-INF/cfusion, neo-*.xml configuration files, lucee-server.xml and lucee-web.xml, box.json and CommandBox servers, BoxLang runtimes and the bx-compat-cfml module, Adobe ColdFusion 2021 / 2023 / 2025 licensing and updates, or planning a move from Adobe ColdFusion to Lucee, to BoxLang, or to a rewrite.
 ---
 
-# Estándares ColdFusion / CFML
+# ColdFusion / CFML standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplicaciones CFML sobre **Adobe ColdFusion**, **Lucee** o **BoxLang**: mantenimiento, endurecimiento,
-cambio de motor y salida. Triggers: `.cfm`/`.cfc`, `Application.cfc`, `cfquery`, `cfqueryparam`,
-`cfscript`, `cffile`, `cfexecute`, `CFIDE/administrator`, `lucee-server.xml`, `box.json`, BoxLang.
+CFML applications on **Adobe ColdFusion**, **Lucee** or **BoxLang**: maintenance, hardening, engine
+change and exit. Triggers: `.cfm`/`.cfc`, `Application.cfc`, `cfquery`, `cfqueryparam`, `cfscript`,
+`cffile`, `cfexecute`, `CFIDE/administrator`, `lucee-server.xml`, `box.json`, BoxLang.
 
-**El eje: ColdFusion sigue existiendo y es comercial — y esa es la mitad de la decisión.** No es un
-lenguaje abandonado que arrastras: es un producto de pago, con versiones vivas y una factura anual
-que ha cambiado de forma. La otra mitad la pone su historial de seguridad (§5). Datos verificados:
+**The axis: ColdFusion still exists and it is commercial — and that is half the decision.** It is not
+an abandoned language you drag along: it is a paid product, with live versions and an annual invoice
+that has changed shape. The other half comes from its security record (§5). Verified data:
 
-- **Adobe ColdFusion**, leído de la propia matriz de fin de vida de Adobe (`helpx.adobe.com`, HTML
-  descargado y parseado, HTTP 200): **CF 2025** — disponibilidad **25-feb-2025**, fin de *core
-  support* **26-feb-2030**, *extended support* **N/A**; **CF 2023** — GA 17-may-2023, core hasta
-  **16-may-2028**, extendido hasta 16-may-2029; **CF 2021** — core terminado el **10-nov-2025** (ya
-  pasó), extendido hasta **10-nov-2026**; CF 2018 y anteriores, fuera hace años. Los dos matices que
-  deciden: **el soporte extendido de Adobe es "mejor esfuerzo" para migrar y no incluye parches de
-  seguridad** —o sea, un CF 2021 hoy es un servidor **sin parches** aunque figure "en soporte"— y
-  **CF 2025 no tiene fase extendida listada**, así que su fecha real es una sola.
-- **Modelo de licencia: cambió.** Desde CF 2025 Adobe vende **solo suscripción** —perpetuas
-  descontinuadas, las ya compradas de 2021/2023 siguen siendo válidas—, por servidor y con cobertura
-  de núcleos (**Standard cubre 2 núcleos**, **Enterprise hasta 8**), activada por Adobe Admin
-  Console. El coste anual publicado ronda los **≈2.930 $/año (Enterprise)** y **≈960 $/año
-  (Standard)**, con fuentes que dan otra cifra para Standard: cifras **orientativas y a verificar**
-  (§8). La consecuencia práctica de contar núcleos en máquinas virtuales grandes es que la factura de
-  quien venía de perpetua puede multiplicarse, y ese es hoy el principal motor de la migración a
+- **Adobe ColdFusion**, read from Adobe's own end-of-life matrix (`helpx.adobe.com`, HTML downloaded
+  and parsed, HTTP 200): **CF 2025** — availability **2025-02-25**, end of *core support*
+  **2030-02-26**, *extended support* **N/A**; **CF 2023** — GA 2023-05-17, core until **2028-05-16**,
+  extended until 2029-05-16; **CF 2021** — core ended on **2025-11-10** (already past), extended
+  until **2026-11-10**; CF 2018 and earlier, out for years. The two nuances that decide: **Adobe's
+  extended support is "best effort" for migrating and does not include security patches** — that is,
+  a CF 2021 today is an **unpatched** server even though it appears "in support" — and **CF 2025 has
+  no extended phase listed**, so its real date is a single one.
+- **Licensing model: it changed.** Since CF 2025 Adobe sells **subscription only** — perpetuals
+  discontinued, the 2021/2023 ones already purchased remain valid — per server and with core coverage
+  (**Standard covers 2 cores**, **Enterprise up to 8**), activated through the Adobe Admin Console.
+  The published annual cost is around **≈$2,930/year (Enterprise)** and **≈$960/year (Standard)**,
+  with sources giving a different figure for Standard: figures **indicative and to be verified**
+  (§8). The practical consequence of counting cores on large virtual machines is that the invoice for
+  someone coming from perpetual can multiply, and that is today the main driver of the migration to
   Lucee.
-- **Lucee** (alternativa de código abierto): licencia **LGPL-2.1**, verificada leyendo el fichero en
-  crudo — y con la trampa habitual: **no está en `LICENSE` ni en `main`/`master`**, sino en
-  **`License.txt` sobre la rama por defecto `7.0`** (la API del repositorio lo confirma como
-  `LGPL-2.1`). Dos líneas estables mantenidas en paralelo: **7.0.4.34** y **6.2.7.16**, ambas del
-  **4-jun-2026**.
-- **BoxLang** (Ortus Solutions): **no es "otro CFML"**, es un **lenguaje dinámico nuevo para la JVM**
-  con **módulo de compatibilidad CFML** (`bx-compat-cfml`, con modo `adobe` o `lucee`) que permite
-  ejecutar aplicaciones existentes. Licencia **Apache-2.0**, verificada en crudo — y aquí el fichero
-  es **`license.txt` en minúsculas sobre la rama `development`**, con un preámbulo comercial delante
-  que hace que la API de GitHub lo clasifique como `NOASSERTION`: **leer el fichero, no fiarse de la
-  etiqueta**. Versión **1.16.0** (30-jul-2026), con cadencia mensual. Modelo de núcleo abierto: el
-  runtime es Apache-2.0 y hay suscripciones de pago (BoxLang+) para soporte, SLA y módulos premium.
+- **Lucee** (the open source alternative): licence **LGPL-2.1**, verified by reading the raw file —
+  and with the usual trap: **it is not in `LICENSE` nor on `main`/`master`**, but in **`License.txt`
+  on the default branch `7.0`** (the repository API confirms it as `LGPL-2.1`). Two stable lines
+  maintained in parallel: **7.0.4.34** and **6.2.7.16**, both from **2026-06-04**.
+- **BoxLang** (Ortus Solutions): **it is not "another CFML"**, it is a **new dynamic language for the
+  JVM** with a **CFML compatibility module** (`bx-compat-cfml`, with `adobe` or `lucee` mode) that
+  allows running existing applications. Licence **Apache-2.0**, verified raw — and here the file is
+  **`license.txt` in lowercase on the `development` branch**, with a commercial preamble in front
+  that makes the GitHub API classify it as `NOASSERTION`: **read the file, do not trust the label**.
+  Version **1.16.0** (2026-07-30), on a monthly cadence. Open-core model: the runtime is Apache-2.0
+  and there are paid subscriptions (BoxLang+) for support, SLA and premium modules.
 
-**No aplica**: `web-app-servers-standards` (**ya escrita**) es la dueña del **servidor** que sirve
-CFML (Tomcat/IIS/Apache delante, conectores, TLS, límites); aquí solo lo que decide el código y la
-configuración del motor CFML. `legacy-modernization-standards` es el
-paraguas y `enterprise-architecture-standards` (**ya escrita**) pone inventario, modelo TIME y las
-"R" —aquí qué implica técnicamente cada opción—, con `refactoring-tech-debt-standards`,
-`testing-qa-standards`, `project-management-standards`, `tech-leadership-standards`, `cicd-standards`
-y `git-workflow-standards` (**ya escritas**). `appsec-standards` y `vulnerability-management-standards`
-(**ya escritas**) ponen metodología, triaje y el uso correcto de KEV/EPSS —aquí los *sinks*
-concretos de CFML—, con `opensource-licensing-standards` (**ya escrita**: el análisis de LGPL y
-Apache-2.0 es suyo), `sql-standards`, `firewall-policy-standards` y `grc-compliance-standards`. Si el
-destino es reescritura, mandan `jvm-spring-standards`, `dotnet-standards`, `php-standards` o
-`python-standards` según el stack. Hermanas de bloque legacy —**comparten la etiqueta "legacy" y poco
-más**—: `jsp-struts-standards`, `classic-asp-standards`, `abap-sap-standards`,
+**Not applicable**: `web-app-servers-standards` (**already written**) owns the **server** that serves
+CFML (Tomcat/IIS/Apache in front, connectors, TLS, limits); here only what the code and the CFML
+engine's configuration decide. `legacy-modernization-standards` is the umbrella and
+`enterprise-architecture-standards` (**already written**) provides inventory, the TIME model and the
+"R"s — here what each option implies technically —, with `refactoring-tech-debt-standards`,
+`testing-qa-standards`, `project-management-standards`, `tech-leadership-standards`,
+`cicd-standards` and `git-workflow-standards` (**already written**). `appsec-standards` and
+`vulnerability-management-standards` (**already written**) provide methodology, triage and the
+correct use of KEV/EPSS — here CFML's concrete *sinks* —, with `opensource-licensing-standards`
+(**already written**: analysing LGPL and Apache-2.0 is theirs), `sql-standards`,
+`firewall-policy-standards` and `grc-compliance-standards`. If the destination is a rewrite,
+`jvm-spring-standards`, `dotnet-standards`, `php-standards` or `python-standards` rule depending on
+the stack. Sister skills of the legacy block — **they share the "legacy" label and little else** —:
+`jsp-struts-standards`, `classic-asp-standards`, `abap-sap-standards`,
 `plsql-oracle-forms-standards`, `vb6-standards`, `dotnet-framework-legacy-standards`.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web antes de fijarlo (§8): versiones, calendario de Adobe, licencias y KEV.
+> Verify on the web before fixing it (§8): versions, Adobe's calendar, licences and KEV.
 
-| Decisión | Por defecto | Nota |
+| Decision | Default | Note |
 |---|---|---|
-| Motor en versión sin *core support* | **Actualizar o migrar. Ya** | Sin parches = incidente pendiente (§1) |
-| Consultas | **`cfqueryparam` en todos los parámetros. Innegociable** | §5 |
-| Estilo | **`cfscript`** para lógica; etiquetas para la vista | §3 |
-| Panel de administración | **Nunca accesible desde internet** | §5; regla que domina todo lo demás |
-| Aplicación nueva en CFML | **No**, salvo equipo CFML consolidado y decisión escrita | §7 |
-| Alternativa libre | **Lucee** (LGPL-2.1) si el objetivo es quitar la licencia | §7: **migración, no interruptor** |
-| Compatibilidad Adobe↔Lucee | **Asumir trabajo de adaptación**, siempre | §3 |
-| Actualizaciones de seguridad | Aplicar **fuera del ciclo normal**, con ventana propia | §5 |
+| Engine on a version without *core support* | **Update or migrate. Now** | No patches = a pending incident (§1) |
+| Queries | **`cfqueryparam` on every parameter. Non-negotiable** | §5 |
+| Style | **`cfscript`** for logic; tags for the view | §3 |
+| Administration panel | **Never reachable from the internet** | §5; the rule that dominates everything else |
+| A new application in CFML | **No**, unless there is a consolidated CFML team and a written decision | §7 |
+| Free alternative | **Lucee** (LGPL-2.1) if the goal is removing the licence | §7: **a migration, not a switch** |
+| Adobe↔Lucee compatibility | **Assume adaptation work**, always | §3 |
+| Security updates | Apply them **outside the normal cycle**, with their own window | §5 |
 
-## 3. Lenguaje y aplicación típica
+## 3. The language and the typical application
 
-**Etiquetas frente a *script***: CFML admite las dos formas para casi todo (`<cfquery>`/`queryExecute`,
-`<cfloop>`/`for`). Criterio: **la lógica va en `cfscript`** —dentro de componentes— y las etiquetas se
-quedan para la plantilla de salida. Mezclar lógica de negocio en la página `.cfm` reproduce el
-problema del *scriptlet*: no se prueba, no se reutiliza y esconde los fallos de seguridad.
+**Tags versus *script***: CFML admits both forms for almost everything
+(`<cfquery>`/`queryExecute`, `<cfloop>`/`for`). Criterion: **logic goes in `cfscript`** — inside
+components — and tags stay for the output template. Mixing business logic into the `.cfm` page
+reproduces the *scriptlet* problem: it is not tested, not reused and it hides the security failures.
 
-**Estructura mínima que se exige**: `Application.cfc` con el ciclo de vida explícito (`onApplicationStart`,
-`onSessionStart`, `onRequestStart`, `onError`), componentes `.cfc` con métodos de acceso declarado
-(`private`/`package`/`public`, y `remote` **solo** donde hay un endpoint de verdad), y las consultas
-encapsuladas en componentes de acceso a datos, nunca esparcidas por las vistas. Los ámbitos
-(`application`, `session`, `request`, `variables`) se declaran siempre de forma explícita: el
-**ámbito implícito** es la fuente clásica de fugas de datos entre peticiones y de condiciones de
-carrera. Escritura sobre `application`/`server`, **siempre dentro de `cflock`**.
+**The minimum structure that is required**: `Application.cfc` with an explicit lifecycle
+(`onApplicationStart`, `onSessionStart`, `onRequestStart`, `onError`), `.cfc` components with
+declared method access (`private`/`package`/`public`, and `remote` **only** where there is a real
+endpoint), and queries encapsulated in data access components, never scattered through the views.
+Scopes (`application`, `session`, `request`, `variables`) are always declared explicitly: the
+**implicit scope** is the classic source of data leaks between requests and of race conditions.
+Writing to `application`/`server`, **always inside a `cflock`**.
 
-**Adobe CF y Lucee no son intercambiables sin trabajo, y hay que decirlo antes de firmar el
-proyecto.** Comparten el 90% del lenguaje y ahí terminan los parecidos cómodos: difieren en
-funciones y etiquetas propietarias (generación de PDF, integración con .NET, servicios que solo
-existen en uno), en el tratamiento de nulos y de la conversión de tipos, en la administración
-—consola, API de administración, tareas programadas, orígenes de datos, mapeos—, en los ajustes de
-seguridad por defecto, y en el comportamiento en los bordes que ninguna documentación describe pero
-del que tu código depende. **Regla de planificación: la migración Adobe→Lucee se estima con un
-inventario y una prueba real de los flujos críticos, no con "es CFML, funcionará".** Lo mismo, con
-más motivo, para BoxLang: su módulo de compatibilidad reduce el cambio, no lo elimina.
+**Adobe CF and Lucee are not interchangeable without work, and it must be said before signing the
+project.** They share 90% of the language and there the comfortable similarities end: they differ in
+proprietary functions and tags (PDF generation, .NET integration, services that only exist in one),
+in the handling of nulls and type conversion, in administration — console, admin API, scheduled
+tasks, datasources, mappings —, in the default security settings, and in the edge-case behaviour that
+no documentation describes but that your code depends on. **Planning rule: the Adobe→Lucee migration
+is estimated with an inventory and a real test of the critical flows, not with "it is CFML, it will
+work".** The same, all the more so, for BoxLang: its compatibility module reduces the change, it does
+not eliminate it.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-Sección **reducida a lo aplicable**: no hay una *toolchain* comparable a la de los ecosistemas
-mayoritarios. Lo que sí se usa: pruebas con los marcos de la comunidad (estilo xUnit para CFML) sobre
-componentes —lo cual **exige** haber sacado la lógica de las páginas (§3)—, **caracterización de
-extremo a extremo** de los flujos críticos antes de cambiar de motor (es el único control que detecta
-las diferencias Adobe↔Lucee), y un **linter/analizador de CFML** si el proyecto lo tiene: verificar
-estado y licencia antes de adoptarlo (§8). El gate de CI mínimo y realista: **el build despliega en un
-motor limpio de la versión destino y ejecuta la suite E2E**; sin eso, cualquier cambio de motor o de
-versión es una apuesta.
+A section **reduced to what applies**: there is no *toolchain* comparable to that of the mainstream
+ecosystems. What is used: testing with the community frameworks (xUnit style for CFML) over
+components — which **requires** having taken the logic out of the pages (§3) —, **end-to-end
+characterisation** of the critical flows before changing engine (it is the only control that detects
+the Adobe↔Lucee differences), and a **CFML linter/analyser** if the project has one: verify its
+status and licence before adopting it (§8). The minimum realistic CI gate: **the build deploys to a
+clean engine of the target version and runs the E2E suite**; without that, any engine or version
+change is a gamble.
 
-## 5. Seguridad — sección principal
+## 5. Security — the main section
 
-**El historial no es anecdótico, es estructural.** Verificado descargando el **catálogo KEV de CISA**
-(JSON en crudo, versión **2026.08.04**): hay **16 vulnerabilidades de Adobe ColdFusion catalogadas
-como explotadas en el mundo real**, y no son todas antiguas — la más reciente, **`CVE-2026-48282`
-(*path traversal*), se añadió el 7-jul-2026**. Otras señaladas: `CVE-2024-20767` (control de acceso,
-añadida dic-2024), `CVE-2023-29300` y `CVE-2023-38203` (deserialización, **ambas marcadas con uso
-conocido en campañas de ransomware**), `CVE-2023-26360`, `CVE-2023-29298`, `CVE-2023-38205`,
-`CVE-2017-3066`, `CVE-2018-15961` (subida de ficheros sin restringir), `CVE-2010-2861` (también
-ransomware). **Patrón que se repite**: recorrido de rutas y control de acceso al **panel de
-administración**, y deserialización. Consecuencia operativa: **la actualización de seguridad de
-ColdFusion no espera a la ventana trimestral**; se aplica con procedimiento propio y con prisa, y el
-motor sin *core support* no recibe ninguna.
+**The record is not anecdotal, it is structural.** Verified by downloading **CISA's KEV catalogue**
+(raw JSON, version **2026.08.04**): there are **16 Adobe ColdFusion vulnerabilities catalogued as
+exploited in the wild**, and they are not all old — the most recent, **`CVE-2026-48282` (*path
+traversal*), was added on 2026-07-07**. Others flagged: `CVE-2024-20767` (access control, added
+Dec-2024), `CVE-2023-29300` and `CVE-2023-38203` (deserialisation, **both marked with known use in
+ransomware campaigns**), `CVE-2023-26360`, `CVE-2023-29298`, `CVE-2023-38205`, `CVE-2017-3066`,
+`CVE-2018-15961` (unrestricted file upload), `CVE-2010-2861` (also ransomware). **The recurring
+pattern**: path traversal and access control on the **administration panel**, and deserialisation.
+Operational consequence: **a ColdFusion security update does not wait for the quarterly window**; it
+is applied with its own procedure and in a hurry, and an engine without *core support* receives none
+at all.
 
-**Reglas duras del código:**
+**Hard code rules:**
 
-- **`cfqueryparam` en todos los parámetros de toda consulta. Requisito no negociable.** Concatenar
-  variables dentro de `<cfquery>` es inyección SQL directa, y es el patrón dominante en el CFML
-  antiguo. Correcciones falsas que hay que rechazar: `#` con `htmlEditFormat()`, comprobar
-  `isNumeric()` "y ya", o filtrar palabras clave. Además del parámetro, se declara **`cfsqltype`** —
-  sin él se pierde parte de la validación de tipo—. Lo mismo en `queryExecute()` con
-  parámetros nombrados. Los procedimientos almacenados, con `cfprocparam`.
-- **Evaluación dinámica**: `evaluate()`, `iif()` con cadenas construidas, `cfinclude` con plantilla
-  derivada de la petición y `cfmodule` dinámico permiten ejecutar código o incluir ficheros
-  arbitrarios. Sustituir por estructuras y listas blancas cerradas; **nunca** entrada de usuario ahí.
-- **`cfexecute`** con argumentos derivados de la petición es ejecución de comandos del sistema. Si no
-  hay más remedio, ruta absoluta fija y argumentos de una lista blanca.
-- **Subida de ficheros (`cffile action="upload"`)**: es la vía histórica de la *webshell* en este
-  ecosistema. Almacenar **fuera del árbol servido**, nombre generado por el servidor, lista blanca por
-  contenido y **`accept`/`strict` configurados** —el `Content-Type` del cliente no es prueba de
-  nada—, y el directorio de subidas **sin ejecución de CFML** en el mapeo del servidor.
-- **XSS**: `#variable#` en la salida escribe tal cual. Codificar **según contexto** con las funciones
-  de codificación de salida (`encodeForHTML`, `encodeForHTMLAttribute`, `encodeForJavaScript`,
-  `encodeForURL`); `htmlEditFormat()` es insuficiente y está superado.
-- **Deserialización**: no deserializar objetos que vengan de la petición; `deserializeJSON` sobre
-  entrada no confiable, con validación de forma posterior.
-- **Errores y depuración**: salida de depuración desactivada en producción (imprime consultas,
-  variables y rutas), página de error genérica con `onError`, y detalle **solo al log**.
-- **Secretos**: credenciales de orígenes de datos y claves **fuera del código y de los ficheros
-  servibles**; `secrets-management-standards`.
+- **`cfqueryparam` on every parameter of every query. A non-negotiable requirement.** Concatenating
+  variables inside `<cfquery>` is direct SQL injection, and it is the dominant pattern in old CFML.
+  False fixes to be rejected: `#` with `htmlEditFormat()`, checking `isNumeric()` "and that is it",
+  or filtering keywords. In addition to the parameter, **`cfsqltype`** is declared — without it part
+  of the type validation is lost. The same in `queryExecute()` with named parameters. Stored
+  procedures, with `cfprocparam`.
+- **Dynamic evaluation**: `evaluate()`, `iif()` with constructed strings, `cfinclude` with a template
+  derived from the request and dynamic `cfmodule` allow executing code or including arbitrary files.
+  Replace with structures and closed allowlists; **never** user input there.
+- **`cfexecute`** with arguments derived from the request is system command execution. If there is no
+  alternative, a fixed absolute path and arguments from an allowlist.
+- **File uploads (`cffile action="upload"`)**: it is the historical *webshell* route in this
+  ecosystem. Store **outside the served tree**, a server-generated name, an allowlist by content and
+  **`accept`/`strict` configured** — the client's `Content-Type` proves nothing —, and the upload
+  directory **with no CFML execution** in the server's mapping.
+- **XSS**: `#variable#` in the output writes it as-is. Encode **per context** with the output
+  encoding functions (`encodeForHTML`, `encodeForHTMLAttribute`, `encodeForJavaScript`,
+  `encodeForURL`); `htmlEditFormat()` is insufficient and superseded.
+- **Deserialisation**: do not deserialise objects coming from the request; `deserializeJSON` over
+  untrusted input, with subsequent shape validation.
+- **Errors and debugging**: debug output disabled in production (it prints queries, variables and
+  paths), a generic error page with `onError`, and detail **only to the log**.
+- **Secrets**: datasource credentials and keys **outside the code and outside servable files**;
+  `secrets-management-standards`.
 
-**La regla que resume todo lo demás: el panel de administración no se expone a internet.** `/CFIDE/`
-—y en particular `/CFIDE/administrator`—, la consola de Lucee y cualquier interfaz de administración
-del motor **se restringen por red** (escucha en interfaz interna o filtro por IP en el servidor
-delante), con contraseña propia rotada, y **se comprueba que no sea alcanzable desde fuera** en cada
-despliegue. La mayoría de las CVE de la lista anterior se explotan contra esa superficie: quitarla de
-internet convierte una crítica en una alta, y a menudo en inexplotable. Complemento obligatorio:
-**restringir la salida de red del servidor** —si cae, que no llame a casa— y ejecutar el motor con un
-usuario sin privilegios y sin escritura sobre el árbol de la aplicación.
+**The rule that summarises everything else: the administration panel is not exposed to the
+internet.** `/CFIDE/` — and in particular `/CFIDE/administrator` —, the Lucee console and any engine
+administration interface **are restricted at the network level** (listening on an internal interface
+or IP filtering on the server in front), with their own rotated password, and **it is checked that
+they are not reachable from outside** on every deployment. Most of the CVEs in the list above are
+exploited against that surface: taking it off the internet turns a critical into a high, and often
+into something unexploitable. Mandatory complement: **restrict the server's outbound network
+traffic** — if it falls, let it not phone home — and run the engine as an unprivileged user with no
+write access to the application tree.
 
-## 6. Operabilidad
+## 6. Operability
 
-Lo específico del motor: el estado de `session`/`application` vive **en el proceso** salvo que se
-configure almacenamiento externo, así que **no hay balanceo sin afinidad ni escalado horizontal** sin
-resolverlo antes; `cfthread` y las tareas programadas del motor son trabajo que se pierde en cada
-reinicio y que nadie monitoriza hasta que falla; y las fugas típicas —consultas sin límite volcadas a
-memoria, cachés en `application` sin política de expiración— tumban la JVM entera. Métricas de JVM
-(memoria, GC, hilos) y de peticiones lentas: es un servidor Java, se instrumenta como tal
-(`observability-standards`). El dimensionado del contenedor y del servidor web es de
+What is specific to the engine: `session`/`application` state lives **in the process** unless
+external storage is configured, so **there is no load balancing without affinity and no horizontal
+scaling** without solving that first; `cfthread` and the engine's scheduled tasks are work that is
+lost on every restart and that nobody monitors until it fails; and the typical leaks — unbounded
+queries dumped into memory, caches in `application` with no expiry policy — take down the whole JVM.
+JVM metrics (memory, GC, threads) and slow requests: it is a Java server, it is instrumented as such
+(`observability-standards`). Sizing the container and the web server belongs to
 `web-app-servers-standards`.
 
-## 7. Decisión: migrar, cambiar de motor o no tocar nada
+## 7. Decision: migrate, change engine or touch nothing
 
-**Cuándo migrar a Lucee (quitarse la licencia)**: cuando el coste de suscripción es el problema
-dominante, la aplicación **no usa funcionalidad propietaria de Adobe** (PDF avanzado, integración con
-.NET, servicios exclusivos) y hay equipo para probarla de verdad. Es una migración con inventario,
-banco de pruebas y plan de vuelta atrás, **no un cambio de instalación** (§3). Ganas: coste cero de
-licencia y un motor mantenido en abierto. Pierdes: soporte comercial del fabricante —salvo que lo
-contrates aparte— y las funciones que no existen.
+**When to migrate to Lucee (dropping the licence)**: when the subscription cost is the dominant
+problem, the application **does not use Adobe proprietary functionality** (advanced PDF, .NET
+integration, exclusive services) and there is a team to test it properly. It is a migration with an
+inventory, a test bench and a rollback plan, **not an installation change** (§3). You gain: zero
+licence cost and an openly maintained engine. You lose: the vendor's commercial support — unless you
+contract it separately — and the features that do not exist.
 
-**Cuándo mirar BoxLang**: cuando además del coste te pesa el lenguaje y quieres una salida gradual
-hacia la JVM manteniendo el código en marcha. Es lo más nuevo de las tres opciones y por tanto lo
-menos probado en producción a gran escala; su cadencia mensual es señal de proyecto vivo, no de
-madurez demostrada. **Decisión con piloto real, no con presentación.**
+**When to look at BoxLang**: when on top of the cost the language itself weighs on you and you want a
+gradual exit towards the JVM while keeping the code running. It is the newest of the three options
+and therefore the least proven in large-scale production; its monthly cadence is a sign of a living
+project, not of demonstrated maturity. **A decision made with a real pilot, not with a slide deck.**
 
-**Cuándo reescribir**: cuando la aplicación tiene lógica en las páginas y nadie la entiende, cuando
-depende de un motor sin soporte y la actualización arrastra medio código, o cuando el negocio ha
-cambiado. La reescritura se hace por partes (*strangler fig*) y la calidad del destino la rige la
-skill del stack elegido.
+**When to rewrite**: when the application has logic in the pages and nobody understands it, when it
+depends on an unsupported engine and updating drags half the code along, or when the business has
+changed. The rewrite is done in parts (*strangler fig*) and the quality of the destination is
+governed by the chosen stack's skill.
 
-**Cuándo NO tocar nada — y es una recomendación legítima, no pereza**: aplicación **interna**, estable,
-sin desarrollo pendiente, sobre un motor **con soporte y parcheado**, y sin exposición a internet. Ahí
-el trabajo correcto es **congelar con higiene**: versión soportada, parches al día, panel de
-administración fuera de la red no confiable, copias de seguridad probadas, inventario de dependencias
-y **fecha de revisión anual escrita**. Migrar por estética cuesta dinero y añade riesgo sin retorno.
-Lo que **no** es una opción es "no tocar nada" sobre un motor sin *core support*: eso no es congelar,
-es acumular un incidente.
+**When NOT to touch anything — and it is a legitimate recommendation, not laziness**: an **internal**
+application, stable, with no pending development, on a **supported and patched** engine, and with no
+internet exposure. There the right work is to **freeze with hygiene**: a supported version, patches
+up to date, the administration panel off untrusted networks, tested backups, a dependency inventory
+and **a written annual review date**. Migrating for aesthetics costs money and adds risk with no
+return. What is **not** an option is "touch nothing" on an engine without *core support*: that is not
+freezing, it is accumulating an incident.
 
-- ❌ PROHIBIDO ejecutar en producción un motor sin *core support* del fabricante (o sin mantenimiento
-  en el caso de Lucee/BoxLang).
-- ❌ PROHIBIDO exponer `/CFIDE/administrator` o la consola de Lucee a redes no confiables.
-- ❌ PROHIBIDO cualquier consulta con variables sin `cfqueryparam`/parámetro nombrado. Sin excepciones.
-- ❌ PROHIBIDO "sanear" con `htmlEditFormat()`, `isNumeric()` o filtros de palabras en vez de parametrizar.
-- ❌ PROHIBIDO `evaluate()`, `iif()` con cadenas, `cfinclude`/`cfmodule` o `cfexecute` con entrada de usuario.
-- ❌ PROHIBIDO guardar ficheros subidos dentro del árbol servido o confiar en el `Content-Type`.
-- ❌ PROHIBIDO dejar la depuración activada, o mostrar trazas y consultas al usuario en producción.
-- ❌ PROHIBIDO escribir en `application`/`server` sin `cflock`, y usar ámbitos implícitos.
-- ❌ PROHIBIDO credenciales en el código o en ficheros alcanzables por HTTP.
-- ❌ PROHIBIDO tratar el cambio Adobe→Lucee (o →BoxLang) como un cambio de instalación sin pruebas.
-- ❌ PROHIBIDO retrasar una actualización de seguridad de ColdFusion a la ventana trimestral ordinaria.
-- ❌ PROHIBIDO declarar un WAF como corrección de una CVE del motor o del panel de administración.
-- ❌ PROHIBIDO planificar la renovación con la licencia **recordada**: el modelo cambió con CF 2025 y
-  se cuenta por núcleos (§8).
-- ❌ PROHIBIDO desarrollo nuevo en CFML sin decisión escrita, con dueño, sobre motor y horizonte.
+- ❌ FORBIDDEN to run in production an engine without the vendor's *core support* (or without
+  maintenance in the case of Lucee/BoxLang).
+- ❌ FORBIDDEN to expose `/CFIDE/administrator` or the Lucee console to untrusted networks.
+- ❌ FORBIDDEN any query with variables without `cfqueryparam`/a named parameter. No exceptions.
+- ❌ FORBIDDEN to "sanitise" with `htmlEditFormat()`, `isNumeric()` or word filters instead of
+  parameterising.
+- ❌ FORBIDDEN `evaluate()`, `iif()` with strings, `cfinclude`/`cfmodule` or `cfexecute` with user
+  input.
+- ❌ FORBIDDEN to store uploaded files inside the served tree or to trust the `Content-Type`.
+- ❌ FORBIDDEN to leave debugging enabled, or to show stack traces and queries to the user in
+  production.
+- ❌ FORBIDDEN to write to `application`/`server` without `cflock`, and to use implicit scopes.
+- ❌ FORBIDDEN credentials in the code or in files reachable over HTTP.
+- ❌ FORBIDDEN to treat the Adobe→Lucee (or →BoxLang) change as an installation change with no
+  testing.
+- ❌ FORBIDDEN to delay a ColdFusion security update to the ordinary quarterly window.
+- ❌ FORBIDDEN to declare a WAF as the fix for a CVE in the engine or in the administration panel.
+- ❌ FORBIDDEN to plan the renewal with the licence **remembered**: the model changed with CF 2025 and
+  it is counted per core (§8).
+- ❌ FORBIDDEN new development in CFML without a written decision, with an owner, on the engine and
+  the horizon.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Comprobar siempre: la **matriz de fin de vida de Adobe** (`helpx.adobe.com/support/programs/eol-matrix.html`,
-que da GA, fin de *core* y fin de *extended* por versión) y qué incluye exactamente el soporte
-extendido; la versión y el nivel de actualización instalados frente a las **actualizaciones de
-seguridad** publicadas por Adobe; las versiones estables vigentes de **Lucee** y de **BoxLang** y su
-licencia **leyendo el fichero en crudo** —recordar: Lucee lo tiene en `License.txt` sobre la rama
-`7.0`, BoxLang en `license.txt` sobre `development`, y la etiqueta automática de GitHub para BoxLang
-dice `NOASSERTION` aunque el texto sea Apache-2.0—; el **catálogo KEV de CISA** en JSON, filtrando por
-`Adobe ColdFusion`, con su `catalogVersion`; y el precio y las condiciones de la suscripción de Adobe
-antes de presupuestar.
+Always check: **Adobe's end-of-life matrix**
+(`helpx.adobe.com/support/programs/eol-matrix.html`, which gives GA, end of *core* and end of
+*extended* per version) and what exactly extended support includes; the installed version and update
+level against the **security updates** published by Adobe; the current stable versions of **Lucee**
+and **BoxLang** and their licence **by reading the raw file** — remember: Lucee has it in
+`License.txt` on branch `7.0`, BoxLang in `license.txt` on `development`, and GitHub's automatic
+label for BoxLang says `NOASSERTION` even though the text is Apache-2.0 —; **CISA's KEV catalogue**
+in JSON, filtering by `Adobe ColdFusion`, with its `catalogVersion`; and the price and terms of
+Adobe's subscription before budgeting.
 
-**Huecos declarados (sin dato verificado, NO rellenar de memoria)**: (a) la afirmación de que el
-**soporte extendido de Adobe no incluye parches de seguridad** procede de resúmenes de buscador sobre
-la política de Adobe, **no de cita verbatim de la fuente primaria**: es un dato crítico para CF 2021
-(en fase extendida hasta nov-2026) — confirmarlo antes de usarlo como argumento; (b) **precios**:
-las cifras de §1 provienen de terceros y **no coinciden entre sí para la edición Standard**, y el
-coste real depende de núcleos, región y distribuidor: pedir presupuesto, no citar estas cifras;
-(c) el detalle de qué funcionalidad de Adobe **no** existe en Lucee o en BoxLang no está verificado —
-se determina con un inventario del código, no con una tabla comparativa; (d) estado y licencia de los
-marcos de prueba y linters de CFML — no verificados; (e) política de soporte y EOL de **Lucee** por
-línea de versión (6.2 frente a 7.0) — no localizada, no suponerla.
+**Declared gaps (no verified data, do NOT fill from memory)**: (a) the claim that **Adobe's extended
+support does not include security patches** comes from search-engine summaries of Adobe's policy,
+**not from a verbatim quote of the primary source**: it is a critical fact for CF 2021 (in its
+extended phase until Nov-2026) — confirm it before using it as an argument; (b) **prices**: the
+figures in §1 come from third parties and **do not agree with each other for the Standard edition**,
+and the real cost depends on cores, region and reseller: ask for a quote, do not cite these figures;
+(c) the detail of which Adobe functionality does **not** exist in Lucee or in BoxLang is not verified
+— it is determined with a code inventory, not with a comparison table; (d) the status and licence of
+CFML test frameworks and linters — not verified; (e) **Lucee**'s support and EOL policy per version
+line (6.2 versus 7.0) — not located, do not assume it.
 
-**Discrepancias señaladas**: la matriz de Adobe da el fin de *core support* de **CF 2025 el
-26-feb-2030** y **sin fase extendida**, mientras fuentes secundarias citan "8 de abril de 2030" y una
-fase extendida hasta 2031 — **manda la matriz de Adobe**. Y la versión "actual" de **BoxLang** que
-anuncian las notas de prensa (1.13) va por detrás de la que publica el repositorio (**1.16.0**,
-30-jul-2026): comprobar la fuente del propio proyecto, no la nota de prensa.
+**Flagged discrepancies**: Adobe's matrix gives the end of *core support* for **CF 2025 as
+2030-02-26** and **with no extended phase**, while secondary sources cite "8 April 2030" and an
+extended phase until 2031 — **Adobe's matrix wins**. And the "current" version of **BoxLang**
+announced in press releases (1.13) is behind the one the repository publishes (**1.16.0**,
+2026-07-30): check the project's own source, not the press release.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

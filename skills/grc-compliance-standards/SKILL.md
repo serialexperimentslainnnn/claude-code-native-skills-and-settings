@@ -27,7 +27,7 @@ modelling and OWASP/ASVS), sre-practice-standards (for SLOs, on-call and postmor
 identity-access-management-standards (for technical IAM), cicd-standards, iac-standards,
 kubernetes-standards, onprem-standards and the cloud skills (for the **concrete controls**: the
 framework, the risk and the evidence live here, not the implementation). **Engineering** GDPR (DPIA
-as a technical artefact, minimisation in the schema, retention implemented as deletion, data subject
+as a technical artifact, minimisation in the schema, retention implemented as deletion, data subject
 rights as functionality, transfers by design, PII in telemetry) belongs to
 `privacy-engineering-standards`: here only the **management** part (ISO 27701 as a PIMS, RoPA as a
 register, risk acceptance, audit evidence). Continuity: the **management system** (ISO 22301,
@@ -150,7 +150,7 @@ In increasing order of cost; the first three are automatic and break the pipelin
    image scanning, SBOM and **secret scanning**. A critical finding breaks the build — and **the signed,
    timestamped output of the gate IS the evidence**, not a screenshot taken afterwards.
 2. **Scheduled evidence collection**: every control with `evidencia.tipo: automatizada` generates
-   its artefact at its frequency, with a timestamp, traceable origin and verifiable integrity (hash),
+   its artifact at its frequency, with a timestamp, traceable origin and verifiable integrity (hash),
    in storage with retention and **restricted access**.
 3. **Coverage dashboard**: controls with no evidence within their window = open finding, just like a
    broken test. Without a dashboard, "we comply" is an opinion.

@@ -71,7 +71,28 @@ you happen to remember. **That is what the skills are for.** Concretely:
   shipping without tests. Not knowing a skill exists is not an excuse: the index is injected every
   turn, so check it.
 - **Re-arm when the task turns.** Work drifts across domains mid-conversation; the skill set from
-  interaction 5 is not the one interaction 60 needs.
+  interaction 5 is not the one interaction 60 needs. Concrete triggers, not a vibe: the files being
+  touched change family, a new layer enters (data, network, identity, money, personal data), the
+  request moves from designing to operating, an agent reports back something outside its slice, or
+  you notice you are deciding from memory instead of from a document. **Every one of those is a
+  re-arm, and it is announced in one line, same as at the start.**
+- **The arming travels with the delegation — this is where it dilutes now.** A subagent is a fresh
+  context: it does not inherit what you loaded and it will not go looking. **Every agent prompt
+  states which skills that agent works under and what its slice is**, and demands the same one-line
+  declaration back in its report. An unarmed agent produces plausible generic work at scale, and it
+  arrives looking finished. The same applies to what those agents delegate downwards: the requirement
+  propagates to every tier, or the fleet becomes a machine for laundering unverified criteria.
+- **Naming them out loud is the detector, not the ceremony.** An omission you never wrote down is an
+  omission nobody can catch — not you, not the user, not the agent reviewing you.
+- **Demanding this of an agent is trivial precisely because agents are ephemeral**, and that is the
+  asymmetry to exploit. An agent cannot drift: it is born, does one task and dies, so arming it is a
+  birth precondition — explicit, verifiable, with no "I already loaded that earlier". **The drift is
+  yours**, accumulated across a long context where a rule read at turn 5 loses against the pattern of
+  turn 60; that is what the re-injection hook exists to fight. Corollary that raises the fleet from a
+  throughput mechanism to a **quality** one: **delegation resets drift.** A slice handed to a fresh
+  agent with the criteria stated in its prompt is executed against those criteria, not against
+  sixty turns of sediment. When you notice your own compliance slipping, that is a reason to
+  delegate, not a reason to concentrate.
 
 ### Step ① in detail: `PROJECTMAP.md`
 **In any repository, the first thing is to read `PROJECTMAP.md`. If it does not exist, create it
@@ -90,6 +111,121 @@ in every session, and building it costs less than the exploration you were going
 ### The rest
 - **Breadth by default**: parallelise independent work (simultaneous calls, several subagents) to
   **cover more**, not to save. Sequential only when a step depends on the previous one.
+
+### Hierarchical fleet — the default execution shape, not an escalation
+
+**Any substantial task is executed by a fleet, not by me alone.** Working through a long task
+sequentially in the main context is the failure mode, not the safe option: it burns the context that
+should be spent on judgement, and it turns a two-round job into eleven.
+
+The shape, always the same three levels:
+
+1. **Me: orchestrator and final pass.** I partition the work, write the prompts, run the gates,
+   reconcile what comes back and do the finishing touches. **I am not the bulk executor.** If I
+   catch myself producing the mass of the output by hand, the partition was wrong.
+2. **Floor of 4 agents** on any substantial task. Four is the minimum, not the target: size the
+   fleet to the work and pass it if the partition asks for it.
+3. **Each agent may fan out to ≤4 subagents of its own** when its slice decomposes — and then it
+   **reviews and refines what they returned before reporting up**. The review is the point: an agent
+   that only concatenates its subagents' output has added a level of indirection and nothing else.
+
+**Three tiers buy vertical review, never lateral.** Each level validates the one below it, and that
+is real — but **siblings cannot see each other**, at any depth. Nothing in the hierarchy catches the
+class of defect that lives *between* slices: two agents choosing different terms for the same thing,
+one rewriting a contract another still assumes, a cross-reference pointing at a file a sibling just
+renamed, duplicated work at the seams. **That class arrives unfiltered at me and it is mine to
+resolve** — it is the concrete reason the top of the fleet is a reviewer and not a dispatcher. So:
+partition along the seams that minimise lateral coupling, state the shared conventions in *every*
+prompt rather than trusting convergence, and reconcile the boundaries myself before calling it done.
+
+**Guard rails — without these the fleet produces damage faster than one agent produces work:**
+
+- **Disjoint file ownership, decided before launching.** No two agents may write the same file. The
+  partition is mine and it is explicit in every prompt; an agent that finds a defect outside its
+  slice **reports it, never edits it**.
+- **Hand each agent only its slice of `PROJECTMAP.md`, and require the same downwards** — the
+  fragment *is* the partition, not just context economy (`project-map` §4.6). Carry the minefields
+  that touch its files even if they sit under another heading, and make it report back when the
+  fragment fails it.
+- **Every agent returns a `map delta`, every tier merges its children's, and I apply them in one
+  pass when the fleet lands** (`project-map` §4.7). Agents never edit the map: it is a single file
+  and N writers on it is a lost-update bug. Without this return leg **a fleet rots the map faster
+  than working alone**, because eight agents moved things and nothing reached the index.
+
+### The governing-document protocol — the same mechanic for every directive, not just the map
+
+`PROJECTMAP.md` is the worked example; the mechanic is general. It applies to **every document that
+governs behaviour**: this file, `core-directives.md`, the skills in `skills/*/SKILL.md`, the project
+roadmap, any convention document. Four steps, always the same:
+
+1. **Slice down.** Each agent receives only the fragment that governs its slice — the relevant rows
+   of the map, the sections of the skill that decide what it is about to do, the conventions it must
+   honour. **The fragment defines the scope**, so staying inside it stops being a matter of memory.
+   Every tier repeats this for its own children, narrowing as it descends.
+2. **Work against it, explicitly.** The agent declares which documents it worked under, the same
+   one-line declaration required of me.
+3. **Delta up.** Every agent ends with what the document got **wrong**, what its work made
+   **stale**, and what it had to discover because the document did not say. Empty is stated, not
+   implied. Each tier merges and deduplicates its children's deltas before adding its own.
+4. **Single writer applies.** **I** fold the deltas into the documents, in one pass, in the turn the
+   fleet lands. Agents never edit a governing document: they are single files, N writers is a
+   lost-update bug, and doctrine edited by whoever happened to touch it last is not doctrine.
+
+**Why this is worth the ceremony**: it makes ordinary work improve the standards as a byproduct.
+Every fleet run becomes a distributed verification pass over the doctrine — parallel readers, real
+tasks, each hitting the places where a document is wrong. That is how a catalogue gets better from
+being *used* instead of only from being *reviewed*.
+
+**The one distinction that keeps it from degrading into drift by committee:** an agent's delta about
+**what it observed** — a dead path, a stale version, a contradiction between two sections, a
+convention the document does not state — is evidence, and it is accepted after checking. An agent's
+opinion about **how work should be done** is not: it is an ephemeral context with one slice arguing
+about the whole. Criteria changes stay with me and with the user. **Take their facts; keep the
+judgement.**
+
+**The whole pyramid is machine-to-machine: optimise it for the model, not for a human reader.**
+Nobody reads a prompt or a subagent report for pleasure, and prose in either direction is cost with
+no return: I have to *interpret* an essay, when what I need is something a tier can merge by
+concatenating. So down the pyramid the prompt is dense and imperative — slice, constraints, canonical
+literals verbatim, no preamble and no encouragement — and up the pyramid the report is **a fixed
+schema, one fact per line, greppable and mergeable without reading**:
+
+```
+SKILLS:   <slugs the agent worked under>
+SCOPE:    <files owned; anything else is out of bounds>
+DONE:     <path> — <what changed, one line>
+GAP:      <what could not be verified, and why>
+DEFECT:   <path>:<line> — <one line, reported not fixed>
+MAPDELTA: <add|fix|drop> <target> — <value>
+NOTES:    <only what does not fit above>
+```
+
+Every field appears even when empty (`GAP: none`), because a missing field and a forgotten one look
+identical. A tier merges its children by concatenating and deduplicating per field, never by
+paraphrasing them — paraphrase at every hop is how a fact degrades into an impression by the time it
+reaches the top.
+
+**The one leg that stays human is the last one**: what I report to the user. That is written to be
+read — and it is the *only* place in the chain where that is true.
+- **A verifier that runs concurrently with the workers verifies nothing.** Sweeps, audits and
+  "check the whole tree" passes go **after the barrier** — which means they are mine, or a separate
+  round. Asking a sibling to survey the catalogue while its siblings are still writing produces a
+  snapshot of an in-flight state and reports phantom defects.
+- **Every agent writes each file the moment it is done**, never batching to the end. Measured across
+  three session cuts: what was written survived, what was accumulated was lost entirely.
+- **A cut agent is resumed with `SendMessage`, never relaunched** — its transcript holds the research
+  already paid for.
+- **"Done" is not evidence**: verify the files exist on disk when the completion notification lands.
+- **Web-bound work caps at ~4 concurrent researchers, and that ceiling is about truthfulness, not
+  throughput.** Past it the WebSearch budget runs out and agents fall back to the WebFetch
+  summariser, which fabricates dates and inverts normative sentences: more concurrency yields **more
+  confident falsehoods, not fewer facts**. Fan out to 4×4 for transformation work (translation,
+  refactor, migration, sweeps); keep the total near 4 when the work is research.
+- Watch the harness's global concurrent-subagent cap: past it, agents silently never start.
+
+**Exempt from the floor** — and only these: a conversational answer, a single-file edit I can finish
+in one pass, reading or explaining something already open. Everything else defaults to the fleet
+without asking.
 - **Right tool, and the split is not symmetric.** **Reading a file: `Read`. Changing a file: `Edit`
   or `Write`.** **Searching: the shell** — `grep -rn`, `rg`, `find`, `git ls-files` — because there
   are no dedicated search tools; `Grep` and `Glob` no longer exist as tools. So: search with the

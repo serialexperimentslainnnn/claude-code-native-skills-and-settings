@@ -3,443 +3,464 @@ name: itsm-itil-standards
 description: Use when IT runs as a service with a customer on the other side — writing or reviewing a service catalogue entry with a named service owner, separating request fulfilment from incident from problem records in a ticket tool, defining request categories and a request catalogue, standard pre-approved changes versus a CAB and the change record that satisfies an auditor, change freeze and blackout windows, writing an SLA, OLA or underpinning contract with service hours, response and resolution targets, credits and exclusions, distinguishing a contractual SLA from an engineering SLO, service desk tiering, escalation matrices and follow-the-sun coverage, CMDB and CI relationships, discovery versus manual maintenance, configuration item ownership and drift, known error database and workarounds, ITIL 4 practices and ITIL Version 5, PeopleCert and AXELOS licensing of ITIL material, ISO/IEC 20000-1 certification scope, FitSM, YaSM or VeriSM as license-free alternatives, service reporting and first-contact resolution, or operating ServiceNow, Jira Service Management, Freshservice, GLPI, iTop, Zammad, OTOBO or Znuny.
 ---
 
-# Estándares de ITSM / ITIL — el contrato de servicio con el negocio
+# ITSM / ITIL standards — the service contract with the business
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre la **gestión de servicios de TI como compromiso explícito con un cliente**: qué servicios existen
-y quién responde de cada uno, cómo entra el trabajo (petición, incidente, problema, cambio), qué se
-promete por escrito (SLA/OLA/contrato de apoyo), qué se registra como evidencia y qué se mide.
+Covers **IT service management as an explicit commitment to a customer**: which services exist
+and who answers for each one, how work comes in (request, incident, problem, change), what is
+promised in writing (SLA/OLA/underpinning contract), what is recorded as evidence and what is
+measured.
 
-Triggers: "catálogo de servicios", "dueño del servicio", "petición de servicio", "request", "incidente
-vs. problema", "known error", "workaround", "gestión del cambio", "CAB", "cambio estándar", "ventana de
-cambio", "congelación", "RFC", "SLA", "OLA", "underpinning contract", "penalización por SLA", "mesa de
-servicio", "L1/L2/L3", "escalado", "CMDB", "CI", "descubrimiento", "ITIL", "ITIL 4", "ITIL v5",
+Triggers: "service catalogue", "service owner", "service request", "request", "incident
+vs. problem", "known error", "workaround", "change management", "CAB", "standard change", "change
+window", "freeze", "RFC", "SLA", "OLA", "underpinning contract", "SLA penalty", "service
+desk", "L1/L2/L3", "escalation", "CMDB", "CI", "discovery", "ITIL", "ITIL 4", "ITIL v5",
 "ISO 20000", "FitSM", "ServiceNow", "Jira Service Management", "GLPI", "iTop", "Zammad", "OTOBO".
 
-**Principio rector**: **ITSM es el contrato de servicio con el negocio, no la burocracia que lo rodea.**
-El fallo típico de una implantación de ITSM no es la falta de proceso: es el **proceso que existe para
-protegerse en lugar de para entregar** — el comité que aprueba para repartir culpa, el ticket que se
-cierra para no incumplir el SLA, la CMDB que se mantiene para el auditor. Test falsable a aplicar a
-cualquier proceso propuesto: **nombra la decisión que toma y quién la toma; si no toma ninguna decisión
-que cambie el resultado para el cliente, se elimina.**
+**Governing principle**: **ITSM is the service contract with the business, not the bureaucracy that
+surrounds it.** The typical failure of an ITSM implementation is not a lack of process: it is the
+**process that exists to protect rather than to deliver** — the committee that approves in order to
+spread the blame, the ticket closed so as not to breach the SLA, the CMDB maintained for the
+auditor. A falsifiable test to apply to any proposed process: **name the decision it makes and who
+makes it; if it makes no decision that changes the outcome for the customer, it is removed.**
 
-Corolario operativo: **un proceso sin dueño nombrado no existe** — existe la plantilla.
+Operational corollary: **a process with no named owner does not exist** — the template exists.
 
-**No aplica**:
-- `incident-management-standards` (**frontera crítica**): la **gestión del incidente técnico en vivo**
-  — declaración, severidad, Incident Commander, comunicación de crisis, status page, decisión de
-  mitigación, postmortem sin culpa y sus acciones. Aquí, en cambio, **el proceso de servicio que lo
-  rodea**: el registro y la categorización del ticket, el SLA contractual que se está consumiendo, el
-  escalado **jerárquico** (avisar a quien responde ante el cliente, no a quien arregla), la relación
-  con el cliente y la conversión del incidente en problema. Regla de arbitraje: mientras el servicio
-  está caído manda `incident-management-standards`; el registro, el compromiso contractual y el
-  seguimiento posterior mandan aquí. **Ambas escrituras deben coexistir en el mismo ticket sin
-  duplicar el mando.**
-- `sre-practice-standards`: **SLI, SLO, error budget, política de quema, guardia y fiabilidad** son
-  suyos. Aquí el **SLA contractual**. **Un SLA no es un SLO** (§3): confundirlos produce una de dos
-  patologías — comprometer con el cliente el objetivo interno (compromisos imposibles) o derivar el
-  objetivo interno del contrato (objetivos sin sentido de ingeniería). Las métricas DORA son suyas.
-- `cicd-standards`: el **despliegue automatizado y sus gates** (pruebas, aprobaciones en pipeline,
-  firma, promoción de artefacto). Aquí el **registro del cambio y su evidencia**: qué se desplegó,
-  quién lo autorizó, contra qué CI y con qué plan de reversión.
-- `grc-compliance-standards`: el **marco normativo y la evidencia de auditoría** (ISO 27001, ENS,
-  DORA-UE, NIS2), el mapeo de controles y la aceptación formal de riesgo. Aquí solo el proceso de
-  servicio que **genera** esa evidencia.
-- `bcdr-standards`: continuidad, BIA, RTO/RPO y activación de DR. Un incidente que escala a desastre
-  sale de este proceso.
-- `observability-standards`: la telemetría con la que se detecta y se diagnostica.
-- `onprem-standards`, `homelab-standards`: la plataforma sobre la que corre el servicio.
-- `knowledge-management-standards`: la **base de conocimiento** — autoría,
-  revisión, caducidad y curación de artículos. Aquí solo su **enganche al proceso**: el KEDB y el
-  artículo obligatorio en el cierre de un problema.
-- `platform-engineering-standards`: el portal interno de desarrollador y el
-  catálogo de *software templates*. La frontera es el cliente: **plataforma sirve a equipos internos
-  con autoservicio; ITSM sirve a un cliente con un compromiso**. El portal no sustituye al catálogo
-  de servicios ni al revés.
-- `enterprise-architecture-standards`: el **inventario de aplicaciones y
-  capacidades**. Se cruza con la CMDB y el catálogo de servicios: el inventario de aplicaciones es la
-  vista de arquitectura (ciclo de vida, capacidad de negocio, *fit*), la CMDB es la vista operativa
-  (qué está desplegado y de qué depende). **Un mismo objeto, dos vistas: si se mantienen dos fuentes
-  de verdad sin dueño único, ambas se degradan** — nombrar cuál es autoritativa por atributo.
-- `cmdb-inventory-standards`: **el modelo de datos del CI, su identificador estable, el
-  descubrimiento, la reconciliación entre fuentes y la frescura del registro son suyos**. Aquí el
-  proceso que lo consume y la decisión de servicio que se toma con él.
-- `project-management-standards`: la **entrega** del servicio nuevo o cambiado. Recíproca:
-  **el proyecto entrega, el servicio opera**; el traspaso es un artefacto con criterios de aceptación
-  (§3) y **un proyecto que entrega algo que nadie puede operar no ha terminado**.
+**Not applicable**:
+- `incident-management-standards` (**critical boundary**): the **management of the live technical
+  incident** — declaration, severity, Incident Commander, crisis communication, status page,
+  mitigation decision, blameless postmortem and its actions. Here, instead, **the service process
+  around it**: the recording and categorisation of the ticket, the contractual SLA being consumed,
+  the **hierarchical** escalation (notifying whoever answers to the customer, not whoever fixes it),
+  the relationship with the customer and the conversion of the incident into a problem. Arbitration
+  rule: while the service is down, `incident-management-standards` governs; the record, the
+  contractual commitment and the subsequent follow-up are governed here. **Both writings must
+  coexist in the same ticket without duplicating command.**
+- `sre-practice-standards`: **SLIs, SLOs, error budget, burn policy, on-call and reliability** are
+  theirs. Here the **contractual SLA**. **An SLA is not an SLO** (§3): confusing them produces one of
+  two pathologies — committing the internal objective to the customer (impossible commitments) or
+  deriving the internal objective from the contract (objectives with no engineering meaning). The
+  DORA metrics are theirs.
+- `cicd-standards`: **automated deployment and its gates** (tests, in-pipeline approvals,
+  signing, artifact promotion). Here the **change record and its evidence**: what was deployed,
+  who authorised it, against which CI and with what rollback plan.
+- `grc-compliance-standards`: the **regulatory framework and the audit evidence** (ISO 27001, ENS,
+  EU DORA, NIS2), control mapping and the formal acceptance of risk. Here only the service
+  process that **generates** that evidence.
+- `bcdr-standards`: continuity, BIA, RTO/RPO and DR activation. An incident that escalates to a
+  disaster leaves this process.
+- `observability-standards`: the telemetry with which it is detected and diagnosed.
+- `onprem-standards`, `homelab-standards`: the platform the service runs on.
+- `knowledge-management-standards`: the **knowledge base** — authorship,
+  review, expiry and curation of articles. Here only its **hook into the process**: the KEDB and the
+  mandatory article on closing a problem.
+- `platform-engineering-standards`: the internal developer portal and the
+  catalogue of *software templates*. The boundary is the customer: **the platform serves internal
+  teams with self-service; ITSM serves a customer with a commitment**. The portal does not replace
+  the service catalogue nor the other way round.
+- `enterprise-architecture-standards`: the **application and capability
+  inventory**. It crosses with the CMDB and the service catalogue: the application inventory is the
+  architecture view (lifecycle, business capability, *fit*), the CMDB is the operational view
+  (what is deployed and what it depends on). **The same object, two views: if two sources of truth
+  are maintained with no single owner, both degrade** — name which one is authoritative per
+  attribute.
+- `cmdb-inventory-standards`: **the CI data model, its stable identifier, discovery, reconciliation
+  between sources and the freshness of the record are theirs**. Here the process that consumes it
+  and the service decision taken with it.
+- `project-management-standards`: the **delivery** of the new or changed service. Reciprocal:
+  **the project delivers, the service operates**; the handover is an artifact with acceptance
+  criteria (§3) and **a project that delivers something nobody can operate has not finished**.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web el estado de marcos, ediciones y precios antes de fijarlos en un proyecto real (§8).
+> Verify on the web the status of frameworks, editions and prices before committing to them in a real
+> project (§8).
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Marco de referencia | **FitSM** como esqueleto citable (libre, sin licencia por usuario) + vocabulario ITIL donde el cliente lo exija | ITIL 4 / ITIL (Version 5) si el contrato o el cliente lo imponen; ISO/IEC 20000-1 si se busca certificación |
-| Material normativo en documentos internos | **Solo FitSM o ISO** citados con referencia; **nunca pegar texto de ITIL** | — (restricción legal, no de gusto) |
-| Certificación formal | **No, salvo requisito de cliente o licitación** | ISO/IEC 20000-1 cuando lo exige un pliego |
-| Tipos de registro | **Cuatro tipos separados y no fusionables**: petición, incidente, problema, cambio | — |
-| Aprobación de cambio | **Cambio estándar preaprobado + revisión por pares en el PR** como ruta normal | CAB **solo** para cambio mayor/no estándar |
-| Frecuencia de CAB | **Bajo demanda** (convocado por un cambio que lo requiere) | Cadencia fija solo si el volumen de cambio mayor lo justifica; nunca semanal por defecto |
-| Compromiso publicado al cliente | **SLA con umbral peor que el SLO interno**, con margen explícito | — |
-| CMDB | **Poblada por descubrimiento automático**; alcance mínimo viable | Registro manual solo para atributos que ninguna herramienta puede descubrir (dueño, criticidad, contrato) |
-| Estructura de la mesa | **Enjambre (swarming) sobre un pool con la competencia**, con un único punto de entrada | L1/L2/L3 clásico solo con volumen alto y trabajo genuinamente repetitivo en L1 |
-| Herramienta | La **que ya se usa**, si cubre los cuatro tipos de registro; en verde: GLPI o iTop autoalojado (GPL/AGPL) | ServiceNow / Jira Service Management / Freshservice cuando lo impone el tamaño o la integración |
-| Métrica de cabecera | **Tiempo hasta restauración percibida por el usuario** y **% de peticiones resueltas sin intervención humana** | — |
+| Reference framework | **FitSM** as a citable skeleton (free, no per-user licence) + ITIL vocabulary where the customer demands it | ITIL 4 / ITIL (Version 5) if the contract or the customer imposes them; ISO/IEC 20000-1 if certification is sought |
+| Normative material in internal documents | **Only FitSM or ISO** cited with a reference; **never paste ITIL text** | — (a legal restriction, not a matter of taste) |
+| Formal certification | **No, unless a customer or a tender requires it** | ISO/IEC 20000-1 when a tender demands it |
+| Record types | **Four separate, non-mergeable types**: request, incident, problem, change | — |
+| Change approval | **Pre-approved standard change + peer review in the PR** as the normal route | CAB **only** for a major/non-standard change |
+| CAB frequency | **On demand** (convened by a change that requires it) | A fixed cadence only if the volume of major change justifies it; never weekly by default |
+| Commitment published to the customer | **An SLA with a threshold worse than the internal SLO**, with an explicit margin | — |
+| CMDB | **Populated by automatic discovery**; minimum viable scope | Manual recording only for attributes no tool can discover (owner, criticality, contract) |
+| Desk structure | **Swarming over a pool with the competence**, with a single entry point | Classic L1/L2/L3 only with high volume and genuinely repetitive work at L1 |
+| Tooling | The **one already in use**, if it covers the four record types; greenfield: self-hosted GLPI or iTop (GPL/AGPL) | ServiceNow / Jira Service Management / Freshservice when size or integration imposes it |
+| Headline metric | **Time to restoration as perceived by the user** and **% of requests resolved with no human intervention** | — |
 
-**Estado real de los marcos (verificado ago-2026, re-verificar §8)**:
-- **ITIL es propiedad comercial**. La marca la posee hoy **PeopleCert**, que **completó la adquisición
-  de AXELOS Limited en julio de 2021** (anuncio del acuerdo el 21-jun-2021). Antes, AXELOS era una
-  *joint venture* del Cabinet Office británico y Capita. Consecuencia práctica: **el material de ITIL
-  es de pago y su texto no se puede reproducir en documentación interna ni en un repositorio**; la
-  página oficial de ITIL Foundation (Version 5) de PeopleCert lista paquetes de examen **de 483 € a
-  1213 € (IVA incl.)** en el momento de la verificación. Un proceso interno **se escribe con
-  vocabulario propio o con una fuente libre**, no copiando ITIL.
-- **Versión vigente**: PeopleCert publica **ITIL (Version 5)**; su página de anuncio dice literalmente
-  *"ITIL 4 remains available for those who wish to continue their current certification journey"* y
-  *"Your existing ITIL knowledge and certifications continue to hold their value as ITIL evolves"*.
-  **Discrepancia declarada**: la fecha exacta de lanzamiento (**12-feb-2026** para Foundation) y el
-  calendario de módulos aparecen en **proveedores de formación, no en la página oficial**, que no
-  muestra fecha; tratar la fecha como no confirmada hasta verla en peoplecert.org (§8). **ITIL 4
-  define 34 prácticas** (14 generales, 17 de servicio, 3 técnicas); la reorganización en Version 5 hay
-  que verificarla contra la fuente oficial antes de citarla — **no se escribe de memoria**.
-- **ISO/IEC 20000-1:2018** (3.ª edición) sigue vigente, con **Amd 1:2024 "Climate action changes"**,
-  cambio menor sobre contexto y partes interesadas. Es **certificable** y **de pago** (la enmienda se
-  distribuye sin coste; la norma base no).
-- **FitSM**: libre y citable. Mantenido por el grupo de trabajo FitSM de **ITEMO e.V.**; núcleo
-  FitSM-0/1/2/3 (+ FitSM-6 de madurez), versión **3.0** (edición 2021, alineada con ISO/IEC 20000:2018).
-  **Discrepancia declarada sobre la licencia**: fuentes de terceros dicen CC BY 4.0, pero el PDF
-  oficial de FitSM-1 V3.0 enlaza **Creative Commons Attribution-NoDerivatives 4.0 (CC BY-ND 4.0)**.
-  **ND importa**: se puede redistribuir y citar íntegro, **no adaptar ni publicar una versión
-  modificada**. Verificar la licencia impresa en el PDF concreto que se descargue antes de derivar
-  material.
-- **YaSM**: modelo comercial de plantillas (19 procesos) con wiki público gratuito; útil como mapa,
-  **no es un estándar**. **VeriSM**: sin señales de desarrollo reciente más allá de formación; **no es
-  un estándar y no certifica organizaciones**. Ninguno de los dos se usa como base normativa.
+**Real status of the frameworks (verified Aug-2026, re-verify §8)**:
+- **ITIL is commercial property**. The trademark is today owned by **PeopleCert**, which **completed
+  the acquisition of AXELOS Limited in July 2021** (the deal was announced on 21-Jun-2021).
+  Previously, AXELOS was a *joint venture* of the UK Cabinet Office and Capita. Practical
+  consequence: **ITIL material is paid for and its text cannot be reproduced in internal
+  documentation or in a repository**; PeopleCert's official ITIL Foundation (Version 5) page lists
+  exam packages **from €483 to €1,213 (VAT incl.)** at the time of verification. An internal process
+  **is written with your own vocabulary or with a free source**, not by copying ITIL.
+- **Current version**: PeopleCert publishes **ITIL (Version 5)**; its announcement page literally
+  says *"ITIL 4 remains available for those who wish to continue their current certification
+  journey"* and *"Your existing ITIL knowledge and certifications continue to hold their value as
+  ITIL evolves"*. **Declared discrepancy**: the exact launch date (**12-Feb-2026** for Foundation)
+  and the module calendar appear on **training providers' sites, not on the official page**, which
+  shows no date; treat the date as unconfirmed until it is seen on peoplecert.org (§8). **ITIL 4
+  defines 34 practices** (14 general, 17 service, 3 technical); the reorganisation in Version 5 must
+  be verified against the official source before citing it — **it is not written from memory**.
+- **ISO/IEC 20000-1:2018** (3rd edition) is still in force, with **Amd 1:2024 "Climate action
+  changes"**, a minor change on context and interested parties. It is **certifiable** and **paid
+  for** (the amendment is distributed at no cost; the base standard is not).
+- **FitSM**: free and citable. Maintained by the FitSM working group of **ITEMO e.V.**; core
+  FitSM-0/1/2/3 (+ FitSM-6 on maturity), version **3.0** (2021 edition, aligned with ISO/IEC
+  20000:2018). **Declared discrepancy about the licence**: third-party sources say CC BY 4.0, but the
+  official FitSM-1 V3.0 PDF links **Creative Commons Attribution-NoDerivatives 4.0 (CC BY-ND 4.0)**.
+  **ND matters**: it can be redistributed and quoted in full, **not adapted nor published as a
+  modified version**. Verify the licence printed in the specific PDF you download before deriving
+  material from it.
+- **YaSM**: a commercial template model (19 processes) with a free public wiki; useful as a map,
+  **it is not a standard**. **VeriSM**: no signs of recent development beyond training; **it is not a
+  standard and it does not certify organisations**. Neither of the two is used as a normative basis.
 
-**Regla de citabilidad**: en un documento interno, en un repositorio o en una respuesta a un pliego,
-**cita FitSM o ISO/IEC 20000-1**. ITIL se menciona como vocabulario común, nunca se transcribe.
+**Citability rule**: in an internal document, in a repository or in a response to a tender,
+**cite FitSM or ISO/IEC 20000-1**. ITIL is mentioned as common vocabulary, never transcribed.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### Servicio, sistema y componente
+### Service, system and component
 
-Tres niveles, tres dueños, tres lenguajes. Confundirlos es la causa raíz de los catálogos inútiles.
+Three levels, three owners, three languages. Confusing them is the root cause of useless catalogues.
 
-| Nivel | Definición operativa | Se nombra en | Dueño |
+| Level | Operational definition | Named in | Owner |
 |---|---|---|---|
-| **Servicio** | Lo que el cliente compra o consume y puede describir sin saber de TI ("facturación", "correo") | Catálogo de servicios, SLA | **Service owner** (persona, no equipo) |
-| **Sistema** | Conjunto desplegable que implementa parte de un servicio (una app, un clúster) | Inventario de aplicaciones, CMDB | Equipo propietario |
-| **Componente / CI** | Unidad gestionable con ciclo de vida propio (VM, base de datos, certificado, contrato) | CMDB | Equipo o proveedor |
+| **Service** | What the customer buys or consumes and can describe without knowing about IT ("billing", "email") | Service catalogue, SLA | **Service owner** (a person, not a team) |
+| **System** | A deployable unit that implements part of a service (an app, a cluster) | Application inventory, CMDB | Owning team |
+| **Component / CI** | A manageable unit with a lifecycle of its own (VM, database, certificate, contract) | CMDB | Team or provider |
 
-**Regla**: un SLA se firma **sobre un servicio**, jamás sobre un componente. Prometer disponibilidad de
-una VM no significa nada para el cliente y genera el peor de los resultados: se cumple el SLA mientras
-el servicio está caído.
+**Rule**: an SLA is signed **over a service**, never over a component. Promising the availability of
+a VM means nothing to the customer and produces the worst outcome of all: the SLA is met while
+the service is down.
 
-### Catálogo de servicios (artefacto obligatorio)
+### Service catalogue (mandatory artifact)
 
-Fichero versionado en Git (YAML/Markdown), no una tabla en la wiki. Campos **mínimos y obligatorios**
-por entrada — una entrada a la que le falte cualquiera de ellos **no se publica**:
+A file versioned in Git (YAML/Markdown), not a table in the wiki. **Minimum and mandatory** fields
+per entry — an entry missing any of them **is not published**:
 
 ```yaml
-- id: svc-facturacion
-  nombre: Facturación a clientes
-  descripcion_negocio: Emisión y envío de facturas mensuales   # sin jerga de TI
-  service_owner: nombre.apellido                                # persona, no equipo
-  criticidad: 1                                                 # tier 1..4, deriva de BIA (bcdr)
-  horario_servicio: L-V 07:00-21:00 Europe/Madrid
-  sla: sla-facturacion-v3.md                                    # o "sin SLA formal", explícito
-  soporta_proceso_negocio: [cierre_mensual, cobro]
-  sistemas: [billing-api, billing-batch]                        # enlace a CMDB
-  dependencias_externas: [pasarela-pagos-x]                     # con contrato de apoyo
-  peticiones_publicadas: [alta-usuario, reemision-factura]
-  revision: 2026-06-01                                          # caduca a los 12 meses
+- id: svc-billing
+  name: Customer billing
+  business_description: Issuing and sending monthly invoices   # no IT jargon
+  service_owner: firstname.lastname                            # a person, not a team
+  criticality: 1                                               # tier 1..4, derived from BIA (bcdr)
+  service_hours: Mon-Fri 07:00-21:00 Europe/Madrid
+  sla: sla-billing-v3.md                                       # or "no formal SLA", explicit
+  supports_business_process: [monthly_close, collection]
+  systems: [billing-api, billing-batch]                        # link to CMDB
+  external_dependencies: [payment-gateway-x]                   # with an underpinning contract
+  published_requests: [user-onboarding, invoice-reissue]
+  review: 2026-06-01                                           # expires after 12 months
 ```
 
-**Revisión anual obligatoria con caducidad dura**: una entrada sin revisar en 12 meses se marca
-`OBSOLETO` automáticamente y deja de dar cobertura contractual. Un catálogo sin caducidad se convierte
-en ficción en dos años.
+**Mandatory annual review with a hard expiry**: an entry not reviewed in 12 months is automatically
+marked `OBSOLETE` and stops providing contractual cover. A catalogue with no expiry becomes
+fiction in two years.
 
-### Los cuatro tipos de registro (definición operativa, no doctrinal)
+### The four record types (an operational definition, not a doctrinal one)
 
-| Tipo | Objetivo | Termina cuando | Métrica propia |
+| Type | Objective | Ends when | Its own metric |
 |---|---|---|---|
-| **Petición** | Entregar **trabajo previsto** ya autorizado (alta de usuario, cuota, acceso) | El usuario tiene lo que pidió | % automatizado, tiempo de entrega |
-| **Incidente** | **Restaurar el servicio** lo antes posible | El servicio funciona (aunque sea con *workaround*) | Tiempo hasta restauración |
-| **Problema** | **Eliminar la causa** de uno o varios incidentes | La causa está eliminada **o** aceptada formalmente como riesgo | Incidentes evitados, edad del problema |
-| **Cambio** | Modificar el entorno con riesgo controlado y evidencia | Está desplegado y verificado, o revertido | Tasa de fallo del cambio, lead time |
+| **Request** | Delivering **foreseen work** already authorised (user onboarding, quota, access) | The user has what they asked for | % automated, delivery time |
+| **Incident** | **Restoring the service** as soon as possible | The service works (even with a *workaround*) | Time to restoration |
+| **Problem** | **Eliminating the cause** of one or more incidents | The cause is eliminated **or** formally accepted as a risk | Incidents avoided, age of the problem |
+| **Change** | Modifying the environment with controlled risk and evidence | It is deployed and verified, or rolled back | Change failure rate, lead time |
 
-**Por qué mezclarlos rompe las métricas** — es aritmético, no filosófico:
-- Una petición metida como incidente **infla el volumen de incidentes** y hunde el tiempo medio: se
-  celebra una mejora de MTTR que solo significa que se han dado más altas de usuario.
-- Un incidente cerrado con *workaround* **sin abrir problema** hace desaparecer el trabajo pendiente:
-  el mismo fallo se paga N veces y no aparece en ningún indicador.
-- Un problema tratado como incidente permanente mantiene un ticket abierto meses y **destruye
-  cualquier medida de tiempo de resolución**.
+**Why mixing them breaks the metrics** — it is arithmetic, not philosophy:
+- A request filed as an incident **inflates the incident volume** and sinks the mean time: an
+  improvement in MTTR is celebrated that only means more users have been onboarded.
+- An incident closed with a *workaround* **without opening a problem** makes the pending work vanish:
+  the same failure is paid for N times and appears in no indicator.
+- A problem treated as a permanent incident keeps a ticket open for months and **destroys any
+  measure of resolution time**.
 
-**Regla dura**: un incidente **nunca** se convierte en problema; se **cierra** al restaurar y se **crea**
-un problema vinculado. Cerrar el incidente no es ocultar el trabajo: el problema lo hereda.
+**Hard rule**: an incident **never** turns into a problem; it is **closed** on restoration and a
+linked problem is **created**. Closing the incident is not hiding the work: the problem inherits it.
 
-**Regla de auto-servicio**: toda petición que se repita **>10 veces al mes** y no requiera juicio humano
-se automatiza o se elimina del catálogo. Una petición manual recurrente es deuda operativa medida.
+**Self-service rule**: any request that recurs **>10 times a month** and requires no human judgement
+is automated or removed from the catalogue. A recurring manual request is measured operational debt.
 
-### Gestión del cambio: la evidencia importa, el comité no
+### Change management: the evidence matters, the committee does not
 
-**Dato verificado y su consecuencia.** DORA (Google) documenta en *Streamlining change approval*
-(actualizado 30-oct-2025) que las aprobaciones externas pesadas **no aportan estabilidad**:
+**A verified datum and its consequence.** DORA (Google) documents in *Streamlining change approval*
+(updated 30-Oct-2025) that heavyweight external approvals **do not add stability**:
 
 > "DORA's research shows that these approaches have a negative impact on software delivery performance."
 
 > "Further, no evidence was found to support the hypothesis that a more formal, external review process
 > was associated with lower change fail rates."
 
-Y la alternativa que la misma fuente prescribe para el requisito de segregación de funciones:
+And the alternative the same source prescribes for the segregation of duties requirement:
 
 > "Use peer review to meet the goal of segregation of duties, with reviews, comments, and approvals
 > captured in the team's development platform as part of the development process."
 
-Origen del hallazgo: **State of DevOps Report 2019** (citado por la propia página). **Cautela declarada**:
-la formulación fuerte que circula por blogs — *"peor que no tener ningún proceso de aprobación"*,
-*"2,6 veces más probable ser* low performer*"* — **no aparece en la página de dora.dev verificada**;
-proviene de la síntesis en el libro *Accelerate* y del informe 2019. **Cítese solo lo verbatim de
-arriba**; si se necesita la cifra, sacarla del informe original y citarla con su año y muestra, nunca
-de un blog.
+Origin of the finding: the **State of DevOps Report 2019** (cited by the page itself). **Declared
+caution**: the strong formulation that circulates on blogs — *"worse than having no approval process
+at all"*, *"2.6 times more likely to be a* low performer*"* — **does not appear on the verified
+dora.dev page**; it comes from the synthesis in the book *Accelerate* and from the 2019 report.
+**Quote only the verbatim above**; if the figure is needed, take it from the original report and cite
+it with its year and sample, never from a blog.
 
-**Consecuencia práctica, escrita como política**:
+**Practical consequence, written as policy**:
 
-1. **Cambio estándar** (por defecto): riesgo bajo, procedimiento conocido, reversible y con pipeline.
-   **Preaprobado** por el service owner mediante una **plantilla de cambio estándar** con criterios de
-   elegibilidad explícitos. No pasa por comité. La autorización es **la revisión por pares del PR**.
-2. **Cambio normal**: no encaja en ninguna plantilla estándar. Aprueba el service owner + el dueño
-   técnico. Comité **solo** si toca varios servicios de tier 1 o hay ventana negociada con el cliente.
-3. **Cambio de emergencia**: se ejecuta primero, se registra **antes de 24 h** con la misma evidencia.
-   Un proceso de emergencia que se use en >10 % de los cambios significa que el proceso normal está
-   roto: se corrige el normal, no se restringe la emergencia.
+1. **Standard change** (by default): low risk, a known procedure, reversible and with a pipeline.
+   **Pre-approved** by the service owner via a **standard change template** with explicit eligibility
+   criteria. It does not go through a committee. The authorisation is **the peer review of the PR**.
+2. **Normal change**: it does not fit any standard template. Approved by the service owner + the
+   technical owner. A committee **only** if it touches several tier 1 services or there is a window
+   negotiated with the customer.
+3. **Emergency change**: executed first, recorded **within 24 h** with the same evidence.
+   An emergency process used in >10% of changes means the normal process is
+   broken: fix the normal one, do not restrict the emergency one.
 
-**Reconciliación con DevOps/SRE — el nudo real del dominio.** El auditor no pide un comité: pide
-demostrar **autorización, segregación de funciones, trazabilidad y capacidad de reversión**. Todo eso lo
-produce el pipeline mejor que una reunión. Evidencia mínima que satisface a un auditor **sin frenar la
-entrega**, generada automáticamente y enlazada en el registro de cambio:
+**Reconciliation with DevOps/SRE — the real knot of the domain.** The auditor does not ask for a
+committee: they ask you to demonstrate **authorisation, segregation of duties, traceability and the
+ability to roll back**. All of that is produced by the pipeline better than by a meeting. The minimum
+evidence that satisfies an auditor **without slowing delivery**, generated automatically and linked
+in the change record:
 
-- **Autorización**: PR aprobado por alguien distinto del autor (segregación de funciones), con
-  identidad verificable — protección de rama que lo imponga, no una norma escrita (`git-workflow-standards`).
-- **Trazabilidad**: commit → artefacto firmado → despliegue, con digest inmutable (`cicd-standards`).
-- **Prueba de control**: resultado de los gates de CI (tests, SCA, IaC scan) adjunto al registro.
-- **Reversión**: identificador de la versión anterior y método de vuelta atrás, probado.
-- **Registro**: el ticket de cambio **se crea desde el pipeline por API**, no a mano. Si un humano
-  teclea el registro de cambio, se llenará tarde, mal o nunca.
+- **Authorisation**: a PR approved by someone other than the author (segregation of duties), with
+  verifiable identity — a branch protection that enforces it, not a written rule
+  (`git-workflow-standards`).
+- **Traceability**: commit → signed artifact → deployment, with an immutable digest
+  (`cicd-standards`).
+- **Control evidence**: the result of the CI gates (tests, SCA, IaC scan) attached to the record.
+- **Rollback**: the identifier of the previous version and the rollback method, tested.
+- **Record**: the change ticket **is created from the pipeline via API**, not by hand. If a human
+  types the change record, it will be filled in late, badly or never.
 
-**Ventanas y congelaciones**: una congelación es una decisión de negocio con fecha de fin y dueño, y
-**debe declarar qué se sigue permitiendo** (siempre: parches de seguridad críticos y reversiones). Una
-congelación indefinida acumula un lote grande y **empeora** el riesgo que pretendía evitar.
+**Windows and freezes**: a freeze is a business decision with an end date and an owner, and
+**it must declare what remains permitted** (always: critical security patches and rollbacks). An
+indefinite freeze accumulates a large batch and **worsens** the risk it was meant to avoid.
 
-### Acuerdos: SLA ≠ OLA ≠ contrato de apoyo ≠ SLO
+### Agreements: SLA ≠ OLA ≠ underpinning contract ≠ SLO
 
-| Objeto | Entre | Dueño | Naturaleza | Consecuencia de incumplir |
+| Object | Between | Owner | Nature | Consequence of breach |
 |---|---|---|---|---|
-| **SLA** | Proveedor ↔ **cliente** | Gestor del servicio / comercial | **Contractual** | Penalización, crédito, escalado ejecutivo |
-| **OLA** | Equipos **internos** | Service owner | Interno, vinculante | Escalado interno; **nunca** se muestra al cliente |
-| **Contrato de apoyo (UC)** | Proveedor ↔ **tercero** | Gestor de proveedor | Contractual con el tercero | Reclamación al proveedor |
-| **SLO** | **Ingeniería consigo misma** | Equipo dueño del servicio | Objetivo técnico con error budget | Congelar features, priorizar fiabilidad |
+| **SLA** | Provider ↔ **customer** | Service manager / commercial | **Contractual** | Penalty, credit, executive escalation |
+| **OLA** | **Internal** teams | Service owner | Internal, binding | Internal escalation; **never** shown to the customer |
+| **Underpinning contract (UC)** | Provider ↔ **third party** | Vendor manager | Contractual with the third party | A claim against the provider |
+| **SLO** | **Engineering with itself** | The service's owning team | A technical objective with an error budget | Freeze features, prioritise reliability |
 
-**Un SLA no es un SLO.** Reglas duras:
-- El **SLA se publica peor que el SLO** con margen explícito (p. ej. SLO 99,9 % → SLA 99,5 %). El margen
-  es el colchón para que un mal trimestre no sea un incumplimiento contractual.
-- **Prohibido derivar el SLO del SLA**: el objetivo de ingeniería nace del impacto en el usuario, no de
-  lo que se firmó. Un SLO igual al SLA convierte cada consumo normal de error budget en un riesgo legal.
-- La cadena tiene que cerrar: **SLA ≤ mínimo(OLAs) ≤ mínimo(UCs)**. Prometer 99,95 % apoyándose en un
-  proveedor con 99,9 % contractual es un incumplimiento programado. **Comprobarlo por escrito antes de
-  firmar** — es aritmética, no negociación.
-- Todo SLA declara: **horario de servicio, exclusiones (mantenimiento planificado, causas del cliente,
-  fuerza mayor), método de medición y quién mide**. Un SLA sin método de medición acordado se
-  disputará en el primer incidente.
-- **Métrica de disponibilidad medida desde el usuario** (petición correcta / petición total con
-  sondeo externo), no desde el ping al servidor.
+**An SLA is not an SLO.** Hard rules:
+- The **SLA is published worse than the SLO** with an explicit margin (e.g. SLO 99.9% → SLA 99.5%).
+  The margin is the buffer so a bad quarter is not a contractual breach.
+- **Deriving the SLO from the SLA is forbidden**: the engineering objective is born of the impact on
+  the user, not of what was signed. An SLO equal to the SLA turns every normal consumption of error
+  budget into a legal risk.
+- The chain has to close: **SLA ≤ min(OLAs) ≤ min(UCs)**. Promising 99.95% while relying on a
+  provider with a contractual 99.9% is a scheduled breach. **Check it in writing before
+  signing** — it is arithmetic, not negotiation.
+- Every SLA declares: **service hours, exclusions (planned maintenance, customer causes,
+  force majeure), the measurement method and who measures**. An SLA with no agreed measurement method
+  will be disputed at the first incident.
+- **An availability metric measured from the user** (successful requests / total requests with
+  external probing), not from a ping to the server.
 
-### Mesa de servicio y escalado
+### Service desk and escalation
 
-- **Un único punto de entrada** por canal publicado; el "canal informal" (mensaje directo al ingeniero)
-  no existe como vía de trabajo: se reconduce siempre a un registro.
-- **El escalado por niveles es una fuente de latencia** y hay que tratarlo como tal. Cada salto L1→L2→L3
-  añade una cola, una recontextualización y una pérdida de información. Regla: **si el 30 % o más de los
-  tickets de una categoría acaban en L3, esa categoría no debería pasar por L1** — se enruta directa.
-- **Escalado jerárquico ≠ escalado funcional**. El funcional busca competencia técnica; el jerárquico
-  busca autoridad para decidir (gastar, parar, comunicar al cliente). **Se disparan por criterios
-  distintos y se documentan por separado.**
-- **Umbral temporal explícito por severidad y por categoría**, automático: el escalado no depende de que
-  alguien se acuerde. Si el sistema no escala solo, el proceso es la buena voluntad del técnico.
-- **Turno / follow-the-sun**: el traspaso es un artefacto escrito (estado, hipótesis descartadas, próximo
-  paso, quién es el dueño ahora), no una conversación.
+- **A single entry point** per published channel; the "informal channel" (a direct message to the
+  engineer) does not exist as a way of working: it is always redirected into a record.
+- **Tiered escalation is a source of latency** and must be treated as such. Every L1→L2→L3 hop
+  adds a queue, a re-contextualisation and a loss of information. Rule: **if 30% or more of the
+  tickets in a category end up at L3, that category should not go through L1** — it is routed
+  directly.
+- **Hierarchical escalation ≠ functional escalation**. Functional seeks technical competence;
+  hierarchical seeks the authority to decide (spend, stop, communicate to the customer). **They are
+  triggered by different criteria and documented separately.**
+- **An explicit time threshold per severity and per category**, automatic: escalation does not depend
+  on someone remembering. If the system does not escalate on its own, the process is the technician's
+  goodwill.
+- **Shift / follow-the-sun**: the handover is a written artifact (state, hypotheses ruled out, next
+  step, who owns it now), not a conversation.
 
-### CMDB: qué justifica su coste
+### CMDB: what justifies its cost
 
-Una CMDB **solo se justifica si responde preguntas que se hacen de verdad y con frecuencia**. Las cuatro
-canónicas: *¿a qué servicio afecta este componente?*, *¿de qué depende este servicio?*, *¿quién responde
-de esto?*, *¿qué cambió antes del fallo?*. **Si no se van a hacer, no se construye una CMDB.**
+A CMDB **is only justified if it answers questions that are genuinely and frequently asked**. The
+four canonical ones: *which service does this component affect?*, *what does this service depend
+on?*, *who answers for this?*, *what changed before the failure?*. **If they are not going to be
+asked, a CMDB is not built.**
 
-- **Descubrimiento automático como principio, mantenimiento manual como excepción justificada**. La
-  razón de que la mayoría de las CMDB se degrade no es la pereza: es que el entorno cambia más rápido
-  que el ritmo humano de actualización, y una CMDB con un 20 % de datos falsos **se deja de consultar**,
-  tras lo cual se degrada al 100 % sin que nadie lo note.
-- **Alcance mínimo viable**: solo CI cuya relación con un servicio se necesita para decidir. Modelar
-  cada paquete instalado es garantía de abandono.
-- **Atributos manuales permitidos** (los que ninguna herramienta descubre): dueño, criticidad, servicio
-  al que pertenece, contrato, fecha de fin de soporte. Todo lo demás, descubierto.
-- **Métrica de salud obligatoria y publicada**: % de CI con descubrimiento en las últimas 24 h, % con
-  dueño válido (persona existente), y **nº de consultas reales al mes**. La tercera es la que decide si
-  la CMDB sigue viva: **una CMDB que nadie consulta se apaga, no se mejora**.
-- Se **reconcilia contra el inventario de aplicaciones** de arquitectura declarando fuente autoritativa
-  por atributo; dos inventarios sin reconciliación producen dos mentiras.
+- **Automatic discovery as the principle, manual maintenance as a justified exception**. The
+  reason most CMDBs degrade is not laziness: it is that the environment changes faster
+  than the human pace of updating, and a CMDB with 20% false data **stops being consulted**,
+  after which it degrades to 100% without anyone noticing.
+- **Minimum viable scope**: only CIs whose relationship with a service is needed to decide. Modelling
+  every installed package is a guarantee of abandonment.
+- **Permitted manual attributes** (the ones no tool discovers): owner, criticality, the service
+  it belongs to, contract, end-of-support date. Everything else, discovered.
+- **A mandatory, published health metric**: % of CIs with discovery in the last 24 h, % with a
+  valid owner (an existing person), and **the number of real queries per month**. The third is what
+  decides whether the CMDB is still alive: **a CMDB nobody consults is switched off, not improved**.
+- It is **reconciled against architecture's application inventory** by declaring an authoritative
+  source per attribute; two inventories with no reconciliation produce two lies.
 
-### Traspaso a operación (frontera con proyecto)
+### Handover to operations (the boundary with the project)
 
-Artefacto de aceptación firmado por el service owner **antes** del cierre del proyecto. Sin estos ítems,
-**el servicio no entra en producción soportada** (y el proyecto no está terminado):
+An acceptance artifact signed by the service owner **before** the project closes. Without these
+items, **the service does not enter supported production** (and the project is not finished):
 
-1. Entrada en el catálogo de servicios publicada, con dueño y criticidad.
-2. SLA/OLA acordados, o declaración explícita de "sin SLA formal" firmada por el negocio.
-3. Runbooks de las tres operaciones más frecuentes + procedimiento de reversión probado.
-4. Alertas accionables con destino de guardia definido (`observability-standards`).
-5. Backup con **restauración probada** y fecha de la prueba (`backup-recovery-standards`).
-6. Peticiones publicadas en el catálogo y categorías de ticket creadas en la herramienta.
-7. CI en la CMDB con descubrimiento funcionando.
-8. Formación registrada de quien va a soportarlo, y periodo de *hypercare* con fecha de fin.
+1. A published service catalogue entry, with an owner and a criticality.
+2. Agreed SLA/OLA, or an explicit "no formal SLA" declaration signed by the business.
+3. Runbooks for the three most frequent operations + a tested rollback procedure.
+4. Actionable alerts with a defined on-call destination (`observability-standards`).
+5. Backup with a **tested restore** and the date of the test (`backup-recovery-standards`).
+6. Requests published in the catalogue and ticket categories created in the tool.
+7. CIs in the CMDB with discovery working.
+8. Recorded training of whoever is going to support it, and a *hypercare* period with an end date.
 
-## 4. Calidad del proceso y verificación
+## 4. Process quality and verification
 
-El equivalente a los tests aquí son **controles automáticos sobre los datos del proceso**. Se ejecutan
-programados y su fallo abre trabajo, no un informe.
+The equivalent of tests here are **automatic controls over the process data**. They run on a
+schedule and their failure opens work, not a report.
 
-| Control | Falla si | Acción |
+| Control | Fails if | Action |
 |---|---|---|
-| Entradas de catálogo caducadas | revisión > 12 meses | Marcar `OBSOLETO`, avisar al owner |
-| Servicios sin dueño persona | `service_owner` vacío o inexistente en el directorio | Bloquear publicación |
-| Cadena de acuerdos | SLA > mín(OLA) o > mín(UC) | Bloquear firma |
-| CI huérfanos | CI sin servicio asociado | Purgar o asignar en 30 días |
-| CI obsoletos | sin descubrimiento > 30 días | Marcar `stale`, excluir de informes |
-| Reapertura de tickets | > 5 % de los cerrados | Auditar criterio de cierre (síntoma de cierre para cumplir SLA) |
-| Incidentes recurrentes sin problema | ≥ 3 incidentes de la misma categoría en 30 días sin problema abierto | Abrir problema de oficio |
-| Cambios de emergencia | > 10 % del total | Revisar el proceso de cambio normal |
-| Cambios sin evidencia enlazada | registro sin PR, sin artefacto o sin plan de reversión | Marcar no conforme |
+| Expired catalogue entries | review > 12 months | Mark `OBSOLETE`, notify the owner |
+| Services with no person owner | `service_owner` empty or non-existent in the directory | Block publication |
+| Agreement chain | SLA > min(OLA) or > min(UC) | Block signing |
+| Orphan CIs | a CI with no associated service | Purge or assign within 30 days |
+| Stale CIs | no discovery > 30 days | Mark `stale`, exclude from reports |
+| Ticket reopenings | > 5% of those closed | Audit the closing criteria (a symptom of closing to meet an SLA) |
+| Recurring incidents with no problem | ≥ 3 incidents of the same category in 30 days with no problem opened | Open a problem on the desk's own initiative |
+| Emergency changes | > 10% of the total | Review the normal change process |
+| Changes with no linked evidence | a record with no PR, no artifact or no rollback plan | Mark as non-conforming |
 
-**Métricas de servicio y las que se manipulan solas.** Toda métrica que un humano pueda mejorar sin
-mejorar el servicio se degrada al usarse como objetivo:
-- ❌ **Tiempo de cierre de ticket** como objetivo: se optimiza cerrando antes, no resolviendo antes.
-  Su síntoma es la tasa de reapertura; medir siempre **cierre y reapertura juntos, o ninguno**.
-- ❌ **Tickets cerrados por técnico**: premia trocear el trabajo y castiga automatizar.
-- ❌ **Cumplimiento de SLA en verde permanente**: mide el margen del contrato, no la experiencia.
-- ✅ **Tiempo hasta restauración percibida por el usuario**, **% de peticiones sin intervención humana**,
-  **incidentes repetidos por causa conocida**, **edad de los problemas abiertos**, **coste por petición**.
-- **CSAT/encuesta**: solo con tasa de respuesta publicada junto al valor. Un CSAT de 4,8 con 4 % de
-  respuesta no es un dato, es un ruido.
+**Service metrics and the ones that game themselves.** Any metric a human can improve without
+improving the service degrades when used as a target:
+- ❌ **Ticket closing time** as a target: it is optimised by closing sooner, not by resolving sooner.
+  Its symptom is the reopening rate; always measure **closing and reopening together, or neither**.
+- ❌ **Tickets closed per technician**: it rewards slicing up the work and punishes automating.
+- ❌ **Permanently green SLA compliance**: it measures the contract's margin, not the experience.
+- ✅ **Time to restoration as perceived by the user**, **% of requests with no human intervention**,
+  **incidents repeated from a known cause**, **age of open problems**, **cost per request**.
+- **CSAT/survey**: only with the response rate published alongside the value. A CSAT of 4.8 with a 4%
+  response rate is not a datum, it is noise.
 
-**Revisión de servicio**: reunión trimestral con el cliente sobre datos publicados de antemano. Si la
-revisión es la primera vez que el cliente ve los números, la relación ya está rota.
+**Service review**: a quarterly meeting with the customer over data published beforehand. If the
+review is the first time the customer sees the numbers, the relationship is already broken.
 
-## 5. Seguridad del proceso
+## 5. Process security
 
-- **La herramienta de ITSM es un objetivo de alto valor**: contiene el mapa de la infraestructura, la
-  cadena de aprobación y a menudo credenciales pegadas en tickets. Trátese como sistema tier 1: SSO con
-  MFA, RBAC por rol de proceso, y registro de auditoría inalterable de aprobaciones y cambios de estado.
-- **Prohibido pegar secretos en tickets o en la CMDB**. Añadir escaneo de secretos sobre los campos de
-  texto de los tickets, no solo sobre el repositorio (`secrets-management-standards`). Un secreto en un
-  ticket es un secreto compartido con toda la mesa de servicio y con su histórico de exportaciones.
-- **La mesa de servicio es el vector de ingeniería social por excelencia** (restablecimiento de
-  contraseña, alta de MFA, cambio de dispositivo). Procedimiento de verificación de identidad
-  **escrito, obligatorio y sin excepción por urgencia o jerarquía**; los reseteos de credencial
-  privilegiada exigen verificación fuera de banda (`identity-access-management-standards`).
-- **La automatización del cumplimiento de peticiones necesita mínimo privilegio**: la cuenta que crea
-  usuarios no puede además poder crear administradores. Una petición automatizada con permisos
-  excesivos es una escalada de privilegios con formulario.
-- **Retención y datos personales**: los tickets contienen datos personales y a veces categorías
-  especiales. Política de retención con borrado efectivo, y adjuntos incluidos
-  (`privacy-engineering-standards`). Los adjuntos son el punto ciego habitual.
-- **Portal externo**: si el cliente abre tickets, el portal es superficie expuesta con autenticación,
-  aislamiento multi-tenant y control de acceso a adjuntos. Un fallo de IDOR en el portal expone la
-  operación completa del cliente vecino.
+- **The ITSM tool is a high-value target**: it contains the map of the infrastructure, the
+  approval chain and often credentials pasted into tickets. Treat it as a tier 1 system: SSO with
+  MFA, RBAC by process role, and an immutable audit log of approvals and state changes.
+- **Pasting secrets into tickets or into the CMDB is forbidden**. Add secret scanning over the
+  tickets' text fields, not just over the repository (`secrets-management-standards`). A secret in a
+  ticket is a secret shared with the whole service desk and with its export history.
+- **The service desk is the social engineering vector par excellence** (password reset,
+  MFA enrolment, device change). An identity verification procedure that is
+  **written, mandatory and without exception for urgency or hierarchy**; privileged credential
+  resets require out-of-band verification (`identity-access-management-standards`).
+- **Automating request fulfilment needs least privilege**: the account that creates
+  users cannot also be able to create administrators. An automated request with excessive
+  permissions is a privilege escalation with a form attached.
+- **Retention and personal data**: tickets contain personal data and sometimes special
+  categories. A retention policy with effective erasure, attachments included
+  (`privacy-engineering-standards`). Attachments are the usual blind spot.
+- **External portal**: if the customer opens tickets, the portal is exposed surface with
+  authentication, multi-tenant isolation and access control over attachments. An IDOR flaw in the
+  portal exposes the neighbouring customer's entire operation.
 
-## 6. Operación y capacidad del propio proceso
+## 6. Operation and capacity of the process itself
 
-- **Dimensionado por demanda medida, no por intuición**: volumen por categoría × tiempo medio de manejo,
-  con margen para picos conocidos (cierre de mes, inicio de curso, campaña). Publicar el supuesto.
-- **Coste por contacto como dato de gestión**: sin él no se puede justificar automatizar ni argumentar
-  el autoservicio. Es la cifra que convierte una discusión de opinión en una decisión.
-- **Cola de trabajo con WIP limitado**: una mesa con 40 tickets "en curso" por técnico no tiene 40 en
-  curso, tiene 39 parados y un informe optimista.
-- **El proceso también se degrada**: revisión semestral de cada proceso con el criterio de §1 — qué
-  decisión toma, quién la toma, qué pasaría si se elimina. Lo que no sobrevive a esa pregunta se retira.
-- **Integración herramienta ↔ pipeline por API** en ambos sentidos, con reintentos idempotentes: crear
-  el registro de cambio desde CI y cerrar el ticket desde el despliegue. Si el enlace se hace a mano,
-  se dejará de hacer.
-- **La herramienta de ITSM no puede depender del servicio que gestiona**: si el ticketing cae con el
-  SSO, no hay cómo gestionar la caída del SSO. Ruta de escalado alternativa documentada y probada.
+- **Sizing by measured demand, not by intuition**: volume per category × mean handling time,
+  with headroom for known peaks (month-end close, start of term, campaign). Publish the assumption.
+- **Cost per contact as a management datum**: without it you cannot justify automating or argue for
+  self-service. It is the figure that turns a discussion of opinion into a decision.
+- **A work queue with limited WIP**: a desk with 40 tickets "in progress" per technician does not
+  have 40 in progress, it has 39 stalled and one optimistic report.
+- **The process degrades too**: a six-monthly review of each process with the criterion of §1 — what
+  decision it makes, who makes it, what would happen if it were removed. Whatever does not survive
+  that question is retired.
+- **Tool ↔ pipeline integration by API** in both directions, with idempotent retries: create
+  the change record from CI and close the ticket from the deployment. If the link is made by hand,
+  it will stop being made.
+- **The ITSM tool cannot depend on the service it manages**: if ticketing goes down with
+  SSO, there is no way to manage the SSO outage. A documented and tested alternative escalation
+  route.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia**: catálogo revisado anualmente por entrada; acuerdos revisados en cada renovación
-contractual y tras cualquier cambio de arquitectura que altere las dependencias; procesos revisados
-semestralmente; plantillas de cambio estándar revisadas tras cada cambio fallido de ese tipo.
+**Cadence**: catalogue reviewed annually per entry; agreements reviewed at each contract
+renewal and after any architecture change that alters the dependencies; processes reviewed
+every six months; standard change templates reviewed after each failed change of that type.
 
-**Deprecación**: retirar un servicio es un proyecto con su propio traspaso (comunicación al cliente,
-migración de datos, fin de soporte, borrado de CI y entrada de catálogo). Un servicio "apagado" que
-sigue en el catálogo genera tickets y expectativas contractuales durante años.
+**Deprecation**: retiring a service is a project with its own handover (communication to the
+customer, data migration, end of support, deletion of CIs and of the catalogue entry). A "switched
+off" service that remains in the catalogue generates tickets and contractual expectations for years.
 
-PROHIBIDO:
-- ❌ **Proceso sin dueño nombrado** (persona, no equipo ni comité). Sin dueño no hay proceso, hay documento.
-- ❌ **CAB semanal fijo aprobando cambios de bajo riesgo**. Contradice la evidencia publicada (§3),
-  añade latencia, agranda los lotes y no reduce la tasa de fallo. Cambio de bajo riesgo → estándar
-  preaprobado + revisión por pares.
-- ❌ **Aprobador que no puede rechazar de facto** (comité que aprueba el 100 %): es un sello, y un sello
-  es latencia disfrazada de control. O toma decisiones o se elimina.
-- ❌ **CMDB que nadie consulta**. Se apaga. Mantener datos que no se leen es coste puro y falsa seguridad.
-- ❌ **Medir el rendimiento por tickets cerrados** o por tiempo de cierre aislado. Premia trocear y
-  cerrar en falso, castiga automatizar.
-- ❌ **Cerrar un incidente sin abrir problema cuando se restauró con *workaround***.
-- ❌ **Registrar peticiones como incidentes** (o al revés) para cuadrar un indicador.
-- ❌ **SLA sobre un componente** en lugar de sobre un servicio.
-- ❌ **SLA igual o más exigente que el SLO interno**; y **derivar el SLO del SLA**.
-- ❌ **Firmar un SLA más exigente que el contrato de apoyo del proveedor** del que se depende.
-- ❌ **Copiar texto de ITIL en documentación interna o en un repositorio**: es material propietario de
-  PeopleCert. Se cita FitSM o ISO/IEC 20000-1.
-- ❌ **Congelación de cambios indefinida o sin dueño**, o que bloquee parches críticos y reversiones.
-- ❌ **Vía informal de trabajo** (petición por mensaje directo que no genera registro): destruye la
-  medición, el dimensionado y la trazabilidad, y concentra el conocimiento en una persona.
-- ❌ **Secretos, credenciales o volcados de datos personales en tickets, comentarios o adjuntos**.
-- ❌ **Comprar una herramienta para arreglar un proceso sin dueño**: se obtiene el mismo desorden, con
-  factura anual y un proyecto de migración.
-- ❌ **Certificarse en ISO/IEC 20000 sin necesidad de negocio**: coste recurrente y proceso de papel.
+FORBIDDEN:
+- ❌ **A process with no named owner** (a person, not a team or a committee). With no owner there is
+  no process, there is a document.
+- ❌ **A fixed weekly CAB approving low-risk changes**. It contradicts the published evidence (§3),
+  adds latency, enlarges the batches and does not reduce the failure rate. Low-risk change →
+  pre-approved standard + peer review.
+- ❌ **An approver who cannot in practice reject** (a committee that approves 100%): it is a rubber
+  stamp, and a rubber stamp is latency disguised as control. Either it makes decisions or it is
+  removed.
+- ❌ **A CMDB nobody consults**. Switch it off. Maintaining data nobody reads is pure cost and false
+  assurance.
+- ❌ **Measuring performance by tickets closed** or by closing time in isolation. It rewards slicing
+  and closing falsely, and punishes automating.
+- ❌ **Closing an incident without opening a problem when it was restored with a *workaround***.
+- ❌ **Recording requests as incidents** (or the other way round) to make an indicator add up.
+- ❌ **An SLA over a component** instead of over a service.
+- ❌ **An SLA equal to or more demanding than the internal SLO**; and **deriving the SLO from the
+  SLA**.
+- ❌ **Signing an SLA more demanding than the underpinning contract of the provider** you depend on.
+- ❌ **Copying ITIL text into internal documentation or into a repository**: it is PeopleCert's
+  proprietary material. Cite FitSM or ISO/IEC 20000-1.
+- ❌ **An indefinite or ownerless change freeze**, or one that blocks critical patches and rollbacks.
+- ❌ **An informal way of working** (a request by direct message that generates no record): it
+  destroys measurement, sizing and traceability, and concentrates the knowledge in one person.
+- ❌ **Secrets, credentials or dumps of personal data in tickets, comments or attachments**.
+- ❌ **Buying a tool to fix an ownerless process**: you get the same mess, with an annual invoice and
+  a migration project.
+- ❌ **Certifying to ISO/IEC 20000 with no business need**: a recurring cost and a paper process.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquiera de estos puntos en un proyecto real:
+Before committing to any of these points in a real project:
 
-1. **ITIL**: versión vigente y calendario real de ITIL (Version 5) **en peoplecert.org** — la fecha
-   12-feb-2026 procede de proveedores de formación y **no está confirmada en la página oficial**
-   (discrepancia declarada en §2). Verificar también la estructura de prácticas de Version 5 frente a
-   las 34 de ITIL 4, y la vigencia/caducidad de las certificaciones ITIL 4.
-2. **Propiedad y licencia de ITIL**: PeopleCert completó la compra de AXELOS en jul-2021 — comprobar que
-   no ha vuelto a cambiar de manos y revisar los términos de uso de marca y material antes de citarlo.
-3. **ISO/IEC 20000**: si -1:2018 sigue siendo la edición vigente o hay 4.ª edición en curso; estado de
-   Amd 1:2024 y de las partes -2, -3, -6 y -10; precio y adopción nacional (UNE/BS).
-4. **FitSM**: versión actual (¿sigue V3.0?) y **licencia exacta impresa en el PDF** — CC BY-ND 4.0
-   según el PDF oficial de FitSM-1 V3.0, CC BY 4.0 según terceros. **ND prohíbe obras derivadas**:
-   confirmarlo antes de adaptar el texto.
-5. **VeriSM y YaSM**: comprobar si siguen mantenidos antes de mencionarlos siquiera como alternativa.
-6. **Evidencia sobre CAB**: releer `dora.dev/capabilities/streamlining-change-approval/` (última
-   actualización vista: 30-oct-2025) y el informe DORA/State of DevOps más reciente. **Citar verbatim**;
-   las formulaciones fuertes que circulan por blogs ("2,6×", "peor que no tener proceso") **no están en
-   esa página**: si se usan, sacarlas del informe original con año y muestra.
-7. **Herramientas**: estado, versión y modelo de precio actuales de ServiceNow (por *fulfiller*, por
-   módulo, sin tarifa pública), Jira Service Management (por agente; Atlassian ha reorganizado su
-   oferta en *Service Collection* y está retirando Data Center — verificar fechas y precios en
-   atlassian.com), Freshservice (por agente, con IA como *add-on* en planes bajos). Las cifras de
-   ServiceNow y Freshservice que circulan proceden de blogs de terceros: **no se citan como precio**,
-   solo el modelo de licenciamiento. Para las de código abierto (GLPI, iTop, Zammad, OTOBO, Znuny),
-   **leer el `LICENSE` en crudo del repositorio** y comprobar qué queda fuera del núcleo libre
-   (plugins certificados, ediciones "Network"/enterprise).
-8. **Marco normativo aplicable** (DORA-UE, NIS2, ENS) por si impone requisitos de gestión de cambio,
-   registro de incidentes o notificación con plazos — cruzar con `grc-compliance-standards`.
+1. **ITIL**: the current version and the real calendar of ITIL (Version 5) **on peoplecert.org** —
+   the date 12-Feb-2026 comes from training providers and **is not confirmed on the official page**
+   (declared discrepancy in §2). Also verify Version 5's practice structure against
+   ITIL 4's 34, and the validity/expiry of ITIL 4 certifications.
+2. **ITIL ownership and licence**: PeopleCert completed the purchase of AXELOS in Jul-2021 — check
+   that it has not changed hands again and review the terms of use for the trademark and the material
+   before citing it.
+3. **ISO/IEC 20000**: whether -1:2018 is still the current edition or a 4th edition is under way; the
+   status of Amd 1:2024 and of parts -2, -3, -6 and -10; price and national adoption (UNE/BS).
+4. **FitSM**: the current version (is it still V3.0?) and the **exact licence printed in the PDF** —
+   CC BY-ND 4.0 according to the official FitSM-1 V3.0 PDF, CC BY 4.0 according to third parties.
+   **ND forbids derivative works**: confirm it before adapting the text.
+5. **VeriSM and YaSM**: check whether they are still maintained before even mentioning them as an
+   alternative.
+6. **Evidence about the CAB**: re-read `dora.dev/capabilities/streamlining-change-approval/` (last
+   update seen: 30-Oct-2025) and the most recent DORA/State of DevOps report. **Quote verbatim**;
+   the strong formulations circulating on blogs ("2.6×", "worse than having no process") **are not on
+   that page**: if they are used, take them from the original report with year and sample.
+7. **Tooling**: the current status, version and pricing model of ServiceNow (per *fulfiller*, per
+   module, with no public tariff), Jira Service Management (per agent; Atlassian has reorganised its
+   offering into a *Service Collection* and is retiring Data Center — verify dates and prices on
+   atlassian.com), Freshservice (per agent, with AI as an *add-on* on the low plans). The ServiceNow
+   and Freshservice figures that circulate come from third-party blogs: **they are not quoted as a
+   price**, only the licensing model. For the open-source ones (GLPI, iTop, Zammad, OTOBO, Znuny),
+   **read the repository's raw `LICENSE`** and check what is left outside the free core
+   (certified plugins, "Network"/enterprise editions).
+8. **The applicable regulatory framework** (EU DORA, NIS2, ENS) in case it imposes requirements on
+   change management, incident recording or notification with deadlines — cross-check with
+   `grc-compliance-standards`.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

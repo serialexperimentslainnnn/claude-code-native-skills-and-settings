@@ -3,161 +3,160 @@ name: fintech-payments-standards
 description: Use when software takes money — PCI DSS v4.0.1 scope and SAQ A / SAQ A-EP / SAQ D selection, hosted fields, iframes and the PAN never touching your servers, cardholder data environment and segmentation, sensitive authentication data and the ban on storing CVV/CVC/CAV2/CID after authorization, PSP tokenization and EMVCo network tokens, PSD2 strong customer authentication and the Regulation (EU) 2018/389 exemptions (TRA, low value, trusted beneficiary, MIT and recurring), EMV 3-D Secure 2.x, liability shift, authorize/capture/partial capture/void/refund state machines, Idempotency-Key and double-charge prevention, settlement and reconciliation against acquirer payout files, chargebacks and representment, SEPA credit transfer, SEPA Direct Debit mandates and Regulation (EU) 2024/886 instant payments, open banking pay-by-bank, MiCA duties for crypto payments, AML/KYC and fraud screening hooks, ISO 4217 minor units, integer minor-unit amounts instead of floats, and immutable double-entry ledgers.
 ---
 
-# Estándares de pagos y fintech
+# Payments and fintech standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica cuando el software **mueve dinero de un tercero**: cobros con tarjeta, transferencias,
-domiciliaciones, monederos, suscripciones y reembolsos. Cubre la decisión que domina todo el
-proyecto —**el alcance PCI DSS**—, el ciclo de vida de una transacción, la autenticación
-reforzada, la conciliación con el dinero que realmente llega, las disputas y la contabilidad
-del importe.
+Applies when software **moves somebody else's money**: card payments, transfers,
+direct debits, wallets, subscriptions and refunds. It covers the decision that dominates the whole
+project —**PCI DSS scope**—, the life cycle of a transaction, strong authentication,
+reconciliation against the money that actually arrives, disputes and the accounting
+of the amount.
 
 Triggers: PCI DSS, CDE, PAN, SAD, CVV/CVC2/CAV2/CID, SAQ A, SAQ A-EP, SAQ D, ROC, AOC, QSA,
-ASV, tokenización, *network token*, PSP, adquirente, emisor, esquema de tarjeta, PSD2, SCA,
-RTS (UE) 2018/389, TRA, MIT, CIT, 3-D Secure, EMV 3DS, *liability shift*, `authorize`,
+ASV, tokenisation, *network token*, PSP, acquirer, issuer, card scheme, PSD2, SCA,
+RTS (EU) 2018/389, TRA, MIT, CIT, 3-D Secure, EMV 3DS, *liability shift*, `authorize`,
 `capture`, `void`, `refund`, `Idempotency-Key`, *settlement*, *payout*, `chargeback`,
-*representment*, *pre-arbitration*, SEPA, SCT, SCT Inst, SDD Core, SDD B2B, mandato, `IBAN`,
+*representment*, *pre-arbitration*, SEPA, SCT, SCT Inst, SDD Core, SDD B2B, mandate, `IBAN`,
 `pain.001`, `camt.053`, ISO 20022, *open banking*, PIS/AIS, MiCA, KYC, AML, ISO 4217,
-*minor units*, libro mayor, asiento, `Stripe`, `Adyen`, `Redsys`, `Mollie`, `Braintree`.
+*minor units*, ledger, journal entry, `Stripe`, `Adyen`, `Redsys`, `Mollie`, `Braintree`.
 
-**Tesis de la skill**: **el alcance PCI es una decisión de arquitectura, no de cumplimiento.**
-Se decide el primer día, con una sola pregunta: *¿el PAN pasa alguna vez por un sistema mío?*
-Si la respuesta es sí —aunque sea un `POST` que solo reenvía, aunque sea un JavaScript propio
-que lee el `<input>`— el proyecto cambia de categoría: de una decena de controles a ciento
-cincuenta o más, con auditoría externa, escaneos trimestrales y segmentación de red. **Tocar
-el PAN una vez cuesta más que todo el resto del producto.**
+**Thesis of the skill**: **PCI scope is an architecture decision, not a compliance one.**
+It is decided on day one, with a single question: *does the PAN ever pass through a system of
+mine?* If the answer is yes —even if it is a `POST` that only forwards, even if it is your own
+JavaScript reading the `<input>`— the project changes category: from a dozen controls to a hundred
+and fifty or more, with external audit, quarterly scans and network segmentation. **Touching
+the PAN once costs more than all the rest of the product.**
 
-Segunda tesis, igual de cara de aprender tarde: **autorización no es cobro, y lo cobrado no es
-lo que ingresas.** Entre "aprobado" en la pasarela y el euro en tu banco hay captura,
-liquidación, comisiones, retenciones, conversión de divisa y disputas. Un sistema que asume
-`status == "approved"` ⇒ *dinero* tiene un descuadre garantizado (§3.6).
+Second thesis, just as expensive to learn late: **authorisation is not a charge, and what you
+charge is not what you receive.** Between "approved" at the gateway and the euro in your bank there
+are capture, settlement, fees, holdbacks, currency conversion and disputes. A system that assumes
+`status == "approved"` ⇒ *money* has a guaranteed mismatch (§3.6).
 
-**No aplica**: ver `e-commerce-standards` (**skill hermana de este lote**: catálogo, carrito,
-inventario, checkout como embudo, impuestos de venta y OSS/IOSS, envíos y devoluciones,
-promociones. Frontera exacta: **el carrito y el precio son suyos; desde `POST /payments` hasta
-el asiento contable, míos**. La regla que evita la duplicación: *quién decide cuánto se cobra →
-`e-commerce`; qué pasa con ese importe una vez enviado al PSP → esta skill*),
-`appsec-standards` (modelado de amenazas, OWASP/ASVS, triaje de vulnerabilidades de la
-aplicación; aquí solo las clases propias del dominio de pago), `api-design-standards`
-(**contrato HTTP y semántica de `Idempotency-Key`, `409`, `Retry-After` y firma de webhooks
-son suyos**; aquí **por qué en pagos la idempotencia no es opcional** y qué se usa como clave),
-`cryptography-pki-standards` (TLS, HSM/KMS, gestión de claves, cifrado en reposo; aquí solo qué
-dato hay que proteger y por qué), `identity-access-management-standards` (OAuth 2.1/OIDC,
-FAPI, mTLS y *client credentials* contra la API del banco; **la SCA de PSD2 es una obligación
-regulatoria de pago y vive aquí**, el motor de autenticación y los factores viven allí),
-`privacy-engineering-standards` (base legal, minimización, retención y derechos del
-interesado sobre los datos de pago; **atención al conflicto real**: la retención contable
-obligatoria gana al derecho de supresión, y esa colisión se resuelve allí),
-`grc-compliance-standards` (**el programa de cumplimiento entero es suyo**: ISO 27001, SOC 2,
-DORA, AML/KYC como obligación corporativa, aceptación de riesgo, relación con el auditor.
-Aquí solo el control técnico y quién lo tiene que implementar), `solidity-standards` (contratos
-EVM; aquí solo qué implica regulatoriamente aceptar cripto), `ai-governance-standards`
-(un modelo antifraude que deniega pagos puede ser sistema de alto riesgo del Reglamento de IA
-y exige supervisión humana: la clasificación es suya), `detection-engineering-standards` y
-`soc-operations-standards` (detección y respuesta sobre la telemetría de fraude),
-`incident-management-standards` (gestión del incidente cuando el descuadre o la brecha ya
-ocurrió), `data-warehouse-modeling-standards` (**el modelado analítico del hecho `pago` es
-suyo**; el libro mayor transaccional e inmutable es de aquí), `sql-standards` (**tipos
-exactos**: `NUMERIC`/`DECIMAL` frente a `float`, restricciones y transacciones),
-`observability-standards` y `sre-practice-standards` (plataforma de métricas, SLO y presupuesto
-de error; aquí qué SLI de pago exportar), `message-brokers-standards` (entrega *at-least-once*
-y por qué obliga a consumidores idempotentes), `microservices-architecture-standards`
-(*outbox*, sagas y propiedad del dato entre servicios), `i18n-standards` (formateo del importe
-y de la divisa para el usuario; **aquí el importe se almacena y transmite en unidades mínimas,
-nunca formateado**), `accessibility-standards` (el formulario de pago accesible),
-`opensource-licensing-standards` (licencia de los SDK de PSP y del software de *ledger*).
+**Not applicable**: see `e-commerce-standards` (**sister skill of this batch**: catalogue, cart,
+inventory, checkout as a funnel, sales taxes and OSS/IOSS, shipping and returns,
+promotions. Exact boundary: **the cart and the price are hers; from `POST /payments` to
+the journal entry, mine**. The rule that avoids duplication: *who decides how much is charged →
+`e-commerce`; what happens to that amount once it is sent to the PSP → this skill*),
+`appsec-standards` (threat modelling, OWASP/ASVS, triage of application vulnerabilities;
+here only the classes specific to the payment domain), `api-design-standards`
+(**the HTTP contract and the semantics of `Idempotency-Key`, `409`, `Retry-After` and webhook
+signing are hers**; here **why idempotency is not optional in payments** and what is used as the
+key), `cryptography-pki-standards` (TLS, HSM/KMS, key management, encryption at rest; here only
+which data must be protected and why), `identity-access-management-standards` (OAuth 2.1/OIDC,
+FAPI, mTLS and *client credentials* against the bank's API; **PSD2 SCA is a regulatory payment
+obligation and lives here**, the authentication engine and the factors live there),
+`privacy-engineering-standards` (legal basis, minimisation, retention and data subject rights
+over payment data; **watch out for the real conflict**: mandatory accounting retention beats the
+right to erasure, and that collision is resolved there),
+`grc-compliance-standards` (**the whole compliance programme is hers**: ISO 27001, SOC 2,
+DORA, AML/KYC as a corporate obligation, risk acceptance, the relationship with the auditor.
+Here only the technical control and who has to implement it), `solidity-standards` (EVM
+contracts; here only what accepting crypto implies from a regulatory standpoint),
+`ai-governance-standards` (an anti-fraud model that denies payments may be a high-risk system
+under the AI Act and requires human oversight: the classification is hers),
+`detection-engineering-standards` and `soc-operations-standards` (detection and response over
+fraud telemetry), `incident-management-standards` (managing the incident once the mismatch or the
+breach has already happened), `data-warehouse-modeling-standards` (**analytical modelling of the
+`payment` fact is hers**; the immutable transactional ledger is ours), `sql-standards` (**exact
+types**: `NUMERIC`/`DECIMAL` versus `float`, constraints and transactions),
+`observability-standards` and `sre-practice-standards` (metrics platform, SLOs and error
+budget; here which payment SLIs to export), `message-brokers-standards` (*at-least-once* delivery
+and why it forces idempotent consumers), `microservices-architecture-standards`
+(*outbox*, sagas and data ownership across services), `i18n-standards` (formatting the amount
+and the currency for the user; **here the amount is stored and transmitted in minor units,
+never formatted**), `accessibility-standards` (the accessible payment form),
+`opensource-licensing-standards` (the licence of PSP SDKs and of *ledger* software).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web la versión vigente de cada norma, las fechas y las comisiones antes de
-> fijarlas en un proyecto real (§8). Datos de **agosto de 2026**.
+> Verify on the web the current version of each standard, the dates and the fees before
+> committing to them in a real project (§8). Data as of **August 2026**.
 
-| Decisión | Por defecto | Motivo / alternativa justificable |
+| Decision | Default | Reason / justifiable alternative |
 |---|---|---|
-| ¿Tocar el PAN? | **Nunca.** Campos alojados o `iframe` del PSP; el navegador habla directo con el PSP | Es la única decisión que reduce el coste de cumplimiento en un orden de magnitud (§3.1) |
-| Cuestionario objetivo | **SAQ A** | Se fija como requisito de producto **antes** de elegir tecnología, no después (§3.2) |
-| Almacenar tarjeta | **Token del PSP**, nunca el PAN | Y para tarjeta guardada, evaluar *network token* con el PSP (§3.3) |
-| CVV/CVC tras autorizar | **PROHIBIDO almacenarlo**, en cualquier forma, cifrado incluido | Requisito PCI DSS 3.3.1.2, citado verbatim en §3.3 |
-| Importes | **Entero en unidades mínimas** (`amount_minor`) + **código ISO 4217** | Coma flotante en dinero es un bug, no una decisión (§3.7) |
-| Idempotencia | **Clave de idempotencia obligatoria** en toda operación que mueva dinero | Sin ella, un *timeout* de red es un doble cobro (§3.5) |
-| Autorización y captura | **Separadas** cuando hay envío físico o verificación posterior | Capturar antes de poder servir es cobrar por algo que quizá no entregues (§3.4) |
-| SCA | **Delegar el 3DS al PSP** y decidir las exenciones con datos, no por defecto | Quién pide la exención y quién asume el fraude no siempre coinciden (§3.9) |
-| Reintentos | **Backoff exponencial con *jitter* + clave de idempotencia + tope duro** | Un reintento sin clave es una transacción nueva |
-| Conciliación | **Diaria y automática** contra el fichero de liquidación del PSP/adquirente | El descuadre se detecta el día 1, no en el cierre trimestral (§3.6) |
-| Contabilidad | **Partida doble, asientos inmutables, corrección por contra-asiento** | `UPDATE` sobre un asiento destruye la auditoría (§3.7) |
-| Webhooks del PSP | **Verificar firma + tratar como pista, no como verdad**; releer el estado por API | Un webhook se puede perder, duplicar y desordenar (§3.8) |
-| Cripto como medio de pago | **No**, salvo decisión de negocio explícita con licencia MiCA verificada | §3.11 |
-| Datos de tarjeta en logs | **PROHIBIDO**, con filtro en la capa de logging, no en la disciplina del programador | §5 |
+| Touch the PAN? | **Never.** Hosted fields or the PSP's `iframe`; the browser talks directly to the PSP | It is the only decision that reduces the compliance cost by an order of magnitude (§3.1) |
+| Target questionnaire | **SAQ A** | Set as a product requirement **before** choosing technology, not after (§3.2) |
+| Storing a card | **PSP token**, never the PAN | And for a stored card, evaluate a *network token* with the PSP (§3.3) |
+| CVV/CVC after authorisation | **FORBIDDEN to store it**, in any form, encrypted included | PCI DSS requirement 3.3.1.2, quoted verbatim in §3.3 |
+| Amounts | **Integer in minor units** (`amount_minor`) + **ISO 4217 code** | Floating point in money is a bug, not a decision (§3.7) |
+| Idempotency | **Mandatory idempotency key** on every operation that moves money | Without it, a network *timeout* is a double charge (§3.5) |
+| Authorisation and capture | **Separate** when there is physical shipping or later verification | Capturing before you can fulfil is charging for something you may not deliver (§3.4) |
+| SCA | **Delegate 3DS to the PSP** and decide exemptions with data, not by default | Who requests the exemption and who bears the fraud are not always the same (§3.9) |
+| Retries | **Exponential backoff with *jitter* + idempotency key + hard cap** | A retry without a key is a new transaction |
+| Reconciliation | **Daily and automatic** against the PSP's/acquirer's settlement file | The mismatch is detected on day 1, not at the quarterly close (§3.6) |
+| Accounting | **Double entry, immutable entries, correction by contra-entry** | An `UPDATE` on an entry destroys the audit trail (§3.7) |
+| PSP webhooks | **Verify the signature + treat as a hint, not as truth**; re-read the state via the API | A webhook can be lost, duplicated and reordered (§3.8) |
+| Crypto as a payment method | **No**, unless there is an explicit business decision with a verified MiCA licence | §3.11 |
+| Card data in logs | **FORBIDDEN**, with a filter in the logging layer, not in the programmer's discipline | §5 |
 
-## 3. Criterio técnico
+## 3. Technical criteria
 
-### 3.1 El alcance lo decide dónde vive el PAN
+### 3.1 Scope is decided by where the PAN lives
 
-PCI DSS se aplica al **CDE** (*cardholder data environment*): todo sistema que almacena,
-procesa o transmite datos de titular, **más todo sistema conectado a ellos o que pueda afectar
-a su seguridad**. Esa segunda mitad es la que sorprende: un servidor de logs, un bastión, un
-agente de despliegue o un servicio de configuración que llega al CDE **entra en el alcance**.
+PCI DSS applies to the **CDE** (*cardholder data environment*): every system that stores,
+processes or transmits cardholder data, **plus every system connected to them or that may affect
+their security**. That second half is the surprising one: a log server, a bastion, a deployment
+agent or a configuration service that reaches the CDE **falls in scope**.
 
-Consecuencia práctica: la arquitectura de pago se elige por su alcance resultante.
+Practical consequence: the payment architecture is chosen for the scope that results from it.
 
-| Integración | El PAN pasa por | Alcance típico |
+| Integration | The PAN passes through | Typical scope |
 |---|---|---|
-| Redirección completa al PSP | Solo por el PSP | El más pequeño; sin criterio de *script* aplicable (§3.2) |
-| `iframe` / campos alojados del PSP | Solo por el PSP; el DOM padre es tuyo | Pequeño, **pero la página contenedora no queda automáticamente fuera** |
-| Formulario propio + `POST` directo al PSP desde el navegador (*direct post*, JS propio) | Tu JavaScript lo toca | Grande: es SAQ A-EP |
-| API servidor-a-servidor con el PAN | Tus servidores | Máximo: SAQ D / ROC, segmentación, escaneos, pentest |
+| Full redirect to the PSP | The PSP only | The smallest; no applicable *script* criterion (§3.2) |
+| PSP `iframe` / hosted fields | The PSP only; the parent DOM is yours | Small, **but the containing page is not automatically out of scope** |
+| Own form + direct `POST` to the PSP from the browser (*direct post*, your own JS) | Your JavaScript touches it | Large: it is SAQ A-EP |
+| Server-to-server API with the PAN | Your servers | Maximum: SAQ D / ROC, segmentation, scans, pentest |
 
-**Regla dura**: si algún elemento de la página de pago se origina en tu servidor, no estás en
-el escenario mínimo. Y **la página contenedora del `iframe` sigue importando**: un botón "Pagar"
-alojado por ti, un *script* de analítica comprometido o una cabecera manipulada pueden
-redirigir al usuario antes de que llegue al `iframe`. El `iframe` protege el campo, no el
-recorrido.
+**Hard rule**: if any element of the payment page originates on your server, you are not in the
+minimum scenario. And **the page containing the `iframe` still matters**: a "Pay" button hosted by
+you, a compromised analytics *script* or a manipulated header can redirect the user before they
+reach the `iframe`. The `iframe` protects the field, not the journey.
 
-### 3.2 SAQ A frente a SAQ A-EP frente a SAQ D
+### 3.2 SAQ A versus SAQ A-EP versus SAQ D
 
-Estado verificado a agosto de 2026: la versión vigente es **PCI DSS v4.0.1** (revisión limitada
-publicada en junio de 2024; v4.0 retirada el 31-12-2024). Los **51 requisitos "*future-dated*"**
-que hasta entonces eran buena práctica **pasaron a ser obligatorios el 31 de marzo de 2025** —
-ya no hay periodo de gracia y el evaluador los prueba como cualquier otro. **Verificar ambos
-datos y el número exacto de requisitos en §8**: el conteo circula mal citado.
+Status verified as of August 2026: the current version is **PCI DSS v4.0.1** (limited revision
+published in June 2024; v4.0 retired on 31-12-2024). The **51 "*future-dated*" requirements**
+that were best practice until then **became mandatory on 31 March 2025** —
+there is no grace period any more and the assessor tests them like any other. **Verify both
+figures and the exact number of requirements in §8**: the count circulates misquoted.
 
-Dos de esos requisitos son los que definen hoy el e-commerce:
+Two of those requirements are the ones that define e-commerce today:
 
-- **6.4.3** — inventario, autorización y control de integridad de **todo *script* cargado en la
-  página de pago**.
-- **11.6.1** — mecanismo de **detección de manipulación** que alerte ante cambios no
-  autorizados en las cabeceras HTTP y en el contenido de la página de pago.
+- **6.4.3** — inventory, authorisation and integrity control of **every *script* loaded on the
+  payment page**.
+- **11.6.1** — a **tamper-detection** mechanism that alerts on unauthorised changes
+  to HTTP headers and to the content of the payment page.
 
-Ambos existen para frenar el *skimming* de cliente (familia Magecart): el servidor está
-limpio, el PAN se exfiltra desde el navegador.
+Both exist to curb client-side *skimming* (the Magecart family): the server is
+clean, the PAN is exfiltrated from the browser.
 
-Cambio de 2025 que se cita mal con frecuencia: en **SAQ A** se **retiraron los ítems 6.4.3,
-11.6.1 y 12.3.1** y se añadió un **criterio de elegibilidad** — el comercio debe confirmar que
-su sitio *no es susceptible a ataques de scripts que puedan afectar a sus sistemas de comercio
-electrónico*. **No es una exención**: los requisitos siguen vigentes en el estándar, en SAQ A-EP,
-en SAQ D y en el ROC. Es un traslado de forma, no de fondo, y se satisface implementando la
-protección o **obteniendo confirmación escrita del PSP** de que su solución la incluye. Con
-redirección completa el criterio no aplica; con `iframe`, sí. (FAQ 1588 del PCI SSC, 28-02-2025.)
+A 2025 change that is frequently misquoted: in **SAQ A**, items **6.4.3, 11.6.1 and 12.3.1 were
+removed** and an **eligibility criterion** was added — the merchant must confirm that
+its site *is not susceptible to script attacks that could affect its e-commerce systems*.
+**It is not an exemption**: the requirements remain in force in the standard, in SAQ A-EP,
+in SAQ D and in the ROC. It is a shift in form, not in substance, and it is satisfied by
+implementing the protection or **obtaining written confirmation from the PSP** that their solution
+includes it. With a full redirect the criterion does not apply; with an `iframe`, it does.
+(PCI SSC FAQ 1588, 28-02-2025.)
 
-**Verificar en §8**: la elegibilidad, el conteo de ítems de cada SAQ y la interpretación
-"sitio entero frente a página de pago" — este último punto no está cerrado y **lo decide tu QSA
-y tu adquirente, no un documento genérico**.
+**Verify in §8**: eligibility, the item count of each SAQ and the "whole site versus payment page"
+interpretation — this last point is not settled and **it is decided by your QSA
+and your acquirer, not by a generic document**.
 
-### 3.3 Datos de titular y datos sensibles de autenticación
+### 3.3 Cardholder data and sensitive authentication data
 
-Dos categorías con reglas opuestas:
+Two categories with opposite rules:
 
-- **Datos de titular** (PAN, nombre, caducidad, código de servicio): se pueden almacenar si hay
-  necesidad de negocio, con el PAN ilegible allá donde se guarde.
-- **SAD** (contenido de pista, código de verificación, PIN/bloque de PIN): **no se almacenan
-  después de la autorización**, punto. Solo emisores y quien da soporte a emisión tienen
-  excepción.
+- **Cardholder data** (PAN, name, expiry, service code): may be stored if there is a
+  business need, with the PAN unreadable wherever it is kept.
+- **SAD** (track content, verification code, PIN/PIN block): **they are not stored
+  after authorisation**, full stop. Only issuers and issuer-support entities have an exception.
 
-Texto de los requisitos de PCI DSS v4.0.1 (reproducción de tercero, §8 declara el hueco de la
-fuente primaria):
+Text of the PCI DSS v4.0.1 requirements (third-party reproduction, §8 declares the gap regarding
+the primary source):
 
 > **3.3.1.1** The full contents of any track are not stored upon completion of the
 > authorization process.
@@ -166,414 +165,415 @@ fuente primaria):
 > **3.3.1.3** The personal identification number (PIN) and the PIN block are not stored upon
 > completion of the authorization process.
 
-Y del propio PCI SSC (FAQ 1280), sobre el caso que siempre se intenta:
+And from the PCI SSC itself (FAQ 1280), on the case that is always attempted:
 
 > "These values are not needed for card-on-file or recurring transactions, and storage for
 > these purposes is prohibited […] However, it is not permitted to retain card verification
 > codes/values once the specific purchase or transaction for which it was collected has been
 > authorized."
 
-Lo que esto implica y suele ignorarse:
+What this implies and is usually ignored:
 
-- **Cifrar el CVV no lo permite.** El requisito prohíbe *almacenar*, no *almacenar en claro*.
-  Cripto-borrado tampoco: sigue almacenado.
-- **Un log, una traza, un `crash dump`, un backup o una fila de auditoría cuentan como
-  almacenamiento.** La guía del estándar enumera explícitamente logs de transacción,
-  depuración y error, ficheros de histórico y de traza, esquemas y contenidos de base de
-  datos —local y en nube— y volcados de memoria.
-- Retenerlo brevemente en **memoria no persistente** tras la autorización se contempla solo
-  con necesidad de negocio legítima, garantías de no persistencia y borrado inmediato. No es
-  una puerta trasera para "guardarlo un ratito".
-- Recogerlo **antes** de autorizar no está prohibido. Retenerlo después, sí.
+- **Encrypting the CVV does not make it allowed.** The requirement forbids *storing*, not
+  *storing in the clear*. Crypto-shredding does not help either: it is still stored.
+- **A log, a trace, a `crash dump`, a backup or an audit row count as
+  storage.** The standard's guidance explicitly lists transaction, debugging and error logs,
+  history and trace files, database schemas and contents —local and in the cloud— and memory
+  dumps.
+- Retaining it briefly in **non-persistent memory** after authorisation is contemplated only
+  with a legitimate business need, guarantees of non-persistence and immediate deletion. It is not
+  a back door for "keeping it for a little while".
+- Collecting it **before** authorising is not forbidden. Retaining it afterwards is.
 
-**Tokenización**: el token del PSP sustituye al PAN en tus sistemas y es el mecanismo estándar
-para tarjeta guardada y suscripciones. **Un token de PSP es específico de ese PSP**: cambiar de
-proveedor exige una migración de tokens negociada — pregúntalo *antes* de firmar, es una de las
-formas más duras de dependencia de proveedor del catálogo.
+**Tokenisation**: the PSP's token replaces the PAN in your systems and is the standard mechanism
+for stored cards and subscriptions. **A PSP token is specific to that PSP**: changing provider
+requires a negotiated token migration — ask about it *before* signing, it is one of the harshest
+forms of vendor lock-in in the catalogue.
 
-**Network tokens** (tokenización de esquema, especificación EMVCo): el token lo emite la red
-—no el PSP— y se actualiza solo cuando la tarjeta se renueva o se reemplaza. Beneficio real y
-medible: menos declinaciones por tarjeta caducada en suscripciones. Coste: depende del PSP y
-del esquema, y **no todos los flujos lo soportan** — verificar cobertura por país y esquema.
+**Network tokens** (scheme tokenisation, EMVCo specification): the token is issued by the network
+—not by the PSP— and updates itself when the card is renewed or replaced. Real and
+measurable benefit: fewer declines from expired cards in subscriptions. Cost: it depends on the PSP
+and the scheme, and **not all flows support it** — verify coverage by country and scheme.
 
-### 3.4 La máquina de estados de una transacción con tarjeta
+### 3.4 The state machine of a card transaction
 
-`autorizar → (capturar | anular) → [liquidar] → (reembolsar | disputar)`
+`authorise → (capture | void) → [settle] → (refund | dispute)`
 
-- **Autorización**: el emisor reserva el importe y devuelve un código. **No hay movimiento de
-  dinero.** Tiene caducidad (días, y depende del esquema y del tipo de comercio): si no
-  capturas a tiempo, la autorización expira y hay que volver a pedirla.
-- **Captura**: la instrucción de cobrar. Puede ser **total, parcial o múltiple** según el PSP y
-  el esquema. Captura parcial es la respuesta correcta cuando envías medio pedido: **no
-  captures el total y reembolses la diferencia** — genera una comisión y un movimiento
-  innecesario en el extracto del cliente.
-- **Anulación (`void`)**: cancela una autorización **no capturada**. Es limpia y suele no dejar
-  rastro para el cliente. Deja de ser posible en cuanto capturas.
-- **Reembolso**: movimiento **nuevo** en sentido contrario, sobre una captura ya hecha. Tarda
-  días en verse, **normalmente no devuelve las comisiones de adquirencia**, y puede fallar por
-  sí mismo.
-- **Reversal / *auth reversal***: liberar una autorización que no vas a capturar es una cortesía
-  con impacto real —libera el crédito del cliente— y evita reclamaciones de soporte. Hazlo
-  explícitamente; no confíes en la expiración.
+- **Authorisation**: the issuer reserves the amount and returns a code. **No money moves.**
+  It has an expiry (days, and it depends on the scheme and the merchant type): if you do not
+  capture in time, the authorisation expires and it has to be requested again.
+- **Capture**: the instruction to charge. It may be **full, partial or multiple** depending on the
+  PSP and the scheme. Partial capture is the correct answer when you ship half an order: **do not
+  capture the full amount and refund the difference** — it generates a fee and an
+  unnecessary movement on the customer's statement.
+- **Void**: cancels an **uncaptured** authorisation. It is clean and usually leaves
+  no trace for the customer. It stops being possible as soon as you capture.
+- **Refund**: a **new** movement in the opposite direction, on a capture already made. It takes
+  days to show up, **usually does not return the acquiring fees**, and may fail
+  on its own.
+- **Reversal / *auth reversal***: releasing an authorisation you are not going to capture is a
+  courtesy with real impact —it frees the customer's credit— and avoids support complaints. Do it
+  explicitly; do not rely on expiry.
 
-**Consecuencia de diseño**: el estado de un pedido y el estado de un pago son **dos máquinas de
-estados distintas** que se sincronizan. Fundirlas en una columna `status` es la causa raíz de la
-mayoría de los descuadres.
+**Design consequence**: the state of an order and the state of a payment are **two different state
+machines** that are synchronised. Merging them into one `status` column is the root cause of most
+mismatches.
 
-### 3.5 Idempotencia: requisito, no optimización
+### 3.5 Idempotency: a requirement, not an optimisation
 
-Toda operación que mueve dinero se ejecuta sobre una red que **falla en el peor momento**: el
-`timeout` que no sabes si llegó. Si el cliente reintenta y el servidor no distingue "es la
-misma" de "es otra", cobras dos veces.
+Every operation that moves money runs over a network that **fails at the worst moment**: the
+`timeout` where you do not know whether it arrived. If the client retries and the server does not
+distinguish "this is the same one" from "this is another one", you charge twice.
 
-Reglas:
+Rules:
 
-1. **La clave la genera el cliente**, no el servidor, y viaja en la petición
-   (`Idempotency-Key`). Debe ser un identificador único de *intención de negocio*: por ejemplo,
-   un UUID generado al crear el intento de pago — **nunca** un hash del cuerpo ni el ID de
-   pedido a secas (dos pagos legítimos del mismo pedido existen: reintento tras fallo, pago
-   parcial).
-2. **Se persiste antes de llamar al PSP**, en la misma transacción de base de datos que crea el
-   registro de intento. Persistirla después es una carrera contra el reintento.
-3. **La respuesta se almacena y se reenvía tal cual** ante una repetición, con el mismo código
-   de estado. Reintentar una clave ya usada **con un cuerpo distinto** es un error del cliente:
-   respóndelo como conflicto, no lo ejecutes.
-4. **Ventana de retención explícita** (típicamente 24 h en los PSP; verifica la de tu
-   proveedor) y purga posterior.
-5. **Los consumidores de eventos también son idempotentes.** Los brokers entregan
-   *at-least-once*: procesar dos veces el evento "pago capturado" es duplicar un asiento.
-6. **Idempotencia extremo a extremo**: tu API es idempotente hacia tu cliente *y* propagas
-   clave hacia el PSP. Solo una de las dos capas no basta.
+1. **The key is generated by the client**, not the server, and travels in the request
+   (`Idempotency-Key`). It must be a unique identifier of *business intent*: for example,
+   a UUID generated when creating the payment attempt — **never** a hash of the body nor the order
+   ID on its own (two legitimate payments for the same order do exist: retry after failure, partial
+   payment).
+2. **It is persisted before calling the PSP**, in the same database transaction that creates the
+   attempt record. Persisting it afterwards is a race against the retry.
+3. **The response is stored and replayed as is** on a repeat, with the same status
+   code. Retrying an already used key **with a different body** is a client error:
+   answer it as a conflict, do not execute it.
+4. **Explicit retention window** (typically 24 h at PSPs; verify your provider's) and later
+   purging.
+5. **Event consumers are idempotent too.** Brokers deliver
+   *at-least-once*: processing the "payment captured" event twice duplicates an entry.
+6. **End-to-end idempotency**: your API is idempotent towards your client *and* you propagate
+   a key towards the PSP. Only one of the two layers is not enough.
 
-Aviso de fuente: **`Idempotency-Key` no es un estándar IETF**. El borrador
-`draft-ietf-httpapi-idempotency-key-header` está **expirado** (versión 07, última revisión
-2025-10-15, marcada como expirada en abril de 2026). Es convención de industria bien asentada
-—Stripe, Adyen, PayPal y otros la implementan— pero no hay RFC: **verifica la semántica exacta
-en la documentación de tu PSP**, no la asumas.
+Source warning: **`Idempotency-Key` is not an IETF standard**. The draft
+`draft-ietf-httpapi-idempotency-key-header` is **expired** (version 07, last revised
+2025-10-15, marked as expired in April 2026). It is a well-established industry convention
+—Stripe, Adyen, PayPal and others implement it— but there is no RFC: **verify the exact semantics
+in your PSP's documentation**, do not assume them.
 
-### 3.6 Liquidación y conciliación: el dinero que llega nunca es el que cobraste
+### 3.6 Settlement and reconciliation: the money that arrives is never the money you charged
 
-Entre la captura y el ingreso hay: **comisión del PSP y del adquirente**, *interchange* y tasa
-de esquema, **retenciones** (*reserve*, *rolling reserve*) del adquirente, **conversión de
-divisa** con su margen, reembolsos y disputas del periodo, e impuestos sobre las comisiones.
-Además, **una liquidación agrupa N transacciones** de varios días y no cuadra 1:1 con nada.
+Between capture and payout there are: **PSP and acquirer fees**, *interchange* and scheme
+fee, **holdbacks** (*reserve*, *rolling reserve*) from the acquirer, **currency conversion**
+with its margin, refunds and disputes of the period, and taxes on the fees.
+Besides, **a settlement groups N transactions** from several days and does not match 1:1 with
+anything.
 
-En la UE, los **topes de tasa de intercambio** están fijados por el Reglamento (UE) 2015/751
-para operaciones con tarjeta de consumidor (verbatim, Art. 3(1)): *"Payment service providers
+In the EU, the **interchange fee caps** are set by Regulation (EU) 2015/751
+for consumer card transactions (verbatim, Art. 3(1)): *"Payment service providers
 shall not offer or request a per transaction interchange fee of more than 0,2 % of the value of
-the transaction for any debit card transaction"* — y **0,3 %** para crédito (Art. 4). Aplican
-desde el 9-12-2015. **No cubren tarjetas comerciales ni las de esquemas de tres partes**, ni
-son tu comisión total: el *interchange* es un componente, no el precio.
+the transaction for any debit card transaction"* — and **0,3 %** for credit (Art. 4). They apply
+from 9-12-2015. **They do not cover commercial cards nor those of three-party schemes**, nor
+are they your total fee: *interchange* is a component, not the price.
 
-Diseño mínimo de conciliación:
+Minimum reconciliation design:
 
-- Ingesta **automática y diaria** del fichero de liquidación / *payout report* del PSP.
-- **Casación por identificador de transacción**, no por importe: los importes coinciden por
-  casualidad y la casación por importe produce falsos positivos.
-- **Todo movimiento del extracto tiene su contrapartida** en el libro mayor: bruto, comisión,
-  retención, diferencia de cambio. Si registras solo el neto, has perdido la comisión como
-  gasto y el bruto como ingreso.
-- **Alerta sobre partidas huérfanas** en ambos sentidos: cobros sin liquidar pasado el plazo
-  esperado, y líneas de liquidación sin transacción local. Una partida huérfana **envejece**;
-  el SLI útil es la antigüedad de la más vieja, no el conteo.
-- **La conciliación no se "arregla" editando el pasado**: se corrige con un asiento nuevo.
+- **Automatic and daily** ingestion of the PSP's settlement file / *payout report*.
+- **Matching by transaction identifier**, not by amount: amounts coincide by
+  chance and matching by amount produces false positives.
+- **Every movement on the statement has its counterpart** in the ledger: gross, fee,
+  holdback, exchange difference. If you record only the net, you have lost the fee as
+  an expense and the gross as revenue.
+- **Alert on orphan items** in both directions: charges not settled past the
+  expected deadline, and settlement lines with no local transaction. An orphan item **ages**;
+  the useful SLI is the age of the oldest one, not the count.
+- **Reconciliation is not "fixed" by editing the past**: it is corrected with a new entry.
 
-### 3.7 Dinero en el código
+### 3.7 Money in the code
 
-- **Importe = entero en unidades mínimas + código ISO 4217.** `amount_minor: 1999, currency:
-  "EUR"`. Nunca `float`/`double`; nunca `19.99` como número. En base de datos, entero o
-  `NUMERIC` con escala explícita — jamás un tipo binario de coma flotante.
-- **No todas las divisas tienen dos decimales.** JPY y KRW tienen cero; algunas (p. ej. las de
-  la familia del dinar) tienen tres. Un `* 100` incrustado en el código es un error a la espera
-  de una expansión internacional. **El número de decimales se consulta en la tabla ISO 4217, no
-  se asume** (§8: iso.org bloquea la descarga automática; usa la lista mantenida por tu
-  biblioteca de i18n y verifica).
-- **El redondeo se decide una vez y se documenta** (impuestos, prorrateos, división de un
-  descuento entre líneas). Prorratear sin repartir el resto produce descuadres de un céntimo
-  que nadie encuentra.
-- **Nunca conviertas divisa por tu cuenta para contabilizar.** Registra el importe original, el
-  liquidado y el tipo aplicado por quien lo aplicó.
-- **Libro mayor de partida doble, solo-append.** Cada movimiento es un asiento con débito y
-  crédito que suman cero; nada se actualiza ni se borra; una corrección es un contra-asiento.
-  El saldo es una proyección derivada, no una columna editable. Esto es lo que hace posible
-  reconstruir "por qué el saldo es este" seis meses después — y lo que hace auditable el
-  sistema (evidencia para `grc-compliance-standards`).
-- **Reloj y zona**: todo instante en UTC con desplazamiento explícito. El corte contable de un
-  día es una decisión de negocio, no la que decida el servidor.
+- **Amount = integer in minor units + ISO 4217 code.** `amount_minor: 1999, currency:
+  "EUR"`. Never `float`/`double`; never `19.99` as a number. In the database, integer or
+  `NUMERIC` with an explicit scale — never a binary floating-point type.
+- **Not all currencies have two decimals.** JPY and KRW have zero; some (e.g. those of
+  the dinar family) have three. A `* 100` embedded in the code is a bug waiting
+  for an international expansion. **The number of decimals is looked up in the ISO 4217 table, not
+  assumed** (§8: iso.org blocks automated download; use the list maintained by your i18n
+  library and verify).
+- **Rounding is decided once and documented** (taxes, proration, splitting a discount
+  across lines). Prorating without distributing the remainder produces one-cent mismatches
+  that nobody can find.
+- **Never convert currency on your own for accounting.** Record the original amount, the
+  settled one and the rate applied by whoever applied it.
+- **Double-entry, append-only ledger.** Every movement is an entry with debit and
+  credit summing to zero; nothing is updated or deleted; a correction is a contra-entry.
+  The balance is a derived projection, not an editable column. This is what makes it possible
+  to reconstruct "why the balance is this" six months later — and what makes the system
+  auditable (evidence for `grc-compliance-standards`).
+- **Clock and time zone**: every instant in UTC with an explicit offset. The accounting cut-off of
+  a day is a business decision, not whatever the server decides.
 
-### 3.8 Webhooks y estado
+### 3.8 Webhooks and state
 
-El webhook del PSP **se puede perder, duplicar, llegar tarde y llegar desordenado**. Reglas:
+The PSP's webhook **can be lost, duplicated, arrive late and arrive out of order**. Rules:
 
-- **Verifica la firma** con el secreto compartido, con comparación en tiempo constante, y
-  **rechaza marcas de tiempo antiguas** (defensa contra repetición).
-- **Responde `2xx` rápido y procesa en segundo plano.** Un webhook que tarda se reintenta y se
-  duplica.
-- **Trátalo como una notificación de "algo cambió", no como el dato.** Ante un evento, **relee
-  el estado por API**. Es la diferencia entre un sistema que aguanta el desorden y uno que se
-  cree el último mensaje que llegó.
-- **Ten un plan B por sondeo**: un trabajo periódico que reconcilie los pagos en estado no
-  terminal. Los webhooks fallan y nadie se entera hasta el cierre.
-- **Idempotencia por identificador de evento**, no por contenido.
+- **Verify the signature** with the shared secret, with constant-time comparison, and
+  **reject old timestamps** (replay defence).
+- **Respond `2xx` quickly and process in the background.** A slow webhook is retried and
+  duplicated.
+- **Treat it as a notification that "something changed", not as the data.** On an event, **re-read
+  the state via the API**. It is the difference between a system that withstands disorder and one
+  that believes the last message that arrived.
+- **Have a polling plan B**: a periodic job that reconciles payments in a non-terminal state.
+  Webhooks fail and nobody finds out until the close.
+- **Idempotency by event identifier**, not by content.
 
-### 3.9 SCA, exenciones y 3-D Secure
+### 3.9 SCA, exemptions and 3-D Secure
 
-La **autenticación reforzada de cliente** (PSD2) exige dos factores independientes de
-categorías distintas —conocimiento, posesión, inherencia— con vínculo dinámico al importe y al
-beneficiario. Las exenciones están tasadas en el **Reglamento Delegado (UE) 2018/389**
-(verbatim de EUR-Lex, CELEX 32018R0389):
+**Strong customer authentication** (PSD2) requires two independent factors from
+different categories —knowledge, possession, inherence— with a dynamic link to the amount and the
+payee. The exemptions are exhaustively listed in **Delegated Regulation (EU) 2018/389**
+(verbatim from EUR-Lex, CELEX 32018R0389):
 
-| Exención | Art. | Umbral literal |
+| Exemption | Art. | Literal threshold |
 |---|---|---|
-| Pago a distancia de bajo importe | 16 | ≤ **EUR 30**; y acumulado desde la última SCA ≤ **EUR 100** *o* ≤ **cinco** operaciones consecutivas |
-| Contactless en punto de venta | 11 | ≤ **EUR 50**; y acumulado ≤ **EUR 150** *o* ≤ **cinco** consecutivas |
-| Terminal desatendido de transporte/aparcamiento | 12 | Sin umbral |
-| Beneficiario de confianza | 13 | La **creación o modificación de la lista sí exige SCA** |
-| Operaciones recurrentes | 14 | **Mismo importe y mismo beneficiario**; la primera exige SCA |
-| Transferencia entre cuentas propias en el mismo proveedor | 15 | — |
-| Procesos corporativos dedicados | 17 | Solo pagadores no consumidores, con visto bueno de la autoridad |
-| Análisis de riesgo de la transacción (TRA) | 18 | Ver tabla siguiente |
+| Low-value remote payment | 16 | ≤ **EUR 30**; and cumulative since the last SCA ≤ **EUR 100** *or* ≤ **five** consecutive transactions |
+| Contactless at the point of sale | 11 | ≤ **EUR 50**; and cumulative ≤ **EUR 150** *or* ≤ **five** consecutive |
+| Unattended transport/parking terminal | 12 | No threshold |
+| Trusted beneficiary | 13 | **Creating or amending the list does require SCA** |
+| Recurring transactions | 14 | **Same amount and same payee**; the first one requires SCA |
+| Transfer between own accounts at the same provider | 15 | — |
+| Dedicated corporate processes | 17 | Only non-consumer payers, with the authority's approval |
+| Transaction risk analysis (TRA) | 18 | See the next table |
 
-**TRA** (Art. 18): solo si la tasa de fraude del proveedor está por debajo de la referencia del
-Anexo *y* el importe no supera el umbral de exención (ETV) *y* el análisis en tiempo real no
-detecta ninguno de los seis indicadores del Art. 18(2)(c). Tabla del Anexo, verbatim:
+**TRA** (Art. 18): only if the provider's fraud rate is below the Annex's reference
+*and* the amount does not exceed the exemption threshold value (ETV) *and* the real-time analysis
+does not detect any of the six indicators in Art. 18(2)(c). Annex table, verbatim:
 
-| ETV | Pagos a distancia con tarjeta | Transferencias a distancia |
+| ETV | Remote card payments | Remote credit transfers |
 |---|---|---|
 | EUR 500 | 0,01 % | 0,005 % |
 | EUR 250 | 0,06 % | 0,01 % |
 | EUR 100 | 0,13 % | 0,015 % |
 
-Y la parte que decide arquitectura: **la exención no la aplica el comercio, la aplica un
-proveedor de servicios de pago** — y el Art. 20 obliga a **cesar** el uso de TRA en un tramo si
-la tasa de fraude supera la referencia **dos trimestres consecutivos**, sin poder reutilizarla
-hasta volver a estar por debajo un trimestre. Consecuencia: **pedir la exención es apostar tu
-tasa de fraude**. El emisor puede además rechazar la exención y exigir *challenge*.
+And the part that decides architecture: **the exemption is not applied by the merchant, it is
+applied by a payment service provider** — and Art. 20 requires **ceasing** the use of TRA in a
+band if the fraud rate exceeds the reference **for two consecutive quarters**, without being able
+to use it again until it has been back below for a quarter. Consequence: **requesting the exemption
+is betting your fraud rate**. The issuer may also refuse the exemption and demand a *challenge*.
 
-**EMV 3-D Secure 2.x** es el protocolo que transporta los datos de contexto al emisor para que
-decida entre flujo sin fricción (*frictionless*) y desafío. Estado verificado (emvco.com,
-agosto de 2026): la línea publicada es **v2.2.0–2.3.1.1**; existe un **borrador v2.4.0.0** cuyo
-periodo de comentarios terminó el 1 de julio de 2026. **Verificar la versión que soporta
-realmente tu PSP y tus emisores objetivo**, que va por detrás de la especificación.
+**EMV 3-D Secure 2.x** is the protocol that carries the context data to the issuer so it can
+decide between a *frictionless* flow and a challenge. Status verified (emvco.com,
+August 2026): the published line is **v2.2.0–2.3.1.1**; there is a **draft v2.4.0.0** whose
+comment period ended on 1 July 2026. **Verify the version your PSP and your target issuers
+actually support**, which lags behind the specification.
 
-**Traslado de responsabilidad** (*liability shift*): una operación autenticada con 3DS traslada
-al emisor la responsabilidad por fraude en la mayoría de escenarios de comercio electrónico.
-**Los detalles —qué códigos de resultado protegen, qué motivos de disputa quedan excluidos,
-qué pasa con las operaciones con exención— los fijan las reglas de cada esquema (Visa,
-Mastercard), no la normativa europea.** Esas reglas son contractuales y su versión vigente se
-verifica con tu adquirente. **Hueco declarado en §8**: no afirmes porcentajes ni garantías de
-traslado de responsabilidad sin el documento de reglas en la mano.
+**Liability shift**: a transaction authenticated with 3DS shifts
+responsibility for fraud to the issuer in most e-commerce scenarios.
+**The details —which result codes protect you, which dispute reasons are excluded,
+what happens with exempted transactions— are set by each scheme's rules (Visa,
+Mastercard), not by European legislation.** Those rules are contractual and their current version
+is verified with your acquirer. **Declared gap in §8**: do not assert percentages or guarantees of
+liability shift without the rules document in hand.
 
-**PSD3 / PSR — estado real**: **no están aprobados**. Verificado en el Observatorio Legislativo
-del Parlamento Europeo (agosto de 2026): PSD3 = procedimiento **2023/0209(COD)**, PSR =
-**2023/0210(COD)**; ambos con último evento *"05/05/2026 — Approval in committee of the text
-agreed at early 2nd reading interinstitutional negotiations"*, estado **"Awaiting Council's 1st
-reading position"** y **fecha indicativa de pleno 14/12/2026**. No hay acto final ni publicación
-en el DOUE. **No planifiques contra un calendario de aplicación que aún no existe**: lo que
-aplica hoy sigue siendo PSD2 y su RTS.
+**PSD3 / PSR — actual status**: **they are not approved**. Verified in the European Parliament's
+Legislative Observatory (August 2026): PSD3 = procedure **2023/0209(COD)**, PSR =
+**2023/0210(COD)**; both with the latest event *"05/05/2026 — Approval in committee of the text
+agreed at early 2nd reading interinstitutional negotiations"*, status **"Awaiting Council's 1st
+reading position"** and an **indicative plenary date of 14/12/2026**. There is no final act nor
+publication in the OJEU. **Do not plan against an application calendar that does not yet exist**:
+what applies today is still PSD2 and its RTS.
 
-### 3.10 Disputas, *chargebacks* y fraude
+### 3.10 Disputes, *chargebacks* and fraud
 
-Un *chargeback* es una reversión iniciada por el emisor a petición del titular. Flujo general:
-**disputa → aportación de pruebas (*representment*) → pre-arbitraje → arbitraje**, con plazos
-por etapa y coste fijo por caso, se gane o se pierda. Además, **la tasa de disputas está
-vigilada por los esquemas**: superar sus umbrales mete al comercio en programas de
-monitorización con multas y, en el extremo, pérdida de la capacidad de cobrar.
+A *chargeback* is a reversal initiated by the issuer at the cardholder's request. General flow:
+**dispute → submission of evidence (*representment*) → pre-arbitration → arbitration**, with
+deadlines per stage and a fixed cost per case, win or lose. Besides, **the dispute rate is
+monitored by the schemes**: exceeding their thresholds puts the merchant into monitoring
+programmes with fines and, in the extreme, loss of the ability to take payments.
 
-Los **plazos y umbrales concretos son reglas de esquema y cambian**: no los escribas de
-memoria, consíguelos de tu adquirente. Lo que sí es criterio estable:
+The **specific deadlines and thresholds are scheme rules and change**: do not write them from
+memory, get them from your acquirer. What is stable criterion:
 
-- **Conserva la evidencia desde el primer día**: IP y huella de dispositivo, marca de tiempo,
-  registro de consentimiento, prueba de entrega, comunicaciones y resultado de 3DS. Reunirla
-  cuando llega la disputa es tarde.
-- **Descriptor del extracto reconocible**: buena parte de las disputas por "no reconozco el
-  cargo" es fraude amistoso causado por un descriptor críptico. Mejor relación coste/beneficio
-  del área. Y **cancelar es más barato que disputar**: la fricción para reembolsar se convierte
-  en *chargeback*, que cuesta más.
-- **Antifraude**: reglas + puntuación, con **umbrales que son decisión de negocio** (cada punto
-  de fraude bloqueado cuesta ventas legítimas). Mide **ambas** tasas: fraude y falsos positivos;
-  un modelo sin medida de rechazo legítimo optimiza una sola cara.
-- **AML/KYC**: identidad, cribado de sanciones y PEP, monitorización y reporte. **La obligación
-  y su gobierno son de `grc-compliance-standards`**; aquí solo que los puntos de enganche van
-  desde el diseño — añadirlos después es rehacer el flujo de alta.
+- **Preserve the evidence from day one**: IP and device fingerprint, timestamp,
+  consent record, proof of delivery, communications and the 3DS result. Gathering it
+  when the dispute arrives is too late.
+- **Recognisable statement descriptor**: a large share of "I do not recognise this charge"
+  disputes is friendly fraud caused by a cryptic descriptor. Best cost/benefit ratio
+  in the area. And **cancelling is cheaper than disputing**: friction in refunding turns
+  into a *chargeback*, which costs more.
+- **Anti-fraud**: rules + scoring, with **thresholds that are a business decision** (every point
+  of fraud blocked costs legitimate sales). Measure **both** rates: fraud and false positives;
+  a model with no measure of legitimate rejections optimises only one side.
+- **AML/KYC**: identity, sanctions and PEP screening, monitoring and reporting. **The obligation
+  and its governance belong to `grc-compliance-standards`**; here only that the hook points go in
+  from the design — adding them later means redoing the onboarding flow.
 
-### 3.11 Fuera de la tarjeta
+### 3.11 Beyond the card
 
-- **SEPA SCT / SCT Inst**: transferencia en euros. El Reglamento (UE) 2024/886 fija (verbatim)
-  que los PSP de la zona euro ofrecen **recepción** de transferencias inmediatas **desde el
-  9-1-2025** y **envío desde el 9-10-2025**; fuera de la zona euro, **9-1-2027** y **9-7-2027**.
-  Con el envío llega la obligación del **servicio de verificación del beneficiario** (*VoP*):
-  contrastar nombre e IBAN antes de que el pagador autorice. Efecto de producto: **el nombre del
-  beneficiario deja de ser decorativo** y un desajuste genera fricción real en el flujo.
-- **SEPA SDD**: la domiciliación se basa en un **mandato** firmado por el deudor, con
-  identificador único, referencia del acreedor y prueba de consentimiento conservada. Dos
-  esquemas: **Core** (consumidores, con derecho de devolución sin motivo dentro de un plazo, y
-  ampliado si no hubo mandato válido) y **B2B** (solo entre empresas, sin ese derecho, con
-  verificación previa del mandato por el banco del deudor). **Los plazos exactos los publica el
-  EPC y cambian entre versiones del rulebook**: verifícalos (§8). Diseño: guarda el mandato como
-  entidad de primera clase con su histórico; un mandato caducado por inactividad es la causa
-  clásica de la devolución masiva.
-- **Open banking / pago por transferencia** (PIS bajo PSD2): el usuario autoriza en su banco;
-  no hay tarjeta, no hay *chargeback*, comisión típicamente menor y **el riesgo se desplaza al
-  fraude por manipulación del pagador**, que ninguna SCA detiene. Sin reversión disponible, la
-  política de reembolsos es tuya, entera. Ojo también a la disponibilidad: **dependes de la
-  API del banco del usuario**, con su ventana de mantenimiento y su tasa de error.
-- **Criptoactivos**: en la UE aplica **MiCA, Reglamento (UE) 2023/1114** — aplicable desde el
-  **30-12-2024** (títulos III y IV desde el 30-6-2024), con el régimen transitorio del **Art.
-  143(3)** verbatim: los proveedores que ya prestaban servicios *"may continue to do so until 1
+- **SEPA SCT / SCT Inst**: euro credit transfer. Regulation (EU) 2024/886 sets (verbatim)
+  that euro-area PSPs offer **receipt** of instant credit transfers **from
+  9-1-2025** and **sending from 9-10-2025**; outside the euro area, **9-1-2027** and **9-7-2027**.
+  With sending comes the obligation of the **verification of payee service** (*VoP*):
+  checking name and IBAN before the payer authorises. Product effect: **the payee's name
+  stops being decorative** and a mismatch creates real friction in the flow.
+- **SEPA SDD**: direct debit is based on a **mandate** signed by the debtor, with a
+  unique identifier, the creditor's reference and preserved proof of consent. Two
+  schemes: **Core** (consumers, with a right of return without a reason within a deadline, and
+  extended if there was no valid mandate) and **B2B** (only between businesses, without that
+  right, with prior mandate verification by the debtor's bank). **The exact deadlines are
+  published by the EPC and change between rulebook versions**: verify them (§8). Design: store the
+  mandate as a first-class entity with its history; a mandate lapsed through inactivity is the
+  classic cause of the mass return.
+- **Open banking / pay by transfer** (PIS under PSD2): the user authorises at their bank;
+  there is no card, no *chargeback*, typically a lower fee and **the risk shifts to
+  fraud through manipulation of the payer**, which no SCA stops. With no reversal available, the
+  refund policy is yours, entirely. Watch out for availability too: **you depend on the user's
+  bank's API**, with its maintenance window and its error rate.
+- **Crypto-assets**: in the EU **MiCA, Regulation (EU) 2023/1114** applies — applicable from
+  **30-12-2024** (Titles III and IV from 30-6-2024), with the transitional regime of **Art.
+  143(3)** verbatim: providers that were already providing services *"may continue to do so until 1
   July 2026 or until they are granted or refused an authorisation pursuant to Article 63,
-  whichever is sooner"*, y con potestad de los Estados miembros para acortarlo. **Ese periodo ya
-  ha vencido**: a agosto de 2026, prestar servicios de criptoactivos en la UE sin autorización
-  está fuera de la ley. Corolario de ingeniería: **aceptar cripto no es "añadir un método de
-  pago", es entrar en un régimen de autorización** — o delegar íntegramente en un proveedor
-  autorizado y verificar su registro. Añade además volatilidad, irreversibilidad y trazabilidad
-  AML. **Verificar el estado del registro del proveedor en §8.**
+  whichever is sooner"*, and with the power of Member States to shorten it. **That period has
+  already expired**: as of August 2026, providing crypto-asset services in the EU without
+  authorisation is outside the law. Engineering corollary: **accepting crypto is not "adding a
+  payment method", it is entering an authorisation regime** — or delegating entirely to an
+  authorised provider and verifying its registration. It also adds volatility, irreversibility and
+  AML traceability. **Verify the state of the provider's registration in §8.**
 
-## 4. Calidad y pruebas
+## 4. Quality and testing
 
-- **Todo se prueba contra el *sandbox* del PSP**, con sus tarjetas de test, códigos de
-  declinación y escenarios 3DS. Un simulacro propio prueba tu simulacro.
-- **Casos obligatorios** además del camino feliz: declinación por fondos y por sospecha de
-  fraude, autorización expirada, `timeout` sin respuesta (el caso de la idempotencia), webhook
-  duplicado, desordenado y con firma inválida, captura parcial, reembolso parcial, reembolso
-  mayor que la captura, divisa de cero decimales, cambio de divisa, disputa recibida.
-- **Propiedad del libro mayor**: para cualquier secuencia, débitos = créditos y saldo derivado =
-  saldo recalculado desde cero.
-- **Concurrencia real**: N peticiones simultáneas con la misma clave de idempotencia producen
-  **un** cargo. En paralelo de verdad, no en secuencia.
-- **Conciliación con fichero real anonimizado**, incluyendo partida huérfana y comisión negativa.
-- **Prueba negativa de logs**: ejecuta un pago y **falla si el volcado contiene algo que parezca
-  un PAN o un CVV**. Es lo único que hace que la prohibición de §5 no dependa de la memoria.
-- **Gates de CI**, coste creciente: análisis estático que **prohíbe `float`/`double` en tipos
-  monetarios** y detecta patrones de PAN/CVV → *secret scanning* → unitarias del *ledger* →
-  contrato con el PSP (grabación/reproducción) → SCA → integración con *sandbox*.
+- **Everything is tested against the PSP's *sandbox***, with its test cards, decline
+  codes and 3DS scenarios. A mock of your own tests your mock.
+- **Mandatory cases** besides the happy path: decline for funds and for suspected
+  fraud, expired authorisation, `timeout` with no response (the idempotency case), duplicate,
+  out-of-order and invalidly signed webhooks, partial capture, partial refund, refund
+  larger than the capture, zero-decimal currency, currency change, dispute received.
+- **Ledger property**: for any sequence, debits = credits and derived balance =
+  balance recomputed from scratch.
+- **Real concurrency**: N simultaneous requests with the same idempotency key produce
+  **one** charge. Genuinely in parallel, not in sequence.
+- **Reconciliation with a real anonymised file**, including an orphan item and a negative fee.
+- **Negative log test**: run a payment and **fail if the dump contains anything that looks like
+  a PAN or a CVV**. It is the only thing that makes the prohibition in §5 not depend on memory.
+- **CI gates**, in increasing cost: static analysis that **forbids `float`/`double` in monetary
+  types** and detects PAN/CVV patterns → *secret scanning* → ledger unit tests →
+  contract with the PSP (record/replay) → SCA → integration with the *sandbox*.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **Nunca registres** PAN completo, CVV, pista, PIN ni la respuesta cruda del PSP. El filtro va
-  **en la capa de logging** (redactor por lista de permitidos), no en cada `logger.info`. Los
-  escapes más frecuentes son trazas de APM, reportes de error y volcados de excepción.
-- **Skimming de cliente (Magecart)** es el vector dominante y **no toca tu servidor**: minimiza
-  *scripts* de terceros en la página de pago, CSP restrictiva, SRI, inventario y autorización de
-  *scripts* (6.4.3) y detección de manipulación (11.6.1). El *frontend* es superficie de pago.
-- **Autorización de objeto**: `GET /payments/{id}` sin comprobar propiedad es el IDOR del
-  dominio, con impacto de datos financieros. Y **quién puede reembolsar, hasta cuánto y con qué
-  segunda aprobación** es control de negocio, no de interfaz — el fraude interno vive ahí, igual
-  que en la separación entre quien fija precios y quien aprueba abonos masivos.
-- **Secretos del PSP** en gestor con rotación, claves distintas por entorno; **prohibida** la
-  clave de producción fuera de producción. TLS moderno extremo a extremo; **fijar el certificado
-  del PSP solo si tienes proceso de rotación** — si no, es un incidente programado.
-- **Card testing**: validar tarjetas robadas con microcargos contra tu formulario. Se detecta por
-  **tasa de declinación anómala**, no por volumen. Sin limitación de tasa por tarjeta, cuenta e
-  IP, tu endpoint es el validador de otro y las autorizaciones las pagas tú.
-- **Enumeración**: identificadores de pago no adivinables (UUID/ULID), nunca secuenciales.
-- **Retención**: define y **aplica** el borrado. Un dato de tarjeta que no guardas no se filtra.
+- **Never log** the full PAN, CVV, track, PIN or the PSP's raw response. The filter goes
+  **in the logging layer** (allowlist-based redactor), not in every `logger.info`. The most
+  frequent escapes are APM traces, error reports and exception dumps.
+- **Client-side skimming (Magecart)** is the dominant vector and **it does not touch your server**:
+  minimise third-party *scripts* on the payment page, restrictive CSP, SRI, *script* inventory and
+  authorisation (6.4.3) and tamper detection (11.6.1). The *frontend* is payment surface.
+- **Object authorisation**: `GET /payments/{id}` without checking ownership is the domain's IDOR,
+  with financial-data impact. And **who can refund, up to how much and with what
+  second approval** is a business control, not an interface one — internal fraud lives there, just
+  as in the separation between who sets prices and who approves mass credits.
+- **PSP secrets** in a manager with rotation, different keys per environment; the production key
+  **is forbidden** outside production. Modern TLS end to end; **pin the PSP's certificate only if
+  you have a rotation process** — otherwise it is a scheduled incident.
+- **Card testing**: validating stolen cards with micro-charges against your form. It is detected by
+  an **anomalous decline rate**, not by volume. Without rate limiting by card, account and
+  IP, your endpoint is somebody else's validator and you pay for the authorisations.
+- **Enumeration**: unguessable payment identifiers (UUID/ULID), never sequential.
+- **Retention**: define and **apply** deletion. Card data you do not keep does not leak.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **SLI que importan**: tasa de autorización aprobada (por PSP, método, país y BIN), latencia
-  p95/p99 y tasa de error del PSP, retraso del webhook, antigüedad de la partida no conciliada
-  más vieja, tasa de disputa y de reembolso, coste efectivo por transacción.
-- **La caída de la tasa de aprobación es un incidente** que ningún monitor de infraestructura
-  ve: todo verde y el dinero no entra. Alerta por desviación de la línea base **por segmento**,
-  no por umbral absoluto.
-- **Timeouts explícitos y cortos** hacia el PSP, con clave de idempotencia lista para reintentar.
-  Sin timeout, un PSP lento es tu caída.
-- **Degradación**: si el PSP no responde, **no adivines el resultado**. Pago en "pendiente de
-  confirmación", mensaje que no promete, y resolución por conciliación. El peor diseño posible
-  es asumir fallo y dejar que el usuario reintente sobre un cargo que sí se hizo.
-- **Multi-PSP** es resiliencia y coste, no adorno: dos integraciones, dos conciliaciones, dos
-  modelos de token y una capa de enrutado. Justificable con volumen alto o dependencia
-  geográfica; **prematuro casi siempre**.
-- **Picos**: la campaña golpea el pago al final del embudo, con el usuario ya comprometido.
-  Prueba de carga del flujo de pago completo y límites de tasa acordados con el PSP por
-  adelantado.
-- **Trazabilidad**: un identificador de correlación que atraviese pedido → intento → llamada al
-  PSP → webhook → asiento → línea de liquidación. Sin él, un céntimo perdido cuesta días.
+- **SLIs that matter**: approved authorisation rate (by PSP, method, country and BIN), p95/p99
+  latency and PSP error rate, webhook delay, age of the oldest unreconciled item, dispute and
+  refund rate, effective cost per transaction.
+- **A drop in the approval rate is an incident** that no infrastructure monitor
+  sees: everything green and the money is not coming in. Alert on deviation from the baseline
+  **per segment**, not on an absolute threshold.
+- **Explicit and short timeouts** towards the PSP, with an idempotency key ready to retry.
+  Without a timeout, a slow PSP is your outage.
+- **Degradation**: if the PSP does not respond, **do not guess the outcome**. Payment in "pending
+  confirmation", a message that promises nothing, and resolution by reconciliation. The worst
+  possible design is to assume failure and let the user retry on a charge that did go through.
+- **Multi-PSP** is resilience and cost, not decoration: two integrations, two reconciliations, two
+  token models and a routing layer. Justifiable with high volume or geographic
+  dependency; **premature almost always**.
+- **Peaks**: the campaign hits payment at the end of the funnel, with the user already committed.
+  Load-test the complete payment flow and agree rate limits with the PSP in
+  advance.
+- **Traceability**: one correlation identifier crossing order → attempt → call to the
+  PSP → webhook → ledger entry → settlement line. Without it, a lost cent costs days.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisión del alcance PCI **ante cada cambio de la página de pago**, y en todo
-  caso anual; validación anual (SAQ/ROC) y escaneos ASV trimestrales cuando apliquen;
-  seguimiento de las versiones de API del PSP y de sus fechas de retirada — **los PSP retiran
-  versiones de API y no esperan**.
-- **Registro de decisiones (ADR)** para: elección de PSP, arquitectura de integración y SAQ
-  objetivo, política de captura, política de exenciones SCA, política de reembolso.
+- **Cadence**: review of PCI scope **on every change to the payment page**, and in any
+  case annually; annual validation (SAQ/ROC) and quarterly ASV scans where applicable;
+  tracking the PSP's API versions and their retirement dates — **PSPs retire
+  API versions and do not wait**.
+- **Decision record (ADR)** for: choice of PSP, integration architecture and target SAQ,
+  capture policy, SCA exemption policy, refund policy.
 
-Prohibiciones:
+Prohibitions:
 
-- ❌ **PROHIBIDO almacenar CVV/CVC2/CAV2/CID, contenido de pista o PIN tras la autorización**,
-  en base de datos, log, caché, cola, backup, hoja de cálculo o ticket de soporte. Cifrado
-  incluido.
-- ❌ **PROHIBIDO representar dinero con coma flotante.** Ni en la API, ni en el dominio, ni en la
-  base de datos, ni en JSON.
-- ❌ **PROHIBIDO un `UPDATE` o `DELETE` sobre un asiento contable ya escrito.** Se corrige con
-  contra-asiento.
-- ❌ **PROHIBIDO llamar al PSP sin clave de idempotencia** en cualquier operación que mueva
-  dinero.
-- ❌ **PROHIBIDO tratar un webhook como fuente de verdad** sin releer el estado por API, y
-  **prohibido procesarlo sin verificar la firma**.
-- ❌ **PROHIBIDO reenviar el PAN a través de tu servidor "solo de paso"**. Ese *proxy* de una
-  línea convierte todo el servicio en CDE.
-- ❌ **PROHIBIDO capturar antes de poder entregar**, salvo modelo de negocio que lo justifique y
-  se comunique.
-- ❌ **PROHIBIDO deducir el estado de un pago del código HTTP de una respuesta perdida.** Un
-  `timeout` no es un fallo: es un desconocido.
-- ❌ **PROHIBIDO desactivar la SCA "porque convierte peor"** sin exención aplicable y sin quien
-  la aplique legítimamente.
-- ❌ **PROHIBIDO un endpoint de pago sin limitación de tasa** (es un validador de tarjetas
-  robadas para otro, y las autorizaciones las pagas tú).
-- ❌ **PROHIBIDO registrar solo el importe neto liquidado.** Bruto, comisión, retención y cambio,
-  cada uno con su asiento.
-- ❌ **PROHIBIDO copiar de este documento un plazo de disputa, una comisión o un umbral de
-  esquema sin verificarlo con tu adquirente.**
-- ❌ **PROHIBIDO recolectar datos de tarjeta por correo, chat, teléfono grabado o ticket de
-  soporte.** Es el atajo que convierte a atención al cliente en parte del CDE.
+- ❌ **FORBIDDEN to store CVV/CVC2/CAV2/CID, track content or PIN after authorisation**,
+  in a database, log, cache, queue, backup, spreadsheet or support ticket. Encrypted
+  included.
+- ❌ **FORBIDDEN to represent money with floating point.** Not in the API, not in the domain, not
+  in the database, not in JSON.
+- ❌ **FORBIDDEN to `UPDATE` or `DELETE` an accounting entry already written.** It is corrected with
+  a contra-entry.
+- ❌ **FORBIDDEN to call the PSP without an idempotency key** in any operation that moves
+  money.
+- ❌ **FORBIDDEN to treat a webhook as the source of truth** without re-reading the state via the
+  API, and **forbidden to process it without verifying the signature**.
+- ❌ **FORBIDDEN to forward the PAN through your server "just passing through"**. That one-line
+  *proxy* turns the entire service into CDE.
+- ❌ **FORBIDDEN to capture before you can deliver**, unless there is a business model that
+  justifies it and it is communicated.
+- ❌ **FORBIDDEN to infer the state of a payment from the HTTP code of a lost response.** A
+  `timeout` is not a failure: it is an unknown.
+- ❌ **FORBIDDEN to disable SCA "because it converts worse"** without an applicable exemption and
+  without somebody who applies it legitimately.
+- ❌ **FORBIDDEN to have a payment endpoint without rate limiting** (it is somebody else's stolen
+  card validator, and you pay for the authorisations).
+- ❌ **FORBIDDEN to record only the net settled amount.** Gross, fee, holdback and exchange,
+  each with its own entry.
+- ❌ **FORBIDDEN to copy from this document a dispute deadline, a fee or a scheme threshold
+  without verifying it with your acquirer.**
+- ❌ **FORBIDDEN to collect card data by email, chat, recorded phone call or support
+  ticket.** It is the shortcut that turns customer service into part of the CDE.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Comprobar **antes** de fijar nada:
+Check **before** committing to anything:
 
-1. **PCI DSS**: versión vigente (a agosto de 2026, **v4.0.1**), estado de los requisitos que
-   dejaron de ser buena práctica el **31-03-2025**, y su número exacto. Fuente primaria:
-   `pcisecuritystandards.org` → Document Library. **Hueco declarado**: el PDF de PCI DSS v4.0.1
-   devuelve **HTTP 403** a la descarga automatizada (requiere aceptar el acuerdo de licencia);
-   el texto de los requisitos 3.3.1.1/3.3.1.2/3.3.1.3 citado en §3.3 procede de una
-   **reproducción de tercero** (`sammy.codific.com`), no de la fuente primaria. **Contrástalo
-   con el PDF oficial antes de usarlo como evidencia de auditoría.** El único texto del PCI SSC
-   citado aquí de origen directo es la FAQ 1280 del blog oficial.
-2. **SAQ A / A-EP / D**: criterios de elegibilidad vigentes, la FAQ 1588 y su revisión, y el
-   número de ítems de cada cuestionario. Y por encima de todo, **lo que exijan tu adquirente y
-   tu QSA**, que mandan sobre cualquier lectura genérica.
-3. **PSD2 / SCA**: Reglamento Delegado **(UE) 2018/389** en EUR-Lex (CELEX 32018R0389) y las
-   directrices y opiniones de la **EBA**, que son las que fijan la interpretación operativa
-   (delegación de SCA, MIT frente a recurrente, alcance del *one-leg*).
-4. **PSD3 / PSR**: estado en el Observatorio Legislativo del PE —**2023/0209(COD)** y
-   **2023/0210(COD)**— y en EUR-Lex. A agosto de 2026 **no hay acto final publicado**; la fecha
-   indicativa de pleno es 14/12/2026. Cualquier fuente que los dé por aprobados o que fije
-   fechas de aplicación está adelantándose.
-5. **MiCA**: Reglamento (UE) **2023/1114**, fin de los regímenes transitorios nacionales
-   (Art. 143(3)) y **registro de proveedores autorizados de ESMA** para verificar a tu
-   contraparte.
-6. **SEPA**: rulebooks vigentes del **EPC** (SCT, SCT Inst, SDD Core, SDD B2B) — plazos de
-   devolución, presentación y validez de mandato cambian entre versiones — y el Reglamento
-   (UE) **2024/886**.
-7. **EMV 3DS**: versión publicada y borradores en `emvco.com`, y **qué versión soporta de
-   verdad tu PSP** (va por detrás).
-8. **Reglas de esquema (Visa, Mastercard)**: plazos y motivos de disputa, umbrales de programas
-   de monitorización, condiciones exactas del traslado de responsabilidad. **Hueco declarado**:
-   el PDF público de reglas de Visa devuelve **HTTP 403** a la descarga automatizada; consíguelo
-   por tu adquirente. **No se afirma aquí ningún plazo ni porcentaje de esas reglas.**
-9. **Tasas de intercambio**: Reglamento (UE) **2015/751** (0,2 % débito / 0,3 % crédito de
-   consumidor) y sus exclusiones; y el **precio real de tu PSP**, que se cita de su página de
-   precios con fecha o no se cita.
-10. **`Idempotency-Key`**: estado del borrador IETF (a agosto de 2026, **expirado**) y la
-    semántica concreta —ventana, conflicto, alcance de la clave— **en la documentación de tu
-    PSP**.
-11. **ISO 4217**: número de decimales por divisa. `iso.org` bloquea la descarga automatizada
-    (**HTTP 403**): usa la lista mantenida de tu biblioteca de i18n y verifica los casos
-    concretos con los que vas a operar.
-12. **Tu PSP**: versión de API vigente y calendario de retirada, cambios en el flujo 3DS,
-    condiciones de portabilidad de tokens ante un cambio de proveedor.
+1. **PCI DSS**: current version (as of August 2026, **v4.0.1**), the status of the requirements
+   that stopped being best practice on **31-03-2025**, and their exact number. Primary source:
+   `pcisecuritystandards.org` → Document Library. **Declared gap**: the PCI DSS v4.0.1 PDF
+   returns **HTTP 403** to automated download (it requires accepting the licence agreement);
+   the text of requirements 3.3.1.1/3.3.1.2/3.3.1.3 quoted in §3.3 comes from a
+   **third-party reproduction** (`sammy.codific.com`), not from the primary source. **Cross-check
+   it against the official PDF before using it as audit evidence.** The only PCI SSC text
+   quoted here from a direct source is FAQ 1280 from the official blog.
+2. **SAQ A / A-EP / D**: current eligibility criteria, FAQ 1588 and its revision, and the
+   number of items in each questionnaire. And above all, **what your acquirer and
+   your QSA require**, which override any generic reading.
+3. **PSD2 / SCA**: Delegated Regulation **(EU) 2018/389** on EUR-Lex (CELEX 32018R0389) and the
+   **EBA** guidelines and opinions, which are what set the operational interpretation
+   (SCA delegation, MIT versus recurring, scope of *one-leg*).
+4. **PSD3 / PSR**: status in the EP's Legislative Observatory —**2023/0209(COD)** and
+   **2023/0210(COD)**— and on EUR-Lex. As of August 2026 **there is no final act published**; the
+   indicative plenary date is 14/12/2026. Any source that treats them as approved or that sets
+   application dates is getting ahead of itself.
+5. **MiCA**: Regulation (EU) **2023/1114**, the end of the national transitional regimes
+   (Art. 143(3)) and **ESMA's register of authorised providers** to verify your
+   counterparty.
+6. **SEPA**: current **EPC** rulebooks (SCT, SCT Inst, SDD Core, SDD B2B) — return,
+   presentation and mandate validity deadlines change between versions — and Regulation
+   (EU) **2024/886**.
+7. **EMV 3DS**: published version and drafts at `emvco.com`, and **which version your PSP
+   really supports** (it lags behind).
+8. **Scheme rules (Visa, Mastercard)**: dispute deadlines and reasons, thresholds of monitoring
+   programmes, exact conditions of liability shift. **Declared gap**:
+   Visa's public rules PDF returns **HTTP 403** to automated download; get it
+   through your acquirer. **No deadline or percentage from those rules is asserted here.**
+9. **Interchange fees**: Regulation (EU) **2015/751** (0,2 % consumer debit / 0,3 % consumer
+   credit) and its exclusions; and **your PSP's real price**, which is quoted from its pricing
+   page with a date or not quoted at all.
+10. **`Idempotency-Key`**: status of the IETF draft (as of August 2026, **expired**) and the
+    specific semantics —window, conflict, key scope— **in your PSP's
+    documentation**.
+11. **ISO 4217**: number of decimals per currency. `iso.org` blocks automated download
+    (**HTTP 403**): use the maintained list from your i18n library and verify the specific
+    cases you are going to operate with.
+12. **Your PSP**: current API version and retirement calendar, changes to the 3DS flow,
+    token portability conditions in case of a provider change.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

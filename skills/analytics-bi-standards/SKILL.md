@@ -3,483 +3,476 @@ name: analytics-bi-standards
 description: Use when data reaches a human for a decision — deciding whether a dashboard changes any decision at all and retiring dead ones, choosing or operating a BI tool (Power BI and Fabric F-SKU capacity versus Pro/PPU per-user licensing, Tableau Creator/Explorer/Viewer seats, Looker platform fee and LookML, Metabase, Apache Superset, Lightdash, Evidence, Preset), .pbix/.pbip/.twb/.twbx/.lkml/model.lkml/explore.lkml files, dashboard and report design driven by audience and decision, self-service tiers and certified versus exploratory content, extracts and imports versus direct/live query, pre-aggregates, caching and refresh schedules as a cost pattern, report certification, per-report ownership and periodic pruning, row-level and column-level security and whether to enforce it in the warehouse or in the tool, spreadsheet export as a governance leak, scheduled report delivery, data alerts, embedded analytics, and showing data freshness or staleness inside the report itself.
 ---
 
-# Estándares de analítica y BI
+# Analytics and BI standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a la **capa de consumo**: informes, cuadros de mando, autoservicio, distribución y
-analítica empotrada. Todo lo que ocurre entre el almacén y la persona que decide.
+Applies to the **consumption layer**: reports, dashboards, self-service, distribution and embedded
+analytics. Everything that happens between the warehouse and the person who decides.
 
-Disparadores: `.pbix`, `.pbit`, `.pbip`, `.twb`, `.twbx`, `.tds`, `.hyper`, `.lkml`,
-`model.lkml`, `explore.lkml`, `view.lkml`, `manifest.lkml`, `dashboards/*.yml` de Lightdash,
-`pages/*.md` con bloques SQL de Evidence, `superset_config.py`, `metabase.db`, "dashboard",
-"cuadro de mando", "informe", "KPI", "drill-down", "extracto", "actualización programada",
-"suscripción", "alerta de datos", "embedded analytics", "RLS", "seguridad a nivel de fila",
-"exportar a Excel", y las frases que delatan un problema de esta capa: **"los dos informes dan
-números distintos"**, "el informe tarda dos minutos en abrir", "esto lo mira alguien todavía?",
-"necesito que se refresque cada 5 minutos", "¿por qué falta el día de ayer?".
+Triggers: `.pbix`, `.pbit`, `.pbip`, `.twb`, `.twbx`, `.tds`, `.hyper`, `.lkml`,
+`model.lkml`, `explore.lkml`, `view.lkml`, `manifest.lkml`, Lightdash `dashboards/*.yml`,
+Evidence `pages/*.md` with SQL blocks, `superset_config.py`, `metabase.db`, "dashboard",
+"report", "KPI", "drill-down", "extract", "scheduled refresh",
+"subscription", "data alert", "embedded analytics", "RLS", "row-level security",
+"export to Excel", and the phrases that give away a problem in this layer: **"the two reports give
+different numbers"**, "the report takes two minutes to open", "does anyone still look at this?",
+"I need it refreshed every 5 minutes", "why is yesterday missing?".
 
-**No aplica**: ver
-- `data-warehouse-modeling-standards` (**dueña de la definición de métrica**): **la definición
-  canónica de una métrica y la capa semántica son suyas**, viven en el repositorio junto al modelo,
-  versionadas y con propietario. **Esta skill las consume; no las define, no las redefine y no las
-  duplica.** Grano, dimensiones, SCD y qué desgloses son legales, también suyos. Si la pregunta es
-  "¿cómo se calcula ingreso neto?" o "¿por qué al sumar sale el doble?", es suya.
-- `dataviz` (**skill sin sufijo `-standards`; el diseño visual del gráfico es suyo, sin excepción**):
-  elección del tipo de marca, paleta y color por serie, ejes, escalas, leyendas, *tooltips*,
-  paletas secuenciales y divergentes, fichas de estadística, *sparklines*, mapas de calor y
-  accesibilidad del gráfico. **Léela antes de escribir la primera línea de código de un gráfico.**
-  Aquí se decide **si el cuadro de mando debe existir, para quién, con qué dato y quién responde
-  por él**; allí, **cómo se dibuja**. No dupliques ni una regla de color.
-- `data-governance-quality-standards` (**hermana; frontera declarada en ambos lados**): **el
-  gobierno decide si el dato es confiable y de quién es; el BI lo presenta para decidir.** Dueño
-  del conjunto de datos, contrato, SLA de frescura, clasificación, catálogo, glosario e incidente
-  de dato son suyos. **Un cuadro de mando sobre dato sin dueño es un incidente esperando**: si no
-  hay dueño aguas arriba, el informe no se certifica. El gobierno del **propio BI** (certificación
-  del informe, dueño por informe, poda) es de aquí, y hereda sus reglas de propiedad y
-  clasificación.
-- `data-engineering-standards`: el pipeline que llena las tablas, su frescura instrumentada y su
-  coste de escaneo. Aquí solo el consumo: qué consulta el informe, cuánto cuesta esa consulta y
-  qué se muestra cuando el dato aún no ha llegado.
-- `lakehouse-standards`: formato de tabla y catálogo técnico; el control de acceso del formato es
-  suyo. Aquí dónde se **aplica** el filtro que ve el usuario.
-- `data-platform-standards` (madre), `privacy-engineering-standards` (**dato personal,
-  minimización, retención y borrado; un informe que expone PII a quien no debe es un incidente de
-  privacidad, y la política es suya**), `grc-compliance-standards` (**marco, riesgo y evidencia de
-  auditoría**), `ai-governance-standards` (**gobierno de sistemas de IA**: un asistente de
-  "pregunta a tus datos" empotrado en la herramienta de BI **es un sistema de IA y cae en su
-  inventario**, aunque el dato que consume sea de esta capa).
-- `identity-access-management-standards`: **identidad, SSO, SCIM y grupos son suyos**; aquí solo
-  cómo la identidad se propaga hasta el filtro de fila.
-- `observability-standards` (telemetría del sistema), `incident-management-standards` (el proceso
-  del incidente), `api-design-standards`, `cicd-standards` (el despliegue del artefacto de BI),
+**Not applicable**: see
+- `data-warehouse-modeling-standards` (**owner of the metric definition**): **the canonical
+  definition of a metric and the semantic layer are theirs**, they live in the repository next to
+  the model, versioned and with an owner. **This skill consumes them; it does not define them, does
+  not redefine them and does not duplicate them.** Grain, dimensions, SCD and which breakdowns are
+  legal, also theirs. If the question is "how is net revenue calculated?" or "why does it come out
+  double when summed?", it is theirs.
+- `dataviz` (**skill with no `-standards` suffix; the visual design of the chart is theirs, without
+  exception**): mark type choice, palette and colour by series, axes, scales, legends, *tooltips*,
+  sequential and diverging palettes, stat tiles, *sparklines*, heatmaps and chart accessibility.
+  **Read it before writing the first line of chart code.** Here it is decided **whether the
+  dashboard should exist, for whom, with what data and who answers for it**; there, **how it is
+  drawn**. Do not duplicate a single colour rule.
+- `data-governance-quality-standards` (**sister; boundary declared on both sides**): **governance
+  decides whether the data is trustworthy and whose it is; BI presents it for deciding.** Dataset
+  owner, contract, freshness SLA, classification, catalogue, glossary and data incident are theirs.
+  **A dashboard over ownerless data is an incident waiting to happen**: if there is no owner
+  upstream, the report is not certified. The governance of **BI itself** (report certification,
+  per-report owner, pruning) belongs here, and inherits their ownership and classification rules.
+- `data-engineering-standards`: the pipeline that fills the tables, its instrumented freshness and
+  its scan cost. Here only the consumption: what the report queries, how much that query costs and
+  what is shown when the data has not arrived yet.
+- `lakehouse-standards`: table format and technical catalogue; the format's access control is
+  theirs. Here where the filter the user sees is **applied**.
+- `data-platform-standards` (parent), `privacy-engineering-standards` (**personal data,
+  minimisation, retention and erasure; a report that exposes PII to the wrong people is a privacy
+  incident, and the policy is theirs**), `grc-compliance-standards` (**framework, risk and audit
+  evidence**), `ai-governance-standards` (**governance of AI systems**: an "ask your data"
+  assistant embedded in the BI tool **is an AI system and falls into their inventory**, even if the
+  data it consumes belongs to this layer).
+- `identity-access-management-standards`: **identity, SSO, SCIM and groups are theirs**; here only
+  how the identity propagates down to the row filter.
+- `observability-standards` (system telemetry), `incident-management-standards` (the incident
+  process), `api-design-standards`, `cicd-standards` (deployment of the BI artifact),
   `iac-standards`, `secrets-management-standards`, `mlops-standards`,
-  `llm-app-engineering-standards` y `rag-standards` (**el producto conversacional sobre datos es
-  suyo**), `nosql-standards`, `search-engines-standards`,
-  `aws-standards`/`azure-standards`/`gcp-standards` (QuickSight, Fabric/Power BI Service y Looker
-  **como servicios gestionados**: aprovisionamiento, red, IAM y facturación son suyos).
-- `streaming-cdc-standards`: la captura y el procesado en movimiento. Aquí solo el consumo: **un
-  cuadro de mando "en tiempo real" sin nadie que actúe en esa latencia es gasto, no capacidad**.
-- `product-discovery-standards`: **el cuadro de mando, la definición canónica de la
-  métrica y su gobierno son de aquí**; **decidir qué se construye a partir de ese número es suyo**,
-  igual que el diseño del experimento que lo mueve. Aviso que ambas comparten: **una métrica se
-  degrada en cuanto se convierte en objetivo** —ley de Goodhart—, y por eso una métrica de negocio
-  necesita métricas de guardia, no solo un umbral.
-- `r-standards` y `julia-standards`: **sustituir un cuadro de mando por un
-  informe de Quarto/R Markdown o por una app de Shiny es una decisión de esta skill** —quién
-  consume, con qué latencia, quién mantiene la definición de la métrica y qué pasa cuando el autor
-  se va—; **el código de ese informe o de esa app** —`renv`, estructura, tests, despliegue y su
-  seguridad— es de `r-standards`. Aviso que ambas comparten: **una app de Shiny en producción es
-  una aplicación web**, con su superficie de ataque y su coste de operación, no un informe.
+  `llm-app-engineering-standards` and `rag-standards` (**the conversational product over data is
+  theirs**), `nosql-standards`, `search-engines-standards`,
+  `aws-standards`/`azure-standards`/`gcp-standards` (QuickSight, Fabric/Power BI Service and Looker
+  **as managed services**: provisioning, network, IAM and billing are theirs).
+- `streaming-cdc-standards`: capture and processing in motion. Here only consumption: **a
+  "real-time" dashboard with nobody acting at that latency is spend, not capability**.
+- `product-discovery-standards`: **the dashboard, the canonical definition of the metric and its
+  governance belong here**; **deciding what gets built from that number is theirs**, as is the
+  design of the experiment that moves it. A warning both share: **a metric degrades as soon as it
+  becomes a target** — Goodhart's law — and that is why a business metric needs guardrail metrics,
+  not just a threshold.
+- `r-standards` and `julia-standards`: **replacing a dashboard with a Quarto/R Markdown report or
+  with a Shiny app is a decision of this skill** — who consumes it, at what latency, who maintains
+  the metric definition and what happens when the author leaves —; **the code of that report or
+  that app** — `renv`, structure, tests, deployment and its security — belongs to `r-standards`.
+  A warning both share: **a Shiny app in production is a web application**, with its attack surface
+  and its operating cost, not a report.
 - `timeseries-db-standards`,
   `message-brokers-standards`, `oracle-dba-standards`, `sqlserver-dba-standards`,
-  `mysql-mariadb-dba-standards`, `caching-cdn-standards`: sus motores y su operación.
+  `mysql-mariadb-dba-standards`, `caching-cdn-standards`: their engines and their operation.
 
-### La pregunta previa
+### The prior question
 
-**¿Este cuadro de mando cambia alguna decisión?** Es la única pregunta que hay que contestar antes
-de construir nada, y hay que contestarla nombrando **quién** decide **qué** y **cuándo**. Si la
-respuesta es "para tener visibilidad", "porque el director lo pidió" o "para monitorizar el
-negocio", no hay decisión: hay **coste de mantenimiento disfrazado de valor**. Cada cuadro de mando
-publicado es una consulta recurrente que se paga, un artefacto que se rompe cuando cambia el
-modelo, una superficie de acceso que auditar y una fuente potencial de contradicción con otro
-informe.
+**Does this dashboard change any decision?** It is the only question that has to be answered before
+building anything, and it has to be answered by naming **who** decides **what** and **when**. If
+the answer is "for visibility", "because the director asked for it" or "to monitor the business",
+there is no decision: there is **maintenance cost disguised as value**. Every published dashboard
+is a recurring query that gets paid for, an artifact that breaks when the model changes, an access
+surface to audit and a potential source of contradiction with another report.
 
-**Corolario que casi nadie aplica: el ciclo de vida incluye retirar.** Ninguna organización tiene
-un problema de "faltan cuadros de mando"; todas tienen un problema de cementerio. Un BI maduro se
-reconoce por lo que **borra**, no por lo que publica. Si en el último año no has retirado ningún
-informe, tu catálogo de informes está mintiendo sobre lo que la organización usa.
+**Corollary almost nobody applies: the life cycle includes retiring.** No organisation has a
+problem of "we are missing dashboards"; they all have a graveyard problem. A mature BI practice is
+recognised by what it **deletes**, not by what it publishes. If you have not retired a single
+report in the last year, your report catalogue is lying about what the organisation uses.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web licencia, estado y **modelo de precio** antes de fijar nada (§2.2 es la
-> sección que más cambia y la que decide la elección) (§8).
+> Verify licence, status and **pricing model** on the web before fixing anything (§2.2 is the
+> section that changes most and the one that decides the choice) (§8).
 
-### 2.1 Antes de elegir herramienta
+### 2.1 Before choosing a tool
 
-| Necesidad real | Solución más simple | Cuándo deja de servir |
+| Real need | Simplest solution | When it stops working |
 |---|---|---|
-| Un número que alguien mira una vez al mes | **Un informe programado por correo** o una consulta guardada | Cuando hay que cruzar, filtrar o comparar |
-| Una tabla que un equipo consulta | **Vista o consulta guardada** en el almacén | Cuando el consumidor no sabe SQL |
-| Un puñado de gráficos versionados junto al código | **BI como código** (Evidence, Lightdash) | Cuando el consumidor necesita construir lo suyo |
-| Exploración libre de un modelo por gente de negocio | **Herramienta de BI completa** | — |
-| Analítica dentro de un producto que vendes | **Empotrado** — es otro producto, otro precio y otro modelo de seguridad (§5.4) | — |
+| A number somebody looks at once a month | **A report scheduled by email** or a saved query | When it has to be crossed, filtered or compared |
+| A table a team consults | **A view or saved query** in the warehouse | When the consumer does not know SQL |
+| A handful of charts versioned next to the code | **BI as code** (Evidence, Lightdash) | When the consumer needs to build their own |
+| Free exploration of a model by business people | **A full BI tool** | — |
+| Analytics inside a product you sell | **Embedded** — it is another product, another price and another security model (§5.4) | — |
 
-Ningún cuadro de mando es gratis. El coste no es construirlo: es mantenerlo alineado con un modelo
-que cambia, durante años, mientras quien lo pidió cambia de puesto.
+No dashboard is free. The cost is not building it: it is keeping it aligned with a model that
+changes, for years, while whoever asked for it moves to another role.
 
-### 2.2 Elección de herramienta
+### 2.2 Tool choice
 
-**El criterio que decide es el modelo de precio, no la lista de funcionalidades**, porque las
-funcionalidades convergieron hace años y el precio no. Y hay un segundo criterio, estructural:
-**la herramienta se cambia cada pocos años; el modelo de datos sobrevive a todas.** De ahí la regla
-más importante del dominio: **no metas lógica de negocio en la herramienta.** Toda transformación,
-regla y métrica que vive dentro del `.pbix`, del `.twb` o del LookML es trabajo que se tira al
-migrar, y mientras tanto es una definición que nadie fuera de la herramienta puede auditar.
+**The criterion that decides is the pricing model, not the feature list**, because features
+converged years ago and price did not. And there is a second, structural criterion: **the tool is
+replaced every few years; the data model outlives all of them.** Hence the most important rule in
+the domain: **do not put business logic in the tool.** Every transformation, rule and metric that
+lives inside the `.pbix`, the `.twb` or the LookML is work thrown away on migration, and in the
+meantime it is a definition nobody outside the tool can audit.
 
-| Herramienta | Licencia (verificado ago-2026) | Modelo de precio | Cuándo es la respuesta |
+| Tool | Licence (verified Aug 2026) | Pricing model | When it is the answer |
 |---|---|---|---|
-| **Power BI / Fabric** | Comercial | **Doble**: por usuario (Pro, Premium Per User) **o por capacidad** (SKU `F` de Fabric, facturación por segundo, reservable). Los SKU `P` heredados están siendo retirados hacia `F`. **A partir de cierto nivel de capacidad los visores dejan de necesitar licencia individual** — ese umbral es el punto de inflexión económico de toda la plataforma | Organizaciones ya en Microsoft 365. **Modela el coste con tu reparto real de autores/visores antes de firmar**: por debajo del umbral pagas por cabeza, por encima pagas capacidad fija |
-| **Tableau** | Comercial (Salesforce) | **Por usuario con roles**: Creator / Explorer / Viewer, facturación anual, con niveles Cloud (Standard/Enterprise) que cambian sustancialmente el precio. Server admite además licencia **por núcleo** | Cultura visual fuerte y muchos autores. **La palanca de coste es la mezcla de roles**: sobreaprovisionar Creator a quien solo consulta es el desperdicio clásico |
-| **Looker** | Comercial (Google) | **Cuota de plataforma elevada + usuarios + capacidad** (límites de llamadas de consulta y de API por edición). Precio **no público, negociado**. Metering de IA anunciado con inicio de facturación en oct-2026 | Cuando quieres una capa de modelado gobernada (LookML) y puedes pagar la entrada. **Coste oculto real: LookML es una práctica de ingeniería con personal dedicado**, no una configuración |
-| **Metabase** | **OSS: AGPL-3.0**; el directorio `enterprise/` está bajo *Metabase Commercial License* (**verificado verbatim en `LICENSE.txt`**). Versiones `0.x` = OSS, `1.x` = comercial | OSS gratuito autoalojado; comercial por plan | **Default cuando la necesidad es "que la gente se conteste sus preguntas" sin proyecto.** Ojo con AGPL si vas a empotrarlo o modificarlo y distribuirlo |
-| **Apache Superset** | **Apache-2.0** (verificado verbatim en `LICENSE.txt`), proyecto **top-level de la ASF** | Gratis; el coste es operarlo (o pagar Preset, el proveedor comercial dominante) | Cuando necesitas licencia permisiva y tienes capacidad de plataforma. **Política de soporte: solo dos versiones mayores a la vez** — un despliegue viejo se queda sin parches rápido |
-| **Lightdash** | **MIT**, excepto `packages/backend/src/ee` bajo licencia comercial (**verificado verbatim en `LICENSE`**) | Autoalojado gratis; Cloud por planes **sin cargo por asiento** | BI sobre dbt con la métrica definida aguas arriba. **Encaja bien con la regla de oro** de §2.3 |
-| **Evidence** | **MIT** | OSS gratis; Cloud/Studio por asiento + créditos de IA | Informes versionados en Git, revisados por PR, sin edición por arrastre. ⚠️ **Verificado: el repositorio OSS no registra commits en `main` desde feb-2026** mientras el esfuerzo va a la plataforma comercial "Studio"; el equipo declara que seguirá desarrollando la versión abierta. **Señal de riesgo a vigilar, no descalificación** |
+| **Power BI / Fabric** | Commercial | **Dual**: per user (Pro, Premium Per User) **or per capacity** (Fabric `F` SKUs, billed per second, reservable). The legacy `P` SKUs are being retired towards `F`. **Above a certain capacity level viewers no longer need an individual licence** — that threshold is the economic inflection point of the whole platform | Organisations already on Microsoft 365. **Model the cost with your real author/viewer split before signing**: below the threshold you pay per head, above it you pay fixed capacity |
+| **Tableau** | Commercial (Salesforce) | **Per user with roles**: Creator / Explorer / Viewer, billed annually, with Cloud tiers (Standard/Enterprise) that change the price substantially. Server also supports **per-core** licensing | Strong visual culture and many authors. **The cost lever is the role mix**: over-provisioning Creator to people who only consult is the classic waste |
+| **Looker** | Commercial (Google) | **High platform fee + users + capacity** (query call and API limits per edition). Price **not public, negotiated**. AI metering announced with billing starting Oct 2026 | When you want a governed modelling layer (LookML) and can pay the entry fee. **Real hidden cost: LookML is an engineering practice with dedicated staff**, not a configuration |
+| **Metabase** | **OSS: AGPL-3.0**; the `enterprise/` directory is under the *Metabase Commercial License* (**verified verbatim in `LICENSE.txt`**). Versions `0.x` = OSS, `1.x` = commercial | Free self-hosted OSS; commercial per plan | **Default when the need is "let people answer their own questions" without a project.** Careful with AGPL if you are going to embed it or modify and distribute it |
+| **Apache Superset** | **Apache-2.0** (verified verbatim in `LICENSE.txt`), an ASF **top-level project** | Free; the cost is operating it (or paying Preset, the dominant commercial vendor) | When you need a permissive licence and have platform capacity. **Support policy: only two major versions at a time** — an old deployment runs out of patches fast |
+| **Lightdash** | **MIT**, except `packages/backend/src/ee` under a commercial licence (**verified verbatim in `LICENSE`**) | Free self-hosted; Cloud per plan **with no seat charge** | BI over dbt with the metric defined upstream. **Fits well with the golden rule** of §2.3 |
+| **Evidence** | **MIT** | Free OSS; Cloud/Studio per seat + AI credits | Reports versioned in Git, reviewed by PR, with no drag-and-drop editing. ⚠️ **Verified: the OSS repository records no commits on `main` since Feb 2026** while the effort goes to the commercial "Studio" platform; the team states it will keep developing the open version. **Risk signal to watch, not a disqualification** |
 
-Reglas de elección:
-- **Coste por usuario frente a coste por capacidad**: el modelo por usuario es predecible y penaliza
-  la difusión (cada visor nuevo cuesta); el de capacidad es fijo y penaliza la infrautilización
-  (pagas el pico aunque nadie mire). **Modela ambos con tu reparto real de autores y visores y con
-  tu crecimiento a 3 años**; el punto de cruce es el número que decide, y casi nunca está donde
-  intuyes. Si el modelo por capacidad "sale más barato" solo asumiendo un número de visores que hoy
-  no tienes, estás comprando una previsión, no una herramienta.
-- **Coste oculto sistemático**: formación, personal de modelado (LookML, semántica, DAX), migración
-  de los informes existentes y **el cómputo del almacén que la herramienta dispara**, que no aparece
-  en ninguna comparativa de precios y a menudo supera a la licencia.
-- **Una herramienta, no tres.** Dos herramientas de BI en la misma organización garantizan dos
-  definiciones de la misma métrica. Si hay dos por historia, hay plan de convergencia con fecha.
-- **Desconfía de toda comparativa escrita por un competidor**: en este segmento son casi todas.
+Choice rules:
+- **Per-user cost versus per-capacity cost**: the per-user model is predictable and penalises
+  spread (each new viewer costs); the capacity one is fixed and penalises underuse (you pay for the
+  peak even when nobody looks). **Model both with your real author and viewer split and with your
+  3-year growth**; the crossover point is the number that decides, and it is almost never where you
+  intuit. If the capacity model "comes out cheaper" only by assuming a number of viewers you do not
+  have today, you are buying a forecast, not a tool.
+- **Systematic hidden cost**: training, modelling staff (LookML, semantics, DAX), migration of the
+  existing reports and **the warehouse compute the tool triggers**, which appears in no price
+  comparison and often exceeds the licence.
+- **One tool, not three.** Two BI tools in the same organisation guarantee two definitions of the
+  same metric. If there are two for historical reasons, there is a convergence plan with a date.
+- **Distrust every comparison written by a competitor**: in this segment almost all of them are.
 
-### 2.3 La regla de oro: la métrica se define una vez, aguas arriba
+### 2.3 The golden rule: the metric is defined once, upstream
 
-**La lógica de negocio no vive en la herramienta de BI.** Vive en el modelo, versionada, con
-propietario y con pruebas — y esa es competencia de `data-warehouse-modeling-standards`, que es su
-dueña.
+**Business logic does not live in the BI tool.** It lives in the model, versioned, with an owner
+and with tests — and that is the remit of `data-warehouse-modeling-standards`, which owns it.
 
-El clásico **"dos informes, dos números"** casi nunca es un fallo del dato: es una consecuencia
-mecánica de haber permitido que cada informe implemente su propia versión de la regla. Basta con
-que dos autores filtren distinto los pedidos cancelados, o que uno use la fecha de pedido y otro la
-de facturación, para que las cifras diverjan de forma indetectable y perfectamente explicable a
-posteriori. Cuando esto ocurre tres veces, la organización aprende que **los datos son opinables**,
-y esa lección no se desaprende con un *hotfix*.
+The classic **"two reports, two numbers"** is almost never a data failure: it is a mechanical
+consequence of having allowed each report to implement its own version of the rule. It is enough
+for two authors to filter cancelled orders differently, or for one to use the order date and the
+other the invoice date, for the figures to diverge undetectably and perfectly explicably after the
+fact. When this happens three times, the organisation learns that **data is a matter of opinion**,
+and that lesson is not unlearned with a *hotfix*.
 
-- **En la herramienta solo puede vivir**: la selección de la métrica ya definida, el filtrado, el
-  desglose por dimensiones declaradas legales y la presentación.
-- **Prohibido en la herramienta**: cálculos que redefinen la métrica, uniones que replican el
-  modelo, campos calculados que implementan reglas de negocio, y transformaciones de limpieza.
-- **Test de la migración**: si cambiar de herramienta obligaría a reimplementar reglas de negocio,
-  la lógica estaba en el sitio equivocado. Es el mismo argumento por el que la herramienta no debe
-  ser el sitio: **es la pieza más volátil del stack**.
-- **Si la herramienta ofrece capa semántica propia** (modelo tabular, LookML, modelos de Metabase),
-  úsala como **proyección** de la definición canónica, no como su origen. Y consúmela desde una sola
-  fuente.
+- **In the tool there can only live**: selecting the already-defined metric, filtering, breaking
+  down by dimensions declared legal, and presentation.
+- **Forbidden in the tool**: calculations that redefine the metric, joins that replicate the model,
+  calculated fields that implement business rules, and cleaning transformations.
+- **The migration test**: if changing tools would force you to reimplement business rules, the
+  logic was in the wrong place. It is the same argument for why the tool must not be the place:
+  **it is the most volatile piece of the stack**.
+- **If the tool offers its own semantic layer** (tabular model, LookML, Metabase models), use it as
+  a **projection** of the canonical definition, not as its origin. And consume it from a single
+  source.
 
-## 3. Diseño del cuadro de mando
+## 3. Dashboard design
 
-**El diseño visual del gráfico es de la skill `dataviz`.** Aquí solo lo que la precede: para quién,
-para qué decisión y con qué estructura.
+**The visual design of the chart belongs to the `dataviz` skill.** Here only what precedes it: for
+whom, for what decision and with what structure.
 
-### 3.1 Audiencia y decisión primero
+### 3.1 Audience and decision first
 
-Antes de abrir la herramienta, por escrito y en el propio artefacto:
+Before opening the tool, in writing and in the artifact itself:
 
-1. **Quién** lo va a mirar (rol concreto, no "dirección").
-2. **Qué decisión** toma con él y **con qué cadencia** (diaria, semanal, trimestral). La cadencia de
-   la decisión determina la de actualización, no al revés (§4.3).
-3. **Qué acción** se dispara cuando el número está mal. Si no hay acción, no hay cuadro de mando:
-   hay una consulta.
-4. **Qué dato** lo alimenta y **quién es su dueño** (si no hay dueño, no se certifica; ver
+1. **Who** is going to look at it (a concrete role, not "management").
+2. **What decision** they take with it and **at what cadence** (daily, weekly, quarterly). The
+   cadence of the decision determines the refresh cadence, not the other way round (§4.3).
+3. **What action** is triggered when the number is wrong. If there is no action, there is no
+   dashboard: there is a query.
+4. **What data** feeds it and **who owns it** (if there is no owner, it is not certified; see
    `data-governance-quality-standards`).
 
-Tres audiencias, tres artefactos distintos, y confundirlas es el error de diseño más común:
+Three audiences, three different artifacts, and confusing them is the most common design error:
 
-| Audiencia | Artefacto | Regla |
+| Audience | Artifact | Rule |
 |---|---|---|
-| **Dirección** | Pocos indicadores, comparación contra objetivo o periodo anterior, sin exploración | Si no cabe en una pantalla sin desplazar, no es un cuadro de mando de dirección |
-| **Operación** | Estado actual y desviaciones accionables, con detalle suficiente para actuar hoy | Debe permitir llegar hasta el registro sobre el que se actúa |
-| **Análisis** | Exploración libre sobre un modelo gobernado | **No es un cuadro de mando**: es una capa de exploración. No lo publiques como si fuera lo mismo |
+| **Management** | Few indicators, comparison against target or previous period, no exploration | If it does not fit on one screen without scrolling, it is not a management dashboard |
+| **Operations** | Current state and actionable deviations, with enough detail to act today | It must let you reach the record that is acted upon |
+| **Analysis** | Free exploration over a governed model | **It is not a dashboard**: it is an exploration layer. Do not publish it as if it were the same thing |
 
-### 3.2 Estructura
+### 3.2 Structure
 
-- **Jerarquía descendente**: la conclusión arriba, el desglose después, el detalle al final. Quien
-  entra debe saber en cinco segundos si algo va mal.
-- **Contexto obligatorio en todo número**: comparación (objetivo, periodo anterior) y unidad. Un
-  número solo no es información, es trivia.
-- **Un cuadro de mando, un tema.** Si necesita pestañas por área, son varios artefactos con dueños
-  distintos.
-- **Filtros por defecto sensatos y visibles.** El filtro oculto con un valor preseleccionado es la
-  causa silenciosa de la mitad de las discrepancias entre dos personas mirando "el mismo" informe.
-- **Todo artefacto lleva metadatos visibles**: dueño, fecha del dato (§6), definición o enlace a la
-  definición de las métricas, y estado de certificación.
-- **Nombres estables y explícitos.** "Informe de ventas v3 (final) copia" es una decisión de
-  gobierno, no un descuido estético.
+- **Descending hierarchy**: the conclusion at the top, the breakdown after, the detail at the end.
+  Whoever comes in must know in five seconds whether something is wrong.
+- **Mandatory context on every number**: comparison (target, previous period) and unit. A number on
+  its own is not information, it is trivia.
+- **One dashboard, one topic.** If it needs tabs per area, they are several artifacts with
+  different owners.
+- **Sensible and visible default filters.** The hidden filter with a preselected value is the
+  silent cause of half the discrepancies between two people looking at "the same" report.
+- **Every artifact carries visible metadata**: owner, data date (§6), definition or link to the
+  definition of the metrics, and certification status.
+- **Stable and explicit names.** "Sales report v3 (final) copy" is a governance decision, not an
+  aesthetic slip.
 
 ## 4. Gates
 
-### 4.1 Gates de publicación (todo informe certificado)
+### 4.1 Publication gates (every certified report)
 
-1. **Decisión declarada**: audiencia, decisión, cadencia y acción, escritas en el artefacto. Sin
-   esto no se publica.
-2. **Dueño nominal del informe** (persona, no equipo) y dueño del dato aguas arriba existente y
-   verificado.
-3. **Cero lógica de negocio en la herramienta**: la revisión comprueba que las métricas provienen
-   de la definición canónica y que no hay cálculos que la reimplementen. **Gate de revisión.**
-4. **Cuadre contra la fuente canónica**: la cifra principal del informe coincide con la del modelo,
-   con tolerancia declarada. Un informe que no cuadra el día que se publica no cuadrará nunca.
-5. **Frescura visible en el propio artefacto** (§6).
-6. **Acceso revisado**: quién lo ve, y si el dato es confidencial o restringido, que el filtro esté
-   **aguas arriba** (§5.1).
-7. **Coste estimado**: consulta por apertura × aperturas previstas + refrescos programados. Si nadie
-   lo ha estimado, se estimará solo en la factura.
-8. **Estado explícito**: `certificado` o `no certificado`. **No existe el estado intermedio**, y
-   todo lo no certificado debe verse como tal en la interfaz.
+1. **Declared decision**: audience, decision, cadence and action, written in the artifact. Without
+   this it is not published.
+2. **A named report owner** (a person, not a team) and an existing, verified upstream data owner.
+3. **Zero business logic in the tool**: the review checks that the metrics come from the canonical
+   definition and that there are no calculations reimplementing it. **Review gate.**
+4. **Reconciliation against the canonical source**: the report's main figure matches the model's,
+   with a declared tolerance. A report that does not reconcile the day it is published will never
+   reconcile.
+5. **Freshness visible in the artifact itself** (§6).
+6. **Access reviewed**: who sees it, and if the data is confidential or restricted, that the filter
+   is **upstream** (§5.1).
+7. **Estimated cost**: query per open × expected opens + scheduled refreshes. If nobody has
+   estimated it, it will only be estimated on the invoice.
+8. **Explicit status**: `certified` or `not certified`. **There is no intermediate state**, and
+   everything not certified must be visible as such in the interface.
 
-### 4.2 Gates de revisión periódica (trimestral)
+### 4.2 Periodic review gates (quarterly)
 
-9. **Uso medido por informe.** La herramienta lo registra; si no lo registra, es un defecto de la
-   herramienta.
-10. **Sin uso en un trimestre → se comunica al dueño y se retira** (archivar, no borrar). El
-    silencio del dueño es consentimiento a la retirada. **Sin este gate no hay ciclo de vida, hay
-    acumulación.**
-11. **Informes duplicados detectados y fusionados**: dos informes con la misma métrica y distinto
-    resultado es un incidente de dato, no una molestia estética.
-12. **Recertificación**: la certificación **caduca**. Un informe certificado hace dos años sobre un
-    modelo que cambió es una mentira con sello oficial.
-13. **Revisión de accesos y de suscripciones programadas** (§5.3).
+9. **Usage measured per report.** The tool records it; if it does not, that is a defect of the
+   tool.
+10. **No use in a quarter → the owner is notified and it is retired** (archive, do not delete). The
+    owner's silence is consent to retirement. **Without this gate there is no life cycle, there is
+    accumulation.**
+11. **Duplicate reports detected and merged**: two reports with the same metric and different
+    results is a data incident, not an aesthetic nuisance.
+12. **Recertification**: certification **expires**. A report certified two years ago over a model
+    that changed is a lie with an official stamp.
+13. **Review of access and of scheduled subscriptions** (§5.3).
 
-### 4.3 Gates de rendimiento y coste
+### 4.3 Performance and cost gates
 
-14. **Presupuesto de tiempo de apertura** declarado (regla práctica: unos pocos segundos en el
-    primer render). Un informe que tarda un minuto no se usa: se pide por correo a un analista, que
-    es exactamente el trabajo que el informe venía a evitar.
-15. **La cadencia de refresco la justifica la cadencia de la decisión.** **El cuadro de mando que se
-    refresca cada 5 minutos porque alguien marcó una casilla** es el patrón de gasto más extendido y
-    menos cuestionado del dominio: multiplica el cómputo del almacén por 288 al día para alimentar a
-    nadie. Refresco intradía solo con una acción documentada que ocurra intradía.
-16. **Consultas del BI etiquetadas** (por informe o por usuario) para poder atribuir el coste. Sin
-    atribución, el coste del BI es un agujero negro en la factura del almacén.
+14. **A declared open-time budget** (rule of thumb: a few seconds on first render). A report that
+    takes a minute is not used: it is requested by email from an analyst, which is exactly the work
+    the report came to avoid.
+15. **The refresh cadence is justified by the cadence of the decision.** **The dashboard that
+    refreshes every 5 minutes because somebody ticked a box** is the most widespread and least
+    questioned spending pattern in the domain: it multiplies warehouse compute by 288 a day to feed
+    nobody. Intraday refresh only with a documented action that happens intraday.
+16. **BI queries tagged** (by report or by user) so cost can be attributed. Without attribution, BI
+    cost is a black hole in the warehouse invoice.
 
-## 5. Acceso, seguridad y autoservicio
+## 5. Access, security and self-service
 
-### 5.1 Seguridad a nivel de fila y de columna: aguas arriba, casi siempre
+### 5.1 Row-level and column-level security: upstream, almost always
 
-**Regla por defecto: el filtro se aplica en el almacén, no en la herramienta de BI.** El motivo es
-de arquitectura, no de preferencia: la regla que vive en la herramienta **solo protege el camino
-que pasa por esa herramienta**, y hoy hay muchos más caminos — un cuaderno, una consulta directa,
-una segunda herramienta de BI, una integración, un agente que genera SQL. Cuanto más lejos está la
-regla del dato, más servicios tienen que ser dignos de confianza para que se cumpla.
+**Default rule: the filter is applied in the warehouse, not in the BI tool.** The reason is
+architectural, not a preference: the rule that lives in the tool **only protects the path that goes
+through that tool**, and today there are many more paths — a notebook, a direct query, a second BI
+tool, an integration, an agent that generates SQL. The further the rule is from the data, the more
+services have to be trustworthy for it to hold.
 
-- **Suelo de aplicación**: políticas nativas del almacén (políticas de acceso a fila,
-  enmascaramiento de columna, vistas autorizadas). El BI **pasa la identidad**, no decide.
-- **Consulta viva (direct query) para dato sensible**, para que la política se aplique en cada
-  consulta. **Un extracto materializado en la herramienta puede saltarse la política del almacén
-  por completo** — es el fallo de diseño más habitual y el más silencioso.
-- **La seguridad en la herramienta es complemento de usabilidad**, no frontera. Úsala para acotar
-  lo que se ve, nunca como único control de lo que se puede ver.
-- **Define las políticas antes de abrir la herramienta**: si alguien consulta la tabla antes de que
-  exista la regla, el autoservicio nace con un agujero.
-- **Rendimiento**: una política de fila con *joins*, transformaciones de texto o búsquedas anidadas
-  convierte cada consulta en un problema de planificación. Precalcula la tabla de asignaciones de
-  permisos y filtra con predicados directos sobre columnas existentes. La dimensión que determina
-  la visibilidad **tiene que existir en el modelo** (decisión de
-  `data-warehouse-modeling-standards`; si se añade después, es una migración del histórico).
-- **Excepción legítima y única**: multi-tenancy en analítica empotrada donde el filtro depende de la
-  sesión de la aplicación — y aun así el filtro se **empuja al almacén** como predicado, no se
-  resuelve solo en la capa de presentación (§5.4).
+- **Enforcement floor**: the warehouse's native policies (row access policies, column masking,
+  authorised views). BI **passes the identity**, it does not decide.
+- **Live query (direct query) for sensitive data**, so the policy is applied on every query. **An
+  extract materialised in the tool can bypass the warehouse policy entirely** — it is the most
+  common design failure and the most silent.
+- **Security in the tool is a usability complement**, not a boundary. Use it to narrow what is
+  seen, never as the sole control over what can be seen.
+- **Define the policies before opening the tool**: if somebody queries the table before the rule
+  exists, self-service is born with a hole.
+- **Performance**: a row policy with *joins*, text transformations or nested lookups turns every
+  query into a planning problem. Precompute the permission assignment table and filter with direct
+  predicates over existing columns. The dimension that determines visibility **has to exist in the
+  model** (a `data-warehouse-modeling-standards` decision; if it is added later, it is a migration
+  of the history).
+- **Legitimate and unique exception**: multi-tenancy in embedded analytics where the filter depends
+  on the application session — and even then the filter is **pushed to the warehouse** as a
+  predicate, it is not resolved only in the presentation layer (§5.4).
 
-### 5.2 Autoservicio: qué se abre y qué no
+### 5.2 Self-service: what gets opened and what does not
 
-El autoservicio es una **negociación entre democratizar y crear un pantano de informes
-contradictorios**, y hay que resolverla explícitamente, no dejarla a la deriva.
+Self-service is a **negotiation between democratising and creating a swamp of contradictory
+reports**, and it has to be resolved explicitly, not left to drift.
 
-| Capa | Quién | Qué puede hacer | Garantía |
+| Layer | Who | What they can do | Guarantee |
 |---|---|---|---|
-| **Certificada** | Todos | Consumir, filtrar, desglosar por dimensiones legales | **La organización responde de estos números** |
-| **Exploratoria** | Analistas con formación | Construir sobre el modelo gobernado, publicar en su espacio | Marcado visiblemente como no certificado; **no se comparte fuera del área sin certificar** |
-| **Libre (SQL)** | Perfiles técnicos con permiso | Consulta directa al almacén | Sin garantía; sujeto a la seguridad del almacén (§5.1) |
+| **Certified** | Everyone | Consume, filter, break down by legal dimensions | **The organisation answers for these numbers** |
+| **Exploratory** | Trained analysts | Build on the governed model, publish in their own space | Visibly marked as not certified; **not shared outside the area without certifying** |
+| **Free (SQL)** | Technical profiles with permission | Direct query against the warehouse | No guarantee; subject to warehouse security (§5.1) |
 
-- **Se abre el modelo, no las tablas crudas.** Autoservicio sobre la capa cruda produce análisis
-  plausibles y equivocados, y nadie lo detecta.
-- **La promoción de exploratorio a certificado es un proceso con revisión**, no un cambio de
-  carpeta.
-- **La formación no es opcional**: quien no sabe qué representa una fila producirá cifras infladas
-  con total sinceridad. El autoservicio sin formación es delegar el error.
-- **La alternativa al autoservicio gobernado no es el orden: es la hoja de cálculo.** Si el acceso
-  gobernado es incómodo, la gente exportará. Por eso el equilibrio se resuelve haciendo cómodo lo
-  correcto, no prohibiendo lo incorrecto.
+- **The model is opened, not the raw tables.** Self-service over the raw layer produces plausible
+  and wrong analyses, and nobody detects it.
+- **Promotion from exploratory to certified is a process with review**, not a change of folder.
+- **Training is not optional**: whoever does not know what a row represents will produce inflated
+  figures in complete sincerity. Self-service without training is delegating the error.
+- **The alternative to governed self-service is not order: it is the spreadsheet.** If governed
+  access is inconvenient, people will export. That is why the balance is resolved by making the
+  right thing convenient, not by forbidding the wrong one.
 
-### 5.3 Exportación a hoja de cálculo: donde se evapora el gobierno
+### 5.3 Spreadsheet export: where governance evaporates
 
-En el momento en que un usuario exporta a CSV o a Excel, **todo se pierde a la vez**: la seguridad
-de fila, la clasificación, la frescura, la definición de la métrica, el linaje y la capacidad de
-corregir. El fichero se reenvía, se edita, se combina con otro y vuelve a la organización como
-"dato" tres semanas después, ya incorrecto y sin trazabilidad. Es, sin discusión, la mayor fuga de
-gobierno de la capa de consumo.
+The moment a user exports to CSV or Excel, **everything is lost at once**: row security,
+classification, freshness, the metric definition, lineage and the ability to correct. The file is
+forwarded, edited, combined with another and comes back into the organisation as "data" three weeks
+later, already incorrect and with no traceability. It is, without argument, the biggest governance
+leak in the consumption layer.
 
-Postura realista (prohibirlo no funciona y empuja a capturas de pantalla y copiar-pegar):
+Realistic posture (forbidding it does not work and pushes people to screenshots and copy-paste):
 
-- **Permitido por defecto en dato interno**; **restringido o desactivado** en informes con dato
-  confidencial o restringido (la clasificación es de `data-governance-quality-standards` y **viaja
-  con la copia**).
-- **Marca de agua en la exportación**: fecha del dato, filtros aplicados, informe de origen y
-  aviso de caducidad. Un CSV sin contexto es indistinguible de un CSV inventado.
-- **Registrar las exportaciones** de informes con dato sensible, y revisar el registro: la
-  exportación masiva y repetida es a la vez una señal de exfiltración y el síntoma de que **el
-  informe no da lo que el usuario necesita**. Trátala como requisito no cubierto antes que como
-  delito.
-- **La exportación programada a un directorio compartido es un pipeline de datos no gobernado.** Si
-  existe, se convierte en un conjunto de datos con dueño y contrato, o se elimina.
+- **Allowed by default on internal data**; **restricted or disabled** in reports with confidential
+  or restricted data (classification belongs to `data-governance-quality-standards` and **travels
+  with the copy**).
+- **Watermark on the export**: data date, applied filters, source report and an expiry notice. A
+  CSV without context is indistinguishable from an invented CSV.
+- **Log the exports** of reports with sensitive data, and review the log: massive and repeated
+  export is both an exfiltration signal and the symptom that **the report does not give the user
+  what they need**. Treat it as an uncovered requirement before treating it as a crime.
+- **Scheduled export to a shared directory is an ungoverned data pipeline.** If it exists, it
+  becomes a dataset with an owner and a contract, or it is removed.
 
-### 5.4 Distribución y analítica empotrada
+### 5.4 Distribution and embedded analytics
 
-- **Informes programados (suscripciones)**: útiles y baratos, pero **caducan igual que los cuadros
-  de mando** y nadie los revisa nunca. Toda suscripción tiene dueño y fecha de revisión; la que
-  nadie abre se cancela. Un correo diario que todo el mundo archiva sin leer no es distribución: es
-  ruido con coste de cómputo.
-- **Alertas sobre datos**: se alerta por **umbral con acción definida**, no por variación
-  interesante. Toda alerta lleva **quién actúa y qué hace**. Y una regla que se olvida siempre:
-  **la alerta que no se dispara porque el dato no llegó es un falso negativo silencioso** — vigila
-  la frescura además del umbral (§6).
-- **Analítica empotrada**: es **otro producto**, con otro modelo de precio (habitualmente por
-  capacidad o por sesiones, no por asiento), otro modelo de aislamiento entre clientes y otro nivel
-  de exigencia de disponibilidad. Requisitos duros: aislamiento por inquilino **verificado con
-  pruebas** (no confiado a un parámetro), filtro empujado al almacén, credenciales de servicio que
-  **jamás** llegan al navegador, y límites de consulta por inquilino para que un cliente no degrade
-  a los demás.
-- **Un asistente conversacional sobre los datos** dentro de la herramienta de BI **es un sistema de
-  IA**: entra en el inventario de `ai-governance-standards`, y su salida se trata como no fiable
-  (ver `llm-app-engineering-standards`). No lo certifiques como fuente.
+- **Scheduled reports (subscriptions)**: useful and cheap, but **they expire just like
+  dashboards** and nobody ever reviews them. Every subscription has an owner and a review date; the
+  one nobody opens is cancelled. A daily email everybody files without reading is not distribution:
+  it is noise with a compute cost.
+- **Data alerts**: alerts fire on a **threshold with a defined action**, not on an interesting
+  variation. Every alert carries **who acts and what they do**. And a rule that is always
+  forgotten: **the alert that does not fire because the data did not arrive is a silent false
+  negative** — watch freshness as well as the threshold (§6).
+- **Embedded analytics**: it is **another product**, with another pricing model (usually per
+  capacity or per session, not per seat), another isolation model between customers and another
+  level of availability demand. Hard requirements: per-tenant isolation **verified with tests** (not
+  trusted to a parameter), the filter pushed to the warehouse, service credentials that **never**
+  reach the browser, and per-tenant query limits so one customer cannot degrade the others.
+- **A conversational assistant over the data** inside the BI tool **is an AI system**: it enters
+  the `ai-governance-standards` inventory, and its output is treated as unreliable (see
+  `llm-app-engineering-standards`). Do not certify it as a source.
 
-## 6. Rendimiento, coste y calidad percibida
+## 6. Performance, cost and perceived quality
 
-### 6.1 Rendimiento y coste
+### 6.1 Performance and cost
 
-- **Agrega aguas arriba, no en la herramienta.** Si un cuadro de mando escanea el hecho atómico en
-  cada apertura, falta un agregado en el modelo. La herramienta no es el sitio para arreglar un
-  problema de modelado.
-- **Extracto/importación frente a consulta viva** — decisión consciente, con consecuencias:
+- **Aggregate upstream, not in the tool.** If a dashboard scans the atomic fact on every open, an
+  aggregate is missing from the model. The tool is not the place to fix a modelling problem.
+- **Extract/import versus live query** — a conscious decision, with consequences:
 
-| Modo | Ventaja | Coste real |
+| Mode | Advantage | Real cost |
 |---|---|---|
-| **Consulta viva** | Un solo sitio con la verdad; **la seguridad del almacén se aplica siempre**; sin duplicación | Latencia dependiente del almacén; cada apertura se paga; concurrencia real sobre el motor |
-| **Extracto / importación** | Rápido y barato de servir; independiente de la carga del almacén | **Duplica el dato y puede saltarse las políticas de acceso** (§5.1); introduce desfase; se convierte en un almacén paralelo sin gobierno |
+| **Live query** | A single place with the truth; **warehouse security is always applied**; no duplication | Latency dependent on the warehouse; every open is paid for; real concurrency against the engine |
+| **Extract / import** | Fast and cheap to serve; independent of warehouse load | **Duplicates the data and can bypass access policies** (§5.1); introduces lag; becomes a parallel warehouse with no governance |
 
-Default: **consulta viva sobre un agregado bien modelado**; extracto solo para dato no sensible con
-un problema de rendimiento medido y con frescura declarada en el propio informe.
-- **Caché con TTL alineado al SLA de frescura del dato.** Cachear más que la frescura no aporta
-  nada; menos, malgasta cómputo. Y un caché que sirve un dato ya corregido es un incidente
-  encubierto: la invalidación forma parte del arreglo.
-- **Los refrescos programados se solapan y se acumulan**: docenas de informes actualizándose a las
-  8:00 producen el pico que hace lento todo lo demás. Escalona, y revisa la lista completa de
-  programaciones al menos una vez al año — está llena de artefactos muertos que siguen consumiendo.
-- **Atribuye el coste al informe y publícalo con su dueño.** Es lo único que convierte el gasto en
-  una decisión en vez de en una queja.
+Default: **live query over a well-modelled aggregate**; an extract only for non-sensitive data with
+a measured performance problem and with freshness declared in the report itself.
+- **Cache with a TTL aligned to the data's freshness SLA.** Caching for longer than the freshness
+  adds nothing; for less, it wastes compute. And a cache serving an already-corrected datum is a
+  covered-up incident: invalidation is part of the fix.
+- **Scheduled refreshes overlap and pile up**: dozens of reports refreshing at 08:00 produce the
+  peak that makes everything else slow. Stagger them, and review the full list of schedules at
+  least once a year — it is full of dead artifacts still consuming.
+- **Attribute the cost to the report and publish it with its owner.** It is the only thing that
+  turns spend into a decision instead of a complaint.
 
-### 6.2 Calidad percibida: cuando el dato falta o llega tarde
+### 6.2 Perceived quality: when data is missing or arrives late
 
-El usuario no distingue "dato mal" de "informe mal": para él, **el BI ha fallado**. La confianza se
-gestiona aquí o se pierde aquí.
+The user does not distinguish "bad data" from "bad report": for them, **BI has failed**. Trust is
+managed here or lost here.
 
-- **Muestra la frescura en el propio informe, siempre y de forma visible**: "datos hasta
-  `<fecha/hora>`", no un pie de página en gris claro. Que el usuario descubra por su cuenta que
-  falta el día de ayer es el peor resultado posible.
-- **Estado explícito cuando el dato no ha llegado**: un aviso claro de dato incompleto o retrasado.
-  **Nunca muestres un gráfico que cae a cero porque falta la última partición**: el usuario leerá
-  una caída del negocio, actuará sobre ella, y habrás convertido un retraso en un incidente de
-  decisión. Un hueco declarado es infinitamente mejor que un cero falso.
-- **Marca el informe como sospechoso mientras dura un incidente de dato** (coordinado con
-  `data-governance-quality-standards` §4.3), **en el punto de consumo**, no en un canal que el
-  consumidor no lee.
-- **Comunicar la corrección forma parte del arreglo.** Si el número cambió retroactivamente, se
-  dice. La confianza se pierde por silencio, no por errores.
-- **Cifras parciales del periodo en curso, etiquetadas como tales.** El mes actual comparado con
-  meses completos es la comparación engañosa más frecuente de todos los cuadros de mando.
+- **Show freshness in the report itself, always and visibly**: "data up to `<date/time>`", not a
+  footnote in light grey. The user finding out on their own that yesterday is missing is the worst
+  possible outcome.
+- **Explicit status when the data has not arrived**: a clear notice of incomplete or delayed data.
+  **Never show a chart that drops to zero because the last partition is missing**: the user will
+  read a business collapse, will act on it, and you will have turned a delay into a decision
+  incident. A declared gap is infinitely better than a false zero.
+- **Mark the report as suspect while a data incident lasts** (coordinated with
+  `data-governance-quality-standards` §4.3), **at the point of consumption**, not on a channel the
+  consumer does not read.
+- **Communicating the correction is part of the fix.** If the number changed retroactively, it is
+  said. Trust is lost through silence, not through errors.
+- **Partial figures for the current period, labelled as such.** The current month compared with
+  complete months is the most frequent misleading comparison in all dashboards.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-- **Cadencia**: revisión trimestral de uso y poda (§4.2); revisión anual del modelo de precio
-  contratado frente al uso real (los modelos por capacidad y por asiento se desalinean rápido); y
-  revisión de las versiones soportadas de la herramienta autoalojada.
-- **ADR obligatorio** para: elección o cambio de herramienta de BI, adopción de un segundo producto
-  de BI, decisión extracto frente a consulta viva sobre dato sensible, dónde se aplica la seguridad
-  de fila, y abrir autoservicio a un colectivo nuevo.
-- **Plan de salida escrito** al contratar: cómo se exportan las definiciones, cuánto trabajo cuesta
-  reimplementar los informes y qué queda atrapado. Si la respuesta es "muchísimo", la lógica estaba
-  en el sitio equivocado (§2.3).
-- **Artefactos de BI versionados** siempre que la herramienta lo permita (LookML, Lightdash,
-  Evidence, formatos de proyecto de Power BI). Un informe que solo existe dentro de una interfaz web
-  no tiene historia, ni revisión, ni recuperación.
+- **Cadence**: quarterly usage review and pruning (§4.2); annual review of the contracted pricing
+  model against real usage (capacity and seat models drift apart fast); and review of the supported
+  versions of the self-hosted tool.
+- **Mandatory ADR** for: choosing or changing the BI tool, adopting a second BI product, the
+  extract-versus-live-query decision on sensitive data, where row security is enforced, and opening
+  self-service to a new group.
+- **Written exit plan** at contract time: how the definitions are exported, how much work it costs
+  to reimplement the reports and what stays trapped. If the answer is "an enormous amount", the
+  logic was in the wrong place (§2.3).
+- **Versioned BI artifacts** whenever the tool allows it (LookML, Lightdash, Evidence, Power BI
+  project formats). A report that only exists inside a web interface has no history, no review and
+  no recovery.
 
-**PROHIBIDO**
-- ❌ **Construir un cuadro de mando sin decisión, audiencia y acción declaradas.**
-- ❌ **Definir o redefinir una métrica dentro de la herramienta de BI** — la definición canónica es
-  de `data-warehouse-modeling-standards`.
-- ❌ Lógica de negocio, limpieza o uniones que replican el modelo dentro del artefacto de BI.
-- ❌ La misma métrica publicada con dos valores distintos: es un incidente, no una discrepancia.
-- ❌ Duplicar aquí las reglas de diseño del gráfico: **son de `dataviz`**.
-- ❌ Publicar un informe sobre un conjunto de datos **sin dueño** aguas arriba.
-- ❌ Informe sin dueño nominal, o cuya certificación no caduca nunca.
-- ❌ Catálogo de informes sin poda: sin uso medido en un trimestre, se retira.
-- ❌ Estado ambiguo: o certificado o marcado visiblemente como no certificado.
-- ❌ **Seguridad a nivel de fila implementada solo en la herramienta de BI** cuando el dato es
-  confidencial o restringido.
-- ❌ Extracto materializado de dato sensible que se salta las políticas del almacén.
-- ❌ Credenciales de servicio o secretos de conexión accesibles desde el cliente/navegador.
-- ❌ **Refresco intradía sin una acción documentada que ocurra intradía.**
-- ❌ Informe publicado sin estimación de coste ni atribución de sus consultas.
-- ❌ Mostrar un gráfico que cae a cero porque falta la última partición.
-- ❌ Informe sin indicación visible de la fecha del dato.
-- ❌ Comparar un periodo en curso con periodos completos sin etiquetarlo.
-- ❌ Alerta sin umbral, sin acción o sin responsable; alerta ciega al dato que no llegó.
-- ❌ Exportación programada a un directorio compartido tratada como algo distinto de un pipeline sin
-  gobierno.
-- ❌ Exportación libre de informes con dato confidencial o restringido, o exportación sin contexto
-  (fecha, filtros, origen).
-- ❌ Autoservicio sobre la capa cruda, o sin formación sobre qué representa una fila.
-- ❌ Dos herramientas de BI en producción sin plan de convergencia con fecha.
-- ❌ Comprar una herramienta sin modelar el coste con el reparto real de autores y visores y sin
-  plan de salida.
-- ❌ Fijar licencias, versiones o modelos de precio de memoria (§8).
+**FORBIDDEN**
+- ❌ **Building a dashboard without a declared decision, audience and action.**
+- ❌ **Defining or redefining a metric inside the BI tool** — the canonical definition belongs to
+  `data-warehouse-modeling-standards`.
+- ❌ Business logic, cleaning or joins that replicate the model inside the BI artifact.
+- ❌ The same metric published with two different values: it is an incident, not a discrepancy.
+- ❌ Duplicating chart design rules here: **they belong to `dataviz`**.
+- ❌ Publishing a report over a dataset **with no owner** upstream.
+- ❌ A report with no named owner, or whose certification never expires.
+- ❌ A report catalogue with no pruning: with no measured use in a quarter, it is retired.
+- ❌ Ambiguous status: either certified or visibly marked as not certified.
+- ❌ **Row-level security implemented only in the BI tool** when the data is confidential or
+  restricted.
+- ❌ A materialised extract of sensitive data that bypasses the warehouse policies.
+- ❌ Service credentials or connection secrets reachable from the client/browser.
+- ❌ **Intraday refresh with no documented action that happens intraday.**
+- ❌ A report published with no cost estimate and no attribution of its queries.
+- ❌ Showing a chart that drops to zero because the last partition is missing.
+- ❌ A report with no visible indication of the data date.
+- ❌ Comparing a current period with complete periods without labelling it.
+- ❌ An alert with no threshold, no action or no owner; an alert blind to data that did not arrive.
+- ❌ Scheduled export to a shared directory treated as anything other than an ungoverned pipeline.
+- ❌ Free export of reports with confidential or restricted data, or export with no context (date,
+  filters, source).
+- ❌ Self-service over the raw layer, or without training on what a row represents.
+- ❌ Two BI tools in production with no dated convergence plan.
+- ❌ Buying a tool without modelling the cost with the real author and viewer split and without an
+  exit plan.
+- ❌ Fixing licences, versions or pricing models from memory (§8).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Los datos de §2 son de **agosto de 2026**, y **el modelo de precio es lo que más cambia y lo que
-decide la elección**. Antes de fijar nada en un entregable, verifica:
+The data in §2 is from **August 2026**, and **the pricing model is what changes most and what
+decides the choice**. Before fixing anything in a deliverable, verify:
 
-1. **Power BI / Fabric**: precios vigentes de Pro y Premium Per User, catálogo de SKU `F`, estado de
-   la retirada de los SKU `P` y —lo decisivo— **el nivel de capacidad a partir del cual los visores
-   dejan de necesitar licencia individual**, en la página oficial de Microsoft, no en comparativas.
-2. **Tableau**: precios de Creator/Explorer/Viewer por edición (Standard/Enterprise), estado de la
-   licencia por núcleo de Server y qué incluye el nivel superior.
-3. **Looker**: cuotas de plataforma vigentes por edición, límites de llamadas de consulta y de API,
-   y **el metering de IA cuya facturación estaba anunciada para octubre de 2026** (comprueba si
-   entró en vigor y a qué tarifas).
-4. **OSS**: licencia vigente de **Metabase** (a ago-2026, AGPL-3.0 fuera de `enterprise/`,
-   verificado verbatim; `0.x` OSS / `1.x` comercial), **Superset** (Apache-2.0, ASF; **versión
-   estable actual y política de soporte de dos majors**), **Lightdash** (MIT salvo
-   `packages/backend/src/ee`) y **Evidence** (MIT) — y sus modelos de precio de la versión
-   gestionada.
-5. **Actividad real de los proyectos OSS** medida en commits y releases, no en la web del proyecto.
-   En concreto **Evidence**: si el repositorio abierto ha vuelto a registrar actividad en `main`
-   (parado desde feb-2026) o si el desarrollo se ha desplazado definitivamente a la plataforma
-   comercial.
-6. **Seguridad a nivel de fila/columna** en tu motor concreto (Snowflake, BigQuery, Databricks,
-   Fabric, Redshift): sintaxis, límites, coste de la política y cómo se propaga la identidad desde
-   la herramienta.
-7. **Cadena de suministro** de cualquier componente que despliegues (imágenes de Superset/Metabase,
-   paquetes de Evidence/Lightdash): compromisos recientes y CVEs. Precedentes vivos en el
-   ecosistema de datos: `elementary-data` (abr-2026), `trivy` y LiteLLM (mar-2026), `durabletask`
-   (may-2026).
+1. **Power BI / Fabric**: current prices of Pro and Premium Per User, the `F` SKU catalogue, the
+   status of the `P` SKU retirement and — the decisive part — **the capacity level above which
+   viewers no longer need an individual licence**, on Microsoft's official page, not in
+   comparisons.
+2. **Tableau**: Creator/Explorer/Viewer prices per edition (Standard/Enterprise), the status of
+   Server's per-core licence and what the top tier includes.
+3. **Looker**: current platform fees per edition, query call and API limits, and **the AI metering
+   whose billing was announced for October 2026** (check whether it came into force and at what
+   rates).
+4. **OSS**: current licence of **Metabase** (as of August 2026, AGPL-3.0 outside `enterprise/`,
+   verified verbatim; `0.x` OSS / `1.x` commercial), **Superset** (Apache-2.0, ASF; **current
+   stable version and the two-major support policy**), **Lightdash** (MIT except
+   `packages/backend/src/ee`) and **Evidence** (MIT) — and the pricing models of their managed
+   versions.
+5. **Real activity of the OSS projects** measured in commits and releases, not on the project's
+   website. Specifically **Evidence**: whether the open repository has recorded activity on `main`
+   again (stopped since Feb 2026) or whether development has moved definitively to the commercial
+   platform.
+6. **Row/column-level security** in your specific engine (Snowflake, BigQuery, Databricks,
+   Fabric, Redshift): syntax, limits, cost of the policy and how the identity propagates from the
+   tool.
+7. **Supply chain** of any component you deploy (Superset/Metabase images, Evidence/Lightdash
+   packages): recent compromises and CVEs. Live precedents in the data ecosystem:
+   `elementary-data` (Apr 2026), `trivy` and LiteLLM (Mar 2026), `durabletask` (May 2026).
 
-**Huecos declarados de esta revisión** (no rellenar de memoria):
-- **Todas las cifras de precio**: verificados los **modelos** (por usuario, por capacidad, cuota de
-  plataforma, por asiento + créditos); **los importes concretos no se fijan aquí** porque las
-  fuentes disponibles eran comparativas de terceros y de competidores, con contradicciones entre
-  ellas. No cites importes sin la página oficial del proveedor.
-- **Power BI**: no verificado en fuente oficial el **valor exacto del umbral de capacidad** que
-  libera a los visores de licencia individual (las fuentes secundarias coinciden en que existe y en
-  que es el punto de inflexión, pero difieren en cifras de coste).
-- **Apache Superset**: **versión estable actual no verificada en fuente ASF**. Las fuentes
-  disponibles (blog del proveedor comercial) apuntan a una 6.1.0 en may-2026; el feed de etiquetas
-  del repositorio solo devolvió etiquetas del chart de Helm. Verifica en `superset.apache.org`.
-- **Metabase**: verificada la licencia verbatim; **no verificados los planes ni los precios
-  vigentes** de la edición comercial.
-- **Looker**: no verificadas las tarifas ni si el metering de IA entró en vigor.
-- **Evidence**: verificado MIT y la ausencia de commits en `main` desde feb-2026; **no verificado**
-  qué compromiso público existe sobre el futuro de la versión abierta.
-- **Preset, QuickSight, Sigma, Hex, Omni y Zoho** no evaluados en esta revisión.
+**Declared gaps of this review** (do not fill from memory):
+- **All price figures**: the **models** are verified (per user, per capacity, platform fee, per
+  seat + credits); **the specific amounts are not fixed here** because the available sources were
+  third-party and competitor comparisons, contradicting each other. Do not cite amounts without the
+  vendor's official page.
+- **Power BI**: the **exact value of the capacity threshold** that frees viewers from an individual
+  licence is not verified in an official source (secondary sources agree that it exists and that it
+  is the inflection point, but differ on cost figures).
+- **Apache Superset**: **current stable version not verified in an ASF source**. The available
+  sources (the commercial vendor's blog) point to a 6.1.0 in May 2026; the repository's tag feed
+  only returned Helm chart tags. Verify at `superset.apache.org`.
+- **Metabase**: the licence is verified verbatim; **the current plans and prices** of the
+  commercial edition **are not verified**.
+- **Looker**: the rates are not verified, nor whether the AI metering came into force.
+- **Evidence**: MIT verified and the absence of commits on `main` since Feb 2026; **not verified**
+  what public commitment exists about the future of the open version.
+- **Preset, QuickSight, Sigma, Hex, Omni and Zoho** not evaluated in this review.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

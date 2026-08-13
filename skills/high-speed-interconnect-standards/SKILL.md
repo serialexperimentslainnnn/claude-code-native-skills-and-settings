@@ -3,270 +3,273 @@ name: high-speed-interconnect-standards
 description: RDMA interconnects for HPC, AI and storage — InfiniBand, RoCE v2 and iWARP as a separate network from the data network. Use when designing or debugging an InfiniBand fabric with opensm or a vendor subnet manager, LIDs, GUIDs, P_Key partitions, SHARP in-network reduction, ibstat, ibstatus, ibnetdiscover, ibdiagnet, perfquery, ibping, iblinkinfo and port error counters, RoCE v2 on Ethernet with rdma-core, ibv_devinfo, rdma link, mlx5 or irdma drivers, RoCE priority and DSCP mapping and end-to-end validation, out-of-sequence and CNP counters, iWARP (RFC 5040, RFC 5044), Ultra Ethernet UEC 1.0 as an emerging alternative, choosing between InfiniBand and Ethernet for a GPU or HPC cluster, fat-tree and dragonfly topologies for compute clusters, libibverbs and verbs programming, UCX, MPI over RDMA (Open MPI, MPICH, UCX transports), NCCL or RCCL collectives and their network backend, GPUDirect RDMA, NVMe over Fabrics with RoCE, TCP or Fibre Channel, nvme connect and nvme discover, SMB Direct, NFS over RDMA (RFC 8166), deciding that NVMe/TCP is good enough and no RDMA is needed, or diagnosing an RDMA fabric where the symptom is collapsed throughput rather than packet loss.
 ---
 
-# Estándares de interconexión de alta velocidad — RDMA, InfiniBand y RoCE
+# High-speed interconnect standards — RDMA, InfiniBand and RoCE
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **diseñar, desplegar, validar y diagnosticar la red de cómputo y de almacenamiento de alto
-rendimiento**: RDMA como modelo, elección de transporte (InfiniBand, RoCE v2, iWARP), gestión de
-subred y particiones, topologías de cómputo y su sobresuscripción, pila de software (verbs, UCX, MPI,
-colectivas de GPU), almacenamiento sobre RDMA, y **el criterio para no usar RDMA en absoluto**.
+Applies to **designing, deploying, validating and diagnosing the high-performance compute and
+storage network**: RDMA as a model, the choice of transport (InfiniBand, RoCE v2, iWARP), subnet
+management and partitions, compute topologies and their oversubscription, the software stack (verbs,
+UCX, MPI, GPU collectives), storage over RDMA, and **the criterion for not using RDMA at all**.
 
 Triggers: `ibstat`, `ibnetdiscover`, `ibdiagnet`, `perfquery`, `iblinkinfo`, `opensm`, "subnet
 manager", "LID", "P_Key", "SHARP", `rdma-core`, `ibv_devinfo`, `rdma link`, `mlx5`, `irdma`, "RoCE
 v2", "iWARP", "GPUDirect", "verbs", "UCX", "NCCL"/"RCCL", "MPI", "fat-tree", "dragonfly", "NVMe-oF",
 `nvme connect`, "SMB Direct", "NFS over RDMA", "Ultra Ethernet"/"UEC".
 
-**No aplica** — el catálogo ya reparte esto: `networking-standards` es la **troncal** (VLAN,
-direccionamiento, MTU, plano de gestión) y **ya delega la profundidad**, mientras
-`datacenter-fabric-standards` **posee la Ethernet que transporta RoCE** — Clos, VXLAN/EVPN y **toda
-la mecánica de la red sin pérdidas: PFC, ETS, DCBX, ECN y DCQCN, con sus umbrales y su
-monitorización** (aquí sólo **qué exige el interconector y cómo se valida extremo a extremo**),
-`routing-switching-standards` posee el campus, la política BGP y la seguridad del plano de control, y
-`network-automation-standards` la configuración como código. Hacia fuera: **la GPU y su cómputo son
-de `gpu-computing-standards`**, **el planificador de trabajos y el dimensionado del clúster, de
-`hpc-standards`**, el sistema de ficheros y el bloque local de
-`linux-storage-standards`, el objeto de `object-storage-standards`, la metodología de medir y el
-modelo de carga de `performance-engineering-standards`, métricas y alertas de
-`observability-standards`, el SLO de `sre-practice-standards`, el método reactivo de
-`network-troubleshooting-standards`, el filtrado de `firewall-policy-standards`, la identidad de
-`identity-access-management-standards`, la malla de `microservices-architecture-standards`, la caché
-de `caching-cdn-standards`, los contenedores de `kubernetes-standards`, y el paraguas de
-`onprem-standards` (con `datacenter-facilities-standards`, dueña de la planta física).
-Entre las tres hermanas de esta tanda: `wireless-standards` es la **red de acceso**,
-`load-balancing-standards` la **red de servicio** y ésta la **red de cómputo**; **el error del
-dominio es aplicarles el mismo criterio**.
+**Not applicable** — the catalogue already splits this up: `networking-standards` is the **trunk**
+(VLANs, addressing, MTU, management plane) and **already delegates the depth**, while
+`datacenter-fabric-standards` **owns the Ethernet that carries RoCE** — Clos, VXLAN/EVPN and **all
+the mechanics of the lossless network: PFC, ETS, DCBX, ECN and DCQCN, with their thresholds and
+their monitoring** (here only **what the interconnect requires and how it is validated end to
+end**), `routing-switching-standards` owns the campus, BGP policy and control plane security, and
+`network-automation-standards` configuration as code. Outwards: **the GPU and its compute belong to
+`gpu-computing-standards`**, **the job scheduler and cluster sizing, to `hpc-standards`**, the
+filesystem and local block to `linux-storage-standards`, objects to `object-storage-standards`, the
+measurement methodology and the load model to `performance-engineering-standards`, metrics and
+alerts to `observability-standards`, the SLO to `sre-practice-standards`, the reactive method to
+`network-troubleshooting-standards`, filtering to `firewall-policy-standards`, identity to
+`identity-access-management-standards`, the mesh to `microservices-architecture-standards`, caching
+to `caching-cdn-standards`, containers to `kubernetes-standards`, and the umbrella to
+`onprem-standards` (with `datacenter-facilities-standards`, owner of the physical plant).
+Among the three sisters of this batch: `wireless-standards` is the **access network**,
+`load-balancing-standards` the **service network** and this one the **compute network**; **the
+domain's error is applying the same criteria to all three**.
 
-**Principio rector**: **la red de cómputo y de almacenamiento no es la red de datos.** Otro modelo de
-fallo (el síntoma no es pérdida, es colapso de rendimiento), otro criterio de sobresuscripción, otro
-plano de gestión y otro personal. Tratarla como "una VLAN más" es el error caro del dominio.
+**Governing principle**: **the compute and storage network is not the data network.** A different
+failure model (the symptom is not loss, it is performance collapse), a different oversubscription
+criterion, a different management plane and different staff. Treating it as "just another VLAN" is
+the expensive error in the domain.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar estado del ecosistema, tasas vigentes, versiones y **licencia en crudo** antes de fijar
-> nada (§8).
+> Verify the state of the ecosystems, current rates, versions and **the raw licence** before fixing
+> anything (§8).
 
-| Decisión | Por defecto | Alternativa justificable / vetado |
+| Decision | Default | Justifiable alternative / vetoed |
 |---|---|---|
-| ¿RDMA sí o no? | **No, por defecto.** Se justifica con un requisito medido que TCP no alcanza | ❌ RDMA "porque es más rápido" sin número objetivo ni equipo capaz de operarlo |
-| Transporte de cómputo | **InfiniBand** cuando el clúster es de entrenamiento o HPC clásico y hay presupuesto y personal | **Ethernet con RoCE v2** cuando manda el ecosistema abierto, el multi-uso o el coste; **iWARP**, en retirada de facto |
-| Transporte de almacenamiento | **NVMe/TCP** salvo requisito medido | NVMe-oF/RoCE con red sin pérdidas validada; FC-NVMe si ya existe SAN de fibra |
-| Red sin pérdidas para RoCE | **Obligatoria y validada extremo a extremo**, en **una sola clase**, con ECN primero y PFC como último recurso (mecánica en `datacenter-fabric-standards`) | ❌ Desplegar RoCE sin control de congestión validado extremo a extremo |
-| Sobresuscripción en cómputo | **1:1 (no bloqueante)** en la red de entrenamiento/HPC | 2:1 sólo con perfil de tráfico medido; ❌ importar los 3:1-4:1 de una malla de cómputo general |
-| Topología | **Fat-tree (Clos) no bloqueante** como default | **Dragonfly** a gran escala por coste de cable, asumiendo enrutado adaptativo y más complejidad |
-| Gestión de subred (IB) | **Un SM primario y al menos uno de reserva**, con configuración versionada | ❌ SM único; ❌ dos SM "maestros" compitiendo por descubrimiento accidental |
-| Aislamiento (IB) | **Particiones (P_Key)** declaradas por inquilino/servicio | ❌ Todo en la partición por defecto y llamarlo segmentación |
-| Pila de usuario | **rdma-core / libibverbs** como base y **UCX** como transporte de MPI y colectivas; **NCCL/RCCL** con GPUDirect RDMA verificado | ❌ Reimplementar transporte sobre verbs; ❌ suponer GPUDirect activo porque la tarjeta lo soporta |
-| Plano de gestión | **Fuera de banda y separado del fabric**, como cualquier equipo de red | ❌ Gestionar los switches del fabric por el propio fabric |
+| RDMA or not? | **No, by default.** It is justified by a measured requirement TCP cannot meet | ❌ RDMA "because it is faster" with no target number and no team able to operate it |
+| Compute transport | **InfiniBand** when the cluster is for training or classic HPC and there is budget and staff | **Ethernet with RoCE v2** when the open ecosystem, multi-use or cost rules; **iWARP**, de facto in retreat |
+| Storage transport | **NVMe/TCP** unless there is a measured requirement | NVMe-oF/RoCE with a validated lossless network; FC-NVMe if a fibre SAN already exists |
+| Lossless network for RoCE | **Mandatory and validated end to end**, in **a single class**, with ECN first and PFC as a last resort (mechanics in `datacenter-fabric-standards`) | ❌ Deploying RoCE with no congestion control validated end to end |
+| Compute oversubscription | **1:1 (non-blocking)** on the training/HPC network | 2:1 only with a measured traffic profile; ❌ importing the 3:1-4:1 of a general-purpose compute fabric |
+| Topology | **Non-blocking fat-tree (Clos)** as the default | **Dragonfly** at large scale for cabling cost, assuming adaptive routing and more complexity |
+| Subnet management (IB) | **One primary SM and at least one standby**, with versioned configuration | ❌ A single SM; ❌ two "master" SMs competing through accidental discovery |
+| Isolation (IB) | **Partitions (P_Key)** declared per tenant/service | ❌ Everything in the default partition and calling it segmentation |
+| User stack | **rdma-core / libibverbs** as the base and **UCX** as the transport for MPI and collectives; **NCCL/RCCL** with GPUDirect RDMA verified | ❌ Reimplementing a transport on top of verbs; ❌ assuming GPUDirect is active because the card supports it |
+| Management plane | **Out of band and separate from the fabric**, like any network device | ❌ Managing the fabric switches through the fabric itself |
 
-## 3. Criterio de diseño
+## 3. Design criteria
 
-**RDMA: qué es y qué exige**
-- **Acceso directo a memoria remota**: la tarjeta lee y escribe memoria del otro extremo **sin copias
-  intermedias y sin pasar por el núcleo** en el camino de datos. De ahí las tres ganancias reales:
-  latencia baja y **predecible**, cero copia y CPU liberada.
-- **Lo que exige de la aplicación**: registrar y anclar memoria (coste no trivial y límites de
-  `memlock`), gestionar colas y compleciones, y **asumir otro modelo de fallo** — la conexión fiable
-  aborta la *queue pair* ante error y la recuperación es de la aplicación. **Una aplicación que no
-  habla verbs no gana nada por poner tarjetas RDMA**: es una decisión de arquitectura, no un ajuste
-  de red, y si el software no está portado el proyecto es de desarrollo.
+**RDMA: what it is and what it demands**
+- **Direct remote memory access**: the card reads and writes the other end's memory **with no
+  intermediate copies and without going through the kernel** on the data path. Hence the three real
+  gains: low and **predictable** latency, zero copy and a freed CPU.
+- **What it demands of the application**: registering and pinning memory (a non-trivial cost and
+  `memlock` limits), managing queues and completions, and **assuming a different failure model** —
+  the reliable connection aborts the *queue pair* on error and recovery belongs to the application.
+  **An application that does not speak verbs gains nothing from installing RDMA cards**: it is an
+  architecture decision, not a network tweak, and if the software is not ported the project is a
+  development project.
 
-**InfiniBand frente a RoCE v2 frente a iWARP — criterio honesto**
-- **InfiniBand**: pila coherente de extremo a extremo, control de flujo por créditos **en el propio
-  protocolo**, gestión centralizada por SM y agregación en red. Menor riesgo técnico en entrenamiento
-  y HPC. **El precio**: ecosistema muy concentrado —la especificación es de la IBTA, pero el mercado
-  de adaptador y conmutador lo domina un fabricante desde la compra de Mellanox por NVIDIA—, coste
-  alto y personal que hay que formar o contratar.
-- **RoCE v2**: RDMA en UDP/IP, luego **enrutable** y sobre conmutadores de cualquiera; ecosistema
-  abierto y personal que ya tienes. **El precio**: **la red pasa a ser responsabilidad tuya**, y es
-  donde se rompe (§ siguiente).
-- **iWARP**: RDMA sobre TCP (**RFC 5040** y **RFC 5044**), sin exigir red sin pérdidas. Suena ideal y
-  **en la práctica ha perdido el mercado**: soporte de tarjetas escaso y adopción en declive. No lo
-  elijas para algo nuevo sin verificar que existe hardware que quieras comprar.
-- **Ultra Ethernet (UEC)** es el movimiento a vigilar: especificación **1.0 publicada en jun-2025**,
-  con transporte RDMA moderno, reparto por múltiples caminos y reordenación en la tarjeta, justo para
-  arreglar lo que RoCE v2 hace mal. **Aún no es el default seguro**: verifica hardware real primero.
-- **Regla de elección**: ¿tienes equipo capaz de operar y **diagnosticar** una Ethernet sin pérdidas?
-  Si no, o InfiniBand o NVMe/TCP y nada de RDMA. La peor combinación es **RoCE operado por gente que
-  no sabe que lo está operando**.
+**InfiniBand versus RoCE v2 versus iWARP — an honest criterion**
+- **InfiniBand**: a coherent end-to-end stack, credit-based flow control **in the protocol itself**,
+  centralised management by the SM and in-network aggregation. Lower technical risk in training and
+  HPC. **The price**: a very concentrated ecosystem — the specification belongs to the IBTA, but the
+  adapter and switch market has been dominated by one manufacturer since NVIDIA's purchase of
+  Mellanox —, high cost and staff you have to train or hire.
+- **RoCE v2**: RDMA over UDP/IP, therefore **routable** and over anybody's switches; an open
+  ecosystem and staff you already have. **The price**: **the network becomes your responsibility**,
+  and that is where it breaks (§ next).
+- **iWARP**: RDMA over TCP (**RFC 5040** and **RFC 5044**), with no lossless network requirement. It
+  sounds ideal and **in practice it has lost the market**: scarce card support and declining
+  adoption. Do not choose it for something new without verifying that hardware you want to buy
+  exists.
+- **Ultra Ethernet (UEC)** is the move to watch: specification **1.0 published in Jun 2025**, with a
+  modern RDMA transport, multi-path spraying and reordering on the card, precisely to fix what RoCE
+  v2 does badly. **It is not yet the safe default**: verify real hardware first.
+- **Choice rule**: do you have a team capable of operating and **diagnosing** a lossless Ethernet?
+  If not, either InfiniBand or NVMe/TCP and no RDMA at all. The worst combination is **RoCE operated
+  by people who do not know they are operating it**.
 
-**RoCE necesita una red sin pérdidas: qué exige el interconector**
-- **La mecánica es de `datacenter-fabric-standards`** (PFC 802.1Qbb, ETS 802.1Qaz, DCBX, ECN y
-  DCQCN). Aquí sólo lo que el interconector impone:
-  1. **Una única clase sin pérdidas**, con la prioridad de RoCE mapeada **idénticamente en todos los
-     saltos y en las dos tarjetas**: una discrepancia en un solo salto anula la garantía.
-  2. **Coherencia entre DSCP y prioridad L2** (RoCE v2 es UDP/IP: la marca que sobrevive al enrutado
-     es DSCP), y **MTU y jumbo coherentes** en todo el camino.
-  3. **Control de congestión configurado también en la tarjeta** (DCQCN o equivalente), no sólo en la
-     red: es **extremo a extremo**, y media configuración es ninguna.
-- **Por qué una red sin pérdidas mal configurada empeora las cosas**: PFC no descarta, **pausa**, y la
-  pausa **empuja la congestión hacia atrás** hasta detener tráfico ajeno (*congestion spreading*);
-  con ciclos de dependencia de buffer aparece el **bloqueo mutuo por PFC (deadlock)**, del que la red
-  **no sale sola** y que se ve como una parte del clúster parada sin errores obvios. Has cambiado
-  "perder paquetes" por "parar a todo el mundo": si el control de congestión extremo a extremo no
-  funciona, has empeorado el fallo, no lo has quitado.
-- **Validación extremo a extremo, obligatoria**: carga real entre pares distantes observando
-  **contadores de pausa PFC, marcas ECN y CNP en tarjetas y conmutadores**. Si nadie mira los
-  contadores, no sabes si estás pausando. Es un gate (§4).
+**RoCE needs a lossless network: what the interconnect demands**
+- **The mechanics belong to `datacenter-fabric-standards`** (PFC 802.1Qbb, ETS 802.1Qaz, DCBX, ECN
+  and DCQCN). Here only what the interconnect imposes:
+  1. **A single lossless class**, with RoCE's priority mapped **identically on every hop and on both
+     cards**: a mismatch on a single hop voids the guarantee.
+  2. **Coherence between DSCP and L2 priority** (RoCE v2 is UDP/IP: the marking that survives
+     routing is DSCP), and **coherent MTU and jumbo frames** along the whole path.
+  3. **Congestion control configured on the card too** (DCQCN or equivalent), not only in the
+     network: it is **end to end**, and half a configuration is none.
+- **Why a badly configured lossless network makes things worse**: PFC does not drop, it **pauses**,
+  and the pause **pushes congestion backwards** until it stops unrelated traffic (*congestion
+  spreading*); with buffer dependency cycles you get **PFC deadlock**, from which the network **does
+  not recover on its own** and which looks like part of the cluster stopped with no obvious errors.
+  You have swapped "losing packets" for "stopping everybody": if end-to-end congestion control does
+  not work, you have made the failure worse, not removed it.
+- **End-to-end validation, mandatory**: a real load between distant peers watching **PFC pause
+  counters, ECN marks and CNPs on cards and switches**. If nobody looks at the counters, you do not
+  know whether you are pausing. It is a gate (§4).
 
-**Gestión: el gestor de subred y por qué Ethernet no tiene equivalente**
-- En InfiniBand, el **Subnet Manager** descubre la topología, **asigna los LID**, programa las
-  **tablas de reenvío** de cada conmutador y mantiene el estado. **Sin SM el fabric no pasa de "link
-  up": no reenvía nada.** Consecuencias: **SM primario y de reserva**, configuración versionada, y
-  conciencia de que un SM ajeno en la subred puede reprogramarla. **El reencaminamiento es una
-  operación observable** que conviene provocar en laboratorio. Las **particiones (P_Key)** son el
-  aislamiento nativo: por inquilino o servicio, no todo en la partición por defecto.
-- **En Ethernet no hay nada de esto**: no existe entidad central que programe el reenvío. Su
-  equivalente funcional son **protocolos distribuidos** (BGP/EVPN, ECMP) más tu automatización — es
-  decir, **lo que en InfiniBand es un componente, en Ethernet es un proyecto**. Ése es el coste
-  oculto real de elegir RoCE.
+**Management: the subnet manager and why Ethernet has no equivalent**
+- In InfiniBand, the **Subnet Manager** discovers the topology, **assigns the LIDs**, programs each
+  switch's **forwarding tables** and maintains the state. **Without an SM the fabric does not get
+  past "link up": it forwards nothing.** Consequences: **a primary and a standby SM**, versioned
+  configuration, and awareness that somebody else's SM on the subnet can reprogram it.
+  **Rerouting is an observable operation** that is worth provoking in a lab. **Partitions (P_Key)**
+  are the native isolation: per tenant or service, not everything in the default partition.
+- **In Ethernet there is none of this**: there is no central entity programming the forwarding. Its
+  functional equivalent is **distributed protocols** (BGP/EVPN, ECMP) plus your automation — that
+  is, **what in InfiniBand is a component, in Ethernet is a project**. That is the real hidden cost
+  of choosing RoCE.
 
-**Topologías y sobresuscripción en cómputo**
-- **Fat-tree no bloqueante** es el default: caminos iguales entre cualquier par y latencia
-  predecible. **Dragonfly** reduce cable y coste a gran escala a cambio de caminos desiguales y
-  dependencia del **enrutado adaptativo**; sólo con equipo que sepa operarlo.
-- **La sobresuscripción se decide con otro criterio que en una malla de centro de datos**: allí el
-  tráfico son muchos flujos independientes y 3:1 es razonable; aquí una colectiva síncrona hace que
-  **todo el trabajo avance al ritmo del enlace más lento**, así que no degrada un poco: degrada el
-  trabajo entero. Default **1:1**; otra cosa es decisión escrita y medida. Y el ***incast* de las
-  colectivas** (muchos emisores a un receptor) rompe buffers: no se arregla con más ancho de banda,
-  sino con control de congestión y agregación en red.
+**Topologies and oversubscription in compute**
+- **A non-blocking fat-tree** is the default: equal paths between any pair and predictable latency.
+  **Dragonfly** reduces cabling and cost at large scale in exchange for unequal paths and dependence
+  on **adaptive routing**; only with a team that knows how to operate it.
+- **Oversubscription is decided with different criteria from a data centre fabric**: there the
+  traffic is many independent flows and 3:1 is reasonable; here a synchronous collective makes
+  **the whole job advance at the pace of the slowest link**, so it does not degrade a bit: it
+  degrades the entire job. Default **1:1**; anything else is a written and measured decision. And
+  the **collectives' *incast*** (many senders to one receiver) breaks buffers: it is not fixed with
+  more bandwidth, but with congestion control and in-network aggregation.
 
 **Software**
-- **verbs / rdma-core** es la base; casi nadie debería programar ahí directamente. **UCX** es la capa
-  de transporte que usan MPI y otras bibliotecas: si algo va mal en MPI, el diagnóstico suele estar en
-  UCX —transporte seleccionado, dispositivo elegido, memoria registrada—, no en el conmutador. **MPI**
-  (Open MPI, MPICH) y el planificador son de `hpc-standards`.
-- **Colectivas de GPU (NCCL/RCCL)**: el entrenamiento distribuido depende de que elijan el transporte
-  correcto y de que **GPUDirect RDMA** esté realmente activo (tarjeta y GPU en un dominio PCIe/NUMA
-  razonable). **Verifícalo, no lo supongas**: la degradación silenciosa habitual es caer a un camino
-  que copia por CPU. La GPU en sí es de `gpu-computing-standards`.
+- **verbs / rdma-core** is the base; almost nobody should be programming there directly. **UCX** is
+  the transport layer used by MPI and other libraries: if something goes wrong in MPI, the diagnosis
+  is usually in UCX — the selected transport, the chosen device, the registered memory — not in the
+  switch. **MPI** (Open MPI, MPICH) and the scheduler belong to `hpc-standards`.
+- **GPU collectives (NCCL/RCCL)**: distributed training depends on them choosing the right transport
+  and on **GPUDirect RDMA** actually being active (card and GPU in a reasonable PCIe/NUMA domain).
+  **Verify it, do not assume it**: the usual silent degradation is falling back to a path that
+  copies via the CPU. The GPU itself belongs to `gpu-computing-standards`.
 
-**Almacenamiento sobre RDMA — la sección más útil, porque la mayoría no necesita RDMA**
-- **NVMe over Fabrics** tiene tres transportes vivos: **RoCE** (menor latencia, exige red sin
-  pérdidas), **TCP** (cualquier NIC, cualquier switch, cualquier topología enrutada) y **Fibre
-  Channel** (natural si ya tienes SAN).
-- **NVMe/TCP es suficiente para la inmensa mayoría** y evita todo lo anterior: sin red sin pérdidas,
-  sin PFC, sin mapeo de prioridades, sin personal especializado. El coste es latencia y CPU, y buena
-  parte se recupera con descarga en la tarjeta.
-- **Criterio**: empieza en NVMe/TCP; pasa a NVMe-oF/RoCE **sólo** con un requisito de latencia
-  **medido** que TCP no cumple **y** equipo capaz de mantener la Ethernet sin pérdidas. Si ya tienes
-  InfiniBand por el cómputo, NVMe-oF sobre él es natural. **SMB Direct** y **NFS over RDMA** (RPC
-  sobre RDMA, **RFC 8166**) arrastran el mismo requisito: sin la red debajo hay incidentes, no
-  ganancia.
+**Storage over RDMA — the most useful section, because most people do not need RDMA**
+- **NVMe over Fabrics** has three live transports: **RoCE** (lowest latency, requires a lossless
+  network), **TCP** (any NIC, any switch, any routed topology) and **Fibre Channel** (natural if you
+  already have a SAN).
+- **NVMe/TCP is enough for the vast majority** and avoids all of the above: no lossless network, no
+  PFC, no priority mapping, no specialised staff. The cost is latency and CPU, and a good part of it
+  is recovered with offload on the card.
+- **Criterion**: start at NVMe/TCP; move to NVMe-oF/RoCE **only** with a **measured** latency
+  requirement TCP does not meet **and** a team able to maintain the lossless Ethernet. If you
+  already have InfiniBand for the compute, NVMe-oF over it is natural. **SMB Direct** and **NFS over
+  RDMA** (RPC over RDMA, **RFC 8166**) drag in the same requirement: without the network underneath
+  there are incidents, not gains.
 
-## 4. Gates de calidad
+## 4. Quality gates
 
-- **Validación de la red antes que de la aplicación**: latencia y caudal con herramientas de nivel de
-  tarjeta **entre todos los pares relevantes**, no entre dos vecinos. Un fabric probado sólo en un
-  rack no está probado.
-- **Gate de RoCE**: carga con observación simultánea de **PFC, ECN/CNP, reordenaciones y reintentos**
-  en tarjeta y conmutador. **Cero pausas sostenidas** o el diseño no pasa. Y **coherencia de la clase
-  sin pérdidas en todos los saltos** por diff automático: un conmutador distinto de sus pares es un
-  hallazgo.
-- **Prueba de fallo real**: caída de un enlace, de un conmutador y (en IB) **del SM primario**,
-  midiendo reconfiguración e impacto en un trabajo en curso. La vuelta también.
-- **Prueba de la colectiva real** a la escala objetivo, no sólo punto a punto: es donde aparecen la
-  sobresuscripción y el incast. Con **GPUDirect RDMA verificado activo** y el camino elegido por la
-  biblioteca de colectivas comprobado, y con **firmware, driver y NOS homogéneos** en toda la flota
-  (la mezcla de versiones en RDMA produce fallos que parecen de red).
+- **Validate the network before the application**: latency and throughput with card-level tools
+  **between all the relevant pairs**, not between two neighbours. A fabric tested in only one rack
+  is not tested.
+- **RoCE gate**: load with simultaneous observation of **PFC, ECN/CNP, reorderings and retries** on
+  card and switch. **Zero sustained pauses** or the design does not pass. And **coherence of the
+  lossless class on every hop** by an automatic diff: a switch differing from its peers is a
+  finding.
+- **Real failure test**: a link drop, a switch drop and (in IB) **the primary SM going down**,
+  measuring reconfiguration and impact on a running job. The return path too.
+- **Real collective test** at the target scale, not just point to point: that is where
+  oversubscription and incast show up. With **GPUDirect RDMA verified active** and the path chosen
+  by the collectives library checked, and with **homogeneous firmware, driver and NOS** across the
+  whole fleet (mixed versions in RDMA produce failures that look like network ones).
 
-## 5. Seguridad
+## 5. Security
 
-- **RDMA no autentica ni cifra por defecto** y el camino de datos **evita el núcleo**: los controles
-  de host (firewall local, inspección) **no ven ese tráfico**, y quien pueda inyectar en el fabric
-  puede leer y escribir memoria remota registrada. Consecuencia: **el fabric es un dominio de
-  confianza físico y acotado**, protegido por **aislamiento** (P_Key en IB, VLAN/VRF y filtrado en el
-  borde de la Ethernet de RoCE), no por reglas en el camino de datos (la política de zonas es de
-  `firewall-policy-standards`).
-- **No enrutes RoCE fuera de su dominio** ni lo lleves por enlaces compartidos con tráfico general
-  sin decidirlo: rompe la garantía sin pérdidas y amplía la superficie.
-- **Plano de gestión OOB** para conmutadores del fabric y para el SM, con AAA y sin credenciales de
-  fábrica: un SM comprometido reprograma el reenvío de todo el clúster. Si el dato exige
-  confidencialidad y el recinto no es de confianza, cifrado **de enlace o de aplicación**
-  (`cryptography-pki-standards`), no suponer que "va por otra red".
+- **RDMA neither authenticates nor encrypts by default** and the data path **bypasses the kernel**:
+  host controls (local firewall, inspection) **do not see that traffic**, and whoever can inject
+  into the fabric can read and write registered remote memory. Consequence: **the fabric is a
+  physical and bounded trust domain**, protected by **isolation** (P_Key in IB, VLAN/VRF and
+  filtering at the edge of the RoCE Ethernet), not by rules on the data path (the zone policy
+  belongs to `firewall-policy-standards`).
+- **Do not route RoCE outside its domain** or carry it over links shared with general traffic
+  without deciding to: it breaks the lossless guarantee and widens the surface.
+- **An OOB management plane** for the fabric switches and for the SM, with AAA and no factory
+  credentials: a compromised SM reprograms the forwarding of the whole cluster. If the data requires
+  confidentiality and the facility is not trusted, **link or application** encryption
+  (`cryptography-pki-standards`), not assuming that "it goes over another network".
 
-## 6. Rendimiento y diagnóstico
+## 6. Performance and diagnosis
 
-- **Aquí el síntoma no es pérdida de paquetes: es colapso de rendimiento.** El trabajo tarda el
-  triple, la colectiva se ralentiza, y `ping` responde perfectamente. Buscar "paquetes perdidos" es
-  la vía muerta clásica del dominio.
-- **Contadores que se vigilan siempre**, en tarjeta y conmutador: errores de símbolo y de enlace,
-  enlaces caídos y renegociados, tasa de error de bit y estado de la óptica, **tramas de pausa PFC**,
-  **paquetes con ECN y CNP**, paquetes fuera de secuencia, reintentos y `retry exceeded`, y
-  compleciones con error. El **contador que sube donde no debería** es el diagnóstico, no la captura.
-- **Un solo enlace degradado envenena el clúster**: con colectivas, un puerto con errores de símbolo
-  baja el rendimiento global sin caerse nunca; el barrido periódico de contadores y calidad de enlace
-  es rutina, no reacción a incidente.
-- **Ubicación importa**: la afinidad NUMA y PCIe entre tarjeta, GPU y proceso cambia el resultado más
-  que cualquier ajuste del conmutador. Y se mide con la carga real —la colectiva objetivo—, no con
-  sintéticos punto a punto (metodología en `performance-engineering-standards`).
+- **Here the symptom is not packet loss: it is performance collapse.** The job takes three times as
+  long, the collective slows down, and `ping` responds perfectly. Looking for "lost packets" is the
+  classic dead end of the domain.
+- **Counters always watched**, on card and switch: symbol and link errors, dropped and renegotiated
+  links, bit error rate and optics status, **PFC pause frames**, **ECN-marked packets and CNPs**,
+  out-of-sequence packets, retries and `retry exceeded`, and completions with errors. The **counter
+  that rises where it should not** is the diagnosis, not the capture.
+- **A single degraded link poisons the cluster**: with collectives, a port with symbol errors drops
+  overall performance without ever going down; the periodic sweep of counters and link quality is
+  routine, not a reaction to an incident.
+- **Placement matters**: NUMA and PCIe affinity between card, GPU and process changes the result
+  more than any switch tuning. And it is measured with the real workload — the target collective —
+  not with point-to-point synthetics (methodology in `performance-engineering-standards`).
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-- **Cadencia**: firmware, driver y NOS por trimestre y ante CVE explotable, **como conjunto probado**
-  (tarjeta + driver + NOS + biblioteca), no pieza a pieza. En RDMA las combinaciones no soportadas
-  dan rendimiento raro, no error claro.
-- **Generaciones**: el fabric se sustituye por generaciones completas y las tasas se duplican cada
-  pocos años cambiando óptica, conector y presupuesto de potencia; mezclarlas funciona por
-  negociación a la baja, así que **planifícalo, no lo descubras**. Particiones, nodos y clases
-  retirados desaparecen de configuración y documentación.
+- **Cadence**: firmware, driver and NOS quarterly and on an exploitable CVE, **as a tested set**
+  (card + driver + NOS + library), not piece by piece. In RDMA, unsupported combinations give odd
+  performance, not a clear error.
+- **Generations**: the fabric is replaced by complete generations and the rates double every few
+  years, changing optics, connector and power budget; mixing them works by negotiating down, so
+  **plan for it, do not discover it**. Retired partitions, nodes and classes disappear from
+  configuration and documentation.
 
-**PROHIBIDO**
-- ❌ Desplegar **RoCE sin control de congestión extremo a extremo configurado y validado** (tarjeta
-  **y** red), con prueba de carga y contadores observados. Sin eso, no entra en producción.
-- ❌ Elegir RDMA sin un requisito de rendimiento **medido** que TCP no cumpla, o RoCE sin equipo capaz
-  de operar y diagnosticar una Ethernet sin pérdidas.
-- ❌ Habilitar PFC en más de una clase, o con mapeo de prioridad/DSCP distinto en algún salto.
-- ❌ Operar sin monitorizar contadores de pausa, ECN/CNP y errores de enlace.
-- ❌ InfiniBand con un único gestor de subred, o con su configuración fuera de control de versiones.
-- ❌ Dejar todo el fabric InfiniBand en la partición por defecto y llamarlo segmentación.
-- ❌ Tratar el fabric como zona de confianza extensible, o enrutar RoCE fuera de su dominio.
-- ❌ Gestionar los conmutadores del fabric a través del propio fabric.
-- ❌ Importar a la red de cómputo la sobresuscripción de una malla de cómputo general.
-- ❌ Suponer que GPUDirect RDMA está activo sin haberlo verificado.
-- ❌ Firmware, driver y NOS heterogéneos en la flota del fabric.
-- ❌ Diagnosticar buscando pérdida de paquetes cuando el síntoma es colapso de rendimiento.
-- ❌ Poner NVMe-oF/RoCE donde NVMe/TCP cumple, o diseñar sobre Ultra Ethernet sin verificar
-  disponibilidad real de hardware.
+**FORBIDDEN**
+- ❌ Deploying **RoCE with no end-to-end congestion control configured and validated** (card **and**
+  network), with a load test and observed counters. Without that, it does not go into production.
+- ❌ Choosing RDMA with no **measured** performance requirement TCP fails to meet, or RoCE with no
+  team able to operate and diagnose a lossless Ethernet.
+- ❌ Enabling PFC on more than one class, or with a different priority/DSCP mapping on some hop.
+- ❌ Operating without monitoring pause, ECN/CNP and link error counters.
+- ❌ InfiniBand with a single subnet manager, or with its configuration outside version control.
+- ❌ Leaving the whole InfiniBand fabric in the default partition and calling it segmentation.
+- ❌ Treating the fabric as an extensible trust zone, or routing RoCE outside its domain.
+- ❌ Managing the fabric's switches through the fabric itself.
+- ❌ Importing into the compute network the oversubscription of a general-purpose compute fabric.
+- ❌ Assuming GPUDirect RDMA is active without having verified it.
+- ❌ Heterogeneous firmware, driver and NOS across the fabric's fleet.
+- ❌ Diagnosing by looking for packet loss when the symptom is performance collapse.
+- ❌ Putting NVMe-oF/RoCE where NVMe/TCP does the job, or designing on Ultra Ethernet without
+  verifying real hardware availability.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-**Metodología**: los RFC, **uno a uno** contra el JSON de `rfc-editor.org`; el estado de los
-ecosistemas, contra fuentes primarias (IBTA, UEC, NVM Express).
+**Methodology**: the RFCs, **one by one** against `rfc-editor.org`'s JSON; the state of the
+ecosystems, against primary sources (IBTA, UEC, NVM Express).
 
-**RFC verificados ago-2026**: **iWARP — RDMAP = RFC 5040** (oct-2007, Proposed Standard, actualizado
-por 7146) y **MPA = RFC 5044** (oct-2007, actualizado por 6581 y 7146); **NFS/RPC sobre RDMA v1 =
-RFC 8166** (jun-2017, **obsoleta RFC 5666** — citar 5666 hoy es un error de hecho). La red sin
-pérdidas y sus referencias IEEE/ECN están verificadas en `datacenter-fabric-standards`: **no las
-dupliques ni las recuerdes desde aquí**.
+**RFCs verified Aug 2026**: **iWARP — RDMAP = RFC 5040** (Oct 2007, Proposed Standard, updated by
+7146) and **MPA = RFC 5044** (Oct 2007, updated by 6581 and 7146); **NFS/RPC over RDMA v1 =
+RFC 8166** (Jun 2017, **obsoletes RFC 5666** — citing 5666 today is a factual error). The lossless
+network and its IEEE/ECN references are verified in `datacenter-fabric-standards`: **do not
+duplicate them or recall them from here**.
 
-**Estado verificado ago-2026**: **IBTA** publicó las especificaciones iniciales de **XDR** en
-oct-2023 (Vol. 1 rel. 1.7), con **XDR = 800 Gb/s por puerto** sobre 200 Gb/s por carril, y hoja de
-ruta hacia **GDR (1600G)** y **LDR (3200G)**; la escalera vigente es EDR 100G → HDR 200G → NDR 400G →
-XDR 800G. **Ultra Ethernet Consortium publicó la especificación 1.0 el 11-jun-2025**, con transporte
-RDMA propio, reparto por múltiples caminos y reordenación en el extremo. **NVM Express publicó el
-conjunto 2.4 el 4-ago-2026**, con **NVMe over RDMA Transport 1.3** y **NVMe over TCP Transport 1.3**.
-**iWARP está en declive de adopción** según las fuentes consultadas.
+**Status verified Aug 2026**: **IBTA** published the initial **XDR** specifications in Oct 2023
+(Vol. 1 rel. 1.7), with **XDR = 800 Gb/s per port** over 200 Gb/s per lane, and a roadmap towards
+**GDR (1600G)** and **LDR (3200G)**; the current ladder is EDR 100G → HDR 200G → NDR 400G →
+XDR 800G. **The Ultra Ethernet Consortium published specification 1.0 on 11 Jun 2025**, with its own
+RDMA transport, multi-path spraying and reordering at the endpoint. **NVM Express published the 2.4
+set on 4 Aug 2026**, with **NVMe over RDMA Transport 1.3** and **NVMe over TCP Transport 1.3**.
+**iWARP is in adoption decline** according to the sources consulted.
 
-**Discrepancia declarada**: sobre la posición de mercado de InfiniBand frente a Ethernet las fuentes
-no coinciden — unos sostienen que el Ethernet especializado del propio fabricante de InfiniBand ya
-envía más volumen que su InfiniBand, y otros presentan InfiniBand como estándar de facto del
-entrenamiento. **Es análisis de mercado, no dato técnico**: no lo uses como argumento de diseño.
+**Declared discrepancy**: on InfiniBand's market position versus Ethernet the sources do not agree —
+some hold that the specialised Ethernet of InfiniBand's own manufacturer already ships more volume
+than its InfiniBand, and others present InfiniBand as the de facto standard of training. **It is
+market analysis, not a technical datum**: do not use it as a design argument.
 
-**Huecos declarados — NO rellenar de memoria**:
-1. **Tasas efectivas y latencias por generación** (más allá de la nominal por puerto) y
-   **disponibilidad real de hardware XDR/GDR**: no verificadas.
-2. **Soporte de iWARP por fabricante y modelo** y **disponibilidad e interoperabilidad de hardware
-   conforme a UEC 1.0**: **no verificados**, y son lo que decide si cada uno es opción hoy.
-3. **Versiones, mantenimiento y licencia en crudo** de `rdma-core`, **UCX** (sólo se leyó su cabecera
-   de copyright, no el clausulado), Open MPI, MPICH, NCCL/RCCL y `opensm`: **no verificadas**.
-4. **Parámetros de DCQCN, umbrales ECN y *headroom* de PFC**, y **números de sobresuscripción por
-   tipo de carga**: criterio de fabricante y de ingeniería, no medidas (en
-   `datacenter-fabric-standards` también constan como no verificados).
-5. **Cifras de latencia de NVMe/TCP frente a NVMe/RoCE**: las fuentes dan rangos, no medidas
-   reproducibles. Mide en tu hardware antes de justificar RDMA con ellas.
+**Declared gaps — do NOT fill from memory**:
+1. **Effective rates and latencies per generation** (beyond the nominal per port) and **real
+   availability of XDR/GDR hardware**: not verified.
+2. **iWARP support by manufacturer and model** and **availability and interoperability of UEC 1.0
+   compliant hardware**: **not verified**, and they are what decides whether each is an option
+   today.
+3. **Versions, maintenance and raw licence** of `rdma-core`, **UCX** (only its copyright header was
+   read, not the terms), Open MPI, MPICH, NCCL/RCCL and `opensm`: **not verified**.
+4. **DCQCN parameters, ECN thresholds and PFC *headroom***, and **oversubscription numbers per
+   workload type**: vendor and engineering criteria, not measurements (in
+   `datacenter-fabric-standards` they are also recorded as not verified).
+5. **NVMe/TCP versus NVMe/RoCE latency figures**: the sources give ranges, not reproducible
+   measurements. Measure on your hardware before justifying RDMA with them.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

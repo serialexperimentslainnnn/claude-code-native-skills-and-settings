@@ -363,7 +363,7 @@ Miss **one** and the result is not published:
    with itself** across identical runs, and it is written that way in the report.
 2. **Warm-up and discard.** JIT, caches, connection *pools*, page tables and filesystem caches
    need a warm-up period **that is discarded from the result**. Including start-up in the
-   histogram contaminates the tail with an artefact.
+   histogram contaminates the tail with an artifact.
 3. **Representative data with realistic cardinality.** A single user, a single key or a single
    product turns the test into a cache test. The access distribution matters as much as the
    volume (Zipf, not uniform).
@@ -373,7 +373,7 @@ Miss **one** and the result is not published:
    demonstrate, **nothing has been demonstrated**.
 6. **System under test observed during the test**: USE on every resource, RED on every
    service. A test that only produces the final number does not allow diagnosing anything.
-7. **Reproducible record**: artefact version, *commit*, configuration, dataset, tool, script,
+7. **Reproducible record**: artifact version, *commit*, configuration, dataset, tool, script,
    arrival model and hardware. **A result nobody can reproduce is an anecdote.**
 
 ### 4.4 Microbenchmarks
@@ -399,7 +399,7 @@ Consequence that decides the order of work: **making infinitely fast a part that
 the time produces, at most, a 5.3 % improvement.** Therefore:
 
 1. **Measure the whole hot path before touching anything.** The distribution of time by stage
-   is the first artefact, always.
+   is the first artifact, always.
 2. **Optimise in order of time fraction, not in order of ease or of interest.**
 3. **Recalculate after each change**: once the bottleneck is removed, the bottleneck is another
    one and the priority list changes entirely. A performance task list **expires as soon as the

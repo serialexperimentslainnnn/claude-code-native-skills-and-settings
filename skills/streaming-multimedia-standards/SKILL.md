@@ -3,186 +3,186 @@ name: streaming-multimedia-standards
 description: Video/audio ingest, transcoding, packaging and delivery pipelines. Use when working with HLS playlists (.m3u8, #EXT-X-*), MPEG-DASH manifests (.mpd), CMAF/fMP4 segments, LL-HLS, codec selection H.264/AVC, HEVC, AV1, VVC and their patent pools, ffmpeg/ffprobe transcode commands and ladders, GStreamer pipelines (gst-launch-1.0), DRM with Widevine/FairPlay/PlayReady and CENC/cbcs, SCTE-35 ad markers, subtitle and caption delivery (WebVTT, TTML/IMSC, CEA-608/708, #EXT-X-MEDIA TYPE=SUBTITLES, DASH text AdaptationSet) and audio-description renditions, RTMP/SRT/WHIP (WebRTC) ingest, Media over QUIC (MoQ), media servers (MediaMTX, Ant Media, Wowza, OBS as encoder), or managed services (AWS MediaLive/MediaPackage/IVS, Mux, Cloudflare Stream).
 ---
 
-# Estándares de streaming multimedia
+# Streaming multimedia standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **pipeline multimedia**: ingesta (RTMP/SRT/WHIP), transcodificación y escalera de
-bitrates, empaquetado (HLS/DASH/CMAF), DRM, latencia (VOD, live estándar, LL-HLS, tiempo real
-con WebRTC/MoQ), elección de codec **con su coste de patentes** —el dato caro del dominio— y
-elección entre servidor propio y servicio gestionado.
+Applies to the **media pipeline**: ingest (RTMP/SRT/WHIP), transcoding and the bitrate
+ladder, packaging (HLS/DASH/CMAF), DRM, latency (VOD, standard live, LL-HLS, real time
+with WebRTC/MoQ), codec choice **with its patent cost** — the expensive fact of this domain — and
+the choice between running your own server and a managed service.
 
-Triggers: `.m3u8`, `#EXT-X-VERSION`/`#EXT-X-PART` y demás etiquetas HLS, `.mpd`, segmentos
-fMP4/CMAF, `ffmpeg`/`ffprobe` (transcodificación, `-c:v libx264/libx265/libsvtav1`, filtros,
-escaleras ABR), `gst-launch-1.0` y pipelines GStreamer, Widevine/FairPlay/PlayReady,
-CENC (`cenc`/`cbcs`), licencias de HEVC/AV1/VVC, SCTE-35, RTMP, SRT, WHIP/WHEP, LL-HLS,
+Triggers: `.m3u8`, `#EXT-X-VERSION`/`#EXT-X-PART` and the other HLS tags, `.mpd`,
+fMP4/CMAF segments, `ffmpeg`/`ffprobe` (transcoding, `-c:v libx264/libx265/libsvtav1`, filters,
+ABR ladders), `gst-launch-1.0` and GStreamer pipelines, Widevine/FairPlay/PlayReady,
+CENC (`cenc`/`cbcs`), HEVC/AV1/VVC licensing, SCTE-35, RTMP, SRT, WHIP/WHEP, LL-HLS,
 Media over QUIC, MediaMTX, Ant Media, Wowza, OBS, MediaLive/MediaPackage/IVS, Mux,
-Cloudflare Stream, "el directo llega con 30 segundos de retraso", "el vídeo no reproduce en
-Safari/iPhone".
+Cloudflare Stream, "the live stream arrives 30 seconds late", "the video does not play in
+Safari/on iPhone".
 
-**No aplica**: ver `caching-cdn-standards` (**la CDN, la caché HTTP, sus cabeceras y su coste de
-egreso son suyos** — un segmento HLS es un objeto HTTP cacheable más; aquí se decide cómo se
-empaqueta y con qué duración, allí cómo lo sirve el borde), `webgl-webgpu-standards` (render en
-navegador: canvas, WebGL/WebGPU, WebCodecs como API gráfica), `frontend-web-platform-standards`
-(el elemento `<video>`, Media Source Extensions y EME como plataforma web genérica; aquí qué
-manifiesto y qué DRM se le entrega), `edge-computing-standards` (cómputo en el borde como
-plataforma; aquí solo si el transcode/repackage vive ahí), `e-commerce-standards` (la tienda que
-incrusta el vídeo), `accessibility-standards` (**el criterio de conformidad y su alcance legal son suyos**: WCAG
-1.2.2/1.2.4/1.2.5, subtítulos frente a transcripción, audiodescripción, quién firma la
-declaración. **Aquí la mecánica de entrega de esas pistas**: producir el WebVTT o el TTML/IMSC,
-declararlo en `#EXT-X-MEDIA TYPE=SUBTITLES,FORCED` o en el `AdaptationSet` de texto del `.mpd`,
-CEA-608/708 incrustado frente a pista lateral, la pista de audio con descripción como
-*rendition* aparte, y validar que el reproductor de cada plataforma la ofrece. **El aviso que
-ambas sostienen: una pista de subtítulos que el empaquetador no declara no existe para el
-usuario**, y el requisito se da por incumplido aunque el fichero esté en el bucket),
-`gaming-infrastructure-standards` (voz y streams de partida en juego),
-`object-storage-standards` (el bucket de origen de VOD), `gpu-computing-standards` (la GPU como
-recurso de cómputo; aquí solo el criterio de encoder hardware vs software).
+**Not applicable**: see `caching-cdn-standards` (**the CDN, HTTP caching, its headers and its egress
+cost are theirs** — an HLS segment is just one more cacheable HTTP object; here it is decided how it
+is packaged and with what duration, there how the edge serves it), `webgl-webgpu-standards` (browser
+rendering: canvas, WebGL/WebGPU, WebCodecs as a graphics API), `frontend-web-platform-standards`
+(the `<video>` element, Media Source Extensions and EME as a generic web platform; here which
+manifest and which DRM are delivered to it), `edge-computing-standards` (edge compute as a
+platform; here only whether the transcode/repackage lives there), `e-commerce-standards` (the shop
+embedding the video), `accessibility-standards` (**the conformance criteria and their legal scope are theirs**: WCAG
+1.2.2/1.2.4/1.2.5, captions versus transcript, audio description, who signs the
+statement. **Here the delivery mechanics of those tracks**: producing the WebVTT or the TTML/IMSC,
+declaring it in `#EXT-X-MEDIA TYPE=SUBTITLES,FORCED` or in the text `AdaptationSet` of the `.mpd`,
+embedded CEA-608/708 versus a side track, the audio-description track as a separate
+*rendition*, and validating that each platform's player offers it. **The warning both sides hold:
+a subtitle track the packager does not declare does not exist for the user**, and the requirement
+counts as unmet even though the file sits in the bucket),
+`gaming-infrastructure-standards` (in-game voice and match streams),
+`object-storage-standards` (the VOD origin bucket), `gpu-computing-standards` (the GPU as a
+compute resource; here only the hardware-versus-software encoder criterion).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión **y el estado de los pools de patentes** por web antes de fijar
-> nada en un proyecto real (§8). Estado verificado a ago-2026:
+> Verify the latest version **and the state of the patent pools** on the web before pinning
+> anything in a real project (§8). Status verified as of Aug 2026:
 
-| Decisión | Por defecto | Alternativa justificable | Motivo |
+| Decision | Default | Justifiable alternative | Reason |
 |---|---|---|---|
-| Formato de entrega | **HLS con segmentos CMAF (fMP4)** | DASH además, si el negocio exige clientes que no traguen HLS | HLS reproduce en todo (Apple lo exige en iOS/Safari); CMAF permite un solo juego de segmentos para HLS+DASH |
-| Codec base | **H.264/AVC** siempre presente en la escalera | — | El único que decodifica todo el parque; sus patentes esenciales están mayoritariamente expiradas o expirando |
-| Codec de eficiencia | **AV1** (SVT-AV1) donde el cliente lo soporte, con fallback H.264 | HEVC si el parque objetivo es Apple/TV y se acepta el coste de licencia | AV1 sin royalty declarado por AOMedia; HEVC con doble peaje (dispositivo y ahora también distribución) — ver aviso abajo |
-| VVC | **No en producción** | Piloto con hardware que lo soporte | Soporte de decodificación marginal en el parque y pool de patentes en consolidación |
-| Transcodificador | **ffmpeg** (9.0, ago-2026; rama 8.1.x mantenida) | GStreamer (1.28.x; 1.30 prevista Q4-2026) cuando el pipeline es de larga vida, con appsink/appsrc o elementos propios | ffmpeg para batch/CLI; GStreamer como framework embebible |
-| Encoder en vivo (contribución) | **OBS Studio** (32.2.x, jul-2026, GPL-2.0; WHIP y WebRTC nativos desde 32.1) | Encoder hardware | Estándar de facto de contribución |
-| Ingesta | **SRT o WHIP (RFC 9725)** para nuevo diseño; RTMP solo por compatibilidad | — | RTMP es legado sin cifrado nativo ni recuperación de pérdida; WHIP ya lo soportan OBS, IVS, Cloudflare y Mux |
-| Servidor propio ligero | **MediaMTX** (v1.20.0, ago-2026, **MIT** — leído del LICENSE): SRT/RTSP/RTMP/WebRTC/LL-HLS/MoQ en un binario Go | Ant Media (CE + Enterprise ~99 USD/mes/instancia) para WebRTC a escala; Wowza (4.9.7, comercial, desde ~195 USD/mes) | Simplicidad, licencia limpia, mantenimiento muy activo |
-| Servicio gestionado | **Mux o Cloudflare Stream** para producto; **AWS IVS** para latencia <3 s interactiva; **MediaLive+MediaPackage** cuando se necesita control fino del pipeline | — | Comprar el pipeline es casi siempre más barato que operarlo; comparar por minutos codificados + minutos entregados + almacenamiento |
-| Latencia objetivo | VOD y live normal: **HLS estándar (6-30 s)**; "casi directo": **LL-HLS (2-6 s)**; conversacional/subastas: **WebRTC (<500 ms)** | **MoQ**: prometedor (sub-segundo a escala CDN) pero **draft IETF (draft-ietf-moq-transport-17, jul-2026), no RFC** — solo pilotos | Cada peldaño de latencia multiplica coste y complejidad: no pedir tiempo real si el negocio tolera 6 s |
-| DRM | **Multi-DRM vía CMAF con cifrado común**: Widevine (Android/Chrome), FairPlay (Apple), PlayReady (TV/Xbox/Edge legacy), servido por un proveedor multi-DRM | Sin DRM + tokens firmados de CDN si solo se necesita control de acceso | Ningún DRM único cubre todo el parque; `cbcs` es el esquema que los tres soportan sobre CMAF — verificar la matriz exacta (§8) |
+| Delivery format | **HLS with CMAF (fMP4) segments** | DASH as well, if the business requires clients that will not take HLS | HLS plays everywhere (Apple requires it on iOS/Safari); CMAF allows a single set of segments for HLS+DASH |
+| Base codec | **H.264/AVC** always present in the ladder | — | The only one the whole device base decodes; its essential patents are largely expired or expiring |
+| Efficiency codec | **AV1** (SVT-AV1) where the client supports it, with an H.264 fallback | HEVC if the target base is Apple/TV and the licence cost is accepted | AV1 declared royalty-free by AOMedia; HEVC with a double toll (device and now distribution too) — see the warning below |
+| VVC | **Not in production** | A pilot with hardware that supports it | Marginal decode support in the installed base and a patent pool still consolidating |
+| Transcoder | **ffmpeg** (9.0, Aug 2026; 8.1.x branch maintained) | GStreamer (1.28.x; 1.30 expected Q4-2026) when the pipeline is long-lived, with appsink/appsrc or in-house elements | ffmpeg for batch/CLI; GStreamer as an embeddable framework |
+| Live (contribution) encoder | **OBS Studio** (32.2.x, Jul 2026, GPL-2.0; native WHIP and WebRTC since 32.1) | A hardware encoder | The de facto contribution standard |
+| Ingest | **SRT or WHIP (RFC 9725)** for a new design; RTMP only for compatibility | — | RTMP is legacy with no native encryption and no loss recovery; WHIP is already supported by OBS, IVS, Cloudflare and Mux |
+| Lightweight self-hosted server | **MediaMTX** (v1.20.0, Aug 2026, **MIT** — read from the LICENSE): SRT/RTSP/RTMP/WebRTC/LL-HLS/MoQ in a single Go binary | Ant Media (CE + Enterprise ~USD 99/month/instance) for WebRTC at scale; Wowza (4.9.7, commercial, from ~USD 195/month) | Simplicity, clean licence, very active maintenance |
+| Managed service | **Mux or Cloudflare Stream** for a product; **AWS IVS** for interactive latency <3 s; **MediaLive+MediaPackage** when fine-grained pipeline control is needed | — | Buying the pipeline is almost always cheaper than operating it; compare by encoded minutes + delivered minutes + storage |
+| Target latency | VOD and normal live: **standard HLS (6-30 s)**; "near-live": **LL-HLS (2-6 s)**; conversational/auctions: **WebRTC (<500 ms)** | **MoQ**: promising (sub-second at CDN scale) but an **IETF draft (draft-ietf-moq-transport-17, Jul 2026), not an RFC** — pilots only | Every latency step multiplies cost and complexity: do not ask for real time if the business tolerates 6 s |
+| DRM | **Multi-DRM over CMAF with common encryption**: Widevine (Android/Chrome), FairPlay (Apple), PlayReady (TV/Xbox/legacy Edge), served through a multi-DRM provider | No DRM + signed CDN tokens if only access control is needed | No single DRM covers the whole base; `cbcs` is the scheme all three support over CMAF — verify the exact matrix (§8) |
 
-**Aviso de patentes — el dato caro (ago-2026), verificado por web, no de memoria**:
+**Patent warning — the expensive fact (Aug 2026), web-verified, not from memory**:
 
-- **Consolidación de pools**: en dic-2025 **Access Advance adquirió la administración del pool
-  HEVC/VVC de Via LA** (renombrado *VCL Advance*). El pool HEVC Advance subió tarifas un 25 % a
-  quien firme después del **30-jun-2026** (fecha ya extendida una vez — verificar la vigente).
-- **La distribución ya no es gratis**: desde 2025 existen pools que reclaman royalties **al
-  servicio de streaming por el contenido distribuido** (Avanci Video y el *Video Distribution
-  Patent Pool* de Access Advance, que cubre HEVC, VVC, VP9 **y AV1**), rompiendo la práctica
-  anterior de cobrar solo al dispositivo.
-- **AV1 "royalty-free" está en litigio**: en mar-2026 Dolby (licenciante de Access Advance)
-  demandó a Snap por infracción de patentes **de AV1** y HEVC — primera acción contra una
-  implementación AV1. AV1 sigue siendo la mejor apuesta de coste, pero "gratis" es una posición
-  de AOMedia, no un hecho jurídico cerrado. **AV2**: spec finalizada (may-2026); sin parque de
-  decodificación — no es opción de producción aún.
-- **Regla**: la elección de codec es decisión de coste y jurídica, se documenta en ADR con
-  asesoría legal si el volumen es serio, y se re-verifica el estado de los pools **antes de
-  cada renovación o lanzamiento** (§8).
+- **Pool consolidation**: in Dec 2025 **Access Advance acquired administration of Via LA's
+  HEVC/VVC pool** (renamed *VCL Advance*). The HEVC Advance pool raised rates by 25% for anyone
+  signing after **30 Jun 2026** (a date already extended once — verify the current one).
+- **Distribution is no longer free**: since 2025 there are pools claiming royalties **from the
+  streaming service for the content distributed** (Avanci Video and Access Advance's *Video
+  Distribution Patent Pool*, covering HEVC, VVC, VP9 **and AV1**), breaking the previous practice
+  of charging the device only.
+- **AV1's "royalty-free" status is in litigation**: in Mar 2026 Dolby (a licensor of Access Advance)
+  sued Snap for infringement of **AV1** and HEVC patents — the first action against an AV1
+  implementation. AV1 remains the best cost bet, but "free" is an AOMedia position, not a settled
+  legal fact. **AV2**: spec finalised (May 2026); no decode base — not a production option yet.
+- **Rule**: codec choice is a cost and legal decision, documented in an ADR with legal advice if
+  the volume is serious, and the state of the pools is re-verified **before every renewal or
+  launch** (§8).
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- **Escalera ABR por contenido, no genérica**: resoluciones/bitrates decididos según el
-  contenido (deporte ≠ charla), con tope en la resolución que el negocio paga. Cada peldaño se
-  valida con métrica perceptual (VMAF/SSIM), no a ojo. La escalera mínima incluye siempre un
-  peldaño bajo (~300-500 kbps) para redes malas.
-- **Duración de segmento**: 4-6 s en HLS/DASH estándar (equilibrio latencia/eficiencia de
-  caché); partes de 0,3-1 s solo en LL-HLS. Segmentos alineados entre renditions (misma
-  cadencia de keyframes: `-g` = fps × duración, `keyint_min` igual) o el ABR *switching* rompe.
-- **CMAF único**: un solo juego de segmentos fMP4 referenciado por manifiesto HLS y DASH;
-  duplicar segmentos por formato duplica almacenamiento y hunde el hit-ratio de la CDN.
-- **Nombres de segmento inmutables y versionados** (nunca reescribir un segmento publicado):
-  la política de caché correspondiente es de `caching-cdn-standards`.
-- **Audio**: AAC-LC universal; Opus donde el cliente lo soporte; loudness normalizado (EBU R 128).
-- **El pipeline es código**: comandos ffmpeg/pipelines GStreamer versionados y parametrizados,
-  nunca "el comando que funcionó en la terminal de alguien". Presets con nombre y ADR.
+- **An ABR ladder per content type, not a generic one**: resolutions/bitrates decided by the
+  content (sport ≠ a talk), capped at the resolution the business pays for. Every rung is
+  validated with a perceptual metric (VMAF/SSIM), not by eye. The minimum ladder always includes a
+  low rung (~300-500 kbps) for bad networks.
+- **Segment duration**: 4-6 s in standard HLS/DASH (a latency/cache-efficiency balance);
+  parts of 0.3-1 s only in LL-HLS. Segments aligned across renditions (same
+  keyframe cadence: `-g` = fps × duration, matching `keyint_min`) or ABR *switching* breaks.
+- **A single CMAF**: one set of fMP4 segments referenced by both the HLS and DASH manifests;
+  duplicating segments per format doubles storage and sinks the CDN hit ratio.
+- **Immutable, versioned segment names** (never rewrite a published segment):
+  the corresponding cache policy belongs to `caching-cdn-standards`.
+- **Audio**: AAC-LC universally; Opus where the client supports it; normalised loudness (EBU R 128).
+- **The pipeline is code**: ffmpeg commands/GStreamer pipelines versioned and parameterised,
+  never "the command that worked in someone's terminal". Named presets and an ADR.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-- **Validación de manifiestos y streams como gate de CI**: Apple `mediastreamvalidator`/HLS
-  report para HLS, DASH-IF conformance para DASH; `ffprobe` sobre la salida (codec, perfil,
-  cadencia de keyframes, duración de segmento) tras cada cambio de preset.
-- **Calidad perceptual medida**: VMAF por peldaño contra la fuente en un set de clips de
-  referencia propio; regresión de VMAF al cambiar encoder o versión de ffmpeg **rompe el build**.
-- **Matriz de reproducción real**: Safari/iOS (el cliente más restrictivo: HLS nativo, FairPlay,
-  soporte de codec distinto), Chrome/Android, una TV/stick representativa. El emulador no
-  detecta los fallos de DRM ni de hardware decode.
-- **Bordes obligatorios**: pérdida de ingesta a mitad de directo (¿el manifiesto se recupera o
-  queda envenenado?), cambio de calidad bajo red degradada, *seek* a mitad de un directo con
-  DVR, expiración de licencia DRM durante la reproducción, discontinuidades SCTE-35.
+- **Manifest and stream validation as a CI gate**: Apple's `mediastreamvalidator`/HLS
+  report for HLS, DASH-IF conformance for DASH; `ffprobe` over the output (codec, profile,
+  keyframe cadence, segment duration) after every preset change.
+- **Measured perceptual quality**: VMAF per rung against the source over an in-house reference
+  clip set; a VMAF regression when changing encoder or ffmpeg version **breaks the build**.
+- **A real playback matrix**: Safari/iOS (the most restrictive client: native HLS, FairPlay,
+  different codec support), Chrome/Android, one representative TV/stick. The emulator detects
+  neither DRM nor hardware-decode failures.
+- **Mandatory edges**: ingest loss mid-broadcast (does the manifest recover or is it
+  poisoned?), quality switching on a degraded network, *seek* into the middle of a live stream with
+  DVR, DRM licence expiry during playback, SCTE-35 discontinuities.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **DRM ≠ control de acceso**: DRM protege el contenido licenciado; para "que no lo vea quien
-  no pagó" suele bastar URL firmada/token de CDN con expiración corta. No comprar multi-DRM
-  para un problema de tokens.
-- **Claves**: las claves de contenido y las credenciales del servidor de licencias jamás en el
-  cliente ni en el manifiesto; rotación de claves en directos largos.
-- **Ingesta autenticada**: stream keys tratadas como secretos (rotables, revocables); SRT con
-  passphrase; WHIP con token corto. Un endpoint RTMP abierto es un canal de publicación anónimo
-  en tu dominio.
-- **ffmpeg/GStreamer procesan entrada hostil**: un fichero subido por un usuario es un exploit
-  potencial contra el demuxer (historial largo de CVEs en ambos). Transcodificación de contenido
-  de usuario **en sandbox/worker aislado sin credenciales**, versiones al día, formatos de
-  entrada acotados por allowlist.
-- Cumplimiento de contenido: DRM y marcas según contrato con el licenciante (el estudio suele
-  exigir nivel de seguridad concreto de Widevine/PlayReady por resolución — verificar contrato).
+- **DRM ≠ access control**: DRM protects licensed content; for "stop people who did not pay from
+  watching" a signed URL/CDN token with short expiry is usually enough. Do not buy multi-DRM
+  for a token problem.
+- **Keys**: content keys and licence-server credentials never in the
+  client or in the manifest; key rotation in long live streams.
+- **Authenticated ingest**: stream keys treated as secrets (rotatable, revocable); SRT with a
+  passphrase; WHIP with a short-lived token. An open RTMP endpoint is an anonymous publishing
+  channel on your domain.
+- **ffmpeg/GStreamer process hostile input**: a user-uploaded file is a potential exploit
+  against the demuxer (a long CVE history in both). Transcode user content
+  **in a sandbox/isolated worker with no credentials**, keep versions current, and restrict input
+  formats with an allowlist.
+- Content compliance: DRM and watermarking according to the contract with the licensor (the studio
+  usually requires a specific Widevine/PlayReady security level per resolution — check the contract).
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **SLI del dominio**: tiempo de arranque de reproducción, ratio de rebuffering, latencia
-  extremo a extremo en directo (medida, no estimada: timestamp incrustado o marca visual),
-  errores de licencia DRM, tasa de fallo de ingesta. La telemetría del reproductor (o el dato
-  del servicio gestionado tipo Mux Data) es la única visión real.
-- **Coste**: el streaming es un negocio de **egreso**; la escalera ABR y la eficiencia de codec
-  son decisiones de coste tanto como de calidad (más peldaños = más transcode + más almacenamiento;
-  mejor codec = menos GB entregados). Egreso y hit-ratio → `caching-cdn-standards`.
-- **Encoder hardware (NVENC/Quick Sync/VCN) para directo a escala; software (x264/SVT-AV1) para
-  VOD donde la calidad por bit domina** — el hardware paga densidad con eficiencia de compresión.
+- **Domain SLIs**: playback start-up time, rebuffering ratio, end-to-end live latency
+  (measured, not estimated: embedded timestamp or visual marker),
+  DRM licence errors, ingest failure rate. Player telemetry (or the managed service's data, such
+  as Mux Data) is the only real view.
+- **Cost**: streaming is an **egress** business; the ABR ladder and codec efficiency
+  are cost decisions as much as quality ones (more rungs = more transcode + more storage;
+  a better codec = fewer GB delivered). Egress and hit ratio → `caching-cdn-standards`.
+- **Hardware encoders (NVENC/Quick Sync/VCN) for live at scale; software (x264/SVT-AV1) for
+  VOD where quality per bit dominates** — hardware buys density with compression efficiency.
 
-## 7. Cuándo NO / Prohibiciones
+## 7. When NOT to / Prohibitions
 
-- ❌ **WebRTC "porque el directo va lento"** cuando el negocio tolera 3-6 s: LL-HLS escala por
-  CDN, WebRTC exige infra de SFU por espectador. Cada peldaño de latencia se justifica con un
-  requisito, no con un deseo.
-- ❌ MoQ en producción a ago-2026 (draft en movimiento) salvo piloto con ruta de fallback.
-- ❌ Elegir HEVC (o asumir AV1 gratis) **sin verificar el estado de los pools de patentes en la
-  fecha de la decisión** — es la decisión más cara del dominio y cambió dos veces en un año.
-- ❌ RTMP como ingesta de diseño nuevo sin justificar compatibilidad.
-- ❌ Segmentos distintos por formato pudiendo servir CMAF único; keyframes desalineados entre
+- ❌ **WebRTC "because the live stream is slow"** when the business tolerates 3-6 s: LL-HLS scales
+  over the CDN, WebRTC demands SFU infrastructure per viewer. Every latency step is justified by a
+  requirement, not by a wish.
+- ❌ MoQ in production as of Aug 2026 (a moving draft) except as a pilot with a fallback path.
+- ❌ Choosing HEVC (or assuming AV1 is free) **without verifying the state of the patent pools on
+  the date of the decision** — it is the most expensive decision in the domain and it changed twice
+  in a year.
+- ❌ RTMP as the ingest of a new design without justifying compatibility.
+- ❌ Different segments per format when a single CMAF would serve; keyframes misaligned across
   renditions.
-- ❌ Transcodificar contenido de usuario en el mismo proceso/host que maneja credenciales.
-- ❌ Stream keys en repos, logs o URLs de ejemplo; endpoint de ingesta sin autenticación.
-- ❌ Montar y operar servidor de streaming propio cuando un gestionado cubre el caso — el coste
-  real es el on-call del pipeline, no la licencia. Propio solo con requisito (dato, coste a
-  escala, latencia, soberanía) escrito en ADR.
-- ❌ "Se ve bien en mi Chrome" como validación: Safari/iOS es el gate.
-- ❌ DRM casero u ofuscación como sustituto de Widevine/FairPlay/PlayReady si el contrato exige
-  protección de contenido.
+- ❌ Transcoding user content in the same process/host that handles credentials.
+- ❌ Stream keys in repositories, logs or example URLs; an ingest endpoint without authentication.
+- ❌ Building and operating your own streaming server when a managed one covers the case — the real
+  cost is the pipeline's on-call, not the licence. Self-hosted only with a requirement (data, cost
+  at scale, latency, sovereignty) written in an ADR.
+- ❌ "It looks fine in my Chrome" as validation: Safari/iOS is the gate.
+- ❌ Home-grown DRM or obfuscation as a substitute for Widevine/FairPlay/PlayReady if the contract
+  requires content protection.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-1. **Pools de patentes** — el dato caro: estado de HEVC Advance/VCL Advance (Access Advance),
-   Avanci Video y el Video Distribution Patent Pool; tarifas y fecha límite vigente (la de
-   jun-2026 ya fue extendida una vez); estado del litigio Dolby vs Snap sobre AV1. Fuentes:
-   `accessadvance.com`, notas de prensa primarias, no foros.
-2. **ffmpeg**: última release en `ffmpeg.org/download.html` (9.0 a 2026-08-04; ramas 8.1.x y
-   7.1.x mantenidas) y CVEs del demuxer.
-3. **GStreamer**: `gstreamer.freedesktop.org/releases/` (1.28.6 a ago-2026, rama en
-   mantenimiento; 1.30 prevista Q4-2026).
-4. **OBS**: `obsproject.com` y releases de GitHub (32.2.1, jul-2026).
-5. **MediaMTX**: `api.github.com/repos/bluenviron/mediamtx/releases` (v1.20.0, ago-2026) y su
-   `LICENSE` en crudo (MIT).
-6. **MoQ**: estado de `draft-ietf-moq-transport` en datatracker.ietf.org (¿sigue en draft o ya
-   es RFC?) — a jul-2026, draft-17.
-7. **LL-HLS/HLS**: spec de Apple (`developer.apple.com`) y RFC 8216 + extensiones; WHIP =
+1. **Patent pools** — the expensive fact: status of HEVC Advance/VCL Advance (Access Advance),
+   Avanci Video and the Video Distribution Patent Pool; rates and the current deadline (the
+   Jun 2026 one has already been extended once); status of the Dolby versus Snap litigation over AV1.
+   Sources: `accessadvance.com`, primary press releases, not forums.
+2. **ffmpeg**: latest release at `ffmpeg.org/download.html` (9.0 as of 2026-08-04; 8.1.x and
+   7.1.x branches maintained) and demuxer CVEs.
+3. **GStreamer**: `gstreamer.freedesktop.org/releases/` (1.28.6 as of Aug 2026, branch in
+   maintenance; 1.30 expected Q4-2026).
+4. **OBS**: `obsproject.com` and the GitHub releases (32.2.1, Jul 2026).
+5. **MediaMTX**: `api.github.com/repos/bluenviron/mediamtx/releases` (v1.20.0, Aug 2026) and its
+   `LICENSE` raw (MIT).
+6. **MoQ**: status of `draft-ietf-moq-transport` at datatracker.ietf.org (still a draft or already
+   an RFC?) — as of Jul 2026, draft-17.
+7. **LL-HLS/HLS**: Apple's spec (`developer.apple.com`) and RFC 8216 + extensions; WHIP =
    **RFC 9725**.
-8. **Servicios gestionados**: precios y modelo (por minuto codificado/entregado/almacenado) de
-   Mux, Cloudflare Stream, IVS y MediaLive en sus páginas oficiales — cambian con frecuencia.
-9. **Matriz DRM/codec por navegador y dispositivo** (qué combinación de `cenc`/`cbcs`, codec y
-   robustez soporta cada cliente): verificar en documentación vigente de cada DRM.
-10. **Huecos declarados** (no verificados en esta redacción — no rellenar de memoria): tarifas
-    concretas por unidad de los pools (solo se verificó su existencia y el +25 %); precios
-    exactos de Wowza y Ant Media (proceden de agregadores, no de la página oficial); matriz
-    exacta `cbcs` vs `cenc` por plataforma; estado de soporte VVC en hardware de 2026; niveles
-    de robustez Widevine/PlayReady exigidos por los estudios hoy.
+8. **Managed services**: pricing and model (per encoded/delivered/stored minute) for
+   Mux, Cloudflare Stream, IVS and MediaLive on their official pages — they change often.
+9. **DRM/codec matrix per browser and device** (which combination of `cenc`/`cbcs`, codec and
+   robustness each client supports): verify in each DRM's current documentation.
+10. **Declared gaps** (not verified in this draft — do not fill them from memory): the pools'
+    concrete per-unit rates (only their existence and the +25% were verified); exact
+    Wowza and Ant Media pricing (taken from aggregators, not the official page); the exact
+    `cbcs` versus `cenc` matrix per platform; the state of VVC support in 2026 hardware; the
+    Widevine/PlayReady robustness levels the studios require today.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

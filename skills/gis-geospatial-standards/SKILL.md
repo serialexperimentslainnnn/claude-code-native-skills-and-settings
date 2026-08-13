@@ -1,5 +1,5 @@
 ---
-name: gis-geoespacial-standards
+name: gis-geospatial-standards
 description: Geospatial data as an engineering discipline — coordinate reference systems, formats and spatial SQL. Use when working with EPSG codes (EPSG:4326, EPSG:3857, EPSG:25830, EPSG:4258), WGS84 versus ETRS89 versus ITRF datums, map projection choice and distortion, .shp/.shx/.dbf/.prj shapefiles and their 2 GB and 10-character limits, GeoPackage .gpkg, GeoJSON and RFC 7946 CRS84, FlatGeobuf .fgb, GeoTIFF and Cloud Optimized GeoTIFF (OGC 21-026), GeoParquet, Zarr, PMTiles, COPC, STAC catalogs, PostGIS (ST_Intersects, ST_DWithin, ST_IsValid, ST_MakeValid, ST_Transform, ST_SetSRID, ST_Simplify, ST_Area, ST_Buffer, geography versus geometry, GiST and SP-GiST indexes, spatial_ref_sys), SpatiaLite, DuckDB spatial, GDAL/OGR with ogr2ogr, gdalwarp, gdal_translate and gdalinfo, PROJ and proj.db grid shifts, OGC WMS/WFS/WMTS/WCS and the OGC API - Features/Tiles/Maps family, vector and raster tiles, GeoServer, MapServer, pg_tileserv, TiTiler, Leaflet, OpenLayers, MapLibre GL JS versus the Mapbox GL JS licence change, OpenStreetMap ODbL share-alike, Copernicus/Sentinel imagery, or Spanish IGN, Catastro and Real Decreto 1071/2007 reference systems.
 ---
 

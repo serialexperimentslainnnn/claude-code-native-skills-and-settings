@@ -30,7 +30,7 @@ depth**; `routing-switching-standards` decides **what the campus and edge config
 OS); `datacenter-fabric-standards` decides the fabric (Clos, VXLAN/EVPN);
 `network-automation-standards` decides **how a change is generated, tested and applied** (Ansible,
 NAPALM, NETCONF/YANG, gNMI, containerlab, drift detection — here only **what each vendor exposes**
-and with what fidelity); `firewall-policy-standards` (filtering policy as an artefact, including
+and with what fidelity); `firewall-policy-standards` (filtering policy as an artifact, including
 FortiOS/PAN-OS **as a firewall**); `wireless-standards` (WLAN and controllers);
 `load-balancing-standards`, `vpn-standards`, `dns-standards`, `network-troubleshooting-standards`
 (reactive method). Outward: `vulnerability-management-standards` (**triage and patching SLA**;

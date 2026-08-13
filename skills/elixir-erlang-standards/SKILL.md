@@ -218,7 +218,7 @@ The rules come from that, not from taste:
 
 **Releases and deployment**:
 - `mix release` with `MIX_ENV=prod`, `runtime.exs` for all environment-dependent config
-  (`config.exs` is frozen at compile time: a secret there ends up **inside the artefact**).
+  (`config.exs` is frozen at compile time: a secret there ends up **inside the artifact**).
 - **Hot code upgrade — you almost never want it.** Verbatim from the official `mix release` docs:
   *"this feature is not supported out of the box by Elixir releases"*, because *"they are very
   complicated to perform in practice, as they require careful coding of your processes and

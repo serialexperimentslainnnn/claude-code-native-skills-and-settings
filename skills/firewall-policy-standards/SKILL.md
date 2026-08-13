@@ -3,7 +3,7 @@ name: firewall-policy-standards
 description: Firewall policy as a governed engineering artifact. Use when writing or reviewing nftables rulesets (nftables.conf, nft -c -f, tables/chains/hooks/priorities, sets, maps, verdict maps, ct state, meters), firewalld zones, services, policies and rich rules (firewall-cmd), ufw profiles, DOCKER-USER chains and Docker firewall-backend published-port bypass, kube-proxy nftables mode, cloud security group and NSG rule sets as filtering policy, egress allow-listing, zone-to-zone flow matrices, rule ownership, expiry dates and change approval, shadowed, duplicate, orphaned or any/any rule review, conntrack table exhaustion and asymmetric-routing state loss, MSS clamping and NAT interaction with filtering, deny logging volume and forwarding, or IPv6 rule parity with IPv4.
 ---
 
-# Firewall policy standards — the rule as an engineering artefact
+# Firewall policy standards — the rule as an engineering artifact
 
 Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
@@ -248,7 +248,10 @@ you want to be able to audit by usage; and the deny `log` **always rate-limited*
 
 ## 4. Mandatory quality gates
 
-In order of increasing cost. The first five break the build or the deployment.
+In order of increasing cost. **Gates 1, 2, 3 and 5 are automatable and break the build or the
+deployment. Gate 4 is not a gate: it is a hard operational precondition** — nothing in a pipeline
+can assert that a rescue session is open, so it blocks the human making the change, not the merge.
+Do not implement it as CI and do not report it as automated coverage.
 
 1. **Syntax validation**: `nft -c -f ruleset.nft` (and `firewall-cmd --check-config` where
    applicable) on every PR. A policy that does not validate does not even reach staging.
@@ -277,7 +280,7 @@ In order of increasing cost. The first five break the build or the deployment.
    happy path **is not tested**: you do not know whether your rule works or whether the service was already
    down.
 6. **Drift detection**: periodic and automatic comparison between `nft list ruleset` (or the
-   device export) and the artefact generated from the repo. Every difference is a finding
+   device export) and the artifact generated from the repo. Every difference is a finding
    with an owner. Drift is the metric of whether your governance is real or theatre.
 7. **Periodic ruleset review** (quarterly at the perimeter, twice-yearly internally) producing
    a report with: **expired** rules, rules **without an owner**, **unused** ones (counter at zero for the whole

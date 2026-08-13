@@ -225,7 +225,7 @@ Minimum conventions:
   implicit `BuildRequires` that do not exist on the target.
 - `rpmlint` in CI as a gate; GPG signature of the package and of the internal repo (key custody is
   set by `cryptography-pki-standards`).
-- Running all of this in a pipeline belongs to `cicd-standards`; the internal artefact repo
+- Running all of this in a pipeline belongs to `cicd-standards`; the internal artifact repo
   as well.
 
 ### 3.5 Image mode: `rpm-ostree` and `bootc`
@@ -370,7 +370,7 @@ operation with the highest probability of leaving a system in an unsupported sta
   build; EPEL has community review but no commitment; an unofficial mirror is an
   attacker with root on your fleet. They are pinned, bounded and audited.
 - **Image mode and signing**: if you adopt bootc, the OS image is a first-class supply
-  chain artefact — **signing (cosign/Sigstore), provenance verification and pinning by
+  chain artifact — **signing (cosign/Sigstore), provenance verification and pinning by
   digest** are mandatory, just as for any container image
   (`kubernetes-standards`/`cicd-standards`). A `bootc switch` to a mutable tag of a registry with no
   verification is a remote root compromise by design.

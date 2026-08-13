@@ -3,363 +3,381 @@ name: r-standards
 description: Use when writing, reviewing or productionizing R code - .R/.Rmd/.qmd/.Rproj files, DESCRIPTION, NAMESPACE, renv.lock, .Rprofile, .lintr, _pkgdown.yml, testthat tests, roxygen2 blocks, tidyverse/dplyr/ggplot2 or data.table pipelines, non-standard evaluation with {{ }} and .data, CRAN/Bioconductor/Posit Package Manager repositories, Shiny apps (app.R, server.R, ui.R), Plumber APIs (plumber.R), Quarto or R Markdown reports, Rcpp/cpp11 native code, or rocker/r-base container images.
 ---
 
-# Estándares R (referencia: agosto 2026)
+# R standards (reference: August 2026)
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a todo trabajo en R: análisis exploratorio, paquetes, informes reproducibles, APIs, apps Shiny,
-empaquetado y despliegue. Triggers: `.R`, `.Rmd`, `.qmd`, `DESCRIPTION`, `NAMESPACE`, `renv.lock`,
-`.Rprofile`, `.lintr`, `app.R`, `plumber.R`, `tests/testthat/`, `src/*.cpp` con Rcpp/cpp11.
+Applies to all work in R: exploratory analysis, packages, reproducible reports, APIs, Shiny apps,
+packaging and deployment. Triggers: `.R`, `.Rmd`, `.qmd`, `DESCRIPTION`, `NAMESPACE`, `renv.lock`,
+`.Rprofile`, `.lintr`, `app.R`, `plumber.R`, `tests/testthat/`, `src/*.cpp` with Rcpp/cpp11.
 
-**El eje de esta skill**: R es un lenguaje de *análisis* que acaba en producción sin haber sido
-diseñado para ello. Un script que empezó en el portátil de un analista termina sirviendo un endpoint,
-un informe programado o un cuadro de mando. Este documento fija cómo se hace ese salto **con red**:
-entorno reproducible, código empaquetado, tests, y frontera de confianza explícita. El fallo
-característico de R en producción no es el rendimiento: es que **nadie puede reconstruir el entorno
-que produjo el número**.
+**The axis of this skill**: R is an *analysis* language that ends up in production without having
+been designed for it. A script that started on an analyst's laptop ends up serving an endpoint,
+a scheduled report or a dashboard. This document sets out how that leap is made **with a safety
+net**: reproducible environment, packaged code, tests, and an explicit trust boundary. R's
+characteristic failure in production is not performance: it is that **nobody can rebuild the
+environment that produced the number**.
 
-**No aplica**: ver `mlops-standards` (**el ciclo de vida del modelo es suyo**: registro y versionado
-de modelos, *feature store*, servicio y despliegue del modelo, monitorización de deriva,
-reentrenamiento, *train/serve skew* — **cómo se escribe el R que entrena o puntúa es de aquí**),
-`data-engineering-standards` (la plataforma de datos: ingesta, orquestación, idempotencia, *backfill*,
-Parquet, SLA de frescura; el código de análisis que consume esa plataforma es de aquí),
-`analytics-bi-standards` (el cuadro de mando como artefacto de decisión y su gobierno —
-**un informe Quarto o una app Shiny que sustituye a una herramienta de BI es una decisión suya**;
-el código de ese informe o esa app, de aquí), `data-warehouse-modeling-standards` (la forma del
-modelo analítico: grano, estrella, SCD), `lakehouse-standards` (formato de tabla y catálogo tras
-`arrow`/`duckdb`), `sql-standards` (**el SQL que `dbplyr` genera o que escribes en `DBI::dbGetQuery`
-está sujeto a su criterio**), `python-standards` (§7 fija cuándo la respuesta correcta es Python),
-`julia-standards` (rendimiento numérico; ver §7), `gpu-computing-standards` (la GPU como recurso que
-se aprovisiona, comparte, monitoriza y paga; el código R que la usa, de aquí),
-`llm-app-engineering-standards` y `rag-standards` (capa de aplicación de IA), `ai-governance-standards`
-(gobernanza del modelo y cumplimiento normativo), `c-standards`/`cpp-standards` (**el código nativo
-al otro lado de `Rcpp`/`cpp11`**: memoria, UB, sanitizers, flags del compilador; la frontera con R
-—`SEXP`, protección de GC, empaquetado— es de aquí), `fortran-standards` (**el kernel Fortran al
-otro lado de `.Fortran()` o de un paquete con `src/*.f90`**: `bind(c)`, contigüidad, orden de
-índices y flags del compilador son suyos; la frontera desde R es de aquí),
-`cicd-standards` (la pipeline que ejecuta los
-gates de §4), `kubernetes-standards` (despliegue de la imagen), `appsec-standards` (modelado de
-amenazas agnóstico; aquí solo los *sinks* de R), `vulnerability-management-standards` (triaje y SLA
-del hallazgo; aquí solo el escaneo del proyecto), `secrets-management-standards`,
-`observability-standards` (pipeline OTel/Prometheus; aquí solo la instrumentación en el código),
-`api-design-standards` (el **contrato** de una API Plumber: recursos, códigos, paginación, versionado).
+**Not applicable**: see `mlops-standards` (**the model life cycle is hers**: model registry and
+versioning, *feature store*, model serving and deployment, drift monitoring,
+retraining, *train/serve skew* — **how the R that trains or scores is written is ours**),
+`data-engineering-standards` (the data platform: ingestion, orchestration, idempotency, *backfill*,
+Parquet, freshness SLA; the analysis code that consumes that platform is ours),
+`analytics-bi-standards` (the dashboard as a decision artifact and its governance —
+**a Quarto report or a Shiny app that replaces a BI tool is a decision of hers**;
+the code of that report or app, ours), `data-warehouse-modeling-standards` (the shape of the
+analytical model: grain, star, SCD), `lakehouse-standards` (table format and catalog behind
+`arrow`/`duckdb`), `sql-standards` (**the SQL that `dbplyr` generates or that you write in
+`DBI::dbGetQuery` is subject to her criteria**), `python-standards` (§7 sets when the correct
+answer is Python), `julia-standards` (numerical performance; see §7), `gpu-computing-standards` (the
+GPU as a resource that is provisioned, shared, monitored and paid for; the R code that uses it,
+ours), `llm-app-engineering-standards` and `rag-standards` (AI application layer),
+`ai-governance-standards` (model governance and regulatory compliance),
+`c-standards`/`cpp-standards` (**the native code on the other side of `Rcpp`/`cpp11`**: memory, UB,
+sanitizers, compiler flags; the boundary with R —`SEXP`, GC protection, packaging— is ours),
+`fortran-standards` (**the Fortran kernel on the other side of `.Fortran()` or of a package with
+`src/*.f90`**: `bind(c)`, contiguity, index order and compiler flags are hers; the boundary from R
+is ours),
+`cicd-standards` (the pipeline that runs the gates in §4), `kubernetes-standards` (deployment of the
+image), `appsec-standards` (agnostic threat modelling; here only R's *sinks*),
+`vulnerability-management-standards` (triage and SLA of the finding; here only scanning the
+project), `secrets-management-standards`,
+`observability-standards` (the OTel/Prometheus pipeline; here only the instrumentation in the code),
+`api-design-standards` (the **contract** of a Plumber API: resources, codes, pagination,
+versioning).
 
-## 2. Toolchain por defecto
+## 2. Default toolchain
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before committing to it in a real project (§8).
 
-| Pieza | Elección | Verificado a ago-2026 | Por qué |
+| Component | Choice | Verified as of Aug 2026 | Why |
 |---|---|---|---|
-| Runtime | **R** de la serie estable actual | 4.6.1 (2026-06-24); 4.6.0 salió 2026-04-24 | Minor **una vez al año, en primavera**; parches cuando hacen falta |
-| Versión "conservadora" | Último parche de la serie anterior | 4.5.3 (2026-03-11) | R Core publica un parche final de la serie previa poco antes del x.y.0 siguiente. **R no tiene LTS**: lo más parecido es esa última patch, nunca >1 año de antigüedad |
-| Entorno/reproducibilidad | **`renv`** | 1.2.3 (2026-05-16), MIT | **No negociable**: `renv.lock` versionado o el proyecto no es reproducible |
-| Repositorio | **Posit Package Manager (P3M)** con snapshot por fecha | `https://packagemanager.posit.co/cran/YYYY-MM-DD` | Snapshots diarios (días laborables) desde 2017-10-10; binarios Linux. CRAN puro no da reproducibilidad temporal |
-| Bioconductor | Solo si el dominio lo exige | 3.23 (2026-04-29) ↔ R 4.6 | **Ciclo acoplado a R**: 2 releases/año; la versión de Bioc fija la versión de R, no al revés |
-| Manipulación de datos | `dplyr`/`tidyverse` **o** `data.table` — elegir uno por proyecto | dplyr 1.2.1 (2026-04-03), MIT; data.table 1.18.4 (2026-05-06), MPL-2.0 | Ver criterio abajo |
-| Estilo | **`styler`** | 1.11.0 (2025-10-13), MIT | El repo GitHub no publica *release* desde 2024 pero **CRAN sí**: no está abandonado, publica por CRAN |
-| Lint (gate CI) | **`lintr`** | 3.4.0 (2026-07-16) | Config en `.lintr` versionado |
-| Tests | **`testthat` 3ª edición** | 3.3.2 (2026-01-12) | Se activa **explícitamente**: `Config/testthat/edition: 3` en `DESCRIPTION`. No es el default |
-| Documentación | **`roxygen2`** | 8.0.0 (2026-05-01) | Mayor reciente: revisar breaking changes antes de subir |
-| Informes | **Quarto** | quarto-cli 1.11.1 (2026-07-28) | Sustituye a R Markdown en proyecto nuevo; Rmd solo en legacy |
-| API HTTP | **`plumber`** | 1.3.3 (2026-01-28), MIT | — |
-| App interactiva | **`shiny`** (paquete R) | MIT | El **paquete** es MIT; el hosting no (ver §5/§7) |
-| Datos que no caben | `arrow` + `duckdb` | — | Empuja el trabajo fuera de la RAM de R antes de reescribir en otro lenguaje |
-| Nativo | `cpp11` en código nuevo; `Rcpp` en legacy | — | `cpp11` no usa macros de C++ pesadas y compila más rápido; `Rcpp` sigue siendo el ecosistema mayoritario |
-| Contenedor | Imágenes **Rocker** (`rocker/r-ver:<version>`) | — | `r-ver` fija versión de R **y** snapshot de repositorio |
+| Runtime | **R** of the current stable series | 4.6.1 (2026-06-24); 4.6.0 came out 2026-04-24 | Minor **once a year, in spring**; patches when needed |
+| "Conservative" version | Last patch of the previous series | 4.5.3 (2026-03-11) | R Core publishes a final patch of the previous series shortly before the next x.y.0. **R has no LTS**: the closest thing is that last patch, never >1 year old |
+| Environment/reproducibility | **`renv`** | 1.2.3 (2026-05-16), MIT | **Non-negotiable**: `renv.lock` versioned or the project is not reproducible |
+| Repository | **Posit Package Manager (P3M)** with a date snapshot | `https://packagemanager.posit.co/cran/YYYY-MM-DD` | Daily snapshots (working days) since 2017-10-10; Linux binaries. Plain CRAN does not give temporal reproducibility |
+| Bioconductor | Only if the domain requires it | 3.23 (2026-04-29) ↔ R 4.6 | **Cycle coupled to R**: 2 releases/year; the Bioc version fixes the R version, not the other way round |
+| Data manipulation | `dplyr`/`tidyverse` **or** `data.table` — choose one per project | dplyr 1.2.1 (2026-04-03), MIT; data.table 1.18.4 (2026-05-06), MPL-2.0 | See criteria below |
+| Style | **`styler`** | 1.11.0 (2025-10-13), MIT | The GitHub repo has published no *release* since 2024 but **CRAN has**: it is not abandoned, it publishes via CRAN |
+| Lint (CI gate) | **`lintr`** | 3.4.0 (2026-07-16) | Config in a versioned `.lintr` |
+| Tests | **`testthat` 3rd edition** | 3.3.2 (2026-01-12) | Enabled **explicitly**: `Config/testthat/edition: 3` in `DESCRIPTION`. It is not the default |
+| Documentation | **`roxygen2`** | 8.0.0 (2026-05-01) | Recent major: review breaking changes before upgrading |
+| Reports | **Quarto** | quarto-cli 1.11.1 (2026-07-28) | Replaces R Markdown in a new project; Rmd only in legacy |
+| HTTP API | **`plumber`** | 1.3.3 (2026-01-28), MIT | — |
+| Interactive app | **`shiny`** (R package) | MIT | The **package** is MIT; the hosting is not (see §5/§7) |
+| Data that does not fit | `arrow` + `duckdb` | — | It pushes the work outside R's RAM before rewriting in another language |
+| Native | `cpp11` in new code; `Rcpp` in legacy | — | `cpp11` does not use heavy C++ macros and compiles faster; `Rcpp` is still the majority ecosystem |
+| Container | **Rocker** images (`rocker/r-ver:<version>`) | — | `r-ver` pins the R version **and** the repository snapshot |
 
-**Trampa de compatibilidad binaria (verificada)**: R 4.6.0 cambió cabeceras y la versión de la API del
-motor gráfico (16 → 17); paquetes **compilados** ya instalados dejaron de cargar (casos reportados:
-`data.table`, `RSQLite`). Regla: al subir de minor de R, **reinstala toda la librería de paquetes
-compilados**, no reutilices el `.libPaths()` anterior. `renv::rebuild()` o imagen nueva.
+**Binary compatibility trap (verified)**: R 4.6.0 changed headers and the version of the graphics
+engine API (16 → 17); already installed **compiled** packages stopped loading (reported cases:
+`data.table`, `RSQLite`). Rule: when upgrading an R minor, **reinstall the whole library of compiled
+packages**, do not reuse the previous `.libPaths()`. `renv::rebuild()` or a new image.
 
-**Criterio tidyverse vs data.table vs base R** (es un criterio, no un bando):
-- **tidyverse** cuando el código lo van a leer y mantener analistas, cuando el proyecto ya es
-  tidyverse, y cuando el volumen cabe holgado en RAM. Coste: árbol de dependencias grande y API que
-  evoluciona (deprecaciones con ciclo, pero evoluciona).
-- **data.table** cuando el rendimiento o la memoria mandan (agregaciones sobre millones de filas,
-  *updates by reference*), o cuando quieres **una sola dependencia**. Su API es
-  extraordinariamente estable — argumento real para código de larga vida. Coste: sintaxis densa.
-- **base R** para paquetes con `Imports` mínimo y para utilidades de infraestructura. Coste:
-  verbosidad y trampas (§3).
-- Prohibido **mezclar los tres estilos en el mismo fichero**. Un paquete puede tener módulos
-  distintos con estilos distintos; una función, no.
+**tidyverse vs data.table vs base R criteria** (it is a criterion, not a side):
+- **tidyverse** when the code is going to be read and maintained by analysts, when the project is
+  already tidyverse, and when the volume fits comfortably in RAM. Cost: a large dependency
+  tree and an API that evolves (deprecations with a cycle, but it evolves).
+- **data.table** when performance or memory rule (aggregations over millions of rows,
+  *updates by reference*), or when you want **a single dependency**. Its API is
+  extraordinarily stable — a real argument for long-lived code. Cost: dense syntax.
+- **base R** for packages with minimal `Imports` and for infrastructure utilities. Cost:
+  verbosity and traps (§3).
+- Forbidden to **mix the three styles in the same file**. A package may have different
+  modules with different styles; a function, no.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-**Script suelto vs paquete — el criterio que define esta skill.** Un análisis deja de ser un script y
-se convierte en **paquete** en cuanto ocurre cualquiera de: (a) una función se usa desde dos ficheros,
-(b) alguien más lo va a ejecutar, (c) el resultado alimenta una decisión recurrente, (d) hay que
-testearlo. Convertirlo en paquete es lo que da, gratis, todo lo que un análisis en producción necesita:
-espacio de nombres, dependencias declaradas en `DESCRIPTION`, documentación con `roxygen2`, tests con
-`testthat`, y `R CMD check` como gate. **No hace falta publicar en CRAN para empaquetar.**
+**Loose script vs package — the criterion that defines this skill.** An analysis stops being a
+script and becomes a **package** as soon as any of these happens: (a) a function is used from two
+files, (b) somebody else is going to run it, (c) the result feeds a recurring decision, (d) it has
+to be tested. Turning it into a package is what gives you, for free, everything an analysis in
+production needs: a namespace, dependencies declared in `DESCRIPTION`, documentation with
+`roxygen2`, tests with `testthat`, and `R CMD check` as a gate. **You do not need to publish on CRAN
+to package.**
 
 ```
-proyecto/
-  DESCRIPTION          # deps declaradas: Imports (uso real), Suggests (opcional), Depends casi nunca
-  NAMESPACE            # generado por roxygen2 — nunca a mano
-  renv.lock            # versionado SIEMPRE
-  .Rprofile            # activa renv; sin lógica de negocio
-  R/                   # funciones; nada de código con efectos al cargar
+project/
+  DESCRIPTION          # deps declared: Imports (real use), Suggests (optional), Depends almost never
+  NAMESPACE            # generated by roxygen2 — never by hand
+  renv.lock            # ALWAYS versioned
+  .Rprofile            # activates renv; no business logic
+  R/                   # functions; no code with effects on load
   tests/testthat/
-  inst/                # scripts de entrada, plantillas
-  analysis/ o vignettes/  # Quarto/Rmd que LLAMAN a R/, no que contienen la lógica
-  src/                 # cpp11/Rcpp si aplica
+  inst/                # entry-point scripts, templates
+  analysis/ or vignettes/  # Quarto/Rmd that CALL R/, not that contain the logic
+  src/                 # cpp11/Rcpp if applicable
 ```
 
-- `library()` y `setwd()` **prohibidos dentro de `R/`**: en un paquete las dependencias se declaran en
-  `DESCRIPTION` y se usan con `pkg::fun()` o `@importFrom`. Rutas con `here::here()` o `system.file()`.
-- Ningún efecto secundario al cargar: nada de `library()`, `options()` globales, conexiones a BD ni
-  lectura de ficheros en el cuerpo de `R/*.R`. Lo que necesite estado va en `.onLoad`/función explícita.
-- Un informe Quarto/Rmd **no es el sitio de la lógica**: `.qmd` orquesta y narra; las funciones viven
-  en `R/` y se testean. Un informe con 300 líneas de transformación embebidas es deuda por defecto.
-- Nombres: funciones `snake_case` verbales; sin `df`, `df2`, `tmp`; sin `.` como separador (choca con
-  el despacho S3). Sin `utils.R` cajón de sastre.
-- **Objetos S3 por defecto**; S4 solo si el dominio ya lo exige (Bioconductor) o hace falta despacho
-  por múltiples argumentos; R5/RC prácticamente nunca. **S7** existe pero verifica su madurez (§8)
-  antes de fijarlo en un proyecto nuevo.
-- `options(stringsAsFactors)` ya no existe como trampa: desde R 4.0.0 el default es `FALSE`. Pero el
-  código heredado que **asumía** factores sigue existiendo — al tocar código pre-4.0, comprueba si
-  dependía de la coerción. Los factores se crean **explícitamente**, con `levels` fijados a mano
-  cuando el orden importa; un factor con niveles inferidos de los datos de hoy rompe mañana.
+- `library()` and `setwd()` **forbidden inside `R/`**: in a package, dependencies are declared in
+  `DESCRIPTION` and used with `pkg::fun()` or `@importFrom`. Paths with `here::here()` or
+  `system.file()`.
+- No side effects on load: no `library()`, no global `options()`, no DB connections nor
+  file reads in the body of `R/*.R`. Anything needing state goes in `.onLoad`/an explicit function.
+- A Quarto/Rmd report **is not the place for the logic**: `.qmd` orchestrates and narrates; the
+  functions live in `R/` and are tested. A report with 300 lines of embedded transformation is debt
+  by default.
+- Names: `snake_case` verbal functions; no `df`, `df2`, `tmp`; no `.` as a separator (it clashes with
+  S3 dispatch). No catch-all `utils.R`.
+- **S3 objects by default**; S4 only if the domain already requires it (Bioconductor) or dispatch on
+  multiple arguments is needed; R5/RC practically never. **S7** exists but verify its maturity (§8)
+  before committing to it in a new project.
+- `options(stringsAsFactors)` no longer exists as a trap: since R 4.0.0 the default is `FALSE`. But
+  legacy code that **assumed** factors still exists — when touching pre-4.0 code, check whether it
+  depended on the coercion. Factors are created **explicitly**, with `levels` fixed by hand
+  when the order matters; a factor with levels inferred from today's data breaks tomorrow.
 
-**Trampas del lenguaje que son bugs de primera clase** (tratarlas como tales, no como folclore):
-- **Reciclado silencioso de vectores**: `x + y` con longitudes distintas no siempre avisa. Valida
-  longitudes en los bordes; en aritmética crítica, `stopifnot(length(x) == length(y))`.
-- **`NA` se propaga**: `sum(x)` sin `na.rm` da `NA`; `if (NA)` es error; `x == NA` es `NA`, se usa
-  `is.na()`. Decide **explícitamente** por columna qué significa `NA` — nunca `na.rm = TRUE` por
-  reflejo, porque cambia la semántica del resultado sin dejar rastro.
-- `[` sobre `data.frame` con un solo resultado colapsa a vector: usa `drop = FALSE` o tibbles.
-- `sapply()` devuelve tipos distintos según los datos: en código de producción, `vapply()` con
-  `FUN.VALUE` explícito o las variantes tipadas de `purrr` (`map_dbl`, `map_chr`).
-- Comparación de flotantes con `==`: `all.equal()` / tolerancia.
-- Evaluación perezosa de argumentos: `force()` cuando capturas argumentos en clausuras.
+**Language traps that are first-class bugs** (treat them as such, not as folklore):
+- **Silent vector recycling**: `x + y` with different lengths does not always warn. Validate
+  lengths at the edges; in critical arithmetic, `stopifnot(length(x) == length(y))`.
+- **`NA` propagates**: `sum(x)` without `na.rm` gives `NA`; `if (NA)` is an error; `x == NA` is `NA`,
+  use `is.na()`. Decide **explicitly** per column what `NA` means — never `na.rm = TRUE` by
+  reflex, because it changes the semantics of the result without leaving a trace.
+- `[` on a `data.frame` with a single result collapses to a vector: use `drop = FALSE` or tibbles.
+- `sapply()` returns different types depending on the data: in production code, `vapply()` with
+  an explicit `FUN.VALUE` or `purrr`'s typed variants (`map_dbl`, `map_chr`).
+- Comparing floats with `==`: `all.equal()` / a tolerance.
+- Lazy evaluation of arguments: `force()` when you capture arguments in closures.
 
-**Non-standard evaluation (NSE)**. La evaluación *tidy* es lo que hace `dplyr` legible **y lo que
-rompe la programación defensiva**: dentro de `filter(datos, x > 1)`, `x` no es una variable del
-entorno, es una columna, y si la columna no existe R puede coger silenciosamente un objeto del
-entorno con ese nombre. Reglas duras:
-- En **funciones de paquete**, referencia siempre columnas con el pronombre `.data$col` (o
-  `.data[[var]]`) — así el fallo es "columna inexistente", no "cogió tu variable global".
-- Para pasar nombres de columna desde los argumentos de tu función: `{{ arg }}` (*embracing*); para
-  varios, `...` pasado tal cual. `!!sym(chr)` solo si el nombre llega como cadena.
-- `aes_string()`, `filter_()`, `mutate_()` y el resto de variantes `_` están **retiradas**: no se usan.
-- Declara `.data` (y los nombres de columna que uses en NSE) para que `R CMD check` no genere el
-  clásico "no visible binding for global variable" — con `utils::globalVariables()` como último recurso,
-  no como norma.
+**Non-standard evaluation (NSE)**. *Tidy* evaluation is what makes `dplyr` readable **and what
+breaks defensive programming**: inside `filter(data, x > 1)`, `x` is not a variable of the
+environment, it is a column, and if the column does not exist R may silently pick up an object from
+the environment with that name. Hard rules:
+- In **package functions**, always reference columns with the `.data$col` pronoun (or
+  `.data[[var]]`) — that way the failure is "non-existent column", not "it took your global
+  variable".
+- To pass column names from your function's arguments: `{{ arg }}` (*embracing*); for
+  several, `...` passed through as is. `!!sym(chr)` only if the name arrives as a string.
+- `aes_string()`, `filter_()`, `mutate_()` and the rest of the `_` variants are **retired**: they
+  are not used.
+- Declare `.data` (and the column names you use in NSE) so that `R CMD check` does not generate the
+  classic "no visible binding for global variable" — with `utils::globalVariables()` as a last
+  resort, not as the norm.
 
-**Errores y condiciones**:
-- `stop()`/`warning()` con mensaje accionable; en paquetes nuevos, `rlang::abort()` con **clase de
-  condición** para que el llamante pueda capturar por clase (`tryCatch(err_datos_vacios = ...)`) en
-  lugar de por `grepl` sobre el mensaje.
-- **Fallar es correcto; devolver un resultado a medias no.** Prohibido `try(..., silent = TRUE)` sin
-  inspeccionar el resultado, y `suppressWarnings()` a granel sobre un bloque entero.
-- `on.exit(add = TRUE)` para liberar conexiones, ficheros y `options()` modificadas — el `defer` de R.
-- `warning()` no interrumpe: nada crítico se señala con `warning`.
+**Errors and conditions**:
+- `stop()`/`warning()` with an actionable message; in new packages, `rlang::abort()` with a
+  **condition class** so that the caller can catch by class (`tryCatch(err_empty_data = ...)`)
+  instead of by `grepl` over the message.
+- **Failing is correct; returning a half-finished result is not.** Forbidden: `try(..., silent =
+  TRUE)` without inspecting the result, and blanket `suppressWarnings()` over a whole block.
+- `on.exit(add = TRUE)` to release connections, files and modified `options()` — R's `defer`.
+- `warning()` does not interrupt: nothing critical is signalled with `warning`.
 
-## 4. Calidad: formato, lint, tests, documentación
+## 4. Quality: formatting, linting, tests, documentation
 
-- **Formato**: `styler` (tidyverse style guide) aplicado a todo el repo; una única configuración.
-- **Lint**: `lintr` con `.lintr` versionado, ejecutado en CI como gate. Mínimo: longitud de línea fija,
-  `object_name_linter`, `seq_linter` (`1:n` es un bug cuando `n == 0` → `seq_len(n)`),
-  `undesirable_function_linter` (veta `attach`, `setwd`, `sapply`, `library` en `R/`),
-  `T`/`F` prohibidos (son variables reasignables; usa `TRUE`/`FALSE`).
-- **Tests con `testthat` 3ª edición** (`Config/testthat/edition: 3`):
-  - Un fichero de test por fichero de `R/`; `expect_*` con AAA y un motivo de fallo por test.
-  - Cubrir camino feliz **y bordes**: vector vacío, `NA`, `NULL`, columna ausente, tipo inesperado,
-    factor con nivel no visto, fecha en otra zona horaria, duplicados.
-  - Snapshot tests (`expect_snapshot`) para mensajes de error y salidas formateadas; revisar el
-    `_snaps/` en el PR como código.
-  - Aleatoriedad: `set.seed()` explícito en el test, o `withr::local_seed()`. Nada de tests que
-    dependan del `RNGkind` global del entorno.
-  - Nada de red pública ni de escribir en el directorio del usuario: `withr::local_tempdir()`.
-  - Todo bug arreglado deja test de regresión. Flaky = se arregla o se borra.
-- **Documentación**: `roxygen2` para toda función exportada (`@param`, `@return`, `@examples`
-  ejecutables). Un `@export` sin documentación es un fallo de revisión. `pkgdown` si el paquete lo
-  consumen terceros.
-- **Gates de CI** (bloquean el merge, lo barato primero):
-  1. `renv::status()` — falla si el lock no está sincronizado.
-  2. `styler` en modo comprobación + `lintr::lint_package()`.
-  3. `R CMD check --as-cran` (o `devtools::check()`): **cero ERROR, cero WARNING**; los NOTE se
-     justifican por escrito o se arreglan.
-  4. `testthat` con cobertura (`covr`); umbral acordado — la cobertura es señal, no meta.
-  5. Auditoría de dependencias (§5) y build de la imagen.
-- **Matriz de CI**: la versión de R fijada en producción, más la anterior si soportas usuarios
-  externos. Fijar el snapshot P3M en CI para que un release de CRAN no rompa un build de ayer.
+- **Formatting**: `styler` (tidyverse style guide) applied to the whole repo; a single
+  configuration.
+- **Lint**: `lintr` with a versioned `.lintr`, run in CI as a gate. Minimum: a fixed line length,
+  `object_name_linter`, `seq_linter` (`1:n` is a bug when `n == 0` → `seq_len(n)`),
+  `undesirable_function_linter` (vetoes `attach`, `setwd`, `sapply`, `library` in `R/`),
+  `T`/`F` forbidden (they are reassignable variables; use `TRUE`/`FALSE`).
+- **Tests with `testthat` 3rd edition** (`Config/testthat/edition: 3`):
+  - One test file per file in `R/`; `expect_*` with AAA and one failure reason per test.
+  - Cover the happy path **and the edges**: empty vector, `NA`, `NULL`, missing column, unexpected
+    type, factor with an unseen level, date in another time zone, duplicates.
+  - Snapshot tests (`expect_snapshot`) for error messages and formatted outputs; review the
+    `_snaps/` in the PR as code.
+  - Randomness: explicit `set.seed()` in the test, or `withr::local_seed()`. No tests that
+    depend on the environment's global `RNGkind`.
+  - No public network and no writing to the user's directory: `withr::local_tempdir()`.
+  - Every fixed bug leaves a regression test. Flaky = fixed or deleted.
+- **Documentation**: `roxygen2` for every exported function (`@param`, `@return`, runnable
+  `@examples`). An `@export` without documentation is a review failure. `pkgdown` if the package is
+  consumed by third parties.
+- **CI gates** (they block the merge, cheapest first):
+  1. `renv::status()` — fails if the lock is out of sync.
+  2. `styler` in check mode + `lintr::lint_package()`.
+  3. `R CMD check --as-cran` (or `devtools::check()`): **zero ERROR, zero WARNING**; NOTEs are
+     justified in writing or fixed.
+  4. `testthat` with coverage (`covr`); an agreed threshold — coverage is a signal, not a goal.
+  5. Dependency audit (§5) and building the image.
+- **CI matrix**: the R version pinned in production, plus the previous one if you support external
+  users. Pin the P3M snapshot in CI so that a CRAN release does not break yesterday's build.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-**`readRDS()` / `load()` / `unserialize()` sobre entrada no confiable es ejecución de código.** Un
-objeto serializado de R puede llevar entornos, promesas y clases con métodos que se ejecutan al
-imprimirse o al restaurarse. Regla: **nunca** deserialices un `.rds`/`.RData` que venga de fuera de tu
-frontera de confianza; para intercambio usa formatos de datos puros (Parquet, CSV, JSON) validados al
-leerlos. `load()` además contamina el entorno global — prohibido en código de paquete.
+**`readRDS()` / `load()` / `unserialize()` over untrusted input is code execution.** A serialised R
+object can carry environments, promises and classes with methods that run when printed or when
+restored. Rule: **never** deserialise an `.rds`/`.RData` that comes from outside your
+trust boundary; for exchange use pure data formats (Parquet, CSV, JSON) validated when
+read. `load()` also pollutes the global environment — forbidden in package code.
 
-- **`eval(parse(text = ...))` sobre entrada de usuario: PROHIBIDO.** Es el `eval` de R y es la
-  vulnerabilidad clásica de Shiny. Tampoco `parse()`, `str2lang()`, `source()` de rutas construidas
-  con input, ni `do.call(nombre_como_texto, ...)` sin allowlist.
-- **Shiny expone R a internet.** Todo `input$*` es entrada hostil:
-  - Valida **en el servidor**, no en la UI: la restricción de un `selectInput` no existe en el
-    protocolo, un cliente puede enviar cualquier valor. `validate()`/`req()` no son validación de
-    seguridad.
-  - Nunca uses `input$*` para construir SQL, rutas de fichero, nombres de objeto ni comandos
-    (`system()`, `system2()`). Allowlist de valores permitidos, no *blacklist*.
-  - `fileInput`: límite de tamaño (`shiny.maxRequestSize`), tipo verificado por contenido, y el
-    fichero se procesa en un temporal — jamás se sirve de vuelta ni se deserializa.
-  - HTML: `HTML()`, `tags$script`, `htmltools::HTML` y `renderText` con `escape = FALSE` son XSS si
-    entra input. Por defecto, texto escapado.
-  - Autenticación: **Shiny Server open source no trae autenticación** — se resuelve por delante
-    (proxy inverso con OIDC) o con un producto que la incluya. No implementes login en el propio
-    `server()`.
-- **SQL**: `DBI::dbGetQuery` con `params = list(...)` o `glue::glue_sql()`; `paste0()` de input en una
-  consulta es veto absoluto. Con `dbplyr`, revisa el SQL generado (`show_query()`) — su criterio es
-  de `sql-standards`.
-- **`install.packages()` en tiempo de ejecución: PROHIBIDO en producción.** Instalar desde el
-  contenedor arrancado o desde el `server()` de una app significa que el artefacto no es inmutable,
-  que el build depende de la red y que la versión que corre hoy no es la que se testeó. Todas las
-  dependencias se instalan en el build, desde un snapshot fijado. Lo mismo para `remotes::install_github()`
-  fuera de un `Dockerfile` con commit fijado por SHA.
-- **CRAN no audita seguridad.** CRAN comprueba que el paquete *funciona*, no que sea seguro ni que su
-  mantenedor siga vivo. Antes de añadir una dependencia: mantenimiento reciente, número de
-  mantenedores, licencia, y si arrastra un `SystemRequirements` que amplía la superficie del contenedor.
-  Un paquete puede ejecutar código arbitrario en la instalación (`configure`, `.onLoad`).
-- **Auditoría de dependencias**: el ecosistema R **no tiene un equivalente maduro a `pip-audit`**.
-  Lo que hay: **`oysteR`** (CRAN 0.1.4, 2025-10-09, Apache-2.0), que consulta Sonatype OSS Index;
-  el propio proyecto declara que **no está soportado por Sonatype** (contribución de comunidad) y que
-  el uso intensivo cae en *rate limiting*. Úsalo como señal (`audit_renv_lock()` en CI, no bloqueante
-  al principio), complementado con OSV/GitHub Advisories sobre el `renv.lock`, y **asume cobertura
-  incompleta**: la ausencia de hallazgos en R no es evidencia de ausencia de vulnerabilidades.
-  Verifica en §8 si ha aparecido algo mejor.
-- **Secretos**: nunca en `.Rprofile`, `.Renviron` versionado, `renv.lock`, código ni informes. Env
-  vars o gestor; `.Renviron` local en `.gitignore`. Cuidado con los `.RData` guardados al salir:
-  desactiva el guardado automático de la sesión (`--no-save`, `--no-restore` en cualquier ejecución
-  no interactiva) — un `.RData` con credenciales en el repo es un incidente clásico.
-- **Informes**: un Quarto/Rmd renderizado incrusta lo que imprimas. Revisa que no salgan cadenas de
-  conexión, tokens ni datos personales en las salidas ni en los mensajes de aviso.
-- **Contenedores**: imagen basada en `rocker/r-ver` con versión de R y snapshot fijados, non-root,
-  multi-stage. **El problema real de R en contenedores son las dependencias de sistema**: muchos
-  paquetes compilan contra librerías del SO (`libcurl`, `libxml2`, `libssl`, `libgdal`, `libproj`,
-  `libgit2`). Instálalas explícitamente en el `Dockerfile` (P3M expone los `SystemRequirements`);
-  no confíes en que "estaban en la imagen base". Y no las dejes en la imagen final si solo hacían
-  falta para compilar.
+- **`eval(parse(text = ...))` over user input: FORBIDDEN.** It is R's `eval` and it is the classic
+  Shiny vulnerability. Nor `parse()`, `str2lang()`, `source()` of paths built
+  with input, nor `do.call(name_as_text, ...)` without an allowlist.
+- **Shiny exposes R to the Internet.** Every `input$*` is hostile input:
+  - Validate **on the server**, not in the UI: the constraint of a `selectInput` does not exist in
+    the protocol, a client can send any value. `validate()`/`req()` are not security
+    validation.
+  - Never use `input$*` to build SQL, file paths, object names or commands
+    (`system()`, `system2()`). An allowlist of permitted values, not a *blacklist*.
+  - `fileInput`: a size limit (`shiny.maxRequestSize`), type verified by content, and the
+    file processed in a temporary location — never served back and never deserialised.
+  - HTML: `HTML()`, `tags$script`, `htmltools::HTML` and `renderText` with `escape = FALSE` are XSS
+    if input gets in. By default, escaped text.
+  - Authentication: **open source Shiny Server ships no authentication** — it is solved in front
+    (reverse proxy with OIDC) or with a product that includes it. Do not implement login in the
+    `server()` itself.
+- **SQL**: `DBI::dbGetQuery` with `params = list(...)` or `glue::glue_sql()`; `paste0()` of input
+  into a query is an absolute veto. With `dbplyr`, review the generated SQL (`show_query()`) — its
+  criteria belong to `sql-standards`.
+- **`install.packages()` at run time: FORBIDDEN in production.** Installing from the
+  started container or from an app's `server()` means the artifact is not immutable,
+  that the build depends on the network and that the version running today is not the one that was
+  tested. All dependencies are installed at build time, from a pinned snapshot. The same for
+  `remotes::install_github()` outside a `Dockerfile` with the commit pinned by SHA.
+- **CRAN does not audit security.** CRAN checks that the package *works*, not that it is secure nor
+  that its maintainer is still alive. Before adding a dependency: recent maintenance, number of
+  maintainers, licence, and whether it drags in a `SystemRequirements` that widens the container's
+  surface. A package can execute arbitrary code on installation (`configure`, `.onLoad`).
+- **Dependency audit**: the R ecosystem **has no mature equivalent to `pip-audit`**.
+  What there is: **`oysteR`** (CRAN 0.1.4, 2025-10-09, Apache-2.0), which queries Sonatype OSS
+  Index; the project itself states that it **is not supported by Sonatype** (a community
+  contribution) and that heavy use runs into *rate limiting*. Use it as a signal
+  (`audit_renv_lock()` in CI, non-blocking at first), complemented with OSV/GitHub Advisories over
+  the `renv.lock`, and **assume incomplete coverage**: the absence of findings in R is not evidence
+  of the absence of vulnerabilities. Check in §8 whether something better has appeared.
+- **Secrets**: never in `.Rprofile`, a versioned `.Renviron`, `renv.lock`, code or reports. Env
+  vars or a manager; local `.Renviron` in `.gitignore`. Careful with `.RData` files saved on exit:
+  disable automatic session saving (`--no-save`, `--no-restore` in any non-interactive
+  run) — an `.RData` with credentials in the repo is a classic incident.
+- **Reports**: a rendered Quarto/Rmd embeds whatever you print. Check that no connection
+  strings, tokens or personal data come out in the outputs or in the warning messages.
+- **Containers**: an image based on `rocker/r-ver` with the R version and snapshot pinned, non-root,
+  multi-stage. **The real problem with R in containers is the system dependencies**: many
+  packages compile against OS libraries (`libcurl`, `libxml2`, `libssl`, `libgdal`, `libproj`,
+  `libgit2`). Install them explicitly in the `Dockerfile` (P3M exposes the `SystemRequirements`);
+  do not trust that "they were in the base image". And do not leave them in the final image if they
+  were only needed to compile.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Orden de ataque**, en este orden y no otro: (1) mide (`profvis`, `bench::mark`) — nunca optimices
-  por intuición; (2) vectoriza y elimina el crecimiento de objetos en bucle (`x <- c(x, i)` es
-  cuadrático: preasigna o usa `vapply`); (3) `data.table` para agregación/joins pesados; (4) empuja el
-  cálculo a `arrow`/`duckdb` o a la base de datos cuando el dato no cabe en RAM; (5) `cpp11`/`Rcpp`
-  solo para el bucle que realmente no se puede vectorizar, y solo tras 1-4.
-- **R copia al modificar** y el pico de memoria es el problema, no la CPU. `data.table` modifica por
-  referencia (`:=`) — potente y una fuente de bugs si el objeto se comparte: documenta cuándo una
-  función muta su argumento, o devuelve copia explícita.
-- Paralelismo: `future`/`furrr` o `parallel`. `multicore` (fork) **no es seguro en un servidor Shiny/
-  Plumber ni en Windows**: usa `multisession` o procesos externos. Nunca lances más *workers* que
-  núcleos asignados al contenedor — R no ve el límite de cgroup por sí solo.
-- **Plumber**: es **monohilo**. Un request lento bloquea a todos. Escala con múltiples procesos tras
-  un balanceador, timeouts explícitos en cada llamada saliente (`httr2::req_timeout`), y trabajo
-  pesado fuera del request. Endpoints `/healthz` y `/readyz`; logging estructurado con *correlation id*.
-- **Shiny en producción**: cada sesión es estado en el servidor y un proceso de R sirve N sesiones en
-  **un solo hilo**. Consecuencias: cualquier cálculo largo en `server()` congela a todos los usuarios
-  de ese proceso (mueve a `future`/cola de trabajos o precalcula); el estado de sesión no sobrevive a
-  la caída del proceso ni migra entre réplicas (**afinidad de sesión obligatoria** en el balanceador,
-  y una app que "se reinicia sola" es un usuario perdiendo su trabajo); reactividad mal aislada = fugas
-  de datos entre sesiones si pones estado en el entorno global. Dimensiona por **sesiones concurrentes
-  y RAM por sesión**, no por peticiones/segundo. Objetos grandes compartidos y de solo lectura: cárgalos
-  una vez fuera de `server()` (se comparten entre sesiones del mismo proceso), nunca datos por usuario.
-- Conexiones a BD: *pool* (`pool`) con límites; una conexión por sesión de Shiny se agota sola.
-  Cierra siempre con `on.exit`.
-- Informes programados: idempotentes, con parámetros explícitos y salida versionada. Un informe que
-  falla debe **fallar ruidosamente**, no publicar la versión de ayer.
-- Semilla y versiones en el artefacto: todo informe/modelo publica versión de R, `renv.lock` (o su
-  hash) y semilla. Sin eso, un número no es reproducible aunque el código esté en git.
+- **Order of attack**, in this order and no other: (1) measure (`profvis`, `bench::mark`) — never
+  optimise by intuition; (2) vectorise and eliminate object growth in loops (`x <- c(x, i)` is
+  quadratic: preallocate or use `vapply`); (3) `data.table` for heavy aggregation/joins; (4) push
+  the computation to `arrow`/`duckdb` or to the database when the data does not fit in RAM; (5)
+  `cpp11`/`Rcpp` only for the loop that genuinely cannot be vectorised, and only after 1-4.
+- **R copies on modify** and the memory peak is the problem, not the CPU. `data.table` modifies by
+  reference (`:=`) — powerful and a source of bugs if the object is shared: document when a
+  function mutates its argument, or return an explicit copy.
+- Parallelism: `future`/`furrr` or `parallel`. `multicore` (fork) **is not safe on a Shiny/
+  Plumber server nor on Windows**: use `multisession` or external processes. Never launch more
+  *workers* than the cores assigned to the container — R does not see the cgroup limit on its own.
+- **Plumber**: it is **single-threaded**. One slow request blocks everybody. Scale with multiple
+  processes behind a load balancer, explicit timeouts on every outbound call
+  (`httr2::req_timeout`), and heavy work outside the request. `/healthz` and `/readyz` endpoints;
+  structured logging with a *correlation id*.
+- **Shiny in production**: each session is state on the server and one R process serves N sessions in
+  **a single thread**. Consequences: any long computation in `server()` freezes all the users
+  of that process (move it to `future`/a job queue or precompute); session state does not survive
+  the process crashing nor migrate between replicas (**session affinity mandatory** on the load
+  balancer, and an app that "restarts on its own" is a user losing their work); badly isolated
+  reactivity = data leaks between sessions if you put state in the global environment. Size by
+  **concurrent sessions and RAM per session**, not by requests/second. Large shared read-only
+  objects: load them once outside `server()` (they are shared across sessions of the same process),
+  never per-user data.
+- DB connections: a *pool* (`pool`) with limits; one connection per Shiny session exhausts itself.
+  Always close with `on.exit`.
+- Scheduled reports: idempotent, with explicit parameters and versioned output. A report that
+  fails must **fail loudly**, not publish yesterday's version.
+- Seed and versions in the artifact: every report/model publishes the R version, the `renv.lock` (or
+  its hash) and the seed. Without that, a number is not reproducible even if the code is in git.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- **Cadencia**: R minor una vez al año (primavera) — planifícalo como evento, con reinstalación de
-  paquetes compilados y ejecución completa de la suite. Parches de R, aplicar. Snapshot de P3M:
-  **avanzarlo deliberadamente** (trimestral, con la suite verde) en lugar de flotar o de congelarlo
-  durante años; un snapshot de 3 años es tan peligroso como no tener ninguno, porque el día que haya
-  que moverlo el salto es imposible.
-- Bioconductor arrastra la versión de R: si dependes de él, tu calendario **es el suyo** (dos releases
-  al año), no al revés.
-- Deprecaciones: tidyverse avisa con ciclos largos pero avisa; `lifecycle` badges y `DeprecationWarning`
-  se tratan como deuda con issue, no se silencian. `data.table` casi no rompe API — es su valor.
-- Una dependencia sin release en >2 años o con mantenedor único se revisa; si está en la ruta crítica
-  de producción, se vendoriza la función que usas o se sustituye.
-- **Deuda del análisis que se convierte en servicio**: cuando un script pasa a servir tráfico,
-  **se reescribe como paquete con tests** antes de exponerlo, no después. "Lo envolvemos en Plumber y
-  ya" es la deuda más cara de este ecosistema: nadie sabe qué entradas acepta, no hay tests, el estado
-  vive en el entorno global y el primer incidente es a las 3 de la mañana. Si no hay presupuesto para
-  la reescritura, no hay presupuesto para el servicio: publícalo como informe programado.
+- **Cadence**: an R minor once a year (spring) — plan it as an event, with reinstallation of
+  compiled packages and a full run of the suite. R patches, apply them. P3M snapshot:
+  **advance it deliberately** (quarterly, with the suite green) instead of floating or freezing it
+  for years; a 3-year-old snapshot is as dangerous as having none, because the day it has to be
+  moved the jump is impossible.
+- Bioconductor drags the R version along: if you depend on it, your calendar **is theirs** (two
+  releases a year), not the other way round.
+- Deprecations: tidyverse warns with long cycles but it warns; `lifecycle` badges and
+  `DeprecationWarning` are treated as debt with an issue, they are not silenced. `data.table`
+  hardly ever breaks its API — that is its value.
+- A dependency with no release in >2 years or with a single maintainer is reviewed; if it is on the
+  critical path of production, the function you use is vendored or replaced.
+- **Debt from an analysis that becomes a service**: when a script starts serving traffic,
+  **it is rewritten as a package with tests** before exposing it, not afterwards. "We'll wrap it in
+  Plumber and that's it" is the most expensive debt in this ecosystem: nobody knows what inputs it
+  accepts, there are no tests, the state lives in the global environment and the first incident is
+  at 3 in the morning. If there is no budget for the rewrite, there is no budget for the service:
+  publish it as a scheduled report.
 
-**Cuándo NO elegir R** (honestidad primero):
-- ❌ R como lenguaje de *aplicación* de propósito general (backend transaccional, CLI de sistema,
-  microservicio con lógica de negocio): usa Python, Go o TypeScript.
-- ❌ R para orquestación de pipelines o infraestructura: eso es `data-engineering-standards`.
-- ❌ R porque "el analista lo sabe": si el artefacto es un servicio con SLA y nadie del equipo mantiene
-  R en producción, la elección correcta es portarlo.
-- ✅ **R sí es la respuesta correcta** frente a Python en: modelado estadístico serio (modelos mixtos,
-  supervivencia, series temporales, inferencia bayesiana, diseño experimental), bioestadística y
-  Bioconductor, gráficos publicables (`ggplot2`), e informes reproducibles donde la narrativa y el
-  cálculo van juntos. Ahí el ecosistema de paquetes especializados de R no tiene equivalente.
-- ✅ **Python** (ver `python-standards`) cuando el trabajo es *engineering* alrededor del análisis:
-  servicio, integración, ML de producción, orquestación, o cuando el equipo que lo mantendrá es de
-  ingeniería. Frontera pragmática: si el resultado es un número o un informe, R; si el resultado es un
-  sistema, Python.
-- ✅ **Julia** (ver `julia-standards`) solo cuando el cuello es un bucle numérico que no se vectoriza.
-  La elección casi nunca es "R o Julia": R es estadística y comunicación de resultados, Julia es
-  rendimiento numérico. Comparten el nicho de "lenguaje científico que no es Python" y poco más.
+**When NOT to choose R** (honesty first):
+- ❌ R as a general-purpose *application* language (transactional backend, system CLI,
+  microservice with business logic): use Python, Go or TypeScript.
+- ❌ R for pipeline or infrastructure orchestration: that is `data-engineering-standards`.
+- ❌ R because "the analyst knows it": if the artifact is a service with an SLA and nobody on the
+  team maintains R in production, the correct choice is to port it.
+- ✅ **R is the right answer** against Python in: serious statistical modelling (mixed models,
+  survival, time series, Bayesian inference, experimental design), biostatistics and
+  Bioconductor, publication-quality graphics (`ggplot2`), and reproducible reports where the
+  narrative and the computation go together. There R's ecosystem of specialised packages has no
+  equivalent.
+- ✅ **Python** (see `python-standards`) when the work is *engineering* around the analysis:
+  serving, integration, production ML, orchestration, or when the team that will maintain it is an
+  engineering one. Pragmatic boundary: if the result is a number or a report, R; if the result is a
+  system, Python.
+- ✅ **Julia** (see `julia-standards`) only when the bottleneck is a numerical loop that does not
+  vectorise. The choice is almost never "R or Julia": R is statistics and communication of results,
+  Julia is numerical performance. They share the niche of "a scientific language that is not
+  Python" and little else.
 
-**Lista de prohibiciones (veto):**
-- ❌ Proyecto en producción sin `renv.lock` versionado, o con repositorio CRAN sin snapshot fijado.
-- ❌ `install.packages()` / `remotes::install_github()` en tiempo de ejecución en producción.
-- ❌ `readRDS()`/`load()`/`unserialize()` sobre entrada no confiable. `load()` dentro de un paquete.
-- ❌ `eval(parse(text = ...))` con input de usuario. `source()` de ruta construida con input.
-- ❌ `setwd()`, `attach()`, `library()` dentro de `R/`; `rm(list = ls())` como "reinicio".
-- ❌ Confiar en el `.RData` guardado de la sesión: ejecuta siempre con `--no-save --no-restore`.
-- ❌ SQL por `paste0`. Input de Shiny hacia `system()`, rutas o nombres de objeto sin allowlist.
-- ❌ `T`/`F` en lugar de `TRUE`/`FALSE`. `1:n` donde `n` puede ser 0. `sapply()` en código de producción.
-- ❌ `na.rm = TRUE` por reflejo, sin decidir qué significa el `NA` en esa columna.
-- ❌ `suppressWarnings()`/`try(silent = TRUE)` a granel; capturar y tragar sin log ni re-raise.
-- ❌ Variantes NSE retiradas (`aes_string`, `*_` con guion bajo) en código nuevo.
-- ❌ Lógica de negocio dentro de un `.qmd`/`.Rmd` en vez de en `R/` con tests.
-- ❌ `R CMD check` con WARNING "ya lo miraremos"; NOTE sin justificar por escrito.
-- ❌ Estado de usuario en el entorno global de una app Shiny (fuga entre sesiones).
-- ❌ Subir de minor de R reutilizando la librería de paquetes compilados anterior (ver §2).
-- ❌ Cálculo largo síncrono dentro de `server()` de Shiny o de un endpoint Plumber.
+**List of prohibitions (veto):**
+- ❌ A project in production without a versioned `renv.lock`, or with a CRAN repository without a
+  pinned snapshot.
+- ❌ `install.packages()` / `remotes::install_github()` at run time in production.
+- ❌ `readRDS()`/`load()`/`unserialize()` over untrusted input. `load()` inside a package.
+- ❌ `eval(parse(text = ...))` with user input. `source()` of a path built with input.
+- ❌ `setwd()`, `attach()`, `library()` inside `R/`; `rm(list = ls())` as a "restart".
+- ❌ Relying on the session's saved `.RData`: always run with `--no-save --no-restore`.
+- ❌ SQL via `paste0`. Shiny input into `system()`, paths or object names without an allowlist.
+- ❌ `T`/`F` instead of `TRUE`/`FALSE`. `1:n` where `n` may be 0. `sapply()` in production code.
+- ❌ `na.rm = TRUE` by reflex, without deciding what `NA` means in that column.
+- ❌ Blanket `suppressWarnings()`/`try(silent = TRUE)`; catching and swallowing with no log and no
+  re-raise.
+- ❌ Retired NSE variants (`aes_string`, `*_` with an underscore) in new code.
+- ❌ Business logic inside a `.qmd`/`.Rmd` instead of in `R/` with tests.
+- ❌ `R CMD check` with a WARNING and "we'll look at it later"; a NOTE with no written justification.
+- ❌ User state in the global environment of a Shiny app (leakage between sessions).
+- ❌ Upgrading an R minor while reusing the previous library of compiled packages (see §2).
+- ❌ A long synchronous computation inside Shiny's `server()` or a Plumber endpoint.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar versiones o decisiones, **verifica online** (WebSearch/WebFetch; para versiones, feeds
-Atom de GitHub Releases y las páginas de CRAN — no el resumidor sobre HTML de GitHub):
-1. Última estable de R y del último parche de la serie previa (`cran.r-project.org/src/base/R-4/`,
-   `developer.r-project.org`). A ago-2026: **4.6.1 (2026-06-24)** y **4.5.3 (2026-03-11)**.
-   **R no tiene LTS declarada** — no lo afirmes.
-2. Versión de Bioconductor y la versión de R a la que está acoplada
-   (`bioconductor.org/about/release-announcements/`). A ago-2026: **3.23 ↔ R 4.6**.
-3. Estado de Posit Package Manager (URL de snapshot, cobertura de binarios por distro, disponibilidad
-   del servicio público y sus términos de uso). Los snapshots públicos existen desde 2017-10-10 y solo
-   en días laborables.
-4. Versiones y **licencias** de `renv`, `styler`, `lintr`, `testthat`, `roxygen2`, `plumber`,
-   `data.table` (MPL-2.0, no MIT), `shiny`. Comprueba **CRAN además de GitHub**: `styler` no publica
-   *release* en GitHub desde 2024 pero su última versión CRAN es 1.11.0 (2025-10-13) — repo quieto
-   ≠ paquete abandonado.
-5. **Modelo comercial de Posit** (dato caro y cambiante): el paquete `shiny` es MIT y **Shiny Server
-   open source es AGPL-3.0**, pero **Shiny Server Pro fue discontinuado el 2026-03-31** y Posit dirige
-   a **Posit Connect**, comercial y con licencia por usuarios activos; el acceso público anónimo a
-   contenido interactivo es un **entitlement de pago** (licencia Enhanced/Advanced). Verifica antes de
-   diseñar hosting: precios no publicados, alternativas ShinyProxy (open source) y
-   Connect Cloud/shinyapps.io. **Discrepancia declarada**: no he encontrado ninguna declaración
-   oficial de Posit que ponga Shiny Server open source en modo mantenimiento, pero su último *release*
-   en GitHub es de **2024-09-30**; trata su futuro como riesgo abierto, no como hecho.
-6. Auditoría de vulnerabilidades: estado de `oysteR` y si existe ya alternativa mantenida (posconsulta:
-   a ago-2026 no la hay). **Hueco no verificado a ago-2026**: la cobertura real de CRAN en OSV/OSS
-   Index (qué porcentaje de paquetes tiene advisories) no la he podido cuantificar — no la afirmes.
-7. **Hueco no verificado a ago-2026**: madurez de **S7** como sistema de objetos por defecto y si ya
-   ha entrado en base R; y estado de `cpp11` frente a `Rcpp` tras el cambio de cabeceras de R 4.6.0.
-8. Breaking changes de `roxygen2` 8.x y de la serie 4.6 de R (API gráfica 16→17, cabeceras) desde el
-   `NEWS` oficial antes de cualquier upgrade — nunca de blogs de terceros sin contrastar.
+Before committing to versions or decisions, **verify online** (WebSearch/WebFetch; for versions, the
+Atom feeds of GitHub Releases and the CRAN pages — not the summariser over GitHub's HTML):
+1. The latest stable R and the last patch of the previous series (`cran.r-project.org/src/base/R-4/`,
+   `developer.r-project.org`). As of Aug 2026: **4.6.1 (2026-06-24)** and **4.5.3 (2026-03-11)**.
+   **R has no declared LTS** — do not assert it.
+2. The Bioconductor version and the R version it is coupled to
+   (`bioconductor.org/about/release-announcements/`). As of Aug 2026: **3.23 ↔ R 4.6**.
+3. The state of Posit Package Manager (snapshot URL, binary coverage per distro, availability
+   of the public service and its terms of use). Public snapshots exist since 2017-10-10 and only
+   on working days.
+4. Versions and **licences** of `renv`, `styler`, `lintr`, `testthat`, `roxygen2`, `plumber`,
+   `data.table` (MPL-2.0, not MIT), `shiny`. Check **CRAN as well as GitHub**: `styler` has
+   published no *release* on GitHub since 2024 but its latest CRAN version is 1.11.0 (2025-10-13) —
+   a quiet repo ≠ an abandoned package.
+5. **Posit's commercial model** (an expensive and changing figure): the `shiny` package is MIT and
+   **open source Shiny Server is AGPL-3.0**, but **Shiny Server Pro was discontinued on 2026-03-31**
+   and Posit directs you to **Posit Connect**, commercial and licensed by active users;
+   anonymous public access to interactive content is a **paid entitlement** (Enhanced/Advanced
+   licence). Verify before designing hosting: prices not published, alternatives ShinyProxy (open
+   source) and Connect Cloud/shinyapps.io. **Declared discrepancy**: I have found no official
+   Posit statement putting open source Shiny Server into maintenance mode, but its last *release*
+   on GitHub is from **2024-09-30**; treat its future as an open risk, not as a fact.
+6. Vulnerability auditing: the state of `oysteR` and whether a maintained alternative already exists
+   (post-check: as of Aug 2026 there is none). **Gap not verified as of Aug 2026**: the real coverage
+   of CRAN in OSV/OSS Index (what percentage of packages have advisories) I have not been able to
+   quantify — do not assert it.
+7. **Gap not verified as of Aug 2026**: the maturity of **S7** as the default object system and
+   whether it has already entered base R; and the state of `cpp11` versus `Rcpp` after the header
+   change in R 4.6.0.
+8. Breaking changes in `roxygen2` 8.x and in R's 4.6 series (graphics API 16→17, headers) from the
+   official `NEWS` before any upgrade — never from third-party blogs without cross-checking.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

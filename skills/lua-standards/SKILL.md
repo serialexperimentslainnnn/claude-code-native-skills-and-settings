@@ -3,300 +3,316 @@ name: lua-standards
 description: Use when writing or reviewing Lua code - .lua files, .luacheckrc, selene.toml, stylua.toml, .rockspec and luarocks, busted spec files, LuaJIT vs Lua 5.1/5.4/5.5 targets, OpenResty content_by_lua_block/access_by_lua_file/ngx.shared.DICT/lua-nginx-module, Neovim init.lua and vim.api/vim.uv plugins with lazy.nvim, Redis or Valkey EVAL/EVALSHA/FUNCTION scripts, Teal .tl files, lua-language-server ---@ annotations, or sandboxing untrusted Lua with load/setfenv/_ENV.
 ---
 
-# Estándares Lua (referencia: agosto 2026)
+# Lua standards (reference: August 2026)
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Lua casi nunca se usa solo: **se usa embebido, y el host decide casi todo** — versión del intérprete,
-bibliotecas disponibles, modelo de concurrencia, qué se puede llamar y qué te mata el proceso. La
-primera pregunta de cualquier trabajo en Lua no es "qué versión del lenguaje" sino **"quién es el
-host"**. Esta skill está estructurada por host.
+Lua is almost never used on its own: **it is used embedded, and the host decides almost everything** —
+interpreter version, available libraries, concurrency model, what can be called and what kills your
+process. The first question in any Lua work is not "which version of the language" but **"who is the
+host"**. This skill is structured by host.
 
 Triggers: `.lua`, `.tl`, `.rockspec`, `.luacheckrc`, `selene.toml`, `stylua.toml`, `init.lua`,
 `*_spec.lua` (busted), `content_by_lua_block`/`access_by_lua_file`/`ngx.*`, `vim.api`/`vim.uv`,
-`EVAL`/`EVALSHA`/`FUNCTION LOAD`, `luarocks`, anotaciones `---@`.
+`EVAL`/`EVALSHA`/`FUNCTION LOAD`, `luarocks`, `---@` annotations.
 
-**No aplica**: ver `caching-cdn-standards` y `networking-standards` (nginx/OpenResty **como
-plataforma**: configuración, TLS, upstreams, caché, límites — **el Lua que corre dentro es de aquí**),
-`data-platform-standards` y `nosql-standards` (Redis/Valkey **como motor**: memoria, persistencia,
-eviction, clustering — **el script `EVAL` es de aquí**), `homelab-standards` (self-hosting del stack),
-`appsec-standards` (metodología y clases de vulnerabilidad; aquí solo el sandboxing concreto de Lua),
-`c-standards` (**la API C de Lua, `lua_State`, extensiones nativas y su memoria son suyas**; aquí solo
-la frontera vista desde Lua), `perl-standards` y `groovy-standards` (nada en común más allá de "es un
-lenguaje dinámico"), `secrets-management-standards`, `vulnerability-management-standards`,
+**Not applicable**: see `caching-cdn-standards` and `networking-standards` (nginx/OpenResty **as a
+platform**: configuration, TLS, upstreams, cache, limits — **the Lua that runs inside is ours**),
+`data-platform-standards` and `nosql-standards` (Redis/Valkey **as an engine**: memory, persistence,
+eviction, clustering — **the `EVAL` script is ours**), `homelab-standards` (self-hosting the stack),
+`appsec-standards` (methodology and vulnerability classes; here only Lua's specific sandboxing),
+`c-standards` (**Lua's C API, `lua_State`, native extensions and their memory are hers**; here only
+the boundary as seen from Lua), `perl-standards` and `groovy-standards` (nothing in common beyond
+"it is a dynamic language"), `secrets-management-standards`, `vulnerability-management-standards`,
 `observability-standards`, `sql-standards`.
 
-## 2. Decisiones por defecto: versión y toolchain
+## 2. Default decisions: version and toolchain
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before committing to it in a real project (§8).
 
-**La fractura del ecosistema es real y no se resuelve eligiendo "la última"**: el host impone la
-versión y muchas librerías de LuaRocks solo funcionan en una rama.
+**The ecosystem's fracture is real and is not resolved by choosing "the latest"**: the host imposes
+the version and many LuaRocks libraries only work on one branch.
 
-| Rama | Estado verificado a ago-2026 | Cuándo es tu target |
+| Branch | Status verified as of Aug 2026 | When it is your target |
 |---|---|---|
-| **Lua 5.1** | Fin de línea (5.1.5, feb-2012). Sigue siendo **la versión más desplegada** vía LuaJIT | Solo porque el host la impone (LuaJIT, Redis, OpenResty) |
-| Lua 5.2 / 5.3 | Sin mantenimiento activo; 5.3.6 es de sep-2020 | Nunca en proyecto nuevo |
-| **Lua 5.4** | 5.4.8 (4-jun-2025), última de la rama | Default para Lua **standalone** si el host no manda |
-| **Lua 5.5** | **5.5.0 publicada el 22-dic-2025** | Greenfield standalone; verificar soporte de tus rocks antes |
-| **LuaJIT** | **Activo**: modelo de *rolling release* sobre la rama `v2.1`, con commits en ago-2026. Sin tarballs ni tags de release; la versión es `2.1.<timestamp del commit>` | Cuando manda el rendimiento o el host (OpenResty, Neovim) |
+| **Lua 5.1** | End of line (5.1.5, Feb 2012). Still **the most widely deployed version** via LuaJIT | Only because the host imposes it (LuaJIT, Redis, OpenResty) |
+| Lua 5.2 / 5.3 | No active maintenance; 5.3.6 is from Sep 2020 | Never in a new project |
+| **Lua 5.4** | 5.4.8 (4 Jun 2025), the latest of the branch | Default for **standalone** Lua if the host does not dictate |
+| **Lua 5.5** | **5.5.0 published on 22 Dec 2025** | Greenfield standalone; verify your rocks' support first |
+| **LuaJIT** | **Active**: a *rolling release* model on the `v2.1` branch, with commits in Aug 2026. No tarballs and no release tags; the version is `2.1.<commit timestamp>` | When performance or the host dictates (OpenResty, Neovim) |
 
-**LuaJIT es apoyable**, con condiciones explícitas: es **compatible con Lua 5.1** más un subconjunto
-de extensiones de 5.2/5.3 — **no** es "Lua moderno". Un proyecto nuevo sobre LuaJIT acepta escribir
-5.1 para siempre. Reglas operativas de upstream que hay que respetar: seguir la rama `v2.1` del git
-(no `master`, no el tag `v2.1.ROLLING`, no `2.1.0-beta3`), **no usar tarballs de terceros ni el
-tarball automático de GitHub** (sin `.git` no compila la versión correcta), y si el build necesita
-"un release", tomar snapshots fechados de la rama.
+**LuaJIT is supportable**, with explicit conditions: it is **compatible with Lua 5.1** plus a subset
+of 5.2/5.3 extensions — it is **not** "modern Lua". A new project on LuaJIT accepts writing
+5.1 for ever. Upstream operational rules that must be respected: follow the git `v2.1` branch
+(not `master`, not the `v2.1.ROLLING` tag, not `2.1.0-beta3`), **do not use third-party tarballs nor
+GitHub's automatic tarball** (without `.git` it does not compile the correct version), and if the
+build needs "a release", take dated snapshots of the branch.
 
-| Pieza | Elección | Verificado | Licencia (LICENSE en crudo) |
+| Component | Choice | Verified | Licence (raw LICENSE) |
 |---|---|---|---|
-| Formatter | **StyLua** | v2.5.2 (may-2026) | **MPL-2.0** (no MIT) |
-| Linter | **selene** | 0.31.0 (may-2026), desarrollo activo | **MPL-2.0** (no MIT) |
-| Linter (alternativa) | `luacheck` (`lunarmodules/luacheck`) | v1.2.0, may-2024 — **sin releases desde entonces** | MIT |
-| Tipos | **lua-language-server** (LuaLS) + anotaciones `---@` | 3.18.2 (abr-2026) | MIT |
-| Tipado real | **Teal** (`tl`) | v0.24.8 (oct-2025) | MIT |
-| Tests | **busted** | v2.3.0 (ene-2026) | MIT |
-| Paquetes | **LuaRocks** | 3.13.x | MIT |
+| Formatter | **StyLua** | v2.5.2 (May 2026) | **MPL-2.0** (not MIT) |
+| Linter | **selene** | 0.31.0 (May 2026), active development | **MPL-2.0** (not MIT) |
+| Linter (alternative) | `luacheck` (`lunarmodules/luacheck`) | v1.2.0, May 2024 — **no releases since** | MIT |
+| Types | **lua-language-server** (LuaLS) + `---@` annotations | 3.18.2 (Apr 2026) | MIT |
+| Real typing | **Teal** (`tl`) | v0.24.8 (Oct 2025) | MIT |
+| Tests | **busted** | v2.3.0 (Jan 2026) | MIT |
+| Packages | **LuaRocks** | 3.13.x | MIT |
 
-Criterio: **selene por defecto** en proyecto nuevo (activo, rápido, `selene.toml` con la *standard
-library* declarada por host: `lua51`, `lua54`, `roblox` o una propia). `luacheck` sigue siendo válido
-donde ya está, pero **su falta de releases desde 2024 es un riesgo declarado**. `stylua.toml`
-committeado y `stylua --check` como gate.
+Criterion: **selene by default** in a new project (active, fast, `selene.toml` with the *standard
+library* declared per host: `lua51`, `lua54`, `roblox` or one of your own). `luacheck` is still valid
+where it is already in place, but **its lack of releases since 2024 is a declared risk**. A committed
+`stylua.toml` and `stylua --check` as a gate.
 
-**Tipado**: en código nuevo no trivial, o **Teal** (compila a Lua, tipos reales; solo si controlas el
-build del host) o Lua plano **con anotaciones `---@` de LuaLS** verificadas en CI
-(`lua-language-server --check`). Sin una de las dos, un refactor en Lua es a ciegas.
+**Typing**: in non-trivial new code, either **Teal** (compiles to Lua, real types; only if you
+control the host's build) or plain Lua **with LuaLS `---@` annotations** verified in CI
+(`lua-language-server --check`). Without one of the two, a refactor in Lua is done blind.
 
-**LuaRocks es el punto frágil del stack**: resuelve mal versiones transitivas, muchos rocks no
-declaran la compatibilidad de rama (5.1 vs 5.4) y los que llevan C necesitan toolchain y cabeceras
-del intérprete concreto. Regla: **árbol de rocks local por proyecto** (`luarocks --tree ./.rocks`),
-`.rockspec` con `dependencies` acotadas por versión, y para OpenResty/Neovim **vendorizar** la
-dependencia en el repo antes que depender de LuaRocks en el runtime de producción.
+**LuaRocks is the fragile point of the stack**: it resolves transitive versions poorly, many rocks do
+not declare branch compatibility (5.1 vs 5.4) and those that carry C need the toolchain and headers
+of the specific interpreter. Rule: **a local rock tree per project** (`luarocks --tree ./.rocks`),
+a `.rockspec` with `dependencies` bounded by version, and for OpenResty/Neovim **vendor** the
+dependency into the repo rather than depending on LuaRocks in the production runtime.
 
-## 3. El lenguaje: lo que realmente rompe
+## 3. The language: what actually breaks
 
-- **Las variables son globales por defecto. Es el mayor fallo de diseño operativo de Lua.** Un typo
-  crea una global silenciosa; en un host de larga vida (nginx worker, servidor de juego) eso es una
-  fuga de memoria y una contaminación de estado entre peticiones. **`local` siempre**, sin excepción.
-  Habilita detección: `luacheck`/`selene` marcan globales no declaradas, y en hosts que lo permitan
-  carga un módulo `strict` que hace *error* al leer/escribir una global no declarada.
-- **La tabla es la única estructura**: array, hash, objeto, módulo y namespace. No hay más.
-  1-indexado. `#t` y `ipairs` **solo son fiables sin agujeros**; con `nil` en medio el resultado es
-  indefinido — para colecciones dispersas, `pairs` y un contador explícito.
-- **Metatablas y `__index`**: la herencia es una cadena de `__index`; úsala poco, explícita y plana
-  (cada nivel es una indirección en el camino caliente). Documenta toda metatabla que no sea `__index`
-  — `__gc`, `__close` (5.4+) y `__newindex` son potentes y opacos.
-- **Los errores son valores, y `pcall` es el mecanismo**: `error()` desenrolla hasta el `pcall` más
-  cercano. Convención: las funciones de librería devuelven `nil, err` (comprobable) y reservan
-  `error()` para violaciones de contrato del programador. `xpcall` con `debug.traceback` para
-  conservar la traza — con `pcall` la pierdes. **Un `pcall` cuyo error se descarta sin log es un veto.**
-- **`nil` vs `false`**: solo `nil` y `false` son falsos; **`0` y `""` son verdaderos**. Distingue
-  "ausente" (`nil`) de "presente y falso" (`false`) en toda API que devuelva flags. La coerción
-  aritmética (`"10" + 1`) esconde bugs: convierte con `tonumber` y comprueba `nil`.
-- En 5.3+ hay **enteros y floats separados** (`3/2` es float, `//` entera); en LuaJIT/5.1 todo es
-  double. El mismo código sobre ambos, haciendo aritmética de índices o de dinero, **se comporta
-  distinto**: fíjalo con tests.
-- **Cierres**: baratos y el idioma natural para callbacks; ojo con capturar `self` o tablas grandes en
-  cierres de larga vida (retienen memoria).
-- **GC**: incremental por defecto; **5.4 añade modo generacional** (`collectgarbage("generational")`),
-  que suele ganar con mucha basura joven. No toques sus parámetros sin medir pausas antes y después.
+- **Variables are global by default. It is Lua's biggest operational design flaw.** A typo
+  creates a silent global; in a long-lived host (an nginx worker, a game server) that is a
+  memory leak and state contamination between requests. **`local` always**, without exception.
+  Enable detection: `luacheck`/`selene` flag undeclared globals, and in hosts that allow it, load
+  a `strict` module that *errors* on reading/writing an undeclared global.
+- **The table is the only structure**: array, hash, object, module and namespace. There is nothing
+  else. 1-indexed. `#t` and `ipairs` **are only reliable with no holes**; with a `nil` in the middle
+  the result is undefined — for sparse collections, `pairs` and an explicit counter.
+- **Metatables and `__index`**: inheritance is a chain of `__index`; use it sparingly, explicitly and
+  flat (each level is an indirection on the hot path). Document every metatable that is not `__index`
+  — `__gc`, `__close` (5.4+) and `__newindex` are powerful and opaque.
+- **Errors are values, and `pcall` is the mechanism**: `error()` unwinds to the nearest
+  `pcall`. Convention: library functions return `nil, err` (checkable) and reserve
+  `error()` for programmer contract violations. `xpcall` with `debug.traceback` to
+  keep the trace — with `pcall` you lose it. **A `pcall` whose error is discarded without a log is a
+  veto.**
+- **`nil` vs `false`**: only `nil` and `false` are falsy; **`0` and `""` are truthy**. Distinguish
+  "absent" (`nil`) from "present and false" (`false`) in every API returning flags. Arithmetic
+  coercion (`"10" + 1`) hides bugs: convert with `tonumber` and check for `nil`.
+- In 5.3+ there are **separate integers and floats** (`3/2` is a float, `//` integer); in LuaJIT/5.1
+  everything is a double. The same code on both, doing index or money arithmetic, **behaves
+  differently**: pin it down with tests.
+- **Closures**: cheap and the natural idiom for callbacks; careful with capturing `self` or big
+  tables in long-lived closures (they retain memory).
+- **GC**: incremental by default; **5.4 adds a generational mode**
+  (`collectgarbage("generational")`), which usually wins with a lot of young garbage. Do not touch
+  its parameters without measuring pauses before and after.
 
-## 4. Criterio por host
+## 4. Criteria per host
 
 ### OpenResty / nginx (`lua-nginx-module`)
-- **Prohibición dura: ninguna llamada bloqueante en el ciclo de eventos.** Un worker de nginx sirve
-  miles de conexiones en un hilo; una llamada bloqueante las congela todas. Vetado en el código de
-  petición: `os.execute`, `io.*` sobre ficheros, `socket.*` de LuaSocket, cualquier librería con I/O
-  síncrono, `ngx.sleep` en bucle de espera activa, y librerías C que bloqueen. Usa **cosockets**
+- **Hard prohibition: no blocking call in the event loop.** An nginx worker serves
+  thousands of connections in one thread; one blocking call freezes them all. Vetoed in request
+  code: `os.execute`, `io.*` over files, LuaSocket's `socket.*`, any library with synchronous
+  I/O, `ngx.sleep` in a busy-wait loop, and C libraries that block. Use **cosockets**
   (`ngx.socket.tcp`), `ngx.timer.at`, `resty.http`, `lua-resty-redis`, `lua-resty-mysql`.
-- Cada petición corre en una **corrutina ligera** gestionada por el módulo: `ngx.thread.spawn` /
-  `ngx.thread.wait` para paralelizar subpeticiones; el objeto cosocket **no se comparte entre
-  peticiones ni entre corrutinas**.
-- **Fases del ciclo de vida**, cada una con lo que puede hacer: `init_by_lua` (arranque del master:
-  precarga de módulos y datos inmutables), `init_worker_by_lua` (timers y estado por worker),
-  `set_by_lua` (**bloquea, solo cómputo trivial**), `rewrite`/`access_by_lua` (auth, routing),
-  `content_by_lua`, `header_filter`/`body_filter_by_lua` (**sin I/O**), `log_by_lua` (**sin cosockets
-  bloqueantes**: usa buffer + timer). Elegir la fase equivocada es el bug más común.
-- **`ngx.shared.DICT` es el único estado compartido entre workers**: tamaño fijo declarado en
-  `nginx.conf`, valores solo escalares/strings, y **puede evictar por LRU cuando se llena** — comprueba
-  el segundo retorno de `:set()` (`err == "no memory"`) y trata el fallo. No es una base de datos ni
-  sustituye a Redis; es una caché de proceso con lock global por operación.
-- `lua_code_cache on` en producción **siempre**; `off` solo en desarrollo (recompila cada petición).
-- Un módulo `require`-ido se cachea por worker: **el estado a nivel de módulo persiste entre
-  peticiones**. Nada mutable por petición a nivel de módulo — es la fuente clásica de fuga de datos
-  entre usuarios.
-- Prefiere `*_by_lua_file` a `*_by_lua_block` en cuanto el código pase de unas líneas: el Lua incrustado
-  en `nginx.conf` no se lintea, no se testea y no se revisa bien.
+- Each request runs in a **lightweight coroutine** managed by the module: `ngx.thread.spawn` /
+  `ngx.thread.wait` to parallelise subrequests; the cosocket object **is not shared between
+  requests nor between coroutines**.
+- **Life cycle phases**, each with what it may do: `init_by_lua` (master startup:
+  preloading modules and immutable data), `init_worker_by_lua` (timers and per-worker state),
+  `set_by_lua` (**it blocks, trivial computation only**), `rewrite`/`access_by_lua` (auth, routing),
+  `content_by_lua`, `header_filter`/`body_filter_by_lua` (**no I/O**), `log_by_lua` (**no blocking
+  cosockets**: use a buffer + timer). Choosing the wrong phase is the most common bug.
+- **`ngx.shared.DICT` is the only state shared between workers**: a fixed size declared in
+  `nginx.conf`, values only scalars/strings, and it **may evict by LRU when it fills up** — check
+  the second return value of `:set()` (`err == "no memory"`) and handle the failure. It is not a
+  database and does not replace Redis; it is a process cache with a global lock per operation.
+- `lua_code_cache on` in production **always**; `off` only in development (it recompiles every
+  request).
+- A `require`d module is cached per worker: **module-level state persists between
+  requests**. Nothing mutable per request at module level — it is the classic source of data leaks
+  between users.
+- Prefer `*_by_lua_file` over `*_by_lua_block` as soon as the code goes beyond a few lines: Lua
+  embedded in `nginx.conf` is not linted, not tested and not reviewed well.
 
 ### Neovim
-- El intérprete es **LuaJIT**: escribes Lua 5.1 con extensiones. No asumas `goto`, `integer division`
-  ni APIs de 5.4.
-- `init.lua` como único punto de entrada; configuración partida en `lua/<usuario>/*.lua` cargada con
-  `require`. Nada de lógica en `init.lua` más allá del bootstrap del gestor de plugins.
-- **API**: `vim.api.nvim_*` (API estable y tipada) por defecto; `vim.fn.*` solo para funciones de
-  Vimscript sin equivalente; `vim.opt`/`vim.o` para opciones. **`vim.loop` está deprecado: usa
-  `vim.uv`** (mismo binding de libuv). Cachea el handle (`local uv = vim.uv`) en rutas calientes.
-- Estructura de plugin: `lua/<plugin>/init.lua` con `M.setup(opts)` idempotente, `plugin/<plugin>.lua`
-  solo para lo que debe correr al cargar, `doc/` con `:help`. **Nada de trabajo pesado en el nivel
-  superior del módulo**: eso se ejecuta al `require` y se paga en el tiempo de arranque.
-- Gestor: **lazy.nvim**, con `lazy-lock.json` **committeado** (es el lockfile: sin él tu config no es
-  reproducible). Carga perezosa por `event`/`ft`/`cmd`/`keys`, no `lazy = false` por comodidad.
-- Autocomandos siempre en un `augroup` propio con `clear = true` — si no, se duplican al recargar.
-- No bloquees la UI: I/O con `vim.uv` async o `vim.system()`; `vim.schedule` para volver al hilo
-  principal desde un callback. `vim.fn.system()` síncrono en un autocomando es un editor congelado.
+- The interpreter is **LuaJIT**: you write Lua 5.1 with extensions. Do not assume `goto`, integer
+  division nor 5.4 APIs.
+- `init.lua` as the single entry point; configuration split into `lua/<user>/*.lua` loaded with
+  `require`. No logic in `init.lua` beyond bootstrapping the plugin manager.
+- **API**: `vim.api.nvim_*` (stable and typed API) by default; `vim.fn.*` only for Vimscript
+  functions with no equivalent; `vim.opt`/`vim.o` for options. **`vim.loop` is deprecated: use
+  `vim.uv`** (the same libuv binding). Cache the handle (`local uv = vim.uv`) on hot paths.
+- Plugin structure: `lua/<plugin>/init.lua` with an idempotent `M.setup(opts)`,
+  `plugin/<plugin>.lua` only for what must run on load, `doc/` with `:help`. **No heavy work at the
+  top level of the module**: that runs on `require` and is paid for in startup time.
+- Manager: **lazy.nvim**, with `lazy-lock.json` **committed** (it is the lockfile: without it your
+  config is not reproducible). Lazy loading by `event`/`ft`/`cmd`/`keys`, not `lazy = false` out of
+  convenience.
+- Autocommands always in their own `augroup` with `clear = true` — otherwise they duplicate on
+  reload.
+- Do not block the UI: I/O with `vim.uv` async or `vim.system()`; `vim.schedule` to get back to the
+  main thread from a callback. A synchronous `vim.fn.system()` in an autocommand is a frozen editor.
 
 ### Redis / Valkey (`EVAL` / `EVALSHA` / Functions)
-- El intérprete es **Lua 5.1** con sandbox: `os`, `io` y acceso al sistema no existen.
-- **El script es atómico y bloquea el servidor entero mientras corre.** Corolario operativo: los
-  scripts son **cortos y acotados**; nada de bucles sobre colecciones de tamaño no acotado, ni `KEYS *`,
-  ni O(n) sobre estructuras grandes. Un script lento es una caída de latencia global.
-- **Determinismo**: histórico y todavía criterio correcto. Hoy la replicación es **por efectos** (los
-  comandos de escritura se replican, no el script) — por defecto desde Redis 5.0 y **la replicación
-  verbatim ya no se soporta desde Redis 7.0**, lo que relaja la restricción del motor. **La regla de
-  ingeniería no se relaja**: no generes aleatoriedad ni leas el tiempo dentro del script. Pasa el
-  timestamp y cualquier valor aleatorio **como argumento (`ARGV`)** desde el cliente: es
-  reproducible, testeable y auditable. Si necesitas la hora del servidor, `redis.call('TIME')`, nunca
-  una fuente Lua.
-- **Todas las claves accedidas van en `KEYS`**, nunca construidas dentro del script: es el contrato
-  que permite funcionar en cluster (todas las claves deben caer en el mismo slot; usa *hash tags*).
-- `local` en cada variable: **contaminar el estado global de Lua rompe la consistencia** del servidor.
-- Despliegue: `SCRIPT LOAD` + `EVALSHA` con *fallback* a `EVAL` ante `NOSCRIPT` (el caché de scripts se
-  pierde al reiniciar y no se replica de forma fiable). Para lógica estable y versionada, **Redis
-  Functions** (`FUNCTION LOAD`) es preferible a un `EVAL` suelto: se persiste y se replica.
-- Los scripts son **código versionado en el repo**, no strings pegados en el código de aplicación.
+- The interpreter is **Lua 5.1** with a sandbox: `os`, `io` and system access do not exist.
+- **The script is atomic and blocks the whole server while it runs.** Operational corollary:
+  scripts are **short and bounded**; no loops over collections of unbounded size, no `KEYS *`,
+  no O(n) over large structures. A slow script is a global latency outage.
+- **Determinism**: historical and still correct criteria. Today replication is **by effects** (write
+  commands are replicated, not the script) — the default since Redis 5.0 and **verbatim replication
+  is no longer supported since Redis 7.0**, which relaxes the engine's restriction. **The
+  engineering rule does not relax**: do not generate randomness nor read the time inside the script.
+  Pass the timestamp and any random value **as an argument (`ARGV`)** from the client: it is
+  reproducible, testable and auditable. If you need the server's time, `redis.call('TIME')`, never
+  a Lua source.
+- **Every key accessed goes in `KEYS`**, never built inside the script: it is the contract
+  that makes it work in a cluster (all keys must fall in the same slot; use *hash tags*).
+- `local` on every variable: **polluting Lua's global state breaks the server's consistency**.
+- Deployment: `SCRIPT LOAD` + `EVALSHA` with a *fallback* to `EVAL` on `NOSCRIPT` (the script cache
+  is lost on restart and is not replicated reliably). For stable and versioned logic, **Redis
+  Functions** (`FUNCTION LOAD`) is preferable to a loose `EVAL`: it is persisted and replicated.
+- Scripts are **code versioned in the repo**, not strings pasted into the application code.
 
-### Juegos y modding
-- Lua embebido en un motor con el fin explícito de que **terceros escriban código**: eso es §5 y no es
-  negociable. Sandbox obligatorio, superficie de API mínima y auditada, y presupuestos de CPU/memoria.
-- El estado del mod vive en el host, no en globales de Lua; expón funciones, no tablas mutables del
-  motor. Cuidado con `__gc` y con retener referencias a objetos nativos: es la vía habitual de
-  *use-after-free* a través de la frontera C.
+### Games and modding
+- Lua embedded in an engine with the explicit purpose of letting **third parties write code**: that
+  is §5 and it is not negotiable. Mandatory sandbox, a minimal and audited API surface, and
+  CPU/memory budgets.
+- The mod's state lives in the host, not in Lua globals; expose functions, not mutable tables of the
+  engine. Careful with `__gc` and with retaining references to native objects: it is the usual route
+  to *use-after-free* across the C boundary.
 
-### Otros hosts (acotado)
-**Wireshark** (dissectors en Lua: código de análisis que corre sobre tráfico no confiable — trátalo
-como parser hostil), **HAProxy** (`lua-load`, mismo veto de bloqueo que OpenResty sobre su bucle de
-eventos), **Kong** (plugins sobre OpenResty: aplica la sección de OpenResty tal cual, más el ciclo de
-vida de plugin de Kong). Para cada uno, la regla es idéntica: **lee qué versión de Lua embebe, qué
-bibliotecas expone y qué operaciones bloquean su bucle** antes de escribir una línea.
+### Other hosts (bounded)
+**Wireshark** (dissectors in Lua: analysis code that runs over untrusted traffic — treat it
+as a hostile parser), **HAProxy** (`lua-load`, the same blocking veto as OpenResty over its event
+loop), **Kong** (plugins on OpenResty: apply the OpenResty section as is, plus Kong's plugin life
+cycle). For each one, the rule is identical: **read which Lua version it embeds, which
+libraries it exposes and which operations block its loop** before writing a line.
 
-## 5. Seguridad: ejecutar Lua de usuario es ejecutar código
+## 5. Security: running user Lua is running code
 
-**Punto de partida, sin matices: si cargas Lua que no has escrito tú, estás ejecutando código
-arbitrario dentro de tu proceso.** El sandbox reduce el daño; no lo elimina.
+**Starting point, with no qualifications: if you load Lua you did not write yourself, you are
+executing arbitrary code inside your process.** The sandbox reduces the damage; it does not
+eliminate it.
 
-- **Superficie de carga**: `load` / `loadstring` / `loadfile` / `dofile` / `require` sobre contenido
-  no confiable son el sink. Usa `load(chunk, name, "t", env)` — el modo **`"t"` (solo texto) es
-  obligatorio**: aceptar bytecode (`"b"`) es fatal, porque **el verificador de bytecode de Lua no es
-  robusto** y un chunk precompilado malicioso corrompe la memoria del intérprete y escapa del sandbox
-  sin necesidad de ninguna función peligrosa.
-- **Entorno**: en 5.2+ pasa un `_ENV` explícito como cuarto argumento de `load`; en 5.1/LuaJIT,
-  `setfenv` sobre la función cargada. El entorno es una **allowlist** construida desde cero, nunca
-  una copia de `_G` con cosas borradas.
-- **Fuera del entorno, siempre**: `os` (`execute`, `getenv`, `remove`, `rename`, `exit`, `tmpname`),
-  `io` completo, `package` y `require` (permite cargar cualquier `.so`), `debug` **entero** (`debug`
-  rompe cualquier sandbox: `getupvalue`/`setupvalue`/`getregistry` dan acceso al estado del host),
-  `load`/`loadstring`/`loadfile`/`dofile`, `collectgarbage`, `rawset`/`rawget` sobre tablas del host,
-  y `string.dump`. De `os`, como mucho `os.time`/`os.clock`/`os.date` si el determinismo no importa.
-- **Cuidado con las referencias indirectas**: `("").format` alcanza la metatabla de strings, que es
-  **global y compartida**; si el sandbox puede modificarla, contamina al host. Protege la metatabla de
-  strings (`debug.setmetatable` en el host, `__metatable` para bloquear `getmetatable`) y congela las
-  tablas del entorno con `__newindex = function() error(...) end`.
-- **Un sandbox en Lua puro nunca es suficiente**, porque no acota recursos:
-  - **CPU**: `while true do end` cuelga el proceso. Mitigación: hook de conteo de instrucciones
-    (`debug.sethook(co, fn, "", N)`) que aborta al superar el presupuesto — instalado **desde el
-    host**, sobre una corrutina, y sabiendo que el propio `debug` no debe quedar expuesto al invitado.
-    Es mitigación parcial: hay operaciones (patrones de `string`, concatenaciones enormes) que gastan
-    mucho tiempo en pocas instrucciones.
-  - **Memoria**: una tabla que crece sin límite agota la RAM del host. Mitigación real: **asignador
-    con límite** (`lua_newstate` con tu propio allocator que falle al superar el cupo) — se hace en C,
-    no en Lua.
-  - **Patrones**: `string.find`/`gsub` con patrones del usuario sobre entradas grandes son un DoS
-    (retroceso). No aceptes patrones de usuario; si debes, acota longitud de patrón y de sujeto.
-- **Aislamiento real**: para código verdaderamente no confiable, el control que corta es **el
-  proceso**: intérprete en proceso separado, sin privilegios, con `rlimit` de CPU/memoria/ficheros,
-  seccomp y sin red, y comunicación por IPC acotado. El sandbox in-process es defensa en profundidad,
-  no la frontera.
-- **Inyección clásica**: nunca construyas código Lua concatenando input (`load("return "..x)`) — es
-  `eval` con otro nombre. Nunca construyas SQL, comandos ni rutas por concatenación desde Lua.
-- **Secretos**: fuera del código y fuera de `nginx.conf`; en OpenResty entran por entorno
-  (`env` + `os.getenv` en `init_by_lua`) o por un fetch en arranque, y **nunca a `ngx.shared.DICT`
-  ni a logs**. Cuidado con volcar tablas de contexto en logs de error: llevan tokens.
-- **SCA**: LuaRocks no tiene un ecosistema de auditoría comparable a npm/PyPI. Consecuencia práctica:
-  minimiza dependencias, fija versiones exactas en el `.rockspec`, y **revisa el código** de los rocks
-  con extensiones C que entren en producción.
+- **Loading surface**: `load` / `loadstring` / `loadfile` / `dofile` / `require` over untrusted
+  content are the sink. Use `load(chunk, name, "t", env)` — the **`"t"` mode (text only) is
+  mandatory**: accepting bytecode (`"b"`) is fatal, because **Lua's bytecode verifier is not
+  robust** and a malicious precompiled chunk corrupts the interpreter's memory and escapes the
+  sandbox without needing any dangerous function.
+- **Environment**: in 5.2+ pass an explicit `_ENV` as the fourth argument to `load`; in 5.1/LuaJIT,
+  `setfenv` on the loaded function. The environment is an **allowlist** built from scratch, never
+  a copy of `_G` with things deleted.
+- **Out of the environment, always**: `os` (`execute`, `getenv`, `remove`, `rename`, `exit`,
+  `tmpname`), the whole of `io`, `package` and `require` (it allows loading any `.so`), the
+  **entire** `debug` (`debug` breaks any sandbox: `getupvalue`/`setupvalue`/`getregistry` give
+  access to the host's state), `load`/`loadstring`/`loadfile`/`dofile`, `collectgarbage`,
+  `rawset`/`rawget` over host tables, and `string.dump`. From `os`, at most
+  `os.time`/`os.clock`/`os.date` if determinism does not matter.
+- **Careful with indirect references**: `("").format` reaches the string metatable, which is
+  **global and shared**; if the sandbox can modify it, it contaminates the host. Protect the string
+  metatable (`debug.setmetatable` in the host, `__metatable` to block `getmetatable`) and freeze the
+  environment's tables with `__newindex = function() error(...) end`.
+- **A sandbox in pure Lua is never enough**, because it does not bound resources:
+  - **CPU**: `while true do end` hangs the process. Mitigation: an instruction-counting hook
+    (`debug.sethook(co, fn, "", N)`) that aborts on exceeding the budget — installed **from the
+    host**, over a coroutine, and knowing that `debug` itself must not be exposed to the guest.
+    It is a partial mitigation: there are operations (`string` patterns, huge concatenations) that
+    burn a lot of time in few instructions.
+  - **Memory**: a table that grows without limit exhausts the host's RAM. Real mitigation: **an
+    allocator with a limit** (`lua_newstate` with your own allocator that fails on exceeding the
+    quota) — done in C, not in Lua.
+  - **Patterns**: `string.find`/`gsub` with user patterns over large inputs are a DoS
+    (backtracking). Do not accept user patterns; if you must, bound the length of the pattern and
+    the subject.
+- **Real isolation**: for genuinely untrusted code, the control that cuts is **the
+  process**: an interpreter in a separate process, unprivileged, with `rlimit` on CPU/memory/files,
+  seccomp and no network, and communication over bounded IPC. The in-process sandbox is defence in
+  depth, not the boundary.
+- **Classic injection**: never build Lua code by concatenating input (`load("return "..x)`) — it is
+  `eval` by another name. Never build SQL, commands or paths by concatenation from Lua.
+- **Secrets**: outside the code and outside `nginx.conf`; in OpenResty they come in via the
+  environment (`env` + `os.getenv` in `init_by_lua`) or via a fetch at startup, and **never into
+  `ngx.shared.DICT` nor into logs**. Careful with dumping context tables into error logs: they carry
+  tokens.
+- **SCA**: LuaRocks has no auditing ecosystem comparable to npm/PyPI. Practical consequence:
+  minimise dependencies, pin exact versions in the `.rockspec`, and **review the code** of rocks
+  with C extensions that go into production.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- Perfila antes de optimizar; en LuaJIT, comprueba primero que tu camino caliente **compila** (`-jv`,
-  `-jdump`): un bail-out a intérprete por una construcción NYI cuesta más que cualquier micro-ajuste.
-- Coste real y medible: concatenación en bucle es O(n²) (acumula en tabla y `table.concat`); una
-  global es un lookup en hash (cachea `local ngx = ngx`, `local fmt = string.format` en el módulo).
-- **Timeouts explícitos en todo I/O**: `settimeout`/`set_timeouts` en cada cosocket; el default de
-  muchas librerías es demasiado alto o infinito. Reintentos con backoff solo en operaciones idempotentes.
-- Observabilidad: logs estructurados con id de correlación (en OpenResty, `ngx.var.request_id`);
-  métricas por worker vía `ngx.shared.DICT` en un endpoint interno. Un error que solo aparece en
-  `error.log` sin nivel ni contexto es un incidente invisible.
-- Vigila `collectgarbage("count")` como métrica: en hosts de larga vida, el crecimiento monótono es el
-  síntoma de globales acumuladas o cierres retenidos. En OpenResty, el cambio de Lua exige `reload`:
-  diseña el arranque barato e idempotente.
+- Profile before optimising; in LuaJIT, first check that your hot path **compiles** (`-jv`,
+  `-jdump`): a bail-out to the interpreter due to an NYI construct costs more than any
+  micro-tuning.
+- Real and measurable cost: concatenation in a loop is O(n²) (accumulate in a table and
+  `table.concat`); a global is a hash lookup (cache `local ngx = ngx`, `local fmt = string.format`
+  in the module).
+- **Explicit timeouts on all I/O**: `settimeout`/`set_timeouts` on every cosocket; the default in
+  many libraries is too high or infinite. Retries with backoff only on idempotent operations.
+- Observability: structured logs with a correlation id (in OpenResty, `ngx.var.request_id`);
+  per-worker metrics via `ngx.shared.DICT` on an internal endpoint. An error that only appears in
+  `error.log` with no level and no context is an invisible incident.
+- Watch `collectgarbage("count")` as a metric: in long-lived hosts, monotonic growth is the
+  symptom of accumulated globals or retained closures. In OpenResty, changing the Lua requires a
+  `reload`: design startup to be cheap and idempotent.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: LuaJIT se actualiza siguiendo la rama `v2.1` con snapshots fechados y revisión de los
-  cambios, no una vez al año. Lua 5.4/5.5 se actualizan en patch sin drama; el salto de rama (5.1→5.4,
-  5.4→5.5) es un **proyecto**, no un bump de versión.
-- Toda dependencia sin release en >18 meses se revisa (aplica hoy a `luacheck`); toda extensión C se
-  audita antes de entrar.
-- Migrar de LuaJIT a Lua 5.4 solo con motivo (necesitas 5.4 de verdad) y midiendo: se pierde el JIT y
-  la FFI, y eso puede ser un orden de magnitud en el camino caliente.
+- **Cadence**: LuaJIT is updated by following the `v2.1` branch with dated snapshots and a review of
+  the changes, not once a year. Lua 5.4/5.5 are updated by patch without drama; the branch jump
+  (5.1→5.4, 5.4→5.5) is a **project**, not a version bump.
+- Every dependency with no release in >18 months is reviewed (this applies today to `luacheck`);
+  every C extension is audited before it goes in.
+- Migrate from LuaJIT to Lua 5.4 only with a reason (you genuinely need 5.4) and with measurement:
+  you lose the JIT and the FFI, and that can be an order of magnitude on the hot path.
 
-**Lista de prohibiciones (veto):**
-- ❌ Variables globales implícitas. `local` o justificación escrita en el código.
-- ❌ **PROHIBIDO** cualquier llamada bloqueante en el ciclo de eventos de OpenResty/HAProxy
-  (`os.execute`, `io.*`, LuaSocket, librerías C síncronas). Es una caída, no un *code smell*.
-- ❌ **PROHIBIDO** `load`/`loadstring` con modo que acepte bytecode (`"b"`/`"bt"`) sobre entrada no
-  confiable. Solo `"t"`.
-- ❌ **PROHIBIDO** exponer `debug`, `package`, `require`, `os` o `io` a código no confiable; y
-  **PROHIBIDO** tratar un sandbox en Lua puro como frontera de seguridad sin límites de CPU/memoria
-  impuestos desde el host.
-- ❌ Construir código Lua, SQL o comandos por concatenación de input.
-- ❌ Aleatoriedad o lectura del reloj dentro de un script de Redis/Valkey; claves no declaradas en
-  `KEYS`; scripts con bucles no acotados.
-- ❌ `pcall` cuyo error se descarta sin log ni propagación.
-- ❌ Estado mutable por petición a nivel de módulo en OpenResty; globales que persisten entre peticiones.
-- ❌ Depender de `#t`/`ipairs` sobre tablas con agujeros.
-- ❌ Publicar/desplegar sin `lazy-lock.json` (Neovim) o sin versiones fijadas en el `.rockspec`.
-- ❌ Lua incrustado en `nginx.conf` más allá de unas líneas (usa `*_by_lua_file`).
-- ❌ `lua_code_cache off` en producción.
-- ❌ Tarballs de LuaJIT de terceros o el tarball automático de GitHub; el tag `v2.1.ROLLING` como pin.
-- ❌ **Elegir Lua para código nuevo que no está embebido en un host que lo exija.** Lua brilla como
-  lenguaje de extensión dentro de un proceso ajeno; como lenguaje de aplicación standalone, su
-  ecosistema (paquetes, auditoría, tipos, librería estándar mínima) es un coste que casi nunca compensa
-  frente a Python o Go.
+**List of prohibitions (veto):**
+- ❌ Implicit global variables. `local` or a written justification in the code.
+- ❌ **FORBIDDEN** any blocking call in the OpenResty/HAProxy event loop
+  (`os.execute`, `io.*`, LuaSocket, synchronous C libraries). It is an outage, not a *code smell*.
+- ❌ **FORBIDDEN** `load`/`loadstring` with a mode that accepts bytecode (`"b"`/`"bt"`) over
+  untrusted input. Only `"t"`.
+- ❌ **FORBIDDEN** to expose `debug`, `package`, `require`, `os` or `io` to untrusted code; and
+  **FORBIDDEN** to treat a pure-Lua sandbox as a security boundary without CPU/memory limits
+  imposed from the host.
+- ❌ Building Lua code, SQL or commands by concatenating input.
+- ❌ Randomness or reading the clock inside a Redis/Valkey script; keys not declared in
+  `KEYS`; scripts with unbounded loops.
+- ❌ A `pcall` whose error is discarded with no log and no propagation.
+- ❌ Per-request mutable state at module level in OpenResty; globals that persist between requests.
+- ❌ Relying on `#t`/`ipairs` over tables with holes.
+- ❌ Publishing/deploying without `lazy-lock.json` (Neovim) or without pinned versions in the
+  `.rockspec`.
+- ❌ Lua embedded in `nginx.conf` beyond a few lines (use `*_by_lua_file`).
+- ❌ `lua_code_cache off` in production.
+- ❌ Third-party LuaJIT tarballs or GitHub's automatic tarball; the `v2.1.ROLLING` tag as a pin.
+- ❌ **Choosing Lua for new code that is not embedded in a host that requires it.** Lua shines as an
+  extension language inside somebody else's process; as a standalone application language, its
+  ecosystem (packages, auditing, types, minimal standard library) is a cost that almost never pays
+  off against Python or Go.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar versiones o APIs, **verifica online** (WebSearch/WebFetch, y los feeds Atom
-`https://github.com/OWNER/REPO/releases.atom` — `api.github.com` devuelve 403 sin autenticar):
-1. **LuaJIT**: actividad de la rama `v2.1` (commits recientes) y estado del proyecto en `luajit.org/status.html`.
-   Es el dato que decide si un proyecto nuevo puede apoyarse en él. No hay tags de release: no busques una.
-2. **Lua**: `lua.org/news.html` y `lua.org/versions.html` — última de 5.4, estado y adopción de **5.5.0**
-   (publicada el 22-dic-2025), y si ha salido ya 5.5.1 o 5.4.9.
-3. Versiones y **licencias en crudo** de StyLua y selene (**ambas MPL-2.0**, no MIT), LuaLS, Teal,
-   busted y LuaRocks; y si `luacheck` ha vuelto a publicar release.
-4. Versión de **OpenResty** y de `lua-nginx-module` (a ago-2026 la rama 0.10.32 estaba en *release
-   candidate*: no fijes un `rc` en producción sin comprobar si ya hay final).
-5. **Neovim**: versión estable (0.12.x a ago-2026) y la lista de deprecaciones (`:help deprecated`)
-   antes de escribir un plugin — `vim.loop`→`vim.uv` no es la única.
-6. **Redis/Valkey**: versión de Lua embebida en la versión concreta que despliegas y estado de
-   Functions vs `EVAL`; las reglas de replicación cambiaron en 5.0 y 7.0.
-7. CVEs del intérprete y de las extensiones C que uses (osv.dev / GitHub Advisories).
+Before committing to versions or APIs, **verify online** (WebSearch/WebFetch, and the Atom feeds
+`https://github.com/OWNER/REPO/releases.atom` — `api.github.com` returns 403 unauthenticated):
+1. **LuaJIT**: activity on the `v2.1` branch (recent commits) and the project's status at
+   `luajit.org/status.html`.
+   It is the datum that decides whether a new project can rest on it. There are no release tags: do
+   not look for one.
+2. **Lua**: `lua.org/news.html` and `lua.org/versions.html` — the latest of 5.4, the status and
+   adoption of **5.5.0** (published on 22 Dec 2025), and whether 5.5.1 or 5.4.9 have come out.
+3. Versions and **raw licences** of StyLua and selene (**both MPL-2.0**, not MIT), LuaLS, Teal,
+   busted and LuaRocks; and whether `luacheck` has published a release again.
+4. The version of **OpenResty** and of `lua-nginx-module` (as of Aug 2026 the 0.10.32 branch was in
+   *release candidate*: do not pin an `rc` in production without checking whether there is already a
+   final).
+5. **Neovim**: stable version (0.12.x as of Aug 2026) and the deprecation list (`:help deprecated`)
+   before writing a plugin — `vim.loop`→`vim.uv` is not the only one.
+6. **Redis/Valkey**: the Lua version embedded in the specific version you deploy and the state of
+   Functions vs `EVAL`; the replication rules changed in 5.0 and 7.0.
+7. CVEs of the interpreter and of the C extensions you use (osv.dev / GitHub Advisories).
 
-**Discrepancia declarada**: el feed Atom de releases de LuaRocks presenta un `updated` de feed
-(2025-12-28) anterior al de su entrada más reciente (LuaRocks 3.13.0, `updated` 2026-01-28). La
-versión 3.13.0 se da por buena; **su fecha de publicación no queda verificada** — confírmala en
-`luarocks.org` antes de citarla.
+**Declared discrepancy**: LuaRocks' releases Atom feed shows a feed `updated`
+(2025-12-28) earlier than that of its most recent entry (LuaRocks 3.13.0, `updated` 2026-01-28).
+Version 3.13.0 is taken as good; **its publication date is not verified** — confirm it at
+`luarocks.org` before citing it.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,419 +3,422 @@ name: nosql-standards
 description: Use when a non-relational store is proposed, modelled or operated — justifying it against PostgreSQL JSONB and GIN first, MongoDB (mongod, mongosh, replica set, sharded cluster, SSPL, Atlas-only rapid releases), DynamoDB single-table design (partition key and sort key, GSI, LSI, hot partition, on-demand versus provisioned capacity, TransactWriteItems, DynamoDB Streams, adaptive capacity), Cassandra or ScyllaDB (CQL, cqlsh, keyspace RF, NetworkTopologyStrategy, LOCAL_QUORUM, tombstones, compaction strategy, nodetool repair), Couchbase, FerretDB or the Linux Foundation DocumentDB Postgres extension, modelling by access pattern instead of by entity, deliberate denormalization and duplicated writes, eventual versus strong reads, CAP and PACELC trade-offs, LSM write amplification and compaction cost, rebalancing and major-version upgrades, source-available licence review (SSPL, BUSL, free-tier node or vCPU caps) before a commercial or managed deployment, or migrating back to a relational store.
 ---
 
-# Estándares de almacenes NoSQL
+# NoSQL data store standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **decidir, modelar y operar** un almacén no relacional: documental (MongoDB y
-compatibles, Couchbase), clave-valor y de columna ancha (DynamoDB, Cassandra, ScyllaDB).
-Cubre la justificación previa frente a PostgreSQL, el modelado por patrón de acceso, el
-diseño de clave, la consistencia como decisión de producto, la operación (particiones,
-compactación, rebalanceo, respaldo, upgrades), el coste y **la revisión de licencia** —que
-en este dominio es un criterio de arquitectura, no un trámite legal— y la salida de vuelta
-a relacional cuando la decisión fue errónea.
+Applies to **deciding, modelling and operating** a non-relational store: document (MongoDB and
+compatibles, Couchbase), key-value and wide-column (DynamoDB, Cassandra, ScyllaDB).
+It covers the prior justification against PostgreSQL, modelling by access pattern, key
+design, consistency as a product decision, operation (partitions, compaction, rebalancing,
+backup, upgrades), cost and **licence review** — which in this domain is an architecture
+criterion, not a legal formality — and the exit back to relational when the decision was
+wrong.
 
 Triggers: "MongoDB", "mongosh", "replica set", "sharding", "DynamoDB", "single-table
 design", "partition key", "GSI", "hot partition", "Cassandra", "ScyllaDB", "CQL",
 "keyspace", "quorum", "tombstone", "compaction", "Couchbase", "FerretDB", "DocumentDB",
-"consistencia eventual", "desnormalizar", "esquema flexible", "NoSQL".
+"eventual consistency", "denormalise", "flexible schema", "NoSQL".
 
-**No aplica**: ver `data-platform-standards` (**skill madre**: PostgreSQL como default —
-modelado, JSONB, índices, particionado, réplicas, PITR—, Valkey/Redis, Kafka, backups,
-clasificación del dato; y el principio "un almacén por necesidad" que esta skill hereda),
-`graph-db-standards` (bases de datos de grafo: **el grafo es un modelo de datos distinto,
-no una familia más de NoSQL** aunque el marketing las agrupe — recorridos de profundidad
-variable, Cypher/GQL, supernodos; aquí no se decide nada de grafo),
-`microservices-architecture-standards` (propiedad del dato por servicio, outbox, sagas y
-consistencia eventual **entre servicios**; aquí la del motor),
-`privacy-engineering-standards` (qué dato personal puede existir, DPIA, borrado real y
-crypto-shredding extremo a extremo; aquí solo su ejecución en un motor sin JOIN ni FK),
-`object-storage-standards` (S3 y compatibles como almacén de blobs: un documento grande
-casi nunca va en la base de datos), `backup-recovery-standards` (mecánica y repositorio de
-la copia), `bcdr-standards` (RTO/RPO derivados del negocio), `observability-standards`,
-`sre-practice-standards`, `kubernetes-standards` (operadores y StatefulSets),
-`linux-storage-standards` y `zfs-standards` (el disco por debajo), `iac-standards`,
+**Not applicable**: see `data-platform-standards` (**parent skill**: PostgreSQL as the default —
+modelling, JSONB, indexes, partitioning, replicas, PITR —, Valkey/Redis, Kafka, backups,
+data classification; and the "one store per need" principle this skill inherits),
+`graph-db-standards` (graph databases: **the graph is a different data model, not one more
+NoSQL family** even if marketing groups them together — variable-depth traversals,
+Cypher/GQL, supernodes; nothing about graphs is decided here),
+`microservices-architecture-standards` (data ownership per service, outbox, sagas and
+eventual consistency **between services**; here the engine's),
+`privacy-engineering-standards` (what personal data may exist, DPIA, real erasure and
+end-to-end crypto-shredding; here only its execution on an engine with no JOIN and no FK),
+`object-storage-standards` (S3 and compatibles as a blob store: a large document almost
+never goes in the database), `backup-recovery-standards` (the mechanics and repository of
+the copy), `bcdr-standards` (RTO/RPO derived from the business), `observability-standards`,
+`sre-practice-standards`, `kubernetes-standards` (operators and StatefulSets),
+`linux-storage-standards` and `zfs-standards` (the disk underneath), `iac-standards`,
 `cicd-standards`, `secrets-management-standards`,
 `identity-access-management-standards`, `cryptography-pki-standards`,
 `grc-compliance-standards`, `vulnerability-management-standards`,
-`aws-standards`/`azure-standards`/`gcp-standards` (DynamoDB, Cosmos DB, Firestore y
-DocumentDB gestionado como servicios del proveedor: cuotas, IAM y factura son suyas; **el
-criterio de modelado y de consistencia es de aquí**), las skills de lenguaje (drivers,
-ODM/ORM y su ciclo de vida), `data-engineering-standards` (pipelines que cargan o extraen
-de estos almacenes), `rag-standards` (recuperación para IA), `vector-db-standards`
-(**búsqueda vectorial y operación del índice ANN: suyas**, aunque estos motores hayan
-añadido tipos vector), `data-warehouse-modeling-standards` (modelado analítico).
-`search-engines-standards` (**Elasticsearch/OpenSearch y la
-búsqueda de texto son suyas — frontera muy próxima**: si el requisito es *relevancia*
-—ranking, analizadores, facetas, sugerencias— no es un almacén documental, es un buscador;
-aquí solo el almacén de verdad que lo alimenta y del que se reindexa),
-`vector-db-standards` (**búsqueda vectorial y ANN: suya**, aunque estos motores hayan
-añadido tipos vector), `timeseries-db-standards` (**series temporales: suyas**),
-`caching-cdn-standards` (**Redis/Valkey como caché: suya** — una caché no es un almacén y
-no se decide aquí), `data-warehouse-modeling-standards` y `lakehouse-standards` (analítica
-y modelado dimensional), `streaming-cdc-standards` (CDC desde estos motores),
+`aws-standards`/`azure-standards`/`gcp-standards` (DynamoDB, Cosmos DB, Firestore and
+managed DocumentDB as provider services: quotas, IAM and the bill are theirs; **the
+modelling and consistency criteria are ours**), the language skills (drivers,
+ODM/ORM and their lifecycle), `data-engineering-standards` (pipelines loading from or
+extracting to these stores), `rag-standards` (retrieval for AI), `vector-db-standards`
+(**vector search and ANN index operation: theirs**, even if these engines have
+added vector types), `data-warehouse-modeling-standards` (analytical modelling).
+`search-engines-standards` (**Elasticsearch/OpenSearch and text
+search are theirs — a very close boundary**: if the requirement is *relevance*
+— ranking, analysers, facets, suggestions — it is not a document store, it is a search engine;
+here only the real store that feeds it and that it is reindexed from),
+`vector-db-standards` (**vector search and ANN: theirs**, even if these engines have
+added vector types), `timeseries-db-standards` (**time series: theirs**),
+`caching-cdn-standards` (**Redis/Valkey as a cache: theirs** — a cache is not a store and
+is not decided here), `data-warehouse-modeling-standards` and `lakehouse-standards` (analytics
+and dimensional modelling), `streaming-cdc-standards` (CDC from these engines),
 `message-brokers-standards`, `data-governance-quality-standards`, `oracle-dba-standards`,
 `sqlserver-dba-standards`, `mysql-mariadb-dba-standards`.
 
-### Principio rector: la pregunta previa es **¿por qué no PostgreSQL?**
+### Governing principle: the prior question is **why not PostgreSQL?**
 
-Un almacén NoSQL entra en la arquitectura **solo** cuando una necesidad **medida** lo exige
-y el ADR documenta cuál es. La lista de necesidades que lo justifican es corta:
+A NoSQL store enters the architecture **only** when a **measured** need demands it
+and the ADR documents which one. The list of needs that justify it is short:
 
-1. **Escala de escritura horizontal real** que un PostgreSQL bien dimensionado (con
-   particionado y réplicas) no absorbe, demostrada con cifras y proyección, no con miedo.
-2. **Patrón de acceso conocido, fijo y de alta cardinalidad**, con presupuesto de latencia
-   p99 estricto a escala (milisegundos de un solo dígito bajo carga sostenida).
-3. **Distribución geográfica multi-región activo-activo** con escritura local y resolución
-   de conflictos asumida.
-4. **Volumen de serie o de log** que un motor LSM absorbe barato y el relacional no.
+1. **Real horizontal write scale** that a properly sized PostgreSQL (with
+   partitioning and replicas) does not absorb, demonstrated with figures and a projection, not with
+   fear.
+2. **A known, fixed, high-cardinality access pattern**, with a strict p99 latency
+   budget at scale (single-digit milliseconds under sustained load).
+3. **Multi-region active-active geographic distribution** with local writes and accepted
+   conflict resolution.
+4. **Series or log volume** that an LSM engine absorbs cheaply and the relational one does not.
 
-Lo que **no** justifica un NoSQL: la *forma* del dato. "Es jerárquico", "es anidado", "los
-campos varían por cliente" y "el esquema evoluciona rápido" los resuelve PostgreSQL con
-`jsonb` + índices **GIN** (`jsonb_path_ops`), columnas generadas para lo que se consulta a
-menudo, `CHECK` con `jsonb_matches_schema`/validación en el borde, particionado declarativo
-y réplicas de lectura. Y las resuelve **conservando** transacciones multi-documento,
-integridad referencial, JOIN ad-hoc y un ecosistema de operación maduro.
+What does **not** justify a NoSQL: the *shape* of the data. "It is hierarchical", "it is nested", "the
+fields vary per customer" and "the schema evolves fast" are all solved by PostgreSQL with
+`jsonb` + **GIN** indexes (`jsonb_path_ops`), generated columns for what is queried
+often, `CHECK` with `jsonb_matches_schema`/validation at the edge, declarative partitioning
+and read replicas. And it solves them **while keeping** multi-document transactions,
+referential integrity, ad-hoc JOINs and a mature operational ecosystem.
 
-Señal de la propia industria: **DocumentDB** —el motor documental compatible con MongoDB
-donado a la Linux Foundation (MIT, agosto 2025)— es literalmente un par de extensiones de
-PostgreSQL (`pg_documentdb_core`, `pg_documentdb`) más una pasarela de protocolo
-(`pg_documentdb_gw`). Cuando la industria quiso un documental abierto, lo construyó
-**encima de PostgreSQL**. Ojo con el nombre: **no** es Amazon DocumentDB, que es un
-servicio gestionado distinto de AWS.
+A signal from the industry itself: **DocumentDB** — the MongoDB-compatible document engine
+donated to the Linux Foundation (MIT, August 2025) — is literally a couple of PostgreSQL
+extensions (`pg_documentdb_core`, `pg_documentdb`) plus a protocol gateway
+(`pg_documentdb_gw`). When the industry wanted an open document store, it built it
+**on top of PostgreSQL**. Mind the name: it is **not** Amazon DocumentDB, which is a
+different managed AWS service.
 
-**Coste de la decisión**: adoptar un NoSQL añade un motor a operar, una licencia que
-revisar, un modelo de consistencia que explicar al negocio y un modelado que **se congela
-con el patrón de acceso** (§3). Es una puerta *one-way* en la práctica: se entra rápido y
-se sale con una migración (§7).
+**Cost of the decision**: adopting a NoSQL adds an engine to operate, a licence to
+review, a consistency model to explain to the business and a model that **freezes
+with the access pattern** (§3). It is a *one-way* door in practice: you go in fast and
+you come out with a migration (§7).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web la versión, el EOL, los CVE y **sobre todo la licencia vigente** antes
-> de fijar nada en un proyecto real (§8). Los datos de esta tabla son de agosto 2026 y
-> caducan; las licencias de este dominio han cambiado varias veces en dos años.
+> Verify on the web the version, the EOL, the CVEs and **above all the current licence** before
+> pinning anything in a real project (§8). The data in this table is from August 2026 and
+> expires; the licences in this domain have changed several times in two years.
 
-| Necesidad | Por defecto | Alternativa justificable |
+| Need | Default | Justifiable alternative |
 |---|---|---|
-| Cualquier caso sin necesidad medida de §1 | **PostgreSQL** (`jsonb` + GIN) | — (la carga de la prueba es de quien propone el NoSQL) |
-| Documental gestionado en AWS/Azure/GCP | El servicio del proveedor, con el modelado de §3 | Autogestionado solo con capacidad operativa real |
-| Clave-valor a escala en AWS | **DynamoDB** | Cassandra/ScyllaDB si hay multi-nube o portabilidad exigida |
-| Columna ancha autogestionada | **Apache Cassandra 5.0.x** (Apache-2.0) | ScyllaDB si el perfil de latencia/densidad lo justifica **y** se acepta su licencia (§2.1) |
-| Documental "compatible con Mongo" sin SSPL | **DocumentDB** (Linux Foundation, MIT) o **FerretDB** sobre él | MongoDB con licencia comercial |
-| Caché | **No es esta skill** — ver `caching-cdn-standards` | — |
-| Búsqueda por relevancia | **No es esta skill** — ver `search-engines-standards` | — |
+| Any case with no measured need from §1 | **PostgreSQL** (`jsonb` + GIN) | — (the burden of proof lies with whoever proposes the NoSQL) |
+| Managed document store on AWS/Azure/GCP | The provider's service, with the modelling from §3 | Self-managed only with real operational capacity |
+| Key-value at scale on AWS | **DynamoDB** | Cassandra/ScyllaDB if there is multi-cloud or required portability |
+| Self-managed wide-column | **Apache Cassandra 5.0.x** (Apache-2.0) | ScyllaDB if the latency/density profile justifies it **and** its licence is accepted (§2.1) |
+| "Mongo-compatible" document store without SSPL | **DocumentDB** (Linux Foundation, MIT) or **FerretDB** on top of it | MongoDB with a commercial licence |
+| Cache | **Not this skill** — see `caching-cdn-standards` | — |
+| Relevance search | **Not this skill** — see `search-engines-standards` | — |
 
-Versiones verificadas (agosto 2026):
+Verified versions (August 2026):
 
-| Motor | Estado verificado | Nota que cambia decisiones |
+| Engine | Verified status | Note that changes decisions |
 |---|---|---|
-| MongoDB | Rama 8.3.x (8.3.7, jul 2026); 9.0 en alpha. 8.0 y 7.0 con EOL 31-oct-2029 (política extendida a 4-5 años) | **Las *rapid releases* (8.1, 8.2, 8.3) solo están soportadas en Atlas, no on-prem**: autogestionado ⇒ **8.0 LTS**. 8.2 fin de soporte 31-jul-2026 |
-| Apache Cassandra | 5.0.8 (abr 2026) estable; 6.0-alpha1 en desarrollo (protocolo Accord) | 5.0 trajo SAI (CEP-7) y tipo vector con ANN (CEP-30) y Unified Compaction Strategy. No llevar 6.0 a producción |
-| ScyllaDB | 2026.2.x estable; 2026.3.0 en rc. Versionado por año | **Ya no hay edición open source** (§2.1) |
-| DocumentDB (LF) | Proyecto de la Linux Foundation, MIT, extensiones sobre PostgreSQL (soporta hasta PG 18) | Opción real para huir de SSPL manteniendo drivers de Mongo |
-| FerretDB | Última etiqueta pública verificada: v2.7.0 (nov 2025) | Cadencia a vigilar antes de apoyarse en él en producción |
+| MongoDB | 8.3.x branch (8.3.7, Jul 2026); 9.0 in alpha. 8.0 and 7.0 with EOL 31 Oct 2029 (policy extended to 4-5 years) | **The *rapid releases* (8.1, 8.2, 8.3) are only supported on Atlas, not on-prem**: self-managed ⇒ **8.0 LTS**. 8.2 end of support 31 Jul 2026 |
+| Apache Cassandra | 5.0.8 (Apr 2026) stable; 6.0-alpha1 in development (Accord protocol) | 5.0 brought SAI (CEP-7) and a vector type with ANN (CEP-30) and the Unified Compaction Strategy. Do not take 6.0 to production |
+| ScyllaDB | 2026.2.x stable; 2026.3.0 in rc. Versioned by year | **There is no longer an open source edition** (§2.1) |
+| DocumentDB (LF) | Linux Foundation project, MIT, extensions on top of PostgreSQL (supports up to PG 18) | A real option for escaping SSPL while keeping the Mongo drivers |
+| FerretDB | Latest verified public tag: v2.7.0 (Nov 2025) | A cadence to watch before relying on it in production |
 
-### 2.1 Licencias — el dato que decide
+### 2.1 Licences — the fact that decides
 
-**Regla**: ningún motor entra en un despliegue comercial, y menos en uno **ofrecido como
-servicio a terceros**, sin leer su licencia vigente y registrarla en el ADR. Estado
-verificado en agosto 2026:
+**Rule**: no engine enters a commercial deployment, and even less one **offered as a
+service to third parties**, without reading its current licence and recording it in the ADR. Status
+verified in August 2026:
 
-| Motor | Licencia del código | Qué implica |
+| Engine | Code licence | What it implies |
 |---|---|---|
-| **MongoDB Community Server** | **SSPL v1** desde octubre 2018 (retirada de la OSI en 2019; la OSI declaró en 2021 que **no** cumple la Open Source Definition). Los *drivers* sí son Apache-2.0 | Ofrecerlo **como servicio** obliga a publicar bajo SSPL todo el software de ese servicio: en la práctica, servicio gestionado propio ⇒ licencia comercial (Enterprise Advanced). **MongoDB no ha vuelto a una licencia OSI**, a diferencia de Elastic y Redis. Uso interno de la aplicación: sin obligación de publicar. Debian, RHEL y Fedora lo retiraron por esto |
-| **ScyllaDB** | **Source-available** (ScyllaDB Software License Agreement) desde diciembre 2024. **6.2 fue la última release AGPL**; las anteriores siguen AGPL a perpetuidad pero sin correcciones | Free tier con **límite duro**, verbatim del FAQ oficial: *"The full-featured ScyllaDB Enterprise will be available for free with a 10TB limitation (total hard drive space of all ScyllaDB servers per organization). The maximum total amount of virtual CPUs (vCPUs, hyperthreads) of all servers across all clusters is 50."* Cualquier despliegue serio ⇒ contrato comercial. Presupuestarlo **antes** de elegirlo |
-| **Apache Cassandra** | **Apache-2.0** | Sin restricción de despliegue ni de servicio. Es el default cuando la licencia es un criterio |
-| **Couchbase Server** | Código bajo **BSL 1.1** (revierte a Apache-2.0 a los 4 años). Los binarios de Community Edition van bajo su propio *Community Edition License Agreement* | CE limitada a **5 nodos por clúster**, **4 cores por nodo** y **sin XDCR** (CE 7.0+): escala departamental. Derivados del código BSL heredan BSL |
-| **ArangoDB** | **BUSL-1.1** desde 3.12 (antes Apache-2.0). Binarios CE bajo *ArangoDB Community License* con tope de **100 GiB** en producción y solo uso interno | Prohibido usarlo para un DBaaS/SaaS o redistribuirlo con tu producto sin acuerdo comercial |
-| **DocumentDB (Linux Foundation)** | **MIT** | Sin restricciones; gobernanza vendor-neutral con TSC |
-| **DynamoDB / Cosmos DB / Firestore** | Servicio gestionado propietario | La "licencia" es el contrato del proveedor y el *lock-in*: registrarlo como coste de salida (§7) |
-| Valkey / Redis | *Fuera de alcance* (ver `caching-cdn-standards`): Valkey BSD-3; Redis 8+ tri-licencia AGPLv3/RSALv2/SSPL | Se cita solo para no confundir el criterio de licencia entre familias |
+| **MongoDB Community Server** | **SSPL v1** since October 2018 (withdrawn from the OSI in 2019; the OSI declared in 2021 that it does **not** meet the Open Source Definition). The *drivers* are Apache-2.0 | Offering it **as a service** requires publishing all the software of that service under SSPL: in practice, your own managed service ⇒ commercial licence (Enterprise Advanced). **MongoDB has not returned to an OSI licence**, unlike Elastic and Redis. Internal application use: no publication obligation. Debian, RHEL and Fedora dropped it over this |
+| **ScyllaDB** | **Source-available** (ScyllaDB Software License Agreement) since December 2024. **6.2 was the last AGPL release**; earlier ones remain AGPL in perpetuity but without fixes | Free tier with a **hard limit**, verbatim from the official FAQ: *"The full-featured ScyllaDB Enterprise will be available for free with a 10TB limitation (total hard drive space of all ScyllaDB servers per organization). The maximum total amount of virtual CPUs (vCPUs, hyperthreads) of all servers across all clusters is 50."* Any serious deployment ⇒ commercial contract. Budget for it **before** choosing it |
+| **Apache Cassandra** | **Apache-2.0** | No deployment or service restriction. It is the default when the licence is a criterion |
+| **Couchbase Server** | Code under **BSL 1.1** (reverts to Apache-2.0 after 4 years). The Community Edition binaries go under their own *Community Edition License Agreement* | CE limited to **5 nodes per cluster**, **4 cores per node** and **no XDCR** (CE 7.0+): departmental scale. Derivatives of the BSL code inherit BSL |
+| **ArangoDB** | **BUSL-1.1** since 3.12 (previously Apache-2.0). CE binaries under the *ArangoDB Community License* with a cap of **100 GiB** in production and internal use only | Forbidden to use it for a DBaaS/SaaS or to redistribute it with your product without a commercial agreement |
+| **DocumentDB (Linux Foundation)** | **MIT** | No restrictions; vendor-neutral governance with a TSC |
+| **DynamoDB / Cosmos DB / Firestore** | Proprietary managed service | The "licence" is the provider's contract and the *lock-in*: record it as an exit cost (§7) |
+| Valkey / Redis | *Out of scope* (see `caching-cdn-standards`): Valkey BSD-3; Redis 8+ tri-licensed AGPLv3/RSALv2/SSPL | Cited only so the licence criteria are not confused across families |
 
-**PROHIBIDO** afirmar la licencia de cualquiera de estos motores de memoria: se lee la
-página oficial vigente (§8). El error de licencia es el más caro de este dominio.
+**FORBIDDEN** to assert the licence of any of these engines from memory: you read the
+current official page (§8). A licence error is the most expensive one in this domain.
 
-## 3. Modelado: es lo contrario del relacional
+## 3. Modelling: it is the opposite of relational
 
-### 3.1 Se modela por patrón de acceso, no por entidad
+### 3.1 You model by access pattern, not by entity
 
-- El punto de partida **no** es el diagrama entidad-relación: es la **lista de consultas**
-  de la aplicación, cada una con su cardinalidad, su frecuencia y su presupuesto de
-  latencia. Sin esa lista escrita, no hay diseño posible — hay adivinación.
-- **Desnormalización deliberada y duplicación controlada**: el dato se copia donde se lee.
-  Cada duplicado es una invariante que la aplicación —no el motor— debe mantener: se
-  documenta qué copia es la fuente de verdad, quién la propaga y qué pasa si la propagación
-  falla a medias (no hay FK ni JOIN que te salven).
-- **Agregado = límite de transacción y de lectura**: si dos cosas se leen y escriben juntas
-  y su tamaño está acotado, van en el mismo documento/partición; si crecen sin cota
-  (comentarios, eventos, histórico), **no** se anidan: el documento ilimitado es el
-  anti-patrón clásico (en DynamoDB, además, es imposible: máximo **400 KB por ítem**).
-- **Cambiar el patrón de acceso después suele significar remodelar y migrar todos los
-  datos**, no añadir un índice. Es la diferencia estructural con el relacional y la razón
-  por la que un dominio en exploración —donde nadie sabe aún cómo se va a consultar— es
-  el peor candidato posible para un NoSQL.
-- "Esquema flexible" **no** significa "sin contrato": el esquema existe, y si no está en el
-  motor está —implícito y sin validar— en el código. Contrato explícito y versionado
-  siempre: JSON Schema validado en el borde, `$jsonSchema` en la colección, tipos
-  declarados en CQL. Campo nuevo ⇒ aditivo y con default; migración de forma ⇒ misma
-  disciplina expand/contract que en SQL, con doble lectura durante la transición.
+- The starting point is **not** the entity-relationship diagram: it is the **list of queries**
+  of the application, each with its cardinality, its frequency and its latency
+  budget. Without that list written down, no design is possible — there is guesswork.
+- **Deliberate denormalisation and controlled duplication**: the data is copied to where it is read.
+  Every duplicate is an invariant that the application — not the engine — must maintain: document
+  which copy is the source of truth, who propagates it and what happens if propagation
+  fails halfway (there is no FK and no JOIN to save you).
+- **Aggregate = transaction and read boundary**: if two things are read and written together
+  and their size is bounded, they go in the same document/partition; if they grow unbounded
+  (comments, events, history), they are **not** nested: the unbounded document is the
+  classic antipattern (in DynamoDB it is also impossible: maximum **400 KB per item**).
+- **Changing the access pattern later usually means remodelling and migrating all the
+  data**, not adding an index. It is the structural difference from the relational world and the
+  reason a domain still under exploration — where nobody yet knows how it will be queried — is
+  the worst possible candidate for a NoSQL.
+- "Flexible schema" does **not** mean "no contract": the schema exists, and if it is not in the
+  engine it is — implicit and unvalidated — in the code. An explicit, versioned contract
+  always: JSON Schema validated at the edge, `$jsonSchema` on the collection, types
+  declared in CQL. A new field ⇒ additive and with a default; a shape migration ⇒ the same
+  expand/contract discipline as in SQL, with double reads during the transition.
 
-### 3.2 Diseño de clave (lo que decide el rendimiento y la factura)
+### 3.2 Key design (what decides performance and the bill)
 
-- **Clave de partición**: determina la distribución. Se elige por **cardinalidad alta y
-  tráfico uniforme**, no por "es el id de la entidad principal". Claves de baja
-  cardinalidad (estado, país, tenant grande, `true/false`, fecha del día) producen
-  ***hot partitions***: el clúster está al 10% y el usuario ve throttling.
-- **Clave de ordenación** (sort key / clustering key): define el rango consultable barato.
-  Se diseña como una **jerarquía de prefijos** (`ORG#123#PROJ#7#TASK#9`) para que un solo
-  `begins_with` sirva a varias consultas.
-- Límites que condicionan el diseño en DynamoDB (verificados; re-verificar en §8): ítem
-  **400 KB**; **3.000 RCU / 1.000 WCU por partición** (con *adaptive capacity* automática,
-  que mitiga pero no elimina el problema de una clave caliente); **5 LSI** y **20 GSI** por
-  tabla por defecto; 40.000 RU/WU por tabla por defecto; 2.500 tablas por región (ampliable
-  a 10.000).
-- Mitigación de claves calientes: *write sharding* con sufijo acotado (`#1..#N`) y
-  dispersión en lectura, o cambio de clave — nunca "confiar en que el motor lo reparta".
-- **Cassandra/ScyllaDB**: la *partition key* acota el trabajo de una consulta; particiones
-  gigantes (cientos de MB, millones de celdas) matan latencias y compactación. Consultar
-  siempre por clave de partición; `ALLOW FILTERING` está **prohibido** en producción. Los
-  índices secundarios nativos son una trampa a escala: modelar tabla por consulta, o SAI
-  (Cassandra 5.0) con medición.
-- **Diseño de tabla única (single-table) en DynamoDB**: es la técnica correcta para
-  resolver varias entidades y accesos con menos peticiones y transacciones baratas, y es
-  **caro en cognición**: nombres de atributos genéricos (`PK`/`SK`/`GSI1PK`), ilegible
-  fuera del código que lo interpreta, difícil de explorar ad-hoc y muy rígido ante un
-  patrón de acceso nuevo. Adóptalo cuando el patrón de acceso sea estable y esté escrito;
-  con dos o tres entidades y accesos simples, varias tablas son más honestas. En ambos
-  casos, el mapa de acceso→clave se documenta junto al código: sin él, la tabla es
-  ilegible en 6 meses.
+- **Partition key**: it determines the distribution. It is chosen for **high cardinality and
+  uniform traffic**, not because "it is the main entity's id". Low-cardinality
+  keys (status, country, a large tenant, `true/false`, today's date) produce
+  ***hot partitions***: the cluster is at 10% and the user sees throttling.
+- **Sort key** (sort key / clustering key): it defines the cheaply queryable range.
+  It is designed as a **hierarchy of prefixes** (`ORG#123#PROJ#7#TASK#9`) so that a single
+  `begins_with` serves several queries.
+- Limits that condition the design in DynamoDB (verified; re-verify in §8): item
+  **400 KB**; **3,000 RCU / 1,000 WCU per partition** (with automatic *adaptive capacity*,
+  which mitigates but does not eliminate the hot-key problem); **5 LSIs** and **20 GSIs** per
+  table by default; 40,000 RU/WU per table by default; 2,500 tables per region (raisable
+  to 10,000).
+- Hot-key mitigation: *write sharding* with a bounded suffix (`#1..#N`) and
+  scatter on read, or a key change — never "trusting the engine to spread it".
+- **Cassandra/ScyllaDB**: the *partition key* bounds the work of a query; huge partitions
+  (hundreds of MB, millions of cells) kill latencies and compaction. Always query
+  by partition key; `ALLOW FILTERING` is **forbidden** in production. Native
+  secondary indexes are a trap at scale: model a table per query, or SAI
+  (Cassandra 5.0) with measurement.
+- **Single-table design in DynamoDB**: it is the right technique to
+  resolve several entities and accesses with fewer requests and cheap transactions, and it is
+  **expensive in cognition**: generic attribute names (`PK`/`SK`/`GSI1PK`), unreadable
+  outside the code that interprets it, hard to explore ad-hoc and very rigid against a new
+  access pattern. Adopt it when the access pattern is stable and written down;
+  with two or three entities and simple accesses, several tables are more honest. In both
+  cases, the access→key map is documented alongside the code: without it, the table is
+  unreadable in 6 months.
 
-### 3.3 Consistencia: es una decisión de producto
+### 3.3 Consistency: it is a product decision
 
-- **CAP sin misticismo**: ante una partición de red, el sistema elige responder con datos
-  posiblemente obsoletos (AP) o rechazar la petición (CP). **PACELC** añade lo que de
-  verdad se paga a diario: *else*, sin partición, se elige entre **latencia** y
-  **consistencia**. La mayoría de estos motores son configurables por operación: la
-  decisión no es del motor, es **tuya y por consulta**.
-- **"Eventual" en la práctica** significa: puedes leer tu propia escritura y no verla;
-  dos lectores pueden ver estados distintos; un contador puede retroceder; y una
-  reconciliación tardía puede borrar lo que el usuario acababa de escribir. Todo eso hay
-  que **decidirlo con el dueño del producto**, no esconderlo en un YAML. Lo que no tolera
-  obsolescencia (saldo, stock, permisos, límites de crédito, unicidad) no se resuelve con
-  lectura eventual — y a menudo tampoco con este tipo de almacén.
-- Palancas concretas: DynamoDB con lectura fuertemente consistente (`ConsistentRead=true`,
-  el doble de coste, solo en la región de la tabla, no en GSI) frente a la eventual por
-  defecto; global tables con **MREC** (eventual) o **MRSC** (fuerte multi-región, con sus
-  cuotas); Cassandra/ScyllaDB con `LOCAL_QUORUM` en RF=3 por DC como base sana (R+W>RF), y
-  `ONE` solo donde la obsolescencia sea aceptable y explícita; MongoDB con `writeConcern`
-  `majority` + `readConcern` `majority` y lecturas en primario por defecto (`readPreference
-  secondary` solo con lag asumido).
-- **Transacciones donde existen y sus límites**: MongoDB tiene transacciones multi-documento
-  y distribuidas (con coste, ventana temporal acotada y contención propia); DynamoDB tiene
-  transacciones acotadas por petición y de coste doble; Cassandra tiene LWT (Paxos, caro) y
-  Accord en desarrollo para 6.0. **Ninguna** sustituye a un relacional para lógica
-  transaccional densa: si el dominio necesita transacciones a menudo, el motor está mal
-  elegido.
-- Sin FK ni JOIN, la integridad la sostiene la aplicación: unicidad con ítem/documento
-  centinela e inserción condicional (`attribute_not_exists`, índice único), idempotencia
-  por clave natural en toda escritura reintentable, y un **reconciliador** que detecta
-  divergencias entre copias duplicadas. Ese reconciliador es parte del entregable, no un
+- **CAP without mysticism**: faced with a network partition, the system chooses to answer with
+  possibly stale data (AP) or to reject the request (CP). **PACELC** adds what is
+  really paid for daily: *else*, with no partition, you choose between **latency** and
+  **consistency**. Most of these engines are configurable per operation: the
+  decision is not the engine's, it is **yours and per query**.
+- **"Eventual" in practice** means: you can read your own write and not see it;
+  two readers can see different states; a counter can go backwards; and a
+  late reconciliation can erase what the user had just written. All of that must be
+  **decided with the product owner**, not hidden in a YAML. What does not tolerate
+  staleness (balance, stock, permissions, credit limits, uniqueness) is not solved by an
+  eventual read — and often not by this kind of store either.
+- Concrete levers: DynamoDB with strongly consistent reads (`ConsistentRead=true`,
+  twice the cost, only in the table's region, not on GSIs) versus the eventual default;
+  global tables with **MREC** (eventual) or **MRSC** (strong multi-region, with its own
+  quotas); Cassandra/ScyllaDB with `LOCAL_QUORUM` at RF=3 per DC as a healthy baseline (R+W>RF), and
+  `ONE` only where staleness is acceptable and explicit; MongoDB with `writeConcern`
+  `majority` + `readConcern` `majority` and reads on the primary by default (`readPreference
+  secondary` only with accepted lag).
+- **Transactions where they exist and their limits**: MongoDB has multi-document and
+  distributed transactions (with a cost, a bounded time window and contention of their own); DynamoDB has
+  transactions bounded per request and at double cost; Cassandra has LWT (Paxos, expensive) and
+  Accord in development for 6.0. **None** replaces a relational store for dense
+  transactional logic: if the domain needs transactions often, the engine is badly
+  chosen.
+- Without FKs and JOINs, integrity is held up by the application: uniqueness with a sentinel
+  item/document and a conditional insert (`attribute_not_exists`, unique index), idempotence
+  by natural key on every retryable write, and a **reconciler** that detects
+  divergences between duplicated copies. That reconciler is part of the deliverable, not an
   extra.
 
-## 4. Calidad y gates
+## 4. Quality and gates
 
-Gates de CI, en orden de coste creciente. Rompen el build:
+CI gates, in increasing cost order. They break the build:
 
-1. **Contrato de esquema versionado en el repo** (JSON Schema / `$jsonSchema` / DDL CQL) y
-   validación de compatibilidad hacia atrás en cada PR. Sin contrato, no se mergea.
-2. **Mapa de patrones de acceso** actualizado como fichero del repo: cada consulta de la
-   aplicación mapeada a clave/índice. Una consulta nueva sin entrada en el mapa es un fallo
-   de revisión, no un detalle.
-3. **Tests de integración contra el motor real** (Testcontainers, DynamoDB Local): jamás
-   contra un mock del driver ni un stub en memoria — los dialectos y los límites mienten.
-   Cubrir camino feliz **y bordes**: ítem al límite de tamaño, clave inexistente, escritura
-   condicional que falla, reintento duplicado, paginación con `LastEvaluatedKey`/cursor.
-4. **Test de consistencia explícito**: al menos un test que documente el comportamiento
-   bajo lectura eventual (leer justo después de escribir) para que la decisión de §3.3 sea
-   verificable y no folclore.
-5. **Detección de escaneos**: prohibido `Scan` sin filtro de clave, `ALLOW FILTERING` y
-   `find()` sin índice en el camino caliente. Linter o revisión mecánica sobre las
-   consultas; en MongoDB, `notablescan` en entornos de prueba para que falle en CI.
-6. **Prueba de carga con datos representativos y distribución realista** (incluidas las
-   claves calientes): un plan con 1.000 documentos no predice nada a 100 M. Medir p99, no
-   media.
-7. **Restore probado** del respaldo (§6) con cadencia programada: es un gate de entrega,
-   no una tarea de operaciones.
+1. **A versioned schema contract in the repo** (JSON Schema / `$jsonSchema` / CQL DDL) and
+   backward-compatibility validation on every PR. Without a contract, no merge.
+2. **An access-pattern map** kept up to date as a file in the repo: every application query
+   mapped to a key/index. A new query with no entry in the map is a review failure,
+   not a detail.
+3. **Integration tests against the real engine** (Testcontainers, DynamoDB Local): never
+   against a driver mock or an in-memory stub — the dialects and the limits lie.
+   Cover the happy path **and edges**: an item at the size limit, a non-existent key, a conditional
+   write that fails, a duplicate retry, pagination with `LastEvaluatedKey`/cursor.
+4. **An explicit consistency test**: at least one test documenting the behaviour
+   under eventual reads (reading right after writing) so that the §3.3 decision is
+   verifiable and not folklore.
+5. **Scan detection**: `Scan` without a key filter, `ALLOW FILTERING` and
+   `find()` without an index on the hot path are forbidden. A linter or a mechanical review over the
+   queries; in MongoDB, `notablescan` in test environments so it fails in CI.
+6. **A load test with representative data and a realistic distribution** (including the
+   hot keys): a plan with 1,000 documents predicts nothing at 100 M. Measure p99, not
+   the mean.
+7. **A tested restore** of the backup (§6) on a scheduled cadence: it is a delivery gate,
+   not an operations task.
 
-## 5. Seguridad
+## 5. Security
 
-- **Autenticación y autorización siempre activas**: estos motores han protagonizado fugas
-  masivas precisamente por instancias sin autenticación expuestas a Internet. `bindIp`
-  restringido, nunca `0.0.0.0` accesible desde fuera; red privada + firewall de egreso e
-  ingreso; **jamás** un puerto de base de datos publicado en Internet, ni siquiera "un
-  momento para probar".
-- **TLS en tránsito** entre clientes y nodos **y entre nodos** (Cassandra/Scylla:
-  `internode_encryption`); **cifrado en reposo** con claves en KMS y rotación (ver
+- **Authentication and authorisation always enabled**: these engines have starred in massive
+  leaks precisely because of unauthenticated instances exposed to the Internet. `bindIp`
+  restricted, never `0.0.0.0` reachable from outside; private network + egress and
+  ingress firewall; **never** a database port published on the Internet, not even "just for
+  a moment to test".
+- **TLS in transit** between clients and nodes **and between nodes** (Cassandra/Scylla:
+  `internode_encryption`); **encryption at rest** with keys in a KMS and rotation (see
   `cryptography-pki-standards`).
-- **Mínimo privilegio con roles por aplicación**, distintos de los de administración y de
-  los de analítica. Ojo con los bypass de RBAC a nivel de consulta: CVE-2026-13059 en
-  MongoDB (CVSS 8.6) permitía a un usuario de bajo privilegio saltarse controles de
-  `find`/`update`/`delete`/`aggregate` — el RBAC del motor se parchea, no se supone.
-- **Inyección**: sí existe fuera de SQL. Nunca construir filtros a partir de entrada del
-  usuario sin tipar (operadores `$where`, `$ne`, `$gt` inyectados desde JSON del cliente);
-  `$where` y la ejecución de JavaScript en servidor, **desactivados**. En CQL, siempre
-  sentencias preparadas con parámetros.
-- **CVE y parcheo** (verificados en agosto 2026, re-verificar en §8): MongoDB acumuló en
-  2026 vulnerabilidades de severidad alta —CVE-2026-13072 (CVSS 9.2, corrupción de memoria
-  con *compute mode* activo), CVE-2026-9740 (8.7, alcanzable sin autenticar), CVE-2026-8053
-  (colecciones time-series)— con corrección en **7.0.39 / 8.0.28 / 8.2.12 / 8.3.7**; y
-  **MongoBleed (CVE-2025-14847)**, fuga de memoria sin autenticar vía mensajes comprimidos,
-  **entró en el catálogo KEV de CISA** (explotación activa confirmada). Cassandra: revisar
-  CVE-2025-23015 (escalada a superusuario con `MODIFY ON ALL KEYSPACES`), cuyo parche se
-  aplicó mal en 4.0.16 — corregido en 4.0.17. Suscribirse a los avisos del motor es
-  obligatorio, no opcional.
-- **Cadena de suministro de los drivers**: no hay incidente conocido específico de estos
-  motores, pero npm y PyPI viven bajo campañas de gusano recurrentes (Shai-Hulud/TeamPCP,
-  TrapDoor en 2026, incluidos paquetes maliciosos **con procedencia SLSA válida**).
-  Fijar drivers por versión y hash en el lockfile, SCA en CI y revisión de cualquier salto
-  de versión mayor.
-- **Datos personales**: sin JOIN ni FK, el borrado es una **búsqueda por todas las copias**
-  (§3.1) — el derecho de supresión se diseña con el modelo, no después. Documentos y
-  particiones duplicadas, índices secundarios, streams, backups y réplicas cross-region
-  cuentan. Donde el borrado físico no sea viable en ventana, crypto-shredding por sujeto
-  (ver `privacy-engineering-standards`).
+- **Least privilege with per-application roles**, separate from the administration ones and from
+  the analytics ones. Beware query-level RBAC bypasses: CVE-2026-13059 in
+  MongoDB (CVSS 8.6) allowed a low-privilege user to bypass controls on
+  `find`/`update`/`delete`/`aggregate` — the engine's RBAC gets patched, not assumed.
+- **Injection**: yes, it exists outside SQL. Never build filters from user
+  input without typing (operators `$where`, `$ne`, `$gt` injected from client JSON);
+  `$where` and server-side JavaScript execution, **disabled**. In CQL, always prepared
+  statements with parameters.
+- **CVEs and patching** (verified in August 2026, re-verify in §8): MongoDB accumulated
+  high-severity vulnerabilities in 2026 — CVE-2026-13072 (CVSS 9.2, memory corruption
+  with *compute mode* enabled), CVE-2026-9740 (8.7, reachable unauthenticated), CVE-2026-8053
+  (time-series collections) — with fixes in **7.0.39 / 8.0.28 / 8.2.12 / 8.3.7**; and
+  **MongoBleed (CVE-2025-14847)**, an unauthenticated memory leak via compressed messages,
+  **entered CISA's KEV catalogue** (active exploitation confirmed). Cassandra: review
+  CVE-2025-23015 (escalation to superuser with `MODIFY ON ALL KEYSPACES`), whose patch was
+  applied wrongly in 4.0.16 — fixed in 4.0.17. Subscribing to the engine's advisories is
+  mandatory, not optional.
+- **Driver supply chain**: there is no known incident specific to these
+  engines, but npm and PyPI live under recurring worm campaigns (Shai-Hulud/TeamPCP,
+  TrapDoor in 2026, including malicious packages **with valid SLSA provenance**).
+  Pin drivers by version and hash in the lockfile, SCA in CI and review of any major
+  version jump.
+- **Personal data**: without JOINs and FKs, erasure is a **search across all the copies**
+  (§3.1) — the right to erasure is designed with the model, not afterwards. Duplicated documents and
+  partitions, secondary indexes, streams, backups and cross-region replicas
+  all count. Where physical erasure is not viable within the window, crypto-shredding per subject
+  (see `privacy-engineering-standards`).
 
-## 6. Operación, rendimiento y coste
+## 6. Operation, performance and cost
 
-- **Réplicas y particiones**: RF=3 como base con conciencia de zona/rack
-  (`NetworkTopologyStrategy`, rack awareness); MongoDB con replica set de 3 miembros y
-  árbitros **evitados**. Añadir o quitar nodos es **rebalanceo**: costoso en red y en E/S,
-  planificado en ventana y medido, nunca improvisado en incidente.
-- **Compactación y amplificación de escritura (LSM)**: en Cassandra/ScyllaDB (y en el
-  motor de almacenamiento de muchos documentales) cada escritura se reescribe varias veces
-  al compactar. Consecuencias que hay que presupuestar: espacio libre suficiente para
-  compactar (regla práctica: no llenar el disco por encima del 50-70% según estrategia),
-  E/S y CPU reservadas, y elección consciente de estrategia (UCS en Cassandra 5.0,
-  size-tiered vs leveled según lectura/escritura). **Tombstones**: los borrados son
-  escrituras; una carga de borrado masivo genera lecturas lentas y timeouts hasta
-  `gc_grace_seconds` — el borrado se diseña (TTL, particionado por tiempo y drop), no se
-  improvisa.
-- **Reparación/anti-entropía** como tarea programada y monitorizada (`nodetool repair`
-  incremental o herramienta del ecosistema; Cassandra 5.0.x incorpora reparación
-  automatizada retroportada de 6.0). Una réplica no reparada es datos divergentes en
-  silencio.
-- **Respaldo y restauración**: snapshot + copia fuera del clúster, cifrada, con una copia
-  inmutable u offline (3-2-1). **El gate es el restore**, y en estos motores el restore
-  suele implicar reconstruir topología y token ranges: ensáyalo completo, cronometrado, y
-  registra el tiempo real como SLI. En DynamoDB, PITR es una casilla que **hay que
-  activar** y tiene ventana propia; la copia a otra cuenta/región es decisión aparte.
-- **Actualizaciones de versión mayor**: leer las release notes completas, ensayar en
-  staging con datos representativos, rolling upgrade nodo a nodo con compatibilidad de
-  protocolo verificada, y **rollback definido y probado** (que en muchos motores no es
-  reversible tras migrar el formato de sstables/ficheros: si no hay vuelta atrás, la
-  estrategia es clúster paralelo y doble escritura). Nunca una `.0` en producción. Y ojo al
-  soporte real: en MongoDB autogestionado, las *rapid releases* no están soportadas (§2).
-- **Observabilidad mínima**: latencia p99 por operación, tasa de throttling/timeout, lag de
-  réplica, distribución de tráfico por partición (para ver las claves calientes **antes**
-  del incidente), tamaño de partición máximo, pendientes de compactación, tombstones por
-  lectura, y consumo frente a capacidad. Alertas por síntoma con runbook.
-- **Coste — el patrón de acceso es la factura**:
-  - Modelo **por petición (on-demand)** frente a **por capacidad aprovisionada**: en
-    DynamoDB, tras la bajada de precios de noviembre de 2024 (−50% on-demand, hasta −67% en
-    global tables), **on-demand es el default razonable** para la mayoría de cargas; el
-    aprovisionado gana con tráfico muy predecible y estable. Existen *Database Savings
-    Plans* (desde diciembre 2025, ~12-18%) y capacidad reservada, cada uno con su alcance.
-    Re-verificar precios y descuentos antes de modelar (§8).
-  - Un modelado malo **multiplica** la factura sin cambiar una línea de negocio: `Scan` en
-    vez de `Query`, GSI proyectando `ALL` cuando bastaba `KEYS_ONLY`, ítems grandes leídos
-    enteros para usar un campo, escrituras replicadas en regiones que nadie lee, o un
-    documento que crece hasta consumir varias unidades por lectura.
-  - Presupuesto de coste **por consulta** en los caminos calientes, medido en producción y
-    revisado trimestralmente junto al de latencia. En NoSQL, coste y modelo son lo mismo.
-- **Capacidad**: proyecta crecimiento de datos y de tráfico con datos reales; el momento de
-  añadir nodos es antes de que la compactación no llegue, no cuando el disco esté al 85%.
+- **Replicas and partitions**: RF=3 as a baseline with zone/rack awareness
+  (`NetworkTopologyStrategy`, rack awareness); MongoDB with a 3-member replica set and
+  arbiters **avoided**. Adding or removing nodes is **rebalancing**: expensive in network and I/O,
+  planned within a window and measured, never improvised during an incident.
+- **Compaction and write amplification (LSM)**: in Cassandra/ScyllaDB (and in the
+  storage engine of many document stores) every write is rewritten several times
+  during compaction. Consequences that must be budgeted: enough free space to
+  compact (rule of thumb: do not fill the disk beyond 50-70% depending on the strategy),
+  reserved I/O and CPU, and a conscious choice of strategy (UCS in Cassandra 5.0,
+  size-tiered vs levelled depending on read/write mix). **Tombstones**: deletes are
+  writes; a mass-delete workload generates slow reads and timeouts until
+  `gc_grace_seconds` — deletion is designed (TTL, time partitioning and drop), not
+  improvised.
+- **Repair/anti-entropy** as a scheduled and monitored task (`nodetool repair`
+  incremental or an ecosystem tool; Cassandra 5.0.x includes automated repair
+  backported from 6.0). An unrepaired replica is silently divergent data.
+- **Backup and restore**: snapshot + a copy outside the cluster, encrypted, with an
+  immutable or offline copy (3-2-1). **The gate is the restore**, and in these engines the restore
+  usually involves rebuilding the topology and token ranges: rehearse it fully, timed, and
+  record the real time as an SLI. In DynamoDB, PITR is a checkbox that **has to be
+  enabled** and has its own window; copying to another account/region is a separate decision.
+- **Major version upgrades**: read the full release notes, rehearse in
+  staging with representative data, rolling upgrade node by node with verified protocol
+  compatibility, and a **defined and tested rollback** (which in many engines is not
+  reversible once the sstable/file format has been migrated: if there is no way back, the
+  strategy is a parallel cluster and double writes). Never a `.0` in production. And mind the
+  real support: in self-managed MongoDB, the *rapid releases* are not supported (§2).
+- **Minimum observability**: p99 latency per operation, throttling/timeout rate, replica
+  lag, traffic distribution per partition (to see the hot keys **before**
+  the incident), maximum partition size, pending compactions, tombstones per
+  read, and consumption against capacity. Symptom-based alerts with a runbook.
+- **Cost — the access pattern is the bill**:
+  - The **per-request (on-demand)** model versus **provisioned capacity**: in
+    DynamoDB, after the November 2024 price cut (−50% on-demand, up to −67% on
+    global tables), **on-demand is the reasonable default** for most workloads; provisioned
+    wins with very predictable and stable traffic. There are *Database Savings
+    Plans* (since December 2025, ~12-18%) and reserved capacity, each with its own scope.
+    Re-verify prices and discounts before modelling (§8).
+  - Bad modelling **multiplies** the bill without changing a line of business: `Scan` instead
+    of `Query`, a GSI projecting `ALL` when `KEYS_ONLY` would have done, large items read
+    whole to use one field, writes replicated to regions nobody reads, or a
+    document that grows until it consumes several units per read.
+  - A cost budget **per query** on the hot paths, measured in production and
+    reviewed quarterly alongside the latency one. In NoSQL, cost and model are the same thing.
+- **Capacity**: project data and traffic growth with real data; the moment to
+  add nodes is before compaction cannot keep up, not when the disk is at 85%.
 
-## 7. Sostenibilidad, salida y prohibiciones
+## 7. Sustainability, exit and prohibitions
 
-- **ADR obligatorio** para: elección del motor (con el "por qué no PostgreSQL" respondido),
-  clave de partición y ordenación, tabla única vs múltiple, nivel de consistencia por
-  operación, política de retención y **licencia vigente en el momento de decidir**.
-- **Re-evaluar la licencia en cada upgrade mayor**: este dominio ha cambiado de licencia
-  tres veces en dos años (ScyllaDB 2024, ArangoDB 3.12, Redis 2024-2025). Un upgrade puede
-  cambiar tus obligaciones legales sin cambiar una línea de tu código.
-- **Salida y migración de vuelta a relacional** cuando la decisión fue errónea (síntomas:
-  cada funcionalidad nueva exige remodelar; la aplicación reimplementa JOINs en memoria;
-  proliferan reconciliadores; la factura crece más rápido que el tráfico; nadie sabe
-  responder una consulta ad-hoc del negocio). Procedimiento:
-  1. Fija el patrón de acceso real observado en producción (no el imaginado) y modela el
-     esquema relacional destino, **normalizando** lo que se duplicó.
-  2. Carga inicial en bloque + **CDC/stream** del motor origen (Change Streams, DynamoDB
-     Streams, CDC de Cassandra) hacia el destino, hasta alcanzar lag estable.
-  3. Doble escritura o *shadow reads* con comparación automática de resultados durante un
-     periodo con tráfico real; el corte se hace cuando la divergencia es cero y medida.
-  4. Conmutación por *feature flag*, con vuelta atrás disponible, y retirada del motor
-     viejo **como parte del proyecto** (si no, quedan dos almacenes para siempre).
-  - Migración parcial válida y a menudo la mejor: dejar en el NoSQL solo la carga que
-    justificaba §1 y llevar el resto a PostgreSQL.
+- **A mandatory ADR** for: the choice of engine (with the "why not PostgreSQL" answered),
+  the partition and sort keys, single vs multiple tables, the consistency level per
+  operation, the retention policy and **the licence in force at the time of deciding**.
+- **Re-evaluate the licence at every major upgrade**: this domain has changed licence
+  three times in two years (ScyllaDB 2024, ArangoDB 3.12, Redis 2024-2025). An upgrade can
+  change your legal obligations without changing a line of your code.
+- **Exit and migration back to relational** when the decision was wrong (symptoms:
+  every new feature requires remodelling; the application reimplements JOINs in memory;
+  reconcilers proliferate; the bill grows faster than the traffic; nobody can
+  answer an ad-hoc business query). Procedure:
+  1. Pin the real access pattern observed in production (not the imagined one) and model the
+     target relational schema, **normalising** what was duplicated.
+  2. Bulk initial load + **CDC/stream** from the source engine (Change Streams, DynamoDB
+     Streams, Cassandra CDC) into the target, until a stable lag is reached.
+  3. Double writes or *shadow reads* with automatic result comparison during a
+     period with real traffic; the cutover happens when divergence is zero and measured.
+  4. Switchover by *feature flag*, with a way back available, and retirement of the old
+     engine **as part of the project** (otherwise you keep two stores forever).
+  - A partial migration is valid and often the best: leave in the NoSQL only the workload that
+    justified §1 and take the rest to PostgreSQL.
 
-**PROHIBIDO**
-- ❌ Elegir NoSQL **por la forma del dato** (jerárquico, anidado, "campos variables"): eso
-  es `jsonb` + GIN en PostgreSQL.
-- ❌ Adoptarlo sin ADR con la necesidad **medida** de §1 y sin el "por qué no PostgreSQL".
-- ❌ Modelar **por entidad** (copiar el modelo relacional al documental) o empezar a modelar
-  sin la lista escrita de patrones de acceso.
-- ❌ "Esquema flexible" como excusa para no tener contrato ni validación.
-- ❌ Documentos, arrays o particiones que crecen **sin cota**.
-- ❌ Claves de partición de baja cardinalidad o con tráfico sesgado, sin mitigación.
-- ❌ `Scan` sin filtro de clave, `ALLOW FILTERING`, o consultas sin índice en camino caliente.
-- ❌ Índices secundarios nativos de Cassandra a escala sin medición; GSI con proyección
-  `ALL` "por si acaso".
-- ❌ Prometer consistencia fuerte que el motor no da, o esconder la eventual al negocio.
-- ❌ Usar el NoSQL como almacén transaccional del dinero/stock sin idempotencia ni unicidad
-  garantizada en el motor.
-- ❌ Instancia sin autenticación, con `0.0.0.0` alcanzable o sin TLS entre nodos.
-- ❌ `$where`/JavaScript en servidor, o filtros construidos con entrada del usuario sin tipar.
-- ❌ Autogestionar MongoDB en una *rapid release* (no soportada fuera de Atlas).
-- ❌ Borrado masivo sin plan de tombstones/compactación, o desactivar la reparación.
-- ❌ Backup sin restore ensayado y cronometrado; PITR sin activar creyendo que viene puesto.
-- ❌ Upgrade mayor sin ensayo, sin release notes y sin ruta de rollback definida.
-- ❌ Desplegar un motor **source-available** (SSPL, BUSL, licencia de ScyllaDB) en producto
-  comercial o como servicio sin revisión legal y sin registrar la obligación en el ADR.
-- ❌ Afirmar versiones, EOL o **licencias** de memoria, sin la verificación de §8.
+**FORBIDDEN**
+- ❌ Choosing NoSQL **for the shape of the data** (hierarchical, nested, "variable fields"): that
+  is `jsonb` + GIN in PostgreSQL.
+- ❌ Adopting it without an ADR with the **measured** need from §1 and without the "why not
+  PostgreSQL".
+- ❌ Modelling **by entity** (copying the relational model into the document store) or starting to
+  model without the written list of access patterns.
+- ❌ "Flexible schema" as an excuse for having no contract and no validation.
+- ❌ Documents, arrays or partitions that grow **unbounded**.
+- ❌ Low-cardinality or skewed-traffic partition keys, with no mitigation.
+- ❌ `Scan` without a key filter, `ALLOW FILTERING`, or queries without an index on a hot path.
+- ❌ Cassandra's native secondary indexes at scale without measurement; GSIs with `ALL`
+  projection "just in case".
+- ❌ Promising strong consistency the engine does not provide, or hiding the eventual one from the
+  business.
+- ❌ Using the NoSQL as the transactional store for money/stock without idempotence and without
+  uniqueness guaranteed in the engine.
+- ❌ An instance without authentication, with `0.0.0.0` reachable or without TLS between nodes.
+- ❌ `$where`/server-side JavaScript, or filters built from untyped user input.
+- ❌ Self-managing MongoDB on a *rapid release* (not supported outside Atlas).
+- ❌ Mass deletion without a tombstone/compaction plan, or disabling repair.
+- ❌ A backup without a rehearsed and timed restore; PITR left off in the belief that it comes
+  enabled.
+- ❌ A major upgrade without a rehearsal, without release notes and without a defined rollback path.
+- ❌ Deploying a **source-available** engine (SSPL, BUSL, the ScyllaDB licence) in a commercial
+  product or as a service without legal review and without recording the obligation in the ADR.
+- ❌ Asserting versions, EOLs or **licences** from memory, without the verification in §8.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier dato de este documento en un entregable:
+Before pinning any fact from this document into a deliverable:
 
-1. **Licencia vigente de cada motor** en su página oficial (`mongodb.com/legal/licensing`,
-   FAQ de licencia de ScyllaDB, licencia de Couchbase CE, licencia de ArangoDB): es el dato
-   que más cambia y el que más caro sale equivocar. Verificar también los límites numéricos
-   del free tier (10 TB / 50 vCPU en ScyllaDB, 5 nodos / 4 cores en Couchbase CE, 100 GiB
-   en ArangoDB CE) **verbatim**, no de resumen.
-2. **Versión estable, política de releases y EOL**: MongoDB (¿sigue 8.0 la LTS on-prem?
-   ¿ha salido 9.0 GA?), Cassandra (¿6.0 GA?), ScyllaDB (¿2026.3 estable?), DocumentDB y
-   FerretDB (cadencia real de releases).
-3. **CVE abiertos y versiones de parche** de los motores a recomendar, y presencia en el
-   **catálogo KEV de CISA** (MongoBleed lo estaba en agosto 2026).
-4. **Precios y modelos de facturación** de DynamoDB/Cosmos DB/Firestore y sus descuentos
-   por compromiso: cambian y determinan el diseño.
-5. **Cuotas y límites duros** del servicio gestionado (tamaño de ítem, throughput por
-   partición, número de índices): un límite es una restricción de diseño, no un detalle.
-6. **Incidentes de cadena de suministro** en los drivers y ODM que se vayan a usar.
+1. **The current licence of each engine** on its official page (`mongodb.com/legal/licensing`,
+   the ScyllaDB licensing FAQ, the Couchbase CE licence, the ArangoDB licence): it is the fact
+   that changes most and the one that costs most to get wrong. Verify the free-tier numeric limits
+   too (10 TB / 50 vCPU on ScyllaDB, 5 nodes / 4 cores on Couchbase CE, 100 GiB
+   on ArangoDB CE) **verbatim**, not from a summary.
+2. **Stable version, release policy and EOL**: MongoDB (is 8.0 still the on-prem LTS?
+   has 9.0 gone GA?), Cassandra (is 6.0 GA?), ScyllaDB (is 2026.3 stable?), DocumentDB and
+   FerretDB (real release cadence).
+3. **Open CVEs and patch versions** of the engines to be recommended, and presence in
+   **CISA's KEV catalogue** (MongoBleed was in it in August 2026).
+4. **Prices and billing models** of DynamoDB/Cosmos DB/Firestore and their commitment
+   discounts: they change and they determine the design.
+5. **Quotas and hard limits** of the managed service (item size, throughput per
+   partition, number of indexes): a limit is a design constraint, not a detail.
+6. **Supply-chain incidents** in the drivers and ODMs that are going to be used.
 
-**Huecos declarados** (no verificados en la sesión de agosto 2026; **no rellenar de
-memoria**, verificar antes de usar):
-- **Versión estable actual de Couchbase Server** y estado de su Community Edition en 2026
-  (solo se verificó el modelo de licencia y sus límites, no la versión ni cambios recientes).
-- **Estado de MongoDB 9.0** más allá de la existencia de etiquetas alpha.
-- **Compatibilidad real de ScyllaDB con la versión actual de CQL/Cassandra 5.0** (SAI,
-  tipo vector): no verificada.
-- **Estado de actividad de FerretDB** tras v2.7.0 (nov 2025): no verificado si la cadencia
-  se ha reanudado o el proyecto ha cambiado de modelo.
-- **Cosmos DB y Firestore**: no se verificó ningún dato específico (cuotas, modelos de
-  consistencia, precios) — tratar todo lo relativo a ellos como no verificado aquí.
-- **CVE de Couchbase, DynamoDB y DocumentDB**: no revisados.
+**Declared gaps** (not verified in the August 2026 session; **do not fill from
+memory**, verify before using):
+- **The current stable version of Couchbase Server** and the state of its Community Edition in 2026
+  (only the licensing model and its limits were verified, not the version nor recent changes).
+- **The state of MongoDB 9.0** beyond the existence of alpha tags.
+- **ScyllaDB's real compatibility with the current CQL/Cassandra 5.0 version** (SAI,
+  vector type): not verified.
+- **FerretDB's activity status** after v2.7.0 (Nov 2025): not verified whether the cadence
+  has resumed or the project has changed model.
+- **Cosmos DB and Firestore**: no specific fact was verified (quotas, consistency
+  models, prices) — treat everything relating to them as unverified here.
+- **CVEs for Couchbase, DynamoDB and DocumentDB**: not reviewed.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,27 +3,27 @@ name: vb6-standards
 description: Visual Basic 6.0 legacy applications - freeze, isolate or rewrite. Use when working with .vbp/.vbg/.frm/.frx/.bas/.cls/.ctl/.dsr project and form files, the VB6 IDE (VB6.EXE) or its command-line compiler, msvbvm60.dll and the VB6 runtime redistributable, MSCOMCTL.OCX/COMCTL32.OCX/MSCOMM32.OCX/MSWINSCK.OCX/RICHTX32.OCX and other OCX or ActiveX controls, regsvr32 component registration, binary compatibility and interface GUID churn, Declare Function Lib for Win32 API P/Invoke, ADO/DAO/RDO data access, Err.Number and On Error GoTo, 32-bit-only processes under WOW64, VB6 apps on Windows Server 2019/2022/2025, and when evaluating VB6-to-.NET converters, application virtualization or containerized Windows isolation for a frozen VB6 build.
 ---
 
-# Estándares Visual Basic 6.0 (legacy)
+# Visual Basic 6.0 standards (legacy)
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplicaciones **VB6 nativas** (sin CLR) todavía en producción: mantenimiento, congelación,
-aislamiento y salida. Triggers: `.vbp`, `.vbg`, `.frm`, `.frx`, `.bas`, `.cls`, `.ctl`,
-`msvbvm60.dll`, `VB6.EXE`, `regsvr32`, `.ocx`, compatibilidad binaria, `Declare Function Lib`,
+**Native VB6** applications (no CLR) still in production: maintenance, freezing,
+isolation and exit. Triggers: `.vbp`, `.vbg`, `.frm`, `.frx`, `.bas`, `.cls`, `.ctl`,
+`msvbvm60.dll`, `VB6.EXE`, `regsvr32`, `.ocx`, binary compatibility, `Declare Function Lib`,
 ADO/DAO/RDO, `On Error GoTo`.
 
-**El malentendido central es "funciona, luego está soportado".** No. Están soportadas dos cosas
-distintas y hay que separarlas quirúrgicamente. Microsoft (*Support Statement for Visual Basic
-6.0*, rev. 18-dic-2024), **verbatim**:
+**The central misunderstanding is "it works, therefore it is supported".** No. Two different things
+are supported and they have to be separated surgically. Microsoft (*Support Statement for Visual
+Basic 6.0*, rev. 18 Dec 2024), **verbatim**:
 
 > "Microsoft's goal is "It Just Works" compatibility for pre-existing Visual Basic 6.0 applications
 > on supported Windows versions. **The Visual Basic 6.0 runtime will be supported for the support
 > lifetime of Windows versions.** The support bar is limited to serious regressions and critical
 > security issues for existing applications."
 
-Y el otro lado, el que decide:
+And the other side, the one that decides:
 
 > "VB6 development is no longer supported. This support statement does not change the support
 > policy for the Visual Basic IDE. **The Visual Basic 6.0 IDE and Visual Studio 6.0 IDE are no
@@ -31,182 +31,181 @@ Y el otro lado, el que decide:
 > Visual Basic 6 applications, **Microsoft strongly recommends that you replace your applications
 > with modern technology.**"
 
-Traducido a criterio: **el binario que ya existe se ejecuta con soporte; el acto de modificarlo no
-está soportado por nadie.** No hay parches del compilador ni del IDE desde 2008. Cada cambio de
-código en una app VB6 se hace con una herramienta sin soporte, en una máquina que probablemente no
-se puede reinstalar limpiamente. **Ese es el riesgo real: el entorno de compilación, no el
-lenguaje.**
+Translated into criteria: **the binary that already exists runs with support; the act of modifying
+it is supported by nobody.** There have been no compiler or IDE patches since 2008. Every code change
+in a VB6 app is made with an unsupported tool, on a machine that probably cannot be reinstalled
+cleanly. **That is the real risk: the build environment, not the language.**
 
-La tabla oficial de sistemas operativos confirma el patrón en todas las filas —Windows 11, 10, 8.1
-SP1, 7 SP1, Server 2025, 2022, 2019, 2016, 2012 R2, 2012, 2008 R2— con **"Supported"** en *VB6
-Runtime Files in OS* y *VB6 Runtime Extended Files*, y **"Not Supported"** en *VB6 IDE*, sin una
-sola excepción. Dos notas que se ignoran a menudo, verbatim: *"For Windows Server, only 64-bit
+The official operating-system table confirms the pattern in every row — Windows 11, 10, 8.1
+SP1, 7 SP1, Server 2025, 2022, 2019, 2016, 2012 R2, 2012, 2008 R2 — with **"Supported"** for *VB6
+Runtime Files in OS* and *VB6 Runtime Extended Files*, and **"Not Supported"** for the *VB6 IDE*, without a
+single exception. Two notes that are often ignored, verbatim: *"For Windows Server, only 64-bit
 editions are supported. Server Core is not supported."*
 
-**No aplica**: `vbnet-standards` (**VB.NET es otro lenguaje sobre el CLR**; la similitud sintáctica
-es la trampa más cara de este dominio — un `.vb` no es un `.bas`),
-`dotnet-framework-legacy-standards` (.NET Framework 4.x, WebForms, WCF: el destino habitual de una
-reescritura *dentro* del mundo Microsoft, y el dueño del criterio de interop COM desde .NET),
-`dotnet-standards` (**.NET moderno: si la reescritura acaba ahí, el código resultante se rige por
-su criterio, no por el de aquí**), `classic-asp-standards` (VBScript en servidor — la propia
-declaración de soporte de VB6 dice **verbatim**: *"VBScript is unrelated to Visual Basic 6.0 and
+**Not applicable**: `vbnet-standards` (**VB.NET is a different language on the CLR**; the syntactic
+similarity is the most expensive trap in this domain — a `.vb` is not a `.bas`),
+`dotnet-framework-legacy-standards` (.NET Framework 4.x, WebForms, WCF: the usual destination of a
+rewrite *inside* the Microsoft world, and the owner of the COM interop criteria from .NET),
+`dotnet-standards` (**modern .NET: if the rewrite ends up there, the resulting code is governed by
+their criteria, not by these**), `classic-asp-standards` (server-side VBScript — VB6's own support
+statement says **verbatim**: *"VBScript is unrelated to Visual Basic 6.0 and
 this support statement"*).
-`legacy-modernization-standards`: decisión de cartera invertir/migrar/
-retirar —aquí el criterio técnico—, con `enterprise-architecture-standards`,
+`legacy-modernization-standards`: the portfolio decision to invest/migrate/
+retire — here the technical criteria —, with `enterprise-architecture-standards`,
 `project-management-standards`, `tech-leadership-standards`, `refactoring-tech-debt-standards`
-(*strangler fig*) y `testing-qa-standards`. Infra y encierro: `vmware-standards`/`hyper-v-standards`
-(**el host que sostiene la VM congelada — la pieza operativa clave de este dominio**),
-`windows-server-ad-standards`, `powershell-standards`, `backup-recovery-standards` (la imagen de la
-máquina de build **es** un activo a respaldar), `sqlserver-dba-standards` y `sql-standards`.
-Seguridad: `appsec-standards`, `vulnerability-management-standards`, `firewall-policy-standards`
-(el aislamiento de red que §5 exige), `grc-compliance-standards`.
+(*strangler fig*) and `testing-qa-standards`. Infrastructure and containment: `vmware-standards`/`hyper-v-standards`
+(**the host that sustains the frozen VM — the key operational piece in this domain**),
+`windows-server-ad-standards`, `powershell-standards`, `backup-recovery-standards` (the build
+machine's image **is** an asset to be backed up), `sqlserver-dba-standards` and `sql-standards`.
+Security: `appsec-standards`, `vulnerability-management-standards`, `firewall-policy-standards`
+(the network isolation §5 demands), `grc-compliance-standards`.
 
-## 2. Qué está soportado y qué no — decisiones por defecto
+## 2. What is supported and what is not — default decisions
 
-> Verificar por web antes de fijarlo (§8): la declaración se actualiza al salir versiones de Windows.
+> Verify on the web before pinning it (§8): the statement is updated as Windows versions ship.
 
-| Pieza | Estado oficial | Criterio |
+| Piece | Official status | Criterion |
 |---|---|---|
-| Runtime en el SO (`msvbvm60.dll` y lista de redist) | Soportado mientras dure el Windows anfitrión | El reloj es el **EOL del Windows**, no el de VB6 |
-| *Runtime extended files* (OCX de la lista, incl. `MSCOMCTL.OCX`, `COMCTL32.OCX`, `MSWINSCK.OCX`, `RICHTX32.OCX`) | Soportados, **pero los distribuye la aplicación**, no el SO | Versionar el redist junto al instalador; no confiar en lo que haya en la máquina |
-| Controles de la lista *unsupported* (`threed32.ocx`, `grid32.ocx`, `mschart.ocx`, `msoutl32.ocx`…) | **No soportados** | Sustituir o encapsular; son un bloqueo duro para certificar el SO |
-| IDE VB6 / VS6 | **No soportado desde 8-abr-2008**, en ningún Windows de la tabla | Ningún plan puede depender de "recompilamos si hace falta" sin resolver §3 |
-| Controles de terceros | Fuera de soporte de Microsoft | *"Microsoft is unable to provide support for third party components, such as OCX/ActiveX controls."* |
-| 64 bits | *"supported only in the WOW emulation environment"* | La app es **32 bits para siempre**: sin acceso a >4 GB, sin drivers ni ODBC de 64 bits |
-| Server Core / ediciones 32-bit de Server | **No soportado** | Descarta hardening por minimización del SO |
-| VBA que hospeda el runtime VB6 | Soportado solo si SO, Office **y** el fichero concreto lo están, a la vez | Tres relojes distintos: el más corto manda |
+| Runtime in the OS (`msvbvm60.dll` and the redist list) | Supported for as long as the host Windows lasts | The clock is the **Windows EOL**, not VB6's |
+| *Runtime extended files* (the listed OCXs, including `MSCOMCTL.OCX`, `COMCTL32.OCX`, `MSWINSCK.OCX`, `RICHTX32.OCX`) | Supported, **but distributed by the application**, not by the OS | Version the redist alongside the installer; do not rely on whatever is on the machine |
+| Controls on the *unsupported* list (`threed32.ocx`, `grid32.ocx`, `mschart.ocx`, `msoutl32.ocx`…) | **Not supported** | Replace or encapsulate; they are a hard blocker for certifying the OS |
+| VB6 / VS6 IDE | **Not supported since 8 Apr 2008**, on every Windows in the table | No plan can depend on "we recompile if we need to" without solving §3 |
+| Third-party controls | Outside Microsoft's support | *"Microsoft is unable to provide support for third party components, such as OCX/ActiveX controls."* |
+| 64-bit | *"supported only in the WOW emulation environment"* | The app is **32-bit forever**: no access to >4 GB, no 64-bit drivers and no 64-bit ODBC |
+| Server Core / 32-bit Server editions | **Not supported** | Rules out hardening by OS minimisation |
+| VBA hosting the VB6 runtime | Supported only if the OS, Office **and** the specific file all are, at the same time | Three separate clocks: the shortest one wins |
 
-**Corrección de una suposición frecuente**: `MSCOMCTL.OCX` **no está muerto** — figura en la lista
-oficial de *"Supported runtime files to distribute with your application"*. Lo que sí está muerto es
-media docena de controles antiguos de VB4/VB5 y **todo lo de terceros**. Antes de declarar un
-control inviable, comprobarlo contra la tabla real de la declaración de soporte, no de memoria.
+**Correcting a frequent assumption**: `MSCOMCTL.OCX` **is not dead** — it appears in the official
+list of *"Supported runtime files to distribute with your application"*. What is dead is
+half a dozen old VB4/VB5 controls and **everything third-party**. Before declaring a
+control unusable, check it against the real table in the support statement, not from memory.
 
-## 3. El problema del entorno de compilación (el riesgo de verdad)
+## 3. The build environment problem (the real risk)
 
-Una aplicación VB6 en producción no falla porque el lenguaje sea viejo: falla el día que hay que
-tocarla y nadie puede reconstruir la máquina que la compila. Reglas duras:
+A VB6 application in production does not fail because the language is old: it fails the day it has
+to be touched and nobody can rebuild the machine that compiles it. Hard rules:
 
-- **La máquina de build es un activo de producción.** Debe existir **al menos** como imagen de VM
-  versionada, con respaldo probado (`backup-recovery-standards`) y capacidad de arrancar en el
-  hipervisor actual (`vmware-standards`/`hyper-v-standards`). Una máquina física única bajo una mesa
-  es un incidente esperando fecha.
-- **Documentar el entorno como inventario, no como recuerdo**: versión exacta del IDE y service pack,
-  cada OCX de terceros con su versión y su origen, las claves de registro que su registro crea, el
-  orden de instalación, y las licencias de diseño de los controles comerciales (muchos exigen una
-  clave que solo vive en el registro de esa máquina). Ese documento es lo que separa "podemos
-  parchear" de "no podemos".
-- **El resultado de la compilación debe ser comparable**: guardar el binario compilado de cada
-  versión entregada junto al código, para poder verificar que una recompilación futura produce algo
-  equivalente. Sin eso, no hay forma de saber si la máquina se ha degradado.
-- El código fuente va en **Git** igual que cualquier otro (`git-workflow-standards`): `.frx` y demás
-  son binarios, tratarlos como tales; nada de carpetas con sufijos de fecha.
+- **The build machine is a production asset.** It must exist **at minimum** as a versioned
+  VM image, with a tested backup (`backup-recovery-standards`) and the ability to boot on the
+  current hypervisor (`vmware-standards`/`hyper-v-standards`). A single physical machine under a desk
+  is an incident waiting for a date.
+- **Document the environment as an inventory, not as a memory**: the exact IDE version and service pack,
+  every third-party OCX with its version and origin, the registry keys its registration creates, the
+  installation order, and the design-time licences of the commercial controls (many require a
+  key that only lives in that machine's registry). That document is what separates "we can
+  patch" from "we cannot".
+- **The build output must be comparable**: keep the compiled binary of every delivered
+  version alongside the code, so a future recompilation can be verified to produce something
+  equivalent. Without that, there is no way to tell whether the machine has degraded.
+- The source code goes in **Git** like anything else (`git-workflow-standards`): `.frx` and the like
+  are binaries, treat them as such; no folders with date suffixes.
 
-**Compatibilidad binaria y GUID**: el proyecto debe estar en **compatibilidad binaria** (*binary
-compatibility*) contra el último binario entregado, no en "compatibilidad de proyecto" ni "sin
-compatibilidad". Si no, cada recompilación genera **GUID de interfaz nuevos**, y todo cliente COM
-registrado contra la versión anterior deja de encontrar el componente. Es la avería clásica de este
-dominio: se recompila "sin cambios", se despliega y el sistema deja de hablar consigo mismo. El
-binario de referencia se versiona y se guarda como parte del artefacto.
+**Binary compatibility and GUIDs**: the project must be set to **binary
+compatibility** against the last delivered binary, not "project compatibility" and not "no
+compatibility". Otherwise every recompilation generates **new interface GUIDs**, and every COM client
+registered against the previous version stops finding the component. It is the classic breakage in this
+domain: it is recompiled "with no changes", deployed, and the system stops talking to itself. The
+reference binary is versioned and kept as part of the artifact.
 
-**Registro de componentes**: registrar OCX/DLL con `regsvr32` es estado global de la máquina.
-Cualquier despliegue debe ser **idempotente y reversible**, y estar escrito (instalador o script
-`powershell-standards`), nunca en la cabeza de nadie. El *DLL hell* de versiones distintas del mismo
-OCX en máquinas distintas es la causa dominante de "en mi máquina funciona".
+**Component registration**: registering an OCX/DLL with `regsvr32` is global machine state.
+Every deployment must be **idempotent and reversible**, and written down (an installer or a
+`powershell-standards` script), never in somebody's head. *DLL hell* from different versions of the same
+OCX on different machines is the dominant cause of "it works on my machine".
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-No hay toolchain moderna aquí (linter, analizador, formateador: no existen para VB6 en estado
-soportado), así que **esta sección se reduce a lo único que sí aplica**: antes de tocar una línea,
-**caracterizar el comportamiento observable** con pruebas de extremo a extremo sobre la aplicación
-tal cual está (entradas → salidas, ficheros, estado en base de datos). La estrategia la fija
-`testing-qa-standards`. Sin esa red, ni un cambio menor es defendible: no hay compilador estricto ni
-suite que avise, y `On Error Resume Next` repartido por el código oculta los fallos que provoques.
+There is no modern toolchain here (linter, analyser, formatter: none exist for VB6 in a
+supported state), so **this section reduces to the only thing that does apply**: before touching a line,
+**characterise the observable behaviour** with end-to-end tests over the application
+as it stands (inputs → outputs, files, database state). The strategy is set by
+`testing-qa-standards`. Without that net, not even a minor change is defensible: there is no strict
+compiler and no suite to warn you, and `On Error Resume Next` scattered through the code hides the failures you cause.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-**Regla dura: una aplicación VB6 no debe atender tráfico de internet.** Ni directamente ni detrás de
-un proxy que "ya filtra". Es código compilado con herramientas sin parches desde 2008, sin
-mitigaciones modernas garantizadas (ASLR/DEP/CFG dependen de flags que ese enlazador no pone), con
-manejo de cadenas propenso a desbordamiento en las llamadas `Declare Function Lib` a la API Win32, y
-sin nadie que vaya a publicar un parche si aparece un fallo del compilador.
+**Hard rule: a VB6 application must not serve internet traffic.** Neither directly nor behind
+a proxy that "already filters". It is code compiled with tools unpatched since 2008, with no
+guaranteed modern mitigations (ASLR/DEP/CFG depend on flags that linker does not set), with
+string handling prone to overflow in the `Declare Function Lib` calls into the Win32 API, and
+with nobody who will publish a patch if a compiler bug appears.
 
-- **Aislamiento por defecto**: red segmentada, alcanzable solo desde clientes internos identificados,
-  regla *default-deny* de entrada **y de salida** (`firewall-policy-standards`). Si necesita
-  publicarse, se publica **un servicio moderno delante** que hable con ella, no ella.
-- **`MSWINSCK.OCX` (Winsock) escuchando en un puerto** es exactamente el escenario prohibido: parser
-  de protocolo escrito en VB6 expuesto a red.
-- **SQL por concatenación** es el patrón dominante en este código. Corrección real: `ADODB.Command`
-  con `CreateParameter`/`Parameters.Append` tipado; nunca `"... WHERE id=" & Text1.Text`. Ver
+- **Isolation by default**: a segmented network, reachable only from identified internal clients,
+  with a *default-deny* rule inbound **and outbound** (`firewall-policy-standards`). If it needs
+  publishing, **a modern service is published in front** that talks to it, not it.
+- **`MSWINSCK.OCX` (Winsock) listening on a port** is exactly the forbidden scenario: a protocol
+  parser written in VB6 exposed to the network.
+- **SQL by concatenation** is the dominant pattern in this code. The real fix: `ADODB.Command`
+  with typed `CreateParameter`/`Parameters.Append`; never `"... WHERE id=" & Text1.Text`. See
   `sql-standards`.
-- **Credenciales** incrustadas en el `.bas` o en un `.ini` junto al ejecutable son lo normal aquí. Un
-  binario VB6 se descompila con facilidad: todo lo que esté ahí está publicado. Sacarlas
-  (`secrets-management-standards`) y **rotarlas**, asumiendo que ya se conocen.
-- **Privilegios**: suelen exigir escribir en `Program Files` o `HKLM`, y "se arreglan" dándoles
-  administrador. PROHIBIDO. Redirigir a rutas de usuario o aislar en su propia VM/sesión.
-- **Dependencias sin escáner**: los OCX de terceros no aparecen en ningún SCA. Entran a mano en el
-  inventario de `vulnerability-management-standards`; un control cuyo fabricante ya no existe es un
-  riesgo aceptado explícitamente, no un olvido.
+- **Credentials** embedded in the `.bas` or in an `.ini` next to the executable are the norm here. A
+  VB6 binary decompiles easily: everything in there is published. Take them out
+  (`secrets-management-standards`) and **rotate them**, assuming they are already known.
+- **Privileges**: these apps usually need to write to `Program Files` or `HKLM`, and get "fixed" by
+  being given administrator. FORBIDDEN. Redirect to user paths or isolate in their own VM/session.
+- **Dependencies with no scanner**: third-party OCXs appear in no SCA. They enter the
+  `vulnerability-management-standards` inventory by hand; a control whose vendor no longer exists is an
+  explicitly accepted risk, not an oversight.
 
-## 6. Operación
+## 6. Operation
 
-- **Congelar y aislar** es legítimo y a menudo lo correcto (§7): VM dedicada, *snapshot* antes de
-  cualquier cambio, imagen respaldada con restauración probada, sin actualizaciones automáticas que
-  rompan un OCX, y el **EOL del Windows anfitrión** como única fecha del registro de riesgos.
-- 32 bits sobre Windows de 64: WOW64. A planificar: el ODBC de 32 bits se configura con
-  `%SystemRoot%\SysWOW64\odbcad32.exe`, el registro va a `HKLM\SOFTWARE\WOW6432Node`, y **no se puede
-  cargar ningún componente de 64 bits en ese proceso** — drivers de base de datos modernos incluidos.
-- Contenedorización de Windows y virtualización de aplicaciones **empaquetan y aíslan** el binario,
-  no lo modernizan: hacen el despliegue reproducible y lo desacoplan del SO anfitrión. Verificar
-  antes que los OCX se registran en el contenedor y que la app no necesita escritorio interactivo.
+- **Freezing and isolating** is legitimate and often the right answer (§7): a dedicated VM, a snapshot before
+  any change, a backed-up image with a tested restore, no automatic updates that
+  break an OCX, and the **host Windows's EOL** as the only date in the risk register.
+- 32-bit on 64-bit Windows: WOW64. To plan for: 32-bit ODBC is configured with
+  `%SystemRoot%\SysWOW64\odbcad32.exe`, the registry goes to `HKLM\SOFTWARE\WOW6432Node`, and **no
+  64-bit component can be loaded into that process** — modern database drivers included.
+- Windows containerisation and application virtualisation **package and isolate** the binary,
+  they do not modernise it: they make deployment reproducible and decouple it from the host OS. Verify
+  first that the OCXs register inside the container and that the app does not need an interactive desktop.
 
-## 7. Salida, prohibiciones y cuándo congelar en vez de migrar
+## 7. Exit, prohibitions and when to freeze instead of migrating
 
-**No existe una ruta mecánica buena, y decirlo pronto ahorra un año.** Los conversores VB6→.NET
-producen código que compila y que **hay que reescribir igualmente**: las formas quedan como
-formularios generados incomprensibles, `On Error` se traduce a `try/catch` inútiles, la lógica sigue
-en los manejadores de eventos y el modelo COM se arrastra. El asistente de actualización de las
-primeras versiones de Visual Studio ya se retiró. Presupuestar una conversión automática como si
-fuera la migración es el error clásico.
+**There is no good mechanical route, and saying so early saves a year.** VB6→.NET converters
+produce code that compiles and that **has to be rewritten anyway**: the forms end up as
+incomprehensible generated forms, `On Error` translates into useless `try/catch`, the logic stays
+in the event handlers and the COM model is dragged along. The upgrade wizard from the early versions
+of Visual Studio has already been withdrawn. Budgeting an automatic conversion as if it were the
+migration is the classic mistake.
 
-Opciones reales, en orden de coste creciente: **(a) congelar y aislar**; **(b) empaquetar/virtualizar
-o contenerizar** el binario para desacoplarlo del SO; **(c) *strangler fig*** — poner un servicio
-moderno delante y mover funcionalidad módulo a módulo, dejando la app VB6 como motor menguante;
-**(d) reescritura** completa, con la app viva y contrastando comportamiento contra ella.
+Real options, in order of increasing cost: **(a) freeze and isolate**; **(b) package/virtualise
+or containerise** the binary to decouple it from the OS; **(c) *strangler fig*** — put a
+modern service in front and move functionality module by module, leaving the VB6 app as a shrinking
+engine; **(d) a full rewrite**, with the app live and its behaviour used as the reference.
 
-**Congelar y aislar** es la respuesta correcta cuando: la aplicación es estable y sin roadmap; el
-Windows anfitrión sigue soportado y con fecha lejana; se puede aislar de red por completo; y existe
-—o se puede reconstruir— el entorno de compilación por si aparece un parche urgente. **Migrar** es
-obligatorio cuando hay evolución funcional pendiente, exposición de red que no se puede eliminar,
-dependencia de controles no soportados o de terceros muertos, o el Windows entra en cuenta atrás.
+**Freeze and isolate** is the right answer when: the application is stable with no roadmap; the
+host Windows is still supported with a distant date; it can be fully isolated from the network; and
+the build environment exists — or can be rebuilt — in case an urgent patch appears. **Migrating** is
+mandatory when there is pending functional evolution, network exposure that cannot be removed,
+a dependency on unsupported controls or dead third parties, or the Windows enters its countdown.
 
-- ❌ PROHIBIDO exponer una aplicación VB6 a internet, directamente o vía *port forwarding*.
-- ❌ PROHIBIDO desarrollo **nuevo** en VB6. Se mantiene lo que hay; lo nuevo se escribe fuera.
-- ❌ PROHIBIDO recompilar sin **compatibilidad binaria** contra el último binario entregado.
-- ❌ PROHIBIDO que exista una única máquina de build sin imagen versionada y restauración probada.
-- ❌ PROHIBIDO SQL por concatenación; parámetros ADO tipados.
-- ❌ PROHIBIDO ejecutar la aplicación como administrador para evitar arreglar sus rutas/permisos.
-- ❌ PROHIBIDO credenciales incrustadas en el código o en `.ini` junto al ejecutable.
-- ❌ PROHIBIDO `On Error Resume Next` en código nuevo o modificado.
-- ❌ PROHIBIDO presentar la salida de un conversor VB6→.NET como una migración terminada.
-- ❌ PROHIBIDO decir "VB6 está soportado" sin la distinción runtime/IDE de §1: es media verdad y
-  lleva a planificar mal.
-- ❌ PROHIBIDO tocar el código sin caracterización previa del comportamiento (§4).
+- ❌ FORBIDDEN to expose a VB6 application to the internet, directly or via port forwarding.
+- ❌ FORBIDDEN: **new** development in VB6. What exists is maintained; anything new is written outside.
+- ❌ FORBIDDEN to recompile without **binary compatibility** against the last delivered binary.
+- ❌ FORBIDDEN for a single build machine to exist without a versioned image and a tested restore.
+- ❌ FORBIDDEN: SQL by concatenation; typed ADO parameters instead.
+- ❌ FORBIDDEN to run the application as administrator to avoid fixing its paths/permissions.
+- ❌ FORBIDDEN: credentials embedded in the code or in an `.ini` next to the executable.
+- ❌ FORBIDDEN: `On Error Resume Next` in new or modified code.
+- ❌ FORBIDDEN to present the output of a VB6→.NET converter as a finished migration.
+- ❌ FORBIDDEN to say "VB6 is supported" without the runtime/IDE distinction in §1: it is a half-truth and
+  it leads to bad planning.
+- ❌ FORBIDDEN to touch the code without prior behavioural characterisation (§4).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Comprobar siempre: la **declaración de soporte de VB6** vigente (se actualiza al salir nuevas
-versiones de Windows — verificar si la tabla ya incluye el SO del parque y si sigue diciendo *"Not
-Supported"* para el IDE); la **fecha de fin de soporte del Windows anfitrión**, que es el único reloj
-real; qué ficheros siguen en la lista de *runtime extended files* soportados frente a la de *no
-soportados*; el estado del fabricante de cada OCX de terceros; CVEs de los componentes COM del
-inventario.
+Always check: the current **VB6 support statement** (it is updated as new Windows
+versions ship — check whether the table already includes the estate's OS and whether it still says *"Not
+Supported"* for the IDE); the **end-of-support date of the host Windows**, which is the only real
+clock; which files remain on the supported *runtime extended files* list versus the *not
+supported* one; the status of every third-party OCX's vendor; CVEs of the COM components in the
+inventory.
 
-**Huecos declarados (sin dato verificado, NO rellenar de memoria)**: no verificado a ago-2026 si
-existe declaración alguna de Microsoft sobre soporte del runtime VB6 en versiones de Windows
-posteriores a las listadas en la tabla —**la ausencia de una fila no es una promesa ni una
-negación**, se consulta la declaración actualizada—; estado de mantenimiento y calidad real de
-salida de los conversores VB6→.NET comerciales; viabilidad concreta de contenedorizar una aplicación
-VB6 con OCX registrados (depende de cada control: probar, no suponer); número de aplicaciones VB6 en
-producción o cuota de mercado — no hay cifra pública fiable, no citar ninguna.
+**Declared gaps (no verified data, do NOT fill them from memory)**: not verified as of Aug 2026 whether
+any Microsoft statement exists on VB6 runtime support in Windows versions
+later than those listed in the table — **the absence of a row is neither a promise nor a
+denial**, consult the updated statement —; the maintenance status and real output quality
+of commercial VB6→.NET converters; the concrete feasibility of containerising a VB6
+application with registered OCXs (it depends on each control: test, do not assume); the number of VB6 applications in
+production or their market share — there is no reliable public figure, do not cite one.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

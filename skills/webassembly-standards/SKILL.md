@@ -3,398 +3,408 @@ name: webassembly-standards
 description: Use when WebAssembly is the compilation target or the runtime - .wasm and .wat modules, WIT files and wit-bindgen, the Component Model and WASI (wasip1/wasip2/wasip3, WASI 0.2/0.3), Rust targets wasm32-unknown-unknown/wasm32-wasip1/wasm32-wasip2, Emscripten emcc, TinyGo -target=wasip2, GOOS=wasip1, dotnet wasm, wasm-bindgen, wasm-pack, wasm-tools, wabt (wat2wasm/wasm2wat), binaryen wasm-opt, Wasmtime, WasmEdge, Wasmer, wazero, Extism plugin hosts, runwasi or containerd-shim-spin, edge functions running Wasm, or sandbox limits, fuel/epoch metering and module size budgets.
 ---
 
-# Estándares WebAssembly (target de compilación y runtime)
+# WebAssembly standards (compilation target and runtime)
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**WebAssembly no es un lenguaje: es un objetivo de compilación y un modelo de ejecución.** Esta skill
-decide **si Wasm es la respuesta**, qué target y qué runtime, qué capacidades importa el host, qué
-límites de recursos se fijan y cuánto puede pesar el artefacto. El código fuente lo manda la skill
-del lenguaje.
+**WebAssembly is not a language: it is a compilation target and an execution model.** This skill
+decides **whether Wasm is the answer**, which target and which runtime, which capabilities the host
+imports, which resource limits are set and how much the artifact may weigh. The source code is
+governed by the language's skill.
 
-Triggers: `.wasm`, `.wat`, ficheros `.wit` y `wit-bindgen`, `wasm-tools`, `wasm-opt`/binaryen,
-`wat2wasm`/`wasm2wat` (wabt), `wasm-bindgen`/`wasm-pack`, targets `wasm32-*` de Rust, `emcc`,
+Triggers: `.wasm`, `.wat`, `.wit` files and `wit-bindgen`, `wasm-tools`, `wasm-opt`/binaryen,
+`wat2wasm`/`wasm2wat` (wabt), `wasm-bindgen`/`wasm-pack`, Rust `wasm32-*` targets, `emcc`,
 `tinygo -target=wasip2`, `GOOS=wasip1`, Wasmtime/WasmEdge/Wasmer/wazero, Extism, `runwasi` /
-`containerd-shim-spin` / `RuntimeClass` de Wasm, funciones edge en Wasm, y cualquier discusión de
-*sandbox*, *fuel*/epoch, límites de memoria o tamaño de módulo.
+`containerd-shim-spin` / a Wasm `RuntimeClass`, edge functions in Wasm, and any discussion of
+*sandbox*, *fuel*/epoch, memory limits or module size.
 
-**No aplica**:
+**Not applicable**:
 
-- **Lenguaje de origen** (**suyo**: cómo se escribe el código, su build, sus tests, su lint;
-  **aquí**: el target Wasm, el runtime, el modelo de componentes, los límites del sandbox y el tamaño
-  del artefacto): `rust-standards`, `c-standards`, `cpp-standards`, `go-standards`,
-  `dotnet-standards`, `typescript-standards`, `dart-standards` (el lenguaje Dart, `pub`,
-  los lint y los tests son suyos; que Flutter web compile a WasmGC es de aquí).
-- `kubernetes-standards` y `container-runtime-security-standards` (**Wasm como alternativa o
-  complemento al contenedor**: el runtime de contenedores, la admisión, las políticas del clúster y
-  el aislamiento del nodo son **suyos**; el módulo Wasm, su host embebido y las capacidades que ese
-  host importa son de **aquí**).
-- `caching-cdn-standards` (el *edge* como plataforma: caché, invalidación, propagación y coste; aquí
-  solo el módulo que se ejecuta en él y sus límites).
-- `webgl-webgpu-standards` (los dos se cruzan constantemente porque los motores gráficos
-  portados desde C++ llegan como Wasm y los transcodificadores de textura son módulos Wasm. **El
-  módulo, su tamaño, su runtime y sus importaciones son de aquí**; **el canvas, el pipeline de GPU,
-  el presupuesto de fotograma y la degradación a WebGL2 son suyos**), `pwa-standards` (el
-  *service worker* que cachea y sirve el módulo, y su modelo de actualización, son suyos — un `.wasm`
-  precacheado con una estrategia equivocada es un binario viejo servido rápido).
-- `compilers-dsl-standards` (**emitir Wasm desde un backend propio es suyo**: gramática, IR,
-  generación de código y diagnósticos; **aquí el target, el runtime, el sandbox y el artefacto**).
-- `appsec-standards` (metodología: modelado de amenazas, clases de vulnerabilidad, ASVS; **aquí** el
-  sandbox concreto, la superficie de importaciones y los límites de recursos).
-- `local-inference-standards` y `gpu-computing-standards` (si Wasm aparece por inferencia en el
-  navegador: el modelo, la cuantización y la aceleración son suyos; el módulo y su runtime, de aquí).
-- Comunes: `cicd-standards` (la pipeline que ejecuta los gates de §4), `secrets-management-standards`
-  (custodia y rotación de los secretos que el host **decide** o **no** pasar al invitado),
-  `vulnerability-management-standards` (triaje y SLA de las CVEs de runtime y toolchain),
-  `api-design-standards` (el contrato de red que el módulo expone o consume; el contrato **WIT** es
-  de aquí), `observability-standards` (pipeline de telemetría; aquí la instrumentación del host y del
-  módulo).
+- **The source language** (**theirs**: how the code is written, its build, its tests, its lint;
+  **here**: the Wasm target, the runtime, the component model, the sandbox limits and the artifact
+  size): `rust-standards`, `c-standards`, `cpp-standards`, `go-standards`,
+  `dotnet-standards`, `typescript-standards`, `dart-standards` (the Dart language, `pub`,
+  the lints and the tests are theirs; that Flutter web compiles to WasmGC belongs here).
+- `kubernetes-standards` and `container-runtime-security-standards` (**Wasm as an alternative or a
+  complement to the container**: the container runtime, admission, cluster policies and
+  node isolation are **theirs**; the Wasm module, its embedded host and the capabilities that host
+  imports belong **here**).
+- `caching-cdn-standards` (the *edge* as a platform: caching, invalidation, propagation and cost;
+  here only the module that runs on it and its limits).
+- `webgl-webgpu-standards` (the two cross constantly because graphics engines
+  ported from C++ arrive as Wasm and texture transcoders are Wasm modules. **The
+  module, its size, its runtime and its imports belong here**; **the canvas, the GPU pipeline,
+  the frame budget and the fallback to WebGL2 are theirs**), `pwa-standards` (the
+  *service worker* that caches and serves the module, and its update model, are theirs — a `.wasm`
+  precached with the wrong strategy is an old binary served fast).
+- `compilers-dsl-standards` (**emitting Wasm from a backend of your own is theirs**: grammar, IR,
+  code generation and diagnostics; **here the target, the runtime, the sandbox and the artifact**).
+- `appsec-standards` (methodology: threat modelling, vulnerability classes, ASVS; **here** the
+  concrete sandbox, the import surface and the resource limits).
+- `local-inference-standards` and `gpu-computing-standards` (if Wasm turns up because of in-browser
+  inference: the model, the quantisation and the acceleration are theirs; the module and its runtime,
+  here).
+- Common ones: `cicd-standards` (the pipeline that runs the §4 gates), `secrets-management-standards`
+  (custody and rotation of the secrets the host **decides** to pass — or **not** — to the guest),
+  `vulnerability-management-standards` (triage and SLA for runtime and toolchain CVEs),
+  `api-design-standards` (the network contract the module exposes or consumes; the **WIT** contract
+  belongs here), `observability-standards` (telemetry pipeline; here the instrumentation of the host
+  and of the module).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before committing to it in a real project (§8).
 
-**Decisión cero — ¿Wasm o no?** Ver §7: la mayoría de las veces la respuesta correcta es *no*. Lo que
-sigue aplica una vez el caso está justificado por escrito.
+**Decision zero — Wasm or not?** See §7: most of the time the right answer is *no*. What
+follows applies once the case is justified in writing.
 
-| Decisión | Elección por defecto | Estado a ago-2026 | Por qué |
+| Decision | Default choice | Status as of Aug-2026 | Why |
 |---|---|---|---|
-| Runtime embebido en un producto | **Wasmtime** | v47.0.3 (2026-07-31); **Apache-2.0 WITH LLVM-exception** (el `LICENSE` incluye literalmente `--- LLVM Exceptions to the Apache 2.0 License ----`) | Runtime de referencia de la **Bytecode Alliance**; es donde aterrizan primero el Component Model y WASI. Gobernanza de fundación, no de una empresa |
-| Runtime embebido en Go, sin CGO | **wazero** | v1.12.0 (2026-05-29); **Apache-2.0** (`LICENSE` en crudo) | Escrito en Go puro: **cero CGO**, cross-compila como cualquier binario Go. Si el host es Go, esto gana por operabilidad |
-| Runtime para plugins de producto | **Extism** (sobre Wasmtime) | v1.30.0 (2026-07-16); **BSD-3-Clause** (`Copyright 2022 Dylibso, Inc.` + las 3 cláusulas, verificado en crudo — **no es MIT ni Apache**, comprueba la compatibilidad con tu política de licencias) | SDKs de host en muchos lenguajes y un modelo de plugin ya resuelto; evita reimplementar el ABI a mano |
-| Runtime con foco edge/AI | **WasmEdge** | 0.17.1 (2026-07-06); **Apache-2.0** (`LICENSE` en crudo, rama `master`) | Proyecto CNCF, integración con containerd/runwasi |
-| Wasmer | Solo por necesidad concreta (WASIX, dynamic linking) | v7.2.1 (2026-07-23); el `LICENSE` del repo principal es **MIT** (`Copyright (c) 2019-present Wasmer, Inc. and its affiliates.`) | **Ojo**: la empresa monetiza Registry y Wasmer Edge (servicios), y **WASIX es una extensión propia, no un estándar** — adoptarlo es lock-in. Verifica licencia **por crate/componente**, no solo el `LICENSE` raíz (§8) |
-| Rust → navegador | `wasm32-unknown-unknown` + `wasm-bindgen` / `wasm-pack` | Target **Tier 2 sin host tools**; wasm-bindgen 0.2.126 | El target no aporta *ninguna* API de sistema: todo entra por importaciones que tú declaras |
-| Rust → fuera del navegador | `wasm32-wasip1` (módulo core, soporte más amplio) o **`wasm32-wasip2`** (componente) | Ambos **Tier 2 sin host tools**. También existen `wasm32-wasip1-threads` (Tier 2), `wasm32v1-none` (Tier 2), `wasm32-unknown-emscripten` (Tier 2 con host tools), y **Tier 3**: `wasm32-wasip3`, `wasm64-unknown-unknown`, `wasm32-wali-linux-musl` | **Los nombres cambiaron**: `wasm32-wasi` ya no existe. **Tier 3 = sin garantías de que compile**: `wasm32-wasip3` no es una elección de producción hoy |
-| C/C++ → Wasm | **Emscripten** (`emcc`) | 6.0.5 (2026-07-28) | Es el único camino realista si arrastras SDL/OpenGL/pthreads/filesystem; trae su propio shim de POSIX |
-| Go → Wasm | Upstream Go `GOOS=wasip1 GOARCH=wasm` + `//go:wasmexport` para módulo core; **TinyGo `-target=wasip2`** si necesitas componente | TinyGo 0.41.1 | El compilador de Go upstream **no produce componentes**; y sus binarios son mucho más grandes que los de TinyGo (Go embarca runtime + GC completos) |
-| Interfaz entre componentes | **WIT** + `wit-bindgen` | — | El contrato se escribe en `.wit` y se versiona como cualquier API |
-| Herramientas | `wasm-tools` (validate/component/print), `wasm-opt` (binaryen), `wabt` | wasm-tools v1.255.0; binaryen version_131; wabt 1.0.41 | `wasm-tools validate` en CI; `wasm-opt -Oz` en release |
+| Runtime embedded in a product | **Wasmtime** | v47.0.3 (2026-07-31); **Apache-2.0 WITH LLVM-exception** (the `LICENSE` literally includes `--- LLVM Exceptions to the Apache 2.0 License ----`) | The **Bytecode Alliance**'s reference runtime; it is where the Component Model and WASI land first. Foundation governance, not a company's |
+| Runtime embedded in Go, without CGO | **wazero** | v1.12.0 (2026-05-29); **Apache-2.0** (raw `LICENSE`) | Written in pure Go: **zero CGO**, cross-compiles like any Go binary. If the host is Go, this wins on operability |
+| Runtime for product plugins | **Extism** (over Wasmtime) | v1.30.0 (2026-07-16); **BSD-3-Clause** (`Copyright 2022 Dylibso, Inc.` + the 3 clauses, verified raw — **it is neither MIT nor Apache**, check compatibility with your licensing policy) | Host SDKs in many languages and an already-solved plugin model; it avoids reimplementing the ABI by hand |
+| Runtime with an edge/AI focus | **WasmEdge** | 0.17.1 (2026-07-06); **Apache-2.0** (raw `LICENSE`, `master` branch) | A CNCF project, integrated with containerd/runwasi |
+| Wasmer | Only for a specific need (WASIX, dynamic linking) | v7.2.1 (2026-07-23); the main repo's `LICENSE` is **MIT** (`Copyright (c) 2019-present Wasmer, Inc. and its affiliates.`) | **Careful**: the company monetises Registry and Wasmer Edge (services), and **WASIX is an extension of their own, not a standard** — adopting it is lock-in. Verify the licence **per crate/component**, not just the root `LICENSE` (§8) |
+| Rust → browser | `wasm32-unknown-unknown` + `wasm-bindgen` / `wasm-pack` | Target **Tier 2 without host tools**; wasm-bindgen 0.2.126 | The target provides *no* system API at all: everything comes in through imports you declare |
+| Rust → outside the browser | `wasm32-wasip1` (core module, broader support) or **`wasm32-wasip2`** (component) | Both **Tier 2 without host tools**. There are also `wasm32-wasip1-threads` (Tier 2), `wasm32v1-none` (Tier 2), `wasm32-unknown-emscripten` (Tier 2 with host tools), and **Tier 3**: `wasm32-wasip3`, `wasm64-unknown-unknown`, `wasm32-wali-linux-musl` | **The names changed**: `wasm32-wasi` no longer exists. **Tier 3 = no guarantee it even compiles**: `wasm32-wasip3` is not a production choice today |
+| C/C++ → Wasm | **Emscripten** (`emcc`) | 6.0.5 (2026-07-28) | It is the only realistic route if you drag SDL/OpenGL/pthreads/filesystem along; it brings its own POSIX shim |
+| Go → Wasm | Upstream Go `GOOS=wasip1 GOARCH=wasm` + `//go:wasmexport` for a core module; **TinyGo `-target=wasip2`** if you need a component | TinyGo 0.41.1 | The upstream Go compiler **does not produce components**; and its binaries are much larger than TinyGo's (Go embeds a full runtime + GC) |
+| Interface between components | **WIT** + `wit-bindgen` | — | The contract is written in `.wit` and versioned like any API |
+| Tooling | `wasm-tools` (validate/component/print), `wasm-opt` (binaryen), `wabt` | wasm-tools v1.255.0; binaryen version_131; wabt 1.0.41 | `wasm-tools validate` in CI; `wasm-opt -Oz` on release |
 
-## 3. Modelo de ejecución: qué garantiza el sandbox y qué NO
+## 3. Execution model: what the sandbox guarantees and what it does NOT
 
-**Lo que sí garantiza, por diseño:**
+**What it does guarantee, by design:**
 
-- **Memoria lineal aislada**: el módulo solo direcciona su propia memoria. Un acceso fuera de rango
-  es un trap, no una lectura del proceso host. No hay punteros al espacio del host.
-- **Integridad del flujo de control**: la pila de llamadas no es direccionable desde el módulo; no se
-  puede sobrescribir una dirección de retorno. Los *jumps* son a índices validados de tabla.
-- **Cero acceso al sistema por defecto**: sin ficheros, sin red, sin reloj, sin entropía, sin
-  variables de entorno, sin llamadas al SO. **Todo lo que el módulo puede hacer con el exterior son
-  las funciones que el host le importa.** Ese es *el* control de seguridad; el resto es consecuencia.
-- **Determinismo** dentro del perfil determinista de Wasm 3.0 (útil para replay y auditoría).
+- **Isolated linear memory**: the module only addresses its own memory. An out-of-range access
+  is a trap, not a read of the host process. There are no pointers into the host's space.
+- **Control flow integrity**: the call stack is not addressable from the module; a return address
+  cannot be overwritten. *Jumps* go to validated table indices.
+- **Zero system access by default**: no files, no network, no clock, no entropy, no
+  environment variables, no OS calls. **Everything the module can do with the outside world is the
+  functions the host imports into it.** That is *the* security control; the rest is a consequence.
+- **Determinism** within Wasm 3.0's deterministic profile (useful for replay and auditing).
 
-**Lo que NO garantiza — y aquí es donde se rompen los despliegues:**
+**What it does NOT guarantee — and this is where deployments break:**
 
-- **No protege de un bucle infinito.** Sin metering, un módulo hostil o con un bug consume la CPU
-  hasta que alguien lo mate. **Fija combustible o interrupción por tiempo, siempre**: `fuel` o
-  `epoch_interruption` en Wasmtime, límites equivalentes en el runtime que uses. Un host que
-  ejecuta código de terceros sin límite de ejecución no tiene sandbox, tiene una promesa.
-- **No protege del agotamiento de memoria.** Fija el **máximo de páginas de memoria lineal** y el
-  tamaño de pila; una memoria que crece sin techo es un OOM del proceso host, y el que muere es el
-  host, no el invitado.
-- **No protege de la lógica maliciosa dentro de lo que le has concedido.** Si le importas
-  `open_file(path)` sin acotar, exfiltrará ficheros; si le importas `http_fetch(url)` sin allowlist,
-  tienes SSRF con esteroides. **El sandbox mueve la frontera de confianza a la lista de
-  importaciones**; si esa lista es generosa, no has aislado nada.
-- **No protege de los bugs del propio runtime.** Wasmtime, WasmEdge y compañía han tenido CVEs de
-  escape. El runtime es software privilegiado: se parchea con la misma urgencia que un hipervisor.
-- **No arregla la memoria insegura del invitado.** Un desbordamiento en C compilado a Wasm sigue
-  corrompiendo *sus* estructuras dentro de la memoria lineal — y en Wasm la memoria lineal **no tiene
-  ASLR, ni páginas de guarda internas, ni NX dentro del heap del módulo**: un bug que en nativo sería
-  un crash puede ser explotable *dentro* del módulo. Wasm contiene el daño al módulo; no lo elimina.
-- **Los canales laterales no desaparecen** (timing, caché). Si el modelo de amenaza incluye
-  co-tenencia hostil con secretos en el host, el sandbox de Wasm no es la respuesta completa.
+- **It does not protect against an infinite loop.** With no metering, a hostile or buggy module
+  consumes CPU until someone kills it. **Set fuel or a time-based interruption, always**: `fuel` or
+  `epoch_interruption` in Wasmtime, equivalent limits in whichever runtime you use. A host that
+  runs third-party code with no execution limit does not have a sandbox, it has a promise.
+- **It does not protect against memory exhaustion.** Set the **maximum number of linear memory
+  pages** and the stack size; a memory that grows without a ceiling is an OOM of the host process,
+  and the one that dies is the host, not the guest.
+- **It does not protect against malicious logic within what you have granted it.** If you import
+  `open_file(path)` unbounded, it will exfiltrate files; if you import `http_fetch(url)` with no
+  allowlist, you have SSRF on steroids. **The sandbox moves the trust boundary to the list of
+  imports**; if that list is generous, you have isolated nothing.
+- **It does not protect against bugs in the runtime itself.** Wasmtime, WasmEdge and company have had
+  escape CVEs. The runtime is privileged software: it is patched with the same urgency as a
+  hypervisor.
+- **It does not fix the guest's memory unsafety.** An overflow in C compiled to Wasm still
+  corrupts *its own* structures inside the linear memory — and in Wasm the linear memory **has no
+  ASLR, no internal guard pages and no NX inside the module's heap**: a bug that natively would be
+  a crash may be exploitable *inside* the module. Wasm contains the damage to the module; it does not
+  eliminate it.
+- **Side channels do not go away** (timing, cache). If the threat model includes hostile
+  co-tenancy with secrets on the host, the Wasm sandbox is not the complete answer.
 
-**Presupuesto obligatorio por instancia** (escríbelo, no lo dejes al default): límite de combustible
-o de tiempo de pared, memoria lineal máxima, profundidad de pila, número de instancias concurrentes,
-timeout por llamada, y **qué pasa al agotarse** (trap → error de dominio manejado, nunca proceso host
-caído). Instancia por petición y desechada; nada de reutilizar una instancia con estado entre
-tenants.
+**Mandatory budget per instance** (write it down, do not leave it to the default): a fuel or
+wall-clock limit, maximum linear memory, stack depth, number of concurrent instances,
+a per-call timeout, and **what happens when it is exhausted** (trap → a handled domain error, never a
+downed host process). One instance per request, then discarded; no reusing a stateful instance
+between tenants.
 
-## 4. Estandarización: qué es estándar y qué es propuesta
+## 4. Standardisation: what is a standard and what is a proposal
 
-Este es el punto donde más información caducada circula. A ago-2026:
+This is the point where the most out-of-date information circulates. As of Aug-2026:
 
-**WebAssembly 3.0 — estándar vivo desde 2025-09-17.** El anuncio oficial dice: *"Today, we are happy
-to announce the release of Wasm 3.0 as the new 'live' standard."* Incluye, verbatim del anuncio:
-*64-bit address space; Multiple memories; Garbage collection; Typed references; Tail calls; Exception
-handling; Relaxed vector instructions; Deterministic profile; Custom annotation syntax; JS string
-builtins.* Sobre despliegue: *"Wasm 3.0 is already shipping in most major web browsers, and support in
-stand-alone engines like Wasmtime is on track to completion as well."*
+**WebAssembly 3.0 — a live standard since 2025-09-17.** The official announcement says: *"Today, we
+are happy to announce the release of Wasm 3.0 as the new 'live' standard."* It includes, verbatim
+from the announcement: *64-bit address space; Multiple memories; Garbage collection; Typed
+references; Tail calls; Exception handling; Relaxed vector instructions; Deterministic profile;
+Custom annotation syntax; JS string builtins.* On deployment: *"Wasm 3.0 is already shipping in most
+major web browsers, and support in stand-alone engines like Wasmtime is on track to completion as
+well."*
 
-- **GC / WasmGC**: **estandarizado en 3.0**. Es el cambio que importa (ver §5): el motor gestiona la
-  memoria, y los lenguajes con GC dejan de embarcar el suyo.
-- **Exception handling**: **estandarizado en 3.0** (tags, `exnref`).
-- **SIMD (128-bit)**: estandarizado desde antes; **relaxed SIMD** entra en 3.0 con fallback
-  determinista explícito.
-- **Memory64**: estandarizado en 3.0. **Pero en la web los navegadores imponen su propio tope** — no
-  asumas 16 exabytes en un navegador; mide.
+- **GC / WasmGC**: **standardised in 3.0**. It is the change that matters (see §5): the engine manages
+  the memory, and languages with a GC stop shipping their own.
+- **Exception handling**: **standardised in 3.0** (tags, `exnref`).
+- **SIMD (128-bit)**: standardised earlier; **relaxed SIMD** enters in 3.0 with an explicit
+  deterministic fallback.
+- **Memory64**: standardised in 3.0. **But on the web the browsers impose their own cap** — do not
+  assume 16 exabytes in a browser; measure.
 
-**Lo que NO está estandarizado, por mucho que se hable de ello** (fases del repo
-`WebAssembly/proposals`, verificadas):
+**What is NOT standardised, however much it is talked about** (phases from the
+`WebAssembly/proposals` repo, verified):
 
-- **Threads: Phase 4** ("Standardize the Feature"), **no** Phase 5. No entró en la lista de Wasm 3.0.
-  Fuera del navegador el soporte es desigual: `wasm32-wasip1-threads` existe en Rust como target
-  Tier 2, pero **el paralelismo no es una propiedad que puedas dar por hecha**.
-- **Shared-Everything Threads: Phase 1.** Es una propuesta temprana; tratarla como algo cercano es un
-  error de planificación.
-- **Component Model: Phase 1.** Sí, **fase 1** en el proceso del CG, pese a que la Bytecode Alliance
-  lo empuja como pieza central y a que WASI ya se define sobre él. **Criterio**: el Component Model es
-  una **especificación de la Bytecode Alliance con implementaciones reales (Wasmtime, jco,
-  wit-bindgen)**, no un estándar del W3C/WebAssembly CG. Adoptarlo es una decisión razonable; venderlo
-  internamente como "estándar" no lo es, y su superficie sigue moviéndose.
+- **Threads: Phase 4** ("Standardize the Feature"), **not** Phase 5. It did not make the Wasm 3.0
+  list. Outside the browser support is uneven: `wasm32-wasip1-threads` exists in Rust as a Tier 2
+  target, but **parallelism is not a property you can take for granted**.
+- **Shared-Everything Threads: Phase 1.** It is an early proposal; treating it as anything close is a
+  planning error.
+- **Component Model: Phase 1.** Yes, **phase 1** in the CG's process, even though the Bytecode
+  Alliance pushes it as a central piece and WASI is already defined on top of it. **Criterion**: the
+  Component Model is a **Bytecode Alliance specification with real implementations (Wasmtime, jco,
+  wit-bindgen)**, not a W3C/WebAssembly CG standard. Adopting it is a reasonable decision; selling it
+  internally as "a standard" is not, and its surface is still moving.
 - **Stack Switching: Phase 3.** **Wide Arithmetic: Phase 3. Custom Page Sizes: Phase 3.**
 - **Memory Control: Phase 1.**
 
-**WASI**: hay tres hitos — **0.1 (Preview 1)**, **0.2 (Preview 2)** y **0.3 (Preview 3)**.
+**WASI**: there are three milestones — **0.1 (Preview 1)**, **0.2 (Preview 2)** and **0.3 (Preview
+3)**.
 
-- **WASI 0.3.0 se publicó el 2026-06-11** y la Bytecode Alliance lo declara estable: *"WASI 0.3 has
-  passed the WASI Subgroup vote. This is a stable release, which means programs you compile for it
-  today are guaranteed to keep working in the future."* Su cambio central es **async nativo en el
-  Component Model** (`stream<T>`, `future<T>`, `async func`) y la **desaparición de `wasi:io`**, cuya
-  funcionalidad *"is now part of the canonical ABI, where the Component Model now offers these
-  primitives natively"*.
-- **Soporte real**: Wasmtime 45 corría el RC y **Wasmtime 46 lo trae con Component Model Async
-  activado por defecto**; jco soporta todo WASI 0.3. **Pero los toolchains de invitado (Rust, Go,
-  JavaScript, Python…) seguían "in progress"**. Esa es la restricción operativa que decide tu
-  proyecto, no la ratificación de la spec.
-- **Criterio a ago-2026**: **WASI 0.2 (`wasip2`) es el objetivo de producción**; **WASI 0.1
-  (`wasip1`)** sigue siendo lo más compatible con runtimes viejos y sigue siendo válido para módulos
-  core simples; **WASI 0.3 (`wasip3`)** se adopta cuando **tu** toolchain de invitado lo soporte —
-  en Rust su target es **Tier 3**, y Tier 3 significa que ni siquiera hay garantía de que compile.
+- **WASI 0.3.0 was published on 2026-06-11** and the Bytecode Alliance declares it stable: *"WASI 0.3
+  has passed the WASI Subgroup vote. This is a stable release, which means programs you compile for
+  it today are guaranteed to keep working in the future."* Its central change is **native async in
+  the Component Model** (`stream<T>`, `future<T>`, `async func`) and the **disappearance of
+  `wasi:io`**, whose functionality *"is now part of the canonical ABI, where the Component Model now
+  offers these primitives natively"*.
+- **Real support**: Wasmtime 45 ran the RC and **Wasmtime 46 brings it with Component Model Async
+  enabled by default**; jco supports all of WASI 0.3. **But the guest toolchains (Rust, Go,
+  JavaScript, Python…) were still "in progress"**. That is the operational constraint that decides
+  your project, not the ratification of the spec.
+- **Criterion as of Aug-2026**: **WASI 0.2 (`wasip2`) is the production target**; **WASI 0.1
+  (`wasip1`)** is still the most compatible with old runtimes and remains valid for simple core
+  modules; **WASI 0.3 (`wasip3`)** is adopted when **your** guest toolchain supports it —
+  in Rust its target is **Tier 3**, and Tier 3 means there is not even a guarantee it compiles.
 
-**Discrepancia declarada**: la documentación oficial del Component Model
-(`component-model.bytecodealliance.org`) seguía afirmando a ago-2026 que *"The current stable release
-of WASI is WASI 0.2.0, which was released on January 25, 2024"*, mientras la propia Bytecode Alliance
-había anunciado WASI 0.3.0 como release estable el 2026-06-11. La documentación va por detrás del
-anuncio: **verifica el estado contra el repo `WebAssembly/WASI` y las notas de release de Wasmtime,
-no contra la web de docs**.
+**Declared discrepancy**: the Component Model's official documentation
+(`component-model.bytecodealliance.org`) was still stating as of Aug-2026 that *"The current stable
+release of WASI is WASI 0.2.0, which was released on January 25, 2024"*, while the Bytecode Alliance
+itself had announced WASI 0.3.0 as a stable release on 2026-06-11. The documentation lags behind the
+announcement: **verify the status against the `WebAssembly/WASI` repo and Wasmtime's release notes,
+not against the docs site**.
 
-## 5. Casos de uso: cuándo Wasm gana
+## 5. Use cases: when Wasm wins
 
-**A. Plugins y extensión segura de un producto — el caso más fuerte hoy.**
-Es el único donde Wasm es claramente la mejor herramienta y no solo una alternativa: quieres ejecutar
-código que **no controlas** dentro de tu proceso, con una frontera fuerte y sin pagar el arranque de
-un contenedor o de un proceso. Wasmtime o wazero embebidos, o **Extism** si no quieres construir el
-ABI. Criterios: superficie de host **explícita y mínima** (una función por capacidad, con los
-parámetros ya acotados: no `open(path)`, sino `read_config()`), instancia por invocación, límites de
-§3 en todas, y contrato de plugin versionado (WIT o el esquema de Extism).
+**A. Plugins and safe extension of a product — the strongest case today.**
+It is the only one where Wasm is clearly the best tool and not just an alternative: you want to run
+code you **do not control** inside your process, with a strong boundary and without paying for
+starting a container or a process. Wasmtime or wazero embedded, or **Extism** if you do not want to
+build the ABI. Criteria: an **explicit and minimal** host surface (one function per capability, with
+the parameters already bounded: not `open(path)`, but `read_config()`), one instance per invocation,
+the §3 limits on all of them, and a versioned plugin contract (WIT or Extism's schema).
 
-**B. En el navegador — cuándo compensa frente a JS.**
-Compensa cuando: (1) hay **cómputo pesado y sostenido** —códecs, criptografía, CAD, simulación,
-tratamiento de imagen/audio, parsers grandes—; (2) quieres **portar una base C/C++/Rust que ya existe
-y está probada** en lugar de reescribirla; (3) necesitas rendimiento **predecible** (sin el
-calentamiento y las desoptimizaciones del JIT de JS).
-**No compensa cuando**: (1) el trabajo es **manipulación del DOM** — Wasm **no tiene acceso directo al
-DOM** y cada toque cruza a JS; (2) el módulo es pequeño y la lógica es de pegamento: el **coste de
-descarga y compilación del `.wasm`** se come cualquier ganancia; (3) el patrón es **muchas llamadas
-cortas** cruzando la frontera JS↔Wasm — el cruce y la conversión de tipos dominan, y acabas más lento
-que en JS puro. **Regla**: llamadas pocas y gordas, no muchas y finas. Y **mide antes**: si no tienes
-un benchmark de la versión JS, no tienes justificación.
+**B. In the browser — when it pays off against JS.**
+It pays off when: (1) there is **heavy, sustained computation** —codecs, cryptography, CAD,
+simulation, image/audio processing, large parsers—; (2) you want to **port an existing, proven
+C/C++/Rust codebase** instead of rewriting it; (3) you need **predictable** performance (without the
+warm-up and deoptimisations of the JS JIT).
+**It does not pay off when**: (1) the work is **DOM manipulation** — Wasm **has no direct access to
+the DOM** and every touch crosses into JS; (2) the module is small and the logic is glue: the
+**download and compilation cost of the `.wasm`** eats any gain; (3) the pattern is **many short
+calls** crossing the JS↔Wasm boundary — the crossing and the type conversion dominate, and you end up
+slower than in plain JS. **Rule**: few and fat calls, not many and thin ones. And **measure first**:
+if you do not have a benchmark of the JS version, you have no justification.
 
 **C. Edge / serverless.**
-Aquí el argumento real es el **arranque en frío**: instanciar un módulo Wasm es órdenes de magnitud
-más barato que arrancar un contenedor, lo que permite densidad y multi-tenencia en el borde. El coste
-es que estás en la plataforma de un proveedor con **su** conjunto de APIs: portabilidad limitada por
-las capacidades del host, no por el estándar. Antes de comprometerte: qué subconjunto de WASI ofrece,
-qué límites de CPU/memoria impone, cómo se depura, y **cuánto cuesta salir**.
+Here the real argument is **cold start**: instantiating a Wasm module is orders of magnitude
+cheaper than starting a container, which allows density and multi-tenancy at the edge. The cost
+is that you are on a provider's platform with **their** set of APIs: portability limited by
+the host's capabilities, not by the standard. Before committing: which subset of WASI it offers,
+which CPU/memory limits it imposes, how it is debugged, and **how much it costs to leave**.
 
-**D. WASI como alternativa a contenedores — sé honesto.**
-El argumento (arranque en milisegundos, artefacto de MB en vez de cientos, sandbox por defecto,
-portabilidad de arquitectura sin build multi-arch) es real. La madurez, no tanto: la ruta es
-`runwasi` como shim de containerd + `RuntimeClass` de Kubernetes (o SpinKube para Spin), y funciona,
-pero **el ecosistema alrededor es el que no está**: casi nada del software que ya operas tiene un
-build Wasm, el soporte de hilos y de sockets es desigual, la depuración es mala (§6) y las
-integraciones (agentes, sidecars, service mesh, herramientas de seguridad de runtime) asumen
-contenedores. **Criterio**: Wasm sustituye al contenedor en cargas **nuevas, pequeñas, sin estado y
-de alta densidad**; en cualquier otro caso es un **complemento** dentro de un clúster que sigue siendo
-de contenedores. Migrar una carga existente a Wasm "para reducir arranque" casi nunca sale a cuenta.
+**D. WASI as an alternative to containers — be honest.**
+The argument (millisecond start-up, an artifact of MB instead of hundreds, a sandbox by default,
+architecture portability with no multi-arch build) is real. The maturity, not so much: the route is
+`runwasi` as a containerd shim + a Kubernetes `RuntimeClass` (or SpinKube for Spin), and it works,
+but **it is the ecosystem around it that is missing**: almost none of the software you already
+operate has a Wasm build, thread and socket support is uneven, debugging is bad (§6) and the
+integrations (agents, sidecars, service mesh, runtime security tooling) assume containers.
+**Criterion**: Wasm replaces the container for **new, small, stateless, high-density** workloads;
+in any other case it is a **complement** inside a cluster that remains container-based.
+Migrating an existing workload to Wasm "to reduce start-up" almost never pays off.
 
-**E. Por qué WasmGC cambia el reparto de lenguajes.**
-Antes de WasmGC, un lenguaje con recolector de basura tenía que **compilar su propio GC a memoria
-lineal** y embarcarlo en cada módulo: artefactos enormes, arranque lento y dos recolectores luchando
-en el navegador. Con **GC estandarizado en Wasm 3.0**, el motor gestiona structs y arrays y el
-lenguaje deja de embarcar su runtime de memoria — eso es lo que hace viables Dart/Flutter web, Kotlin,
-Java y Scala sobre Wasm. **Matices que no se pueden saltar**: WasmGC no ofrece un sistema de objetos
-ni closures, solo los primitivos; los lenguajes cuyo runtime necesita más que eso (**se reporta el
-caso de .NET**, ver §8) siguen en memoria lineal; y **el soporte de navegador no es uniforme** —
-Chromium/V8 desde la 119, Firefox anunció soporte estable en 120 pero *"currently doesn't work"* por
-una limitación conocida, Safari lo soporta con un bug de compatibilidad, y **en iOS no funciona en
-ningún navegador** porque todos usan WebKit. Cualquier plan de "web en WasmGC" necesita **fallback a
-JS** o excluye iOS. Ver `dart-standards` para el lado Dart de esto.
+**E. Why WasmGC changes the distribution of languages.**
+Before WasmGC, a language with a garbage collector had to **compile its own GC into linear
+memory** and ship it in every module: enormous artifacts, slow start-up and two collectors fighting
+in the browser. With **GC standardised in Wasm 3.0**, the engine manages structs and arrays and the
+language stops shipping its memory runtime — that is what makes Dart/Flutter web, Kotlin,
+Java and Scala on Wasm viable. **Nuances that cannot be skipped**: WasmGC does not offer an object
+system or closures, only the primitives; languages whose runtime needs more than that (**the case of
+.NET is reported**, see §8) stay in linear memory; and **browser support is not uniform** —
+Chromium/V8 since 119, Firefox announced stable support in 120 but it *"currently doesn't work"*
+because of a known limitation, Safari supports it with a compatibility bug, and **on iOS it does not
+work in any browser** because they all use WebKit. Any "web on WasmGC" plan needs a **fallback to
+JS** or excludes iOS. See `dart-standards` for the Dart side of this.
 
-## 6. Calidad, tamaño, depuración y operabilidad
+## 6. Quality, size, debugging and operability
 
-**Tamaño del artefacto: métrica de primera clase.** En el navegador es latencia de usuario; en el
-edge es coste y densidad; en un plugin es memoria por instancia multiplicada por N.
+**Artifact size: a first-class metric.** In the browser it is user latency; at the
+edge it is cost and density; in a plugin it is memory per instance multiplied by N.
 
-- Gate de CI con **presupuesto de bytes** que rompe el build al superarse (`.wasm` y `.wasm.br`).
-- `wasm-opt -Oz` (binaryen) en release; `wasm-strip`/`--strip-debug` para producción, **guardando
-  aparte los símbolos** para simbolizar stack traces.
-- Rust: `panic = "abort"`, `lto`, `opt-level = "z"`/`"s"`, `codegen-units = 1`; evita `format!` y
-  formateo de errores en el camino caliente (arrastra media `core::fmt`).
-- Go upstream a Wasm da binarios grandes por diseño (runtime + GC): si el tamaño importa, es **TinyGo**.
-- C/C++ con Emscripten: revisa qué shims estás arrastrando (filesystem, pthreads, SDL) — cada uno se
-  paga en bytes.
-- Comprime en transporte (Brotli) y sirve con MIME correcto para permitir compilación en streaming.
+- A CI gate with a **byte budget** that breaks the build when exceeded (`.wasm` and `.wasm.br`).
+- `wasm-opt -Oz` (binaryen) on release; `wasm-strip`/`--strip-debug` for production, **keeping
+  the symbols separately** to symbolise stack traces.
+- Rust: `panic = "abort"`, `lto`, `opt-level = "z"`/`"s"`, `codegen-units = 1`; avoid `format!` and
+  error formatting on the hot path (it drags in half of `core::fmt`).
+- Upstream Go to Wasm gives large binaries by design (runtime + GC): if size matters, it is
+  **TinyGo**.
+- C/C++ with Emscripten: review which shims you are dragging in (filesystem, pthreads, SDL) — each
+  one is paid for in bytes.
+- Compress in transport (Brotli) and serve with the correct MIME type to allow streaming compilation.
 
-**Gates de CI** (coste creciente):
+**CI gates** (increasing cost):
 
-1. `wasm-tools validate` sobre el módulo/componente generado (y `wasm-tools component wit` para
-   verificar que el WIT exportado es el esperado).
-2. **Diff del contrato WIT**: un cambio incompatible en `.wit` debe romper el build, igual que un
-   cambio incompatible en un `.proto`.
-3. Tests del **invitado** con la toolchain de su lenguaje (los manda la skill del lenguaje).
-4. Tests del **host**: instanciar el módulo real y ejercitar la frontera — incluyendo **el caso de
-   trap, el de agotamiento de combustible y el de OOM del invitado**. Si no has probado que un plugin
-   en bucle infinito se corta limpiamente, no lo has probado.
-5. Presupuesto de tamaño.
-6. Benchmark comparativo frente a la implementación previa (si Wasm sustituye algo, demuestra que
-   gana).
+1. `wasm-tools validate` over the generated module/component (and `wasm-tools component wit` to
+   verify that the exported WIT is the expected one).
+2. **WIT contract diff**: an incompatible change in a `.wit` must break the build, just like an
+   incompatible change in a `.proto`.
+3. **Guest** tests with its language's toolchain (governed by the language's skill).
+4. **Host** tests: instantiate the real module and exercise the boundary — including **the trap case,
+   the fuel exhaustion case and the guest OOM case**. If you have not proven that a plugin in an
+   infinite loop is cut off cleanly, you have not tested it.
+5. A size budget.
+6. A comparative benchmark against the previous implementation (if Wasm replaces something, prove it
+   wins).
 
-**Depuración y observabilidad: el punto más débil, asúmelo antes de elegir Wasm.**
+**Debugging and observability: the weakest point, accept it before choosing Wasm.**
 
-- **DWARF** en el `.wasm` funciona en navegador con la extensión de DevTools de C/C++ y en algunos
-  runtimes standalone; **infla el módulo enormemente** — build de debug con DWARF, build de release
-  sin, y **símbolos archivados** por versión para simbolizar después.
-- **Source maps** para el caso web; Flutter web en Wasm los genera con `--source-maps`.
-- **Perfilado**: soporte irregular. Wasmtime ofrece salida para `perf`/VTune; en navegador el profiler
-  atribuye a funciones Wasm si conservas nombres (`name` section). **Sin nombres, un perfil de
-  producción es ilegible**: decide si conservas la `name` section (peso vs. diagnóstico) y sé
-  consciente de que también facilita el reversing de tu módulo.
-- **Logs y trazas**: el invitado no tiene salida por sí mismo — **el host la importa**. Instrumenta en
-  el host: duración por invocación, combustible consumido, traps por tipo, memoria pico, tamaño de
-  entrada/salida. Correla con el trace del host propagando el contexto **explícitamente** por la
-  frontera (no hay contexto ambiental que cruce).
-- Métricas de capacidad: instancias concurrentes, tiempo de instanciación, aciertos de caché de
-  módulos compilados (**precompila y cachea el módulo**: compilar en cada petición es el error de
-  rendimiento clásico del host).
+- **DWARF** in the `.wasm` works in the browser with the C/C++ DevTools extension and in some
+  standalone runtimes; **it inflates the module enormously** — a debug build with DWARF, a release
+  build without, and **archived symbols** per version to symbolise afterwards.
+- **Source maps** for the web case; Flutter web on Wasm generates them with `--source-maps`.
+- **Profiling**: irregular support. Wasmtime offers output for `perf`/VTune; in the browser the
+  profiler attributes to Wasm functions if you keep the names (`name` section). **Without names, a
+  production profile is unreadable**: decide whether you keep the `name` section (weight vs.
+  diagnostics) and be aware that it also makes reversing your module easier.
+- **Logs and traces**: the guest has no output of its own — **the host imports it**. Instrument in
+  the host: duration per invocation, fuel consumed, traps by type, peak memory, input/output
+  size. Correlate with the host's trace by propagating the context **explicitly** across the
+  boundary (there is no ambient context that crosses).
+- Capacity metrics: concurrent instances, instantiation time, compiled-module cache hits
+  (**precompile and cache the module**: compiling on every request is the classic host performance
+  mistake).
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia**
+**Cadence**
 
-- El **runtime es software privilegiado**: parches de seguridad en <72 h, igual que un hipervisor.
-  Wasmtime publica parches en varias ramas a la vez (a 2026-07-31 salieron simultáneamente 47.0.3,
-  46.0.2, 36.0.13 y 24.0.12) — quédate en una rama soportada y súbela.
-- Las propuestas se mueven: revisa el estado de fases y de WASI **cada trimestre**, no una vez.
-- Fija toolchain (versión de compilador, `wasm-opt`, `wasm-tools`, `wit-bindgen`) en el repo y en la
-  imagen de CI; que un `wasm-opt` distinto genere otro binario es un fallo de reproducibilidad.
-- **Registra un ADR con el motivo de haber elegido Wasm y con la condición de salida.** Si el motivo
-  deja de ser cierto, se revierte; una decisión de plataforma sin criterio de reversión es una trampa.
+- The **runtime is privileged software**: security patches in <72 h, just like a hypervisor.
+  Wasmtime publishes patches on several branches at once (on 2026-07-31 47.0.3, 46.0.2, 36.0.13 and
+  24.0.12 came out simultaneously) — stay on a supported branch and keep moving up.
+- The proposals move: review the phase status and WASI **every quarter**, not once.
+- Pin the toolchain (compiler version, `wasm-opt`, `wasm-tools`, `wit-bindgen`) in the repo and in the
+  CI image; a different `wasm-opt` generating a different binary is a reproducibility failure.
+- **Record an ADR with the reason for having chosen Wasm and with the exit condition.** If the reason
+  stops being true, it is reverted; a platform decision with no reversion criterion is a trap.
 
-**Cuándo Wasm NO es la respuesta** (la sección de más valor: hay mucho entusiasmo y pocos casos donde
-de verdad gane)
+**When Wasm is NOT the answer** (the most valuable section: there is a lot of enthusiasm and few
+cases where it genuinely wins)
 
-- ❌ **Como acelerador de una app web normal.** Si el trabajo es DOM, formularios, red y estado, Wasm
-  no tiene nada que ofrecer: añade toolchain, tamaño y un cruce de frontera que cuesta.
-- ❌ **Para código que ya escribes tú y confías.** El sandbox es valioso frente a **código ajeno**. Si
-  el código es tuyo y va en tu proceso, aislarlo con Wasm es coste sin beneficio: usa una librería.
-- ❌ **Para "hacer portable" lo que ya empaquetas en un contenedor** y funciona. El artefacto Wasm no
-  te da nada que el contenedor no te diera, y pierdes todo el ecosistema operativo.
-- ❌ **Para cargas con estado, I/O intensivo, muchos sockets o dependencia fuerte del SO.** El soporte
-  es desigual, y donde existe suele ser más lento que nativo.
-- ❌ **Como sustituto de un hipervisor o de gVisor/Kata frente a un atacante decidido con secretos
-  compartidos en el host.** Es un sandbox de proceso, no una frontera de máquina (ver
+- ❌ **As an accelerator for a normal web app.** If the work is DOM, forms, network and state, Wasm
+  has nothing to offer: it adds a toolchain, size and a boundary crossing that costs.
+- ❌ **For code you write yourself and trust.** The sandbox is valuable against **someone else's
+  code**. If the code is yours and runs in your process, isolating it with Wasm is cost with no
+  benefit: use a library.
+- ❌ **To "make portable" what you already package in a container** and works. The Wasm artifact gives
+  you nothing the container did not, and you lose the whole operational ecosystem.
+- ❌ **For stateful workloads, heavy I/O, many sockets or a strong OS dependency.** Support
+  is uneven, and where it exists it is usually slower than native.
+- ❌ **As a substitute for a hypervisor or for gVisor/Kata against a determined attacker with shared
+  secrets on the host.** It is a process sandbox, not a machine boundary (see
   `container-runtime-security-standards`).
-- ❌ **Como "el reemplazo de Docker".** No lo es, y planificar sobre esa premisa es deuda garantizada.
-- ❌ **Cuando nadie del equipo sabe depurar un trap en producción.** La depuración es el eslabón
-  débil (§6); si no tienes plan para eso, no metas Wasm en el camino crítico.
-- ❌ **Cuando tu lenguaje de origen aún no soporta bien el target que necesitas** (ver "in progress"
-  de los toolchains de invitado para WASI 0.3, y Tier 3 de `wasm32-wasip3`).
+- ❌ **As "the replacement for Docker".** It is not, and planning on that premise is guaranteed debt.
+- ❌ **When nobody on the team knows how to debug a trap in production.** Debugging is the weak
+  link (§6); if you have no plan for that, do not put Wasm in the critical path.
+- ❌ **When your source language does not yet support the target you need well** (see the "in
+  progress" state of the guest toolchains for WASI 0.3, and Tier 3 for `wasm32-wasip3`).
 
-**LISTA DE PROHIBICIONES** (bloquean review)
+**LIST OF PROHIBITIONS** (they block review)
 
-- ❌ PROHIBIDO ejecutar código de terceros **sin límite de combustible/epoch y sin límite de memoria**.
-- ❌ PROHIBIDO importar una capacidad genérica al invitado (`open`, `exec`, `fetch(url)` sin
-  allowlist, acceso al FS del host sin preopen acotado). Una importación = una operación acotada.
-- ❌ Preabrir `/` o el directorio de trabajo del host "para simplificar"; heredar variables de entorno
-  del host en bloque (los secretos van dentro).
-- ❌ Reutilizar una instancia con estado entre invocaciones de **tenants distintos**.
-- ❌ Que un trap del invitado tumbe el proceso host, o que se ignore silenciosamente. Trap = error de
-  dominio, registrado y devuelto.
-- ❌ Cargar un `.wasm` de terceros **por URL o por tag mutable**. Se fija por **digest** (§ siguiente).
-- ❌ Compilar el módulo en cada petición en vez de cachear el módulo compilado.
-- ❌ Publicar el módulo de release **con DWARF completo** o **con la `name` section** sin haberlo
-  decidido conscientemente (peso y superficie de reversing).
-- ❌ Tratar el **Component Model** o **shared-everything threads** como estándares consolidados: son
-  **Phase 1**.
-- ❌ Escribir contra `wasm32-wasi` (target retirado) o dar por hecho que existe.
-- ❌ Adoptar extensiones propietarias de un runtime (p. ej. WASIX) sin registrar el lock-in en un ADR.
-- ❌ Asumir soporte de hilos, de sockets o de 64 bits sin comprobarlo en **tu** runtime y **tu**
-  navegador objetivo.
-- ❌ Elegir Wasm sin benchmark comparativo contra la alternativa que sustituye.
-- ❌ Fijar versiones, targets o estados de propuesta de memoria en vez de contra la fuente oficial.
+- ❌ FORBIDDEN to run third-party code **without a fuel/epoch limit and without a memory limit**.
+- ❌ FORBIDDEN to import a generic capability into the guest (`open`, `exec`, `fetch(url)` with no
+  allowlist, host FS access without a bounded preopen). One import = one bounded operation.
+- ❌ Preopening `/` or the host's working directory "to keep it simple"; inheriting the host's
+  environment variables wholesale (the secrets are in there).
+- ❌ Reusing a stateful instance across invocations from **different tenants**.
+- ❌ Letting a guest trap take down the host process, or silently ignoring it. Trap = a domain error,
+  logged and returned.
+- ❌ Loading a third-party `.wasm` **by URL or by a mutable tag**. It is pinned by **digest** (see the
+  next section).
+- ❌ Compiling the module on every request instead of caching the compiled module.
+- ❌ Publishing the release module **with full DWARF** or **with the `name` section** without having
+  decided it consciously (weight and reversing surface).
+- ❌ Treating the **Component Model** or **shared-everything threads** as consolidated standards: they
+  are **Phase 1**.
+- ❌ Writing against `wasm32-wasi` (a removed target) or assuming it exists.
+- ❌ Adopting a runtime's proprietary extensions (e.g. WASIX) without recording the lock-in in an ADR.
+- ❌ Assuming thread, socket or 64-bit support without checking it in **your** runtime and **your**
+  target browser.
+- ❌ Choosing Wasm without a comparative benchmark against the alternative it replaces.
+- ❌ Stating versions, targets or proposal statuses from memory instead of against the official
+  source.
 
-**Seguridad del stack — cadena de suministro y frontera de confianza**
+**Stack security — supply chain and trust boundary**
 
-- **El sandbox no es una frontera de confianza si el host importa capacidades sin criterio.** La
-  auditoría de seguridad de un sistema Wasm es la **auditoría de la lista de importaciones**: cada
-  función que expone el host, qué puede hacer con ella el peor invitado posible, y qué límites la
-  acotan. Escríbela; revísala en cada PR que la toque.
-- **Mínimo privilegio en las importaciones**: capacidades específicas y ya parametrizadas por el host,
-  no primitivas generales. Preopens de directorio acotados al mínimo. Sin red salvo allowlist de
-  destinos, aplicada **en el host** (un módulo hostil con salida libre es SSRF con persistencia).
-- **Secretos**: no entran en el módulo. Ni en la memoria lineal al instanciar, ni por variables de
-  entorno heredadas. El host hace la operación que necesita el secreto y devuelve el resultado. Un
-  `.wasm` es tan inspeccionable como cualquier binario, y más fácil de descompilar
-  (`wasm2wat`) — ver `secrets-management-standards`.
-- **Validación de entrada en la frontera, en ambos sentidos**: el host valida lo que entrega al
-  invitado **y lo que recibe de él** (longitudes, punteros a memoria lineal, índices, UTF-8). Un
-  puntero/longitud devueltos por el invitado son **input no confiable**: comprobar rango contra el
-  tamaño de la memoria es obligatorio, y omitirlo es la vulnerabilidad clásica de host.
-- **Cadena de suministro de módulos de terceros**: firma y procedencia (cosign, atestaciones,
-  distribución como artefacto OCI) **son necesarias pero no suficientes**. Precedente del catálogo:
-  **hubo atestaciones SLSA L3 válidas emitidas para paquetes maliciosos** — una atestación demuestra
-  *dónde y cómo* se construyó algo, **no que sea benigno**. El control que sí corta es **fijar por
-  digest inmutable** (`sha256:…`), replicar el artefacto en tu registro y promover el **mismo digest**
-  entre entornos. Tag mutable = ningún control.
-- El runtime se parchea como componente privilegiado; sigue sus advisories (RustSec/GitHub Advisories
-  para Wasmtime y wazero, releases de WasmEdge/Wasmer).
-- Metodología general de amenazas: `appsec-standards`. Aislamiento del nodo y admisión en clúster:
-  `container-runtime-security-standards` y `kubernetes-standards`.
+- **The sandbox is not a trust boundary if the host imports capabilities without judgement.** The
+  security audit of a Wasm system is the **audit of the list of imports**: every function the host
+  exposes, what the worst possible guest can do with it, and which limits bound it.
+  Write it down; review it in every PR that touches it.
+- **Least privilege in the imports**: specific capabilities already parameterised by the host,
+  not general primitives. Directory preopens bounded to the minimum. No network except an allowlist
+  of destinations, enforced **in the host** (a hostile module with free egress is SSRF with
+  persistence).
+- **Secrets**: they do not go into the module. Not into the linear memory at instantiation, nor
+  through inherited environment variables. The host performs the operation that needs the secret and
+  returns the result. A `.wasm` is as inspectable as any binary, and easier to decompile
+  (`wasm2wat`) — see `secrets-management-standards`.
+- **Input validation at the boundary, in both directions**: the host validates what it hands to the
+  guest **and what it receives from it** (lengths, pointers into linear memory, indices, UTF-8). A
+  pointer/length returned by the guest is **untrusted input**: checking the range against the
+  memory's size is mandatory, and omitting it is the classic host vulnerability.
+- **Supply chain of third-party modules**: signing and provenance (cosign, attestations,
+  distribution as an OCI artifact) **are necessary but not sufficient**. A precedent from the
+  catalogue: **valid SLSA L3 attestations were issued for malicious packages** — an attestation
+  proves *where and how* something was built, **not that it is benign**. The control that does cut is
+  **pinning by immutable digest** (`sha256:…`), replicating the artifact in your registry and
+  promoting the **same digest** between environments. A mutable tag = no control at all.
+- The runtime is patched as a privileged component; follow its advisories (RustSec/GitHub Advisories
+  for Wasmtime and wazero, WasmEdge/Wasmer releases).
+- General threat methodology: `appsec-standards`. Node isolation and cluster admission:
+  `container-runtime-security-standards` and `kubernetes-standards`.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar versión, target, runtime o estado de una feature, **verifica online**:
+Before committing to a version, target, runtime or feature status, **verify online**:
 
-1. **Fases de las propuestas**: `github.com/WebAssembly/proposals` — es la única fuente que zanja qué
-   está estandarizado. Revisa en particular si **Threads** pasó de Phase 4 a 5 y si el **Component
-   Model** ha salido de Phase 1; ambos cambian el criterio de §4.
-2. **Wasm 3.0 y soporte de motores**: `webassembly.org/news/2025-09-17-wasm-3.0/` y la tabla de
-   `webassembly.org/features/` (**se carga por JS**: puede no ser legible por fetch simple — usa el
-   repo `WebAssembly/website` o la matriz de MDN/caniuse).
-3. **WASI**: releases de `github.com/WebAssembly/WASI` y `bytecodealliance.org/articles/WASI-0.3`.
-   Comprueba **el soporte en tu toolchain de invitado**, que a ago-2026 iba por detrás de la spec, y
-   **no te fíes de `component-model.bytecodealliance.org` para el estado de versión** (discrepancia
-   declarada en §4).
-4. **Targets de Rust y su tier**: `doc.rust-lang.org/rustc/platform-support.html`. Los nombres han
-   cambiado (`wasm32-wasi` → `wasm32-wasip1`) y `wasm32-wasip3` es **Tier 3**.
-5. **Versiones y licencias de runtimes**, desde los feeds Atom (`.../releases.atom`) y el `LICENSE`
-   **en crudo** (`raw.githubusercontent.com`), nunca de una tabla comparativa de terceros: Wasmtime,
-   WasmEdge, Wasmer, wazero, Extism. **En Wasmer verifica licencia por crate/componente y el estado
-   de sus servicios comerciales** — el `LICENSE` raíz siendo MIT no dice nada de los subcomponentes ni
-   del Registry/Edge.
-6. **CVEs de runtime y toolchain** antes de fijar versión: RustSec, GitHub Advisories, osv.dev.
-7. **Wasm en Kubernetes**: estado de `runwasi`, `containerd-shim-*` y SpinKube (versiones, madurez,
-   compatibilidad con la versión de containerd/K8s del clúster).
+1. **Proposal phases**: `github.com/WebAssembly/proposals` — it is the only source that settles what
+   is standardised. Check in particular whether **Threads** moved from Phase 4 to 5 and whether the
+   **Component Model** has left Phase 1; both change the criteria of §4.
+2. **Wasm 3.0 and engine support**: `webassembly.org/news/2025-09-17-wasm-3.0/` and the table at
+   `webassembly.org/features/` (**it is loaded by JS**: it may not be readable by a simple fetch —
+   use the `WebAssembly/website` repo or the MDN/caniuse matrix).
+3. **WASI**: the releases of `github.com/WebAssembly/WASI` and `bytecodealliance.org/articles/WASI-0.3`.
+   Check **the support in your guest toolchain**, which as of Aug-2026 lagged behind the spec, and
+   **do not trust `component-model.bytecodealliance.org` for the version status** (declared
+   discrepancy in §4).
+4. **Rust targets and their tier**: `doc.rust-lang.org/rustc/platform-support.html`. The names have
+   changed (`wasm32-wasi` → `wasm32-wasip1`) and `wasm32-wasip3` is **Tier 3**.
+5. **Runtime versions and licences**, from the Atom feeds (`.../releases.atom`) and the **raw**
+   `LICENSE` (`raw.githubusercontent.com`), never from a third-party comparison table: Wasmtime,
+   WasmEdge, Wasmer, wazero, Extism. **For Wasmer verify the licence per crate/component and the
+   status of its commercial services** — the root `LICENSE` being MIT says nothing about the
+   subcomponents nor about Registry/Edge.
+6. **Runtime and toolchain CVEs** before pinning a version: RustSec, GitHub Advisories, osv.dev.
+7. **Wasm on Kubernetes**: the status of `runwasi`, `containerd-shim-*` and SpinKube (versions,
+   maturity, compatibility with the cluster's containerd/K8s version).
 
-**Huecos no verificados a ago-2026** (marcados a propósito, sin rellenar):
+**Gaps not verified as of Aug-2026** (marked on purpose, left unfilled):
 
-- **Soporte de WasmGC por navegador con cifras actuales**: la afirmación de §5 procede de la
-  documentación de Flutter (Chromium ≥119; Firefox 120 anunciado pero *"currently doesn't work"*;
-  Safari con bug de compatibilidad; iOS no). **No verificado contra caniuse/MDN ni contra los bugs
-  originales** (bugzilla 1788206, webkit 267291) en esta redacción: compruébalo antes de excluir o
-  incluir una plataforma.
-- **"WasmGC no cubre las necesidades del runtime de .NET"**: procede de una fuente secundaria, **no
-  confirmado contra documentación oficial de .NET**. Verifica en la doc de Microsoft antes de fijar
-  criterio para .NET.
-- **Estado de gobernanza y financiación de la Bytecode Alliance** (miembros actuales, proyectos bajo
-  su paraguas) no verificado en esta redacción más allá de que Wasmtime es su runtime de referencia.
-- **Rendimiento relativo Wasm vs JS vs nativo**: deliberadamente sin cifras. Depende de la carga, el
-  motor y la versión; **se mide en tu caso**, no se cita.
+- **WasmGC browser support with current figures**: the claim in §5 comes from Flutter's
+  documentation (Chromium ≥119; Firefox 120 announced but *"currently doesn't work"*;
+  Safari with a compatibility bug; iOS no). **Not verified against caniuse/MDN nor against the
+  original bugs** (bugzilla 1788206, webkit 267291) in this drafting: check it before excluding or
+  including a platform.
+- **"WasmGC does not cover the needs of the .NET runtime"**: it comes from a secondary source, **not
+  confirmed against official .NET documentation**. Verify in Microsoft's docs before setting a
+  criterion for .NET.
+- **The governance and funding status of the Bytecode Alliance** (current members, projects under
+  its umbrella) not verified in this drafting beyond the fact that Wasmtime is its reference runtime.
+- **Relative performance of Wasm vs JS vs native**: deliberately without figures. It depends on the
+  workload, the engine and the version; **it is measured in your case**, not quoted.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

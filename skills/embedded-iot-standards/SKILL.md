@@ -3,391 +3,392 @@ name: embedded-iot-standards
 description: Engineering a physical connected device — microcontroller or embedded Linux — from silicon choice to field update and its EU regulatory deadline. Use when working with prj.conf, west.yml, Kconfig fragments, boards/*_defconfig, devicetree .dts/.dtsi/.overlay files, FreeRTOSConfig.h, a Zephyr/FreeRTOS/NuttX/Eclipse ThreadX application, a superloop versus RTOS decision, NuttX Kconfig, Yocto bitbake recipes (.bb/.bbappend, local.conf, bblayers.conf, meta- layers, kas), Buildroot (make menuconfig, BR2_ options, br2-external, defconfig), a cross toolchain sysroot or arm-none-eabi-gcc, a linker script .ld with FLASH/RAM regions and .bss/.noinit sections, newlib-nano or picolibc, U-Boot bootcmd/bootargs and boot_targets, MCUboot slot0/slot1 and imgtool sign, A/B or dual-bank firmware slots with rollback counters, RAUC or SWUpdate or Mender or Eclipse hawkBit OTA campaigns, watchdog kick and reset-cause registers, low-power modes and coulomb-counter energy budgets, JTAG/SWD debugging with OpenOCD, probe-rs, J-Link or a reset-cause register, semihosting or printf-over-UART cost, static allocation and no-malloc firmware, a secure element or TPM or ARM TrustZone-M key store, per-device identity and provisioning, PSA Certified, ETSI EN 303 645, the EU Cyber Resilience Act (Regulation (EU) 2024/2847), or RED Delegated Regulation (EU) 2022/30 and EN 18031.
 ---
 
-# Estándares de sistemas empotrados y dispositivo IoT
+# Embedded systems and IoT device standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **construir un producto físico que ejecuta software propio y, casi siempre, se conecta**:
-elegir el silicio (MCU frente a MPU), decidir si hace falta un RTOS o basta un superloop, montar la
-toolchain cruzada y hacer el build reproducible, arrancar (bootloader, device tree), **poder
-actualizarlo en campo sin que un fallo lo convierta en ladrillo**, vigilarlo (watchdog), medir su
-consumo, depurarlo sin puerto abierto en producción, gestionar la memoria sin *heap*, y cumplir el
-marco regulatorio europeo que **ya tiene fechas en el calendario**.
+Applies to **building a physical product that runs your own software and, almost always, connects**:
+choosing the silicon (MCU versus MPU), deciding whether an RTOS is needed or a superloop is enough,
+setting up the cross toolchain and making the build reproducible, booting (bootloader, device tree),
+**being able to update it in the field without a failure turning it into a brick**, watching over it
+(watchdog), measuring its consumption, debugging it without an open port in production, managing
+memory without a *heap*, and complying with the European regulatory framework that **already has
+dates on the calendar**.
 
-Triggers: `prj.conf`, `west.yml`/`west build`, `Kconfig` y fragmentos `*.conf`, `boards/*_defconfig`,
+Triggers: `prj.conf`, `west.yml`/`west build`, `Kconfig` and `*.conf` fragments, `boards/*_defconfig`,
 `.dts`/`.dtsi`/`.overlay`/`dtc`, `FreeRTOSConfig.h`, `configTOTAL_HEAP_SIZE`, `xTaskCreateStatic`,
 `nuttx/.config`, Eclipse ThreadX / `tx_thread_create`, `arm-none-eabi-gcc`, `--specs=nano.specs`,
-picolibc, un `.ld` con `MEMORY { FLASH ... RAM ... }`, `.noinit`, `bitbake`, `local.conf`,
+picolibc, an `.ld` with `MEMORY { FLASH ... RAM ... }`, `.noinit`, `bitbake`, `local.conf`,
 `bblayers.conf`, `meta-*`, `kas`, `BR2_*`, `br2-external`, `u-boot.env`, `bootcmd`, `bootargs`,
 `fw_setenv`, MCUboot, `imgtool sign`, slot0/slot1, `RAUC`, `SWUpdate`, `Mender`, `hawkBit`,
-`swupdate.cfg`, `system.conf` de RAUC, `IWDG`/`WWDG`/`wdt_feed`, `PWR_CR`, "modo *stop*",
-"presupuesto de energía", OpenOCD, `probe-rs`, J-Link, SWD, JTAG, semihosting, ATECC608, SE050,
-TPM 2.0 en dispositivo, TrustZone-M / `CMSE`, PSA Certified, ETSI EN 303 645, EN 18031, RED,
-Cyber Resilience Act, "clave por dispositivo", "no arranca tras el update".
+`swupdate.cfg`, RAUC's `system.conf`, `IWDG`/`WWDG`/`wdt_feed`, `PWR_CR`, "*stop* mode",
+"energy budget", OpenOCD, `probe-rs`, J-Link, SWD, JTAG, semihosting, ATECC608, SE050,
+on-device TPM 2.0, TrustZone-M / `CMSE`, PSA Certified, ETSI EN 303 645, EN 18031, RED,
+Cyber Resilience Act, "per-device key", "it does not boot after the update".
 
-**Principio rector**: **un dispositivo sin vía de actualización remota probada es un pasivo, no un
-producto.** Todo lo demás de esta skill —arranque, particionado, watchdog, identidad, energía— existe
-para que esa actualización sea posible durante los diez o quince años que el aparato va a estar
-enchufado. La segunda regla de la casa: **el firmware no puede pedir ayuda**. No hay operador, no hay
-`ssh`, no hay reinicio manual — si el diseño supone que alguien irá a tocarlo, el diseño está mal.
+**Governing principle**: **a device with no tested remote update path is a liability, not a
+product.** Everything else in this skill — boot, partitioning, watchdog, identity, energy — exists so
+that update is possible during the ten or fifteen years the thing is going to be plugged in. The
+second house rule: **firmware cannot ask for help**. There is no operator, no `ssh`, no manual
+restart — if the design assumes somebody will go and touch it, the design is wrong.
 
-**No aplica**: ver `ot-ics-security-standards` (**la industria y el proceso son suyos, sin
-excepción**: PLC, RTU, DCS, SCADA, SIS, modelo Purdue/ISA-95, zonas y conductos de IEC 62443,
-protocolos de campo —Modbus, DNP3, PROFINET, IEC 60870-5-104, OPC UA—, monitorización pasiva y
-ventana de parada. **Frontera operativa: si el aparato *actúa sobre un proceso físico industrial* y
-su fallo es un problema de seguridad de personas, es suyo; si es un producto conectado de consumo,
-edificio, retail, medición o logística, es de aquí.** Un controlador que caiga en ambos lados se
-diseña bajo esta skill y **se gobierna bajo la suya**), `edge-computing-standards` (**hermana
-directa**: **suyo el nodo con Linux completo, el cómputo desplazado al borde, la
-flota como sistema distribuido, la sincronización y la orquestación remota**; **aquí el dispositivo
-como objeto físico**: silicio, arranque, memoria, energía, periféricos, imagen del firmware y su
-actualización. Regla de arbitraje: *"¿qué se ejecuta en el borde y cómo se coordina la flota?" es
-suyo; "¿qué imagen arranca en esa placa, cómo se firma y cómo se sustituye sin ladrillarla?" es de
-aquí*. **Corte espejado del actualizador A/B**: MCUboot, RAUC, SWUpdate, Mender y hawkBit —imagen
-de firmware, ranuras y contador de rollback— son de aquí; rpm-ostree, bootc, greenboot y balenaOS
-—imagen de SO completo— son suyos; y **la campaña sobre la flota es suya siempre**, con cualquier
-mecanismo), `c-standards`, `cpp-standards`, `rust-standards`, `ada-standards` y `zig-standards` (**el
-lenguaje y su toolchain son suyos**, incluidos `-std=`, MISRA C/CERT C, sanitizers, flags de
-hardening del binario, runtime restringido de Ada y `no_std` de Rust — **aquí solo qué restricciones
-impone el objetivo**: sin `malloc`, sin excepciones, sin libc completa, tamaño de pila acotado),
-`assembly-standards` (arranque en ensamblador, vectores y rutinas críticas), `linux-administration-standards`
-(el día a día de systemd en un servidor — **no** en una imagen empotrada de solo lectura),
-`linux-hardening-standards` (baseline CIS/STIG de un host completo: no es el modelo de un aparato de
-32 MB), `selinux-standards`, `container-runtime-security-standards` (contenedor y su runtime, si el
-aparato llega a ejecutarlos), `cryptography-pki-standards` (**elección de algoritmo, curva, tamaño de
-clave y toda la PKI de provisión: es suya** — aquí solo dónde vive la clave en el silicio y por qué),
-`secrets-management-standards` (custodia y rotación del secreto en el lado servidor),
-`performance-engineering-standards` (metodología de perfilado de servidores),
-`networking-standards`, `wireless-standards` (radio, espectro, coexistencia),
-`opensource-licensing-standards` (obligaciones de distribución: **un aparato que embarca GPL es
-distribución, y ahí manda esa skill**), `vulnerability-management-standards` (triaje y SLA de los CVE
-del árbol embarcado), `grc-compliance-standards` (marco regulatorio como programa; aquí las fechas
-que decidan diseño), `mobile-standards` (la app que lo controla), `homelab-standards` (la placa como
-juguete: la frontera es el rigor exigido, no el hardware).
+**Not applicable**: see `ot-ics-security-standards` (**industry and process are theirs, without
+exception**: PLC, RTU, DCS, SCADA, SIS, the Purdue/ISA-95 model, IEC 62443 zones and conduits, field
+protocols — Modbus, DNP3, PROFINET, IEC 60870-5-104, OPC UA —, passive monitoring and the shutdown
+window. **Operational boundary: if the thing *acts on an industrial physical process* and its failure
+is a human-safety problem, it is theirs; if it is a connected consumer, building, retail, metering or
+logistics product, it is ours.** A controller that falls on both sides is designed under this skill
+and **governed under theirs**), `edge-computing-standards` (**direct sibling**: **theirs is the node
+with full Linux, compute pushed to the edge, the fleet as a distributed system, synchronisation and
+remote orchestration**; **here the device as a physical object**: silicon, boot, memory, energy,
+peripherals, the firmware image and its update. Arbitration rule: *"what runs at the edge and how is
+the fleet coordinated?" is theirs; "what image boots on that board, how is it signed and how is it
+replaced without bricking it?" is ours*. **Mirrored cut of the A/B updater**: MCUboot, RAUC,
+SWUpdate, Mender and hawkBit — firmware image, slots and rollback counter — are ours; rpm-ostree,
+bootc, greenboot and balenaOS — full OS image — are theirs; and **the campaign over the fleet is
+always theirs**, with any mechanism), `c-standards`, `cpp-standards`, `rust-standards`,
+`ada-standards` and `zig-standards` (**the language and its toolchain are theirs**, including
+`-std=`, MISRA C/CERT C, sanitizers, binary hardening flags, Ada's restricted runtime and Rust's
+`no_std` — **here only what restrictions the target imposes**: no `malloc`, no exceptions, no full
+libc, bounded stack size), `assembly-standards` (assembly startup, vectors and critical routines),
+`linux-administration-standards` (the day-to-day of systemd on a server — **not** on a read-only
+embedded image), `linux-hardening-standards` (a CIS/STIG baseline for a full host: it is not the
+model for a 32 MB device), `selinux-standards`, `container-runtime-security-standards` (the container
+and its runtime, if the device ends up running them), `cryptography-pki-standards` (**the choice of
+algorithm, curve, key size and the whole provisioning PKI: theirs** — here only where the key lives
+in the silicon and why), `secrets-management-standards` (custody and rotation of the secret on the
+server side), `performance-engineering-standards` (server profiling methodology),
+`networking-standards`, `wireless-standards` (radio, spectrum, coexistence),
+`opensource-licensing-standards` (distribution obligations: **a device that ships GPL is
+distribution, and there that skill rules**), `vulnerability-management-standards` (triage and SLA for
+the CVEs of the shipped tree), `grc-compliance-standards` (the regulatory framework as a programme;
+here the dates that decide design), `mobile-standards` (the app that controls it),
+`homelab-standards` (the board as a toy: the boundary is the rigour demanded, not the hardware).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión, licencia y fecha por web antes de fijar nada en un proyecto real (§8).
-> Lo siguiente es el estado **verificado** a agosto de 2026, con la fuente citada.
+> Verify the latest version, licence and date on the web before pinning anything in a real project
+> (§8). What follows is the **verified** state as of August 2026, with the source cited.
 
-### 2.1 MCU o MPU — la decisión que condiciona todas las demás
+### 2.1 MCU or MPU — the decision that conditions all the others
 
-| Elige **MCU** (Cortex-M, RISC-V embebido, ESP32, nRF) si | Elige **MPU + Linux** (Cortex-A, RISC-V con MMU) si |
+| Choose **MCU** (Cortex-M, embedded RISC-V, ESP32, nRF) if | Choose **MPU + Linux** (Cortex-A, RISC-V with MMU) if |
 |---|---|
-| El presupuesto de energía se mide en µA medios o el aparato va a pila años | Hay alimentación continua o batería grande y recargable |
-| Se exige arranque en milisegundos y determinismo de la respuesta | Se toleran segundos de arranque y latencias de decenas de ms |
-| El BOM manda: unidades de euro, RAM en KB, flash en cientos de KB | Hace falta pila de red completa, TLS moderno, sistema de ficheros, actualización de paquetes |
-| La función es fija y conocida en el diseño | La función va a cambiar: apps, contenedores, modelos, orquestación remota |
-| No hay MMU y no se quiere sistema operativo de propósito general | Se necesita aislamiento de procesos, MMU y usuarios |
+| The energy budget is measured in average µA or the thing runs on a battery for years | There is continuous power or a large rechargeable battery |
+| Millisecond boot and deterministic response are required | Seconds of boot and tens-of-ms latencies are tolerated |
+| The BOM rules: euro-level unit cost, RAM in KB, flash in hundreds of KB | A full network stack, modern TLS, a filesystem and package updating are needed |
+| The function is fixed and known at design time | The function is going to change: apps, containers, models, remote orchestration |
+| There is no MMU and no general-purpose operating system is wanted | Process isolation, an MMU and users are needed |
 
-Reglas duras: **no se elige MPU "por si acaso"** (multiplica coste, consumo, superficie de ataque y
-carga de mantenimiento de un árbol Linux completo durante toda la vida del producto), y **no se
-elige MCU cuando ya se sabe que hará falta TLS 1.3, un sistema de ficheros y OTA de imagen
-completa** — ese proyecto acaba portando medio Linux a mano. Si la duda es real, **la decide el
-presupuesto de energía y el ciclo de vida del software**, no la simpatía por la plataforma.
+Hard rules: **an MPU is not chosen "just in case"** (it multiplies cost, consumption, attack surface
+and the maintenance load of a full Linux tree for the whole life of the product), and **an MCU is not
+chosen when it is already known that TLS 1.3, a filesystem and full-image OTA will be needed** — that
+project ends up porting half of Linux by hand. If the doubt is real, **it is decided by the energy
+budget and the software lifecycle**, not by fondness for the platform.
 
-### 2.2 Superloop o RTOS
+### 2.2 Superloop or RTOS
 
-**Un superloop no es una decisión de principiante: es la respuesta correcta más veces de lo que se
-admite.** Un `while(1)` con máquina de estados no bloqueante y una ISR que solo pone banderas es
-determinista, auditable de un vistazo, no tiene *stack overflow* por tarea ni inversión de
-prioridad, y cabe en 8 KB de RAM.
+**A superloop is not a beginner's decision: it is the right answer more often than is admitted.** A
+`while(1)` with a non-blocking state machine and an ISR that only raises flags is deterministic,
+auditable at a glance, has no per-task *stack overflow* and no priority inversion, and fits in 8 KB
+of RAM.
 
-| Superloop basta si | Hace falta RTOS si |
+| A superloop is enough if | An RTOS is needed if |
 |---|---|
-| Todo el trabajo es no bloqueante y acotado; ningún camino tarda más que el peor plazo | Hay actividades con plazos muy distintos que no se pueden intercalar a mano |
-| Hay 1-2 fuentes de eventos y ningún protocolo con máquinas de estado profundas | Hay pila TCP/IP, BLE, USB o sistema de ficheros: casi todas asumen hilos |
-| El equipo puede razonar el peor tiempo de ejecución del bucle completo | Se necesitan primitivas de sincronización, temporizadores y colas ya probadas |
-| No se usan bibliotecas de terceros que asuman bloqueo | Se quiere aprovechar drivers y middleware del ecosistema del RTOS |
+| All the work is non-blocking and bounded; no path takes longer than the worst deadline | There are activities with very different deadlines that cannot be interleaved by hand |
+| There are 1-2 event sources and no protocol with deep state machines | There is a TCP/IP, BLE, USB stack or a filesystem: almost all of them assume threads |
+| The team can reason about the worst-case execution time of the full loop | Already-proven synchronisation primitives, timers and queues are needed |
+| No third-party libraries that assume blocking are used | You want to take advantage of the RTOS ecosystem's drivers and middleware |
 
-**Antipatrón principal**: *superloop con un `delay()` bloqueante en medio*. Deja de ser un superloop
-y pasa a ser un sistema con plazos indeterminados. Si aparece un `delay()` de más de un puñado de
-microsegundos en el bucle, o el diseño se rehace con máquina de estados o toca RTOS.
+**Main antipattern**: *a superloop with a blocking `delay()` in the middle*. It stops being a
+superloop and becomes a system with indeterminate deadlines. If a `delay()` longer than a handful of
+microseconds appears in the loop, either the design is redone with a state machine or it is time for
+an RTOS.
 
-### 2.3 RTOS — estado, gobernanza y licencia verificados
+### 2.3 RTOS — verified status, governance and licence
 
-| RTOS | Versión verificada (ago-2026) | Licencia leída en crudo | Gobernanza | Cuándo es el default |
+| RTOS | Verified version (Aug 2026) | Licence read raw | Governance | When it is the default |
 |---|---|---|---|---|
-| **Zephyr** | **4.4.0** (2026-04-14, EOL 2027-04-12); **LTS vigente: 3.7.0** (2024-07-26, mantenido hasta **2029-07-27**) — próximo LTS previsto en 4.6 | **Apache-2.0** (`LICENSE` en `main`, texto íntegro de la Apache License 2.0) | Linux Foundation, con proceso de seguridad y CVE propios | **Default del catálogo** para producto nuevo con conectividad: `west`, Kconfig+devicetree, MCUboot integrado, soporte de placas y política de LTS explícita |
-| **FreeRTOS Kernel** | **V11.3.0** | **MIT** (`LICENSE.md` en `main`) | Amazon (AWS) como *steward* desde 2017 | Proyecto que ya lo usa, MCU muy pequeño, o cuando se quiere planificador y nada más — **FreeRTOS es un kernel, no una distribución**: red, TLS, OTA y drivers los pones tú |
-| **NuttX** | **13.0.0** | **Apache-2.0** (`LICENSE` en `master`) | **Apache Software Foundation** (proyecto de primer nivel) | Cuando la **compatibilidad POSIX** es el requisito: código que debe compilar igual en Linux y en el aparato, o portabilidad de aplicación existente |
-| **Eclipse ThreadX** | v6.4.x, cadencia trimestral sincronizada entre componentes | **MIT** (`LICENSE.txt` en `master`, *"Copyright (c) 2024 - present Microsoft Corporation"*) | **Eclipse Foundation** desde 2023-2024; existe la **ThreadX Alliance** (lanzada 2024-10-08) para sostenibilidad y para licenciar el paquete de documentación de seguridad funcional | Cuando se necesita RTOS **con certificación de seguridad funcional** y el ecosistema del fabricante ya lo trae (STM32, Renesas, Microchip) |
+| **Zephyr** | **4.4.0** (2026-04-14, EOL 2027-04-12); **current LTS: 3.7.0** (2024-07-26, maintained until **2029-07-27**) — next LTS expected in 4.6 | **Apache-2.0** (`LICENSE` on `main`, the full text of the Apache License 2.0) | Linux Foundation, with its own security and CVE process | **Catalogue default** for a new product with connectivity: `west`, Kconfig+devicetree, integrated MCUboot, board support and an explicit LTS policy |
+| **FreeRTOS Kernel** | **V11.3.0** | **MIT** (`LICENSE.md` on `main`) | Amazon (AWS) as *steward* since 2017 | A project that already uses it, a very small MCU, or when you want a scheduler and nothing else — **FreeRTOS is a kernel, not a distribution**: network, TLS, OTA and drivers are on you |
+| **NuttX** | **13.0.0** | **Apache-2.0** (`LICENSE` on `master`) | **Apache Software Foundation** (top-level project) | When **POSIX compatibility** is the requirement: code that must compile the same on Linux and on the device, or portability of an existing application |
+| **Eclipse ThreadX** | v6.4.x, quarterly cadence synchronised across components | **MIT** (`LICENSE.txt` on `master`, *"Copyright (c) 2024 - present Microsoft Corporation"*) | **Eclipse Foundation** since 2023-2024; there is a **ThreadX Alliance** (launched 2024-10-08) for sustainability and to licence the functional-safety documentation package | When an RTOS **with functional-safety certification** is needed and the vendor's ecosystem already ships it (STM32, Renesas, Microchip) |
 
-Notas de gobernanza que **se afirman mal constantemente**:
-- **"Azure RTOS" ya no existe como producto de Microsoft**: la marca no era transferible; el proyecto
-  es **Eclipse ThreadX** bajo Eclipse Foundation, MIT. Escribir "Azure RTOS" en un documento de 2026
-  es señal de que el dato viene de memoria.
-- El repositorio de documentación `eclipse-threadx/rtos-docs` está **archivado**; la fuente viva es
-  `rtos-docs-asciidoc`. La cadencia de versiones se sincroniza entre componentes **aunque el código no
-  haya cambiado** — una versión nueva no implica cambio funcional: hay que leer las notas.
-- FreeRTOS es MIT desde la v10 (antes, GPL modificada). Si el proyecto arrastra un `FreeRTOS.h` de
-  hace una década, **la licencia embarcada no es la que crees**: se lee del árbol que se compila.
+Governance facts that are **constantly asserted wrongly**:
+- **"Azure RTOS" no longer exists as a Microsoft product**: the brand was not transferable; the
+  project is **Eclipse ThreadX** under the Eclipse Foundation, MIT. Writing "Azure RTOS" in a 2026
+  document is a sign that the fact came from memory.
+- The documentation repository `eclipse-threadx/rtos-docs` is **archived**; the live source is
+  `rtos-docs-asciidoc`. The version cadence is synchronised across components **even when the code
+  has not changed** — a new version does not imply a functional change: you have to read the notes.
+- FreeRTOS has been MIT since v10 (before that, a modified GPL). If the project drags along a
+  `FreeRTOS.h` from a decade ago, **the shipped licence is not the one you think**: it is read from
+  the tree that gets compiled.
 
-### 2.4 Linux embebido — Yocto o Buildroot, con criterio
+### 2.4 Embedded Linux — Yocto or Buildroot, with criteria
 
 | Yocto Project | Buildroot |
 |---|---|
-| **Producto con vida larga y varias variantes de hardware**: capas (`meta-*`) permiten separar BSP del fabricante, distro y producto | **Un producto, un hardware, una imagen**: `defconfig` + `br2-external` y poco más |
-| Genera **SDK y paquetes** (`ipk`/`rpm`/`deb`): permite instalar y actualizar por paquete si se decide así | **No hay gestor de paquetes**: la imagen es el artefacto, y eso empuja —correctamente— a OTA de imagen completa |
-| **LTS real**: Wrynose 6.0 (abril 2026, soporte hasta **abril 2030**); Scarthgap 5.0 (abril 2024, hasta **abril 2028**) | Ciclo trimestral (2026.05 es la última verificada); **LTS cada dos años con 3 años de soporte** — la línea 2025.02.x es la LTS vigente, la siguiente será 2027.02 |
-| Curva de aprendizaje alta, builds largas, `bitbake` opaco cuando falla | Se aprende en un día, build de una hora, `make menuconfig` legible |
-| Licencia: **MIT** (OpenEmbedded/poky) | **GPL-2.0-or-later** (`COPYING`: *"Buildroot is distributed under the terms of the GNU General Public License … either version 2 of the License, or (at your option) any later version"*) — con la salvedad explícita de que **los parches empaquetados se rigen por la licencia del software al que se aplican** |
+| **A product with a long life and several hardware variants**: layers (`meta-*`) let you separate the vendor BSP, the distro and the product | **One product, one hardware, one image**: `defconfig` + `br2-external` and little else |
+| Generates an **SDK and packages** (`ipk`/`rpm`/`deb`): it allows installing and updating per package if that is decided | **There is no package manager**: the image is the artifact, and that pushes — correctly — towards full-image OTA |
+| **Real LTS**: Wrynose 6.0 (April 2026, supported until **April 2030**); Scarthgap 5.0 (April 2024, until **April 2028**) | Quarterly cycle (2026.05 is the latest verified); **LTS every two years with 3 years of support** — the 2025.02.x line is the current LTS, the next will be 2027.02 |
+| Steep learning curve, long builds, `bitbake` opaque when it fails | Learned in a day, one-hour build, readable `make menuconfig` |
+| Licence: **MIT** (OpenEmbedded/poky) | **GPL-2.0-or-later** (`COPYING`: *"Buildroot is distributed under the terms of the GNU General Public License … either version 2 of the License, or (at your option) any later version"*) — with the explicit caveat that **the packaged patches are governed by the licence of the software they apply to** |
 
-**El criterio de elección real, no el gusto**: se elige **Yocto** cuando hay *más de una variante de
-hardware o de producto que comparte base*, cuando el BSP del fabricante ya viene como capa Yocto, o
-cuando el ciclo de vida exige una rama LTS con parches de seguridad durante años. Se elige
-**Buildroot** cuando hay *un hardware, un equipo pequeño y una imagen*, y se prefiere entender el
-build entero a delegarlo. **Quien elige Yocto para un producto único y sencillo paga una complejidad
-que no necesitaba; quien elige Buildroot para una familia de seis productos acaba con seis árboles
-divergentes.** Ojo con el origen: **Buildroot se desarrolla en GitLab (`gitlab.com/buildroot.org/buildroot`)
-y el repositorio de GitHub es un *mirror*** — issues y PR allí no los ve nadie.
+**The real choice criterion, not taste**: choose **Yocto** when there is *more than one hardware or
+product variant sharing a base*, when the vendor BSP already comes as a Yocto layer, or when the
+lifecycle demands an LTS branch with security patches for years. Choose **Buildroot** when there is
+*one hardware, a small team and one image*, and you prefer understanding the whole build to
+delegating it. **Whoever chooses Yocto for a single simple product pays for complexity they did not
+need; whoever chooses Buildroot for a family of six products ends up with six divergent trees.** Mind
+the origin: **Buildroot is developed on GitLab (`gitlab.com/buildroot.org/buildroot`) and the GitHub
+repository is a *mirror*** — issues and PRs there are seen by nobody.
 
-### 2.5 Arranque, toolchain y OTA
+### 2.5 Boot, toolchain and OTA
 
-| Decisión | Default | Motivo / dato verificado |
+| Decision | Default | Reason / verified fact |
 |---|---|---|
-| Bootloader MPU | **U-Boot** (última verificada: 2026.07 en `ftp.denx.de/pub/u-boot/`) | **GPL-2.0**, con excepción explícita para las *standalone applications* que usan la *jump table* (`Licenses/README`) — dato relevante para el cumplimiento de distribución |
-| Bootloader MCU | **MCUboot 2.4.0**, **Apache-2.0** (`LICENSE`) | Es el estándar de facto para A/B y verificación de firma en MCU; integrado en Zephyr |
-| Descripción de hardware (MPU) | **Device tree** (`.dts`/`.dtsi`/`.overlay`), versionado con el producto | Prohibido parchear el árbol del fabricante *in situ*: se usa `.dtsi` propio y overlays |
-| OTA en Linux embebido | **RAUC** (v1.15.x, **LGPL-2.1**) o **SWUpdate** (2026.05.x, **GPL-2.0**) | Ambos hacen A/B con verificación de firma. **La licencia importa**: LGPL frente a GPL cambia lo que se puede enlazar |
-| OTA gestionada / campañas | **Eclipse hawkBit** (**EPL-2.0**) como servidor de despliegue; **Mender** (cliente **Apache-2.0**, Northern.tech) si se quiere producto integrado | Verificar **siempre** qué parte del servidor es abierta y cuál es de pago antes de comprometer arquitectura |
-| Toolchain | Fijada por versión exacta y **ejecutada dentro de contenedor o `kas`** | Un build que dependa del `gcc` del portátil del desarrollador no es reproducible ni auditable |
+| MPU bootloader | **U-Boot** (latest verified: 2026.07 on `ftp.denx.de/pub/u-boot/`) | **GPL-2.0**, with an explicit exception for the *standalone applications* that use the *jump table* (`Licenses/README`) — a relevant fact for distribution compliance |
+| MCU bootloader | **MCUboot 2.4.0**, **Apache-2.0** (`LICENSE`) | It is the de facto standard for A/B and signature verification on MCUs; integrated in Zephyr |
+| Hardware description (MPU) | **Device tree** (`.dts`/`.dtsi`/`.overlay`), versioned with the product | Patching the vendor tree *in place* is forbidden: use your own `.dtsi` and overlays |
+| OTA on embedded Linux | **RAUC** (v1.15.x, **LGPL-2.1**) or **SWUpdate** (2026.05.x, **GPL-2.0**) | Both do A/B with signature verification. **The licence matters**: LGPL versus GPL changes what you can link |
+| Managed OTA / campaigns | **Eclipse hawkBit** (**EPL-2.0**) as the deployment server; **Mender** (client **Apache-2.0**, Northern.tech) if an integrated product is wanted | **Always** verify which part of the server is open and which is paid before committing architecture |
+| Toolchain | Pinned to an exact version and **run inside a container or `kas`** | A build that depends on the `gcc` on the developer's laptop is neither reproducible nor auditable |
 
-**Reproducibilidad del build**: la versión de toolchain, de las capas/paquetes y de las fuentes se
-fija (`SRCREV` explícito, nunca ramas móviles; `BR2_DOWNLOAD_...` con hash). El build **produce y
-archiva el manifiesto**: qué versión de cada componente entró en esa imagen. Sin ese manifiesto no se
-puede responder "¿está mi flota afectada por este CVE?", que es la pregunta que llegará. El SBOM
-deja de ser higiene y pasa a ser obligación regulatoria (§5.4).
+**Build reproducibility**: the toolchain version, the layer/package versions and the source versions
+are pinned (explicit `SRCREV`, never moving branches; `BR2_DOWNLOAD_...` with a hash). The build
+**produces and archives the manifest**: which version of each component went into that image. Without
+that manifest you cannot answer "is my fleet affected by this CVE?", which is the question that will
+arrive. The SBOM stops being hygiene and becomes a regulatory obligation (§5.4).
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- **Separación estricta**: `app/` (lógica de producto, portable y testeable en host) — `hal/`
-  (acceso a periférico, la única capa que conoce el registro) — `board/` (pinout, device tree,
-  overlays, `defconfig`). La lógica de producto **no incluye cabeceras del fabricante**: si lo hace,
-  no hay tests en host y no hay portabilidad al siguiente silicio.
-- **Configuración en Kconfig/`prj.conf`/`defconfig`, versionada**, nunca en `#define` dispersos ni en
-  flags de compilación pasados a mano. Un `defconfig` por variante de producto, diffeable.
-- **Mapa de memoria explícito en el linker script**: regiones, tamaño de pila por tarea, sección
-  `.noinit` para lo que debe sobrevivir al reset (causa del último reset, contador de arranques
-  fallidos). El *high-water mark* de cada pila se mide, no se estima.
-- **Particionado A/B desde el primer día**, aunque la primera versión no tenga OTA. Añadir A/B
-  después obliga a un *update* de particionado en campo, que es exactamente la operación que no se
-  puede hacer con seguridad. Layout mínimo: bootloader (inmutable o actualizable por separado y con
-  extremo cuidado) + slot A + slot B + datos persistentes + almacén de estado del arranque.
-- **La causa del reset se lee y se persiste en cada arranque** (registro de reset del MCU, `bootcount`
-  en U-Boot). Un dispositivo que no sabe por qué se reinició no se puede diagnosticar en campo.
-- **El reloj es un problema, no un dato**: sin RTC con batería, tras un corte de corriente el
-  dispositivo no sabe la fecha — y sin fecha, la validación de certificados TLS falla o, peor, se
-  desactiva. Se decide explícitamente: RTC respaldado, NTP/`chrony` con arranque tolerante, o
-  validación de certificado sin dependencia de reloj (tiempo mínimo persistido monotónicamente).
+- **Strict separation**: `app/` (product logic, portable and testable on the host) — `hal/`
+  (peripheral access, the only layer that knows the register) — `board/` (pinout, device tree,
+  overlays, `defconfig`). The product logic **does not include vendor headers**: if it does, there
+  are no host tests and no portability to the next silicon.
+- **Configuration in Kconfig/`prj.conf`/`defconfig`, versioned**, never in scattered `#define`s nor in
+  compilation flags passed by hand. One `defconfig` per product variant, diffable.
+- **Explicit memory map in the linker script**: regions, per-task stack size, a `.noinit` section for
+  what must survive the reset (cause of the last reset, failed-boot counter). Each stack's *high-water
+  mark* is measured, not estimated.
+- **A/B partitioning from day one**, even if the first version has no OTA. Adding A/B later forces a
+  partitioning *update* in the field, which is exactly the operation that cannot be done safely.
+  Minimum layout: bootloader (immutable, or separately updatable with extreme care) + slot A + slot B
+  + persistent data + boot state store.
+- **The reset cause is read and persisted on every boot** (the MCU's reset register, `bootcount` in
+  U-Boot). A device that does not know why it restarted cannot be diagnosed in the field.
+- **The clock is a problem, not a given**: without a battery-backed RTC, after a power cut the device
+  does not know the date — and without the date, TLS certificate validation fails or, worse, gets
+  disabled. It is decided explicitly: backed-up RTC, NTP/`chrony` with tolerant startup, or
+  certificate validation with no clock dependency (a minimum time persisted monotonically).
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-En orden de coste creciente; los tres primeros son **gates que rompen el build**:
+In increasing cost order; the first three are **gates that break the build**:
 
-1. **Compilación limpia con warnings como errores** para todas las variantes de `defconfig` del
-   producto, no solo la que usa el desarrollador. Añadir una variante y no meterla en CI es garantía
-   de que se romperá en silencio.
-2. **Tests unitarios en host** de toda la lógica de producto, con el HAL sustituido por un doble.
-   Si el porcentaje de código testeable en host es bajo, el problema es la arquitectura (§3), no el
-   test. `twister` en Zephyr para ejecutar la suite en `native_sim` y en emulación.
-3. **Análisis estático y disciplina de memoria**: el conjunto concreto de herramientas y flags es de
-   `c-standards`/`cpp-standards`/`rust-standards`; **lo que esta skill exige es la comprobación de que
-   no hay asignación dinámica donde se prohibió** (ver §7) y que el uso de pila está acotado y medido.
-4. **Emulación**: Renode o QEMU para ejecutar el firmware completo en CI sin hardware. Es lo que
-   permite tener CI de verdad en un proyecto embebido; sin ella el CI se limita a "compila".
-5. **Hardware-in-the-loop** con un banco de placas reales y sonda de depuración, ejecutando la suite
-   sobre el binario firmado que se va a distribuir. **Aquí es donde se prueba la actualización.**
-6. **Prueba de actualización obligatoria en CI, y no es negociable**: (a) A→B correcto; (b) **corte de
-   alimentación en mitad de la escritura**, en varios puntos, y arranque posterior correcto; (c)
-   imagen corrupta o con firma inválida → rechazada; (d) imagen válida que arranca y **no confirma**
-   → *rollback* automático al slot anterior; (e) actualización **desde la versión más antigua en
-   campo**, no solo desde la anterior. Un OTA que solo se ha probado en el camino feliz no está
-   probado.
-7. **Longevidad**: prueba de 72 h o más con el ciclo real de trabajo, vigilando fragmentación (si hay
-   heap), fugas de descriptores, desbordamiento de contadores y deriva del reloj.
+1. **A clean compilation with warnings as errors** for every `defconfig` variant of the product, not
+   just the one the developer uses. Adding a variant and not putting it in CI is a guarantee that it
+   will break silently.
+2. **Host unit tests** for all the product logic, with the HAL replaced by a double. If the percentage
+   of host-testable code is low, the problem is the architecture (§3), not the test. `twister` on
+   Zephyr to run the suite on `native_sim` and in emulation.
+3. **Static analysis and memory discipline**: the concrete set of tools and flags belongs to
+   `c-standards`/`cpp-standards`/`rust-standards`; **what this skill demands is the check that there
+   is no dynamic allocation where it was forbidden** (see §7) and that stack use is bounded and
+   measured.
+4. **Emulation**: Renode or QEMU to run the whole firmware in CI without hardware. It is what makes
+   real CI possible in an embedded project; without it CI is limited to "it compiles".
+5. **Hardware-in-the-loop** with a bench of real boards and a debug probe, running the suite over the
+   signed binary that is going to be distributed. **This is where the update gets tested.**
+6. **A mandatory update test in CI, and it is not negotiable**: (a) A→B correct; (b) **power cut in
+   the middle of the write**, at several points, and a correct boot afterwards; (c) a corrupt image or
+   one with an invalid signature → rejected; (d) a valid image that boots and **does not confirm** →
+   automatic *rollback* to the previous slot; (e) an update **from the oldest version in the field**,
+   not just from the previous one. An OTA that has only been tested on the happy path is not tested.
+7. **Longevity**: a 72 h or longer test with the real duty cycle, watching fragmentation (if there is
+   a heap), descriptor leaks, counter overflow and clock drift.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-### 5.1 Arranque seguro y cadena de confianza
-- **Raíz de confianza inmutable en el silicio** (ROM del fabricante), que verifica el bootloader, que
-  verifica la aplicación. La cadena se rompe en el primer eslabón que no verifica al siguiente: un
-  bootloader firmado que carga una aplicación sin comprobar firma **no aporta nada**.
-- **Los fusibles se queman en producción, no en el banco**: activar arranque seguro es irreversible.
-  El proceso de provisión se ensaya completo en unidades de sacrificio antes de tocar la línea.
-- **Contador de anti-*rollback*** para impedir que un atacante instale una versión anterior con un
-  fallo conocido. Un A/B con firma pero sin anti-rollback es un mecanismo de downgrade asistido.
-- Las claves de firma de firmware viven en **HSM o servicio de firma**, no en el CI ni en un portátil.
-  La rotación de la clave de firma se diseña **antes** del primer envío: si no se puede rotar, la
-  primera filtración obliga a retirar el producto.
+### 5.1 Secure boot and chain of trust
+- **Immutable root of trust in the silicon** (vendor ROM), which verifies the bootloader, which
+  verifies the application. The chain breaks at the first link that does not verify the next: a signed
+  bootloader that loads an application without checking the signature **contributes nothing**.
+- **Fuses are burned in production, not on the bench**: enabling secure boot is irreversible. The
+  provisioning process is rehearsed end to end on sacrificial units before touching the line.
+- **Anti-*rollback* counter** to stop an attacker installing an earlier version with a known flaw. An
+  A/B with a signature but without anti-rollback is an assisted downgrade mechanism.
+- Firmware signing keys live in an **HSM or a signing service**, not in CI nor on a laptop. Signing
+  key rotation is designed **before** the first shipment: if it cannot be rotated, the first leak
+  forces a product recall.
 
-### 5.2 Identidad y almacén de claves
-- **Una clave única por dispositivo, sin excepciones.** Una clave compartida en toda la flota es el
-  fallo de diseño clásico y su consecuencia es conocida: la extracción de un solo aparato de un
-  cajón compromete el parque entero, y **no hay rotación posible sin tocar todas las unidades**. Lo
-  mismo aplica a contraseñas por defecto idénticas — es literalmente la primera recomendación de
-  ETSI EN 303 645 (§5.4).
-- **Dónde vive la clave privada, en orden de preferencia**: elemento seguro dedicado (ATECC608, SE050)
-  o TPM 2.0 → enclave del propio SoC (TrustZone-M con `CMSE`, TrustZone-A con mundo seguro) → región
-  de flash protegida con lectura deshabilitada → *(inaceptable)* fichero en el sistema de ficheros o
-  constante en el binario. **El criterio real: la clave privada nunca sale del elemento; se usa allí
-  dentro.** Si el diseño la lee a RAM para firmar, no hay almacén seguro, hay un cajón.
-- **La identidad se inyecta en fabricación** con un proceso auditado: quién la generó, dónde está el
-  registro de qué serie tiene qué certificado, y cómo se revoca una unidad concreta. Si no existe
-  procedimiento de revocación por dispositivo, no hay identidad, hay decorado.
-- Cifrado y algoritmos: **es decisión de `cryptography-pki-standards`**. Lo que esta skill impone es
-  que el MCU **tenga acelerador o presupuesto de ciclos** para lo que se elija, verificado con medida,
-  y que el generador de aleatoriedad sea un TRNG del silicio — **no** un `srand(time())`, que en un
-  aparato sin RTC produce la misma semilla en toda la flota.
+### 5.2 Identity and key store
+- **A unique key per device, no exceptions.** A key shared across the whole fleet is the classic
+  design failure and its consequence is well known: extracting a single device from a drawer
+  compromises the entire estate, and **there is no possible rotation without touching every unit**.
+  The same applies to identical default passwords — it is literally the first recommendation of ETSI
+  EN 303 645 (§5.4).
+- **Where the private key lives, in order of preference**: a dedicated secure element (ATECC608,
+  SE050) or TPM 2.0 → an enclave in the SoC itself (TrustZone-M with `CMSE`, TrustZone-A with a secure
+  world) → a protected flash region with reading disabled → *(unacceptable)* a file in the filesystem
+  or a constant in the binary. **The real criterion: the private key never leaves the element; it is
+  used inside it.** If the design reads it into RAM to sign, there is no secure store, there is a
+  drawer.
+- **Identity is injected in manufacturing** with an audited process: who generated it, where the
+  record of which serial has which certificate lives, and how a specific unit gets revoked. If there
+  is no per-device revocation procedure, there is no identity, there is scenery.
+- Encryption and algorithms: **that is `cryptography-pki-standards`' decision**. What this skill
+  imposes is that the MCU **has an accelerator or a cycle budget** for whatever is chosen, verified by
+  measurement, and that the randomness generator is a TRNG in the silicon — **not** an `srand(time())`,
+  which on a device with no RTC produces the same seed across the whole fleet.
 
-### 5.3 Superficie de depuración en producción
-- **JTAG/SWD deshabilitado o bloqueado por fusible en la unidad de producción.** Un puerto de
-  depuración abierto es lectura completa de la flash, extracción de claves y modificación del
-  firmware con acceso físico de diez minutos.
-- **Consola serie**: sin *shell* interactiva, sin `root` sin contraseña, sin `bootdelay` que permita
-  interrumpir U-Boot y editar `bootargs` — **interrumpir el arranque y añadir `init=/bin/sh` es el
-  ataque de manual**. Si se deja consola para diagnóstico, es de solo lectura y autenticada.
-- **La reactivación de la depuración, si es necesaria para RMA, se hace por reto-respuesta firmado**
-  contra la identidad del dispositivo, nunca por una contraseña maestra común.
-- Trazas y logs: **el firmware no imprime secretos, claves, tokens ni identificadores completos** —
-  ni por UART, ni en el fichero de log, ni en el volcado de fallo que se sube a la nube.
+### 5.3 Debug surface in production
+- **JTAG/SWD disabled or fuse-locked on the production unit.** An open debug port is a full read of
+  the flash, key extraction and firmware modification with ten minutes of physical access.
+- **Serial console**: no interactive *shell*, no passwordless `root`, no `bootdelay` that allows
+  interrupting U-Boot and editing `bootargs` — **interrupting boot and adding `init=/bin/sh` is the
+  textbook attack**. If a console is left for diagnostics, it is read-only and authenticated.
+- **Re-enabling debug, if it is necessary for RMA, is done by a signed challenge-response** against
+  the device identity, never by a common master password.
+- Traces and logs: **the firmware does not print secrets, keys, tokens or full identifiers** — not
+  over UART, not in the log file, and not in the crash dump uploaded to the cloud.
 
-### 5.4 Marco regulatorio — el dato que más decide y peor se cita
+### 5.4 Regulatory framework — the fact that decides most and is cited worst
 
-Verificado a agosto de 2026, de fuente oficial. **Re-verificar siempre: estas fechas se han movido ya
-una vez.**
+Verified as of August 2026, from official sources. **Always re-verify: these dates have already moved
+once.**
 
-- **Cyber Resilience Act — Reglamento (UE) 2024/2847.** Fuente: `digital-strategy.ec.europa.eu`,
-  verbatim: *"The CRA entered into force on 10 December 2024."* y *"The main obligations introduced by
-  the Act will apply from 11 December 2027, with reporting obligations to apply as of 11 September
-  2026."* Adicionalmente, el capítulo de **notificación de organismos de evaluación de la conformidad
-  aplica desde el 11 de junio de 2026**. Consecuencias de diseño, no de papeleo: obligación de
-  gestionar vulnerabilidades durante el **periodo de soporte** declarado, **SBOM**, canal de
-  divulgación de vulnerabilidades, **actualizaciones de seguridad** — y notificación de vulnerabilidad
-  activamente explotada e incidente grave a ENISA y al CSIRT nacional **ya en 2026**. Alcance: todo
-  *producto con elementos digitales* puesto en el mercado de la UE, no solo IoT de consumo.
-- **RED — Directiva 2014/53/UE, artículo 3.3 (d), (e) y (f)**, activados por el **Reglamento Delegado
-  (UE) 2022/30**. La fecha original de aplicación (1 de agosto de 2024) **se pospuso doce meses** por
-  el Reglamento Delegado (UE) 2023/2444: **son de aplicación desde el 1 de agosto de 2025**. Cubren
-  protección de la red (d), datos personales y privacidad (e) y protección frente al fraude (f).
-  Normas armonizadas: **EN 18031-1/-2/-3**, citadas en el DOUE con **restricciones** (Decisión (UE)
-  2025/138); donde esas condiciones no se cumplen, **no hay presunción de conformidad** y hace falta
-  organismo notificado. Se espera que la RED-DA sea derogada al aplicar plenamente el CRA en 2027 —
-  **verificarlo antes de planificar sobre esa suposición**.
-- **ETSI EN 303 645** — versión vigente **V3.1.3 (2024-09)**. Es el baseline de ciberseguridad de IoT
-  de consumo: sin contraseñas por defecto, política de divulgación de vulnerabilidades, software
-  actualizado. **No es una norma armonizada de la RED por sí misma** y no define método de ensayo —
-  para eso está **ETSI TS 103 701**. Usarla como *checklist* de diseño es correcto; presentarla como
-  prueba de conformidad regulatoria, no.
-- **Consecuencia de arquitectura**: el periodo de soporte declarado bajo el CRA fija **cuántos años
-  hay que poder emitir firmware nuevo para ese hardware**. Eso decide hoy el tamaño de flash (debe
-  caber una imagen mayor dentro de años), la elección de LTS del RTOS o de la distribución, y si el
-  silicio elegido seguirá teniendo BSP mantenido. **Es una decisión de ingeniería con fecha legal.**
+- **Cyber Resilience Act — Regulation (EU) 2024/2847.** Source: `digital-strategy.ec.europa.eu`,
+  verbatim: *"The CRA entered into force on 10 December 2024."* and *"The main obligations introduced
+  by the Act will apply from 11 December 2027, with reporting obligations to apply as of 11 September
+  2026."* In addition, the chapter on **notification of conformity assessment bodies applies from 11
+  June 2026**. Design consequences, not paperwork: an obligation to manage vulnerabilities during the
+  declared **support period**, an **SBOM**, a vulnerability disclosure channel, **security updates** —
+  and notification of an actively exploited vulnerability and of a severe incident to ENISA and the
+  national CSIRT **already in 2026**. Scope: every *product with digital elements* placed on the EU
+  market, not just consumer IoT.
+- **RED — Directive 2014/53/EU, article 3.3 (d), (e) and (f)**, activated by **Delegated Regulation
+  (EU) 2022/30**. The original date of application (1 August 2024) **was postponed by twelve months**
+  by Delegated Regulation (EU) 2023/2444: **they apply from 1 August 2025**. They cover network
+  protection (d), personal data and privacy (e) and protection against fraud (f). Harmonised
+  standards: **EN 18031-1/-2/-3**, cited in the OJEU with **restrictions** (Decision (EU) 2025/138);
+  where those conditions are not met, **there is no presumption of conformity** and a notified body is
+  required. The RED-DA is expected to be repealed when the CRA fully applies in 2027 — **verify that
+  before planning on that assumption**.
+- **ETSI EN 303 645** — current version **V3.1.3 (2024-09)**. It is the consumer IoT cybersecurity
+  baseline: no default passwords, a vulnerability disclosure policy, updated software. **It is not a
+  RED harmonised standard by itself** and it does not define a test method — that is what **ETSI TS
+  103 701** is for. Using it as a design *checklist* is correct; presenting it as proof of regulatory
+  conformity is not.
+- **Architectural consequence**: the support period declared under the CRA fixes **how many years you
+  must be able to issue new firmware for that hardware**. That decides today the flash size (a larger
+  image must fit years from now), the choice of RTOS or distribution LTS, and whether the chosen
+  silicon will still have a maintained BSP. **It is an engineering decision with a legal date.**
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Presupuesto de energía escrito antes de escribir código**: corriente por modo (activo, *sleep*,
-  *deep sleep*), tiempo en cada modo por ciclo de trabajo, y consumo medio resultante frente a la
-  capacidad de la batería. Se **mide** con analizador de corriente o contador de coulombios sobre el
-  hardware real — un presupuesto calculado con las cifras de la hoja de datos siempre sale mejor que
-  la realidad. Lo que arruina el presupuesto casi nunca es el MCU: es la **radio** y un periférico
-  que se quedó alimentado.
-- **Watchdog independiente activado siempre en producción**, alimentado desde un único punto que solo
-  se alcanza si **todas** las tareas han reportado vida. Un `wdt_feed()` en una ISR periódica no
-  vigila nada: sobrevive perfectamente a una aplicación colgada. El watchdog **no se deshabilita
-  para depurar** en la imagen de producción, y el número de resets por watchdog es telemetría de
-  primer nivel.
-- **`printf` por UART cuesta lo que no está escrito**: bloquea, puede alterar el *timing* que se
-  intenta depurar (heisenbug), consume flash en formateo y a menudo deja secretos en el cable. En
-  camino crítico se usa **trazado con marcas** (`ITM`/SWO, GPIO conmutado y analizador lógico, o log
-  binario diferido con desreferencia en el host). El log textual queda para el arranque y los errores.
-- **Telemetría mínima que debe subir el dispositivo**: versión de firmware, causa del último reset,
-  contador de resets por watchdog, *high-water mark* de pila, resultado del último intento de
-  actualización, y estado de la conectividad. Sin eso, la flota es opaca y el primer OTA fallido se
-  descubre por el servicio de atención al cliente.
-- **Despliegue de OTA por fases obligatorio**: canario (decenas de unidades) → porcentaje creciente →
-  flota. **Con criterio de parada automático** ligado a la telemetría anterior: si el ratio de
-  arranques confirmados cae, la campaña se detiene sola. Y el aparato **jamás se actualiza con la
-  batería por debajo del umbral** ni durante una operación crítica.
-- **Degradación con red caída**: el dispositivo tiene que funcionar sin conexión. Reintentos con
-  *backoff* y *jitter* — **el jitter no es un detalle**: diez mil aparatos que reintentan al mismo
-  segundo tras un corte tumban el backend con un ataque de denegación de servicio propio.
+- **An energy budget written before writing code**: current per mode (active, *sleep*, *deep sleep*),
+  time in each mode per duty cycle, and the resulting average consumption against the battery
+  capacity. It is **measured** with a current analyser or a coulomb counter on the real hardware — a
+  budget computed with datasheet figures always comes out better than reality. What ruins the budget
+  is almost never the MCU: it is the **radio** and a peripheral that was left powered.
+- **An independent watchdog always enabled in production**, kicked from a single point that is only
+  reached if **all** tasks have reported life. A `wdt_feed()` in a periodic ISR watches nothing: it
+  survives a hung application perfectly well. The watchdog **is not disabled for debugging** in the
+  production image, and the number of watchdog resets is first-class telemetry.
+- **`printf` over UART costs what is not written down**: it blocks, it can alter the very *timing* you
+  are trying to debug (heisenbug), it burns flash on formatting and it often leaves secrets on the
+  wire. On the critical path use **mark-based tracing** (`ITM`/SWO, a toggled GPIO with a logic
+  analyser, or a deferred binary log dereferenced on the host). Textual logging is left for boot and
+  errors.
+- **Minimum telemetry the device must upload**: firmware version, cause of the last reset, watchdog
+  reset counter, stack *high-water mark*, result of the last update attempt, and connectivity status.
+  Without that the fleet is opaque and the first failed OTA is discovered through customer support.
+- **Phased OTA rollout is mandatory**: canary (tens of units) → increasing percentage → fleet. **With
+  an automatic stop criterion** tied to the telemetry above: if the confirmed-boot ratio drops, the
+  campaign stops itself. And the device **is never updated with the battery below the threshold** nor
+  during a critical operation.
+- **Degradation with the network down**: the device has to work without a connection. Retries with
+  *backoff* and *jitter* — **the jitter is not a detail**: ten thousand devices retrying on the same
+  second after an outage take the backend down with a self-inflicted denial of service.
 
-## 7. Sostenibilidad a largo plazo y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-- **Cadencia**: seguir la rama **LTS** del RTOS o de la distribución (Zephyr 3.7 LTS hasta 2029;
-  Yocto Wrynose 6.0 hasta 2030; Buildroot LTS bienal con 3 años) y **actualizar de LTS a LTS con un
-  proyecto planificado**, no de golpe cuando salte un CVE crítico. Quedarse en una rama sin soporte
-  es incompatible con el periodo de soporte declarado bajo el CRA.
-- **Fin de vida declarado y publicado**: fecha hasta la que habrá firmware de seguridad, qué pasa
-  después con el servicio en la nube del que depende el aparato, y si el dispositivo sigue siendo útil
-  sin él. Un producto que se convierte en ladrillo el día que se apaga el backend es un problema
-  regulatorio y reputacional, no una decisión de negocio limpia.
+- **Cadence**: follow the **LTS** branch of the RTOS or the distribution (Zephyr 3.7 LTS until 2029;
+  Yocto Wrynose 6.0 until 2030; Buildroot biennial LTS with 3 years) and **move from LTS to LTS as a
+  planned project**, not all at once when a critical CVE lands. Staying on an unsupported branch is
+  incompatible with the support period declared under the CRA.
+- **Declared and published end of life**: the date until which there will be security firmware, what
+  happens afterwards to the cloud service the device depends on, and whether the device is still
+  useful without it. A product that becomes a brick the day the backend is switched off is a
+  regulatory and reputational problem, not a clean business decision.
 
-Prohibiciones explícitas:
-- ❌ **Dispositivo sin vía de actualización remota probada.** Es el veto número uno de esta skill.
-- ❌ **Clave, contraseña o certificado compartidos por toda la flota**, incluidas las "de fábrica" y
-  las "solo para desarrollo" que acaban en producción. PROHIBIDO.
-- ❌ **Actualización sin A/B ni rollback automático**, o con rollback que depende de que alguien pulse
-  algo. PROHIBIDO escribir sobre la única copia arrancable.
-- ❌ **Firmware sin firmar, o firmado con clave que no se puede rotar.** PROHIBIDO validar solo un
-  CRC o un hash sin firma: un hash no autentica nada.
-- ❌ **JTAG/SWD activo, `bootdelay` interrumpible o shell de U-Boot accesible en unidad de producción.**
-- ❌ **`malloc`/`free` en tiempo de ejecución en firmware de MCU.** Toda la memoria se reserva estática
-  o en arenas de tamaño fijo en el arranque; sin MMU, la fragmentación no es recuperable y el fallo
-  aparece semanas después en campo, sin traza. Si un componente de terceros exige heap, se le asigna
-  una arena acotada y se prohíbe que crezca. Excepción justificable y documentada: asignación
-  **exclusivamente durante la inicialización**, que después nunca se libera.
-- ❌ **Recursividad no acotada, VLA y `alloca` en firmware** — desbordan la pila sin aviso.
-- ❌ **Bloquear dentro de una ISR** (esperas activas, `printf`, tomar un mutex que puede dormir).
-- ❌ **Watchdog deshabilitado o alimentado desde un temporizador ciego** en la imagen de producción.
-- ❌ **Depender de que el usuario final actualice**: la actualización es automática por defecto, con
-  campaña gestionada. Un modelo "opt-in" produce una flota mayoritariamente sin parchear.
-- ❌ **Ramas móviles en el build** (`master`, `main`, `latest`) para cualquier fuente, capa o
-  contenedor de toolchain. PROHIBIDO: mata la reproducibilidad y con ella el análisis de impacto de
-  CVE.
-- ❌ **Parchear el BSP del fabricante *in situ*** en lugar de mantener capa/overlay propio: bloquea
-  toda actualización futura del BSP.
-- ❌ **Certificados TLS con validación desactivada** "porque el reloj falla al arrancar". El problema
-  es el reloj (§3), y se resuelve ahí.
-- ❌ **Telemetría con identificador personal o de localización sin base legal y sin minimización** —
-  aquí entra el artículo 3.3(e) de la RED y el RGPD, no solo el buen gusto.
+Explicit prohibitions:
+- ❌ **A device with no tested remote update path.** It is the number one veto of this skill.
+- ❌ **A key, password or certificate shared across the whole fleet**, including the "factory" ones and
+  the "development only" ones that end up in production. FORBIDDEN.
+- ❌ **An update without A/B and without automatic rollback**, or with a rollback that depends on
+  somebody pressing something. FORBIDDEN to write over the only bootable copy.
+- ❌ **Unsigned firmware, or firmware signed with a key that cannot be rotated.** FORBIDDEN to validate
+  only a CRC or a hash without a signature: a hash authenticates nothing.
+- ❌ **JTAG/SWD active, an interruptible `bootdelay` or an accessible U-Boot shell on a production
+  unit.**
+- ❌ **`malloc`/`free` at run time in MCU firmware.** All memory is reserved statically or in
+  fixed-size arenas at startup; without an MMU, fragmentation is not recoverable and the failure shows
+  up weeks later in the field, with no trace. If a third-party component requires a heap, it gets a
+  bounded arena and is forbidden to grow. Justifiable and documented exception: allocation
+  **exclusively during initialisation**, never freed afterwards.
+- ❌ **Unbounded recursion, VLAs and `alloca` in firmware** — they overflow the stack without warning.
+- ❌ **Blocking inside an ISR** (busy waits, `printf`, taking a mutex that can sleep).
+- ❌ **A watchdog disabled or kicked from a blind timer** in the production image.
+- ❌ **Depending on the end user to update**: the update is automatic by default, with a managed
+  campaign. An "opt-in" model produces a mostly unpatched fleet.
+- ❌ **Moving branches in the build** (`master`, `main`, `latest`) for any source, layer or toolchain
+  container. FORBIDDEN: it kills reproducibility and with it CVE impact analysis.
+- ❌ **Patching the vendor BSP *in place*** instead of maintaining your own layer/overlay: it blocks
+  every future BSP update.
+- ❌ **TLS certificates with validation disabled** "because the clock fails at boot". The problem is
+  the clock (§3), and it gets solved there.
+- ❌ **Telemetry with a personal or location identifier without a legal basis and without
+  minimisation** — this is where article 3.3(e) of the RED and the GDPR come in, not just good taste.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar en la web —**esta lista es corta a propósito: es
-lo que cambia y lo que se cita mal**:
+Before pinning anything in a real project, check on the web — **this list is deliberately short: it
+is what changes and what gets cited wrongly**:
 
-1. **Fechas del CRA (Reglamento (UE) 2024/2847)** en `digital-strategy.ec.europa.eu` y en EUR-Lex, y
-   si algún acto posterior (paquetes ómnibus, actos de ejecución) ha movido plazos, ampliado
-   exenciones o precisado categorías de productos importantes/críticos.
-2. **Estado de la RED-DA**: si el Reglamento Delegado (UE) 2022/30 sigue vigente o ya ha sido
-   derogado por la aplicación del CRA, y el estado de las **restricciones** a EN 18031-1/-2/-3 en el
-   DOUE (Decisión (UE) 2025/138 o su sucesora).
-3. **Versión vigente de ETSI EN 303 645** y de ETSI TS 103 701 en `etsi.org` (a ago-2026: V3.1.3
-   de 2024-09).
-4. **RTOS**: última estable **y LTS vigente** de Zephyr (`docs.zephyrproject.org/latest/releases/`),
-   versión de FreeRTOS Kernel, de NuttX (releases de Apache) y cadencia de Eclipse ThreadX. **La
-   licencia se lee del fichero en crudo del árbol que se va a compilar** (`LICENSE`, `LICENSE.md`,
-   `LICENSE.txt`, `COPYING`), no de la etiqueta que muestra GitHub.
-5. **Linux embebido**: rama LTS vigente de Yocto (`wiki.yoctoproject.org/wiki/Releases`) con su fecha
-   de fin de soporte, y la LTS vigente de Buildroot (`buildroot.org/lts.html`) — recordando que **el
-   desarrollo de Buildroot está en GitLab, no en GitHub**.
-6. **Bootloader y OTA**: última de U-Boot en `ftp.denx.de/pub/u-boot/`, de MCUboot, RAUC y SWUpdate, y
-   **qué parte del servidor de campañas es abierta y cuál es comercial** antes de comprometer
-   arquitectura.
-7. **CVE del árbol embarcado** (RTOS, pila TCP/IP, TLS, bootloader) y si la rama que se usa recibe el
-   parche o solo lo recibe la siguiente.
-8. **Estado del silicio elegido**: si el fabricante mantiene el BSP y hasta cuándo, y si hay aviso de
-   fin de producción (PCN/EOL) del propio chip — un producto con periodo de soporte declarado a diez
-   años sobre un MCU que se descataloga en dos es una decisión que hay que tomar sabiéndola.
+1. **CRA dates (Regulation (EU) 2024/2847)** on `digital-strategy.ec.europa.eu` and on EUR-Lex, and
+   whether any later act (omnibus packages, implementing acts) has moved deadlines, widened exemptions
+   or refined the categories of important/critical products.
+2. **Status of the RED-DA**: whether Delegated Regulation (EU) 2022/30 is still in force or has
+   already been repealed by the application of the CRA, and the status of the **restrictions** on
+   EN 18031-1/-2/-3 in the OJEU (Decision (EU) 2025/138 or its successor).
+3. **Current version of ETSI EN 303 645** and of ETSI TS 103 701 on `etsi.org` (as of Aug 2026:
+   V3.1.3 of 2024-09).
+4. **RTOS**: the latest stable **and the current LTS** of Zephyr
+   (`docs.zephyrproject.org/latest/releases/`), the FreeRTOS Kernel version, NuttX's (Apache releases)
+   and Eclipse ThreadX's cadence. **The licence is read from the raw file of the tree that is going to
+   be compiled** (`LICENSE`, `LICENSE.md`, `LICENSE.txt`, `COPYING`), not from the label GitHub shows.
+5. **Embedded Linux**: the current Yocto LTS branch (`wiki.yoctoproject.org/wiki/Releases`) with its
+   end-of-support date, and Buildroot's current LTS (`buildroot.org/lts.html`) — remembering that
+   **Buildroot development is on GitLab, not on GitHub**.
+6. **Bootloader and OTA**: the latest U-Boot on `ftp.denx.de/pub/u-boot/`, and of MCUboot, RAUC and
+   SWUpdate, and **which part of the campaign server is open and which is commercial** before
+   committing architecture.
+7. **CVEs in the shipped tree** (RTOS, TCP/IP stack, TLS, bootloader) and whether the branch in use
+   receives the patch or only the next one does.
+8. **Status of the chosen silicon**: whether the vendor maintains the BSP and until when, and whether
+   there is an end-of-production notice (PCN/EOL) for the chip itself — a product with a declared
+   ten-year support period on an MCU that gets discontinued in two is a decision that has to be taken
+   knowingly.
 
-**Huecos declarados**: el texto íntegro de EN 18031-1/-2/-3 y de ETSI TS 103 701 es de pago o de
-acceso restringido; sus requisitos concretos **no se han verificado verbatim** en este documento y
-deben leerse de la norma comprada antes de afirmar conformidad. Las cifras de consumo, latencia y
-tamaño no se dan aquí porque **dependen enteramente del silicio y del ciclo de trabajo**: se miden en
-el hardware, no se citan.
+**Declared gaps**: the full text of EN 18031-1/-2/-3 and of ETSI TS 103 701 is paid or
+access-restricted; their concrete requirements **have not been verified verbatim** in this document
+and must be read from the purchased standard before asserting conformity. Consumption, latency and
+size figures are not given here because **they depend entirely on the silicon and the duty cycle**:
+they are measured on the hardware, not quoted.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

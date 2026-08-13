@@ -3,312 +3,312 @@ name: sre-practice-standards
 description: SRE practice standards for service reliability. Use when defining SLIs, SLOs, error budgets, multi-window burn-rate alerts, on-call rotation sizing, paging and handover, toil measurement and reduction, production readiness reviews, change risk classification, reliability game days, capacity planning or DORA metrics.
 ---
 
-# Estándares de práctica SRE — fiabilidad como disciplina de ingeniería
+# SRE practice standards — reliability as an engineering discipline
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al definir, revisar o corregir la **práctica de fiabilidad** de un servicio: elección de SLI desde
-user journeys, definición de SLO y ventanas, error budgets y la política que disparan, alertas por burn
-rate, diseño de rotación de guardia y paging, mando de incidente y severidades, comunicación durante
-caídas, postmortems sin culpa y seguimiento de acciones, identificación y reducción de toil, production
-readiness reviews, clasificación de riesgo del cambio, capacity planning, game days y simulacros, métricas
-DORA y la negociación fiabilidad vs. velocidad.
+Applies when defining, reviewing or correcting a service's **reliability practice**: choosing SLIs from
+user journeys, defining SLOs and windows, error budgets and the policy they trigger, burn-rate
+alerts, on-call rotation and paging design, incident command and severities, communication during
+outages, blameless postmortems and action follow-up, identifying and reducing toil, production
+readiness reviews, change risk classification, capacity planning, game days and drills, DORA
+metrics and the reliability vs. velocity negotiation.
 
-Principio rector: **la fiabilidad es una decisión de producto expresada en un número, no una aspiración**.
-Sin SLO acordado con el dueño del servicio no hay error budget; sin error budget no hay criterio objetivo
-para decidir entre enviar features y arreglar la plataforma, y la discusión degenera en quién grita más.
-Corolario: 100 % no es el objetivo — el objetivo es el nivel de fiabilidad que el usuario nota y el negocio
-paga; el resto del presupuesto se gasta deliberadamente en velocidad.
+Governing principle: **reliability is a product decision expressed as a number, not an aspiration**.
+Without an SLO agreed with the service owner there is no error budget; without an error budget there is no objective criterion
+for deciding between shipping features and fixing the platform, and the discussion degenerates into who shouts
+loudest. Corollary: 100% is not the target — the target is the level of reliability the user notices and the business
+pays for; the rest of the budget is deliberately spent on velocity.
 
-**No aplica**: ver `observability-standards` (instrumentación, métricas, trazas, logs y su pipeline —
-aquí se decide *qué* se mide y *qué* despierta a alguien, no *cómo* se instrumenta),
-`incident-management-standards` (**el proceso de gestión del incidente**, agnóstico de causa y
-canónico: criterios de declaración, matriz de severidad, roles y traspaso de mando, comunicación y
-portavoz, cierre, postmortem como artefacto, métricas del proceso, incidentes de proveedor o de dato.
-Lo que esta skill contiene sobre mando de incidente y postmortem es el **resumen aplicado a un
-incidente de fiabilidad**: si ambas divergen, manda aquella),
-`incident-response-forensics-standards` (incidente de **seguridad**: contención sin destruir
-evidencia, adquisición, cadena de custodia, erradicación y recuperación, notificación regulatoria),
-`bcdr-standards` (continuidad y DR como programa: RTO/RPO, sitios alternos,
-ejercicios de recuperación completa), `chaos-engineering-standards` (**el diseño y la mecánica
-del experimento de caos son suyos** —hipótesis de estado estable, herramienta de inyección,
-*blast radius*, condiciones de aborto—; **el game day como práctica de fiabilidad y el SLO que
-sirve de estado estable son de aquí**), `itsm-itil-standards` (proceso de servicio: catálogo, CAB, gestión de
-peticiones, cumplimiento contractual), `web-performance-standards` (**el SLO del
-servicio y su error budget son de aquí**; **la experiencia percibida en el navegador** —Core Web
-Vitals, RUM al percentil 75— **es suya**. Un servicio puede cumplir su SLO de disponibilidad y
-latencia de servidor y aun así ser lento para el usuario: son dos medidas distintas y ninguna
-sustituye a la otra), `performance-engineering-standards` (*"¿cuánta latencia
-podemos permitirnos y qué hacemos si la superamos?"* es de aquí; *"¿por qué es lenta y qué la
-arregla?"* es suya), `knowledge-management-standards` (**el contenido del runbook —qué comprueba, qué comando
-se ejecuta, qué se escala— es de aquí**; **que exista, tenga dueño, fecha de revisión y se haya
-ejecutado al menos una vez es criterio suyo**. La regla que ambas sostienen: **un runbook que nadie
-ha ejecutado es ficción**, y descubrirlo durante un incidente es la peor forma de averiguarlo),
-`tech-leadership-standards` (**las métricas DORA y los SLO son de aquí y miden
-sistemas y equipos**; **la prohibición de usarlas para evaluar personas se refuerza allí**, porque
-esa presión llega de la línea de gestión y no del equipo. Ninguna de las dos skills acepta un
-"DORA por ingeniero"), `finops-standards` (**fiabilidad frente a coste es un trade-off explícito**: la
-redundancia, el sobredimensionado y el multi-AZ se deciden aquí con el error budget como árbitro;
-**cuánto cuesta esa decisión y en qué unidad económica se expresa, allí**. Ninguna de las dos
-recorta a la otra sin decisión declarada), `platform-engineering-standards` (**la
-plataforma interna también es un servicio y se le aplican SLO, on-call y error budget de aquí**; su
-diseño como producto, su camino pavimentado y su adopción son suyos), `itsm-itil-standards`
-(**un SLA contractual no es un SLO** — el SLA y su régimen de créditos son suyos, el SLO
-y su error budget son de aquí, y confundirlos produce compromisos imposibles u objetivos internos
-sin sentido), `testing-qa-standards` (canary, *feature flags* y *shadow traffic*
-**se diseñan allí como tipo de prueba**; la decisión de desplegar así, por fiabilidad y error
-budget, es de aquí).
+**Not applicable**: see `observability-standards` (instrumentation, metrics, traces, logs and their pipeline —
+here we decide *what* is measured and *what* wakes somebody up, not *how* it is instrumented),
+`incident-management-standards` (**the incident management process**, cause-agnostic and
+canonical: declaration criteria, severity matrix, roles and command handover, communication and the
+spokesperson, closure, the postmortem as an artifact, process metrics, vendor or data incidents.
+What this skill contains about incident command and postmortems is the **summary applied to a
+reliability incident**: if the two diverge, that one wins),
+`incident-response-forensics-standards` (a **security** incident: containment without destroying
+evidence, acquisition, chain of custody, eradication and recovery, regulatory notification),
+`bcdr-standards` (continuity and DR as a programme: RTO/RPO, alternate sites,
+full recovery exercises), `chaos-engineering-standards` (**the design and the mechanics
+of the chaos experiment are theirs** — steady-state hypothesis, injection tool,
+*blast radius*, abort conditions; **the game day as a reliability practice and the SLO that
+serves as the steady state belong here**), `itsm-itil-standards` (the service process: catalogue, CAB, request
+management, contractual compliance), `web-performance-standards` (**the service's SLO
+and its error budget belong here**; **the experience perceived in the browser** — Core Web
+Vitals, RUM at the 75th percentile — **is theirs**. A service can meet its availability and
+server latency SLO and still be slow for the user: they are two different measurements and neither
+replaces the other), `performance-engineering-standards` (*"how much latency
+can we afford and what do we do if we exceed it?"* belongs here; *"why is it slow and what
+fixes it?"* is theirs), `knowledge-management-standards` (**the runbook's content — what it checks, which command
+is run, what gets escalated — belongs here**; **that it exists, has an owner, a review date and has been
+executed at least once is their criterion**. The rule both uphold: **a runbook nobody
+has executed is fiction**, and discovering that during an incident is the worst way to find out),
+`tech-leadership-standards` (**DORA metrics and SLOs belong here and measure
+systems and teams**; **the prohibition on using them to evaluate people is reinforced there**, because
+that pressure comes from the management line and not from the team. Neither of the two skills accepts a
+"DORA per engineer"), `finops-standards` (**reliability versus cost is an explicit trade-off**: 
+redundancy, over-provisioning and multi-AZ are decided here with the error budget as arbiter;
+**how much that decision costs and in what economic unit it is expressed, there**. Neither of the two
+cuts into the other without a declared decision), `platform-engineering-standards` (**the internal
+platform is also a service and the SLOs, on-call and error budget from here apply to it**; its
+design as a product, its paved road and its adoption are theirs), `itsm-itil-standards`
+(**a contractual SLA is not an SLO** — the SLA and its credit regime are theirs, the SLO
+and its error budget belong here, and confusing them produces impossible commitments or meaningless
+internal targets), `testing-qa-standards` (canary, *feature flags* and *shadow traffic*
+**are designed there as a type of test**; the decision to deploy that way, for reliability and error
+budget reasons, belongs here).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión y el estado de las referencias por web antes de fijarlas en un proyecto real (§8).
+> Verify the latest version and the status of the references on the web before committing to them in a real project (§8).
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Origen del SLI | **Critical user journey** medido lo más cerca posible del usuario (borde/cliente) | Métrica de servidor si no hay telemetría de cliente — documentar el sesgo |
-| Nº de SLO por servicio | **2-3** (disponibilidad + latencia; frescura si hay pipeline) | Más solo en servicios con modos de fallo realmente distintos |
-| Ventana de SLO | **28 días rolling** | Trimestre natural si el ciclo de negocio lo exige; nunca "mes natural" para paging |
-| Objetivo inicial | Derivado del **rendimiento histórico**, no del deseo: mide 4 semanas y fija justo por debajo | — |
-| Alerta de budget | **Multi-window multi-burn-rate** (§6) | Solo si el tráfico es suficiente; en tráfico bajo, sondas sintéticas o SLO agregado |
-| Política de error budget | **Escrita, firmada por producto e ingeniería, con consecuencia automática** | — |
-| Severidades | **SEV1-SEV4** con definición por impacto de usuario, no por componente | Cualquier escala, si es inequívoca en 10 segundos |
-| Mando de incidente | Roles **IC / Comms / Ops** separados (ICS); IC no depura | En incidentes pequeños, IC puede acumular Comms |
-| Postmortem | **Obligatorio en SEV1-SEV2 y en toda recurrencia**, sin culpa, con acciones con dueño y fecha | — |
-| Carga de guardia | **≤ 2 páginas accionables por turno**; rotación de **≥ 6 personas** (ideal 8) | Follow-the-sun si hay equipos en 2+ regiones |
-| Techo de toil | **≤ 50 %** del tiempo del equipo, medido, con objetivo de reducción trimestral | — |
-| Lanzamiento a producción | **PRR superada** (§4) antes de tráfico real de usuarios | — |
-| Métricas de entrega | **DORA, 5 métricas** (§6): frecuencia de despliegue, lead time, change failure rate, tiempo de recuperación y **rework rate** | — |
+| SLI source | A **critical user journey** measured as close to the user as possible (edge/client) | A server metric if there is no client telemetry — document the bias |
+| No. of SLOs per service | **2-3** (availability + latency; freshness if there is a pipeline) | More only in services with genuinely distinct failure modes |
+| SLO window | **28 rolling days** | A calendar quarter if the business cycle demands it; never a "calendar month" for paging |
+| Initial target | Derived from **historical performance**, not from wishes: measure 4 weeks and set it just below | — |
+| Budget alert | **Multi-window multi-burn-rate** (§6) | Only if traffic is sufficient; on low traffic, synthetic probes or an aggregated SLO |
+| Error budget policy | **Written, signed by product and engineering, with an automatic consequence** | — |
+| Severities | **SEV1-SEV4** defined by user impact, not by component | Any scale, if it is unambiguous within 10 seconds |
+| Incident command | Separate **IC / Comms / Ops** roles (ICS); the IC does not debug | In small incidents, the IC may also take Comms |
+| Postmortem | **Mandatory for SEV1-SEV2 and for every recurrence**, blameless, with actions with an owner and a date | — |
+| On-call load | **≤ 2 actionable pages per shift**; a rotation of **≥ 6 people** (ideally 8) | Follow-the-sun if there are teams in 2+ regions |
+| Toil ceiling | **≤ 50%** of the team's time, measured, with a quarterly reduction target | — |
+| Launch to production | **A passed PRR** (§4) before real user traffic | — |
+| Delivery metrics | **DORA, 5 metrics** (§6): deployment frequency, lead time, change failure rate, time to recover and **rework rate** | — |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### Del user journey al SLI
+### From the user journey to the SLI
 
-1. Enumera los **critical user journeys** (CUJ) del servicio en lenguaje de usuario: "el cliente completa el
-   pago", "el informe nocturno está disponible a las 07:00". Si no puedes nombrar el journey, el SLO que
-   escribas medirá una máquina, no un usuario.
-2. Para cada CUJ elige el tipo de SLI del menú, no lo inventes:
-   - **Petición/respuesta**: disponibilidad (proporción de peticiones válidas servidas OK), **latencia**
-     (proporción de peticiones más rápidas que un umbral) y calidad/corrección.
-   - **Pipeline / procesamiento de datos**: frescura, corrección, cobertura (proporción de datos procesados).
-   - **Almacenamiento**: durabilidad, latencia de lectura.
-3. Formula el SLI **siempre como proporción de eventos buenos sobre eventos válidos** (`buenos/válidos`), no
-   como media. Las medias esconden la cola; la cola es el usuario enfadado.
-4. Define explícitamente qué es un "evento válido": qué códigos, qué rutas, qué tráfico se excluye (health
-   checks, bots, peticiones abortadas por el cliente). Esa exclusión es parte del contrato.
+1. Enumerate the service's **critical user journeys** (CUJs) in user language: "the customer completes the
+   payment", "the nightly report is available at 07:00". If you cannot name the journey, the SLO you
+   write will measure a machine, not a user.
+2. For each CUJ choose the SLI type from the menu, do not invent it:
+   - **Request/response**: availability (the proportion of valid requests served OK), **latency**
+     (the proportion of requests faster than a threshold) and quality/correctness.
+   - **Pipeline / data processing**: freshness, correctness, coverage (the proportion of data processed).
+   - **Storage**: durability, read latency.
+3. Formulate the SLI **always as a proportion of good events over valid events** (`good/valid`), not
+   as a mean. Means hide the tail; the tail is the angry user.
+4. Define explicitly what a "valid event" is: which codes, which routes, which traffic is excluded (health
+   checks, bots, requests aborted by the client). That exclusion is part of the contract.
 
-**Latencia**: umbral + proporción (`99 % de las peticiones < 300 ms`), no "p99 = 300 ms" como objetivo — un
-percentil como objetivo no es componible ni sumable en un budget. Usa dos umbrales cuando el journey lo
-merezca (rápido / tolerable).
+**Latency**: threshold + proportion (`99% of requests < 300 ms`), not "p99 = 300 ms" as a target — a
+percentile as a target is neither composable nor summable in a budget. Use two thresholds when the journey
+warrants it (fast / tolerable).
 
-### Especificación del SLO
+### The SLO specification
 
-Todo SLO se escribe como artefacto versionado en el repo del servicio (SLO as code, revisado en PR) con:
-nombre del CUJ, SLI exacto (numerador, denominador, fuente de datos), objetivo, ventana, dueño de negocio,
-consecuencias (política de budget) y fecha de la próxima revisión. Un SLO sin dueño de negocio es una
-métrica de vanidad.
+Every SLO is written as a versioned artifact in the service's repo (SLO as code, reviewed in a PR) with:
+the CUJ name, the exact SLI (numerator, denominator, data source), the target, the window, the business owner,
+the consequences (the budget policy) and the date of the next review. An SLO without a business owner is a
+vanity metric.
 
-### Política de error budget (el artefacto que da valor al SLO)
+### The error budget policy (the artifact that gives the SLO its value)
 
-Escrita **antes** de agotar el presupuesto, no durante la bronca. Contenido mínimo:
+Written **before** the budget is exhausted, not during the row. Minimum content:
 
-- **Umbral de agotamiento** y qué se dispara: congelación de cambios no relacionados con fiabilidad,
-  reasignación de un porcentaje de la capacidad del equipo a trabajo de fiabilidad, revisión obligatoria
-  con producto.
-- **Excepciones** nombradas (parches de seguridad, cambios que reducen riesgo) y quién puede aprobarlas.
-- **Quién decide** el desbloqueo y con qué evidencia.
-- **Escape hatch**: qué pasa si el budget se agota por causa externa (proveedor cloud) — se documenta, no se
-  ignora; si ocurre repetidamente es una decisión de arquitectura, no mala suerte.
-- Una política que nunca ha frenado nada no es una política: es decoración.
+- **The exhaustion threshold** and what it triggers: a freeze on changes unrelated to reliability,
+  reallocation of a percentage of the team's capacity to reliability work, a mandatory review
+  with product.
+- Named **exceptions** (security patches, changes that reduce risk) and who can approve them.
+- **Who decides** the unblocking and with what evidence.
+- **An escape hatch**: what happens if the budget is exhausted by an external cause (a cloud provider) — it is documented, not
+  ignored; if it happens repeatedly it is an architecture decision, not bad luck.
+- A policy that has never stopped anything is not a policy: it is decoration.
 
-### Guardia y escalado
+### On-call and escalation
 
-- Rotación **≥ 6 personas** por turno primario (con 6 el suelo estructural de toil ya es ~33 %; con menos,
-  la guardia se come al equipo). Turnos con solape y **handover escrito** en canal compartido — nunca por DM.
-- El handover incluye: incidentes abiertos, hipótesis a medias, cambios en vuelo, alertas silenciadas y su
-  caducidad. El contexto no puede vivir en la cabeza de una persona.
-- **Escalado por tiempo, no por heroísmo**: si el on-call primario no reconoce en N minutos, escala solo; si
-  no hay mitigación en M minutos, entra el secundario/IC. Los umbrales están escritos, no implícitos.
-- Compensación y descanso reglados; un turno con noche rota descuenta del día siguiente. La guardia sin
-  descanso compensado es deuda de personas y termina en rotación de plantilla.
-- **Todo page enlaza runbook**; alerta sin runbook y sin acción posible se elimina, no se silencia para siempre.
+- A rotation of **≥ 6 people** per primary shift (with 6 the structural toil floor is already ~33%; with fewer,
+  on-call eats the team). Shifts with overlap and a **written handover** in a shared channel — never by DM.
+- The handover includes: open incidents, half-formed hypotheses, changes in flight, silenced alerts and their
+  expiry. Context cannot live in one person's head.
+- **Escalation by time, not by heroics**: if the primary on-call does not acknowledge within N minutes, it escalates on its own; if
+  there is no mitigation within M minutes, the secondary/IC comes in. The thresholds are written down, not implicit.
+- Regulated compensation and rest; a shift with a broken night is deducted from the following day. On-call without
+  compensated rest is people debt and ends in staff turnover.
+- **Every page links a runbook**; an alert with no runbook and no possible action is deleted, not silenced forever.
 
-### Mando de incidente
+### Incident command
 
-- Declara pronto y **degrada con libertad**: es barato abrir un SEV2 y bajarlo; es caro descubrir a la hora
-  que nadie estaba coordinando.
-- **IC coordina y decide, no depura.** Si el IC tiene las manos en el teclado, no hay IC.
-- Roles: **IC** (decisión, prioridad, delegación), **Comms** (estado a interesados y status page), **Ops**
-  (manos). Un canal único por incidente, con timeline escrito en vivo — la reconstrucción posterior es el
-  90 % del coste del postmortem.
-- **Mitigar antes que entender**: rollback, feature flag, drenar tráfico, escalar capacidad. La causa raíz
-  se investiga después; el usuario no cobra en explicaciones.
-- Comunicación externa: cadencia fija por severidad (p. ej. SEV1 cada 15-30 min) **aunque no haya novedad**;
-  impacto en lenguaje de usuario, sin causa técnica especulativa ni detalles que faciliten un ataque (§5).
+- Declare early and **downgrade freely**: it is cheap to open a SEV2 and lower it; it is expensive to discover an hour in
+  that nobody was coordinating.
+- **The IC coordinates and decides, they do not debug.** If the IC has their hands on the keyboard, there is no IC.
+- Roles: **IC** (decision, priority, delegation), **Comms** (status to stakeholders and the status page), **Ops**
+  (hands). A single channel per incident, with a live written timeline — the later reconstruction is
+  90% of the postmortem's cost.
+- **Mitigate before understanding**: rollback, feature flag, drain traffic, scale capacity. The root cause
+  is investigated afterwards; the user does not get paid in explanations.
+- External communication: a fixed cadence by severity (e.g. SEV1 every 15-30 min) **even when there is no news**;
+  impact in user language, with no speculative technical cause and no details that would facilitate an attack (§5).
 
-## 4. Calidad y verificación
+## 4. Quality and verification
 
-Gates que rompen el lanzamiento o el cambio, en orden de coste creciente:
+Gates that break the launch or the change, in order of increasing cost:
 
-1. **Production Readiness Review (PRR)** antes de recibir tráfico real. Checklist mínima: SLO definido y
-   acordado; dashboards de golden signals; alertas conectadas a un on-call **nombrado**; runbook con los 3-5
-   modos de fallo conocidos; plan y **prueba de rollback**; límites y timeouts en dependencias; capacidad
-   dimensionada con datos de carga; backups/restauración verificados si tiene estado; propietario y ruta de
-   escalado. Sin PRR superada, no hay tráfico de usuario — sin excepción "temporal".
-2. **Clasificación de riesgo del cambio** (§6) aplicada en el PR/pipeline; los cambios de riesgo alto exigen
-   canary con criterio de abortado automático.
-3. **Revisión de acciones de postmortem** con dueño y fecha, seguidas en el mismo backlog que el producto
-   hasta su cierre. Métrica de salud del proceso: **porcentaje de acciones cerradas en plazo** — si es bajo,
-   los postmortems son teatro.
-4. **Game days trimestrales**: fallo inyectado en un entorno realista con la guardia real respondiendo. Se
-   evalúa detección (¿alertó?), diagnóstico (¿sirvió el runbook?) y mitigación (¿funcionó el rollback?). Todo
-   hallazgo entra al backlog como acción con dueño.
-5. **Simulacro de DR** con la periodicidad que fije el programa de continuidad (ver `bcdr-standards`); desde
-   SRE se aporta el criterio de SLO durante la degradación y la validación de runbooks.
-6. **Revisión trimestral de SLO**: ¿el objetivo sigue reflejando lo que el usuario nota? ¿Hubo budget quemado
-   sin quejas (objetivo demasiado estricto) o quejas sin budget quemado (SLI mal elegido)? Ambos son bugs del
-   SLO, no del servicio.
+1. **A Production Readiness Review (PRR)** before receiving real traffic. Minimum checklist: an SLO defined and
+   agreed; golden signal dashboards; alerts wired to a **named** on-call; a runbook with the 3-5
+   known failure modes; a rollback plan and **rollback test**; limits and timeouts on dependencies; capacity
+   sized with load data; verified backups/restores if it is stateful; an owner and an escalation
+   path. Without a passed PRR, there is no user traffic — with no "temporary" exception.
+2. **Change risk classification** (§6) applied in the PR/pipeline; high-risk changes require
+   a canary with automatic abort criteria.
+3. **A review of postmortem actions** with an owner and a date, tracked in the same backlog as the product
+   until closure. Process health metric: **the percentage of actions closed on time** — if it is low,
+   the postmortems are theatre.
+4. **Quarterly game days**: a failure injected in a realistic environment with the real on-call responding. It is
+   assessed on detection (did it alert?), diagnosis (was the runbook useful?) and mitigation (did the rollback work?). Every
+   finding enters the backlog as an action with an owner.
+5. **A DR drill** at the frequency set by the continuity programme (see `bcdr-standards`); from
+   SRE comes the SLO criterion during the degradation and the validation of runbooks.
+6. **A quarterly SLO review**: does the target still reflect what the user notices? Was budget burned
+   without complaints (a target that is too strict) or were there complaints without budget burned (a badly chosen SLI)? Both are bugs in the
+   SLO, not in the service.
 
-## 5. Seguridad del proceso operativo
+## 5. Operational process security
 
-- **Acceso de emergencia (break-glass)**: cuenta/rol de elevación con MFA, uso registrado, alerta automática
-  al usarse y revisión posterior obligatoria. La urgencia justifica el acceso, nunca su falta de auditoría.
-- Herramientas de incidente (paging, chat de incidente, status page) con autenticación fuerte y control de
-  acceso propio; son objetivo de primer nivel — quien las controla controla la respuesta.
-- **Un incidente de fiabilidad puede ser un incidente de seguridad**: define el criterio de reclasificación
-  (indicio de intrusión, exfiltración, datos alterados) y el traspaso inmediato al proceso de seguridad
-  (`incident-response-forensics`). En cuanto se sospecha compromiso, **preservar evidencia antes de mitigar**
-  destruyendo estado (no reinstalar el host "para que vuelva").
-- **Comunicación sin fugas**: la status page describe impacto, no arquitectura interna; los postmortems
-  públicos se saneen de PII, rutas internas, versiones exactas y detalles explotables.
-- Postmortems internos con datos de usuario: minimiza, referencia identificadores en vez de copiar datos, y
-  aplica la retención del resto de artefactos con PII.
-- La cultura sin culpa **no es impunidad**: aplica a error honesto en un sistema que lo permitió. La
-  actuación deliberada o negligente se trata por otro canal — no se diluye en el postmortem.
+- **Emergency access (break-glass)**: an elevation account/role with MFA, logged use, an automatic alert
+  when used and a mandatory subsequent review. Urgency justifies the access, never the lack of auditing.
+- Incident tooling (paging, incident chat, status page) with strong authentication and its own access
+  control; they are a first-tier target — whoever controls them controls the response.
+- **A reliability incident can be a security incident**: define the reclassification criteria
+  (an indication of intrusion, exfiltration, altered data) and the immediate handover to the security process
+  (`incident-response-forensics`). As soon as compromise is suspected, **preserve evidence before mitigating**
+  by destroying state (do not reinstall the host "so it comes back").
+- **Communication without leaks**: the status page describes impact, not internal architecture; public
+  postmortems are sanitised of PII, internal paths, exact versions and exploitable details.
+- Internal postmortems with user data: minimise, reference identifiers instead of copying data, and
+  apply the same retention as for other artifacts with PII.
+- A blameless culture **is not impunity**: it applies to an honest error in a system that allowed it. Deliberate
+  or negligent conduct is dealt with through another channel — it is not diluted in the postmortem.
 
-## 6. Operabilidad: alertas, capacidad y velocidad
+## 6. Operability: alerts, capacity and velocity
 
-### Golden signals y alertas
+### Golden signals and alerts
 
-- Instrumenta y vigila los cuatro: **latencia, tráfico, errores, saturación** (colas/lag y utilización en
-  sistemas de trabajo). Son la base del diagnóstico; **no todos son motivo de page**.
-- **Se pagina sobre síntoma de usuario (SLO en riesgo), se diagnostica sobre causa.** CPU alta no despierta a
-  nadie; el CUJ degradado, sí.
-- **Alerta multi-window multi-burn-rate** como default (Google SRE Workbook, cap. "Alerting on SLOs",
-  iteración 6). Tabla de partida — verificar y **ajustar por servicio**:
+- Instrument and watch all four: **latency, traffic, errors, saturation** (queues/lag and utilisation in
+  work systems). They are the basis of diagnosis; **not all of them are a reason to page**.
+- **You page on a user symptom (an SLO at risk), you diagnose on a cause.** High CPU does not wake
+  anybody; a degraded CUJ does.
+- **Multi-window multi-burn-rate alerting** as the default (Google SRE Workbook, the "Alerting on SLOs" chapter,
+  iteration 6). A starting table — verify it and **tune it per service**:
 
-  | Budget consumido | Ventana larga | Ventana corta | Burn rate | Acción |
+  | Budget consumed | Long window | Short window | Burn rate | Action |
   |---|---|---|---|---|
-  | 2 % | 1 h | 5 min | 14.4 | **Page** |
-  | 5 % | 6 h | 30 min | 6 | **Page** |
-  | 10 % | 3 días | 6 h | 1 | Ticket |
+  | 2% | 1 h | 5 min | 14.4 | **Page** |
+  | 5% | 6 h | 30 min | 6 | **Page** |
+  | 10% | 3 days | 6 h | 1 | Ticket |
 
-  Regla: ventana corta = 1/12 de la larga; la corta garantiza que la alerta se apaga poco después de la
-  mitigación y puede volver a disparar si recae.
-- **Prohibido usar `for`/duración** como criterio en alertas de SLO: una serie de picos cortos de error nunca
-  alcanza la duración y consume el presupuesto igual.
-- **Tráfico bajo rompe el modelo**: con pocas peticiones el ratio es ruido. Alternativas: sondas sintéticas
-  que generen volumen conocido, agregar varios servicios en un SLO común, o alargar ventanas y aceptar
-  detección más lenta — decidido explícitamente, no por defecto silencioso.
-- Higiene de alertas cada trimestre: toda alerta que no haya provocado una acción en 90 días se elimina o se
-  degrada a canal no-paginante. Agrupa las cascadas: un fallo de BD es **un** hilo de respuesta, no doce pages.
+  Rule: short window = 1/12 of the long one; the short one guarantees the alert clears shortly after the
+  mitigation and can fire again if it relapses.
+- **Forbidden to use `for`/duration** as a criterion in SLO alerts: a series of short error spikes never
+  reaches the duration and consumes the budget just the same.
+- **Low traffic breaks the model**: with few requests the ratio is noise. Alternatives: synthetic probes
+  generating a known volume, aggregating several services into a common SLO, or lengthening windows and accepting
+  slower detection — decided explicitly, not as a silent default.
+- Alert hygiene every quarter: every alert that has not prompted an action in 90 days is deleted or
+  downgraded to a non-paging channel. Group the cascades: a DB failure is **one** response thread, not twelve pages.
 
 ### Toil
 
-- Definición operativa (todas a la vez): manual, repetitivo, automatizable, táctico, sin valor duradero y que
-  **escala linealmente con el servicio**. Trabajo aburrido pero de ingeniería no es toil.
-- **Mídelo antes de atacarlo**: 2-3 semanas de registro por categoría, ranking por horas. Sin medición, se
-  automatiza lo divertido, no lo caro.
-- Orden de ataque: **eliminar** la necesidad (cambiar el diseño o rechazar la tarea) > **autoservicio** para
-  quien la pide > **automatizar** el procedimiento. Automatizar un proceso que no debería existir es toil
-  con más pasos.
-- Objetivo numérico por trimestre (p. ej. "de 30 % a 20 % del tiempo del equipo"), revisado como cualquier
-  otro objetivo de ingeniería.
+- Operational definition (all at once): manual, repetitive, automatable, tactical, with no lasting value and
+  **scaling linearly with the service**. Boring but engineering work is not toil.
+- **Measure it before attacking it**: 2-3 weeks of logging by category, ranked by hours. Without measurement,
+  what gets automated is the fun part, not the expensive one.
+- Order of attack: **eliminate** the need (change the design or refuse the task) > **self-service** for
+  whoever asks for it > **automate** the procedure. Automating a process that should not exist is toil
+  with more steps.
+- A numeric target per quarter (e.g. "from 30% to 20% of the team's time"), reviewed like any
+  other engineering target.
 
-### Capacidad y riesgo del cambio
+### Capacity and change risk
 
-- **Capacity planning con dos entradas**: demanda orgánica prevista (tendencia + estacionalidad + eventos de
-  negocio conocidos) y demanda inorgánica (lanzamientos, campañas). Se traduce a recursos vía un **modelo de
-  carga validado con pruebas**, no por regla de tres sobre la CPU media.
-- Prueba de carga antes de comprometer un SLO nuevo y antes de picos previstos; conoce el punto de saturación
-  y el modo de degradación (¿se degrada o se cae?).
-- **Clasificación de riesgo del cambio** — determina el rigor del despliegue:
-  - *Bajo*: reversible, sin cambio de esquema ni de contrato, tras feature flag → rolling automático.
-  - *Medio*: toca camino crítico o dependencias → canary con métricas de abortado y rollback probado.
-  - *Alto*: migración de datos, cambio de contrato, irreversible en la práctica → expand/contract, ventana
-    acordada, plan de vuelta atrás escrito y ensayado, comunicación previa.
-- **El cambio es la causa dominante de incidentes**: si no sabes qué cambió, empieza por ahí. Todo despliegue
-  deja marca correlacionable con la telemetría.
+- **Capacity planning with two inputs**: forecast organic demand (trend + seasonality + known
+  business events) and inorganic demand (launches, campaigns). It is translated into resources via a **load
+  model validated with tests**, not by a rule of three over average CPU.
+- Load testing before committing to a new SLO and before expected peaks; know the saturation point
+  and the degradation mode (does it degrade or does it fall over?).
+- **Change risk classification** — it determines the rigour of the deployment:
+  - *Low*: reversible, with no schema or contract change, behind a feature flag → automatic rolling.
+  - *Medium*: touches the critical path or dependencies → canary with abort metrics and a tested rollback.
+  - *High*: data migration, contract change, irreversible in practice → expand/contract, an agreed
+    window, a written and rehearsed rollback plan, prior communication.
+- **Change is the dominant cause of incidents**: if you do not know what changed, start there. Every deployment
+  leaves a mark correlatable with the telemetry.
 
-### Métricas DORA
+### DORA metrics
 
-Cinco métricas vigentes (DORA amplió las cuatro clásicas con **rework rate**): frecuencia de despliegue, lead
-time para cambios, change failure rate, tiempo de recuperación y rework rate. Úsalas para **diagnosticar el
-sistema de entrega**, nunca para evaluar personas ni comparar equipos entre sí. Throughput y estabilidad se
-leen **juntos**: subir despliegues mientras crece el change failure rate no es mejora, es deuda acelerándose.
+Five current metrics (DORA extended the classic four with **rework rate**): deployment frequency, lead
+time for changes, change failure rate, time to recover and rework rate. Use them to **diagnose the
+delivery system**, never to evaluate people or compare teams against each other. Throughput and stability are
+read **together**: raising deployments while the change failure rate grows is not an improvement, it is debt accelerating.
 
-### Negociar fiabilidad frente a velocidad
+### Negotiating reliability versus velocity
 
-- El error budget es el mecanismo de negociación: mientras haya presupuesto, **producto decide**; cuando se
-  agota, decide la política acordada. Eso convierte un conflicto político en una regla.
-- Si el equipo nunca consume budget, **está siendo demasiado conservador**: sobra fiabilidad y falta
-  velocidad — sube el ritmo o baja el objetivo (y ahorra el coste).
-- **Bajar el objetivo porque el coste no lo sostiene**: es la contraparte legítima del punto
-  anterior y **se decide aquí, no en la hoja de coste**. `finops-standards` aporta cuánto cuesta
-  cada nueve; **la firma es de quien responde del SLO**, va en un ADR con el impacto en el usuario
-  declarado, y se comunica a quien consume el servicio. Un objetivo que baja para que deje de
-  sonar la alerta —o para cuadrar un presupuesto sin decirlo— no es una renegociación: es un
-  compromiso roto en silencio.
-- Fiabilidad extra por encima del SLO no se vende: cada nueve adicional multiplica el coste y los usuarios ya
-  no lo perciben (su red, su móvil y sus dependencias imponen un techo). Dilo con números en la discusión.
+- The error budget is the negotiation mechanism: while there is budget, **product decides**; when it is
+  exhausted, the agreed policy decides. That turns a political conflict into a rule.
+- If the team never consumes budget, **it is being too conservative**: there is surplus reliability and a shortage of
+  velocity — raise the pace or lower the target (and save the cost).
+- **Lowering the target because the cost does not sustain it**: it is the legitimate counterpart of the previous
+  point and **it is decided here, not on the cost sheet**. `finops-standards` provides how much
+  each nine costs; **the signature belongs to whoever answers for the SLO**, it goes in an ADR with the user impact
+  declared, and it is communicated to whoever consumes the service. A target lowered so that the
+  alert stops firing — or to make a budget balance without saying so — is not a renegotiation: it is a
+  commitment broken in silence.
+- Extra reliability above the SLO is not sellable: every additional nine multiplies the cost and users no
+  longer perceive it (their network, their phone and their dependencies impose a ceiling). Say it with numbers in the discussion.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: SLO revisados trimestralmente; política de error budget revisada al menos anualmente o tras
-  cualquier incidente en que se ignorase; runbooks revisados cuando el game day demuestre que fallan.
-- **Deprecación de alertas y SLO**: se retiran con el servicio; un SLO huérfano genera páginas sin dueño.
-- **Documentación viva mínima**: por servicio, SLO + runbook + diagrama de dependencias + ruta de escalado.
-  Lo que no se usa durante un incidente, se borra.
-- La práctica SRE se **adopta incrementalmente**: empieza por el servicio más crítico con 1 SLO y su política;
-  extender a 40 servicios a la vez produce 40 SLO ignorados.
+- **Cadence**: SLOs reviewed quarterly; the error budget policy reviewed at least annually or after
+  any incident in which it was ignored; runbooks reviewed when the game day proves they fail.
+- **Deprecating alerts and SLOs**: they are retired with the service; an orphan SLO generates pages with no owner.
+- **Minimum living documentation**: per service, the SLO + runbook + dependency diagram + escalation path.
+  What is not used during an incident gets deleted.
+- SRE practice is **adopted incrementally**: start with the most critical service with 1 SLO and its policy;
+  extending to 40 services at once produces 40 ignored SLOs.
 
-**PROHIBIDO**
-- ❌ SLO de 100 %, o SLO sin error budget, o error budget sin política escrita con consecuencia.
-- ❌ Fijar el objetivo por deseo o por copiar a otro equipo, en vez de por medición histórica + necesidad de usuario.
-- ❌ SLI medido sobre una métrica de máquina cuando existe telemetría del journey de usuario.
-- ❌ Percentil como objetivo de SLO (`p99 = X`) en vez de proporción sobre umbral.
-- ❌ Paginar sobre causas (CPU, memoria, reinicio de pod) en vez de sobre síntoma de usuario.
-- ❌ Alerta sin runbook, sin dueño o sin acción posible; silencios permanentes sin fecha de caducidad.
-- ❌ Alertas de SLO con `for`/duración, o de ventana única.
-- ❌ Rotación de guardia por debajo de 6 personas sostenida en el tiempo, o guardia sin compensación ni descanso.
-- ❌ IC que depura, incidente sin timeline escrito, o incidente coordinado por DM en vez de canal común.
-- ❌ Buscar causa raíz antes de mitigar cuando el usuario está afectado.
-- ❌ Postmortem con nombres propios como conclusión ("error humano"), o sin acciones con dueño y fecha.
-- ❌ Acciones de postmortem en una lista aparte que nadie prioriza.
-- ❌ Lanzar a producción sin PRR: sin SLO, sin runbook, sin on-call nombrado o sin rollback probado.
-- ❌ Declarar automatizado un proceso cuyo fallo obliga igualmente a intervención manual no documentada.
-- ❌ Usar DORA (o el conteo de incidentes) como métrica de rendimiento individual o ranking entre equipos.
-- ❌ Congelar cambios indefinidamente como respuesta a un incidente: es lo contrario de la política de budget.
-- ❌ Game days y simulacros anunciados como demostración; si no puede fallar, no es un ejercicio.
+**FORBIDDEN**
+- ❌ A 100% SLO, or an SLO without an error budget, or an error budget without a written policy with a consequence.
+- ❌ Setting the target by wish or by copying another team, instead of by historical measurement + user need.
+- ❌ An SLI measured on a machine metric when there is telemetry for the user journey.
+- ❌ A percentile as an SLO target (`p99 = X`) instead of a proportion over a threshold.
+- ❌ Paging on causes (CPU, memory, pod restarts) instead of on a user symptom.
+- ❌ An alert with no runbook, no owner or no possible action; permanent silences with no expiry date.
+- ❌ SLO alerts with `for`/duration, or with a single window.
+- ❌ An on-call rotation below 6 people sustained over time, or on-call without compensation or rest.
+- ❌ An IC who debugs, an incident without a written timeline, or an incident coordinated by DM instead of a common channel.
+- ❌ Hunting for the root cause before mitigating when the user is affected.
+- ❌ A postmortem with people's names as its conclusion ("human error"), or without actions with an owner and a date.
+- ❌ Postmortem actions in a separate list nobody prioritises.
+- ❌ Launching to production without a PRR: with no SLO, no runbook, no named on-call or no tested rollback.
+- ❌ Declaring automated a process whose failure still requires undocumented manual intervention.
+- ❌ Using DORA (or the incident count) as an individual performance metric or as a ranking between teams.
+- ❌ Freezing changes indefinitely as a response to an incident: it is the opposite of the budget policy.
+- ❌ Game days and drills announced as a demonstration; if it cannot fail, it is not an exercise.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier cifra, nombre o referencia de este documento, **búscalo — no lo recuerdes**:
+Before committing to any figure, name or reference in this document, **search for it — do not remember it**:
 
-1. **Tabla de burn rates y ventanas** vigente en el SRE Workbook (`sre.google/workbook/alerting-on-slos/`):
-   los factores 14.4/6/1 y sus ventanas son el punto de partida publicado, no una constante universal.
-2. **Estado de los libros de Google SRE**: verificado ago-2026 — siguen siendo tres (*SRE* 2016, *SRE
-   Workbook* 2018, *Building Secure & Reliable Systems* 2020), sin nueva edición anunciada; `sre.google`
-   publica actualizaciones por capítulo y material nuevo (p. ej. operación fiable de sistemas de IA).
-   Comprobar si ha salido una edición nueva antes de citar.
-3. **DORA**: verificado ago-2026 — el informe se renombró a *State of AI-assisted Software Development*
-   (edición 2025) y el conjunto oficial pasó de 4 a **5 métricas** (añade *rework rate*); el modelo de
-   niveles de rendimiento se sustituyó por arquetipos de equipo. Confirmar en `dora.dev` si ya hay edición
-   2026 y si los benchmarks han cambiado antes de usarlos.
-4. **Herramientas de SLO as code** que vayas a recomendar (Sloth, OpenSLO, slo-generator, Pyrra…): estado de
-   mantenimiento, soporte real de MWMB y compatibilidad con tu stack — varían por versión.
-5. **Benchmarks del sector** para el objetivo (disponibilidad típica del tipo de servicio) antes de proponer
-   un número al negocio.
+1. **The burn rate and window table** current in the SRE Workbook (`sre.google/workbook/alerting-on-slos/`):
+   the 14.4/6/1 factors and their windows are the published starting point, not a universal constant.
+2. **The status of the Google SRE books**: verified Aug-2026 — there are still three (*SRE* 2016, *SRE
+   Workbook* 2018, *Building Secure & Reliable Systems* 2020), with no new edition announced; `sre.google`
+   publishes per-chapter updates and new material (e.g. the reliable operation of AI systems).
+   Check whether a new edition has come out before quoting.
+3. **DORA**: verified Aug-2026 — the report was renamed to *State of AI-assisted Software Development*
+   (the 2025 edition) and the official set went from 4 to **5 metrics** (adding *rework rate*); the
+   performance level model was replaced by team archetypes. Confirm on `dora.dev` whether there is already a 2026
+   edition and whether the benchmarks have changed before using them.
+4. **SLO-as-code tools** you are going to recommend (Sloth, OpenSLO, slo-generator, Pyrra…): maintenance
+   status, real MWMB support and compatibility with your stack — they vary by version.
+5. **Industry benchmarks** for the target (typical availability for that type of service) before proposing
+   a number to the business.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

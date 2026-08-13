@@ -3,564 +3,564 @@ name: linux-hardening-standards
 description: Linux OS hardening baselines and their measurement. Use when applying or auditing CIS Benchmarks, DISA STIG, ANSSI-BP-028 or CCN-STIC/ENS on Linux hosts, running oscap/OpenSCAP with SCAP Security Guide profiles, Lynis, Wazuh SCA, ansible-lockdown or devsec.hardening roles, or editing sshd_config, sysctl.d, audit.rules/auditd.conf, pam_faillock, faillock.conf, login.defs, sudoers, modprobe.d blacklists, fstab mount options (noexec/nosuid/nodev), SUID audits, systemd unit sandboxing (systemd-analyze security), AIDE, Secure Boot/TPM/LUKS unattended unlock, unattended-upgrades/dnf-automatic or kernel livepatching.
 ---
 
-# Estándares de hardening de Linux
+# Linux hardening standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **endurecer el sistema operativo Linux y demostrarlo con una medida**: elección y
-aplicación de un baseline (CIS, STIG, ANSSI-BP-028, CCN-STIC/ENS), su automatización como código,
-su auditoría con escáner, el score acordado y el tratamiento del drift. Cubre superficie mínima,
-parámetros de kernel, cuentas/sudo/PAM, SSH, auditd, integridad y arranque medido, contención de
-servicios con systemd, opciones de montaje y SUID, actualizaciones de seguridad y livepatching, e
-imagen dorada endurecida.
+Applies to **hardening the Linux operating system and proving it with a measurement**: choosing and
+applying a baseline (CIS, STIG, ANSSI-BP-028, CCN-STIC/ENS), automating it as code,
+auditing it with a scanner, the agreed score and the handling of drift. It covers minimal surface,
+kernel parameters, accounts/sudo/PAM, SSH, auditd, integrity and measured boot, service containment
+with systemd, mount options and SUID, security updates and livepatching, and
+a hardened golden image.
 
 Triggers: `oscap`, `ssg`/`scap-security-guide`, `lynis`, `cis`, `stig`, `anssi_bp28`, `ccn-stic`,
 `sshd_config`, `/etc/sysctl.d/*.conf`, `/etc/audit/rules.d/*.rules`, `auditd.conf`, `faillock.conf`,
 `pwquality.conf`, `login.defs`, `/etc/sudoers.d/`, `/etc/modprobe.d/*.conf`, `fstab`, `aide.conf`,
 `systemd-analyze security`, `unattended-upgrades`, `dnf-automatic`, `kpatch`, "baseline",
-"benchmark", "score de cumplimiento", "el hardening ha roto el servicio".
+"benchmark", "compliance score", "the hardening broke the service".
 
-**Principio rector**: **un baseline sin medida es una opinión, y un baseline aplicado a ciegas es
-una interrupción de servicio programada.** El hardening real son tres cosas simultáneas —
-*aplicarlo como código*, *medirlo con un escáner* y *documentar cada excepción con dueño y motivo*.
-Cualquiera de las tres que falte convierte el trabajo en teatro de cumplimiento.
+**Governing principle**: **a baseline without a measurement is an opinion, and a baseline applied
+blind is a scheduled service outage.** Real hardening is three simultaneous things —
+*applying it as code*, *measuring it with a scanner* and *documenting every exception with an owner and a reason*.
+Missing any of the three turns the work into compliance theatre.
 
-**No aplica**: ver `selinux-standards` (control de acceso obligatorio en profundidad: política,
-contextos, booleanos, diagnóstico de AVC, AppArmor — aquí solo se **exige** MAC en `enforcing` como
-control del baseline y se mide, no se explica cómo se opera ni se escribe política),
-`onprem-standards` (**paraguas de plataforma**: hardware, plano de gestión OOB/BMC, hipervisor,
-topología de flota, cadencia de parcheo de la flota, invariantes de plataforma — sus invariantes de
-§1.3 son inviolables y esta skill los desarrolla en la capa SO),
-`bash-linux-scripting-standards` (los scripts que ejecutan cualquier cosa de aquí: `set -Eeuo
-pipefail`, ShellCheck, bats), `iac-standards` (Ansible/Terraform como herramienta: estructura de
-roles, Molecule, lint y CI del repo de IaC — aquí solo qué rol de hardening se elige y con qué
-criterio se aplica), `vulnerability-management-standards` (triaje de CVE con CVSS/EPSS/KEV, SLA de
-remediación, VEX, seguimiento de EOL — **ellos priorizan el parche, tú endureces para que el parche
-importe menos**), `grc-compliance-standards` (ENS/ISO 27001/NIST CSF como marco, SoA, aceptación de
-riesgo y evidencia de auditoría — aquí el **control técnico y su prueba**, que es lo que ellos
-consumen como evidencia), `networking-standards` (diseño de red: VLAN, routing, política de firewall
-entre zonas, DNS, VPN; **el firewall *de host* es de esta skill** — `nftables`/`firewalld` en el
-propio servidor como control del baseline: default-deny de entrada, egress filtrado, ruleset
-versionado —, mientras que qué flujo se permite entre zonas y por qué lo decide la topología de
-red), `cryptography-pki-standards` (elección de algoritmos y su justificación criptográfica, gestión
-de claves LUKS, emisión de certificados SSH y PKI interna — aquí solo la **configuración** que los
-consume), `identity-access-management-standards` (IdP, SSO, MFA, elevación JIT/PAM y el bastión como
-servicio — aquí la configuración local: `sudoers`, `pam_faillock`, `AllowGroups`),
-`kubernetes-standards` (hardening declarativo del Pod, `securityContext`, admisión),
-`observability-standards` (dónde y cómo se recogen, retienen y correlacionan los logs de auditd),
-`appsec-standards` (vulnerabilidades del código de aplicación), `homelab-standards` (laboratorio
-personal: la frontera es el rigor exigido, no el tamaño), `offensive-security-standards`
-(verificación ofensiva del endurecimiento, con alcance y autorización), `ctf-lab-standards`
-(laboratorio de entrenamiento desechable), `developer-workstation-standards` (frontera
-que colisiona de verdad: **aquí el endurecimiento del servidor y de la flota** —baseline CIS/STIG,
-`sysctl`, auditd, sudoers, SELinux/AppArmor, aplicado por configuración centralizada—; **allí el
-puesto de trabajo**, cuyo modelo de amenaza es distinto: cifrado de disco, claves en hardware,
-extensiones del editor y `curl | sh` como cadena de suministro, y credenciales de desarrollo. **Un
-baseline de servidor aplicado a una estación de desarrollo no la endurece, la inutiliza**),
-`endpoint-security-standards` (**el EDR/XDR de terceros y la postura del protector de cifrado en
-flota son suyos** —incluidos los límites reales del agente en Linux—; aquí el control del baseline
-que se aplica por configuración centralizada y se mide con `oscap`).
+**Not applicable**: see `selinux-standards` (mandatory access control in depth: policy,
+contexts, booleans, AVC diagnosis, AppArmor — here MAC in `enforcing` is only **required** as a
+baseline control and measured, not explained in terms of how it is operated nor how policy is written),
+`onprem-standards` (**platform umbrella**: hardware, the OOB/BMC management plane, hypervisor,
+fleet topology, fleet patching cadence, platform invariants — its §1.3 invariants are
+inviolable and this skill develops them at the OS layer),
+`bash-linux-scripting-standards` (the scripts that run anything from here: `set -Eeuo
+pipefail`, ShellCheck, bats), `iac-standards` (Ansible/Terraform as a tool: role
+structure, Molecule, lint and CI of the IaC repo — here only which hardening role is chosen and with what
+criteria it is applied), `vulnerability-management-standards` (CVE triage with CVSS/EPSS/KEV, remediation
+SLA, VEX, EOL tracking — **they prioritise the patch, you harden so the patch
+matters less**), `grc-compliance-standards` (ENS/ISO 27001/NIST CSF as a framework, SoA, risk
+acceptance and audit evidence — here the **technical control and its proof**, which is what they
+consume as evidence), `networking-standards` (network design: VLANs, routing, firewall policy
+between zones, DNS, VPN; **the *host* firewall belongs to this skill** — `nftables`/`firewalld` on the
+server itself as a baseline control: default-deny inbound, filtered egress, a versioned
+ruleset —, whereas which flow is allowed between zones and why is decided by the network
+topology), `cryptography-pki-standards` (the choice of algorithms and their cryptographic justification, LUKS
+key management, SSH certificate issuance and the internal PKI — here only the **configuration** that
+consumes them), `identity-access-management-standards` (IdP, SSO, MFA, JIT/PAM elevation and the bastion as
+a service — here the local configuration: `sudoers`, `pam_faillock`, `AllowGroups`),
+`kubernetes-standards` (declarative Pod hardening, `securityContext`, admission),
+`observability-standards` (where and how auditd logs are collected, retained and correlated),
+`appsec-standards` (application code vulnerabilities), `homelab-standards` (a personal
+lab: the boundary is the rigour demanded, not the size), `offensive-security-standards`
+(offensive verification of the hardening, with scope and authorisation), `ctf-lab-standards`
+(a disposable training lab), `developer-workstation-standards` (a boundary
+that really does collide: **here the hardening of the server and the fleet** — CIS/STIG baseline,
+`sysctl`, auditd, sudoers, SELinux/AppArmor, applied by centralised configuration —; **there the
+workstation**, whose threat model is different: disk encryption, keys in hardware,
+editor extensions and `curl | sh` as a supply chain, and development credentials. **A
+server baseline applied to a development workstation does not harden it, it makes it unusable**),
+`endpoint-security-standards` (**third-party EDR/XDR and the posture of the encryption guard across the
+fleet are theirs** — including the agent's real limits on Linux —; here the baseline control
+applied by centralised configuration and measured with `oscap`).
 
-Además:
-`container-runtime-security-standards` (seccomp, eBPF/Falco, detección de escape de
-contenedor y seguridad del runtime), `detection-engineering-standards` (qué se hace con
-la telemetría de auditd — reglas Sigma, casos de uso, SIEM), `bcdr-standards` (RTO/RPO y
-continuidad), `linux-administration-standards` (día a día del SO, systemd, paquetes,
-usuarios sin ángulo de seguridad), `rhel-fedora-standards` (particularidades de la
-familia RHEL — `dnf5`, `rpm-ostree`, `bootc`, image builder).
+In addition:
+`container-runtime-security-standards` (seccomp, eBPF/Falco, container escape detection
+and runtime security), `detection-engineering-standards` (what is done with
+auditd telemetry — Sigma rules, use cases, SIEM), `bcdr-standards` (RTO/RPO and
+continuity), `linux-administration-standards` (day-to-day OS work, systemd, packages,
+users without a security angle), `rhel-fedora-standards` (the specifics of the RHEL
+family — `dnf5`, `rpm-ostree`, `bootc`, image builder).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8). Los datos son de
-> **agosto 2026** y el contenido de baseline (CIS, SSG) se revisa cada pocas semanas.
+> Verify the latest version on the web before pinning it in a real project (§8). The facts are from
+> **August 2026** and baseline content (CIS, SSG) is revised every few weeks.
 
-| Ámbito | Por defecto | Motivo / alternativa justificable |
+| Area | Default | Reason / justifiable alternative |
 |---|---|---|
-| Baseline de referencia | **CIS Benchmark de la versión exacta de la distro**, Level 1 Server como suelo, Level 2 en hosts que traten datos sensibles | Es el único con contenido automatizado, mapeo a controles y actualización continua. **El número de versión va por versión de distro**: "el CIS de Linux" no existe. Verificado ago-2026 en cisecurity.org: **RHEL 10 v1.0.1**, **RHEL 9 v2.0.0**, **RHEL 8 v4.0.0**, **Ubuntu 24.04 LTS v2.0.0**, **Ubuntu 22.04 LTS v3.0.0**, **Debian 13 v1.0.0**, **Debian 12 v2.0.0**; variantes STIG-flavored: RHEL 9 STIG v1.0.0, RHEL 8 STIG v2.0.0, Ubuntu 24.04 STIG v1.0.0 |
-| **Hueco de cobertura a vigilar** | **No existe CIS Benchmark para Ubuntu 26.04 LTS** (verificado ago-2026) | Si estandarizas en 26.04, tu baseline **no puede ser CIS todavía**: usa ANSSI-BP-028 o `devsec.hardening` y planifica la migración cuando CIS publique. Extrapolar el benchmark de 24.04 a 26.04 sin revisarlo regla a regla está prohibido (§7) |
-| Perfil (L1/L2, Server/Workstation) | **Server** en servidores, **Workstation** solo en puestos; L1 = "no debería romper nada", L2 = **extiende** L1 asumiendo impacto funcional | Cuatro perfiles por benchmark (L1/L2 × Server/Workstation) y **L2 no es autónomo: incluye L1**. Aplicar el perfil Workstation a un servidor, o L2 sin plan de excepciones, es la causa número uno de "el hardening rompió el servicio" |
-| Baseline en sector público español | **CCN-STIC 610-25 "Perfilado de seguridad para distribuciones Linux (servidor o cliente)"** sobre el ENS (**RD 311/2022**), categoría BÁSICA/MEDIA/ALTA | Verificado ago-2026: la guía unificada 610-25 (elaborada sobre Rocky Linux 10) define el **PCTE** de Linux con **14 medidas** aplicables técnicamente y perfiles **ENS / DIFUSIÓN LIMITADA / INFORMACIÓN CLASIFICADA**, con anexos por distro (**A** Rocky, **B** Arch, **E** Debian; también anunciados Ubuntu y Fedora). Sustituye en la práctica a la serie por producto `610Axx`. La serie 600 es **incremental**: guía del SO + guía de cada servicio. SSG trae un perfil `ens` |
-| Baseline en defensa/gobierno aliado | **DISA STIG** cuando el cliente lo exija por contrato | Verificado ago-2026 (fuentes de terceros, ver §8): **RHEL 9 V2R8**, **RHEL 10 V1R1**, **Ubuntu 24.04 LTS V1R5** (13-may-2026). DISA publica trimestralmente: confirma siempre en `public.cyber.mil` |
-| Baseline con criterio técnico propio | **ANSSI-BP-028 v2.0** (oct-2022), niveles `minimal` → `intermediary` → `enhanced` → `high` | Los cuatro niveles son **acumulativos** y están implementados como perfiles SCAP desde SSG **0.1.73**. Es el baseline mejor razonado para elegir *cuánto* endurecer, no solo *qué*. Ojo: `R1`, `R2`… son **identificadores de regla** dentro del documento, no niveles |
-| Contenido de auditoría | **SCAP Security Guide / ComplianceAsCode v0.1.81** (1-jun-2026) | Fuente única de perfiles `cis_server_l1/l2`, `cis_workstation_l1/l2`, `stig`, `anssi_bp28_{minimal,intermediary,enhanced,high}`, `pci-dss`, `ospp`, `ens`, `e8`, `hipaa`, `cui`. Cubre RHEL 8/9/10, Ubuntu, **Debian 13**, SLE. Red Hat entrega las versiones CIS vigentes en SSG ≥ 0.1.80. Cambio relevante: las reglas de PAM usan **authselect** — no se aplican si el stack PAM se editó por otros medios |
-| Escáner de cumplimiento | **OpenSCAP ≥ 1.4.4** (NEWS 04-mar-2026, publicado 09-abr-2026) — `oscap xccdf eval` | Es la medida formal y auditable (XCCDF/OVAL, ARF). Línea 1.4.x: `oscap xccdf generate fix --fix-type kickstart` (instalación desatendida ya endurecida), `oscap-im` para imágenes **bootc/Image Mode**, `autotailor` con tailorings JSON multi-perfil, `oscap info` lista reglas y variables del perfil, `--skip-valid` **eliminado** → `--skip-validation`. **Aviso**: las distros van muy por detrás (Ubuntu 24.04 empaqueta **1.3.9**) — usa el binario del vendor de tu SO y no asumas features de 1.4.x |
-| Escáner complementario | **Lynis 3.1.7** (25-jun-2026; CISOfy, mantenida con cadencia lenta ~8 meses) | Sin agente y sin SCAP: señal rápida y útil en hosts fuera del alcance de SSG. **Las distros empaquetan versiones antiguas**: usa el repo de CISOfy o el tarball, y `lynis --check-update`. Su "hardening index" **no es un score de cumplimiento**: no lo mezcles con el de OpenSCAP |
-| Escáner continuo de flota | **Wazuh 4.14.x** (4.14.7, 29-jul-2026) con su módulo **SCA** (políticas YAML alineadas a CIS, extensibles) | OpenSCAP mide bien y puntualmente; el drift se detecta en continuo. Los dos, para cosas distintas. Wazuh 5.0 en desarrollo cambia el ciclo de sincronización de SCA/FIM: no planifiques sobre él hasta su GA |
-| Aplicación del baseline | **Rol Ansible mantenido**, no scripts propios | Verificado ago-2026, ambos **activos**: **ansible-lockdown** (RHEL9-CIS **v2.2.0**, 27-feb-2026, firmada GPG; UBUNTU24-CIS **v1.6.0**, 5-may-2026; ~93 repos con commits en jul-ago 2026; patrón `-CIS`/`-STIG` = remediación y `-Audit` = verificación con GOSS; MIT) y **devsec.hardening 10.6.0** (26-may-2026; roles `os_hardening`, `ssh_hardening`, `nginx_hardening`, `mysql_hardening`; Apache-2.0; ya soporta **Ubuntu 26.04** y Fedora 42-44) |
-| Elección entre ambos | **ansible-lockdown** si el requisito es *cumplir un benchmark numerado y demostrarlo*; **devsec.hardening** si es *un baseline sensato multi-distro sin numeración* (y hoy, si tu SO es **Ubuntu 26.04**, que aún no tiene CIS) | No los mezcles sobre el mismo host: se pisan en `sysctl.d`, `sshd_config` y `login.defs`. Uno, y encima tus excepciones. Nota operativa: **los roles de ansible-lockdown no soportan check mode** — son remediación, no auditoría |
-| Escribirlo a mano | **Solo** para lo que el rol no cubre o para las excepciones | Un baseline propio desde cero envejece: nadie lo reevalúa cuando sale la nueva versión del benchmark. Adoptas contenido mantenido y añades tu delta |
-| MAC | **SELinux o AppArmor en `enforcing`, siempre** — control del baseline, no opción | Cómo se opera, diagnostica y escribe política: `selinux-standards`. Verificado ago-2026: **SLES 16.0 (GA 4-nov-2025) elimina AppArmor y arranca con SELinux enforcing** (+400 módulos); openSUSE Tumbleweed desde el snapshot 20250211 y Leap 16 igual |
-| Firewall de host | **nftables** (directo o vía `firewalld`), **default-deny de entrada**, ruleset versionado y aplicado por código | systemd v259 ya elimina iptables/libiptc de `networkd`/`nspawn`: iptables-legacy es deuda. El egress filtrado es obligatorio en zonas sensibles |
-| Actualizaciones de seguridad | **Automáticas y acotadas a seguridad**: `unattended-upgrades` con orígenes `-security`, o `dnf-automatic` con `upgrade_type = security` + `apply_updates = yes`; orquestadas en ventana para prod | El punto de decisión real **no es instalar, es reiniciar**: kernel, glibc y OpenSSL no surten efecto hasta el reinicio. Verificación obligatoria antes de confiar: `unattended-upgrades --dry-run --debug` / `dnf-automatic /etc/dnf/automatic.conf`, más `journalctl -u` y `/var/run/reboot-required` |
-| Livepatching | **Solo si el RTO no admite el reinicio**, y **nunca como sustituto del reinicio** | Verificado ago-2026: **kpatch** (RHEL 9 desde 9.0, **RHEL 10 desde 10.2**; kernels elegibles designados **trimestralmente**, parcheados hasta 1 año; con EUS 2 años y con Update Services for SAP 4; obliga a actualizar kernel y reiniciar **≥2 veces al año**; **no se soporta revertir un live patch sin reiniciar**; solo RPMs de repos Red Hat). **Canonical Livepatch** (hasta 10 años con Ubuntu Pro, +5 con Legacy; parches por kernel solo durante **9-13 meses** desde su release; **incompatible con kernels FIPS y real-time**; **ARM64 llega con 26.04**). **KernelCare/TuxCare** (RHEL, Oracle, Rocky, Alma, CentOS, Ubuntu, Debian — **SLES no figura**; incompatible con Canonical Livepatch en el mismo host). Trata las cifras de cobertura de los comparativos de vendor como marketing |
-| auditd | **audit-userspace 4.x** con reglas mínimas útiles en `/etc/audit/rules.d/` | Verificado ago-2026: desde **audit-4.0 las reglas se cargan por `audit-rules.service`**; 4.1.0 añadió `libauplugin`; 4.1.2 aceleró mucho `ausearch`/`aureport` y movió `audit.pid`/estado a `--runstatedir` (`/run`) — **si tienes política MAC propia sobre esas rutas, actualízala**. `report_interval` (≥4.0.5) vuelca métricas a `/run/audit/auditd.state` |
-| Integridad de ficheros | **AIDE ≥ 0.19.2** (14-ago-2025) con base de datos **fuera del host**; FIM del agente (Wazuh) donde ya haya agente | **0.19.2 es la versión mínima segura** (CVE-2025-54409: null-pointer deref → DoS local en 0.13–0.19.1). Sin releases en 2026: proyecto de cadencia lenta. Una base de AIDE que vive en el host que audita no vale nada tras un compromiso |
-| Arranque | **Secure Boot + TPM 2.0** donde el hardware lo permita, kernel y módulos firmados, `lockdown` en `integrity` como mínimo | systemd v259 **eliminó TPM 1.2** de `systemd-boot`/`systemd-stub`. El LSM `lockdown` **estuvo sin mantenedor desde 5.4 hasta Linux 6.17**, cuando volvió a tener mantenimiento activo: antes de 6.17 trátalo como control estable pero no evolutivo |
-| Cifrado en reposo | **LUKS2**; desbloqueo desatendido con **Clevis/Tang** en datacenter y **`systemd-cryptenroll` con TPM2** en equipos con Secure Boot | Verificado ago-2026: TPM2 en `systemd-cryptsetup` requiere systemd ≥ 251 y kernel ≥ 5.17 para políticas de PCR; **sellar a PCR 0/1/2/4 se rompe con cada actualización de kernel/initramfs/GRUB** y **PCR 7 en solitario es atacable** (initrd sustituible sin cambiar PCRs) → usa **políticas de PCR firmadas (PCR 11 + `--tpm2-signature`)** o PIN. El rol upstream `linux-system-roles/nbde_client` es **Clevis-céntrico y no soporta TPM2**. Elección de algoritmos y custodia de claves: `cryptography-pki-standards` |
+| Reference baseline | **The CIS Benchmark for the exact distro version**, Level 1 Server as the floor, Level 2 on hosts processing sensitive data | It is the only one with automated content, mapping to controls and continuous updates. **The version number goes per distro version**: "the CIS for Linux" does not exist. Verified Aug 2026 on cisecurity.org: **RHEL 10 v1.0.1**, **RHEL 9 v2.0.0**, **RHEL 8 v4.0.0**, **Ubuntu 24.04 LTS v2.0.0**, **Ubuntu 22.04 LTS v3.0.0**, **Debian 13 v1.0.0**, **Debian 12 v2.0.0**; STIG-flavored variants: RHEL 9 STIG v1.0.0, RHEL 8 STIG v2.0.0, Ubuntu 24.04 STIG v1.0.0 |
+| **A coverage gap to watch** | **There is no CIS Benchmark for Ubuntu 26.04 LTS** (verified Aug 2026) | If you standardise on 26.04, your baseline **cannot be CIS yet**: use ANSSI-BP-028 or `devsec.hardening` and plan the migration when CIS publishes. Extrapolating the 24.04 benchmark to 26.04 without reviewing it rule by rule is forbidden (§7) |
+| Profile (L1/L2, Server/Workstation) | **Server** on servers, **Workstation** only on workstations; L1 = "should not break anything", L2 = **extends** L1 accepting functional impact | Four profiles per benchmark (L1/L2 × Server/Workstation) and **L2 is not standalone: it includes L1**. Applying the Workstation profile to a server, or L2 with no exception plan, is the number one cause of "the hardening broke the service" |
+| Baseline in the Spanish public sector | **CCN-STIC 610-25 "Perfilado de seguridad para distribuciones Linux (servidor o cliente)"** over the ENS (**RD 311/2022**), category BÁSICA/MEDIA/ALTA | Verified Aug 2026: the unified 610-25 guide (produced on Rocky Linux 10) defines the Linux **PCTE** with **14 measures** that are technically applicable and profiles **ENS / DIFUSIÓN LIMITADA / INFORMACIÓN CLASIFICADA**, with per-distro annexes (**A** Rocky, **B** Arch, **E** Debian; Ubuntu and Fedora also announced). In practice it supersedes the per-product `610Axx` series. The 600 series is **incremental**: the OS guide + a guide per service. SSG ships an `ens` profile |
+| Baseline in allied defence/government | **DISA STIG** when the customer requires it contractually | Verified Aug 2026 (third-party sources, see §8): **RHEL 9 V2R8**, **RHEL 10 V1R1**, **Ubuntu 24.04 LTS V1R5** (13 May 2026). DISA publishes quarterly: always confirm on `public.cyber.mil` |
+| Baseline with your own technical criteria | **ANSSI-BP-028 v2.0** (Oct 2022), levels `minimal` → `intermediary` → `enhanced` → `high` | The four levels are **cumulative** and have been implemented as SCAP profiles since SSG **0.1.73**. It is the best-reasoned baseline for deciding *how much* to harden, not just *what*. Careful: `R1`, `R2`… are **rule identifiers** within the document, not levels |
+| Audit content | **SCAP Security Guide / ComplianceAsCode v0.1.81** (1 Jun 2026) | The single source of the `cis_server_l1/l2`, `cis_workstation_l1/l2`, `stig`, `anssi_bp28_{minimal,intermediary,enhanced,high}`, `pci-dss`, `ospp`, `ens`, `e8`, `hipaa`, `cui` profiles. It covers RHEL 8/9/10, Ubuntu, **Debian 13**, SLE. Red Hat delivers the current CIS versions in SSG ≥ 0.1.80. A relevant change: the PAM rules use **authselect** — they do not apply if the PAM stack was edited by other means |
+| Compliance scanner | **OpenSCAP ≥ 1.4.4** (NEWS 04 Mar 2026, released 09 Apr 2026) — `oscap xccdf eval` | It is the formal, auditable measurement (XCCDF/OVAL, ARF). The 1.4.x line: `oscap xccdf generate fix --fix-type kickstart` (an unattended install already hardened), `oscap-im` for **bootc/Image Mode** images, `autotailor` with multi-profile JSON tailorings, `oscap info` lists a profile's rules and variables, `--skip-valid` **removed** → `--skip-validation`. **Warning**: the distros lag far behind (Ubuntu 24.04 packages **1.3.9**) — use your OS vendor's binary and do not assume 1.4.x features |
+| Complementary scanner | **Lynis 3.1.7** (25 Jun 2026; CISOfy, maintained at a slow ~8-month cadence) | Agentless and without SCAP: a fast, useful signal on hosts outside SSG's scope. **The distros package old versions**: use the CISOfy repo or the tarball, and `lynis --check-update`. Its "hardening index" **is not a compliance score**: do not mix it with OpenSCAP's |
+| Continuous fleet scanner | **Wazuh 4.14.x** (4.14.7, 29 Jul 2026) with its **SCA** module (YAML policies aligned to CIS, extensible) | OpenSCAP measures well and at a point in time; drift is detected continuously. Both, for different things. Wazuh 5.0 in development changes the SCA/FIM synchronisation cycle: do not plan on it until its GA |
+| Applying the baseline | **A maintained Ansible role**, not home-made scripts | Verified Aug 2026, both **active**: **ansible-lockdown** (RHEL9-CIS **v2.2.0**, 27 Feb 2026, GPG-signed; UBUNTU24-CIS **v1.6.0**, 5 May 2026; ~93 repos with commits in Jul-Aug 2026; the `-CIS`/`-STIG` pattern = remediation and `-Audit` = verification with GOSS; MIT) and **devsec.hardening 10.6.0** (26 May 2026; roles `os_hardening`, `ssh_hardening`, `nginx_hardening`, `mysql_hardening`; Apache-2.0; already supports **Ubuntu 26.04** and Fedora 42-44) |
+| Choosing between the two | **ansible-lockdown** if the requirement is *to meet a numbered benchmark and prove it*; **devsec.hardening** if it is *a sensible multi-distro baseline without numbering* (and today, if your OS is **Ubuntu 26.04**, which still has no CIS) | Do not mix them on the same host: they step on each other in `sysctl.d`, `sshd_config` and `login.defs`. One, plus your exceptions on top. Operational note: **the ansible-lockdown roles do not support check mode** — they are remediation, not auditing |
+| Writing it by hand | **Only** for what the role does not cover or for the exceptions | A home-made baseline ages: nobody re-evaluates it when the new benchmark version comes out. You adopt maintained content and add your delta |
+| MAC | **SELinux or AppArmor in `enforcing`, always** — a baseline control, not an option | How it is operated, diagnosed and how policy is written: `selinux-standards`. Verified Aug 2026: **SLES 16.0 (GA 4 Nov 2025) removes AppArmor and boots with SELinux enforcing** (+400 modules); openSUSE Tumbleweed since snapshot 20250211 and Leap 16 likewise |
+| Host firewall | **nftables** (directly or via `firewalld`), **default-deny inbound**, a versioned ruleset applied by code | systemd v259 already removes iptables/libiptc from `networkd`/`nspawn`: iptables-legacy is debt. Filtered egress is mandatory in sensitive zones |
+| Security updates | **Automatic and scoped to security**: `unattended-upgrades` with `-security` origins, or `dnf-automatic` with `upgrade_type = security` + `apply_updates = yes`; orchestrated within a window for prod | The real decision point **is not installing, it is rebooting**: kernel, glibc and OpenSSL do not take effect until the reboot. Mandatory verification before trusting it: `unattended-upgrades --dry-run --debug` / `dnf-automatic /etc/dnf/automatic.conf`, plus `journalctl -u` and `/var/run/reboot-required` |
+| Livepatching | **Only if the RTO does not allow the reboot**, and **never as a substitute for the reboot** | Verified Aug 2026: **kpatch** (RHEL 9 since 9.0, **RHEL 10 since 10.2**; eligible kernels designated **quarterly**, patched for up to 1 year; 2 years with EUS and 4 with Update Services for SAP; it forces you to update the kernel and reboot **≥2 times a year**; **reverting a live patch without rebooting is not supported**; Red Hat repo RPMs only). **Canonical Livepatch** (up to 10 years with Ubuntu Pro, +5 with Legacy; patches per kernel only for **9-13 months** from its release; **incompatible with FIPS and real-time kernels**; **ARM64 arrives with 26.04**). **KernelCare/TuxCare** (RHEL, Oracle, Rocky, Alma, CentOS, Ubuntu, Debian — **SLES is not listed**; incompatible with Canonical Livepatch on the same host). Treat the coverage figures in vendor comparisons as marketing |
+| auditd | **audit-userspace 4.x** with a minimal set of useful rules in `/etc/audit/rules.d/` | Verified Aug 2026: since **audit-4.0 the rules are loaded by `audit-rules.service`**; 4.1.0 added `libauplugin`; 4.1.2 sped up `ausearch`/`aureport` considerably and moved `audit.pid`/state to `--runstatedir` (`/run`) — **if you have your own MAC policy over those paths, update it**. `report_interval` (≥4.0.5) dumps metrics to `/run/audit/auditd.state` |
+| File integrity | **AIDE ≥ 0.19.2** (14 Aug 2025) with the database **off the host**; the agent's FIM (Wazuh) where an agent already exists | **0.19.2 is the minimum safe version** (CVE-2025-54409: null-pointer deref → local DoS in 0.13–0.19.1). No releases in 2026: a slow-cadence project. An AIDE database that lives on the host it audits is worth nothing after a compromise |
+| Boot | **Secure Boot + TPM 2.0** where the hardware allows it, signed kernel and modules, `lockdown` at `integrity` as a minimum | systemd v259 **removed TPM 1.2** from `systemd-boot`/`systemd-stub`. The `lockdown` LSM **had no maintainer from 5.4 until Linux 6.17**, when it regained active maintenance: before 6.17 treat it as a stable but non-evolving control |
+| Encryption at rest | **LUKS2**; unattended unlock with **Clevis/Tang** in the datacenter and **`systemd-cryptenroll` with TPM2** on machines with Secure Boot | Verified Aug 2026: TPM2 in `systemd-cryptsetup` requires systemd ≥ 251 and kernel ≥ 5.17 for PCR policies; **sealing to PCR 0/1/2/4 breaks with every kernel/initramfs/GRUB update** and **PCR 7 on its own is attackable** (the initrd can be replaced without changing PCRs) → use **signed PCR policies (PCR 11 + `--tpm2-signature`)** or a PIN. The upstream `linux-system-roles/nbde_client` role is **Clevis-centric and does not support TPM2**. The choice of algorithms and key custody: `cryptography-pki-standards` |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 El baseline se aplica con excepciones documentadas, nunca a ciegas
+### 3.1 The baseline is applied with documented exceptions, never blind
 
-Hay controles de CIS que **rompen servicios reales** — `noexec` en `/var` o `/tmp` frente a
-instaladores y runtimes que ejecutan desde ahí, `nodev` en rutas que un contenedor necesita,
-`umask 027` frente a servicios que comparten grupo, restringir user namespaces sin privilegios
-frente a Podman rootless o navegadores, restricciones de `cron`/`at`, algoritmos SSH que dejan fuera
-a clientes antiguos, `pam_pwquality` frente a cuentas de servicio. El baseline **no se aplica al
-100 %**: se aplica al 100 % *menos un conjunto de excepciones explícitas*.
+There are CIS controls that **break real services** — `noexec` on `/var` or `/tmp` against
+installers and runtimes that execute from there, `nodev` on paths a container needs,
+`umask 027` against services that share a group, restricting unprivileged user namespaces
+against rootless Podman or browsers, `cron`/`at` restrictions, SSH algorithms that leave out
+old clients, `pam_pwquality` against service accounts. The baseline is **not applied
+100%**: it is applied 100% *minus a set of explicit exceptions*.
 
-Formato obligatorio de excepción, en el repo, junto al código que la implementa:
+Mandatory exception format, in the repo, next to the code that implements it:
 
-| Campo | Contenido |
+| Field | Content |
 |---|---|
-| Regla | ID exacto del benchmark (`xccdf_org.ssgproject.content_rule_…` o número CIS) |
-| Alcance | Qué hosts/grupo, no "producción" |
-| Motivo | El fallo concreto observado, con evidencia (log, traza, incidencia) |
-| Compensación | Qué control alternativo cubre el riesgo |
-| Dueño y caducidad | Persona y fecha de reevaluación. **Sin fecha, no es excepción: es abandono** |
+| Rule | The exact benchmark ID (`xccdf_org.ssgproject.content_rule_…` or the CIS number) |
+| Scope | Which hosts/group, not "production" |
+| Reason | The concrete failure observed, with evidence (log, trace, ticket) |
+| Compensation | Which alternative control covers the risk |
+| Owner and expiry | Person and re-evaluation date. **Without a date it is not an exception: it is abandonment** |
 
-La excepción se implementa como **tailoring del perfil** (`autotailor`, ficheros de tailoring
-XCCDF/JSON) para que el escáner **no la cuente como fallo**. Una excepción que sigue apareciendo
-como hallazgo en cada informe entrena al equipo a ignorar los informes.
+The exception is implemented as a **profile tailoring** (`autotailor`, XCCDF/JSON tailoring
+files) so the scanner **does not count it as a failure**. An exception that keeps appearing
+as a finding in every report trains the team to ignore the reports.
 
-### 3.2 Orden de trabajo (no negociable)
+### 3.2 Order of work (non-negotiable)
 
-1. **Medir antes de tocar**: `oscap xccdf eval` con el perfil objetivo sobre el host tal cual está.
-   Ese informe es la línea base y el argumento de la conversación.
-2. **Aplicar en no-producción** el rol completo, sin excepciones, y **romper cosas ahí**.
-3. **Catalogar lo roto** → excepciones (§3.1) + tailoring.
-4. **Aplicar en producción por olas**, con smoke test funcional después de cada ola (§4).
-5. **Re-medir y fijar el score acordado** como umbral de CI.
-6. **Vigilar el drift** en continuo; cada desviación es un hallazgo con dueño.
+1. **Measure before touching**: `oscap xccdf eval` with the target profile against the host as it is.
+   That report is the baseline and the argument for the conversation.
+2. **Apply in non-production** the full role, with no exceptions, and **break things there**.
+3. **Catalogue what broke** → exceptions (§3.1) + tailoring.
+4. **Apply in production in waves**, with a functional smoke test after each wave (§4).
+5. **Re-measure and set the agreed score** as the CI threshold.
+6. **Watch the drift** continuously; every deviation is a finding with an owner.
 
-Nunca: aplicar el rol completo directamente a producción "porque es un baseline estándar".
+Never: applying the full role directly to production "because it is a standard baseline".
 
-### 3.3 Superficie mínima
+### 3.3 Minimal surface
 
-- **Paquetes**: instalación mínima como punto de partida (`Minimal Install`, `debootstrap`,
-  `--no-install-recommends`). Todo lo que se instala después está justificado. Sin compiladores,
-  sin clientes de red innecesarios (`telnet`, `ftp`, `rsh`, `tftp`), sin servidores X en servidores.
-- **Servicios y puertos**: `systemctl list-units --type=service --state=running` y `ss -lntup`
-  contra la lista esperada del rol. Un puerto a la escucha no declarado es un hallazgo.
-- **Módulos de kernel innecesarios**, con blacklist real (`install <mod> /bin/true` en
-  `/etc/modprobe.d/`, no solo `blacklist`, que no impide la carga bajo demanda): filesystems
-  exóticos (`cramfs`, `freevxfs`, `jffs2`, `hfs`, `hfsplus`, `udf`, `squashfs` si no se usa),
-  protocolos de red inusuales (`dccp`, `sctp`, `rds`, `tipc`), `usb-storage` en servidores,
-  `firewire-core`, `bluetooth`. Verificar que el blacklisting sobrevive al `initramfs`.
-- **Cuentas**: sin cuentas de sistema con shell válido; sin cuentas huérfanas; `nologin`
-  explícito. Sin cuentas locales compartidas — todo acceso es nominal.
+- **Packages**: a minimal installation as the starting point (`Minimal Install`, `debootstrap`,
+  `--no-install-recommends`). Everything installed afterwards is justified. No compilers,
+  no unnecessary network clients (`telnet`, `ftp`, `rsh`, `tftp`), no X servers on servers.
+- **Services and ports**: `systemctl list-units --type=service --state=running` and `ss -lntup`
+  against the role's expected list. An undeclared listening port is a finding.
+- **Unnecessary kernel modules**, with a real blacklist (`install <mod> /bin/true` in
+  `/etc/modprobe.d/`, not just `blacklist`, which does not prevent on-demand loading): exotic
+  filesystems (`cramfs`, `freevxfs`, `jffs2`, `hfs`, `hfsplus`, `udf`, `squashfs` if unused),
+  unusual network protocols (`dccp`, `sctp`, `rds`, `tipc`), `usb-storage` on servers,
+  `firewire-core`, `bluetooth`. Verify that the blacklisting survives the `initramfs`.
+- **Accounts**: no system accounts with a valid shell; no orphan accounts; explicit
+  `nologin`. No shared local accounts — all access is named.
 
-### 3.4 Kernel y parámetros
+### 3.4 Kernel and parameters
 
-Nada de "una lista de `sysctl` copiada de un blog". Cada parámetro fijado se justifica y se agrupa
-en `/etc/sysctl.d/` por propósito, con el fichero versionado (ojo: en **Debian 13**
-`/etc/sysctl.conf` ya no se honra — hay que escribir en `sysctl.d`, cosa que `devsec.hardening`
-corrigió en su línea 10.4).
+No "list of `sysctl`s copied from a blog". Every parameter set is justified and grouped
+in `/etc/sysctl.d/` by purpose, with the file versioned (careful: on **Debian 13**
+`/etc/sysctl.conf` is no longer honoured — you have to write into `sysctl.d`, something `devsec.hardening`
+fixed in its 10.4 line).
 
-Ejes, con el criterio de por qué:
+The axes, with the criterion for why:
 
-- **Red**: anti-spoofing (`rp_filter`), ignorar redirects ICMP y source routing, no reenviar
-  paquetes salvo que el host sea router, `tcp_syncookies`, y `accept_ra`/`disable_ipv6` **solo si
-  IPv6 realmente no se usa** — desactivar IPv6 "por si acaso" rompe servicios modernos y no
-  endurece nada. La política de filtrado en sí es del firewall, no de `sysctl`.
-- **Exposición de información del kernel**: `kernel.kptr_restrict=2`, `kernel.dmesg_restrict=1`,
-  `kernel.perf_event_paranoid` alto en hosts sin perfilado, `fs.protected_hardlinks`/`_symlinks`/
-  `_fifos`/`_regular`. Coste operativo real: dificultan el diagnóstico — decídelo, no lo heredes.
-- **Restricción de trazado y de vuelcos**: `kernel.yama.ptrace_scope` ≥ 1 (2 o 3 en hosts que no
-  depuran nada; `devsec.hardening` 10.6.0 lo endureció explícitamente en may-2026),
-  `fs.suid_dumpable=0`, core dumps deshabilitados o dirigidos a ruta controlada (un core dump puede
-  contener claves en memoria).
-- **Cadena de arranque y de código**: **module signing** obligatorio, `kernel.modules_disabled=1`
-  al final del arranque en hosts de función fija, `kexec_load_disabled=1`, y **`lockdown`** —
-  `integrity` como suelo (bloquea la modificación del kernel en ejecución y la carga de módulos sin
-  firmar), `confidentiality` en hosts que traten secretos, **midiendo antes** qué se rompe
-  (perfilado, depuración, hibernación, algunos drivers propietarios). Las transiciones de
-  `lockdown` son **unidireccionales**: solo se puede endurecer, nunca relajar en caliente. En
-  EFI x86/arm64 muchas distros lo activan solas con Secure Boot. Limitación declarada por su autor:
-  protege la **integridad del kernel, no del sistema completo** — complétalo con dm-verity y MAC.
-- **Espacios de nombres sin privilegios**: en Ubuntu 24.04+/26.04 la restricción va por AppArmor
-  (`kernel.apparmor_restrict_unprivileged_userns=1` por defecto). Antes de desactivarlo por una app
-  que "no arranca", entiende qué la usa: es superficie de escalada histórica, y Qualys publicó en
-  mar-2025 **tres bypasses** de esa restricción (vía `aa-exec` a perfiles permisivos y vía el perfil
-  por defecto de busybox). En **RHEL 10** la configuración por defecto concede user namespaces a
-  usuarios no privilegiados, lo que amplió el impacto de fallos de kernel recientes: revísalo.
-- **Mitigaciones de CPU**: **activas por defecto, siempre**. Si el coste es inaceptable, se mide con
-  el workload real, se documenta la pérdida, se acota a hosts concretos y se aprueba con el dueño
-  del riesgo. `mitigations=off` en un host multiinquilino o que ejecute código ajeno está prohibido
-  (§7). Referencia verificada del coste real: **VMSCAPE (CVE-2025-40300**, sept-2025; fuga
-  guest→hipervisor en todas las generaciones AMD Zen 1-5 y Coffee Lake) se mitiga con IBPB condicional
-  tras VMexit (`vmscape=`, `vmscape=force` con guests no confiables) a un coste de **~10 % con
-  dispositivo emulado y ~1 % en Zen 4** — ese es el orden de magnitud de la conversación, no "las
-  mitigaciones cuestan la mitad del rendimiento". Patrón recurrente: **el parche de kernel solo no
-  basta, hace falta microcódigo/UEFI en paralelo**. Estado real: `lscpu` y
+- **Network**: anti-spoofing (`rp_filter`), ignore ICMP redirects and source routing, do not forward
+  packets unless the host is a router, `tcp_syncookies`, and `accept_ra`/`disable_ipv6` **only if
+  IPv6 really is not used** — disabling IPv6 "just in case" breaks modern services and hardens
+  nothing. The filtering policy itself belongs to the firewall, not to `sysctl`.
+- **Kernel information exposure**: `kernel.kptr_restrict=2`, `kernel.dmesg_restrict=1`,
+  a high `kernel.perf_event_paranoid` on hosts without profiling, `fs.protected_hardlinks`/`_symlinks`/
+  `_fifos`/`_regular`. Real operational cost: they make diagnosis harder — decide it, do not inherit it.
+- **Tracing and dump restrictions**: `kernel.yama.ptrace_scope` ≥ 1 (2 or 3 on hosts that do not
+  debug anything; `devsec.hardening` 10.6.0 hardened it explicitly in May 2026),
+  `fs.suid_dumpable=0`, core dumps disabled or directed to a controlled path (a core dump can
+  contain keys in memory).
+- **Boot and code chain**: mandatory **module signing**, `kernel.modules_disabled=1`
+  at the end of boot on fixed-function hosts, `kexec_load_disabled=1`, and **`lockdown`** —
+  `integrity` as the floor (it blocks modifying the running kernel and loading unsigned
+  modules), `confidentiality` on hosts handling secrets, **measuring first** what breaks
+  (profiling, debugging, hibernation, some proprietary drivers). `lockdown` transitions are
+  **one-way**: you can only harden, never relax at runtime. On
+  EFI x86/arm64 many distros enable it by themselves with Secure Boot. A limitation declared by its author:
+  it protects the **integrity of the kernel, not of the whole system** — complement it with dm-verity and MAC.
+- **Unprivileged namespaces**: on Ubuntu 24.04+/26.04 the restriction goes through AppArmor
+  (`kernel.apparmor_restrict_unprivileged_userns=1` by default). Before disabling it for an app
+  that "does not start", understand what uses it: it is historic escalation surface, and Qualys published in
+  Mar 2025 **three bypasses** of that restriction (via `aa-exec` to permissive profiles and via busybox's
+  default profile). On **RHEL 10** the default configuration grants user namespaces to
+  unprivileged users, which widened the impact of recent kernel flaws: review it.
+- **CPU mitigations**: **on by default, always**. If the cost is unacceptable, it is measured with
+  the real workload, the loss is documented, it is scoped to specific hosts and it is approved by the risk
+  owner. `mitigations=off` on a multi-tenant host or one running third-party code is forbidden
+  (§7). A verified reference for the real cost: **VMSCAPE (CVE-2025-40300**, Sep 2025; guest→hypervisor
+  leak on all AMD Zen 1-5 generations and Coffee Lake) is mitigated with conditional IBPB
+  after VMexit (`vmscape=`, `vmscape=force` with untrusted guests) at a cost of **~10% with
+  an emulated device and ~1% on Zen 4** — that is the order of magnitude of the conversation, not "the
+  mitigations cost half the performance". A recurring pattern: **the kernel patch alone is
+  not enough, microcode/UEFI is needed in parallel**. Real status: `lscpu` and
   `/sys/devices/system/cpu/vulnerabilities/*`.
 
-### 3.5 Cuentas, sudo y PAM
+### 3.5 Accounts, sudo and PAM
 
-- **sudo nominal y acotado**: reglas por grupo, con comandos explícitos y rutas absolutas, en
-  ficheros de `/etc/sudoers.d/` versionados y validados con `visudo -c`. `Defaults logfile` o
-  `log_output` para los comandos elevados. **Prohibido `NOPASSWD: ALL`** (§7); `NOPASSWD` acotado a
-  un comando concreto para automatización es aceptable **si** el comando no permite escapar a shell
-  (cuidado con `vi`, `less`, `find -exec`, `tar --to-command`, gestores de paquetes).
-- **`sudo` es superficie de ataque de primer nivel, no infraestructura inerte**: CVE-2025-32462 y
-  **CVE-2025-32463** (escalada a root vía `--chroot`, CVSS 9.3, **en el catálogo CISA KEV desde el
-  29-sep-2025**, y **explotable sin estar en sudoers**) se corrigieron en **sudo 1.9.17p1**. Upstream
-  ha anunciado que la opción chroot será eliminada. Verifica la versión instalada, y prohíbe el uso
-  de `--chroot`/`-R` en tus reglas.
-- **`pam_faillock`** configurado en `/etc/security/faillock.conf` (bloqueo tras N fallos, ventana,
-  `unlock_time` distinto de cero salvo requisito explícito, y **excluir root del bloqueo permanente**
-  para no autoexcluirse). Verifica el desbloqueo con `faillock --user X --reset` antes de darlo por
-  bueno. En la familia RHEL, **el stack PAM se gestiona con `authselect`**: editar los ficheros a
-  mano hace que las reglas de SSG no apliquen y que el siguiente `authselect apply-changes` revierta
-  tu cambio.
-- **`pam_namespace` desactivado salvo uso real**: CVE-2025-6020 y su fix completo CVE-2025-8941
-  (CVSS 7.8, con exploit público) permiten escalada a root vía symlinks sobre rutas controladas por
-  el usuario. Corregido en linux-pam 1.7.1. Si lo necesitas, monta con `nosymfollow` y no lo apuntes
-  a rutas escribibles por el usuario.
-- **Política de contraseñas contrastada, no barroca**: la evidencia moderna (NIST SP 800-63B) manda
-  **longitud mínima alta + comprobación contra listas de contraseñas comprometidas**, y desaconseja
-  la caducidad periódica obligatoria y las reglas de composición. El baseline CIS todavía pide
-  caducidad y complejidad: si tu marco te obliga, cúmplelo; si tienes margen, documenta la
-  desviación *hacia la práctica mejor* con el mismo rigor que cualquier otra excepción. Comprobación
-  contra listas: `pam_pwquality` con diccionario o fuente de credenciales filtradas. Hashing local:
-  yescrypt o SHA-512 con rondas altas según distro.
-- **Límites**: `/etc/security/limits.d/` con `nproc`/`nofile`/`core` acotados para contener
-  fork-bombs y agotamiento de descriptores; complementa, no sustituye, los límites de systemd.
-- **`umask 027`** (o `077` en hosts sensibles) en `/etc/login.defs` y en el perfil de shell, con
-  cuidado en servicios que comparten grupo. `UMask=` en la unidad systemd para el servicio.
-- **Sesiones**: `TMOUT`/`ClientAliveInterval` para sesiones inactivas, banner legal
-  (`/etc/issue.net`) — el banner es control de cumplimiento, no de seguridad: trátalo como tal.
+- **Named and scoped sudo**: rules per group, with explicit commands and absolute paths, in
+  versioned `/etc/sudoers.d/` files validated with `visudo -c`. `Defaults logfile` or
+  `log_output` for elevated commands. **`NOPASSWD: ALL` is forbidden** (§7); `NOPASSWD` scoped to
+  a specific command for automation is acceptable **if** the command does not allow escaping to a shell
+  (careful with `vi`, `less`, `find -exec`, `tar --to-command`, package managers).
+- **`sudo` is first-class attack surface, not inert infrastructure**: CVE-2025-32462 and
+  **CVE-2025-32463** (root escalation via `--chroot`, CVSS 9.3, **in the CISA KEV catalogue since
+  29 Sep 2025**, and **exploitable without being in sudoers**) were fixed in **sudo 1.9.17p1**. Upstream
+  has announced that the chroot option will be removed. Verify the installed version, and forbid the use
+  of `--chroot`/`-R` in your rules.
+- **`pam_faillock`** configured in `/etc/security/faillock.conf` (lockout after N failures, a window,
+  a non-zero `unlock_time` unless explicitly required, and **excluding root from permanent lockout**
+  so you do not lock yourself out). Verify the unlock with `faillock --user X --reset` before considering it
+  done. In the RHEL family, **the PAM stack is managed with `authselect`**: editing the files by
+  hand means the SSG rules do not apply and the next `authselect apply-changes` reverts
+  your change.
+- **`pam_namespace` disabled unless genuinely used**: CVE-2025-6020 and its complete fix CVE-2025-8941
+  (CVSS 7.8, with a public exploit) allow root escalation via symlinks over paths controlled by
+  the user. Fixed in linux-pam 1.7.1. If you need it, mount with `nosymfollow` and do not point it
+  at user-writable paths.
+- **An evidence-based password policy, not a baroque one**: modern evidence (NIST SP 800-63B) calls for
+  **a high minimum length + checking against lists of compromised passwords**, and advises against
+  mandatory periodic expiry and composition rules. The CIS baseline still asks for
+  expiry and complexity: if your framework forces you, comply; if you have room, document the
+  deviation *towards the better practice* with the same rigour as any other exception. Checking
+  against lists: `pam_pwquality` with a dictionary or a source of leaked credentials. Local hashing:
+  yescrypt or SHA-512 with a high round count depending on the distro.
+- **Limits**: `/etc/security/limits.d/` with bounded `nproc`/`nofile`/`core` to contain
+  fork bombs and descriptor exhaustion; it complements, it does not replace, systemd's limits.
+- **`umask 027`** (or `077` on sensitive hosts) in `/etc/login.defs` and in the shell profile, with
+  care for services that share a group. `UMask=` in the systemd unit for the service.
+- **Sessions**: `TMOUT`/`ClientAliveInterval` for idle sessions, a legal banner
+  (`/etc/issue.net`) — the banner is a compliance control, not a security one: treat it as such.
 
-### 3.6 SSH endurecido
+### 3.6 Hardened SSH
 
-- **Base**: `PermitRootLogin no`, `PasswordAuthentication no`, `KbdInteractiveAuthentication no`,
-  `PermitEmptyPasswords no`, `AllowGroups <grupo>` (allowlist explícita, no denylist),
-  `X11Forwarding no`, `MaxAuthTries` bajo, `LogLevel VERBOSE` (registra la huella de la clave usada,
-  que es lo que necesitarás en la investigación).
-- **Post-cuántico — verificado ago-2026** (OpenSSH **10.4**, 06-jul-2026): **9.9** añadió
-  `mlkem768x25519-sha256`; **10.0** (abr-2025) lo hizo **KEX por defecto**; **10.1** (oct-2025)
-  hace que **el cliente `ssh(1)` avise** cuando el servidor no ofrece KEX post-cuántico (*"WARNING:
-  connection is not using a post-quantum key exchange algorithm"*) y añade **`WarnWeakCrypto`** en
-  `ssh_config` para silenciarlo. El híbrido anterior `sntrup761x25519-sha512@openssh.com` (por
-  defecto desde 9.0) sigue soportado y sirve para interoperar con servidores 9.0-9.8. **Criterio**:
-  el servidor debe negociar `mlkem768x25519-sha256`; **silenciar el aviso en el cliente en vez de
-  actualizar el servidor está prohibido** (§7). OpenSSH **no** tiene aún firmas post-cuánticas para
-  claves de identidad: el aviso es solo de KEX.
-- **Algoritmos**: no copies listas de `KexAlgorithms`/`Ciphers`/`MACs` de hace tres años — una lista
-  fijada a mano envejece hacia *más débil* que el default del binario actual (desde 10.0 el orden por
-  defecto de cifrados es ChaCha20-Poly1305 → AES-GCM → AES-CTR: **una lista antigua deshace esa
-  mejora**). Parte del default de la versión instalada y **quita**, no reconstruyas. Verifica lo que
-  negocia de verdad (`ssh -Q kex`, `sshd -T`). **DSA fue eliminado por completo en OpenSSH 10.0**;
-  RSA solo con SHA-2 y ≥ 3072 bits si no hay más remedio; por defecto **ed25519** o **ed25519-sk**
-  (FIDO2). Nota de migración: 10.x cambió `Match` a *quoting* estilo shell — **puede romper configs
-  existentes**, y hay una corrección de seguridad en `DisableForwarding`, que no deshabilitaba X11 ni
-  agent forwarding como documentaba.
-- **Certificados SSH de vida corta > `authorized_keys`**: una CA SSH interna con certificados de
-  horas elimina el problema de revocación y de claves huérfanas repartidas por la flota
-  (`TrustedUserCAKeys`, `principals`, `HostCertificate` para autenticar también al servidor y matar
-  el TOFU). La emisión, la CA y su custodia: `cryptography-pki-standards`; la elevación JIT y el
-  bastión como servicio: `identity-access-management-standards`. Aquí: **el host solo confía en la
-  CA y en `AllowGroups`**.
-- **Acceso solo vía bastión**, con `Match Address` restringiendo el origen y sin acceso directo
-  desde redes de usuario. Cualquier cambio en `sshd_config` se valida con `sshd -t` **y se recarga
-  con una segunda sesión abierta** (§4).
+- **Baseline**: `PermitRootLogin no`, `PasswordAuthentication no`, `KbdInteractiveAuthentication no`,
+  `PermitEmptyPasswords no`, `AllowGroups <group>` (an explicit allowlist, not a denylist),
+  `X11Forwarding no`, a low `MaxAuthTries`, `LogLevel VERBOSE` (it records the fingerprint of the key used,
+  which is what you will need in the investigation).
+- **Post-quantum — verified Aug 2026** (OpenSSH **10.4**, 06 Jul 2026): **9.9** added
+  `mlkem768x25519-sha256`; **10.0** (Apr 2025) made it **the default KEX**; **10.1** (Oct 2025)
+  makes **the `ssh(1)` client warn** when the server does not offer a post-quantum KEX (*"WARNING:
+  connection is not using a post-quantum key exchange algorithm"*) and adds **`WarnWeakCrypto`** to
+  `ssh_config` to silence it. The previous hybrid `sntrup761x25519-sha512@openssh.com` (default
+  since 9.0) is still supported and serves to interoperate with 9.0-9.8 servers. **Criterion**:
+  the server must negotiate `mlkem768x25519-sha256`; **silencing the warning on the client instead of
+  updating the server is forbidden** (§7). OpenSSH does **not** yet have post-quantum signatures for
+  identity keys: the warning is about KEX only.
+- **Algorithms**: do not copy `KexAlgorithms`/`Ciphers`/`MACs` lists from three years ago — a list
+  pinned by hand ages towards *weaker* than the current binary's default (since 10.0 the default cipher
+  order is ChaCha20-Poly1305 → AES-GCM → AES-CTR: **an old list undoes that
+  improvement**). Start from the installed version's default and **remove**, do not rebuild. Verify what
+  it actually negotiates (`ssh -Q kex`, `sshd -T`). **DSA was removed entirely in OpenSSH 10.0**;
+  RSA only with SHA-2 and ≥ 3072 bits if there is no alternative; by default **ed25519** or **ed25519-sk**
+  (FIDO2). Migration note: 10.x changed `Match` to shell-style *quoting* — **it can break existing
+  configs**, and there is a security fix in `DisableForwarding`, which did not disable X11 or
+  agent forwarding as documented.
+- **Short-lived SSH certificates > `authorized_keys`**: an internal SSH CA with certificates lasting
+  hours removes the problem of revocation and of orphan keys scattered across the fleet
+  (`TrustedUserCAKeys`, `principals`, `HostCertificate` to authenticate the server too and kill
+  TOFU). Issuance, the CA and its custody: `cryptography-pki-standards`; JIT elevation and the
+  bastion as a service: `identity-access-management-standards`. Here: **the host only trusts the
+  CA and `AllowGroups`**.
+- **Access only via a bastion**, with `Match Address` restricting the source and no direct access
+  from user networks. Any change to `sshd_config` is validated with `sshd -t` **and reloaded
+  with a second session open** (§4).
 
 ### 3.7 auditd
 
-- **Reglas mínimas útiles**. Una lista de 400 reglas copiada de un repo genérico produce gigabytes
-  al día, satura el disco, degrada el host y **no la lee nadie**: es pérdida de señal disfrazada de
-  cumplimiento. La inteligencia de detección (TTP, firmas de herramienta) vive en el SIEM como
-  reglas Sigma, no en el ruleset de auditd — ver `detection-engineering-standards`.
-- Núcleo defendible: cambios en `/etc/passwd`, `/etc/shadow`, `/etc/group`, `sudoers` y
-  `sudoers.d`; ejecución de binarios SUID/SGID relevantes; `execve` de shells por cuentas de
-  servicio; carga/descarga de módulos; cambios de hora; montajes; modificación de la configuración
-  del propio auditd y de SSH; accesos denegados (`EACCES`/`EPERM`) en rutas críticas. Cada regla con
-  `-k <clave>` para poder buscarla y correlacionarla.
-- **Sintaxis y despliegue**: las reglas de syscall requieren `-a always,exit` (un `-S execve` suelto
-  no genera nada); las reglas de usuario humano usan `-F auid>=<UID_MIN> -F auid!=unset`
-  sustituyendo `UID_MIN` de `/etc/login.defs` **en tiempo de despliegue** (auditd no tiene
-  variables); `-e 2` al final para inmutabilizar el ruleset **solo cuando el conjunto esté estable**
-  (exige reinicio para cambiarlo). Verificación: `augenrules --check`, `augenrules --load`,
+- **A minimal set of useful rules.** A list of 400 rules copied from a generic repo produces gigabytes
+  a day, saturates the disk, degrades the host and **nobody reads it**: it is signal loss disguised as
+  compliance. Detection intelligence (TTPs, tool signatures) lives in the SIEM as
+  Sigma rules, not in the auditd ruleset — see `detection-engineering-standards`.
+- A defensible core: changes to `/etc/passwd`, `/etc/shadow`, `/etc/group`, `sudoers` and
+  `sudoers.d`; execution of relevant SUID/SGID binaries; `execve` of shells by service
+  accounts; module load/unload; time changes; mounts; modification of auditd's own configuration
+  and of SSH's; denied accesses (`EACCES`/`EPERM`) on critical paths. Every rule with
+  `-k <key>` so it can be searched and correlated.
+- **Syntax and deployment**: syscall rules require `-a always,exit` (a bare `-S execve`
+  generates nothing); human-user rules use `-F auid>=<UID_MIN> -F auid!=unset`
+  substituting `UID_MIN` from `/etc/login.defs` **at deployment time** (auditd has no
+  variables); `-e 2` at the end to make the ruleset immutable **only when the set is stable**
+  (it requires a reboot to change it). Verification: `augenrules --check`, `augenrules --load`,
   `auditctl -l`, `auditctl -s`.
-- **Operación**: en la familia RHEL, `systemctl reload auditd` **no funciona** (`service auditd
-  restart` o `augenrules --load`); desde audit-4.0 las reglas se cargan vía `audit-rules.service`.
-- **Integridad y retención**: `/var/log/audit` en **partición propia** (que auditd llene el disco
-  raíz es una caída, y `space_left_action`/`admin_space_left_action` con `SUSPEND` **dejan de
-  auditar en silencio** — decide entre disponibilidad y auditoría, y documéntalo). Reenvío al SIEM
-  con `audisp-syslog`/`audisp-remote` desde `/etc/audit/plugins.d/` (en Debian/Ubuntu requiere
-  `audispd-plugins`). **El log local es prueba débil**: un atacante con root lo edita; la copia
-  remota, con reloj sincronizado, es la que vale. Dónde va y cuánto se retiene, en
+- **Operation**: in the RHEL family, `systemctl reload auditd` **does not work** (`service auditd
+  restart` or `augenrules --load`); since audit-4.0 the rules are loaded via `audit-rules.service`.
+- **Integrity and retention**: `/var/log/audit` on **its own partition** (auditd filling the root
+  disk is an outage, and `space_left_action`/`admin_space_left_action` with `SUSPEND` **silently stop
+  auditing** — decide between availability and auditing, and document it). Forwarding to the SIEM
+  with `audisp-syslog`/`audisp-remote` from `/etc/audit/plugins.d/` (on Debian/Ubuntu it requires
+  `audispd-plugins`). **The local log is weak evidence**: an attacker with root edits it; the remote
+  copy, with a synchronised clock, is the one that counts. Where it goes and how long it is retained, in
   `observability-standards`.
 
-### 3.8 Integridad y arranque
+### 3.8 Integrity and boot
 
-- **Secure Boot habilitado** y kernel + módulos firmados (con MOK propia si compilas módulos fuera
-  de árbol). Sin Secure Boot, `lockdown` no es una frontera real.
-- **TPM 2.0 con medición**: los PCRs miden la cadena de arranque; útil solo si algo *comprueba* la
-  medida — sellado de claves LUKS a PCRs o atestación remota. Un TPM que nadie consulta es un chip
-  caro. Cuidado con la fragilidad de PCRs y con el ataque a PCR 7 en solitario (§2).
-- **LUKS2** en discos con datos, **y en los backups**. Desatendido: **Clevis/Tang** (dos o más
-  servidores Tang para no crear SPOF; `sss` con umbral — **Tang no almacena secretos**) o TPM2 con
-  política firmada. Regla dura: **si el host no arranca sin un humano, no está en producción**.
-- **AIDE** (o FIM del agente) con la base de datos firmada y almacenada fuera del host,
-  inicializada **después** de aplicar el baseline y **reinicializada tras cada cambio aprobado** —
-  si no, todo el mundo aprende a ignorar sus informes.
+- **Secure Boot enabled** and kernel + modules signed (with your own MOK if you compile out-of-tree
+  modules). Without Secure Boot, `lockdown` is not a real boundary.
+- **TPM 2.0 with measurement**: the PCRs measure the boot chain; useful only if something *checks* the
+  measurement — sealing LUKS keys to PCRs or remote attestation. A TPM nobody queries is an expensive
+  chip. Beware the fragility of PCRs and the attack on PCR 7 on its own (§2).
+- **LUKS2** on disks with data, **and on the backups**. Unattended: **Clevis/Tang** (two or more
+  Tang servers so as not to create a SPOF; `sss` with a threshold — **Tang stores no secrets**) or TPM2 with
+  a signed policy. Hard rule: **if the host does not boot without a human, it is not in production**.
+- **AIDE** (or the agent's FIM) with the database signed and stored off the host,
+  initialised **after** applying the baseline and **re-initialised after every approved change** —
+  otherwise everyone learns to ignore its reports.
 
-### 3.9 Contención de servicios con systemd (control de hardening de primera línea)
+### 3.9 Service containment with systemd (a front-line hardening control)
 
-El sandboxing de systemd es un control de contención real y **complementario al MAC**: MAC define
-qué puede tocar un dominio según su etiqueta; systemd recorta lo que el proceso *puede pedir* al
-kernel (namespaces, capabilities, syscalls, vistas de FS). Se aplican **los dos**;
-`systemd-analyze security` **ignora explícitamente SELinux y AppArmor**, así que un score bueno no
-sustituye a `enforcing` ni al revés.
+systemd sandboxing is a real containment control and **complementary to MAC**: MAC defines
+what a domain can touch according to its label; systemd trims what the process *can ask* of the
+kernel (namespaces, capabilities, syscalls, FS views). **Both** are applied;
+`systemd-analyze security` **explicitly ignores SELinux and AppArmor**, so a good score does not
+replace `enforcing` nor the other way round.
 
-Toda unidad propia (y toda unidad de terceros que exponga red) lleva, como suelo:
-`User=` dedicado o `DynamicUser=yes`, `NoNewPrivileges=yes`, `ProtectSystem=strict`,
+Every unit of your own (and every third-party unit exposing the network) carries, as a floor:
+a dedicated `User=` or `DynamicUser=yes`, `NoNewPrivileges=yes`, `ProtectSystem=strict`,
 `ProtectHome=yes`, `PrivateTmp=yes`, `PrivateDevices=yes`, `ProtectKernelTunables=yes`,
 `ProtectKernelModules=yes`, `ProtectKernelLogs=yes`, `ProtectControlGroups=yes`,
 `ProtectClock=yes`, `ProtectHostname=yes`, `ProtectProc=invisible`, `RestrictSUIDSGID=yes`,
 `RestrictRealtime=yes`, `RestrictNamespaces=yes`, `LockPersonality=yes`,
-`CapabilityBoundingSet=` (vacío, y solo lo imprescindible añadido),
+`CapabilityBoundingSet=` (empty, with only the indispensable added),
 `SystemCallFilter=@system-service` + `SystemCallArchitectures=native`,
-`RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX`, `ReadWritePaths=` explícitos,
-`IPAddressDeny=any` + `IPAddressAllow=` cuando el servicio hable con destinos conocidos.
+`RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX`, explicit `ReadWritePaths=`,
+`IPAddressDeny=any` + `IPAddressAllow=` when the service talks to known destinations.
 
-- **Umbral**: `systemd-analyze security <unidad>` da un *exposure level* de 0.0 a 10.0, con
-  predicados (`UNSAFE` / `EXPOSED` / `MEDIUM` / `OK`). Objetivo **< 4.0** en servicios propios;
-  **medir y registrar** el valor antes/después. Desde systemd v250 se puede pasar una **política
-  JSON** con los requisitos propios y comparar unidades contra ella: eso es lo que se mete en CI, no
-  un número recordado. Caveat oficial: no analiza el hardening interno del programa, y hay servicios
-  (`sshd`, `crond`, `atd`) que puntúan mal **por diseño** — no los "arregles" a ciegas.
-- **Overrides en `/etc/systemd/system/<unidad>.d/override.conf`**, jamás editando la unidad del
-  paquete (§7). Notas de versión relevantes: **v259** (17-dic-2025) pasa `libselinux`, `pam`,
-  `audit`, `libseccomp` a `dlopen` y deja de enlazar `libcap` — verifica que tu imagen mínima las
-  incluye antes de asumir que el sandbox está activo; **v260** (17-mar-2026) **elimina el soporte de
-  scripts SysV** (`systemd-sysv-generator`, `rc-local.service`); **v261** es la línea actual.
-- `MemoryDenyWriteExecute=yes` solo donde el runtime lo tolere (rompe JIT: JVM, .NET, V8). Es un
-  buen ejemplo de control que **se prueba, no se presupone**.
+- **Threshold**: `systemd-analyze security <unit>` gives an *exposure level* from 0.0 to 10.0, with
+  predicates (`UNSAFE` / `EXPOSED` / `MEDIUM` / `OK`). Target **< 4.0** on your own services;
+  **measure and record** the value before/after. Since systemd v250 you can pass a **JSON
+  policy** with your own requirements and compare units against it: that is what goes into CI, not
+  a remembered number. Official caveat: it does not analyse the program's internal hardening, and there are services
+  (`sshd`, `crond`, `atd`) that score badly **by design** — do not "fix" them blindly.
+- **Overrides in `/etc/systemd/system/<unit>.d/override.conf`**, never editing the package's
+  unit (§7). Relevant release notes: **v259** (17 Dec 2025) moves `libselinux`, `pam`,
+  `audit`, `libseccomp` to `dlopen` and stops linking `libcap` — verify your minimal image
+  includes them before assuming the sandbox is active; **v260** (17 Mar 2026) **removes support for
+  SysV scripts** (`systemd-sysv-generator`, `rc-local.service`); **v261** is the current line.
+- `MemoryDenyWriteExecute=yes` only where the runtime tolerates it (it breaks JIT: JVM, .NET, V8). It is a
+  good example of a control that **is tested, not presumed**.
 
-### 3.10 Filesystem, montajes y SUID
+### 3.10 Filesystem, mounts and SUID
 
-- **Particionado**: `/var`, `/var/log`, `/var/log/audit`, `/tmp` y `/home` separados — el objetivo
-  real es que **ningún consumidor de disco pueda tumbar el host** ni impedir el logging.
-- **Opciones de montaje**: `nodev` en todo lo que no sea `/` o `/dev`; `nosuid` en `/tmp`,
-  `/var/tmp`, `/home`, `/dev/shm` y montajes de red; `noexec` en `/tmp`, `/var/tmp` y `/dev/shm`
-  **midiendo antes** (instaladores, `pip`, gestores de paquetes y algunos runtimes ejecutan desde
-  `/tmp`; la excepción, si la hay, es `TMPDIR` propio, no quitar `noexec`).
-- **Binarios SUID/SGID**: inventario explícito, comparado en cada auditoría
-  (`find / -xdev -type f \( -perm -4000 -o -perm -2000 \)`). Un SUID nuevo no declarado es hallazgo
-  de seguridad, no ruido. Retira `setuid` de los que no se usen. Preferir **capabilities acotadas** o
-  systemd (`AmbientCapabilities=`) sobre SUID nuevo.
-- **`/boot`** montado con `nodev,nosuid,noexec` y contraseña de GRUB para la edición de la línea de
-  arranque en hosts con acceso físico no controlado (útil justamente porque `selinux=0` o
-  `init=/bin/bash` se escriben ahí).
+- **Partitioning**: `/var`, `/var/log`, `/var/log/audit`, `/tmp` and `/home` separated — the real
+  goal is that **no disk consumer can take the host down** nor prevent logging.
+- **Mount options**: `nodev` on everything that is not `/` or `/dev`; `nosuid` on `/tmp`,
+  `/var/tmp`, `/home`, `/dev/shm` and network mounts; `noexec` on `/tmp`, `/var/tmp` and `/dev/shm`
+  **measuring first** (installers, `pip`, package managers and some runtimes execute from
+  `/tmp`; the exception, if any, is your own `TMPDIR`, not removing `noexec`).
+- **SUID/SGID binaries**: an explicit inventory, compared at every audit
+  (`find / -xdev -type f \( -perm -4000 -o -perm -2000 \)`). A new undeclared SUID is a security
+  finding, not noise. Remove `setuid` from those not in use. Prefer **scoped capabilities** or
+  systemd (`AmbientCapabilities=`) over a new SUID.
+- **`/boot`** mounted with `nodev,nosuid,noexec` and a GRUB password for editing the boot
+  line on hosts with uncontrolled physical access (useful precisely because `selinux=0` or
+  `init=/bin/bash` are written there).
 
-### 3.11 Imagen dorada
+### 3.11 Golden image
 
-- El hardening se aplica **en la imagen**, no host por host: `oscap xccdf generate fix --fix-type
-  kickstart` u `oscap-im` para imágenes **bootc/Image Mode** (OpenSCAP 1.4.x), o el remediation
-  Ansible del perfil, integrados en el build (image builder, Packer).
-- La imagen se **verifica con el mismo escáner y el mismo perfil** que la flota, en el pipeline, y
-  se publica **firmada y versionada**. *Build once, promote the same artifact*: la imagen que se
-  audita es exactamente la que se despliega.
-- La imagen incorpora *cero secretos*: sin claves SSH de host preembebidas (regenerar en primer
-  arranque), sin credenciales, sin `authorized_keys` del constructor.
+- The hardening is applied **in the image**, not host by host: `oscap xccdf generate fix --fix-type
+  kickstart` or `oscap-im` for **bootc/Image Mode** images (OpenSCAP 1.4.x), or the profile's Ansible
+  remediation, integrated into the build (image builder, Packer).
+- The image is **verified with the same scanner and the same profile** as the fleet, in the pipeline, and
+  it is published **signed and versioned**. *Build once, promote the same artifact*: the image that is
+  audited is exactly the one that gets deployed.
+- The image carries *zero secrets*: no pre-embedded SSH host keys (regenerate on first
+  boot), no credentials, no builder's `authorized_keys`.
 
-## 4. Gates de calidad (rompen el build o el despliegue)
+## 4. Quality gates (they break the build or the deployment)
 
-En orden de coste creciente:
+In increasing cost order:
 
-1. **Lint y validación sintáctica** antes de cualquier aplicación: `visudo -c`, `sshd -t`,
-   `augenrules --check`, `nft -c -f`, `ansible-lint`. Barato y evita la mayoría de los bloqueos de
-   acceso.
-2. **Aplicación en modo comprobación** en no-producción (`--check --diff`) y revisión del diff.
-   Aviso: los roles de ansible-lockdown **no soportan check mode** — no lo uses como única red.
-3. **Escaneo de cumplimiento en CI** sobre la imagen dorada, con el perfil y el tailoring del
-   proyecto: `oscap xccdf eval --profile <perfil> --tailoring-file <t.xml> --results-arf arf.xml
-   --report report.html`. **El build rompe si el score baja del umbral acordado** o si aparece un
-   fallo *nuevo* no cubierto por una excepción vigente. El umbral se sube con el tiempo; nunca se
-   baja para que pase el build (§7).
-4. **Smoke test funcional post-hardening**: el gate decisivo. Después de endurecer se comprueba que
-   **el servicio responde de verdad** (puerto, health endpoint, transacción sintética, autenticación
-   real), no que systemd diga `active`. Endurecer sin este test es apostar.
-5. **Prueba de acceso con red de rescate**: cambios en SSH, PAM, firewall o `sudoers` se aplican
-   **con una segunda sesión abierta o consola OOB disponible**, y se valida un login nuevo antes de
-   cerrar la primera. No negociable.
-6. **Escaneo continuo de la flota** (Wazuh SCA o equivalente) con **el drift como hallazgo**: ticket
-   con dueño y fecha, igual que una vulnerabilidad. Un host que se aparta del baseline entre
-   auditorías es exactamente el que te van a comprometer.
-7. **Verificación del baseline tras cada cambio** que toque el SO (actualización mayor, nuevo rol,
-   nuevo servicio): re-escaneo automático y comparación contra el informe anterior. Las
-   actualizaciones de distro **reintroducen** configuración por defecto con frecuencia.
-8. **Reinicio probado**: un host endurecido que no arranca tras el reinicio es peor que uno sin
-   endurecer. Reinicio obligatorio en el pipeline de validación — montajes, `lockdown`, module
-   signing, TPM/LUKS, `modules_disabled` e `initramfs` solo se comprueban de verdad al arrancar.
+1. **Lint and syntax validation** before any application: `visudo -c`, `sshd -t`,
+   `augenrules --check`, `nft -c -f`, `ansible-lint`. Cheap, and it avoids most access
+   lockouts.
+2. **Application in check mode** in non-production (`--check --diff`) and review of the diff.
+   Warning: the ansible-lockdown roles **do not support check mode** — do not use it as your only net.
+3. **Compliance scan in CI** over the golden image, with the project's profile and tailoring:
+   `oscap xccdf eval --profile <profile> --tailoring-file <t.xml> --results-arf arf.xml
+   --report report.html`. **The build breaks if the score drops below the agreed threshold** or
+   if a *new* failure appears that is not covered by a current exception. The threshold goes up over time; it is never
+   lowered to make the build pass (§7).
+4. **Post-hardening functional smoke test**: the decisive gate. After hardening you check that
+   **the service really responds** (port, health endpoint, synthetic transaction, real
+   authentication), not that systemd says `active`. Hardening without this test is a gamble.
+5. **An access test with a rescue net**: changes to SSH, PAM, the firewall or `sudoers` are applied
+   **with a second session open or an OOB console available**, and a fresh login is validated before
+   closing the first one. Non-negotiable.
+6. **Continuous fleet scanning** (Wazuh SCA or equivalent) with **drift as a finding**: a ticket
+   with an owner and a date, just like a vulnerability. A host that drifts from the baseline between
+   audits is exactly the one that will get you compromised.
+7. **Baseline verification after every change** touching the OS (a major upgrade, a new role,
+   a new service): automatic rescan and comparison against the previous report. Distro
+   updates **reintroduce** default configuration frequently.
+8. **A tested reboot**: a hardened host that does not boot after a reboot is worse than an
+   unhardened one. A mandatory reboot in the validation pipeline — mounts, `lockdown`, module
+   signing, TPM/LUKS, `modules_disabled` and `initramfs` are only really verified at boot.
 
-## 5. Seguridad del propio proceso de hardening
+## 5. Security of the hardening process itself
 
-- **La cadena de suministro del baseline es cadena de suministro**: los roles de hardening se fijan
-  (*pin*) por versión/tag —nunca `main`—, se revisa el diff al actualizar y se ejecutan desde un
-  repo propio o un mirror interno. Un rol que corre como root en toda la flota es el objetivo más
-  rentable que tienes. Verifica la firma cuando el proveedor la publique (las releases de
-  ansible-lockdown están firmadas con GPG).
-- **Rol abandonado = riesgo, no ahorro**: antes de adoptar cualquier contenido de hardening,
-  verifica último release y actividad (§8). Un rol sin mantenimiento aplica un benchmark caducado y
-  da sensación de cumplimiento.
-- **El escáner no es inocuo**: `oscap` con `--remediate` modifica el sistema. Prohibido remediar
-  automáticamente en producción desde el escaneo; el escaneo mide, el código aplica.
-- **Secretos**: contraseñas de GRUB, hashes de arranque, claves de LUKS, `become_pass` y
-  credenciales de agente van en Vault/sops, nunca en el repo ni en variables de rol en claro. El
-  hash de contraseña de GRUB en un repo público es una credencial expuesta.
-- **Los informes de cumplimiento son datos sensibles**: un ARF/HTML de OpenSCAP es un mapa de las
-  debilidades exactas del host. Acceso restringido, no en un bucket abierto ni en el artefacto
-  público del pipeline.
-- **Registro de quién endurece**: los cambios de baseline se ejecutan desde CI con identidad propia
-  y quedan auditados. Nadie aplica un rol de hardening desde su portátil con su cuenta personal.
-- **El hardening no sustituye al parcheo**: 2026 ha dejado ejemplos explícitos de fallos de kernel
-  que **anulan las garantías del baseline** (escaladas locales a root y bypass de MAC operando por
-  debajo de la capa de política). Cuando el hallazgo es de kernel, la única mitigación fiable es
-  parchear y reiniciar — coordínalo con `vulnerability-management-standards`.
+- **The baseline's supply chain is a supply chain**: hardening roles are pinned
+  by version/tag — never `main` —, the diff is reviewed on update and they are run from
+  your own repo or an internal mirror. A role that runs as root across the whole fleet is the most
+  profitable target you have. Verify the signature when the provider publishes it (ansible-lockdown
+  releases are GPG-signed).
+- **An abandoned role = a risk, not a saving**: before adopting any hardening content,
+  verify the last release and its activity (§8). An unmaintained role applies an expired benchmark and
+  gives a feeling of compliance.
+- **The scanner is not harmless**: `oscap` with `--remediate` modifies the system. Automatic remediation
+  in production from the scan is forbidden; the scan measures, the code applies.
+- **Secrets**: GRUB passwords, boot hashes, LUKS keys, `become_pass` and
+  agent credentials go in Vault/sops, never in the repo nor in role variables in the clear. A
+  GRUB password hash in a public repo is an exposed credential.
+- **Compliance reports are sensitive data**: an OpenSCAP ARF/HTML is a map of the host's exact
+  weaknesses. Restricted access, not in an open bucket nor in the pipeline's public
+  artifact.
+- **A record of who hardens**: baseline changes are run from CI with their own identity
+  and are audited. Nobody applies a hardening role from their laptop with their personal account.
+- **Hardening does not replace patching**: 2026 has left explicit examples of kernel flaws
+  that **void the baseline's guarantees** (local root escalations and MAC bypasses operating below
+  the policy layer). When the finding is in the kernel, the only reliable mitigation is to
+  patch and reboot — coordinate it with `vulnerability-management-standards`.
 
-## 6. Operabilidad y coste
+## 6. Operability and cost
 
-- **Todo control tiene coste; el que no se mide se paga en producción**. Medir con el workload real
-  antes de fijar: mitigaciones de CPU (orden de magnitud verificado: ~1-10 % según caso, §3.4),
-  `auditd` (I/O y CPU proporcionales al número de reglas), AIDE (I/O del scan: fuera de pico),
-  `MemoryDenyWriteExecute` (incompatible con JIT), `noexec` (rompe instaladores),
-  `lockdown=confidentiality` (rompe perfilado y depuración).
-- **Telemetría del cumplimiento**: exportar el score por host como métrica y alertar sobre
-  *tendencia a la baja* y sobre *hosts sin escanear en N días*. Un host que ha dejado de reportar es
-  un fallo de control, no un hueco en el dashboard.
-- **Diagnóstico bajo un sistema endurecido**: documenta en el runbook cómo se depura con
-  `dmesg_restrict`, `ptrace_scope` y `ProtectProc=invisible` activos — si no, la primera incidencia
-  seria acabará con alguien desactivándolo todo "temporalmente".
-- **Rollback**: cada cambio de hardening tiene revert conocido y probado (el rol debe poder
-  desaplicar el control concreto). Sin revert probado no se toca producción.
-- **Reinicios**: livepatching no elimina el reinicio, lo pospone — y los propios vendors lo exigen
-  (kpatch obliga a actualizar kernel y reiniciar ≥2 veces al año; Canonical solo genera parches para
-  un kernel durante 9-13 meses). Ventana de reinicio programada y **contador de uptime como señal de
-  riesgo**, no de orgullo.
-- **Compatibilidad**: hardening y automatización se estorban (`noexec` en `/tmp` frente a Ansible,
-  `nosuid` frente a `become`, `RestrictNamespaces` frente a contenedores). Resuélvelo con
-  configuración (`remote_tmp` propio, `pipelining=true`), no quitando el control.
+- **Every control has a cost; the one you do not measure is paid for in production**. Measure with the real workload
+  before pinning: CPU mitigations (verified order of magnitude: ~1-10% depending on the case, §3.4),
+  `auditd` (I/O and CPU proportional to the number of rules), AIDE (scan I/O: off-peak),
+  `MemoryDenyWriteExecute` (incompatible with JIT), `noexec` (breaks installers),
+  `lockdown=confidentiality` (breaks profiling and debugging).
+- **Compliance telemetry**: export the score per host as a metric and alert on a
+  *downward trend* and on *hosts not scanned in N days*. A host that has stopped reporting is
+  a control failure, not a gap in the dashboard.
+- **Diagnosis under a hardened system**: document in the runbook how to debug with
+  `dmesg_restrict`, `ptrace_scope` and `ProtectProc=invisible` active — otherwise, the first serious
+  incident will end with somebody disabling everything "temporarily".
+- **Rollback**: every hardening change has a known and tested revert (the role must be able to
+  unapply the specific control). Without a tested revert, production is not touched.
+- **Reboots**: livepatching does not remove the reboot, it postpones it — and the vendors themselves require it
+  (kpatch forces you to update the kernel and reboot ≥2 times a year; Canonical only generates patches for
+  a kernel for 9-13 months). A scheduled reboot window and **the uptime counter as a risk
+  signal**, not a source of pride.
+- **Compatibility**: hardening and automation get in each other's way (`noexec` on `/tmp` against Ansible,
+  `nosuid` against `become`, `RestrictNamespaces` against containers). Solve it with
+  configuration (your own `remote_tmp`, `pipelining=true`), not by removing the control.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia**
-- Revisar la **versión del benchmark** trimestralmente (CIS publica actualizaciones continuas; DISA,
-  trimestrales) y al salir cada versión mayor de distro. Cambiar de benchmark es un proyecto.
-- Actualizar **SSG/ComplianceAsCode y OpenSCAP** con la distro; no mezclar contenido SSG de una
-  versión menor con otra (Red Hat lo desaconseja explícitamente: el contenido y los componentes de
-  hardening pueden no ser compatibles hacia atrás).
-- Revisar **excepciones caducadas** en cada ciclo: la excepción sin fecha no existe.
-- Reevaluar la lista de `sysctl`, módulos en blacklist y algoritmos SSH al cambiar de versión mayor
-  de kernel u OpenSSH: **lo que era endurecer hace tres años hoy puede ser degradar**.
-- No dejar en producción una distro EOL sin plan de salida fechado. Verificado ago-2026: **RHEL 10.2
-  y RHEL 9.8** (ambas 20-may-2026; RHEL 10 Full Support hasta may-2030, RHEL 9 hasta may-2027);
-  **Fedora 44** (28-abr-2026); **Debian 13.6 "trixie"** (11-jul-2026; soporte completo a ago-2028,
-  LTS a jun-2030) con **Debian 12 saliendo de soporte regular el 11-jul-2026**; **Ubuntu 26.04 LTS**
-  (23-abr-2026 → abr-2031, ESM a 2036) y **24.04 LTS** (→ abr-2029). **Trampa de RHEL**: durante
-  Maintenance Support **solo el último minor recibe parches** — quedarse en 9.7 con 9.8 publicada es
-  estar sin soporte de facto.
+**Cadence**
+- Review the **benchmark version** quarterly (CIS publishes continuous updates; DISA,
+  quarterly) and when each major distro version comes out. Changing benchmark is a project.
+- Update **SSG/ComplianceAsCode and OpenSCAP** with the distro; do not mix SSG content from one
+  minor version with another (Red Hat explicitly advises against it: hardening content and components
+  may not be backward compatible).
+- Review **expired exceptions** every cycle: an exception without a date does not exist.
+- Re-evaluate the `sysctl` list, blacklisted modules and SSH algorithms when moving to a new major
+  kernel or OpenSSH version: **what was hardening three years ago can be degradation today**.
+- Do not leave an EOL distro in production without a dated exit plan. Verified Aug 2026: **RHEL 10.2
+  and RHEL 9.8** (both 20 May 2026; RHEL 10 Full Support until May 2030, RHEL 9 until May 2027);
+  **Fedora 44** (28 Apr 2026); **Debian 13.6 "trixie"** (11 Jul 2026; full support to Aug 2028,
+  LTS to Jun 2030) with **Debian 12 leaving regular support on 11 Jul 2026**; **Ubuntu 26.04 LTS**
+  (23 Apr 2026 → Apr 2031, ESM to 2036) and **24.04 LTS** (→ Apr 2029). **The RHEL trap**: during
+  Maintenance Support **only the latest minor receives patches** — staying on 9.7 with 9.8 published is
+  being de facto unsupported.
 
-**PROHIBIDO**
-- ❌ **Desactivar un control "para que funcione"** sin diagnóstico, sin excepción documentada y sin
-  revert planificado. Incluye `setenforce 0`, parar el firewall, `chmod 777` y quitar `noexec`.
-- ❌ **Aplicar CIS/STIG a ciegas en producción** sin ensayo previo y sin catálogo de excepciones.
-- ❌ **Extrapolar un benchmark de otra versión de distro** (p. ej. aplicar el CIS de Ubuntu 24.04 a
-  26.04, que aún no tiene benchmark) sin revisión regla a regla y sin declararlo como baseline propio.
-- ❌ Baseline **sin excepciones documentadas** (aunque estén todas aplicadas: la lista vacía se
-  declara), o excepciones **sin dueño y sin fecha de caducidad**.
-- ❌ **Bajar el umbral de score** para que pase el build, o marcar reglas como "no aplicable" sin
-  motivo escrito.
-- ❌ `NOPASSWD: ALL` en sudo; reglas con comodines sobre rutas; binarios que permiten escape a
-  shell; permitir `sudo --chroot`/`-R`; `sudo` a un grupo genérico "todos los técnicos".
-- ❌ Editar el stack PAM a mano en distros gestionadas por `authselect`.
-- ❌ Cuentas compartidas, login de root remoto, autenticación SSH por contraseña, claves SSH sin
-  caducidad repartidas por la flota.
-- ❌ **Silenciar el aviso post-cuántico de OpenSSH** (`WarnWeakCrypto`) en vez de actualizar el
-  servidor; fijar listas de `Ciphers`/`KexAlgorithms`/`MACs` copiadas de una guía antigua sin
-  comprobar qué negocia el binario actual.
-- ❌ `mitigations=off` (o desactivar mitigaciones individuales) sin medición, sin aprobación del
-  dueño del riesgo, y **jamás** en hosts multiinquilino o que ejecuten código de terceros.
-- ❌ Desactivar MAC (`selinux=0`, AppArmor parado) como solución — ver `selinux-standards`.
-- ❌ Rulesets gigantes de auditd copiados sin revisar; `/var/log/audit` sin partición propia; auditd
-  que solo escribe en local sin reenvío al SIEM.
-- ❌ Base de datos de AIDE almacenada únicamente en el host que audita; informes de integridad que
-  nadie revisa; AIDE < 0.19.2.
-- ❌ Editar unidades systemd del paquete en vez de usar `override.conf`; servicios de red corriendo
-  como root sin sandboxing.
-- ❌ Remediación automática (`oscap --remediate`) directamente contra producción.
-- ❌ Aplicar simultáneamente dos roles de hardening (ansible-lockdown + devsec.hardening) sobre el
-  mismo host.
-- ❌ Usar el livepatching como excusa para no reiniciar nunca, o como sustituto del ciclo de parcheo.
-- ❌ Sellar claves LUKS a PCRs frágiles sin política firmada, sin PIN y sin passphrase de
-  recuperación custodiada fuera del host.
-- ❌ Fijar versiones de benchmark, distro, EOL o algoritmos **de memoria** sin la verificación de §8.
+**FORBIDDEN**
+- ❌ **Disabling a control "to make it work"** without diagnosis, without a documented exception and without
+  a planned revert. That includes `setenforce 0`, stopping the firewall, `chmod 777` and removing `noexec`.
+- ❌ **Applying CIS/STIG blind in production** without a prior rehearsal and without an exception catalogue.
+- ❌ **Extrapolating a benchmark from another distro version** (e.g. applying the Ubuntu 24.04 CIS to
+  26.04, which has no benchmark yet) without a rule-by-rule review and without declaring it as your own baseline.
+- ❌ A baseline **without documented exceptions** (even if all are applied: an empty list is
+  declared), or exceptions **without an owner and without an expiry date**.
+- ❌ **Lowering the score threshold** to make the build pass, or marking rules as "not applicable" without a
+  written reason.
+- ❌ `NOPASSWD: ALL` in sudo; rules with wildcards over paths; binaries that allow escaping to a
+  shell; allowing `sudo --chroot`/`-R`; `sudo` for a generic "all technicians" group.
+- ❌ Editing the PAM stack by hand on distros managed by `authselect`.
+- ❌ Shared accounts, remote root login, SSH password authentication, non-expiring SSH keys
+  scattered across the fleet.
+- ❌ **Silencing OpenSSH's post-quantum warning** (`WarnWeakCrypto`) instead of updating the
+  server; pinning `Ciphers`/`KexAlgorithms`/`MACs` lists copied from an old guide without
+  checking what the current binary negotiates.
+- ❌ `mitigations=off` (or disabling individual mitigations) without measurement, without approval from the
+  risk owner, and **never** on multi-tenant hosts or ones running third-party code.
+- ❌ Disabling MAC (`selinux=0`, AppArmor stopped) as a solution — see `selinux-standards`.
+- ❌ Giant auditd rulesets copied without review; `/var/log/audit` without its own partition; an auditd
+  that only writes locally with no forwarding to the SIEM.
+- ❌ An AIDE database stored only on the host it audits; integrity reports
+  nobody reviews; AIDE < 0.19.2.
+- ❌ Editing the package's systemd units instead of using `override.conf`; network services running
+  as root without sandboxing.
+- ❌ Automatic remediation (`oscap --remediate`) directly against production.
+- ❌ Applying two hardening roles simultaneously (ansible-lockdown + devsec.hardening) on the
+  same host.
+- ❌ Using livepatching as an excuse never to reboot, or as a substitute for the patching cycle.
+- ❌ Sealing LUKS keys to fragile PCRs without a signed policy, without a PIN and without a recovery
+  passphrase held off the host.
+- ❌ Pinning benchmark versions, distro versions, EOLs or algorithms **from memory** without the verification in §8.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier dato concreto, **búscalo — no lo recuerdes**:
+Before pinning any concrete fact, **look it up — do not remember it**:
 
-1. **Versión vigente del CIS Benchmark de la distro exacta** en `cisecurity.org` o CIS WorkBench.
-   Verificado ago-2026 (§2), incluido el hallazgo de que **Ubuntu 26.04 LTS aún no tiene benchmark**.
-2. **Release de SCAP Security Guide / ComplianceAsCode** y perfiles disponibles para tu producto
-   (verificado ago-2026: **v0.1.81**, 1-jun-2026). **Hueco declarado**: no se pudo obtener el
-   **listado exhaustivo de perfiles por producto** (`complianceascode.github.io/content-pages/
-   product-guides.html` → 404 y `static.open-scap.org/ssg-guides/` → 403); comprueba con
-   `oscap info` sobre el datastream instalado, no de memoria.
-3. **Release de DISA STIG** para tu SO. **Hueco declarado**: RHEL 9 V2R8, RHEL 10 V1R1 y Ubuntu 24.04
-   V1R5 se verificaron **vía terceros** (Tenable, BigFix, Red Hat), **no** en `public.cyber.mil` —
-   confirma en la fuente oficial antes de comprometerte contractualmente.
-4. **Versión vigente de ANSSI-BP-028** en `cyber.gouv.fr` (verificado: **v2.0**, oct-2022, en SSG
-   desde 0.1.73). **Hueco declarado**: no se pudo descartar la existencia de una versión posterior.
-5. **Guías CCN-STIC aplicables** en `ccn-cert.cni.es` y el portal del ENS (verificado:
-   **CCN-STIC 610-25** con anexos A/Rocky, B/Arch, E/Debian). **Huecos declarados**: la **letra de
-   los anexos de Ubuntu y Fedora**, y si la 610-25 **deroga formalmente** la serie por producto
-   `610Axx` (que sigue publicada). El texto del **RD 311/2022** tampoco se verificó contra el BOE.
-6. **OpenSCAP, Lynis y Wazuh**: versión y mantenimiento (verificado ago-2026: OpenSCAP **1.4.4**,
-   Lynis **3.1.7**, Wazuh **4.14.7**; los tres activos). Comprueba también **qué versión empaqueta tu
-   distro**, que suele ir muy por detrás.
-7. **Roles Ansible de hardening**: último release y actividad antes de adoptarlos (verificado
-   ago-2026: ansible-lockdown RHEL9-CIS **v2.2.0** y UBUNTU24-CIS **v1.6.0**; devsec.hardening
-   **10.6.0**). No adoptes un rol sin release en el último año. **Hueco declarado**: la versión
-   mínima exacta de `ansible-core` que exige devsec.hardening 10.6.0 (la documentación dice ≥ 2.16 y
-   la release declara 2.21) — compruébalo en el `galaxy.yml` de la versión que instales.
-8. **OpenSSH**: versión instalada y algoritmos por defecto reales (`ssh -Q kex`, `sshd -T`) y estado
-   del KEX post-cuántico en `openssh.com/pq.html` (verificado ago-2026: **10.4**, 06-jul-2026).
-   **Hueco declarado**: la **lista exacta de MACs por defecto en 10.x** no se verificó (con AEAD la
-   lista de MACs no se usa, así que su relevancia práctica es baja), ni si DSA se deshabilitó en
-   compilación en 9.8 o en 9.9 — su **eliminación total en 10.0 sí está verificada**.
-9. **systemd**: versión instalada y directivas de sandboxing en el man de esa versión (verificado
-   ago-2026: **v261** es la línea actual; v260 17-mar-2026; v259 17-dic-2025). **Huecos declarados**:
-   la **fecha exacta de v261** y los **cortes numéricos del exposure score** (los predicados existen;
-   los umbrales 9.0/7.5/5.0 circulan en foros pero **no están en el manual**) — no cites números de
-   corte, cita el predicado que devuelve la herramienta.
-10. **audit-userspace**: versión y cambios operativos (verificado ago-2026: línea 4.1.x/4.2; carga de
-    reglas por `audit-rules.service` desde 4.0; estado en `/run` desde 4.1.2).
-11. **Versiones y EOL de las distros** en `endoflife.date` o el ciclo oficial del vendor (verificado
-    ago-2026 en §7). **Hueco declarado**: discrepancia en el **fin de ELS de RHEL 9** entre
-    2035-05-31 y 2036-05-31 — confirma en Red Hat antes de usarlo en un plan.
-12. **CVEs vigentes** en la cadena que toques, con KEV/EPSS. Verificados y citables: **sudo
-    CVE-2025-32462 / CVE-2025-32463** (fix en 1.9.17p1; 32463 en KEV desde 29-sep-2025);
-    **linux-pam CVE-2025-6020 y CVE-2025-8941** (`pam_namespace`, fix en 1.7.1); **AIDE
-    CVE-2025-54409** (fix en 0.19.2); **VMSCAPE CVE-2025-40300**. **Huecos declarados**: los CVEs de
-    2026 en `polkit`/PackageKit/glibc solo se pudieron corroborar con **fuentes de fiabilidad media**
-    (blogs de seguridad y PoCs, no NVD/upstream) — **no se citan aquí**; consúltalos en el aviso de tu
-    vendor. Y nunca cites un identificador de memoria.
-13. **Estado del livepatching** de tu vendor: cobertura, arquitecturas, ventanas y límites
-    (verificado ago-2026 en §2). **Hueco declarado**: **SUSE Linux Enterprise Live Patching**
-    (histórico kGraft) no se verificó contra fuente de SUSE.
-14. **Mitigaciones de CPU**: vulnerabilidades de microarquitectura publicadas desde la última
-    revisión y su coste. **Hueco declarado**: no se encontró **ninguna divulgación nueva confirmada
-    en 2026** (la más reciente verificable es VMSCAPE, sept-2025) y **no hay dato actualizado del
-    coste de `mitigations=off`** — mídelo con tu workload y comprueba
+1. **The current CIS Benchmark version for the exact distro** on `cisecurity.org` or CIS WorkBench.
+   Verified Aug 2026 (§2), including the finding that **Ubuntu 26.04 LTS has no benchmark yet**.
+2. **The SCAP Security Guide / ComplianceAsCode release** and the profiles available for your product
+   (verified Aug 2026: **v0.1.81**, 1 Jun 2026). **Declared gap**: it was not possible to obtain the
+   **exhaustive list of profiles per product** (`complianceascode.github.io/content-pages/
+   product-guides.html` → 404 and `static.open-scap.org/ssg-guides/` → 403); check with
+   `oscap info` against the installed datastream, not from memory.
+3. **The DISA STIG release** for your OS. **Declared gap**: RHEL 9 V2R8, RHEL 10 V1R1 and Ubuntu 24.04
+   V1R5 were verified **via third parties** (Tenable, BigFix, Red Hat), **not** on `public.cyber.mil` —
+   confirm at the official source before committing contractually.
+4. **The current ANSSI-BP-028 version** on `cyber.gouv.fr` (verified: **v2.0**, Oct 2022, in SSG
+   since 0.1.73). **Declared gap**: it was not possible to rule out the existence of a later version.
+5. **The applicable CCN-STIC guides** on `ccn-cert.cni.es` and the ENS portal (verified:
+   **CCN-STIC 610-25** with annexes A/Rocky, B/Arch, E/Debian). **Declared gaps**: the **letter of
+   the Ubuntu and Fedora annexes**, and whether 610-25 **formally repeals** the per-product
+   `610Axx` series (which is still published). The text of **RD 311/2022** was not verified against the BOE either.
+6. **OpenSCAP, Lynis and Wazuh**: version and maintenance (verified Aug 2026: OpenSCAP **1.4.4**,
+   Lynis **3.1.7**, Wazuh **4.14.7**; all three active). Also check **which version your distro
+   packages**, which usually lags far behind.
+7. **Ansible hardening roles**: the latest release and activity before adopting them (verified
+   Aug 2026: ansible-lockdown RHEL9-CIS **v2.2.0** and UBUNTU24-CIS **v1.6.0**; devsec.hardening
+   **10.6.0**). Do not adopt a role with no release in the last year. **Declared gap**: the exact
+   minimum `ansible-core` version devsec.hardening 10.6.0 requires (the documentation says ≥ 2.16 and
+   the release declares 2.21) — check it in the `galaxy.yml` of the version you install.
+8. **OpenSSH**: the installed version and the real default algorithms (`ssh -Q kex`, `sshd -T`) and the state
+   of the post-quantum KEX on `openssh.com/pq.html` (verified Aug 2026: **10.4**, 06 Jul 2026).
+   **Declared gap**: the **exact list of default MACs in 10.x** was not verified (with AEAD the
+   MAC list is not used, so its practical relevance is low), nor whether DSA was disabled at
+   compile time in 9.8 or in 9.9 — its **complete removal in 10.0 is verified**.
+9. **systemd**: the installed version and the sandboxing directives in that version's man page (verified
+   Aug 2026: **v261** is the current line; v260 17 Mar 2026; v259 17 Dec 2025). **Declared gaps**:
+   the **exact date of v261** and the **numeric cut-offs of the exposure score** (the predicates exist;
+   the 9.0/7.5/5.0 thresholds circulate on forums but **are not in the manual**) — do not cite cut-off
+   numbers, cite the predicate the tool returns.
+10. **audit-userspace**: version and operational changes (verified Aug 2026: the 4.1.x/4.2 line; rule
+    loading via `audit-rules.service` since 4.0; state in `/run` since 4.1.2).
+11. **Distro versions and EOLs** on `endoflife.date` or the vendor's official lifecycle (verified
+    Aug 2026 in §7). **Declared gap**: a discrepancy in the **end of ELS for RHEL 9** between
+    2035-05-31 and 2036-05-31 — confirm with Red Hat before using it in a plan.
+12. **Current CVEs** in the chain you touch, with KEV/EPSS. Verified and citable: **sudo
+    CVE-2025-32462 / CVE-2025-32463** (fix in 1.9.17p1; 32463 in KEV since 29 Sep 2025);
+    **linux-pam CVE-2025-6020 and CVE-2025-8941** (`pam_namespace`, fix in 1.7.1); **AIDE
+    CVE-2025-54409** (fix in 0.19.2); **VMSCAPE CVE-2025-40300**. **Declared gaps**: the 2026
+    CVEs in `polkit`/PackageKit/glibc could only be corroborated with **medium-reliability sources**
+    (security blogs and PoCs, not NVD/upstream) — **they are not cited here**; consult them in your
+    vendor's advisory. And never cite an identifier from memory.
+13. **The state of your vendor's livepatching**: coverage, architectures, windows and limits
+    (verified Aug 2026 in §2). **Declared gap**: **SUSE Linux Enterprise Live Patching**
+    (historically kGraft) was not verified against a SUSE source.
+14. **CPU mitigations**: microarchitectural vulnerabilities published since the last
+    review and their cost. **Declared gap**: **no new confirmed disclosure in 2026** was found
+    (the most recent verifiable one is VMSCAPE, Sep 2025) and **there is no up-to-date figure for the
+    cost of `mitigations=off`** — measure it with your workload and check
     `/sys/devices/system/cpu/vulnerabilities/`.
-15. **Sysctls de endurecimiento del kernel** (`kptr_restrict`, `dmesg_restrict`, `yama.ptrace_scope`,
-    module signing). **Hueco declarado**: no se verificaron contra fuente primaria; no se detectaron
-    cambios respecto a la recomendación clásica, pero confírmalo en la documentación del kernel de tu
-    versión antes de fijarlos.
+15. **Kernel hardening sysctls** (`kptr_restrict`, `dmesg_restrict`, `yama.ptrace_scope`,
+    module signing). **Declared gap**: they were not verified against a primary source; no
+    changes from the classic recommendation were detected, but confirm it in the kernel documentation for your
+    version before pinning them.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

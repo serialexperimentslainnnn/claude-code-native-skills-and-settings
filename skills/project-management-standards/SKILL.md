@@ -3,482 +3,510 @@ name: project-management-standards
 description: Use when work is organized as a project or delivery programme — choosing predictive, agile or hybrid delivery for a given piece of work, writing a project charter, statement of work or product backlog, declaring which of scope, time, cost, quality and risk is fixed and which floats, estimating with ranges instead of single dates, relative estimation and story points, Monte Carlo forecasting over throughput data, planning fallacy and reference class forecasting, WIP limits, lead time and cycle time, cumulative flow and burnup charts, a RAID or risk-and-assumption log with owner and trigger, cross-team dependency tracking and critical path, a RACI and stakeholder communication plan, RAG status reports and watermelon reporting, milestone versus incremental delivery, change-request and scope-change control, decision records for management decisions, project closure with acceptance criteria and handover to operations, retrospectives with owned actions, PMBOK Guide Eighth Edition, PRINCE2 7, the Scrum Guide, SAFe, Kanban, or citing Standish CHAOS Report figures.
 ---
 
-# Estándares de gestión de proyectos y entrega
+# Project and delivery management standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Cubre **cómo se entrega trabajo ya decidido**: elección del enfoque de entrega, compromisos y su
-formulación, estimación y previsión, gestión del flujo, riesgos y supuestos, dependencias entre
-equipos, comunicación con interesados, registro de decisiones y cierre con traspaso a operación.
+Covers **how already-decided work is delivered**: choice of delivery approach, commitments and how
+they are phrased, estimation and forecasting, flow management, risks and assumptions, cross-team
+dependencies, stakeholder communication, decision records and closure with handover to operations.
 
-Triggers: "acta de proyecto", "charter", "SOW", "alcance", "triángulo de hierro", "estimación", "story
-points", "velocity", "Monte Carlo", "throughput", "lead time", "cycle time", "WIP", "burnup", "camino
-crítico", "dependencias", "RAID", "registro de riesgos", "supuestos", "RACI", "plan de comunicación",
-"informe de estado", "RAG", "semáforo", "hito", "control de cambios", "petición de cambio",
-"retrospectiva", "cierre de proyecto", "traspaso a operación", "PMBOK", "PRINCE2", "Scrum Guide",
+Triggers: "project charter", "charter", "SOW", "scope", "iron triangle", "estimation", "story
+points", "velocity", "Monte Carlo", "throughput", "lead time", "cycle time", "WIP", "burnup",
+"critical path", "dependencies", "RAID", "risk register", "assumptions", "RACI", "communication
+plan", "status report", "RAG", "traffic light", "milestone", "change control", "change request",
+"retrospective", "project closure", "handover to operations", "PMBOK", "PRINCE2", "Scrum Guide",
 "SAFe", "Kanban", "CHAOS Report".
 
-**Principio rector**: **entregar valor con restricciones conocidas y decisiones registradas — no
-rellenar plantillas.** Un artefacto de gestión solo se justifica si **cambia una decisión**: si el
-registro de riesgos no ha alterado ninguna prioridad en tres meses, no es un registro de riesgos, es un
-documento. Test falsable aplicable a cualquier artefacto o ceremonia propuesta: **nombra la decisión
-que habilita, quién la toma y con qué frecuencia se ha tomado realmente en el último trimestre.** Lo
-que no lo supere, se elimina.
+**Governing principle**: **deliver value with known constraints and recorded decisions — do not
+fill in templates.** A management artifact is only justified if it **changes a decision**: if the
+risk register has not altered any priority in three months, it is not a risk register, it is a
+document. Falsifiable test applicable to any proposed artifact or ceremony: **name the decision
+it enables, who takes it and how many times it has actually been taken in the last quarter.**
+Whatever does not pass is removed.
 
-Corolario: **la incertidumbre no se elimina declarando una fecha; se acota y se declara.**
+Corollary: **uncertainty is not eliminated by declaring a date; it is bounded and declared.**
 
-**No aplica**:
-- `product-discovery-standards`: **qué se construye y por qué** — problema,
-  usuario, hipótesis, validación, priorización por valor y decisión de matar una idea. Aquí, **cómo se
-  entrega lo ya decidido**. Frontera dura: si la discusión es *"¿merece la pena esto?"*, no es esta
-  skill; si es *"¿cuándo y con qué riesgo estará?"*, sí.
-- `tech-leadership-standards`: decisiones técnicas, diseño de equipo,
-  desarrollo profesional, *career ladder* y la conversación individual. Aquí no se gestionan personas,
-  se gestiona trabajo.
-- `sre-practice-standards`: **las métricas DORA y el trabajo no planificado son suyos**, igual que SLO,
-  error budget y capacity planning. Aquí se usa el dato de trabajo no planificado como **restricción de
-  capacidad** al comprometer, no se define.
-- `itsm-itil-standards`: **el servicio, su catálogo, el SLA y la operación continua**. Recíproca:
-  **el proyecto entrega, el servicio opera.** El traspaso es un artefacto con criterios de aceptación
-  (lista canónica en su §3) y **un proyecto que entrega algo que nadie puede operar no ha terminado**:
-  sin dueño de servicio, runbook, alerta y restauración probada, el proyecto sigue abierto.
-- `erp-sap-standards` y las skills de vertical de paquete: **cuando el proyecto es implantar
-  software de terceros, tres de las cinco variables de §2 dejan de ser negociables aquí** — la
-  fecha la puede fijar un fin de mantenimiento, el alcance lo acota lo que el paquete hace de
-  serie, y el coste depende de una métrica de licencia que cambia con decisiones de arquitectura.
-  **Eso no es una restricción externa cualquiera: es el marco del proyecto**, y se lee en su skill
-  antes de comprometer nada aquí.
-- `testing-qa-standards` y `code-review-standards`: la ***Definition of Done* técnica
-  vive allí** — cobertura, gates, criterios de merge. Aquí la DoD de **entrega** (aceptado por el
-  interesado, desplegado, operable, comunicado). No se duplican: la DoD de gestión **incluye por
-  referencia** la técnica, no la reescribe.
-- `git-workflow-standards`: tamaño de PR, ramas, versionado y release. La cadencia de integración es
-  suya; aquí sus consecuencias sobre el flujo.
-- `cicd-standards`: pipeline y automatización de despliegue.
-- `enterprise-architecture-standards`: hoja de ruta de capacidades, gobierno
-  de arquitectura y la cartera de aplicaciones. La cartera de **proyectos** se cruza con ella: qué
-  proyecto toca qué capacidad.
-- `finops-standards`: **el coste como restricción medida** — presupuesto cloud,
-  unidad económica, previsión de gasto. Aquí el coste es una de las variables del compromiso; su
-  modelado y control corresponden allí.
-- `grc-compliance-standards`: obligaciones regulatorias que condicionan el alcance y las evidencias
-  formales de aprobación exigidas por un marco.
-- `refactoring-tech-debt-standards`: **qué deuda existe, cuánto cuesta su interés y qué
-  técnica la paga es suyo**; **cómo se financia ese trabajo dentro de la entrega es de aquí** —
-  porcentaje fijo de capacidad, oportunismo o proyecto dedicado, y la negociación con las partes
-  interesadas. Aviso que ambas comparten y que esta skill debe sostener ante presión: **el proyecto
-  dedicado de "limpieza" suele fracasar** porque compite con funcionalidad y pierde; la asignación
-  sostenida de capacidad es lo que sí funciona.
-- `software-architecture-patterns-standards`: el criterio técnico de estilo, límites y
-  decisiones registradas es suyo; aquí el plan, el riesgo y el compromiso de fechas que rodean esa
-  decisión.
+**Not applicable**:
+- `product-discovery-standards`: **what is built and why** — problem,
+  user, hypothesis, validation, prioritisation by value and the decision to kill an idea. Here,
+  **how what has already been decided is delivered**. Hard boundary: if the discussion is *"is this
+  worth it?"*, it is not this skill; if it is *"when and with what risk will it be ready?"*, it is.
+- `tech-leadership-standards`: technical decisions, team design,
+  professional development, the *career ladder* and the one-to-one conversation. People are not
+  managed here, work is.
+- `sre-practice-standards`: **DORA metrics and unplanned work are hers**, as are SLOs,
+  error budgets and capacity planning. Here the unplanned-work figure is used as a **capacity
+  constraint** when committing, it is not defined.
+- `itsm-itil-standards`: **the service, its catalogue, the SLA and continuous operation**.
+  Reciprocal: **the project delivers, the service operates.** The handover is an artifact with
+  acceptance criteria (canonical list in her §3) and **a project that delivers something nobody can
+  operate has not finished**: without a service owner, runbook, alert and tested restore, the
+  project is still open.
+- `erp-sap-standards` and the packaged-vertical skills: **when the project is implementing
+  third-party software, three of the five variables in §2 stop being negotiable here** — the
+  date may be set by an end of maintenance, the scope is bounded by what the package does out of
+  the box, and the cost depends on a licence metric that changes with architecture decisions.
+  **That is not just any external constraint: it is the project's frame**, and it is read in its
+  skill before committing to anything here.
+- `testing-qa-standards` and `code-review-standards`: the technical ***Definition of Done*
+  lives there** — coverage, gates, merge criteria. Here the **delivery** DoD (accepted by the
+  stakeholder, deployed, operable, communicated). They are not duplicated: the management DoD
+  **includes by reference** the technical one, it does not rewrite it.
+- `git-workflow-standards`: PR size, branches, versioning and releases. The integration cadence is
+  hers; here its consequences on flow.
+- `cicd-standards`: pipeline and deployment automation.
+- `enterprise-architecture-standards`: capability roadmap, architecture
+  governance and the application portfolio. The **project** portfolio intersects with it: which
+  project touches which capability.
+- `finops-standards`: **cost as a measured constraint** — cloud budget,
+  unit economics, spend forecasting. Here cost is one of the variables of the commitment; its
+  modelling and control belong there.
+- `grc-compliance-standards`: regulatory obligations that constrain scope and the formal approval
+  evidence required by a framework.
+- `refactoring-tech-debt-standards`: **what debt exists, what its interest costs and which
+  technique pays it off is hers**; **how that work is funded within the delivery is ours** —
+  a fixed percentage of capacity, opportunism or a dedicated project, and the negotiation with
+  stakeholders. A warning both share and that this skill must hold under pressure: **the
+  dedicated "clean-up" project usually fails** because it competes with features and loses;
+  sustained allocation of capacity is what does work.
+- `software-architecture-patterns-standards`: the technical criteria for style, boundaries and
+  recorded decisions are hers; here the plan, the risk and the date commitment surrounding that
+  decision.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web ediciones vigentes, propiedad y precios antes de fijarlos en un proyecto real (§8).
+> Verify on the web the current editions, ownership and prices before committing to them in a real
+> project (§8).
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Enfoque de entrega | **Iterativo con incremento entregable** (Scrum o Kanban según variabilidad de la demanda) | Predictivo cuando el alcance está contractualmente fijado y el coste del cambio tardío es bajo |
-| Marco citado en documentos | **Scrum Guide** (gratuita) y **Kanban / métricas de flujo** | PMBOK/PRINCE2 solo si el cliente o el pliego lo exigen |
-| Unidad de compromiso | **Incremento desplegado y aceptado** | Hito documental **solo** con obligación contractual explícita |
-| Forma de una fecha | **Rango con probabilidad** ("85 % antes del 12-nov") | Fecha única **solo** si es una restricción externa impuesta, y entonces flota el alcance |
-| Método de previsión | **Monte Carlo sobre throughput histórico** (≥ 8-12 periodos) | Estimación relativa + velocity si no hay historial; estimación absoluta en horas solo para tareas conocidas y acotadas |
-| Variable que flota | **El alcance**, declarado por escrito en el acta | Coste (añadir gente rara vez ayuda) o calidad (**nunca**: se prohíbe en §7) |
-| Gestión del flujo | **Límite de WIP explícito por columna**, revisado mensualmente | — |
-| Registro de riesgos | **RAID vivo** con dueño, disparador y fecha de revisión | — |
-| Registro de decisiones | **ADR para lo técnico** + **registro de decisiones de gestión** con el mismo formato | — |
-| Informe de estado | **Estado por evidencia observable**, no por color subjetivo | RAG **solo** con criterio numérico publicado que determine el color |
-| Métrica de cabecera | **Lead time del ítem y previsión probabilística de la fecha** | — |
-| Métrica prohibida como objetivo | Velocity, utilización de personas, horas imputadas (§7) | — |
+| Delivery approach | **Iterative with a deliverable increment** (Scrum or Kanban depending on demand variability) | Predictive when scope is contractually fixed and the cost of late change is low |
+| Framework cited in documents | **Scrum Guide** (free) and **Kanban / flow metrics** | PMBOK/PRINCE2 only if the client or the tender requires it |
+| Unit of commitment | **Deployed and accepted increment** | A documentary milestone **only** with an explicit contractual obligation |
+| Shape of a date | **Range with a probability** ("85 % before 12 Nov") | A single date **only** if it is an imposed external constraint, and then scope floats |
+| Forecasting method | **Monte Carlo over historical throughput** (≥ 8-12 periods) | Relative estimation + velocity if there is no history; absolute estimation in hours only for known, bounded tasks |
+| Variable that floats | **Scope**, declared in writing in the charter | Cost (adding people rarely helps) or quality (**never**: forbidden in §7) |
+| Flow management | **Explicit WIP limit per column**, reviewed monthly | — |
+| Risk register | **Living RAID** with owner, trigger and review date | — |
+| Decision record | **ADR for technical matters** + **management decision record** with the same format | — |
+| Status report | **Status by observable evidence**, not by subjective colour | RAG **only** with a published numeric criterion that determines the colour |
+| Headline metric | **Item lead time and probabilistic date forecast** | — |
+| Metric forbidden as a target | Velocity, people utilisation, hours booked (§7) | — |
 
-**Estado real de los marcos (verificado ago-2026, re-verificar §8)**:
-- **PMI / PMBOK**: la página oficial de estándares de PMI lista **A Guide to the Project Management
-  Body of Knowledge (PMBOK Guide) — Eighth Edition** junto con *The Standard for Project Management*;
-  mantiene principios y dominios de desempeño de la 7.ª edición y reintroduce guía de procesos de forma
-  no prescriptiva. **De pago** (históricamente con PDF incluido en la membresía de PMI).
-  **Discrepancia declarada**: las fechas exactas de publicación (nov-2025 vs. inicio de 2026) y la de
-  actualización del examen PMP proceden de blogs de formación y **se contradicen entre sí**; el PDF del
-  índice alojado en pmi.org lleva sello de sep-2025. **No citar una fecha sin confirmarla en pmi.org.**
-  El examen PMP se rige por el *Examination Content Outline*, no por el PMBOK: son objetos distintos.
-- **PRINCE2**: **propiedad de PeopleCert**, que adquirió AXELOS (adquisición completada en jul-2021;
-  antes era una *joint venture* del Cabinet Office británico y Capita). Edición vigente **PRINCE2 7**,
-  disponible desde **sep-2023**; los "temas" pasaron a llamarse **prácticas**. **Material de pago**: el
-  manual va incluido en el examen y **no se puede reproducir en documentación interna**.
-- **Scrum Guide**: versión vigente **noviembre 2020**, gratuita en `scrumguides.org`, mantenida por
-  Schwaber y Sutherland al margen de cualquier empresa. **Es el único marco de esta lista que se puede
-  citar y redistribuir sin coste**; scrum.org y Scrum Alliance publican comentario, no la norma.
-- **SAFe**: **de pago y con licencia de marca**. Scaled Agile **ha abandonado los números de versión**:
-  6.0 fue la última numerada y ahora se publica por fecha (`[año].[mes]`), con la marca actual
-  **AI-Native SAFe** (anuncio de jun-2026). **Consecuencia práctica: escribir "SAFe 7" en un documento
-  es un error de hecho.** Verificar el nombre y la fecha de release exactos antes de citarlo.
-- **Regla de citabilidad**: en documentación interna o en una respuesta a un pliego, **cita la Scrum
-  Guide o describe el proceso con vocabulario propio**. PMBOK, PRINCE2 y SAFe se mencionan como
-  referencia, nunca se transcriben.
+**Actual state of the frameworks (verified Aug 2026, re-verify §8)**:
+- **PMI / PMBOK**: PMI's official standards page lists **A Guide to the Project Management
+  Body of Knowledge (PMBOK Guide) — Eighth Edition** together with *The Standard for Project
+  Management*; it keeps the 7th edition's principles and performance domains and reintroduces
+  process guidance in a non-prescriptive way. **Paid** (historically with the PDF included in PMI
+  membership).
+  **Declared discrepancy**: the exact publication dates (Nov 2025 vs. early 2026) and the PMP exam
+  update date come from training blogs and **contradict each other**; the PDF of the
+  index hosted on pmi.org carries a Sep 2025 stamp. **Do not cite a date without confirming it on
+  pmi.org.** The PMP exam is governed by the *Examination Content Outline*, not by the PMBOK: they
+  are different objects.
+- **PRINCE2**: **owned by PeopleCert**, which acquired AXELOS (acquisition completed in Jul 2021;
+  before that it was a *joint venture* of the UK Cabinet Office and Capita). Current edition
+  **PRINCE2 7**, available since **Sep 2023**; the "themes" were renamed **practices**. **Paid
+  material**: the manual is included with the exam and **cannot be reproduced in internal
+  documentation**.
+- **Scrum Guide**: current version **November 2020**, free at `scrumguides.org`, maintained by
+  Schwaber and Sutherland independently of any company. **It is the only framework in this list that
+  can be quoted and redistributed at no cost**; scrum.org and Scrum Alliance publish commentary, not
+  the standard.
+- **SAFe**: **paid and with a trademark licence**. Scaled Agile **has abandoned version numbers**:
+  6.0 was the last numbered one and it is now published by date (`[year].[month]`), with the current
+  brand **AI-Native SAFe** (Jun 2026 announcement). **Practical consequence: writing "SAFe 7" in a
+  document is a factual error.** Verify the exact name and release date before citing it.
+- **Citability rule**: in internal documentation or in a tender response, **cite the Scrum
+  Guide or describe the process in your own vocabulary**. PMBOK, PRINCE2 and SAFe are mentioned as
+  references, never transcribed.
 
-**Cifras famosas: qué NO se usa como dato.**
-- ❌ **Standish Group / CHAOS Report**. Es el ejemplo canónico de cifra famosa con metodología
-  cuestionada. **Eveleens y Verhoef, "The Rise and Fall of the Chaos Report Figures", *IEEE Software*
-  27(1):30-36, ene-2010** (DOI 10.1109/MS.2009.154) documentan cuatro fallos: definiciones engañosas
-  basadas solo en exactitud de la estimación, medida de exactitud unilateral, incentivos perversos, y
-  agregación con sesgo desconocido; aplicando las definiciones de Standish a 5.457 previsiones sobre
-  1.211 proyectos reales, los resultados no reproducían los de Standish. Añádase que **los datos
-  brutos y el marco muestral no son públicos** y que el diseño original (solicitar historias de fracaso
-  a directivos de TI) introduce sesgo de selección. **Última edición: CHAOS 2020**, así que cualquier
-  "dato CHAOS 2025" es reciclado. **Uso permitido**: como *dirección* citando explícitamente el
-  informe, su año y la crítica de Eveleens-Verhoef. **Uso prohibido**: como porcentaje en una
-  justificación, una diapositiva o una decisión de inversión.
-- ❌ **"El 70 % de las transformaciones fracasa"** y variantes. Circula sin estudio primario
-  localizable. **No se escribe.**
-- ✅ **Lo que sí es citable con fuente**: el **sesgo de planificación** (*planning fallacy*), nombrado
-  por **Kahneman y Tversky, "Intuitive Prediction: Biases and Corrective Procedures", TIMS Studies in
-  Management Science 12:313-327 (1979)** — la tendencia sistemática a subestimar tiempo, coste y riesgo
-  incluso teniendo experiencia directa de casos similares; y su corrección, la **vista externa /
-  *reference class forecasting*** (Lovallo y Kahneman 2003; Flyvbjerg 2008, *European Planning Studies*
-  16(1):3-21), respaldada por la American Planning Association desde 2005. **Existe crítica reciente**
-  a la RCF (*Production Planning & Control*, 2025): su base experimental es limitada y en la práctica
-  se aplica como recargo *post hoc*. Cítese con esa reserva, no como ley.
+**Famous figures: what is NOT used as data.**
+- ❌ **Standish Group / CHAOS Report**. It is the canonical example of a famous figure with a
+  questioned methodology. **Eveleens and Verhoef, "The Rise and Fall of the Chaos Report Figures",
+  *IEEE Software* 27(1):30-36, Jan 2010** (DOI 10.1109/MS.2009.154) document four flaws: misleading
+  definitions based only on estimation accuracy, a one-sided accuracy measure, perverse incentives,
+  and aggregation with unknown bias; applying Standish's definitions to 5,457 forecasts over
+  1,211 real projects, the results did not reproduce Standish's. Add that **the raw
+  data and the sampling frame are not public** and that the original design (asking IT executives
+  for failure stories) introduces selection bias. **Last edition: CHAOS 2020**, so any
+  "CHAOS 2025 figure" is recycled. **Permitted use**: as a *direction*, explicitly citing the
+  report, its year and the Eveleens-Verhoef critique. **Forbidden use**: as a percentage in a
+  justification, a slide or an investment decision.
+- ❌ **"70 % of transformations fail"** and variants. It circulates with no locatable primary study.
+  **It is not written.**
+- ✅ **What is citable with a source**: the **planning fallacy**, named
+  by **Kahneman and Tversky, "Intuitive Prediction: Biases and Corrective Procedures", TIMS Studies
+  in Management Science 12:313-327 (1979)** — the systematic tendency to underestimate time, cost
+  and risk even with direct experience of similar cases; and its correction, the **outside view /
+  *reference class forecasting*** (Lovallo and Kahneman 2003; Flyvbjerg 2008, *European Planning
+  Studies* 16(1):3-21), endorsed by the American Planning Association since 2005. **There is recent
+  criticism** of RCF (*Production Planning & Control*, 2025): its experimental basis is limited and
+  in practice it is applied as a *post hoc* surcharge. Cite it with that reservation, not as a law.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### Elección del enfoque: por naturaleza del trabajo, no por moda
+### Choosing the approach: by the nature of the work, not by fashion
 
-Se decide con estas cuatro preguntas, respondidas por escrito en el acta. **No hay puntuación: si
-alguna respuesta cae en la columna derecha, el enfoque predictivo puro está descartado.**
+It is decided with these four questions, answered in writing in the charter. **There is no scoring:
+if any answer falls in the right-hand column, the purely predictive approach is ruled out.**
 
-| Pregunta | Predictivo apto si… | Iterativo apto si… |
+| Question | Predictive suitable if… | Iterative suitable if… |
 |---|---|---|
-| ¿Se conocen los requisitos con detalle suficiente para construir? | Sí, y están estables | No, o se aprenderán al usar el producto |
-| ¿Cuánto cuesta cambiar de opinión tarde? | Poco (obra sobre plano, migración con destino fijo) | Mucho (producto con usuarios, integración desconocida) |
-| ¿Hay obligación contractual o regulatoria de alcance y fecha fijos? | Sí | No |
-| ¿Se puede entregar valor en trozos usables? | No (una certificación; **el corte final** de una migración) | Sí |
+| Are the requirements known in enough detail to build? | Yes, and they are stable | No, or they will be learned by using the product |
+| How much does it cost to change your mind late? | Little (build-to-plan, migration with a fixed destination) | A lot (product with users, unknown integration) |
+| Is there a contractual or regulatory obligation of fixed scope and date? | Yes | No |
+| Can value be delivered in usable chunks? | No (a certification; **the final cutover** of a migration) | Yes |
 
-> **Matiz que `migration-projects-standards` obliga a hacer**: *migración* no es sinónimo de
-> *indivisible*. Lo indivisible es **el corte**, y su default es **por olas**, con la primera
-> deliberadamente pequeña y reversible; el corte único solo con sus condiciones verificadas. Tratar
-> el proyecto entero como un bloque es lo que produce el *big bang* que ambas skills prohíben.
+> **Nuance that `migration-projects-standards` forces**: *migration* is not a synonym for
+> *indivisible*. What is indivisible is **the cutover**, and its default is **by waves**, with the
+> first deliberately small and reversible; the single cutover only with its conditions verified.
+> Treating the whole project as one block is what produces the *big bang* both skills forbid.
 
-**Híbrido honesto**: el proyecto tiene **fases con naturaleza distinta** y cada una usa su enfoque, con
-la frontera declarada — p. ej. hardware y obra civil predictivos con fecha de entrega, software encima
-iterativo con alcance flotante. Se escribe cuál es cuál y qué se compromete en cada una.
+**Honest hybrid**: the project has **phases of different nature** and each uses its own approach,
+with the boundary declared — e.g. hardware and civil works predictive with a delivery date, software
+on top iterative with floating scope. It is written down which is which and what is committed in
+each.
 
-**Híbrido como excusa** (reconocible y vetado): se ejecuta en sprints pero **el alcance, la fecha y el
-coste siguen fijos desde el día uno**. Eso no es híbrido, es predictivo con ceremonias: se paga el coste
-de ambos (la sobrecarga de la iteración y la rigidez del plan) sin obtener el beneficio de ninguno.
-**Síntoma diagnóstico**: existe un backlog "priorizado" en el que nada se ha despriorizado nunca.
+**Hybrid as an excuse** (recognisable and vetoed): it runs in sprints but **the scope, the date and
+the cost stay fixed from day one**. That is not hybrid, it is predictive with ceremonies: you pay
+the cost of both (the overhead of iteration and the rigidity of the plan) without getting the
+benefit of either. **Diagnostic symptom**: there is a "prioritised" backlog in which nothing has
+ever been deprioritised.
 
-### El triángulo y su versión honesta
+### The triangle and its honest version
 
-Cinco variables, no tres: **alcance, tiempo, coste, calidad y riesgo**. Regla:
+Five variables, not three: **scope, time, cost, quality and risk**. Rule:
 
-> **Se fijan como máximo dos. Al menos una flota, y se declara por escrito cuál, en el acta, firmada
-> por quien paga.**
+> **At most two are fixed. At least one floats, and which one is declared in writing, in the
+> charter, signed by whoever pays.**
 
-- **La calidad no es una variable que flote.** Recortar calidad no libera tiempo: lo adelanta y lo cobra
-  con intereses en operación. Lo que sí puede flotar es el **alcance de la calidad** (qué escenarios se
-  soportan, qué navegadores, qué carga), declarado explícitamente — no el rigor sobre lo que se entrega.
-- **El riesgo es la variable que se olvida y la que explota.** Comprimir plazo sin reducir alcance no
-  hace desaparecer el trabajo: lo convierte en riesgo aceptado tácitamente. Si se acepta, se acepta
-  **por escrito y con nombre** (`grc-compliance-standards` para el formalismo de aceptación de riesgo).
-- Frase que debe aparecer literalmente en el acta: *"Es fijo X. Flota Y. Ante conflicto, se sacrifica Y
-  y decide Z."* Sin ella, en el primer conflicto se sacrificará la calidad en silencio.
+- **Quality is not a variable that floats.** Cutting quality does not free time: it brings it
+  forward and charges it with interest in operations. What can float is the **scope of quality**
+  (which scenarios are supported, which browsers, what load), explicitly declared — not the rigour
+  applied to what is delivered.
+- **Risk is the variable that gets forgotten and the one that explodes.** Compressing a schedule
+  without reducing scope does not make the work disappear: it turns it into tacitly accepted risk.
+  If it is accepted, it is accepted **in writing and with a name** (`grc-compliance-standards` for
+  the formalism of risk acceptance).
+- Sentence that must appear literally in the charter: *"X is fixed. Y floats. In case of conflict, Y
+  is sacrificed and Z decides."* Without it, at the first conflict quality will be sacrificed
+  silently.
 
-### Estimación y previsión
+### Estimation and forecasting
 
-1. **Las estimaciones absolutas fallan de forma sistemática y direccional**, no aleatoria: es el sesgo
-   de planificación (§2, Kahneman y Tversky 1979). Consecuencia: **promediar estimaciones optimistas no
-   las corrige**; hay que introducir información distribucional externa.
-2. **Estimación relativa** (tallas, puntos) para ordenar y dimensionar el backlog. **Nunca se convierte
-   a horas ni a euros**: la conversión reintroduce el sesgo y añade una falsa precisión.
-3. **Previsión probabilística como método defendible**: Monte Carlo sobre el **throughput histórico**
-   (ítems terminados por periodo) responde *"¿cuándo estarán N ítems?"* y *"¿cuántos ítems para la
-   fecha F?"* con probabilidades. Requisitos duros para que el resultado signifique algo:
-   - **≥ 8-12 periodos** de historial del **mismo equipo y mismo tipo de trabajo**.
-   - **Proceso estable con WIP limitado**. Sin límite de WIP no hay flujo estable y la previsión es
-     ruido con formato de gráfico.
-   - **Re-ejecución cada 1-2 semanas**; una previsión es perecedera, no un compromiso.
-   - Publicar **percentiles 50 / 85 / 95**, no la media. La media de una distribución con cola larga
-     no es una fecha útil.
-4. **Vista externa antes de comprometer**: buscar 3-5 trabajos comparables ya terminados y su duración
-   real. Si la estimación interna es mejor que **todos** los comparables, la estimación está mal —
-   no el mundo.
-5. **Regla de compromiso, sin excepciones**:
+1. **Absolute estimates fail systematically and directionally**, not randomly: it is the planning
+   fallacy (§2, Kahneman and Tversky 1979). Consequence: **averaging optimistic estimates does not
+   correct them**; external distributional information must be introduced.
+2. **Relative estimation** (sizes, points) to order and size the backlog. **It is never converted
+   to hours or euros**: the conversion reintroduces the bias and adds false precision.
+3. **Probabilistic forecasting as a defensible method**: Monte Carlo over **historical throughput**
+   (items finished per period) answers *"when will N items be ready?"* and *"how many items by
+   date D?"* with probabilities. Hard requirements for the result to mean anything:
+   - **≥ 8-12 periods** of history from the **same team and the same type of work**.
+   - **A stable process with limited WIP**. Without a WIP limit there is no stable flow and the
+     forecast is noise formatted as a chart.
+   - **Re-run every 1-2 weeks**; a forecast is perishable, not a commitment.
+   - Publish **percentiles 50 / 85 / 95**, not the mean. The mean of a long-tailed distribution
+     is not a useful date.
+4. **Outside view before committing**: find 3-5 comparable finished pieces of work and their real
+   duration. If the internal estimate is better than **all** the comparables, the estimate is wrong —
+   not the world.
+5. **Commitment rule, no exceptions**:
 
-   > **No se compromete una fecha sin rango.** Una fecha única es un rango cuyo intervalo se ha
-   > ocultado, y siempre se interpreta como el percentil 50 presentado como percentil 95.
+   > **No date is committed without a range.** A single date is a range whose interval has been
+   > hidden, and it is always read as the 50th percentile presented as the 95th.
 
-   Formulación válida: *"85 % de probabilidad de estar antes del 12-nov; 50 % antes del 28-oct"*.
-   Formulación inválida: *"estará el 28 de octubre"*.
-6. **Descomposición como control de calidad de la estimación**: si un ítem no se puede descomponer,
-   es que no se entiende; **estimarlo en horas es simular conocimiento** (prohibido, §7). Se
-   convierte primero en una *spike* con caja de tiempo fija y resultado documentado.
-7. **La estimación cuesta dinero.** Si el trabajo es homogéneo y hay historial, **el conteo de ítems
-   pronostica igual de bien que estimarlos**: dejar de estimar es una decisión legítima y medible.
+   Valid formulation: *"85 % probability of being ready before 12 Nov; 50 % before 28 Oct"*.
+   Invalid formulation: *"it will be ready on 28 October"*.
+6. **Decomposition as quality control of the estimate**: if an item cannot be decomposed,
+   it is not understood; **estimating it in hours is simulating knowledge** (forbidden, §7). It is
+   first turned into a *spike* with a fixed timebox and a documented result.
+7. **Estimation costs money.** If the work is homogeneous and there is history, **counting items
+   forecasts just as well as estimating them**: stopping estimating is a legitimate and measurable
+   decision.
 
-### Flujo
+### Flow
 
-- **WIP limitado por columna** y visible. La justificación es aritmética, no cultural: por la ley de
-  Little, `lead time = WIP / throughput`; con throughput dado, **doblar el WIP dobla el lead time sin
-  entregar más**. Todo trabajo en curso adicional es trabajo terminado más tarde.
-- **Métricas de flujo mínimas y públicas**: `lead time` (desde el compromiso con el cliente hasta la
-  entrega — es lo que el cliente experimenta), `cycle time` (desde que se empieza), `throughput`,
-  **edad del trabajo en curso** (la única que permite actuar *hoy*: el ítem que supera el percentil 85
-  de cycle time se escala antes de convertirse en sorpresa) y **% de trabajo no planificado**
-  (`sre-practice-standards` lo define; aquí resta de la capacidad comprometible).
-- **La utilización de personas es contraproducente como objetivo, y es teoría de colas, no opinión**:
-  en cualquier sistema con variabilidad, el tiempo de espera crece de forma no lineal con la ocupación
-  y tiende a infinito al acercarse al 100 %. Planificar al 100 % de ocupación **garantiza** que
-  cualquier imprevisto se propague como retraso. Se optimiza el flujo del **trabajo**, no la ocupación
-  de las **personas**. Un equipo con holgura entrega antes; uno saturado entrega tarde y con más
-  defectos.
-- **Retraso de rehacer**: contabilizar el retrabajo como categoría propia. Un flujo aparentemente sano
-  con 30 % de retrabajo no es un flujo sano.
+- **WIP limited per column** and visible. The justification is arithmetic, not cultural: by Little's
+  law, `lead time = WIP / throughput`; with throughput given, **doubling WIP doubles lead time
+  without delivering more**. Every additional piece of work in progress is work finished later.
+- **Minimum public flow metrics**: `lead time` (from the commitment to the customer to
+  delivery — it is what the customer experiences), `cycle time` (from when work starts),
+  `throughput`, **age of work in progress** (the only one that allows acting *today*: an item that
+  exceeds the 85th percentile of cycle time is escalated before it becomes a surprise) and
+  **% of unplanned work** (`sre-practice-standards` defines it; here it is subtracted from
+  committable capacity).
+- **People utilisation is counterproductive as a target, and this is queueing theory, not opinion**:
+  in any system with variability, waiting time grows non-linearly with occupancy
+  and tends to infinity as it approaches 100 %. Planning at 100 % occupancy **guarantees** that
+  any unforeseen event propagates as delay. What is optimised is the flow of the **work**, not the
+  occupancy of the **people**. A team with slack delivers sooner; a saturated one delivers late and
+  with more defects.
+- **Rework delay**: account for rework as a category of its own. An apparently healthy flow
+  with 30 % rework is not a healthy flow.
 
-### Riesgos y supuestos: registro vivo o no existe
+### Risks and assumptions: a living register or it does not exist
 
-Un registro que se escribe al inicio y no se vuelve a mirar es un pasivo: da falsa cobertura. Formato
-mínimo obligatorio por entrada — **una entrada sin `disparador` y sin `dueño` no se acepta**:
+A register that is written at the start and never looked at again is a liability: it gives false
+coverage. Mandatory minimum format per entry — **an entry with no `trigger` and no `owner` is not
+accepted**:
 
 ```yaml
 - id: R-014
-  tipo: riesgo                       # riesgo | supuesto | incidencia | dependencia
-  enunciado: "Si el proveedor X no entrega la API antes del 30-sep, el módulo de cobros no arranca"
-  dueño: nombre.apellido             # persona con autoridad para actuar, no el PM por defecto
-  disparador: "30-sep sin entorno de pruebas del proveedor"   # observable y fechado
-  probabilidad: media                # o cualitativo, pero consistente en todo el registro
-  impacto: "3 semanas de retraso en el hito de cobros"        # cuantificado
-  respuesta: "Mitigar: desarrollar simulador de la API (5 d)" # evitar|mitigar|transferir|aceptar
-  accion_hasta: 2026-09-15           # fecha, no 'en curso'
-  estado: abierto
-  revisado: 2026-08-20
+  type: risk                         # risk | assumption | issue | dependency
+  statement: "If supplier X does not deliver the API before 30 Sep, the payments module cannot start"
+  owner: name.surname                # person with authority to act, not the PM by default
+  trigger: "30 Sep with no supplier test environment"   # observable and dated
+  probability: medium                # or qualitative, but consistent across the register
+  impact: "3 weeks' delay on the payments milestone"    # quantified
+  response: "Mitigate: build an API simulator (5 d)"    # avoid|mitigate|transfer|accept
+  action_by: 2026-09-15              # a date, not 'in progress'
+  status: open
+  reviewed: 2026-08-20
 ```
 
-- **Un supuesto es un riesgo con la probabilidad puesta a 1 por comodidad.** Todo supuesto lleva
-  disparador de invalidación; cuando salta, se convierte en riesgo o en incidencia el mismo día.
-- **Revisión quincenal con quórum**; cada entrada se cierra, se reevalúa o cambia de dueño. Una entrada
-  sin revisar en dos ciclos se escala: o importa, o se borra.
-- **Riesgo aceptado = decisión registrada** (abajo), con nombre de quien acepta. "Lo asumimos" dicho en
-  una reunión no es aceptación de riesgo.
+- **An assumption is a risk with its probability set to 1 for convenience.** Every assumption
+  carries an invalidation trigger; when it fires, it becomes a risk or an issue the same day.
+- **Fortnightly review with a quorum**; each entry is closed, reassessed or changes owner. An entry
+  unreviewed for two cycles is escalated: either it matters, or it is deleted.
+- **Accepted risk = recorded decision** (below), with the name of whoever accepts it. "We'll live
+  with it" said in a meeting is not risk acceptance.
 
-### Dependencias entre equipos: la causa dominante del retraso real
+### Cross-team dependencies: the dominant cause of real delay
 
-En organizaciones con varios equipos, **el tiempo se pierde esperando, no ejecutando**. La media de
-ejecución de una tarea rara vez explica el retraso; la cola frente al equipo del que se depende, sí.
+In organisations with several teams, **time is lost waiting, not executing**. The average
+execution of a task rarely explains the delay; the queue in front of the team you depend on does.
 
-- **Registro explícito de dependencia**: quién necesita qué, de quién, para cuándo, y **qué se hace si
-  no llega** (ruta alternativa). Una dependencia sin plan B es una fecha regalada a otro equipo.
-- **Cada dependencia tiene fecha de compromiso acordada con el equipo proveedor**, no asignada por el
-  que depende. Una fecha no acordada no es un compromiso, es una expectativa.
-- **Estrategia por orden de preferencia**: (1) **eliminar** la dependencia (duplicar o autoservicio),
-  (2) **desacoplar** con contrato de interfaz y simulador, (3) **secuenciar** con compromiso mutuo,
-  (4) escalar. La (1) casi nunca se considera y suele ser la más barata.
-- **Métrica**: tiempo bloqueado por dependencia externa como % del lead time. Si supera el 30 %, el
-  problema no es de planificación sino de arquitectura organizativa: escalarlo como tal
+- **Explicit dependency register**: who needs what, from whom, by when, and **what is done if it
+  does not arrive** (alternative route). A dependency with no plan B is a date given away to another
+  team.
+- **Every dependency has a commitment date agreed with the providing team**, not assigned by the
+  one that depends on it. An unagreed date is not a commitment, it is an expectation.
+- **Strategy in order of preference**: (1) **eliminate** the dependency (duplicate or self-service),
+  (2) **decouple** with an interface contract and a simulator, (3) **sequence** with a mutual
+  commitment, (4) escalate. Option (1) is almost never considered and is usually the cheapest.
+- **Metric**: time blocked by an external dependency as a % of lead time. If it exceeds 30 %, the
+  problem is not one of planning but of organisational architecture: escalate it as such
   (`enterprise-architecture-standards`, `platform-engineering-standards`).
 
-### Interesados y comunicación
+### Stakeholders and communication
 
-- **Mapa de interesados con nivel de decisión**: quién aprueba, quién debe ser consultado, quién solo
-  informado. Un RACI **con una sola A por decisión**; dos "accountable" es cero.
-- **Cadencia fija y contenido fijo**, escrito de antemano:
+- **Stakeholder map with decision level**: who approves, who must be consulted, who is only
+  informed. A RACI **with a single A per decision**; two "accountable" is zero.
+- **Fixed cadence and fixed content**, written in advance:
 
-| Audiencia | Cadencia | Contenido |
+| Audience | Cadence | Content |
 |---|---|---|
-| Equipo | Diaria (≤ 15 min) | Bloqueos y edad del trabajo en curso; **no** informe de estado individual |
-| Patrocinador / dueño del presupuesto | Quincenal | Previsión con rango, riesgos con disparador vencido, decisiones que necesita tomar |
-| Interesados amplios | Por incremento entregado | Qué se puede usar ya y qué cambió respecto de lo previsto |
-| Comité / dirección | Mensual o por excepción | Desviación frente al compromiso declarado y la decisión pedida |
+| Team | Daily (≤ 15 min) | Blockers and age of work in progress; **not** an individual status report |
+| Sponsor / budget owner | Fortnightly | Forecast with a range, risks with an expired trigger, decisions they need to take |
+| Wider stakeholders | Per delivered increment | What can be used already and what changed relative to the plan |
+| Steering committee / management | Monthly or by exception | Deviation from the declared commitment and the decision being requested |
 
-- **El informe que no miente**. El patrón a evitar tiene nombre: ***watermelon reporting*** — verde por
-  fuera, rojo por dentro; el estado se vuelve más verde a medida que sube por la jerarquía, y de golpe
-  se pone rojo cuando ya no hay margen. Su causa raíz **no es deshonestidad individual sino cultura de
-  culpa**: si informar en rojo trae reproche en vez de ayuda, nadie informa en rojo. Contramedidas
-  concretas y verificables:
-  1. **El color se calcula, no se opina**: se deriva de un criterio numérico publicado (p. ej. la
-     previsión al percentil 85 excede la fecha comprometida → rojo). Si el color se elige a mano, es
-     una opinión con formato de dato.
-  2. **Toda casilla no verde exige la petición asociada** ("necesito X de Y antes de Z"). Un rojo sin
-     petición es queja; un rojo con petición es gestión.
-  3. **Se informa la previsión, no el porcentaje de avance.** "80 % completado" no es información;
-     "85 % de probabilidad de terminar antes del 12-nov" sí.
-  4. **Prohibido cambiar el color al subir de nivel.** El informe agregado enlaza el original sin
-     retocarlo; cualquier matiz va como comentario firmado, no como recoloreado.
-  5. **Rojo se trata como petición de ayuda**, y quien lo declara pronto no recibe reproche. Esto es
-     una regla de conducta del patrocinador, y sin ella las cuatro anteriores no funcionan.
+- **The report that does not lie**. The pattern to avoid has a name: ***watermelon reporting*** —
+  green on the outside, red on the inside; the status gets greener as it goes up the hierarchy, and
+  suddenly turns red when there is no margin left. Its root cause **is not individual dishonesty but
+  a culture of blame**: if reporting red brings reproach instead of help, nobody reports red.
+  Concrete and verifiable countermeasures:
+  1. **The colour is computed, not opined**: it derives from a published numeric criterion (e.g. the
+     85th-percentile forecast exceeds the committed date → red). If the colour is chosen by hand, it
+     is an opinion formatted as data.
+  2. **Every non-green cell requires the associated request** ("I need X from Y before Z"). A red
+     without a request is a complaint; a red with a request is management.
+  3. **The forecast is reported, not the percentage of progress.** "80 % complete" is not
+     information; "85 % probability of finishing before 12 Nov" is.
+  4. **Forbidden to change the colour when moving up a level.** The aggregated report links the
+     original without retouching it; any nuance goes as a signed comment, not as a recolouring.
+  5. **Red is treated as a request for help**, and whoever declares it early receives no reproach.
+     This is a rule of conduct for the sponsor, and without it the previous four do not work.
 
-### Decisiones registradas
+### Recorded decisions
 
-**Una decisión sin registro se vuelve a discutir** — y la segunda discusión es más cara porque ya hay
-código escrito y egos invertidos. Dos registros con el mismo formato y el mismo repositorio:
+**A decision with no record gets discussed again** — and the second discussion is more expensive
+because there is already code written and egos invested. Two registers with the same format and the
+same repository:
 
-- **ADR** para decisiones técnicas (arquitectura, tecnología, patrón).
-- **Registro de decisión de gestión** para alcance, secuencia, contratación, aceptación de riesgo,
-  cambio de compromiso.
+- **ADR** for technical decisions (architecture, technology, pattern).
+- **Management decision record** for scope, sequencing, hiring, risk acceptance,
+  change of commitment.
 
-Campos mínimos: `fecha`, `decisor` (persona), `contexto`, `opciones consideradas`, `decisión`,
-`consecuencias`, `fecha de revisión` y **`reversibilidad`** (puerta de un sentido / de dos sentidos).
-**Regla de velocidad derivada de la reversibilidad**: una decisión reversible se toma rápido y al nivel
-más bajo posible; una irreversible se instruye, se documenta y se decide arriba. **Tratar todas las
-decisiones como irreversibles es la forma más común de parálisis en gestión.**
+Minimum fields: `date`, `decision-maker` (a person), `context`, `options considered`, `decision`,
+`consequences`, `review date` and **`reversibility`** (one-way / two-way door).
+**Speed rule derived from reversibility**: a reversible decision is taken fast and at the lowest
+possible level; an irreversible one is worked up, documented and decided at the top. **Treating all
+decisions as irreversible is the most common form of paralysis in management.**
 
-Cambios de alcance: **toda petición de cambio se registra con su impacto en las cinco variables (§3)
-antes de aceptarse o rechazarse**. Aceptar alcance sin declarar qué se mueve es la mecánica exacta del
-*scope creep* — no un accidente, una omisión.
+Scope changes: **every change request is recorded with its impact on the five variables (§3)
+before being accepted or rejected**. Accepting scope without declaring what moves is the exact
+mechanics of *scope creep* — not an accident, an omission.
 
-### Cierre
+### Closure
 
-Un proyecto cierra cuando **el receptor lo acepta y alguien puede operarlo**, no cuando se agota el
-presupuesto ni cuando el equipo se disuelve.
+A project closes when **the recipient accepts it and somebody can operate it**, not when the budget
+runs out nor when the team is disbanded.
 
-1. **Criterios de aceptación escritos antes de empezar** y verificados por el interesado que los
-   escribió, no por el equipo que los implementó.
-2. **Traspaso a operación completo** según la lista de `itsm-itil-standards` §3 (dueño de servicio,
-   catálogo, SLA u OLA, runbooks, alertas, backup con restauración probada, CMDB, formación,
-   *hypercare* con fecha de fin). **Sin ella el proyecto no está cerrado**, esté como esté la factura.
-3. **Retrospectiva con acciones que alguien ejecuta**: cada acción tiene dueño, fecha y aparece en el
-   backlog del siguiente ciclo. **Una retrospectiva cuyas acciones no se ejecutan enseña al equipo que
-   la retrospectiva es teatro**, y es peor que no hacerla. Métrica: % de acciones de retro cerradas en
-   el ciclo siguiente; si baja del 70 %, se dejan de generar acciones y se arregla el mecanismo.
-4. **Comparación previsión vs. real archivada**: alimenta la clase de referencia del siguiente proyecto
-   (vista externa, §3). Sin este paso la organización repite el sesgo de planificación indefinidamente.
-5. **Cierre administrativo**: contratos, licencias, accesos revocados, entornos temporales destruidos y
-   coste recurrente heredado declarado (`finops-standards`).
+1. **Acceptance criteria written before starting** and verified by the stakeholder who
+   wrote them, not by the team that implemented them.
+2. **Complete handover to operations** per the list in `itsm-itil-standards` §3 (service owner,
+   catalogue, SLA or OLA, runbooks, alerts, backup with tested restore, CMDB, training,
+   *hypercare* with an end date). **Without it the project is not closed**, whatever the state of
+   the invoice.
+3. **Retrospective with actions somebody executes**: each action has an owner, a date and appears in
+   the next cycle's backlog. **A retrospective whose actions are not executed teaches the team that
+   the retrospective is theatre**, and it is worse than not holding one. Metric: % of retro actions
+   closed in the following cycle; if it drops below 70 %, stop generating actions and fix the
+   mechanism.
+4. **Forecast vs. actual comparison archived**: it feeds the reference class of the next project
+   (outside view, §3). Without this step the organisation repeats the planning fallacy indefinitely.
+5. **Administrative closure**: contracts, licences, revoked access, temporary environments destroyed
+   and inherited recurring cost declared (`finops-standards`).
 
-## 4. Calidad de la gestión y controles
+## 4. Management quality and controls
 
-Controles automatizables sobre los datos del sistema de gestión. Se ejecutan programados; su fallo abre
-trabajo, no un informe.
+Automatable controls over the management system's data. They run on a schedule; their failure opens
+work, not a report.
 
-| Control | Falla si | Acción |
+| Control | Fails if | Action |
 |---|---|---|
-| Compromiso sin rango | existe una fecha comprometida sin percentil asociado | Bloquear publicación del compromiso |
-| Variable flotante no declarada | acta sin la frase "es fijo X, flota Y" | No arrancar el proyecto |
-| Riesgo sin dueño o sin disparador | campo vacío | Rechazar la entrada |
-| Registro estancado | entrada sin revisar en 2 ciclos | Escalar al patrocinador |
-| Supuesto vencido | fecha del disparador pasada sin evaluar | Convertir en riesgo o incidencia el mismo día |
-| Dependencia sin fecha acordada | falta confirmación del equipo proveedor | Marcar como riesgo, no como plan |
-| WIP por encima del límite | supera el límite de la columna | Parar de empezar, empezar a terminar |
-| Ítem envejecido | edad > percentil 85 del cycle time | Escalar antes de que sea sorpresa |
-| Estado sin evidencia | color no derivable del criterio numérico publicado | Rechazar el informe |
-| Acciones de retro | < 70 % cerradas en el ciclo siguiente | Dejar de generar acciones; arreglar el mecanismo |
-| Previsión caducada | Monte Carlo no re-ejecutado en > 2 semanas | Marcar la previsión como no válida |
+| Commitment without a range | there is a committed date with no associated percentile | Block publication of the commitment |
+| Floating variable not declared | charter without the phrase "X is fixed, Y floats" | Do not start the project |
+| Risk without an owner or a trigger | empty field | Reject the entry |
+| Stagnant register | entry unreviewed for 2 cycles | Escalate to the sponsor |
+| Expired assumption | trigger date passed without evaluation | Convert into a risk or an issue the same day |
+| Dependency without an agreed date | confirmation from the providing team missing | Mark as a risk, not as a plan |
+| WIP above the limit | exceeds the column's limit | Stop starting, start finishing |
+| Aged item | age > 85th percentile of cycle time | Escalate before it becomes a surprise |
+| Status without evidence | colour not derivable from the published numeric criterion | Reject the report |
+| Retro actions | < 70 % closed in the following cycle | Stop generating actions; fix the mechanism |
+| Expired forecast | Monte Carlo not re-run in > 2 weeks | Mark the forecast as invalid |
 
-**La DoD de entrega** (distinta de la técnica, que vive en `testing-qa-standards` y
-`code-review-standards`, e **incluida por referencia**): aceptado por el interesado nombrado, desplegado
-en producción, operable según el traspaso, documentado para quien lo use, y comunicado a los afectados.
-**Un ítem "terminado" que no está desplegado no está terminado** — es inventario, y el inventario en
-software solo se deprecia.
+**The delivery DoD** (distinct from the technical one, which lives in `testing-qa-standards` and
+`code-review-standards`, and **included by reference**): accepted by the named stakeholder, deployed
+in production, operable per the handover, documented for whoever will use it, and communicated to
+those affected. **An item that is "finished" but not deployed is not finished** — it is inventory,
+and inventory in software only depreciates.
 
-## 5. Seguridad y confidencialidad de la información de gestión
+## 5. Security and confidentiality of management information
 
-- **Los artefactos de gestión son información sensible**: el registro de riesgos, la previsión real y
-  las actas contienen debilidades explotables, datos de proveedores y a veces información de personas.
-  Control de acceso por rol, no "todo el mundo con el enlace".
-- **Prohibido meter credenciales, datos personales o datos de cliente en tickets, hojas de cálculo de
-  seguimiento o actas**. El backlog es un repositorio de texto libre con historial: lo que entra, se
-  queda (`secrets-management-standards`, `privacy-engineering-standards`).
-- **Requisitos regulatorios y de seguridad son alcance, no "no funcionales" que se recortan al final.**
-  Se identifican en el acta con su fuente normativa (`grc-compliance-standards`). Un proyecto que
-  descubre en la semana 20 que necesita una DPIA ya lleva 20 semanas de retraso sin saberlo.
-- **Proveedores y subcontratas**: la dependencia contractual entra en el registro de riesgos con su
-  cláusula de salida. Un proveedor crítico sin plan de salida es riesgo de continuidad
+- **Management artifacts are sensitive information**: the risk register, the real forecast and the
+  charters contain exploitable weaknesses, supplier data and sometimes information about people.
+  Role-based access control, not "everybody with the link".
+- **Forbidden to put credentials, personal data or customer data in tickets, tracking
+  spreadsheets or charters**. The backlog is a free-text repository with history: what goes in,
+  stays (`secrets-management-standards`, `privacy-engineering-standards`).
+- **Regulatory and security requirements are scope, not "non-functionals" trimmed at the end.**
+  They are identified in the charter with their regulatory source (`grc-compliance-standards`). A
+  project that discovers in week 20 that it needs a DPIA is already 20 weeks late without knowing
+  it.
+- **Suppliers and subcontractors**: contractual dependency goes into the risk register with its
+  exit clause. A critical supplier with no exit plan is a continuity risk
   (`bcdr-standards`).
-- **Herramienta de gestión**: SSO con MFA, auditoría de cambios de estado y de fechas comprometidas.
-  Una fecha comprometida que se puede editar sin traza invita a reescribir la historia.
+- **Management tool**: SSO with MFA, audit of status changes and of committed dates.
+  A committed date that can be edited without a trace invites rewriting history.
 
-## 6. Sostenibilidad del sistema de gestión y capacidad
+## 6. Sustainability of the management system and capacity
 
-*(La §6 canónica —rendimiento y operabilidad— no aplica a un dominio de proceso; **se sustituye
-declarándolo** por la operabilidad del propio sistema de gestión.)*
+*(The canonical §6 —performance and operability— does not apply to a process domain; **it is
+replaced, and this is declared**, by the operability of the management system itself.)*
 
-- **Capacidad comprometible = capacidad bruta − trabajo no planificado histórico − ausencias − soporte**.
-  Comprometer sobre capacidad bruta es la forma más común y menos discutida de incumplir. El porcentaje
-  histórico de trabajo no planificado se toma del dato, no de la esperanza.
-- **Cada ceremonia y cada artefacto se auditan semestralmente** con el test de §1 (qué decisión
-  habilita, quién la toma, cuántas veces se ha tomado). Lo que no lo pase, se elimina — la sobrecarga
-  de gestión crece por acumulación, nunca por decisión.
-- **Coste de coordinación**: sumar personas a un proyecto tardío añade coordinación antes que capacidad.
-  Antes de contratar, agotar: reducir alcance, eliminar dependencias, subir el límite de flujo.
-- **Multiproyecto**: una persona en tres proyectos no aporta un tercio a cada uno; el cambio de contexto
-  se lleva una parte que no se contabiliza en ningún sitio. **Asignación por defecto: una persona, un
-  flujo de trabajo.**
-- **Continuidad del conocimiento**: el registro de decisiones y el traspaso a operación son lo único que
-  sobrevive al equipo. Un proyecto cuyo estado solo existe en la cabeza del PM tiene un SPOF con
-  vacaciones.
-- **Sucesión del rol**: si el PM desaparece una semana, el sistema debe seguir siendo legible. Si no lo
-  es, el problema no es el PM: es que el estado no está escrito.
+- **Committable capacity = gross capacity − historical unplanned work − absences − support**.
+  Committing on gross capacity is the most common and least discussed way of failing to deliver. The
+  historical percentage of unplanned work is taken from the data, not from hope.
+- **Every ceremony and every artifact is audited half-yearly** with the test in §1 (which decision
+  it enables, who takes it, how many times it has been taken). Whatever does not pass is removed —
+  management overhead grows by accumulation, never by decision.
+- **Coordination cost**: adding people to a late project adds coordination before capacity.
+  Before hiring, exhaust: reduce scope, eliminate dependencies, raise the flow limit.
+- **Multi-project**: a person on three projects does not contribute a third to each; context
+  switching takes a share that is not accounted for anywhere. **Default allocation: one person, one
+  workflow.**
+- **Knowledge continuity**: the decision record and the handover to operations are the only things
+  that outlive the team. A project whose state exists only in the PM's head has a SPOF that goes on
+  holiday.
+- **Role succession**: if the PM disappears for a week, the system must remain legible. If it is
+  not, the problem is not the PM: it is that the state is not written down.
 
-## 7. Sostenibilidad a largo plazo y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-**Cadencia**: acta y variables fijas revisadas en cada cambio de compromiso; RAID quincenal; previsión
-cada 1-2 semanas; límites de WIP mensualmente; ceremonias y artefactos semestralmente; clase de
-referencia actualizada al cierre de cada proyecto.
+**Cadence**: charter and fixed variables reviewed at every change of commitment; RAID fortnightly;
+forecast every 1-2 weeks; WIP limits monthly; ceremonies and artifacts half-yearly; reference class
+updated at the closure of each project.
 
-**Deprecación de proceso**: cada norma de gestión se introduce con la condición que la haría innecesaria.
-Una norma sin condición de retirada es permanente por omisión, y así se acumula la burocracia que nadie
-defendió nunca explícitamente.
+**Process deprecation**: every management rule is introduced together with the condition that would
+make it unnecessary. A rule with no retirement condition is permanent by omission, and that is how
+the bureaucracy nobody ever explicitly defended accumulates.
 
-PROHIBIDO:
-- ❌ **Comprometer fecha, alcance y coste a la vez.** Es la mentira fundacional del proyecto: se
-  descubrirá tarde y se pagará con calidad, que es la única variable que nadie declaró.
-- ❌ **Estimar en horas lo que no se entiende.** Si no se puede descomponer, no se estima: se investiga
-  con una *spike* de caja de tiempo fija.
-- ❌ **Convertir puntos o tallas en horas o euros.** Reintroduce el sesgo y añade precisión falsa.
-- ❌ **Comprometer una fecha sin rango ni probabilidad.**
-- ❌ **Gestionar por hitos sin incremento entregable.** Un hito documental mide actividad, no valor, y
-  permite estar "al 80 %" durante meses.
-- ❌ **Usar la velocity como medida de productividad individual** (ni de equipo frente a otro equipo).
-  Se infla de inmediato: los puntos son gratis. Mide capacidad de un equipo consigo mismo, nada más.
-- ❌ **Objetivos de utilización de personas** (≥ 90 % facturable/ocupado). Garantiza colas y retrasos.
-- ❌ **El informe verde por cortesía** (*watermelon*): color no derivable de un criterio publicado,
-  recoloreado al agregar hacia arriba, o rojo sin petición asociada.
-- ❌ **Recortar calidad como palanca de plazo.** Adelanta trabajo, no lo elimina, y lo cobra en operación.
-- ❌ **Registro de riesgos escrito al inicio y no revisado**, o con entradas sin dueño ni disparador.
-- ❌ **Aceptar un cambio de alcance sin declarar qué se mueve** en tiempo, coste o alcance existente.
-- ❌ **Dependencia con fecha asignada unilateralmente** al equipo proveedor y sin ruta alternativa.
-- ❌ **Cerrar un proyecto sin traspaso a operación aceptado** (`itsm-itil-standards` §3): si nadie puede
-  operarlo, no ha terminado.
-- ❌ **Retrospectivas sin acciones con dueño y fecha**, o con acciones que sistemáticamente no se cierran.
-- ❌ **Citar cifras del CHAOS Report (u otras cifras de fracaso sin metodología pública) como dato** para
-  justificar una decisión o un presupuesto (§2).
-- ❌ **Copiar texto de PMBOK, PRINCE2 o SAFe en documentación interna**: material propietario de PMI,
-  PeopleCert y Scaled Agile respectivamente. Se cita la Scrum Guide o se describe con vocabulario propio.
-- ❌ **Escribir "SAFe 7"**: Scaled Agile abandonó el versionado numérico (§2).
-- ❌ **Adoptar un marco escalado para resolver un problema de dependencias arquitectónicas**: añade
-  ceremonias sobre el mismo acoplamiento y encarece el síntoma sin tocar la causa.
-- ❌ **Una persona asignada a más de dos flujos de trabajo simultáneos** sin declarar el coste de cambio
-  de contexto.
+FORBIDDEN:
+- ❌ **Committing date, scope and cost at the same time.** It is the project's founding lie: it will
+  be discovered late and paid for with quality, which is the only variable nobody declared.
+- ❌ **Estimating in hours what is not understood.** If it cannot be decomposed, it is not
+  estimated: it is investigated with a fixed-timebox *spike*.
+- ❌ **Converting points or sizes into hours or euros.** It reintroduces the bias and adds false
+  precision.
+- ❌ **Committing a date without a range or a probability.**
+- ❌ **Managing by milestones with no deliverable increment.** A documentary milestone measures
+  activity, not value, and allows being "80 % there" for months.
+- ❌ **Using velocity as a measure of individual productivity** (nor of one team against another).
+  It inflates immediately: points are free. It measures a team's capacity against itself, nothing
+  more.
+- ❌ **People utilisation targets** (≥ 90 % billable/occupied). It guarantees queues and delays.
+- ❌ **The report that is green out of courtesy** (*watermelon*): a colour not derivable from a
+  published criterion, recoloured when aggregating upwards, or a red with no associated request.
+- ❌ **Cutting quality as a schedule lever.** It brings work forward, it does not eliminate it, and
+  it charges for it in operations.
+- ❌ **A risk register written at the start and never reviewed**, or with entries lacking an owner or
+  a trigger.
+- ❌ **Accepting a scope change without declaring what moves** in time, cost or existing scope.
+- ❌ **A dependency with a date assigned unilaterally** to the providing team and with no alternative
+  route.
+- ❌ **Closing a project without an accepted handover to operations** (`itsm-itil-standards` §3): if
+  nobody can operate it, it has not finished.
+- ❌ **Retrospectives without actions with an owner and a date**, or with actions that are
+  systematically not closed.
+- ❌ **Citing CHAOS Report figures (or other failure figures with no public methodology) as data** to
+  justify a decision or a budget (§2).
+- ❌ **Copying text from PMBOK, PRINCE2 or SAFe into internal documentation**: proprietary material
+  of PMI, PeopleCert and Scaled Agile respectively. The Scrum Guide is cited or it is described in
+  your own vocabulary.
+- ❌ **Writing "SAFe 7"**: Scaled Agile dropped numeric versioning (§2).
+- ❌ **Adopting a scaling framework to solve a problem of architectural dependencies**: it adds
+  ceremonies on top of the same coupling and makes the symptom more expensive without touching the
+  cause.
+- ❌ **One person assigned to more than two simultaneous workflows** without declaring the cost of
+  context switching.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquiera de estos puntos en un proyecto real:
+Before committing to any of these points in a real project:
 
-1. **PMI**: edición vigente en `pmi.org/standards/pmbok` — a ago-2026 aparece la **8.ª edición**, pero
-   **la fecha de publicación es contradictoria entre fuentes de terceros** (nov-2025 vs. inicio de 2026;
-   el índice alojado en pmi.org lleva sello de sep-2025). Confirmar fecha, precio, condiciones de acceso
-   para miembros y el estado del *Examination Content Outline* del PMP, que se actualiza aparte.
-2. **PRINCE2**: si PRINCE2 7 (sep-2023) sigue siendo la edición vigente y si PeopleCert continúa siendo
-   el propietario; términos de uso de marca y material antes de citarlo.
-3. **Scrum Guide**: comprobar en `scrumguides.org` si sigue vigente la versión de **noviembre 2020** —
-   es la referencia gratuita por defecto de este documento y una revisión cambiaría vocabulario.
-4. **SAFe**: nombre y fecha de la release actual en `framework.scaledagile.com` (esquema
-   `[año].[mes]`, marca **AI-Native SAFe** a jun-2026) y condiciones de licencia. **Nunca escribir un
-   número de versión sin verificarlo.**
-5. **Cifras**: antes de usar cualquier porcentaje de fracaso, éxito o "transformaciones que fallan",
-   localizar el **estudio primario, su año, su muestra y su método**. Si no aparece, o si la metodología
-   está cuestionada (caso CHAOS/Standish, §2), **no se usa**. Verificar también si Standish ha publicado
-   algo posterior a CHAOS 2020.
-6. **Sesgo de planificación y *reference class forecasting***: comprobar el estado del debate — hay
-   crítica publicada reciente a la RCF (*Production Planning & Control*, 2025) que conviene citar junto
-   a Kahneman-Tversky (1979) y Flyvbjerg (2008) para no presentar la corrección como más sólida de lo
-   que es.
-7. **Herramientas de gestión y previsión**: estado, licencia y precio de lo que se proponga (Jira y su
-   reorganización de oferta y retirada de Data Center, Azure DevOps, ActionableAgile, alternativas
-   libres). Para lo *open source*, **leer el `LICENSE` en crudo del repositorio**.
-8. **Marco contractual y regulatorio** del proyecto concreto (pliego, DORA-UE, NIS2, ENS, EU AI Act si
-   hay componente de IA): puede imponer un marco de gestión, evidencias formales o plazos —
-   `grc-compliance-standards` y `ai-governance-standards`.
+1. **PMI**: current edition at `pmi.org/standards/pmbok` — as of Aug 2026 the **8th edition**
+   appears, but **the publication date is contradictory across third-party sources** (Nov 2025 vs.
+   early 2026; the index hosted on pmi.org carries a Sep 2025 stamp). Confirm the date, price, member
+   access conditions and the state of the PMP *Examination Content Outline*, which is updated
+   separately.
+2. **PRINCE2**: whether PRINCE2 7 (Sep 2023) is still the current edition and whether PeopleCert is
+   still the owner; trademark and material terms of use before citing it.
+3. **Scrum Guide**: check at `scrumguides.org` whether the **November 2020** version is still
+   current — it is this document's default free reference and a revision would change vocabulary.
+4. **SAFe**: name and date of the current release at `framework.scaledagile.com` (scheme
+   `[year].[month]`, brand **AI-Native SAFe** as of Jun 2026) and licensing terms. **Never write a
+   version number without verifying it.**
+5. **Figures**: before using any percentage of failure, success or "transformations that fail",
+   locate the **primary study, its year, its sample and its method**. If it does not turn up, or if
+   the methodology is questioned (the CHAOS/Standish case, §2), **it is not used**. Also verify
+   whether Standish has published anything after CHAOS 2020.
+6. **Planning fallacy and *reference class forecasting***: check the state of the debate — there is
+   recent published criticism of RCF (*Production Planning & Control*, 2025) worth citing alongside
+   Kahneman-Tversky (1979) and Flyvbjerg (2008) so as not to present the correction as more solid
+   than it is.
+7. **Management and forecasting tools**: status, licence and price of whatever is proposed (Jira and
+   its offering reorganisation and Data Center retirement, Azure DevOps, ActionableAgile, free
+   alternatives). For *open source*, **read the repository's raw `LICENSE`**.
+8. **Contractual and regulatory framework** of the specific project (tender, EU DORA, NIS2, ENS, EU
+   AI Act if there is an AI component): it may impose a management framework, formal evidence or
+   deadlines — `grc-compliance-standards` and `ai-governance-standards`.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

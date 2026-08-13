@@ -16,7 +16,10 @@ fires"), and the decision of where a rule lives.
 **Not applicable**: `update-config` (harness configuration in `settings.json`, hooks and
 permissions), `knowledge-management-standards` (documentation for humans: ADR, runbooks, README),
 `ai-agent-workflow-standards` (how agents are used safely, not how their skills are
-written).
+written), `update-standards` (**re-verifying an already written skill against the web**: refresh
+cadence, the `Criteria verified as of` line, closing a `Declared gap`, and the traps that make a
+refresh assert a confident falsehood — **this skill decides how a skill is built, that one how an
+existing one stops being false**).
 
 ## 2. Default decisions
 
@@ -28,7 +31,7 @@ written).
 | Location | `~/.claude/skills/<slug>/SKILL.md` (global) or `.claude/skills/` (project) | Automatic filesystem discovery; the project one wins on a name collision |
 | Frontmatter fields | Only `name` + `description` | They are the only indispensable ones; everything else adds surface and, in some cases, permission friction |
 | `allowed-tools` | **Do not use without demonstrated need** | Marked experimental in the standard; there is an open report that it is parsed but **not enforced**, and its presence requires user approval on first use. Do not rely on it as a security control |
-| `disable-model-invocation` | Only in skills that must be exclusively manual (`/name`) | A skill that never self-activates pays index cost without giving any automatic benefit |
+| `disable-model-invocation` | **The correct choice for anything with side effects or user-owned timing** (`/deploy`, `/commit`, a refresh that rewrites criteria) | **Corrected 2026-08-13 against the official documentation**: this field does **not** merely stop auto-activation — with it, *"Description not in context, full skill loads when you invoke"*. So a manual-only skill costs **zero index**, and the old claim here that it "pays index cost without automatic benefit" was false and pushed the decision the wrong way. Its counterpart `user-invocable: false` (only the model invokes) **does** keep the description in context |
 | Language | `description` in **English**, body in the working language | Routing is done over the description; English is the language of technical triggers |
 | Body length | **Dictated by the content, not by a quota** | The body is not loaded until activation: going long costs no index. The real limit is **density** — every line pins a decision, a prohibition or a verification. A dense domain can ask for 400+ lines; a niche one, 80 |
 | Auxiliary files | `references/`, `scripts/` next to the `SKILL.md` when the content doesn't fit | They are loaded on demand from the body, not in the index |
@@ -41,13 +44,13 @@ when the skill activates. Optimise the description for routing, the body for use
 - **Directory = slug = `name`**. Suffix `-standards` for domain-criteria skills.
 - Do not put templates or reference files inside `~/.claude/skills/`: any
   directory with a `SKILL.md` gets registered and pollutes the index. Outside the tree.
-- Body with the 8 canonical sections (see `~/.claude/SKILL-TEMPLATE.md`).
-- **Explicit boundary in §1** (`**Not applicable**: see `knowledge-management-standards` (clean boundary, easy to confuse:
-**documentation for humans is theirs** —Diátaxis, docs as code, README, runbook, onboarding
-guide, owner and review date—; **skill authoring here**, which are instructions for
-a model with an index cost and an activation criterion of their own. A skill is not documentation
-and is not written as such: it does not explain, it decides), X, Y`) on **both sides** of every pair
-  that could compete. Without this, two neighbouring skills tread on each other and routing becomes chance.
+- Body with the 8 canonical sections. Canonical template: **`SKILL-TEMPLATE.md` at the root of the
+  catalogue repository** — the repo is the source of truth. It is deliberately **not** installed by
+  `install.sh`, so any copy sitting in `~/.claude/` is a stale orphan: do not read it.
+- **Explicit boundary in §1** — the line `**Not applicable**: see <skill-x> (what it decides),
+  <skill-y> (what it decides)` — written on **both sides** of every pair that could compete. State
+  *what each one decides*, not what topic it covers: topics overlap, decisions do not. Without this,
+  two neighbouring skills tread on each other and routing becomes chance.
 - Reference date on the first line of the body.
 
 ### `description` design (the most important part of the file)
@@ -162,109 +165,113 @@ Gates before calling a skill good:
        if len(sh)>=4: print(len(sh),a,'<->',b,':',', '.join(sorted(sh)))
    EOF
    ```
-   Un par con ≥4 términos compartidos exige estrechar triggers, o justificar el solape como
-   inherente. **Solo cuentan los términos que son disparadores por artefacto**: si lo compartido
-   son conectores o sustantivos genéricos, es ruido del tokenizador — amplía `STOP` en vez de
-   mutilar la descripción. Solapes inherentes ya aceptados en el catálogo:
-   - las tres nubes (`*.tf`, `terraform`, `iac`, `finops`), desambiguadas por nombre de servicio y
-     por `provider aws|azurerm|google`;
-   - la familia de seguridad, que comparte **nombres de norma** (`nis2`, `dora`, `iso`, `gdpr`) y
-     de framework (`att`): son vocabulario del dominio, no reclamación del mismo trabajo. Lo que
-     los separa es la línea `**No aplica**`, que debe existir en **ambos** lados y decir qué
-     decide cada una;
-   - las skills con obligación legal europea (`accessibility`, `e-commerce`, `ai-governance`,
-     `green-it`, `govtech-eidas`, `technical-hiring`), que comparten `act`, `directive`,
-     `european`, `omnibus`, `decreto`: mismo motivo que la familia de seguridad;
-   - la cripto (`cryptography-pki` ↔ `post-quantum-crypto` ↔ `vpn`) por `tls`, `1.3`, `ikev2`,
-     `rfc 9370`: el algoritmo es el vocabulario, el reparto está en §1 de cada una;
-   - los motores de juego (`game-development` ↔ `xr`) por `unity`, `unreal`, `godot`;
-   - los orquestadores de datos (`data-engineering` ↔ `mlops`) por `airflow`, `dagster`,
-     `prefect` — declarado explícitamente como inherente en el cuerpo de `mlops`;
-   - `endpoint-security` ↔ `macos-fleet` por `escrow`/`mdm`/`macos`, que son **homónimos**
-     (BitLocker frente a FileVault) con arbitraje escrito en ambos §1;
-   - `ibm-i-rpg` ↔ `mainframe-zos-cobol` por `db2`, `ebcdic`, `packed`, `decimal`, `ibm`: es
-     vocabulario del fabricante, y **las dos declaran expresamente en su §1 que son plataformas
-     distintas que la gente mete en el mismo saco** y que no se extrapola criterio entre ellas.
-     El solape de términos es justo la razón por la que esa frontera está escrita.
+   A pair sharing ≥4 terms requires narrowing the triggers, or justifying the overlap as
+   inherent. **Only artifact-level trigger terms count**: if what is shared are connectors or
+   generic nouns, it is tokeniser noise — widen `STOP` instead of
+   mutilating the description. Inherent overlaps already accepted in the catalogue:
+   - the three clouds (`*.tf`, `terraform`, `iac`, `finops`), disambiguated by service name and
+     by `provider aws|azurerm|google`;
+   - the security family, which shares **standard names** (`nis2`, `dora`, `iso`, `gdpr`) and
+     framework names (`att`): they are domain vocabulary, not a claim on the same work. What
+     separates them is the `**Not applicable**` line, which must exist on **both** sides and state what
+     each one decides;
+   - the skills carrying European legal obligations (`accessibility`, `e-commerce`, `ai-governance`,
+     `green-it`, `govtech-eidas`, `technical-hiring`), which share `act`, `directive`,
+     `european`, `omnibus`, `decreto`: the same reason as the security family;
+   - crypto (`cryptography-pki` ↔ `post-quantum-crypto` ↔ `vpn`) over `tls`, `1.3`, `ikev2`,
+     `rfc 9370`: the algorithm is the vocabulary, the split is in each one's §1;
+   - the game engines (`game-development` ↔ `xr`) over `unity`, `unreal`, `godot`;
+   - the data orchestrators (`data-engineering` ↔ `mlops`) over `airflow`, `dagster`,
+     `prefect` — explicitly declared inherent in the body of `mlops`;
+   - `endpoint-security` ↔ `macos-fleet` over `escrow`/`mdm`/`macos`, which are **homonyms**
+     (BitLocker versus FileVault) with the arbitration written into both §1s;
+   - `ibm-i-rpg` ↔ `mainframe-zos-cobol` over `db2`, `ebcdic`, `packed`, `decimal`, `ibm`: it is
+     vendor vocabulary, and **both expressly declare in their §1 that they are different
+     platforms which people lump together** and that criteria are not extrapolated between them.
+     The term overlap is precisely why that boundary is written.
 
-   **Ejecución del 2026-08-10 sobre 218 skills**: la `STOP` original daba **420 pares** (gate
-   inservible). Ampliada con ~220 términos genéricos → **41 pares**, de los que **8 eran solapes
-   reales** y se corrigieron **estrechando la `description` de la vecina, nunca el cuerpo**:
-   `onprem` cedió el hardware físico, el BMC y la sala a `server-hardware` y
-   `datacenter-facilities` (tercera poda de esta skill, el patrón de siempre);
-   `dns` cedió SPF/DKIM/DMARC/MTA-STS/TLS-RPT a `email-security`; `datacenter-fabric` conservó
-   la configuración PFC/ETS/DCBX del switch y soltó RDMA, mientras `high-speed-interconnect`
-   soltó el *deadlock* por PFC y la sobresuscripción; `abap-sap` cedió la conversión a S/4HANA
-   como proyecto a `erp-sap` (y aquella soltó OData); `edge-computing` cedió RAUC/SWUpdate/Mender
-   y la identidad por TPM a `embedded-iot`; `os-provisioning` cedió `bootc-image-builder` y
-   `rpm-ostree` a `rhel-fedora`; `game-development` cedió `matchmaking` a
-   `gaming-infrastructure`. Resultado final: **35 pares, ninguno ≥8, todos inherentes.**
-4. **Prueba funcional real**: abrir un fichero representativo del dominio y comprobar que
-   se activa **esa** skill y no una vecina. Una skill que nunca se dispara es peor que no
-   tenerla: paga índice y no aporta.
-5. **Prueba de no-activación**: comprobar que NO se activa en tareas de dominios vecinos.
-6. **Revisión de seguridad** del lote (`/security-review`): sin instrucciones de ejecución
-   embebidas, sin secretos, sin rutas o comandos que no deberían estar.
+   **Run of 2026-08-10 over 218 skills**: the original `STOP` produced **420 pairs** (a useless
+   gate). Widened with ~220 generic terms → **41 pairs**, of which **8 were real
+   overlaps** and were corrected by **narrowing the neighbour's `description`, never the body**:
+   `onprem` ceded physical hardware, the BMC and the room to `server-hardware` and
+   `datacenter-facilities` (this skill's third pruning, the usual pattern);
+   `dns` ceded SPF/DKIM/DMARC/MTA-STS/TLS-RPT to `email-security`; `datacenter-fabric` kept
+   the switch's PFC/ETS/DCBX configuration and released RDMA, while `high-speed-interconnect`
+   released PFC deadlock and oversubscription; `abap-sap` ceded the S/4HANA conversion
+   as a project to `erp-sap` (and that one released OData); `edge-computing` ceded RAUC/SWUpdate/Mender
+   and TPM-based identity to `embedded-iot`; `os-provisioning` ceded `bootc-image-builder` and
+   `rpm-ostree` to `rhel-fedora`; `game-development` ceded `matchmaking` to
+   `gaming-infrastructure`. Final result: **35 pairs, none ≥8, all inherent.**
+4. **A real functional test**: open a representative file of the domain and check that
+   **that** skill fires and not a neighbour. A skill that never fires is worse than not
+   having it: it pays index cost and contributes nothing.
+5. **A non-activation test**: check that it does NOT fire on neighbouring domains' tasks.
+6. **Security review** of the batch (`/security-review`): no embedded execution
+   instructions, no secrets, no paths or commands that should not be there.
 
-## 5. Seguridad
+## 5. Security
 
-- Una skill es **texto que entra en el contexto y dirige comportamiento**: trátala como
-  código privilegiado. Revisar el diff de cada skill de terceros antes de instalarla.
-- **Prohibidas las skills de terceros sin auditar**: un `SKILL.md` puede contener
-  instrucciones de exfiltración o de ejecución encubierta. Autoría propia o revisión línea
-  a línea.
-- No incrustar secretos, tokens, rutas internas sensibles ni credenciales de ejemplo
-  reales — el contenido acaba en contexto y potencialmente en logs.
-- `allowed-tools` **no es una frontera de seguridad** (ver §2): no lo uses para contener
-  una skill en la que no confías; la contención real es no instalarla.
-- Skills que invocan scripts (`scripts/`): el script se ejecuta con tus permisos. Revisarlo
-  con el mismo criterio que cualquier binario que ejecutas.
+- A skill is **text that enters the context and steers behaviour**: treat it as
+  privileged code. Review the diff of every third-party skill before installing it.
+- **Unaudited third-party skills are forbidden**: a `SKILL.md` can contain
+  exfiltration or covert-execution instructions. Authored in house or reviewed line
+  by line.
+- Do not embed secrets, tokens, sensitive internal paths or real example
+  credentials — the content ends up in context and potentially in logs.
+- `allowed-tools` **is not a security boundary** (see §2): do not use it to contain
+  a skill you do not trust; the real containment is not installing it.
+- Skills that invoke scripts (`scripts/`): the script runs with your permissions. Review it
+  with the same criteria as any binary you execute.
 
-## 6. Operabilidad del catálogo
+## 6. Catalogue operability
 
-- **Medir el coste de índice** periódicamente: sumar las `description` de todas las skills
-  y vigilar que no crezca sin control conforme se añaden.
-- **Síntoma de catálogo enfermo**: la skill correcta no se activa, o se activa una vecina.
-  Causa casi siempre: descripciones que se solapan, no falta de contenido.
-- **Skills que nunca se activan**: revisar trimestralmente y podar. Cobertura teórica que
-  no se usa es deuda de mantenimiento.
-- Cambios en el catálogo (añadir, renombrar, borrar) surten efecto sin reiniciar: el
-  descubrimiento es por filesystem en cada turno.
+- **Measure the index cost** periodically: sum the `description` of every skill
+  and watch that it does not grow unchecked as more are added.
+- **Symptom of a sick catalogue**: the right skill does not fire, or a neighbour does.
+  The cause is almost always overlapping descriptions, not missing content.
+- **Skills that never fire**: review quarterly and prune. Theoretical coverage that
+  goes unused is maintenance debt.
+- Catalogue changes (adding, renaming, deleting) take effect without a restart:
+  discovery is by filesystem on every turn.
 
-## 7. Sostenibilidad
+## 7. Sustainability
 
-- **Cadencia**: revisar las skills con datos de versión al menos cada 6 meses; las de
-  ecosistemas volátiles (IA, normativa) cada 3. La §8 de cada skill es la que evita que el
-  contenido caducado se afirme como vigente.
-- **Fecha de referencia visible** en el cuerpo: convierte una skill obsoleta en una skill
-  fechada, que es recuperable.
-- Renombrar una skill rompe las líneas de frontera que la citan: buscar referencias
-  (`grep -rl '<slug-viejo>' ~/.claude/skills/`) antes de renombrar.
+- **Cadence**: review skills carrying version data at least every 6 months; those in
+  volatile ecosystems (AI, regulation) every 3. Each skill's §8 is what stops expired
+  content being asserted as current.
+- **A visible reference date** in the body: it turns an obsolete skill into a dated
+  skill, which is recoverable.
+- **Re-verification itself is governed by `update-standards`**: cadence, mechanical selection of
+  the batch, literals that are not paraphrased, and the verification traps. Here it is only fixed
+  that the date must exist; the refresh cycle is theirs.
+- Renaming a skill breaks the boundary lines that cite it: search for references in **the repo,
+  which is the source of truth** (`grep -rl '<old-slug>' skills/`), never in `~/.claude/skills/`,
+  which is a destination.
 
-**PROHIBIDO**
-- ❌ Descripción por concepto abstracto sin artefactos concretos.
-- ❌ Descripciones con relleno, o que dupliquen triggers de una skill vecina.
-- ❌ Recortar una descripción por cuota de palabras destruyendo disparadores legítimos.
-- ❌ Skill sin línea de frontera `**No aplica**` cuando tiene vecinas en su familia.
-- ❌ Meter en una skill lo que es doctrina transversal: eso va en `CLAUDE.md`.
-- ❌ Meter en `CLAUDE.md` lo que es criterio de un dominio concreto: eso va en una skill.
-- ❌ Plantillas, borradores o ficheros auxiliares dentro de `~/.claude/skills/`.
-- ❌ Instalar skills de terceros sin auditar línea a línea.
-- ❌ Confiar en `allowed-tools` como control de seguridad.
-- ❌ Tutorial y relleno: la skill fija criterio, no enseña a programar.
-- ❌ Fijar versiones o fechas EOL de memoria sin la verificación de §8.
+**FORBIDDEN**
+- ❌ A description by abstract concept with no concrete artifacts.
+- ❌ Descriptions with filler, or that duplicate a neighbouring skill's triggers.
+- ❌ Trimming a description to a word quota, destroying legitimate triggers.
+- ❌ A skill with no `**Not applicable**` boundary line when it has neighbours in its family.
+- ❌ Putting cross-cutting doctrine into a skill: that belongs in `CLAUDE.md`.
+- ❌ Putting a specific domain's criteria into `CLAUDE.md`: that belongs in a skill.
+- ❌ Templates, drafts or auxiliary files inside `~/.claude/skills/`.
+- ❌ Installing third-party skills without auditing them line by line.
+- ❌ Trusting `allowed-tools` as a security control.
+- ❌ Tutorial and filler: a skill fixes criteria, it does not teach programming.
+- ❌ Pinning versions or EOL dates from memory without the verification in §8.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier campo, comportamiento o límite del sistema de skills:
+Before pinning any field, behaviour or limit of the skills system:
 
-1. **Referencia canónica de frontmatter**: `code.claude.com/docs/en/skills` — qué campos
-   existen hoy, cuáles son del estándar Agent Skills y cuáles extensión de Claude Code.
-2. **Estado de `allowed-tools`**: sigue marcado experimental y con incidencias abiertas de
-   enforcement; confirmar antes de recomendarlo para algo.
-3. **Diferencias CLI vs SDK**: hay campos soportados solo en Claude Code CLI que no
-   aplican vía SDK.
-4. **Cambios de comportamiento del harness** (descubrimiento, precedencia proyecto/global,
-   aprobación de permisos en el primer uso) en el changelog de Claude Code.
+1. **The canonical frontmatter reference**: `code.claude.com/docs/en/skills` — which fields
+   exist today, which belong to the Agent Skills standard and which are a Claude Code extension.
+2. **The status of `allowed-tools`**: still marked experimental and with open enforcement
+   issues; confirm before recommending it for anything.
+3. **CLI versus SDK differences**: there are fields supported only in the Claude Code CLI that do
+   not apply through the SDK.
+4. **Harness behaviour changes** (discovery, project/global precedence,
+   permission approval on first use) in the Claude Code changelog.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

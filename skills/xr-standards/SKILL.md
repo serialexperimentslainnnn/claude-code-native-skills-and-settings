@@ -3,391 +3,383 @@ name: xr-standards
 description: Virtual, augmented and mixed reality engineering where comfort, latency and biometric privacy are hard requirements. Use when building with OpenXR (xrCreateInstance, XrSession, XrSpace, xrWaitFrame/xrBeginFrame/xrEndFrame, XR_KHR_composition_layer_depth, XR_EXT_hand_tracking, XR_EXT_eye_gaze_interaction, XR_EXT_plane_detection, XR_EXT_spatial_anchor, vendor XR_FB_/XR_META_/XR_ANDROID_ extensions), Unity XR Interaction Toolkit and OpenXR plugin, Unreal VR templates and OpenXR runtime, Godot XR, or WebXR (navigator.xr, requestSession("immersive-vr"/"immersive-ar"), XRReferenceSpace, hit-test and anchors), motion-to-photon latency, reprojection, timewarp, Application SpaceWarp and stale frames, headset refresh rates and per-frame budget on standalone hardware, locomotion, teleport, snap turn, vignette and simulator sickness, room-scale guardian and boundary, seated versus standing play, hand tracking versus controllers, raycast interaction, gaze and pinch, passthrough and scene understanding, spatial anchors and a persisted 3D mesh of the user's home, eye or face tracking data and emotion inference under the EU AI Act, Quest store VRC submission checks, or spatial audio and spatial subtitles.
 ---
 
-# Estándares de XR (realidad virtual, aumentada y mixta)
+# XR standards (virtual, augmented and mixed reality)
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Fija el criterio de ingeniería sobre **construir una aplicación que se lleva puesta en la cabeza**:
-presupuesto de fotograma y latencia, confort y cinetosis como requisito funcional, API estándar
-frente a extensión de fabricante, interacción con manos y mandos, accesibilidad en un medio que
-asume un cuerpo concreto, y **la privacidad de los datos que solo existen en XR** —mirada, cara,
-cuerpo y un mapa tridimensional del domicilio del usuario—.
+Sets the engineering criteria for **building an application worn on your head**: frame budget and
+latency, comfort and motion sickness as a functional requirement, standard API versus vendor
+extension, interaction with hands and controllers, accessibility in a medium that assumes one
+specific body, and **the privacy of the data that only exists in XR** — gaze, face, body and a
+three-dimensional map of the user's home.
 
-**Eje del dominio: el confort y la seguridad no son pulido, son requisito funcional.** En una
-pantalla, un fotograma perdido es una molestia; en la cabeza, **es un síntoma físico**. Un juego con
-malas físicas se juega mal; una aplicación de XR que provoca mareo **no se usa**, se quita uno el
-casco y no vuelve. Por eso el orden de prioridades es rígido y no se negocia con el diseño:
+**The domain's axis: comfort and safety are not polish, they are a functional requirement.** On a
+screen, a dropped frame is an annoyance; on your head, **it is a physical symptom**. A game with bad
+physics plays badly; an XR application that makes people dizzy **does not get used** — the headset
+comes off and does not go back on. That is why the order of priorities is rigid and not negotiated
+with design:
 
-1. **Tasa de fotogramas estable dentro del presupuesto del dispositivo** — no "alta de media".
-2. **Latencia movimiento-fotón mínima**: la imagen debe responder a la cabeza antes que el oído
-   interno note el desfase.
-3. **Ninguna aceleración impuesta al usuario**: ni de cámara, ni de horizonte, ni de escala.
-4. Y solo después: fidelidad visual, contenido y funcionalidad.
+1. **A stable frame rate within the device's budget** — not "high on average".
+2. **Minimum motion-to-photon latency**: the image must respond to the head before the inner ear
+   notices the lag.
+3. **No acceleration imposed on the user**: not of the camera, not of the horizon, not of the scale.
+4. And only then: visual fidelity, content and features.
 
-**Regla de oro, la que más se incumple: no muevas la cámara del usuario sin que el usuario lo haya
-hecho.** Nada de cinemáticas que giran la cabeza, ni de sacudidas de cámara, ni de retroceso de
-arma que rota la vista, ni de "smooth" impuesto al colisionar, ni de fundido que arrastra el
-horizonte. El vector de la cinetosis es el **conflicto entre lo que el ojo ve y lo que el oído
-interno siente**; cualquier movimiento que el cuerpo no ha ordenado es una dosis de ese conflicto.
+**Golden rule, the most broken one: do not move the user's camera unless the user moved it.** No
+cutscenes that turn the head, no camera shake, no weapon recoil that rotates the view, no imposed
+"smoothing" on collision, no fade that drags the horizon. The vector of motion sickness is the
+**conflict between what the eye sees and what the inner ear feels**; any movement the body did not
+command is a dose of that conflict.
 
-**La reproyección es una red de seguridad, no un plan.** *Timewarp*/*reprojection* y sus variantes
-(*Application SpaceWarp* y equivalentes) salvan un fotograma perdido ocasional generando uno
-sintético a partir del anterior; usados como presupuesto de diseño producen artefactos visibles
-(estelas, bordes desgarrados, fantasmas en objetos rápidos) y no arreglan la latencia de la
-simulación. **Se diseña para cumplir el presupuesto sin ellos.**
+**Reprojection is a safety net, not a plan.** *Timewarp*/*reprojection* and their variants
+(*Application SpaceWarp* and equivalents) rescue the occasional dropped frame by generating a
+synthetic one from the previous frame; used as a design budget they produce visible artifacts
+(trails, torn edges, ghosting on fast objects) and they do not fix simulation latency. **Design to
+meet the budget without them.**
 
 Triggers: `xrCreateInstance`, `XrSession`, `XrSpace`, `xrWaitFrame`, `xrEndFrame`,
 `XR_EXT_hand_tracking`, `XR_EXT_eye_gaze_interaction`, `XR_EXT_plane_detection`,
 `XR_EXT_spatial_anchor`, `XR_FB_*`/`XR_META_*`/`XR_ANDROID_*`, `com.oculus.permission.USE_SCENE`,
 `XRInteractionManager`, `XROrigin`, `navigator.xr`, `requestSession('immersive-vr')`,
-`XRReferenceSpace`, `local-floor`, `hit-test`, OVR Metrics Tool, *stale frames*, VRC de tienda, y
-los síntomas: "marea", "se ve a tirones al girar la cabeza", "las manos van con retraso", "no
-detecta el suelo", "el rechazo del casco a los 10 minutos".
+`XRReferenceSpace`, `local-floor`, `hit-test`, OVR Metrics Tool, *stale frames*, store VRCs, and the
+symptoms: "it makes me sick", "it stutters when I turn my head", "the hands lag", "it does not
+detect the floor", "the headset comes off after 10 minutes".
 
-**No aplica**: ver `game-development-standards` (**lote 22, hermana directa y frontera principal**:
-**el motor, el bucle de juego, el paso fijo, ECS, el *pooling*, el *streaming* de assets, el
-multijugador con autoridad de servidor, el control de versiones de binarios, la certificación y la
-monetización son suyos**. **Aquí lo que cambia por llevarlo puesto**: presupuesto y estabilidad por
-dispositivo, confort, locomoción, interacción espacial, accesibilidad de XR y privacidad
-biométrica. Regla de arbitraje: *si la respuesta sería la misma en una pantalla plana, es de
-`game-development`; si cambia porque el usuario tiene el aparato en la cabeza, es de aquí*),
-`webgl-webgpu-standards` (**el navegador y la API gráfica son suyos sin excepción**: WebGL2/WebGPU,
-WGSL/GLSL, three.js/Babylon, pérdida de contexto, texturas comprimidas. **WebXR se apoya en ellos:
-aquí el modelo de sesión, los espacios de referencia, la entrada y el confort; allí lo que se
-dibuja y cuánto cuesta**), `computer-vision-standards` (**SLAM, seguimiento *inside-out*,
-reconstrucción, detección de planos y de marcadores, y cualquier modelo de percepción son suyos**;
-aquí solo **consumir** el resultado que expone el runtime —anclas, mallas, planos— y las
-obligaciones que trae ese dato), `mobile-standards` (empaquetado Android, permisos, ciclo de vida
-de app y política de tienda; un casco autónomo es un Android con reglas propias), `cpp-standards` /
-`c-standards` (el lenguaje del *loader* y de las extensiones), `dotnet-standards` (C# fuera de
-Unity), `accessibility-standards` (**el criterio de conformidad WCAG, EN 301 549 y su alcance legal
-es suyo**; **aquí lo que WCAG no cubre**: altura, alcance, mano dominante, sentado/de pie, subtítulo
-espacial), `i18n-standards` (traducción, formatos y proveedor; aquí solo el coste espacial del
-texto), `privacy-engineering-standards` (**la disciplina de privacidad —base legal, DPIA,
-minimización, derechos del interesado, retención— es suya, íntegra**. **Aquí solo el hecho
-diferencial de XR**: qué sensores existen, qué se deriva de ellos y qué se prohíbe capturar. Un
-tratamiento de datos de mirada se **diseña** con esta skill y se **gobierna** con la suya),
-`ai-governance-standards` (**el AI Act como marco de cumplimiento —inventario, roles de proveedor y
-responsable del despliegue, evaluaciones, gobernanza— es suyo**; aquí solo el disparador concreto:
-inferencia de emociones a partir de biometría), `deep-learning-standards` y
-`local-inference-standards` (entrenar y servir modelos), `performance-engineering-standards`
-(metodología de perfilado), `gaming-infrastructure-standards` (servidores y sesiones
-multiusuario), `frontend-web-platform-standards` (la página que aloja la experiencia WebXR),
-`embedded-iot-standards` (el dispositivo como objeto físico; aquí se asume hardware ajeno).
+**Not applicable**: see `game-development-standards` (**batch 22, direct sister and the main
+boundary**: **the engine, the game loop, the fixed timestep, ECS, *pooling*, asset *streaming*,
+multiplayer with server authority, binary version control, certification and monetisation are
+theirs**. **Here what changes because it is worn**: budget and stability per device, comfort,
+locomotion, spatial interaction, XR accessibility and biometric privacy. Arbitration rule: *if the
+answer would be the same on a flat screen, it belongs to `game-development`; if it changes because
+the user has the device on their head, it belongs here*), `webgl-webgpu-standards` (**the browser
+and the graphics API are theirs without exception**: WebGL2/WebGPU, WGSL/GLSL, three.js/Babylon,
+context loss, compressed textures. **WebXR rests on them: here the session model, reference spaces,
+input and comfort; there what is drawn and what it costs**), `computer-vision-standards` (**SLAM,
+*inside-out* tracking, reconstruction, plane and marker detection, and any perception model are
+theirs**; here only **consuming** the result the runtime exposes — anchors, meshes, planes — and the
+obligations that data brings), `mobile-standards` (Android packaging, permissions, app lifecycle and
+store policy; a standalone headset is an Android with rules of its own), `cpp-standards` /
+`c-standards` (the language of the *loader* and the extensions), `dotnet-standards` (C# outside
+Unity), `accessibility-standards` (**the WCAG and EN 301 549 conformance criterion and its legal
+scope are theirs**; **here what WCAG does not cover**: height, reach, dominant hand, seated/standing,
+spatial subtitles), `i18n-standards` (translation, formats and vendor; here only the spatial cost of
+text), `privacy-engineering-standards` (**the privacy discipline — legal basis, DPIA, minimisation,
+data subject rights, retention — is theirs, in full**. **Here only XR's differentiating fact**: which
+sensors exist, what is derived from them and what is forbidden to capture. Gaze data processing is
+**designed** with this skill and **governed** with theirs), `ai-governance-standards` (**the AI Act
+as a compliance framework — inventory, provider and deployer roles, assessments, governance — is
+theirs**; here only the concrete trigger: emotion inference from biometrics),
+`deep-learning-standards` and `local-inference-standards` (training and serving models),
+`performance-engineering-standards` (profiling methodology), `gaming-infrastructure-standards`
+(servers and multi-user sessions), `frontend-web-platform-standards` (the page hosting the WebXR
+experience), `embedded-iot-standards` (the device as a physical object; here third-party hardware is
+assumed).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión, el catálogo de dispositivos vigente y sus tasas de refresco por web
-> antes de fijarlas en un proyecto real (§8). **El catálogo de hardware de XR rota rápido y las
-> cifras de ventas que circulan no son verificables: no se citan.**
+> Verify the latest version, the current device catalogue and their refresh rates on the web before
+> fixing them in a real project (§8). **The XR hardware catalogue rotates fast and the sales figures
+> in circulation are not verifiable: they are not cited.**
 
-| Decisión | Por defecto | Alternativa justificable | Motivo |
+| Decision | Default | Justifiable alternative | Reason |
 |---|---|---|---|
-| API de dispositivo | **OpenXR** | SDK propietario | Estándar Khronos; evita reescribir por fabricante |
-| Extensiones de fabricante | Solo tras degradación probada | — | Cada `XR_FB_`/`XR_META_` es acoplamiento |
-| Motor | Unity + XR Interaction Toolkit / Unreal / Godot XR | Nativo con OpenXR + Vulkan | Herramientas e interacción resueltas |
-| Objetivo de rendimiento | **ms de p99 dentro del presupuesto del dispositivo** | — | El fotograma perdido se nota en el cuerpo |
-| Locomoción por defecto | **Teleporte + giro por pasos (*snap turn*)** | Continua **como opción** con viñeteado | Menor conflicto vestibular |
-| Marco de referencia | `local-floor`/*stage* con calibración de altura | `local` sentado | Escala y suelo correctos |
-| Entrada | **Mandos** como camino primario | Manos como alternativa | Fiabilidad, precisión y fatiga |
-| Interacción a distancia | *Raycast* con retroalimentación clara | Interacción directa (cerca) | Ergonomía del alcance |
-| Mirada como entrada | **Solo con confirmación explícita** | — | La mirada no es una intención |
-| Datos de mirada/cara | **No salen del dispositivo** | Nunca por defecto | Biometría §5 |
-| Web | **WebXR** cuando basta y el alcance manda | Nativo cuando manda el rendimiento | Distribución sin tienda |
-| Reproyección | Red de seguridad | — | No es presupuesto de diseño |
+| Device API | **OpenXR** | Proprietary SDK | Khronos standard; avoids rewriting per vendor |
+| Vendor extensions | Only after proven degradation | — | Every `XR_FB_`/`XR_META_` is coupling |
+| Engine | Unity + XR Interaction Toolkit / Unreal / Godot XR | Native with OpenXR + Vulkan | Tooling and interaction already solved |
+| Performance target | **p99 ms within the device's budget** | — | A dropped frame is felt in the body |
+| Default locomotion | **Teleport + *snap turn*** | Continuous **as an option** with vignetting | Less vestibular conflict |
+| Reference frame | `local-floor`/*stage* with height calibration | `local` seated | Correct scale and floor |
+| Input | **Controllers** as the primary path | Hands as an alternative | Reliability, precision and fatigue |
+| Distance interaction | *Raycast* with clear feedback | Direct interaction (near) | Ergonomics of reach |
+| Gaze as input | **Only with explicit confirmation** | — | Gaze is not an intent |
+| Gaze/face data | **Does not leave the device** | Never by default | Biometrics §5 |
+| Web | **WebXR** when it suffices and reach matters | Native when performance matters | Distribution without a store |
+| Reprojection | Safety net | — | It is not a design budget |
 
-**Estado verificado del estándar (agosto de 2026):**
+**Verified status of the standard (August 2026):**
 
-- **OpenXR** publica su especificación en la línea **1.1** (`registry.khronos.org/OpenXR/`: *«OpenXR
-  1.1 API Specifications (also applies to 1.0 development)»*; la 1.0.34 aparece marcada como
-  *Obsolete*). Última entrega del SDK verificada por el feed Atom de releases: **OpenXR SDK
-  1.1.62**.
-- **Qué queda fuera del estándar, con cifra y método**: contando las extensiones declaradas en el
-  registro oficial `specification/registry/xr.xml` (rama `main` de `OpenXR-SDK`, excluidos los
-  huecos reservados del tipo `XR_META_extension_NNN`), hay **261 extensiones con nombre real**, de
-  las cuales solo **35 son `XR_KHR_`** y **38 `XR_EXT_`** (multi-fabricante). Las **188 restantes son
-  de fabricante**: `XR_FB_` 41, `XR_META_` 34, `XR_ANDROID_` 27, `XR_BD_` 16, `XR_MSFT_` 15,
-  `XR_ML_` 13, `XR_HTC_` 9, `XR_VARJO_` 7, `XR_QCOM_` 6… **Lectura**: OpenXR estandariza bien el
-  núcleo —sesión, espacios, capas, entrada, ciclo de fotograma— y **casi todo lo diferencial
-  (passthrough, malla de escena, seguimiento de cara y cuerpo, anclas compartidas, *depth*) sigue
-  llegando por extensión de fabricante**. Portabilidad real = núcleo estándar + capa de abstracción
-  propia sobre lo que se use por extensión + **degradación probada** cuando la extensión no está.
-- **WebXR Device API**: **W3C Candidate Recommendation Draft de 9 de junio de 2026**
-  (`w3.org/TR/webxr/`). Es decir: estándar en curso, no Recomendación; el soporte por navegador y
-  plataforma **se comprueba antes de prometerlo**, y los módulos (AR, *hit test*, anclas, capas,
-  manos) van por especificaciones separadas con madurez distinta.
-- **Presupuesto de fotograma por dispositivo — dato normativo verificado.** Requisito de tienda de
-  Meta `VRC.Quest.Performance.1` (actualizado 22-oct-2025), verbatim: *«The app must run at an
-  allowed refresh rate and maintain a rendering rate (fps) of at least 60 fps»*, *«Interactive
-  applications must use a refresh rate of 72 Hz, 80 Hz, 90 Hz, 96 Hz, 100 Hz or 120 Hz (96 Hz, 100
-  Hz, and 120 Hz not available on all devices)»* y *«Media applications may use a refresh of 60 Hz
-  on devices that support 60 Hz»*. La guía de rendimiento para Unity del mismo fabricante afirma
-  además: *«Interactive applications must achieve a minimum of 72 FPS»*. **Traducción a
-  presupuesto**: 72 Hz → **13,9 ms**; 80 Hz → 12,5 ms; 90 Hz → **11,1 ms**; 120 Hz → 8,3 ms **por
-  fotograma, para todo** (simulación, física, animación, culling, dos ojos de render, composición,
-  audio, red). Y **por ojo**: el coste de render se paga dos veces salvo que se use render de una
-  sola pasada (*single-pass instanced*/*multiview*), que es el ajuste por defecto correcto.
-- **Excepción documentada**: el mismo VRC permite *«a rendering rate (fps) of half the refresh rate
+- **OpenXR** publishes its specification on the **1.1** line (`registry.khronos.org/OpenXR/`:
+  *«OpenXR 1.1 API Specifications (also applies to 1.0 development)»*; 1.0.34 appears marked
+  *Obsolete*). Latest SDK release verified via the releases Atom feed: **OpenXR SDK 1.1.62**.
+- **What falls outside the standard, with a figure and a method**: counting the extensions declared
+  in the official registry `specification/registry/xr.xml` (`main` branch of `OpenXR-SDK`, excluding
+  reserved placeholders of the `XR_META_extension_NNN` kind), there are **261 extensions with a real
+  name**, of which only **35 are `XR_KHR_`** and **38 `XR_EXT_`** (multi-vendor). The **remaining 188
+  are vendor-specific**: `XR_FB_` 41, `XR_META_` 34, `XR_ANDROID_` 27, `XR_BD_` 16, `XR_MSFT_` 15,
+  `XR_ML_` 13, `XR_HTC_` 9, `XR_VARJO_` 7, `XR_QCOM_` 6… **Reading**: OpenXR standardises the core
+  well — session, spaces, layers, input, frame cycle — and **almost everything differentiating
+  (passthrough, scene mesh, face and body tracking, shared anchors, *depth*) still arrives via vendor
+  extension**. Real portability = standard core + your own abstraction layer over whatever extension
+  is used + **proven degradation** when the extension is absent.
+- **WebXR Device API**: **W3C Candidate Recommendation Draft of 9 June 2026** (`w3.org/TR/webxr/`).
+  That is: a standard in progress, not a Recommendation; browser and platform support **is checked
+  before promising it**, and the modules (AR, *hit test*, anchors, layers, hands) go through separate
+  specifications with different maturity.
+- **Frame budget per device — verified normative data.** Meta store requirement
+  `VRC.Quest.Performance.1` (updated 2025-10-22), verbatim: *«The app must run at an allowed refresh
+  rate and maintain a rendering rate (fps) of at least 60 fps»*, *«Interactive applications must use
+  a refresh rate of 72 Hz, 80 Hz, 90 Hz, 96 Hz, 100 Hz or 120 Hz (96 Hz, 100 Hz, and 120 Hz not
+  available on all devices)»* and *«Media applications may use a refresh of 60 Hz on devices that
+  support 60 Hz»*. The same vendor's Unity performance guide additionally states: *«Interactive
+  applications must achieve a minimum of 72 FPS»*. **Translated into a budget**: 72 Hz → **13.9 ms**;
+  80 Hz → 12.5 ms; 90 Hz → **11.1 ms**; 120 Hz → 8.3 ms **per frame, for everything** (simulation,
+  physics, animation, culling, two eyes of rendering, composition, audio, networking). And **per
+  eye**: the render cost is paid twice unless single-pass rendering (*single-pass
+  instanced*/*multiview*) is used, which is the correct default setting.
+- **Documented exception**: the same VRC allows *«a rendering rate (fps) of half the refresh rate
   (such as … 36 fps for 72 Hz), for portions of their experience utilizing Application SpaceWarp»*
-  y exige generar vectores de movimiento que minimicen los artefactos. **Es una excepción con
-  condiciones, no una licencia para diseñar a medio presupuesto.**
-- **Otros fabricantes**: cada tienda tiene su propio pliego equivalente. **No se asume que el de uno
-  valga para el otro**: se lee el del destino antes de fijar el objetivo (§8).
+  and requires generating motion vectors that minimise artifacts. **It is an exception with
+  conditions, not a licence to design at half budget.**
+- **Other vendors**: each store has its own equivalent requirements document. **Do not assume one
+  vendor's applies to another**: read the target's before fixing the goal (§8).
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-**Bucle y sincronización.** El ciclo de OpenXR (`xrWaitFrame` → `xrBeginFrame` → render →
-`xrEndFrame`) lo gobierna **el runtime**, no la aplicación: `xrWaitFrame` es quien decide cuándo
-empezar y entrega el `predictedDisplayTime`. Reglas:
+**Loop and synchronisation.** The OpenXR cycle (`xrWaitFrame` → `xrBeginFrame` → render →
+`xrEndFrame`) is governed by **the runtime**, not the application: `xrWaitFrame` is what decides when
+to begin and delivers the `predictedDisplayTime`. Rules:
 
-- **Toda pose se consulta para el tiempo de visualización predicho**, no para "ahora". Usar la pose
-  del fotograma anterior o el reloj del sistema introduce latencia y *judder*.
-- **Nunca bloquear el hilo de render**: carga de assets, red, decodificación y física pesada van
-  fuera. Un bloqueo de 30 ms es un fotograma perdido, y un fotograma perdido es un tirón en la
-  cabeza.
-- **Entregar siempre las capas de composición con profundidad correcta** (`XR_KHR_composition_layer_depth`
-  cuando esté disponible): la reproyección funciona mucho mejor con profundidad.
-- **La UI no se pega a la cara.** Interfaz anclada al mundo o al cuerpo, a distancia cómoda de
-  lectura, con texto de tamaño angular suficiente. La UI fija a la cabeza (*head-locked*) provoca
-  mareo y es la marca del port perezoso desde pantalla plana.
+- **Every pose is queried for the predicted display time**, not for "now". Using the previous frame's
+  pose or the system clock introduces latency and *judder*.
+- **Never block the render thread**: asset loading, networking, decoding and heavy physics go
+  elsewhere. A 30 ms block is a dropped frame, and a dropped frame is a jolt in the head.
+- **Always submit composition layers with correct depth** (`XR_KHR_composition_layer_depth` where
+  available): reprojection works much better with depth.
+- **The UI is not stuck to the face.** Interface anchored to the world or to the body, at a
+  comfortable reading distance, with sufficient angular text size. A *head-locked* UI causes sickness
+  and is the hallmark of the lazy port from a flat screen.
 
-**Espacios de referencia y escala.** Declarar explícitamente qué se usa (`local`, `local-floor`,
-`stage`/*bounded*) y **respetar la escala 1:1**: un metro virtual es un metro real. Cambiar la
-escala del mundo o la separación interpupilar sin motivo rompe la percepción de profundidad y marea.
-El límite de juego (*guardian*/boundary) es una funcionalidad de **seguridad física**: nunca
-ocultarlo, nunca incitar a salirse de él, prever el caso de espacio pequeño.
+**Reference spaces and scale.** Declare explicitly which one is used (`local`, `local-floor`,
+`stage`/*bounded*) and **respect 1:1 scale**: a virtual metre is a real metre. Changing the world's
+scale or the interpupillary distance without reason breaks depth perception and causes sickness. The
+play boundary (*guardian*) is a **physical safety** feature: never hide it, never incite the user to
+step outside it, plan for the small-space case.
 
-**Locomoción — catálogo con criterio:**
+**Locomotion — a catalogue with criteria:**
 
-- **Teleporte** con indicación de destino: el más cómodo, casi sin conflicto vestibular. Por defecto.
-- **Giro por pasos** (30°/45°) frente a giro continuo: por defecto los pasos; el continuo, opción.
-- **Locomoción continua**: solo como **opción activable**, con **viñeteado dinámico** (reducir el
-  campo de visión periférico mientras hay movimiento), velocidad constante y **sin aceleración**
-  (la aceleración es lo que marea, no la velocidad), sin *strafe* combinado con giro.
-- **Marco estático de referencia** (cabina, nariz virtual, rejilla o marco fijo respecto al cuerpo)
-  cuando hay movimiento inevitable: reduce el conflicto al dar al ojo una referencia que no se
-  mueve. Es el motivo de que los simuladores de conducción/vuelo sean cómodos.
-- **Prohibido siempre**: escaleras/rampas que balancean la cámara, *head bobbing*, movimiento
-  vertical no ordenado, caída libre larga, y quitar el control de la vista al usuario.
-- **Todo lo anterior se ofrece como ajuste**, con valores por defecto conservadores y accesibles en
-  cualquier momento **sin salir de la aplicación**.
+- **Teleport** with a destination indicator: the most comfortable, with almost no vestibular
+  conflict. The default.
+- **Snap turn** (30°/45°) versus continuous turn: snap by default; continuous as an option.
+- **Continuous locomotion**: only as an **opt-in option**, with **dynamic vignetting** (reducing the
+  peripheral field of view while moving), constant speed and **no acceleration** (acceleration is
+  what causes sickness, not speed), with no strafing combined with turning.
+- **A static reference frame** (cockpit, virtual nose, grid or frame fixed relative to the body) when
+  movement is unavoidable: it reduces the conflict by giving the eye a reference that does not move.
+  It is why driving/flight simulators are comfortable.
+- **Always forbidden**: stairs/ramps that sway the camera, *head bobbing*, uncommanded vertical
+  movement, long free falls, and taking view control away from the user.
+- **All of the above is offered as a setting**, with conservative defaults, accessible at any moment
+  **without leaving the application**.
 
-**Interacción.**
+**Interaction.**
 
-- **Mandos** para lo que exige precisión, retroalimentación háptica y baja fatiga. **Manos** para
-  interacción social, breve o sin accesorio: el seguimiento falla con oclusión, con poca luz y fuera
-  del campo de las cámaras, así que **toda interacción con manos necesita camino alternativo** y
-  tolerancia a la pérdida de seguimiento.
-- ***Gorilla arm* es un requisito de diseño**: nada de mantener el brazo en alto ni de gestos
-  repetidos; interacciones cortas, a la altura del pecho, con descanso.
-- **Retroalimentación multimodal**: todo objetivo apuntado se resalta, toda acción confirma con
-  sonido y/o háptica. En XR, sin retroalimentación el usuario no sabe si el sistema lo ha oído.
-- **La mirada no es un clic.** Con seguimiento ocular, la mirada puede seleccionar pero **confirma
-  otro gesto** (pinza, botón). El *dwell* (mantener la mirada) solo como accesibilidad explícita.
-- **Zona de confort**: contenido interactivo dentro del alcance sin desplazarse; nada crítico por
-  encima de la cabeza, por debajo de la cintura ni detrás del usuario. Si algo importante está
-  fuera del campo de visión, hay que **indicarlo** (audio espacial, flecha, halo).
+- **Controllers** for what demands precision, haptic feedback and low fatigue. **Hands** for social,
+  short or accessory-free interaction: tracking fails under occlusion, in low light and outside the
+  cameras' field of view, so **every hand interaction needs an alternative path** and tolerance to
+  tracking loss.
+- ***Gorilla arm* is a design requirement**: no holding the arm up, no repeated gestures; short
+  interactions, at chest height, with rest.
+- **Multimodal feedback**: every targeted object is highlighted, every action confirms with sound
+  and/or haptics. In XR, without feedback the user does not know whether the system heard them.
+- **Gaze is not a click.** With eye tracking, gaze may select but **another gesture confirms** (pinch,
+  button). *Dwell* (holding the gaze) only as an explicit accessibility option.
+- **Comfort zone**: interactive content within reach without moving; nothing critical above the head,
+  below the waist or behind the user. If something important is outside the field of view, it must be
+  **indicated** (spatial audio, arrow, halo).
 
-**Audio espacial** como parte de la simulación, no como adorno: es el canal que sitúa lo que está
-fuera de la vista y reduce el trabajo del cuello. Con oclusión y reverberación coherentes con la
-escena.
+**Spatial audio** as part of the simulation, not as decoration: it is the channel that places what is
+out of sight and reduces neck work. With occlusion and reverberation consistent with the scene.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-- **Perfilar en el dispositivo, en build de release, siempre.** El editor con vista previa en el
-  casco no mide lo que mide el aparato: térmica, GPU móvil, resolución real y composición. En
-  hardware autónomo, además, **el rendimiento decae con el calor**: la prueba válida dura **más de
-  15–20 minutos**, no dos.
-- **Métrica**: tiempo de fotograma en p99, **fotogramas perdidos y *stale frames*** (fotogramas
-  repetidos por el compositor), y nivel de *throttling* térmico de CPU/GPU. Los fps medios no valen.
-- **Pruebas de confort con personas**, incluidas personas sin experiencia previa en XR y personas
-  propensas al mareo: **la tolerancia del equipo de desarrollo es la peor referencia posible**
-  (habituación). Sesiones cronometradas, con posibilidad de parar en cualquier momento, y registro
-  de síntomas. **Ninguna cifra del tipo "el X % se marea" se cita sin estudio y metodología: es
-  folclore del sector.**
-- **Matriz de pruebas físicas obligatoria**: de pie y sentado; espacio grande y espacio de 1×1 m;
-  usuario alto y usuario bajo (o sentado en silla de ruedas); zurdo y diestro; con gafas; con poca
-  luz y con luz directa (afecta al seguimiento *inside-out*); quitarse y ponerse el casco a media
-  sesión; perder el seguimiento de una mano; mando sin batería.
-- **Degradación de extensiones**: test que arranca con las extensiones de fabricante deshabilitadas
-  y verifica que la aplicación funciona o degrada limpiamente.
-- **Gates de CI en orden de coste**: análisis estático → tests de lógica sin casco → build por
-  plataforma → escena de referencia medida en dispositivo con umbral en ms → comprobación
-  automatizada de requisitos de tienda (VRC/equivalente) → sesión de confort con personas.
-- **Antes de enviar a tienda**: pasar la lista de requisitos del fabricante entera. Los fallos más
-  frecuentes no son técnicos de render, son de política —privacidad, edad, contenido, metadatos—.
+- **Profile on the device, in a release build, always.** The editor with a headset preview does not
+  measure what the device measures: thermals, mobile GPU, real resolution and composition. On
+  standalone hardware, moreover, **performance degrades with heat**: a valid test lasts **more than
+  15–20 minutes**, not two.
+- **Metrics**: p99 frame time, **dropped frames and *stale frames*** (frames repeated by the
+  compositor), and the level of CPU/GPU thermal *throttling*. Average fps is worthless.
+- **Comfort testing with people**, including people with no prior XR experience and people prone to
+  motion sickness: **the development team's tolerance is the worst possible reference** (habituation).
+  Timed sessions, with the option to stop at any moment, and a symptom log. **No figure of the "X% get
+  sick" kind is cited without a study and its methodology: that is industry folklore.**
+- **A mandatory physical test matrix**: standing and seated; a large space and a 1×1 m space; a tall
+  user and a short user (or a user seated in a wheelchair); left-handed and right-handed; with
+  glasses; in low light and in direct light (it affects *inside-out* tracking); taking the headset
+  off and putting it back on mid-session; losing tracking of one hand; a controller with a dead
+  battery.
+- **Extension degradation**: a test that boots with vendor extensions disabled and verifies the
+  application works or degrades cleanly.
+- **CI gates in order of cost**: static analysis → logic tests without the headset → per-platform
+  build → a reference scene measured on-device with a threshold in ms → automated check of store
+  requirements (VRC/equivalent) → a comfort session with people.
+- **Before submitting to a store**: go through the vendor's full requirements list. The most frequent
+  failures are not render technicalities, they are policy — privacy, age rating, content, metadata.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-**Aquí es donde XR se separa de todo lo demás del catálogo: los sensores que necesita para funcionar
-son sensores de vigilancia corporal y doméstica.** El casco mide dónde miras, cuánto se dilatan tus
-pupilas, cómo se mueve tu cara, cómo se mueve tu cuerpo y **cómo es por dentro la habitación en la
-que vives**. Nada de eso es "telemetría".
+**This is where XR separates from everything else in the catalogue: the sensors it needs to work are
+sensors for bodily and domestic surveillance.** The headset measures where you look, how much your
+pupils dilate, how your face moves, how your body moves and **what the room you live in looks like
+inside**. None of that is "telemetry".
 
-- **Mirada (*eye tracking*)**: revela atención, interés, carga cognitiva y —según la literatura—
-  permite identificar a la persona por su patrón de movimiento ocular. **Criterio duro: los datos de
-  mirada se procesan en el dispositivo y no salen de él.** Si el caso de uso es *foveated rendering*
-  o apuntado, la aplicación necesita el vector actual, **no el histórico**: no se almacena, no se
-  registra, no se envía, no se usa para publicidad ni para analítica de atención.
-- **Cara y cuerpo**: la expresión facial y la postura son datos de comportamiento derivados de
-  sensores biométricos. Mismo criterio: locales, efímeros, con propósito declarado (avatar) y sin
-  persistencia.
-- **Mapa 3D del domicilio**: la malla de escena, los planos y los anclas espaciales son **un plano de
-  la casa del usuario**, con muebles, tamaño y a veces contenido. En la plataforma de Meta el acceso
-  está tras un permiso de ejecución explícito —`com.oculus.permission.USE_SCENE`, declarado en el
-  `AndroidManifest.xml`, con diálogo de consentimiento— y la documentación exige **prever el camino
-  alternativo si el usuario lo deniega**. Criterio: **pedirlo solo cuando se usa, explicarlo en el
-  momento, funcionar sin él y no exportarlo jamás del dispositivo**. Subir una malla de escena a un
-  servidor propio es un tratamiento que requiere base legal, DPIA y minimización
+- **Gaze (*eye tracking*)**: it reveals attention, interest, cognitive load and — according to the
+  literature — allows identifying a person by their eye movement pattern. **Hard criterion: gaze data
+  is processed on the device and does not leave it.** If the use case is *foveated rendering* or
+  aiming, the application needs the current vector, **not the history**: it is not stored, not
+  logged, not transmitted, not used for advertising nor for attention analytics.
+- **Face and body**: facial expression and posture are behavioural data derived from biometric
+  sensors. Same criterion: local, ephemeral, with a declared purpose (avatar) and with no persistence.
+- **3D map of the home**: the scene mesh, the planes and the spatial anchors are **a floor plan of the
+  user's house**, with furniture, size and sometimes contents. On Meta's platform access sits behind
+  an explicit runtime permission — `com.oculus.permission.USE_SCENE`, declared in the
+  `AndroidManifest.xml`, with a consent dialog — and the documentation requires **planning the
+  alternative path if the user denies it**. Criterion: **ask for it only when it is used, explain it
+  at that moment, work without it and never export it off the device**. Uploading a scene mesh to
+  your own server is processing that requires a legal basis, a DPIA and minimisation
   (`privacy-engineering-standards`).
-- **Cámaras de *passthrough*** y acceso a fotograma de cámara: es una cámara doméstica con todo lo
-  que ello implica —terceros no consentidos en la escena incluidos—. Se trata como cámara, con
-  indicación visible de captura y sin grabación silenciosa.
-- **Marco legal, verbatim de la fuente:**
-  - **RGPD, art. 4(14)**: *«‘biometric data’ means personal data resulting from specific technical
+- ***Passthrough* cameras** and camera frame access: it is a domestic camera with everything that
+  implies — including non-consenting third parties in the scene. It is treated as a camera, with a
+  visible capture indicator and no silent recording.
+- **Legal framework, verbatim from the source:**
+  - **GDPR, art. 4(14)**: *«‘biometric data’ means personal data resulting from specific technical
     processing relating to the physical, physiological or behavioural characteristics of a natural
     person, which allow or confirm the unique identification of that natural person…»*. **Art. 9(1)**:
-    el tratamiento de *«biometric data for the purpose of uniquely identifying a natural person»*
-    **está prohibido** salvo excepción del 9(2) —consentimiento explícito entre ellas—. Es decir: el
-    dato de mirada o de cara **no es automáticamente art. 9**; lo es **cuando se usa para
-    identificar de forma única**. La consecuencia práctica no cambia: es dato personal sensible por
-    contexto, y el diseño correcto es que no se persista.
-  - **Reglamento de IA (UE) 2024/1689 — inferencia de emociones**. Definición (art. 3): *«‘emotion
-    recognition system’ means an AI system for the purpose of identifying or inferring emotions or
-    intentions of natural persons on the basis of their biometric data»*. **Prohibición (art. 5)**,
-    verbatim: *«the placing on the market, the putting into service for this specific purpose, or
-    the use of AI systems to infer emotions of a natural person in the areas of workplace and
-    education institutions, except where the use of the AI system is intended to be put in place or
-    into the market for medical or safety reasons»*. Fuera de trabajo y educación **no está
-    prohibido, pero es alto riesgo**: el Anexo III lista *«AI systems intended to be used for
-    emotion recognition»*. Y el art. 50(3) obliga: *«Deployers of an emotion recognition system or a
-    biometric categorisation system shall inform the natural persons exposed thereto of the
-    operation of the system»*. El propio Reglamento avisa en sus considerandos de que hay *«serious
-    concerns about the scientific basis of AI systems aiming to identify or infer emotions»*.
-    **Traducción de ingeniería**: una función de "detectar cómo se siente el usuario" a partir de
-    cara, mirada o voz es, en formación laboral o educativa en la UE, **ilegal**; en el resto de
-    casos arrastra el régimen de alto riesgo y deber de información. **No se implementa sin pasar
-    por `ai-governance-standards`.**
-- **Menores**: los cascos tienen mínimos de edad y modos de cuenta infantil. Contenido, chat de voz,
-  captura de datos y publicidad cambian de régimen. Verificar la política de la plataforma y el
-  marco de protección del menor antes de diseñar la funcionalidad social.
-- **Requisito de tienda verificado** (`VRC.Quest.Privacy.4`, actualizado 8-abr-2026): la política de
-  privacidad debe explicar cómo **cualquier** usuario solicita el borrado de sus datos, y *«Requiring
-  users to pay a fee for deletion of user data is prohibited»*. Es además, según el propio
-  fabricante, **uno de los requisitos que más se suspenden**.
-- **Superficie clásica que no desaparece por ser XR**: multijugador con autoridad de servidor y
-  cliente hostil (`game-development-standards` §5), claves embebidas en el binario, contenido
-  descargado por el usuario, y **acoso en espacios sociales** —que en XR es corporal (invasión de
-  espacio personal): burbuja personal, silenciado, bloqueo y denuncia son funcionalidades de
-  seguridad, no de comunidad—.
+    the processing of *«biometric data for the purpose of uniquely identifying a natural person»*
+    **is prohibited** save for an exception under 9(2) — explicit consent among them. That is: gaze
+    or face data **is not automatically art. 9**; it becomes so **when it is used to uniquely
+    identify**. The practical consequence does not change: it is personal data that is sensitive by
+    context, and the correct design is that it is not persisted.
+  - **AI Regulation (EU) 2024/1689 — emotion inference**. Definition (art. 3): *«‘emotion recognition
+    system’ means an AI system for the purpose of identifying or inferring emotions or intentions of
+    natural persons on the basis of their biometric data»*. **Prohibition (art. 5)**, verbatim: *«the
+    placing on the market, the putting into service for this specific purpose, or the use of AI
+    systems to infer emotions of a natural person in the areas of workplace and education
+    institutions, except where the use of the AI system is intended to be put in place or into the
+    market for medical or safety reasons»*. Outside work and education it **is not prohibited, but it
+    is high risk**: Annex III lists *«AI systems intended to be used for emotion recognition»*. And
+    art. 50(3) requires: *«Deployers of an emotion recognition system or a biometric categorisation
+    system shall inform the natural persons exposed thereto of the operation of the system»*. The
+    Regulation itself warns in its recitals that there are *«serious concerns about the scientific
+    basis of AI systems aiming to identify or infer emotions»*. **Engineering translation**: a
+    "detect how the user feels" feature based on face, gaze or voice is, in workplace training or
+    education in the EU, **illegal**; in every other case it drags in the high-risk regime and the
+    duty to inform. **It is not implemented without going through `ai-governance-standards`.**
+- **Minors**: headsets have minimum ages and child account modes. Content, voice chat, data capture
+  and advertising change regime. Verify the platform's policy and the child protection framework
+  before designing social features.
+- **Verified store requirement** (`VRC.Quest.Privacy.4`, updated 2026-04-08): the privacy policy must
+  explain how **any** user requests deletion of their data, and *«Requiring users to pay a fee for
+  deletion of user data is prohibited»*. It is also, according to the vendor itself, **one of the most
+  frequently failed requirements**.
+- **The classic surface that does not disappear just because it is XR**: multiplayer with server
+  authority and a hostile client (`game-development-standards` §5), keys embedded in the binary,
+  user-downloaded content, and **harassment in social spaces** — which in XR is bodily (invasion of
+  personal space): a personal bubble, muting, blocking and reporting are safety features, not
+  community features.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Coste doble por ojo**: activar render de una sola pasada instanciada (*single-pass
-  instanced*/multiview) por defecto; medir si se está pagando dos veces por error.
-- **Palancas reales en hardware autónomo**, en orden de rentabilidad: reducir *draw calls* y cambios
-  de material (agrupamiento estático/dinámico, atlas), resolución dinámica y *foveation* (fija o
-  guiada por mirada), *shaders* móviles simples y sin sobredibujo (**el sobredibujo con transparencias
-  es el asesino número uno**), *lightmaps* frente a iluminación dinámica, LOD agresivo, y evitar
-  post-procesado a pantalla completa. La geometría rara vez es el cuello; el relleno y las llamadas,
-  casi siempre.
-- **Térmica**: el dispositivo autónomo se limita solo. Medir con la sesión larga y dejar margen
-  (~10–20 %) sobre el presupuesto nominal; ningún diseño que dependa de ir al 99 % del presupuesto
-  sobrevive al minuto 20.
-- **Telemetría de sesión** (con consentimiento): tiempo de fotograma, fotogramas perdidos,
-  *throttling*, duración de sesión y **abandono temprano**. Un pico de abandonos en los primeros
-  minutos es la firma del mareo, no de la trama.
-- **Arranque y reanudación**: el usuario se quita y se pone el casco constantemente; guardar y
-  restaurar estado, pausar sin castigo, no perder progreso al perder el foco.
-- **Batería y peso**: la sesión típica no dura horas. Diseñar experiencias con puntos de salida
-  naturales cada pocos minutos.
-- **Accesibilidad en XR** — mínimos exigibles, y ninguno es opcional:
-  - **Altura y alcance ajustables**: recalibración de altura sin salir de la app; todo lo interactivo
-    alcanzable **sentado**; modo sentado real (no "de pie con menos altura").
-  - **Mano dominante configurable** y toda acción disponible con **una sola mano**.
-  - **Alternativa a girarse físicamente**: giro por mando siempre disponible (no todo el mundo puede
-    girar 360°, ni tiene sitio).
-  - **Locomoción configurable** (teleporte/continua, viñeteado, giro por pasos/continuo, velocidad).
-  - **Subtítulos espaciales**: legibles, con indicación de la dirección del hablante fuera de vista;
-    tamaño y contraste ajustables; nada de subtítulo *head-locked* pegado a la cara.
-  - **Sin requisito de audición estéreo ni de visión binocular**: no cifrar información **solo** en
-    audio espacial ni **solo** en profundidad estereoscópica.
-  - **Sin exigir gestos finos, fuerza ni rapidez**; tiempos de espera ajustables; *dwell* como
-    alternativa a la pulsación.
-  - **Fotosensibilidad**: sin destellos ni patrones de alto contraste rápido; opción de reducir
-    efectos.
+- **Double cost per eye**: enable single-pass instanced rendering (*single-pass
+  instanced*/multiview) by default; measure whether you are paying twice by mistake.
+- **Real levers on standalone hardware**, in order of return: reduce *draw calls* and material
+  changes (static/dynamic batching, atlases), dynamic resolution and *foveation* (fixed or
+  gaze-driven), simple mobile *shaders* with no overdraw (**overdraw with transparencies is killer
+  number one**), *lightmaps* instead of dynamic lighting, aggressive LOD, and avoiding full-screen
+  post-processing. Geometry is rarely the bottleneck; fill rate and calls almost always are.
+- **Thermals**: a standalone device throttles itself. Measure with a long session and leave headroom
+  (~10–20%) over the nominal budget; no design that depends on running at 99% of the budget survives
+  minute 20.
+- **Session telemetry** (with consent): frame time, dropped frames, *throttling*, session duration
+  and **early abandonment**. A spike of drop-offs in the first few minutes is the signature of motion
+  sickness, not of the plot.
+- **Start-up and resumption**: the user takes the headset off and puts it back on constantly; save and
+  restore state, pause without punishment, do not lose progress on losing focus.
+- **Battery and weight**: the typical session does not last hours. Design experiences with natural
+  exit points every few minutes.
+- **Accessibility in XR** — enforceable minimums, and none of them optional:
+  - **Adjustable height and reach**: height recalibration without leaving the app; everything
+    interactive reachable **seated**; a real seated mode (not "standing but shorter").
+  - **Configurable dominant hand** and every action available with **one hand**.
+  - **An alternative to physically turning around**: controller turning always available (not
+    everyone can turn 360°, nor has the room).
+  - **Configurable locomotion** (teleport/continuous, vignetting, snap/continuous turn, speed).
+  - **Spatial subtitles**: legible, with an indication of the speaker's direction when out of sight;
+    adjustable size and contrast; no *head-locked* subtitle stuck to the face.
+  - **No requirement for stereo hearing or binocular vision**: do not encode information **only** in
+    spatial audio nor **only** in stereoscopic depth.
+  - **No requirement for fine gestures, strength or speed**; adjustable timeouts; *dwell* as an
+    alternative to pressing.
+  - **Photosensitivity**: no flashes and no fast high-contrast patterns; an option to reduce effects.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- **Portabilidad como decisión de arquitectura**: núcleo sobre OpenXR, y **una capa propia fina**
-  sobre toda extensión de fabricante que se use, con implementación nula (*no-op*) documentada. El
-  dispositivo estrella de hoy se descataloga; el SDK propietario que ahorró dos semanas cuesta el
-  port entero.
-- **Cadencia**: el runtime del fabricante se actualiza solo en el dispositivo del usuario. Probar
-  contra la versión de runtime nueva **antes** de que llegue al público (canales de prueba) y fijar
-  la versión de SDK/plugin en el repo y en CI.
-- **Deprecación**: las extensiones `XR_FB_*` se han ido reemplazando por `XR_META_*` y algunas
-  funciones por `XR_EXT_*` ya estandarizadas. Revisar en cada subida qué se ha promovido al núcleo y
-  migrar hacia el estándar, no al revés.
-- **Documentar en ADR**: dispositivos objetivo y su presupuesto, extensiones no estándar usadas y por
-  qué, decisiones de locomoción y confort, y **qué datos de sensor se tocan y con qué base legal**.
+- **Portability as an architectural decision**: a core on OpenXR, and **a thin layer of your own**
+  over every vendor extension used, with a documented *no-op* implementation. Today's flagship device
+  gets discontinued; the proprietary SDK that saved two weeks costs the entire port.
+- **Cadence**: the vendor's runtime updates itself on the user's device. Test against the new runtime
+  version **before** it reaches the public (test channels) and pin the SDK/plugin version in the repo
+  and in CI.
+- **Deprecation**: `XR_FB_*` extensions have gradually been replaced by `XR_META_*` and some features
+  by already-standardised `XR_EXT_*`. Review at every bump what has been promoted to the core and
+  migrate towards the standard, not away from it.
+- **Document in an ADR**: target devices and their budget, non-standard extensions used and why,
+  locomotion and comfort decisions, and **which sensor data is touched and on what legal basis**.
 
-**Prohibiciones explícitas:**
+**Explicit prohibitions:**
 
-- ❌ **Mover, rotar, inclinar o sacudir la cámara del usuario** por decisión de la aplicación.
-  Incluye *head bobbing*, retroceso de arma, cinemáticas que giran la vista y "empujones" físicos.
-- ❌ Diseñar contando con la reproyección/*SpaceWarp* para llegar al presupuesto.
-- ❌ Fijar el objetivo en **fps medios** o medir solo en el editor y en el PC de desarrollo.
-- ❌ Aceleración en la locomoción continua, o locomoción continua **sin** alternativa por teleporte
-  y **sin** viñeteado configurable.
-- ❌ UI pegada a la cabeza (*head-locked*), texto pequeño a distancia de lectura incorrecta, o menús
-  que obligan a girar el cuello.
-- ❌ Ocultar, desactivar o incitar a ignorar el límite de juego (*guardian*/boundary).
-- ❌ **Almacenar, registrar o transmitir datos de mirada, expresión facial, cuerpo o malla de
-  escena.** Ni "anonimizados", ni "para mejorar el producto".
-- ❌ **Inferir emociones o estado psicológico** a partir de biometría en contexto laboral o educativo
-  en la UE (prohibición del art. 5 del Reglamento de IA), y hacerlo en cualquier otro contexto sin
-  gobierno de alto riesgo y sin informar a la persona (arts. Anexo III y 50(3)).
-- ❌ Pedir el permiso de datos espaciales al arrancar "por si acaso", sin explicación y sin camino
-  alternativo si se deniega.
-- ❌ Grabar *passthrough* o cámara sin indicación visible.
-- ❌ Asumir un cuerpo estándar: usuario de pie, dos manos funcionales, 1,75 m, sin gafas, con 2×2 m
-  libres. Es la exclusión por defecto del medio.
-- ❌ Bloquear el hilo de render con carga de assets, red o física pesada.
-- ❌ Depender de una extensión de fabricante sin ruta de degradación probada.
-- ❌ Citar cifras de mareo, de cuota de mercado o de ventas de dispositivos sin estudio y metodología.
-- ❌ Portar una aplicación de pantalla plana a XR conservando cámara, UI y ritmo. Es el origen del
-  95 % de las malas experiencias… cifra que, por cierto, **tampoco tiene fuente: no la repitas**.
+- ❌ **Moving, rotating, tilting or shaking the user's camera** by application decision. Includes
+  *head bobbing*, weapon recoil, cutscenes that turn the view and physical "shoves".
+- ❌ Designing while counting on reprojection/*SpaceWarp* to hit the budget.
+- ❌ Setting the target in **average fps** or measuring only in the editor and on the development PC.
+- ❌ Acceleration in continuous locomotion, or continuous locomotion **without** a teleport
+  alternative and **without** configurable vignetting.
+- ❌ A *head-locked* UI, small text at the wrong reading distance, or menus that force neck rotation.
+- ❌ Hiding, disabling or encouraging the user to ignore the play boundary (*guardian*).
+- ❌ **Storing, logging or transmitting gaze, facial expression, body or scene mesh data.** Neither
+  "anonymised", nor "to improve the product".
+- ❌ **Inferring emotions or psychological state** from biometrics in a workplace or educational
+  context in the EU (art. 5 prohibition of the AI Regulation), and doing so in any other context
+  without high-risk governance and without informing the person (Annex III and art. 50(3)).
+- ❌ Requesting the spatial data permission at start-up "just in case", with no explanation and no
+  alternative path if denied.
+- ❌ Recording *passthrough* or camera without a visible indicator.
+- ❌ Assuming a standard body: a standing user, two functional hands, 1.75 m, no glasses, with 2×2 m
+  free. It is the medium's default exclusion.
+- ❌ Blocking the render thread with asset loading, networking or heavy physics.
+- ❌ Depending on a vendor extension with no proven degradation path.
+- ❌ Citing motion sickness, market share or device sales figures without a study and its
+  methodology.
+- ❌ Porting a flat-screen application to XR keeping its camera, UI and pacing. It is the origin of
+  95% of bad experiences… a figure which, by the way, **also has no source: do not repeat it**.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de decidir, comprobar en la fuente primaria:
+Before deciding, check against the primary source:
 
-1. **OpenXR**: versión vigente de la especificación en `registry.khronos.org/OpenXR/` (verificada:
-   línea **1.1**) y última entrega del SDK (verificada: **1.1.62**). Revisar en
-   `specification/registry/xr.xml` qué extensiones se han promovido a `XR_EXT_`/`XR_KHR_` desde la
-   última vez: **es la única forma fiable de saber qué ha dejado de ser propietario**.
-2. **Presupuesto por dispositivo**: pliego de requisitos técnicos de **cada tienda de destino**
-   (verificado solo el de Meta: `VRC.Quest.Performance.1`, tasas permitidas y mínimo de 60 fps con
-   excepción de AppSW). **Hueco declarado**: no se ha podido verificar en fuente primaria la tasa de
-   refresco objetivo ni el pliego equivalente de **visionOS/Apple Vision Pro** ni de otros
-   fabricantes (páginas renderizadas por JavaScript, sin texto recuperable); **verificar antes de
-   fijar objetivo en esas plataformas**.
-3. **WebXR**: estado del documento en `w3.org/TR/webxr/` (verificado: **Candidate Recommendation
-   Draft, 9-jun-2026**) y soporte real por navegador/plataforma de los módulos que se vayan a usar
-   (AR, *hit test*, anclas, capas, manos) — el soporte de Safari/visionOS y de los cascos Android es
-   el que más cambia.
-4. **Catálogo de dispositivos**: modelos vigentes, tasas soportadas, resolución, sensores (mirada,
-   cara, cuerpo) y mínimos de edad. **No casarse con un fabricante ni citar ventas.**
-5. **Reglamento de IA (UE) 2024/1689**: texto consolidado en EUR-Lex y **fechas de aplicación
-   vigentes** —han sido modificadas por el paquete ómnibus digital; el calendario correcto lo fija
-   `ai-governance-standards`, no este documento—.
-6. **RGPD**: guías de la AEPD y del EDPB sobre biometría y datos derivados de sensores; la
-   interpretación de "identificación única" es la que decide si aplica el art. 9.
-7. **Requisitos de privacidad y publicación de tienda** (verificado: `VRC.Quest.Privacy.4`,
-   8-abr-2026) y política de menores de cada plataforma.
-8. **CVEs y avisos** del runtime, del *loader* de OpenXR, del motor y de los SDK de fabricante.
+1. **OpenXR**: the current specification version at `registry.khronos.org/OpenXR/` (verified: the
+   **1.1** line) and the latest SDK release (verified: **1.1.62**). Review in
+   `specification/registry/xr.xml` which extensions have been promoted to `XR_EXT_`/`XR_KHR_` since
+   last time: **it is the only reliable way to know what has stopped being proprietary**.
+2. **Budget per device**: the technical requirements document of **each target store** (only Meta's
+   verified: `VRC.Quest.Performance.1`, allowed rates and a 60 fps minimum with the AppSW exception).
+   **Declared gap**: it has not been possible to verify against a primary source the target refresh
+   rate nor the equivalent requirements document for **visionOS/Apple Vision Pro** nor for other
+   vendors (JavaScript-rendered pages, no retrievable text); **verify before fixing a target on those
+   platforms**.
+3. **WebXR**: the document's status at `w3.org/TR/webxr/` (verified: **Candidate Recommendation
+   Draft, 2026-06-09**) and real browser/platform support for the modules you intend to use (AR, *hit
+   test*, anchors, layers, hands) — Safari/visionOS and Android headset support is what changes most.
+4. **Device catalogue**: current models, supported rates, resolution, sensors (gaze, face, body) and
+   minimum ages. **Do not marry a vendor and do not cite sales.**
+5. **AI Regulation (EU) 2024/1689**: the consolidated text on EUR-Lex and **the application dates in
+   force** — they have been amended by the digital omnibus package; the correct timetable is set by
+   `ai-governance-standards`, not by this document.
+6. **GDPR**: AEPD and EDPB guidance on biometrics and sensor-derived data; the interpretation of
+   "unique identification" is what decides whether art. 9 applies.
+7. **Store privacy and publishing requirements** (verified: `VRC.Quest.Privacy.4`, 2026-04-08) and
+   each platform's policy on minors.
+8. **CVEs and advisories** for the runtime, the OpenXR *loader*, the engine and vendor SDKs.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

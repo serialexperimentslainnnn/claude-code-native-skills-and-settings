@@ -3,17 +3,17 @@ name: datacenter-fabric-standards
 description: The data centre network as a routed Clos fabric, not one big switched network. Use when designing or reviewing a leaf-spine (Clos) topology, oversubscription ratio and spine count, eBGP-per-leaf with private ASNs or IS-IS as the underlay, BGP unnumbered with IPv6 link-local next hops (RFC 8950), RFC 7938 large-scale DC routing, VXLAN encapsulation (RFC 7348) or Geneve (RFC 8926), EVPN control plane (RFC 7432, RFC 8365) replacing flood-and-learn, EVPN route types 1-5, IMET, ESI and RFC 9136 type-5 IP prefix routes, symmetric versus asymmetric IRB (RFC 9135), anycast distributed gateway, L3VNI/L2VNI and VRF multi-tenancy, EVPN multihoming with ESI-LAG and RFC 9746 split-horizon versus proprietary MLAG/vPC, jumbo frames and encapsulation MTU overhead, ARP/ND suppression and proxy-ARP (RFC 9161), BUM traffic handling (RFC 9572), configuring lossless Ethernet on the switch with PFC (802.1Qbb), ETS (802.1Qaz), DCBX, ECN (RFC 3168) and DCQCN, DCI and the danger of stretching layer 2, or deciding that two switches and plain routing are enough and EVPN is not needed.
 ---
 
-# Estándares de malla de centro de datos — Clos, EVPN y cuándo no hacer nada de esto
+# Data centre fabric standards — Clos, EVPN and when to do none of this
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **diseñar, dimensionar y operar la red interna de un centro de datos**: topología Clos
-hoja-espina, sobresuscripción y escalado, protocolo de la malla (*underlay*), superposición
-VXLAN/EVPN (*overlay*), enrutado integrado y pasarela distribuida, multi-inquilino con VRF, MTU de
-encapsulación, multihoming de servidores, red sin pérdidas para almacenamiento y RDMA, interconexión
-entre centros de datos, y **el criterio para no construir una malla EVPN**.
+Applies to **designing, sizing and operating a data centre's internal network**: leaf-spine Clos
+topology, oversubscription and scaling, the fabric protocol (*underlay*), the
+VXLAN/EVPN overlay, integrated routing and the distributed gateway, VRF multi-tenancy, encapsulation
+MTU, server multihoming, lossless networking for storage and RDMA, data centre
+interconnect, and **the criteria for not building an EVPN fabric**.
 
 Triggers: "leaf-spine", "Clos", "spine", "leaf", "border leaf", "superspine", "oversubscription",
 `vxlan`/`vni`/`vtep`/`nve`, `evpn`, `l2vpn evpn`, `route-type 2`/`type-5`, `esi`, `anycast-gateway`,
@@ -21,253 +21,253 @@ Triggers: "leaf-spine", "Clos", "spine", "leaf", "border leaf", "superspine", "o
 `802.1Qbb`, `dcbx`, `ets`, `ecn`, `wred`, `dcqcn`, "lossless", "RoCE", "DCI", "VXLAN stretch",
 "MLAG", "vPC", "ESI-LAG".
 
-**No aplica** — cada skill **decide** una cosa distinta:
-`networking-standards` (**troncal, madre**: decide **direccionamiento e IPAM, qué VLAN existe,
-fundamentos de BGP/OSPF, MTU/MSS de diseño, proxies y overlays de host, NetBox como SoT**; aquí no se
-reabre nada de eso, aquí se decide **la topología y el plano de control de la malla**);
-`routing-switching-standards` (**decide campus y borde**: STP, MLAG de campus, VRRP, IGP de sede,
-**política BGP hacia el exterior**, RPKI, QoS, CoPP y plano de gestión — aquí sólo BGP como protocolo
-de malla interna, no la política de Internet); `network-troubleshooting-standards` (**decide el método
-reactivo** cuando la malla ya falla); `network-automation-standards` (**decide cómo se genera, se
-prueba y se aplica** esta configuración, y su telemetría); `high-speed-interconnect-standards`
-(**ya escrita**: **InfiniBand y RoCE como interconexión de cómputo son suyos**; aquí sólo la
-Ethernet que los transporta); `datacenter-facilities-standards` (**la planta
-física es suya** — energía, refrigeración, racks, cableado); `kubernetes-standards` (**decide lo que va
-por encima**: CNI, Service, Ingress, NetworkPolicy, service mesh); `firewall-policy-standards`
-(**decide qué flujo se permite entre inquilinos y zonas**); `finops-standards` (coste por puerto,
-óptica y transceptor). También frontera: `onprem-standards` (paraguas), `iac-standards`,
+**Not applicable** — each skill **decides** a different thing:
+`networking-standards` (**the backbone, the parent**: it decides **addressing and IPAM, which VLAN exists,
+BGP/OSPF fundamentals, design MTU/MSS, proxies and host overlays, NetBox as the SoT**; none of that is
+reopened here, here we decide **the fabric's topology and control plane**);
+`routing-switching-standards` (**it decides campus and edge**: STP, campus MLAG, VRRP, the site IGP,
+**BGP policy towards the outside**, RPKI, QoS, CoPP and the management plane — here only BGP as the internal
+fabric protocol, not Internet policy); `network-troubleshooting-standards` (**it decides the reactive
+method** when the fabric is already failing); `network-automation-standards` (**it decides how this
+configuration is generated, tested and applied**, and its telemetry); `high-speed-interconnect-standards`
+(**already written**: **InfiniBand and RoCE as a compute interconnect are theirs**; here only the
+Ethernet that carries them); `datacenter-facilities-standards` (**the physical
+plant is theirs** — power, cooling, racks, cabling); `kubernetes-standards` (**it decides what runs
+on top**: CNI, Service, Ingress, NetworkPolicy, service mesh); `firewall-policy-standards`
+(**it decides which flow is permitted between tenants and zones**); `finops-standards` (cost per port,
+optics and transceivers). Also boundaries: `onprem-standards` (the umbrella), `iac-standards`,
 `observability-standards`, `sre-practice-standards`, `secrets-management-standards`,
 `linux-hardening-standards`, `vulnerability-management-standards`,
-`identity-access-management-standards`, `offensive-security-standards` (**esta skill es defensiva**),
-`vpn-standards`, `dns-standards`, `network-vendors-standards`, `telco-5g-standards` y
+`identity-access-management-standards`, `offensive-security-standards` (**this skill is defensive**),
+`vpn-standards`, `dns-standards`, `network-vendors-standards`, `telco-5g-standards` and
 `wan-legacy-standards`.
 
-**Principio rector**: **el centro de datos moderno se diseña como una malla enrutada, no como una red
-conmutada grande.** La capa 2 se reduce al mínimo y se transporta encapsulada sobre routing; el
-caudal escala horizontalmente; y **la latencia predecible vale más que el pico de ancho de banda**.
+**Governing principle**: **the modern data centre is designed as a routed fabric, not as one big
+switched network.** Layer 2 is reduced to a minimum and carried encapsulated over routing; the
+throughput scales horizontally; and **predictable latency is worth more than peak bandwidth**.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web estado, versión y RFC antes de fijar nada (§8). Los RFC de esta tabla están
-> verificados uno a uno contra la API JSON de `rfc-editor.org`.
+> Verify status, version and RFC on the web before committing to anything (§8). The RFCs in this table are
+> verified one by one against the `rfc-editor.org` JSON API.
 
-| Decisión | Por defecto | Alternativa justificable / vetado |
+| Decision | Default | Justifiable alternative / vetoed |
 |---|---|---|
-| Topología | **Clos hoja-espina de dos niveles**; tres niveles sólo cuando las hojas superan el radio de las espinas | ❌ Núcleo-distribución-acceso con VLAN extendidas en DC nuevo; ❌ anillo o árbol con STP |
-| Conectividad | **Cada hoja a todas las espinas; ninguna hoja a otra hoja, ninguna espina a otra espina.** Más caudal = una espina más | Enlaces hoja-hoja: rompen el camino uniforme y la predictibilidad |
-| Sobresuscripción | **Declararla explícitamente** por rol de rack (1:1 o 2:1 en almacenamiento/IA, 3:1–4:1 en cómputo general) | ❌ No calcularla y descubrirla en producción; ❌ mismo ratio para todos los racks |
-| Underlay | **eBGP, ASN privada por hoja**, espinas con ASN común, ECMP a todas. **RFC 7938** (Informational) como referencia | **IS-IS** si se prefiere IGP puro y el equipo lo domina; OSPF es la peor de las tres aquí |
-| Direccionamiento del underlay | **BGP unnumbered**: siguiente salto IPv6 link-local sobre enlaces sin numerar — **RFC 8950** (nov-2020, **obsoleta RFC 5549**) | Numerar cada `/31`: funciona, pero es inventario que se automatiza mal |
-| Detección de fallo | **BFD** en cada sesión del underlay, con ECMP recalculando | Temporizadores BGP agresivos: castigan la CPU y convergen peor |
-| Encapsulación | **VXLAN — RFC 7348** (Informational, ago-2014) por soporte universal en hardware | **Geneve — RFC 8926** (Proposed Standard) es técnicamente superior pero su soporte en ASIC es desigual: **verificar por plataforma** |
-| Plano de control del overlay | **EVPN — RFC 7432** con **RFC 8365** (EVPN sobre NVO/VXLAN) | ❌ **Flood-and-learn con VXLAN multicast**: aprende inundando, depende de multicast en el underlay y no escala |
-| IRB | **Simétrico — RFC 9135** (oct-2021). Default moderno: cada VTEP sólo necesita sus VLAN locales y el tránsito va por un **L3VNI** común | **Asimétrico** exige que **todas** las VNI existan en **todos** los VTEP: más simple de entender, no escala |
-| Pasarela | **Distribuida anycast**: misma IP y MAC en todas las hojas; el primer salto nunca cruza la malla | ❌ Pasarela centralizada: convierte una malla en topología radial y añade *tromboning* |
-| Multi-inquilino | **VRF por inquilino mapeada a L3VNI**; prefijos IP con **RFC 9136** (type-5); fugas entre VRF sólo por política escrita | ❌ Espacio de enrutado único "porque son todos nuestros" |
-| MTU | **Jumbo en toda la malla (≥ 9000 de payload)**, uniforme y verificada extremo a extremo. **No negociable** | ❌ MTU 1500 con VXLAN encima; ❌ MTU distinta en un solo enlace |
-| Multihoming de servidor | **EVPN multihoming (ESI-LAG)**: estándar, sin enlace de par, activo-activo, N hojas. Split-horizon actualizado por **RFC 9746** (mar-2025) | **MLAG/vPC propietario** sólo si el hardware no soporta EVPN-MH: ata a un fabricante y añade estado compartido |
-| Elección de DF | Algoritmo de *designated forwarder* **explícito** — **RFC 8584** (abr-2019) hizo el marco extensible | Dejarlo al default y descubrirlo con tráfico BUM duplicado |
-| Red sin pérdidas | **Sólo donde el protocolo lo exija** (RDMA/RoCE, algún almacenamiento). **ECN (RFC 3168) primero, PFC como último recurso**, en una sola clase | ❌ PFC habilitado "por si acaso" en toda la malla |
-| DCI | **Interconexión enrutada (L3) por defecto** | Extensión L2 entre DC **sólo** con requisito escrito, dominio de fallo acotado y fecha de retirada |
+| Topology | **A two-tier leaf-spine Clos**; three tiers only when the leaves exceed the spines' radix | ❌ Core-distribution-access with stretched VLANs in a new DC; ❌ a ring or a tree with STP |
+| Connectivity | **Every leaf to every spine; no leaf to another leaf, no spine to another spine.** More throughput = one more spine | Leaf-leaf links: they break the uniform path and the predictability |
+| Oversubscription | **Declare it explicitly** per rack role (1:1 or 2:1 on storage/AI, 3:1–4:1 on general compute) | ❌ Not calculating it and discovering it in production; ❌ the same ratio for every rack |
+| Underlay | **eBGP, a private ASN per leaf**, spines with a common ASN, ECMP to all of them. **RFC 7938** (Informational) as the reference | **IS-IS** if a pure IGP is preferred and the team knows it well; OSPF is the worst of the three here |
+| Underlay addressing | **BGP unnumbered**: an IPv6 link-local next hop over unnumbered links — **RFC 8950** (Nov-2020, **obsoletes RFC 5549**) | Numbering each `/31`: it works, but it is inventory that automates badly |
+| Failure detection | **BFD** on every underlay session, with ECMP recalculating | Aggressive BGP timers: they punish the CPU and converge worse |
+| Encapsulation | **VXLAN — RFC 7348** (Informational, Aug-2014) for universal hardware support | **Geneve — RFC 8926** (Proposed Standard) is technically superior but its ASIC support is uneven: **verify per platform** |
+| Overlay control plane | **EVPN — RFC 7432** with **RFC 8365** (EVPN over NVO/VXLAN) | ❌ **Flood-and-learn with multicast VXLAN**: it learns by flooding, depends on multicast in the underlay and does not scale |
+| IRB | **Symmetric — RFC 9135** (Oct-2021). The modern default: each VTEP only needs its local VLANs and transit goes over a common **L3VNI** | **Asymmetric** requires **every** VNI to exist on **every** VTEP: simpler to understand, does not scale |
+| Gateway | **Distributed anycast**: the same IP and MAC on every leaf; the first hop never crosses the fabric | ❌ A centralised gateway: it turns a fabric into a hub-and-spoke topology and adds *tromboning* |
+| Multi-tenancy | **A VRF per tenant mapped to an L3VNI**; IP prefixes with **RFC 9136** (type-5); leaks between VRFs only by written policy | ❌ A single routing space "because they're all ours" |
+| MTU | **Jumbo across the whole fabric (≥ 9000 payload)**, uniform and verified end to end. **Non-negotiable** | ❌ MTU 1500 with VXLAN on top; ❌ a different MTU on a single link |
+| Server multihoming | **EVPN multihoming (ESI-LAG)**: standard, no peer link, active-active, N leaves. Split-horizon updated by **RFC 9746** (Mar-2025) | **Proprietary MLAG/vPC** only if the hardware does not support EVPN-MH: it ties you to a vendor and adds shared state |
+| DF election | An **explicit** *designated forwarder* algorithm — **RFC 8584** (Apr-2019) made the framework extensible | Leaving it at the default and discovering it through duplicated BUM traffic |
+| Lossless networking | **Only where the protocol demands it** (RDMA/RoCE, some storage). **ECN (RFC 3168) first, PFC as a last resort**, in a single class | ❌ PFC enabled "just in case" across the whole fabric |
+| DCI | **Routed (L3) interconnect by default** | An L2 stretch between DCs **only** with a written requirement, a bounded failure domain and a retirement date |
 
-## 3. Decisiones de diseño
+## 3. Design decisions
 
-**EVPN: qué resuelve realmente**
-VXLAN sin plano de control **inunda y aprende**, como un switch. EVPN sustituye eso por **BGP
-anunciando lo que cada VTEP conoce**, y con ello desaparecen la dependencia de multicast en el
-underlay, la inundación de unicast desconocido y buena parte del ARP/ND en el cable.
+**EVPN: what it actually solves**
+VXLAN without a control plane **floods and learns**, like a switch. EVPN replaces that with **BGP
+advertising what each VTEP knows**, and with it the dependency on multicast in the
+underlay, the flooding of unknown unicast and much of the ARP/ND on the wire all disappear.
 
-- **Tipo 1 — Ethernet Auto-Discovery**: descubrimiento por ESI; sostiene el multihoming (convergencia
-  rápida al caer un enlace, *aliasing* para balancear hacia un servidor multihomed).
-- **Tipo 2 — MAC/IP Advertisement**: MAC y, opcionalmente, IP del host. Es lo que hace posible la
-  **supresión de ARP/ND** (aspectos operativos de proxy ARP/ND en **RFC 9161**).
-- **Tipo 3 — IMET**: construye el árbol de réplica del tráfico BUM. Procedimientos actualizados por
-  **RFC 9572** (may-2024).
-- **Tipo 4 — Ethernet Segment**: descubre quién comparte segmento y **elige el designated forwarder**
-  que reenvía BUM hacia él (evita duplicados y bucles).
-- **Tipo 5 — IP Prefix (RFC 9136)**: prefijos IP sin MAC; conectividad externa, resumen, VRF.
-- **Regla de lectura**: problema de alcance L2 dentro de una VNI → tipos 2 y 3; multihoming o tráfico
-  duplicado → tipos 1 y 4; conectividad entre VRF o hacia fuera → tipo 5.
+- **Type 1 — Ethernet Auto-Discovery**: discovery by ESI; it underpins multihoming (fast convergence
+  when a link drops, *aliasing* to balance towards a multihomed server).
+- **Type 2 — MAC/IP Advertisement**: the host's MAC and, optionally, its IP. It is what makes
+  **ARP/ND suppression** possible (proxy ARP/ND operational aspects in **RFC 9161**).
+- **Type 3 — IMET**: it builds the replication tree for BUM traffic. Procedures updated by
+  **RFC 9572** (May-2024).
+- **Type 4 — Ethernet Segment**: it discovers who shares a segment and **elects the designated forwarder**
+  that forwards BUM towards it (avoiding duplicates and loops).
+- **Type 5 — IP Prefix (RFC 9136)**: IP prefixes with no MAC; external connectivity, summarisation, VRFs.
+- **Reading rule**: an L2 reachability problem within a VNI → types 2 and 3; multihoming or duplicated
+  traffic → types 1 and 4; connectivity between VRFs or towards the outside → type 5.
 
-**MTU: el requisito no negociable**
-- La encapsulación **añade cabecera** (VXLAN sobre UDP/IP añade decenas de bytes; Geneve más, y
-  **variable** por opciones). Si la malla no transporta la trama del inquilino **más** esa cabecera,
-  se rompe.
-- **Qué se rompe si falta**: el ping funciona, el handshake TCP funciona y la transferencia se cuelga.
-  Los paquetes grandes con DF desaparecen y, sin ICMP *fragmentation needed* / *packet too big* de
-  vuelta, PMTUD muere en silencio. **Síntoma canónico: "conecta pero se cuelga al transferir"** — la
-  demostración es de `network-troubleshooting-standards`; **el arreglo es de aquí y es de diseño**.
-- **Uniforme significa uniforme**: un solo enlace con MTU menor hace el problema intermitente y
-  dependiente del camino ECMP. Se verifica como gate (§4), no por inspección visual.
+**MTU: the non-negotiable requirement**
+- The encapsulation **adds a header** (VXLAN over UDP/IP adds tens of bytes; Geneve more, and
+  **variable** by options). If the fabric does not carry the tenant's frame **plus** that header,
+  it breaks.
+- **What breaks if it is missing**: ping works, the TCP handshake works and the transfer hangs.
+  Large packets with DF disappear and, without ICMP *fragmentation needed* / *packet too big* coming
+  back, PMTUD dies silently. **The canonical symptom: "it connects but hangs on transfer"** — the
+  demonstration belongs to `network-troubleshooting-standards`; **the fix belongs here and is a design one**.
+- **Uniform means uniform**: a single link with a lower MTU makes the problem intermittent and
+  dependent on the ECMP path. It is verified as a gate (§4), not by visual inspection.
 
-**Multihoming de servidor**
-- **EVPN-MH (ESI-LAG)** es el default: estándar, sin enlace de par entre hojas, admite más de dos
-  hojas, sin estado compartido propietario. Se decide explícitamente el valor y unicidad del **ESI**,
-  el algoritmo de **DF election** (RFC 8584) y el comportamiento ante pérdida del único uplink de una
-  hoja.
-- **MLAG/vPC** sigue siendo válido donde el hardware manda, pero **arrastra a la malla los modos de
-  fallo del campus** (*split brain*, keepalive, actualización del par) que en EVPN-MH no existen. Si
-  lo eliges, se prueban esos tres casos en laboratorio (criterio en `routing-switching-standards`).
+**Server multihoming**
+- **EVPN-MH (ESI-LAG)** is the default: standard, with no peer link between leaves, supporting more than two
+  leaves, with no proprietary shared state. The **ESI**'s value and uniqueness, the
+  **DF election** algorithm (RFC 8584) and the behaviour when a leaf loses its only uplink are decided
+  explicitly.
+- **MLAG/vPC** remains valid where the hardware dictates, but it **drags the campus's failure modes into
+  the fabric** (*split brain*, keepalive, peer upgrades) which do not exist in EVPN-MH. If
+  you choose it, those three cases are tested in a lab (criteria in `routing-switching-standards`).
 
-**Almacenamiento y RDMA: la red sin pérdidas mal hecha propaga la congestión**
-- **PFC (IEEE 802.1Qbb, hoy incorporado a 802.1Q)** pausa por prioridad en el enlace, y su efecto es
-  **empujar la congestión hacia atrás**: si el receptor no drena, la pausa se propaga salto a salto y
-  detiene tráfico que no tenía nada que ver (*congestion spreading*). Con ciclos de dependencia de
-  buffer puede producir **deadlock por PFC**, del que la red no sale sola.
-- **Por eso el orden es ECN primero**: marcado ECN (**RFC 3168**) con umbrales por cola y control de
-  tasa extremo a extremo (**DCQCN** en RoCEv2, que combina ECN y realimentación al emisor). PFC queda
-  como red de seguridad de última instancia, no como mecanismo principal.
-- Requisitos si se despliega: **una sola clase sin pérdidas**, ETS (**IEEE 802.1Qaz**) repartiendo el
-  resto, mapeo de prioridad **coherente en todos los saltos** (una discrepancia rompe la garantía),
-  *headroom* de buffer dimensionado, y **monitorización de tramas de pausa y de marcado ECN**: si
-  nadie mira los contadores de PFC, no sabes que estás pausando.
-- **InfiniBand frente a RoCE** es de `high-speed-interconnect-standards` (**ya escrita**).
+**Storage and RDMA: badly done lossless networking propagates congestion**
+- **PFC (IEEE 802.1Qbb, today incorporated into 802.1Q)** pauses per priority on the link, and its effect is
+  **to push congestion backwards**: if the receiver does not drain, the pause propagates hop by hop and
+  stops traffic that had nothing to do with it (*congestion spreading*). With buffer dependency
+  cycles it can produce **PFC deadlock**, from which the network does not recover on its own.
+- **That is why the order is ECN first**: ECN marking (**RFC 3168**) with per-queue thresholds and end-to-end
+  rate control (**DCQCN** in RoCEv2, which combines ECN and feedback to the sender). PFC remains
+  as a last-resort safety net, not as the primary mechanism.
+- Requirements if it is deployed: **a single lossless class**, ETS (**IEEE 802.1Qaz**) sharing out the
+  rest, priority mapping **consistent across every hop** (one mismatch breaks the guarantee),
+  sized buffer *headroom*, and **monitoring of pause frames and ECN marking**: if
+  nobody looks at the PFC counters, you do not know you are pausing.
+- **InfiniBand versus RoCE** belongs to `high-speed-interconnect-standards` (**already written**).
 
-**DCI: el peligro de extender capa 2**
-- **Por defecto, los DC se interconectan por capa 3.** Extender capa 2 crea **un único dominio de
-  fallo con latencia de por medio**: tormenta, bucle o fallo de control plane se propagan a los dos
-  sitios a la vez, y la alta disponibilidad que motivó la extensión desaparece justo en el escenario
-  que la justificaba.
-- Si el requisito es real, se acota: sólo las VNI necesarias, con control de BUM y de MAC, dominios de
-  fallo separados a ambos lados y **fecha de retirada escrita**. Una extensión "temporal" sin fecha es
-  permanente. La alternativa correcta casi siempre es **arreglar la aplicación** que asume adyacencia
-  L2 y trata la IP como identidad.
+**DCI: the danger of stretching layer 2**
+- **By default, DCs are interconnected at layer 3.** Stretching layer 2 creates **a single
+  failure domain with latency in the middle**: a storm, a loop or a control plane failure propagates to both
+  sites at once, and the high availability that motivated the stretch disappears precisely in the scenario
+  that justified it.
+- If the requirement is real, it is bounded: only the necessary VNIs, with BUM and MAC control, separate
+  failure domains on both sides and **a written retirement date**. A "temporary" stretch with no date is
+  permanent. The correct alternative is almost always to **fix the application** that assumes L2
+  adjacency and treats the IP as an identity.
 
-**Cuándo NO hace falta una malla EVPN — la sección que más valor aporta**
-- **Un rack, dos ToR y enrutado simple bastan.** Con dos conmutadores, un par de VLAN, LACP hacia los
-  servidores y pasarela redundante, EVPN no aporta nada y añade un plano de control entero que hay que
-  saber operar, diagnosticar y actualizar.
-- **Umbrales honestos para plantearlo**: más de un puñado de racks; necesidad real de mover una subred
-  entre racks; multi-inquilino con solapamiento de direcciones; multihoming estándar a más de dos
-  hojas. **Ninguno es "queremos VXLAN porque es lo moderno".**
-- **Coste que hay que aceptar antes**: personal capaz de diagnosticar BGP con familias L2VPN, NOS con
-  soporte maduro, laboratorio para probar cambios, y automatización (no se opera a mano). Si falta
-  cualquiera de los cuatro, **una malla EVPN es una fuente de incidentes, no una mejora**.
-- **Alternativas legítimas**: routing puro con ECMP y sin overlay cuando cada rack es una subred;
-  overlay **en el host** (Kubernetes o el hipervisor ya lo hacen, `kubernetes-standards`) dejando la
-  red física como transporte tonto y rápido.
-- **Regla**: **la complejidad del plano de control se justifica por un requisito escrito, no por el
-  catálogo del fabricante.**
+**When an EVPN fabric is NOT needed — the section that adds the most value**
+- **One rack, two ToRs and plain routing are enough.** With two switches, a couple of VLANs, LACP towards the
+  servers and a redundant gateway, EVPN contributes nothing and adds a whole control plane that has to be
+  known how to operate, diagnose and upgrade.
+- **Honest thresholds for considering it**: more than a handful of racks; a real need to move a subnet
+  between racks; multi-tenancy with overlapping addresses; standard multihoming to more than two
+  leaves. **None of them is "we want VXLAN because it's modern".**
+- **The cost that must be accepted first**: staff capable of diagnosing BGP with L2VPN families, a NOS with
+  mature support, a lab to test changes, and automation (it is not operated by hand). If any of the four is
+  missing, **an EVPN fabric is a source of incidents, not an improvement**.
+- **Legitimate alternatives**: pure routing with ECMP and no overlay when each rack is a subnet;
+  an overlay **on the host** (Kubernetes or the hypervisor already do it, `kubernetes-standards`) leaving the
+  physical network as dumb, fast transport.
+- **Rule**: **the complexity of the control plane is justified by a written requirement, not by the
+  vendor's catalogue.**
 
-## 4. Gates de calidad
+## 4. Quality gates
 
-- **Verificación de MTU extremo a extremo** como gate automático tras cada cambio: prueba con paquete
-  grande y bit DF entre VTEP y entre hosts de VNI distintas, no inspección de configuración.
-- **Prueba de fallo con tráfico real y medición** antes de producción: caída de una espina (debe ser
-  transparente), de un uplink de hoja, de una hoja en un servidor multihomed, y **la recuperación de
-  cada una** (la vuelta falla más que la ida).
-- **Prueba negativa de aislamiento entre inquilinos**: verificar que las VRF **no** se alcanzan entre
-  sí. Un multi-inquilino probado sólo por el camino feliz no está probado.
-- **Coherencia entre pares del mismo rol**: la malla es regular por diseño, así que **una hoja distinta
-  de las demás es un hallazgo**. Diff automático.
-- **Laboratorio virtual con las mismas versiones de NOS** antes de cualquier cambio de EVPN, underlay o
-  política de VRF (herramientas en `network-automation-standards`).
-- Con red sin pérdidas: validar que la clase está mapeada igual en **todos** los saltos y ejecutar
-  prueba de carga observando contadores de PFC y ECN.
+- **End-to-end MTU verification** as an automatic gate after every change: a test with a large packet
+  and the DF bit between VTEPs and between hosts on different VNIs, not configuration inspection.
+- **Failure testing with real traffic and measurement** before production: the loss of a spine (must be
+  transparent), of a leaf uplink, of a leaf on a multihomed server, and **the recovery from each of them**
+  (coming back fails more often than going).
+- **A negative tenant isolation test**: verify that the VRFs **cannot** reach each
+  other. Multi-tenancy tested only along the happy path is not tested.
+- **Consistency between peers of the same role**: the fabric is regular by design, so **a leaf that differs
+  from the rest is a finding**. Automatic diff.
+- **A virtual lab with the same NOS versions** before any change to EVPN, the underlay or
+  VRF policy (tooling in `network-automation-standards`).
+- With lossless networking: validate that the class is mapped identically on **every** hop and run a
+  load test watching the PFC and ECN counters.
 
-## 5. Operación y seguridad
+## 5. Operations and security
 
-- **Plano de gestión OOB para toda la malla**, separado del tráfico de datos, con AAA centralizado y
-  SSH/SNMPv3 (criterio completo en `routing-switching-standards`). Es lo que te deja arreglar el
-  cambio de underlay que aisló una hoja.
-- **La malla no es una zona de confianza.** Compartir fabric no autoriza tráfico: la política
-  este-oeste es de `firewall-policy-standards`. **La VRF segrega enrutado, no aplica política.**
-- **VXLAN no cifra ni autentica nada**: quien pueda inyectar en el underlay puede inyectar en una VNI.
-  El underlay debe estar físicamente acotado y el tráfico sensible protegido por encima (mTLS, IPsec,
-  MACsec en enlaces que salgan del recinto).
-- **Señales que se vigilan siempre**: sesiones BGP de underlay y overlay, rutas EVPN por tipo, entradas
-  MAC y ARP/ND por VTEP **frente al límite de la tabla del ASIC** (agotarla es un fallo silencioso y
-  brutal), descartes y errores por interfaz, **balanceo real del ECMP** (un hash desequilibrado satura
-  un enlace con la malla al 40%), contadores de PFC/ECN, y óptica.
-- **Actualizaciones**: una a una, por rol, **drenando el nodo antes** (retirarlo del ECMP) y verificando
-  entre pasos. Actualizar espinas y hojas a la vez es cómo se pierde un centro de datos.
-- **Rendimiento específico de la malla**: el valor de Clos es que todos los pares hoja-hoja están a la
-  misma distancia y el percentil alto de latencia es estable — un diseño que mejora el pico a costa de
-  caminos desiguales es peor para aplicaciones distribuidas, que esperan al más lento. **ECMP con hash
-  por flujo, nunca por paquete**; vigila la entropía real (pocos flujos grandes desequilibran ECMP
-  aunque sobre capacidad). El buffer del ASIC es finito y compartido: la mayoría de los descartes
-  inexplicables son *incast*, que no se arregla con más ancho de banda.
-- **Capacidad**: el ratio de sobresuscripción se revisa con datos reales por rack, no con el del diseño
-  original. Coste por puerto y óptica en `finops-standards`.
+- **An OOB management plane for the whole fabric**, separate from the data traffic, with centralised AAA and
+  SSH/SNMPv3 (the full criteria in `routing-switching-standards`). It is what lets you fix the
+  underlay change that isolated a leaf.
+- **The fabric is not a trust zone.** Sharing a fabric does not authorise traffic: east-west
+  policy belongs to `firewall-policy-standards`. **A VRF segregates routing, it does not apply policy.**
+- **VXLAN encrypts and authenticates nothing**: whoever can inject into the underlay can inject into a VNI.
+  The underlay must be physically bounded and sensitive traffic protected above it (mTLS, IPsec,
+  MACsec on links that leave the premises).
+- **Signals that are always watched**: underlay and overlay BGP sessions, EVPN routes by type, MAC
+  and ARP/ND entries per VTEP **against the ASIC's table limit** (exhausting it is a silent and
+  brutal failure), per-interface discards and errors, **the real ECMP balance** (an unbalanced hash saturates
+  one link with the fabric at 40%), PFC/ECN counters, and optics.
+- **Upgrades**: one at a time, by role, **draining the node first** (removing it from the ECMP) and verifying
+  between steps. Upgrading spines and leaves at the same time is how a data centre is lost.
+- **Fabric-specific performance**: the value of a Clos is that every leaf-leaf pair is at the
+  same distance and the high percentile of latency is stable — a design that improves the peak at the cost of
+  unequal paths is worse for distributed applications, which wait for the slowest one. **ECMP with a
+  per-flow hash, never per packet**; watch the real entropy (a few large flows unbalance ECMP
+  even with spare capacity). The ASIC buffer is finite and shared: most of the
+  unexplainable discards are *incast*, which is not fixed with more bandwidth.
+- **Capacity**: the oversubscription ratio is reviewed with real per-rack data, not with the one from the
+  original design. Cost per port and optics in `finops-standards`.
 
-## 6. Rendimiento
+## 6. Performance
 
-**Sección omitida a propósito**: la telemetría, sus umbrales y sus alertas son de
-`observability-standards`; el diagnóstico reactivo, de `network-troubleshooting-standards`; y lo
-específico de rendimiento de la malla está integrado en §5, donde se opera. Duplicarlo aquí sería
-relleno.
+**Section deliberately omitted**: telemetry, its thresholds and its alerts belong to
+`observability-standards`; reactive diagnosis, to `network-troubleshooting-standards`; and what is
+specific to fabric performance is integrated into §5, where it is operated. Duplicating it here would be
+filler.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: NOS revisado por trimestre y ante CVE explotable; **rama estable con soporte EVPN
-  maduro** frente a la última funcionalidad. Un bug de EVPN es un incidente de todo el DC.
-- **Deprecación**: VNI, VRF y ESI retirados se eliminan de configuración, SoT y documentación.
-- **Fin de soporte del hardware inventariado**: la malla se sustituye por generaciones, y el plan
-  empieza antes de que el fabricante lo anuncie.
+- **Cadence**: the NOS reviewed quarterly and in the face of an exploitable CVE; **a stable branch with mature
+  EVPN support** over the latest feature. An EVPN bug is an incident for the whole DC.
+- **Deprecation**: retired VNIs, VRFs and ESIs are removed from the configuration, the SoT and the documentation.
+- **End of support for the inventoried hardware**: the fabric is replaced by generations, and the plan
+  starts before the vendor announces it.
 
-**PROHIBIDO**
-- ❌ Diseñar un DC nuevo como red conmutada grande con VLAN extendidas y STP como convergencia.
-- ❌ Enlaces hoja-hoja o espina-espina en un Clos.
-- ❌ VXLAN **flood-and-learn** (sin EVPN) en un despliegue nuevo.
-- ❌ Malla con MTU 1500, o con MTU distinta en algún enlace.
-- ❌ Pasarela centralizada en lugar de anycast distribuida, sin requisito escrito.
-- ❌ IRB asimétrico por defecto en una malla que crecerá.
-- ❌ Extender capa 2 entre centros de datos sin requisito escrito, sin acotar el dominio de fallo y sin
-  fecha de retirada.
-- ❌ PFC en toda la malla "por si acaso"; o red sin pérdidas sin ECN, sin mapeo coherente en todos los
-  saltos y sin monitorizar contadores de pausa.
-- ❌ Tratar la malla como zona de confianza y saltarse la política este-oeste.
-- ❌ Construir una malla EVPN para un rack, o sin personal, laboratorio y automatización para operarla.
-- ❌ Actualizar varias hojas o espinas a la vez, o sin drenar el nodo antes.
-- ❌ Configuración divergente entre equipos del mismo rol, o hecha a mano fuera del SoT.
-- ❌ No declarar el ratio de sobresuscripción por rol de rack.
-- ❌ ECMP con hash por paquete.
-- ❌ Poner en producción una malla sin haber probado y **medido** caída de espina, uplink y hoja con
-  tráfico real.
+**FORBIDDEN**
+- ❌ Designing a new DC as one big switched network with stretched VLANs and STP as the convergence mechanism.
+- ❌ Leaf-leaf or spine-spine links in a Clos.
+- ❌ VXLAN **flood-and-learn** (without EVPN) in a new deployment.
+- ❌ A fabric with MTU 1500, or with a different MTU on some link.
+- ❌ A centralised gateway instead of a distributed anycast one, with no written requirement.
+- ❌ Asymmetric IRB by default in a fabric that will grow.
+- ❌ Stretching layer 2 between data centres with no written requirement, without bounding the failure domain and without
+  a retirement date.
+- ❌ PFC across the whole fabric "just in case"; or lossless networking without ECN, without consistent mapping on every
+  hop and without monitoring pause counters.
+- ❌ Treating the fabric as a trust zone and skipping east-west policy.
+- ❌ Building an EVPN fabric for one rack, or without the staff, lab and automation to operate it.
+- ❌ Upgrading several leaves or spines at once, or without draining the node first.
+- ❌ Divergent configuration between devices of the same role, or made by hand outside the SoT.
+- ❌ Not declaring the oversubscription ratio per rack role.
+- ❌ ECMP with a per-packet hash.
+- ❌ Putting a fabric into production without having tested and **measured** the loss of a spine, an uplink and a leaf with
+  real traffic.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-**Metodología**: los RFC se verificaron **uno a uno** contra la API JSON de `rfc-editor.org` (título,
-estado, fecha, `obsoletes`/`obsoleted_by`/`updated_by`), no contra resúmenes HTML.
+**Methodology**: the RFCs were verified **one by one** against the `rfc-editor.org` JSON API (title,
+status, date, `obsoletes`/`obsoleted_by`/`updated_by`), not against HTML summaries.
 
-**RFC verificados ago-2026**. **VXLAN = RFC 7348** (ago-2014, **Informational** — no es Standards
-Track; citarlo como "estándar" es incorrecto); **Geneve = RFC 8926** (nov-2020, Proposed Standard).
-**EVPN = RFC 7432** (feb-2015), actualizado por **8584, 9161, 9572, 9573 y 9746**; **EVPN sobre
-NVO/VXLAN = RFC 8365** (mar-2018), actualizado por **9746**. **IRB simétrico/asimétrico = RFC 9135** y
-**prefijos IP / type-5 = RFC 9136** (ambos oct-2021). **Marco de elección de DF = RFC 8584** (abr-2019,
-actualizado por 9722 y 9785). **Split-horizon en multihoming EVPN = RFC 9746** (mar-2025), que
-**actualiza 7432 y 8365**. **Proxy ARP/ND = RFC 9161** (ene-2022); **BUM = RFC 9572** (may-2024).
-**BGP en DC a gran escala = RFC 7938** (ago-2016, **Informational**). **Siguiente salto IPv6 para NLRI
-IPv4 ("BGP unnumbered") = RFC 8950** (nov-2020), que **obsoleta RFC 5549** — citar 5549 hoy es un error
-de hecho. **ECN = RFC 3168**, actualizado por 4301, 6040, 8311 y 9768. **IEEE**: PFC = **802.1Qbb** y
-QCN = **802.1Qau**, ambos **incorporados a la base 802.1Q** (revisión vigente 802.1Q-2022); ETS =
-**802.1Qaz**; DCBX es extensión de LLDP (802.1AB).
+**RFCs verified Aug-2026**. **VXLAN = RFC 7348** (Aug-2014, **Informational** — it is not Standards
+Track; citing it as "a standard" is incorrect); **Geneve = RFC 8926** (Nov-2020, Proposed Standard).
+**EVPN = RFC 7432** (Feb-2015), updated by **8584, 9161, 9572, 9573 and 9746**; **EVPN over
+NVO/VXLAN = RFC 8365** (Mar-2018), updated by **9746**. **Symmetric/asymmetric IRB = RFC 9135** and
+**IP prefixes / type-5 = RFC 9136** (both Oct-2021). **DF election framework = RFC 8584** (Apr-2019,
+updated by 9722 and 9785). **Split-horizon in EVPN multihoming = RFC 9746** (Mar-2025), which
+**updates 7432 and 8365**. **Proxy ARP/ND = RFC 9161** (Jan-2022); **BUM = RFC 9572** (May-2024).
+**BGP in large-scale DCs = RFC 7938** (Aug-2016, **Informational**). **IPv6 next hop for IPv4
+NLRI ("BGP unnumbered") = RFC 8950** (Nov-2020), which **obsoletes RFC 5549** — citing 5549 today is a factual
+error. **ECN = RFC 3168**, updated by 4301, 6040, 8311 and 9768. **IEEE**: PFC = **802.1Qbb** and
+QCN = **802.1Qau**, both **incorporated into the 802.1Q base** (the current revision is 802.1Q-2022); ETS =
+**802.1Qaz**; DCBX is an extension of LLDP (802.1AB).
 
-**Discrepancia declarada**: **RFC 7432 tiene un sucesor en curso.** `draft-ietf-bess-rfc7432bis` está
-en revisión **-14** con actividad el **2-mar-2026** y **aún no es RFC** (`rfc: null` en datatracker,
-sin *intended std level* declarado en el registro consultado). La referencia normativa vigente sigue
-siendo **RFC 7432**, pero está en sustitución: verifica si ya se publicó antes de citarlo en un
-documento de arquitectura.
+**Declared discrepancy**: **RFC 7432 has a successor in progress.** `draft-ietf-bess-rfc7432bis` is
+at revision **-14** with activity on **2-Mar-2026** and **is not yet an RFC** (`rfc: null` in the datatracker,
+with no *intended std level* declared in the register consulted). The current normative reference is still
+**RFC 7432**, but it is being replaced: verify whether it has been published before citing it in an
+architecture document.
 
-**Huecos declarados — NO rellenar de memoria**:
-1. **Bytes exactos de sobrecarga de VXLAN y Geneve** y la MTU mínima concreta resultante: **no
-   verificados byte a byte**. Geneve es **variable** por sus opciones. Calcúlalo y **pruébalo**.
-2. **Soporte de Geneve en ASIC** por plataforma y generación: **no verificado**, y es el criterio que
-   decide VXLAN frente a Geneve.
-3. **Límites de tabla del ASIC** (MAC, ARP/ND, rutas, VTEP, VNI): **no verificados**. Son el techo real
-   de la malla y varían por modelo y perfil de reenvío.
-4. **Versiones y estado de soporte de EVPN por NOS** (incluidos NOS abiertos tipo SONiC y basados en
-   FRR): **no verificados**. Comprobar versión, mantenimiento y **licencia en crudo** antes de fijar
-   cualquiera como default.
-5. **Umbrales de ECN, *headroom* de PFC y parámetros de DCQCN**: **no verificados** y muy dependientes
-   del hardware y del perfil de tráfico. Parten de la guía del fabricante y se validan con carga.
-6. **Deadlock por PFC en topologías Clos concretas** y sus mitigaciones vigentes: criterio general aquí,
-   **no contrastado** contra literatura reciente.
-7. **Ratios de sobresuscripción típicos por carga** (IA frente a cómputo general): son criterio de
-   ingeniería, **no medidas verificadas**.
-8. **`high-speed-interconnect-standards` ya existe**: InfiniBand, RoCE v2, iWARP, el gestor de
-   subred, el bloqueo mutuo por PFC visto desde el interconector y NVMe over Fabrics **son suyos**.
-   `datacenter-facilities-standards` **también existe**: la planta física —energía, refrigeración,
-   cableado— es suya. No la improvises aquí.
+**Declared gaps — do NOT fill from memory**:
+1. **The exact overhead bytes of VXLAN and Geneve** and the resulting concrete minimum MTU: **not
+   verified byte by byte**. Geneve is **variable** because of its options. Calculate it and **test it**.
+2. **Geneve support in ASICs** by platform and generation: **not verified**, and it is the criterion that
+   decides VXLAN versus Geneve.
+3. **ASIC table limits** (MAC, ARP/ND, routes, VTEPs, VNIs): **not verified**. They are the fabric's real
+   ceiling and they vary by model and forwarding profile.
+4. **EVPN versions and support status per NOS** (including open NOSes such as SONiC and FRR-based
+   ones): **not verified**. Check the version, maintenance and **raw licence** before setting
+   any of them as the default.
+5. **ECN thresholds, PFC *headroom* and DCQCN parameters**: **not verified** and highly dependent
+   on the hardware and the traffic profile. They start from the vendor's guidance and are validated under load.
+6. **PFC deadlock in specific Clos topologies** and its current mitigations: general criteria here,
+   **not cross-checked** against recent literature.
+7. **Typical oversubscription ratios by workload** (AI versus general compute): they are engineering
+   criteria, **not verified measurements**.
+8. **`high-speed-interconnect-standards` already exists**: InfiniBand, RoCE v2, iWARP, the subnet
+   manager, PFC deadlock as seen from the interconnect and NVMe over Fabrics **are theirs**.
+   `datacenter-facilities-standards` **also exists**: the physical plant — power, cooling,
+   cabling — is theirs. Do not improvise it here.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

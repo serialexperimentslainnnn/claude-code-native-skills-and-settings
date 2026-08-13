@@ -108,7 +108,7 @@ if during the exercise you detect a pre-existing compromise, you stop and escala
 | **TLPT (TIBER-EU / DORA)** | Does the financial entity withstand an attack aimed at critical functions? | Significant entity notified by its authority | Treating it as a normal red team: there is a Control Team, mandatory external intelligence, and the authority can reject the exercise |
 | **Bug bounty / VDP** | What does the crowd find continuously? | Continuous complement once maturity is reached | As a substitute for the pentest: coverage biased towards what pays and what is easy to demonstrate |
 
-## 3. Rules of Engagement: the contract as an engineering artefact
+## 3. Rules of Engagement: the contract as an engineering artifact
 
 The RoE are not preliminary paperwork: they are **the control document of the exercise**. If
 something is not written there, it is not authorised. Minimum content, all explicit:
@@ -170,7 +170,7 @@ What separates a professional exercise from playing with tools.
   fragile system without knowing it is negligence, not bad luck.
 
 ### Evidence chain of custody
-- Minimum sufficient evidence: cropped and **redacted** screenshot, hash of the artefact, not the
+- Minimum sufficient evidence: cropped and **redacted** screenshot, hash of the artifact, not the
   full dump of a database.
 - **Encrypted at rest** storage, access limited to the exercise team, inventory of
   what was collected and where it lives.
@@ -343,7 +343,7 @@ it holds accesses, credentials and data that nobody else brings together. It is 
   and written authorisation.
 - ❌ **Exfiltrating real client data "as proof"**. Access is demonstrated, the data is not
   extracted. Never mass dumps, never full PII, never to your own infrastructure.
-- ❌ Leaving **artefacts, accounts, tasks, keys or implants unwithdrawn and undocumented**.
+- ❌ Leaving **artifacts, accounts, tasks, keys or implants unwithdrawn and undocumented**.
   Each one is a back door that you left behind.
 - ❌ Reusing operating infrastructure or credentials between clients.
 - ❌ Keeping client data, evidence or credentials past the agreed destruction

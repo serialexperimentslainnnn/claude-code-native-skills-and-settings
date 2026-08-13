@@ -3,274 +3,275 @@ name: network-automation-standards
 description: Network as code — source of truth, generation, validation and safe rollout of device configuration. Use when driving devices from Ansible network collections (ansible.netcommon, cisco.ios, arista.eos, junipernetworks.junos, nokia.srlinux), Nornir with nornir-napalm or nornir-netmiko, NAPALM get_facts/compare_config/commit_config, netmiko send_config_set, scrapli or scrapli-netconf, Jinja templates rendering device config, NetBox as source of truth with pynetbox, custom fields, config contexts, config templates or the NetBox Ansible/Nornir inventory plugin, YAML intent data and schema validation, NETCONF (RFC 6241), RESTCONF (RFC 8040), YANG 1.1 (RFC 7950), NMDA (RFC 8342), candidate datastores and confirmed-commit, gNMI Get/Set/Subscribe with gnmic or pygnmi, OpenConfig versus IETF versus native YANG models, streaming telemetry replacing SNMP polling, containerlab .clab.yml topologies, netlab, vrnetlab or GNS3/EVE-NG virtual labs, pre-checks and post-checks, config diff and dry-run, drift detection against intent, batched canary rollout with tested rollback, commit-confirm timers, Batfish or pyATS/Genie operational-state validation, or storing device configs and credentials in a git repository.
 ---
 
-# Estándares de automatización de red — la red como código
+# Network automation standards — the network as code
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **automatizar la configuración y la verificación de equipos de red**: fuente de verdad y su
-gobierno, modelo de datos de intención, generación de configuración, interfaces del dispositivo (CLI,
-NETCONF/RESTCONF, gNMI), pruebas y validación de estado operativo, laboratorio virtual, CI/CD de red
-con despliegue por lotes y reversión probada, detección de deriva, telemetría de flujo continuo, y la
-**custodia de las credenciales que dan acceso a toda la flota**.
+Applies when **automating the configuration and verification of network devices**: source of truth
+and its governance, intent data model, configuration generation, device interfaces (CLI,
+NETCONF/RESTCONF, gNMI), testing and operational-state validation, virtual lab, network CI/CD with
+batched rollout and tested rollback, drift detection, streaming telemetry, and the **custody of the
+credentials that grant access to the entire fleet**.
 
 Triggers: `*.clab.yml`, `containerlab`, `netlab`, `vrnetlab`, `nornir_config.yaml`, `hosts.yaml`,
 `groups.yaml`, `napalm`, `netmiko`, `scrapli`, `pynetbox`, `ansible.netcommon`,
 `cisco.ios`/`arista.eos`/`junipernetworks.junos`/`nokia.srlinux`, `gnmic`, `pygnmi`, `ncclient`,
-`pyang`, `batfish`, `pyats`/`genie`, `*.j2` de configuración de red, "config context",
+`pyang`, `batfish`, `pyats`/`genie`, network configuration `*.j2`, "config context",
 "config template", "source of truth", "drift", "pre-check"/"post-check", "commit-confirm",
 "streaming telemetry", "dial-in"/"dial-out".
 
-**No aplica** — cada skill **decide** una cosa distinta:
-`networking-standards` (**troncal, madre**: decide **direccionamiento e IPAM, las VLAN, los
-fundamentos de routing, MTU/MSS y que NetBox es el SoT de intención**; aquí no se repite eso, aquí se
-decide **cómo se modela esa intención, cómo se genera la configuración y cómo llega al equipo sin
-romper nada**); `routing-switching-standards` (**decide qué debe decir la configuración de campus y
-borde**: STP, LACP, MLAG, IGP, política BGP, RPKI, CoPP, AAA); `datacenter-fabric-standards`
-(**decide qué debe decir la configuración de la malla**: Clos, EVPN, VRF, MTU, red sin pérdidas).
-**Esas dos diseñan; esta automatiza lo que ellas diseñan.**
-`network-troubleshooting-standards` (**decide el método reactivo** cuando el cambio automatizado rompió
-algo); `iac-standards` (**decide Terraform y Ansible como herramientas y cómo se escriben** —aquí sólo
-lo específico de red); `secrets-management-standards` (**decide el gestor de secretos**, rotación y
-credenciales efímeras); `observability-standards` (**decide la plataforma, los umbrales y las
-alertas** — aquí sólo de dónde sale el dato del equipo y por qué protocolo); `cicd-standards`
-(**decide el motor de pipeline**); `firewall-policy-standards` (**decide la política de filtrado y su
-gobierno**, aunque se aplique con estas herramientas); `opensource-licensing-standards` (**decide la
-licencia aceptable** de cada herramienta que se adopte). También frontera: `sre-practice-standards`,
-`dns-standards`, `vpn-standards`, `kubernetes-standards`, `onprem-standards` (paraguas),
-`identity-access-management-standards`, `linux-hardening-standards`,
-`vulnerability-management-standards`, `finops-standards`, `offensive-security-standards` (**esta skill
-es defensiva**), y `network-vendors-standards`, `wan-legacy-standards`, `telco-5g-standards`,
-`high-speed-interconnect-standards` y `datacenter-facilities-standards`.
+**Not applicable** — each skill **decides** a different thing:
+`networking-standards` (**the trunk, the parent**: decides **addressing and IPAM, VLANs, routing
+fundamentals, MTU/MSS and that NetBox is the intent SoT**; none of that is repeated here, here what
+gets decided is **how that intent is modelled, how the configuration is generated and how it reaches
+the device without breaking anything**); `routing-switching-standards` (**decides what the campus and
+edge configuration must say**: STP, LACP, MLAG, IGP, BGP policy, RPKI, CoPP, AAA);
+`datacenter-fabric-standards` (**decides what the fabric configuration must say**: Clos, EVPN, VRF,
+MTU, lossless networking). **Those two design; this one automates what they design.**
+`network-troubleshooting-standards` (**decides the reactive method** when the automated change broke
+something); `iac-standards` (**decides Terraform and Ansible as tools and how they are written** —
+here only what is network-specific); `secrets-management-standards` (**decides the secrets manager**,
+rotation and ephemeral credentials); `observability-standards` (**decides the platform, the
+thresholds and the alerts** — here only where the device data comes from and over which protocol);
+`cicd-standards` (**decides the pipeline engine**); `firewall-policy-standards` (**decides the
+filtering policy and its governance**, even when it is applied with these tools);
+`opensource-licensing-standards` (**decides the acceptable licence** of every tool adopted). Also
+bordering: `sre-practice-standards`, `dns-standards`, `vpn-standards`, `kubernetes-standards`,
+`onprem-standards` (umbrella), `identity-access-management-standards`, `linux-hardening-standards`,
+`vulnerability-management-standards`, `finops-standards`, `offensive-security-standards` (**this
+skill is defensive**), and `network-vendors-standards`, `wan-legacy-standards`,
+`telco-5g-standards`, `high-speed-interconnect-standards` and `datacenter-facilities-standards`.
 
-**Principio rector**: **automatizar una red mal diseñada la rompe más rápido y en más sitios a la
-vez.** La automatización no arregla el diseño: lo multiplica. Por eso el orden es **primero leer y
-comprobar, después generar, y sólo al final aplicar**, y por eso la regla dura es que **un cambio de
-red se revierte solo o no se aplica**.
+**Governing principle**: **automating a badly designed network breaks it faster and in more places at
+once.** Automation does not fix the design: it multiplies it. That is why the order is **first read
+and check, then generate, and only at the end apply**, and why the hard rule is that **a network
+change either rolls itself back or it is not applied**.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Versiones y licencias verificadas ago-2026 contra la **API JSON de PyPI**, los **feeds Atom de
-> releases** y el fichero **`LICENSE` en crudo**. Re-verificar antes de fijar nada (§8).
+> Versions and licences verified Aug 2026 against the **PyPI JSON API**, the **Atom release feeds**
+> and the **raw `LICENSE` file**. Re-verify before committing to anything (§8).
 
-| Ámbito | Por defecto | Alternativa justificable / vetado |
+| Area | Default | Justifiable alternative / vetoed |
 |---|---|---|
-| Fuente de verdad | **NetBox 4.6.7** (30-jul-2026; **Apache-2.0**, verificado en `LICENSE.txt` en crudo) como SoT de **intención** | ❌ Hoja de cálculo; ❌ la configuración del equipo como SoT; ❌ poblarlo por descubrimiento y llamarlo intención |
-| Modelo de datos | **Intención declarativa versionada** (YAML u objetos de NetBox) **con esquema validado en CI** | ❌ Intención incrustada en las plantillas; ❌ datos sin esquema |
-| Orquestador general | **Ansible** (`ansible-core` 2.21.2, **GPL-3.0-or-later**) con colecciones de red, si ya es el estándar de la casa | Modelo de ejecución lento en flotas grandes y gestión de errores por host tosca |
-| Framework en Python | **Nornir 3.6.0** (2-ago-2026, **Apache-2.0**) cuando hace falta lógica real, concurrencia y tests | Nornir es framework, no caja de herramientas: aporta inventario y paralelismo, **los drivers los pones tú** (`nornir-napalm` 0.6.0, `nornir-netmiko`) |
-| Abstracción multi-fabricante | **NAPALM 5.2.0** (27-jul-2026, **Apache-2.0**) por `get_*` normalizados, `compare_config` y commit con confirmación | Cobertura de plataformas limitada y desigual: **verifica el driver de tu NOS antes de diseñar sobre él** |
-| Transporte CLI | **netmiko 4.7.0** (12-may-2026, **MIT**) como opción segura; **scrapli** (**MIT**) por rendimiento, asincronismo o NETCONF | **scrapli está en transición** (§8): la última no-prerelease en PyPI es `2026.2.20` y la reescritura 2.0 va por *release candidate*. **No la fijes como default aún** |
-| Plantillas | **Jinja 3.1.6** (**BSD-3-Clause**), con **plantillas tontas y datos ricos** | ❌ Lógica de negocio en la plantilla: código sin tests |
-| Interfaz al equipo | **gNMI** para telemetría y, con soporte sólido, para configuración; **NETCONF (RFC 6241)** para configuración transaccional | **CLI** sólo cuando no hay modelo de datos; **RESTCONF (RFC 8040)** donde sea lo único disponible |
-| Cliente gNMI | **`gnmic` 0.46.0** (14-may-2026, **Apache-2.0**, bajo la organización **openconfig**); **`pygnmi`** (BSD-3-Clause) desde Python | Escribir un cliente gRPC propio sin necesidad |
-| Modelos YANG | **OpenConfig** primero en entorno multi-fabricante; **IETF** para lo básico (interfaces, IP, routing); **nativos** sólo para lo que ninguno cubre | ❌ Diseñar toda la automatización sobre modelos nativos: es CLI con otra sintaxis |
-| Laboratorio virtual | **containerlab v0.77.0** (28-jun-2026; **BSD-3-Clause**, copyright **Nokia**, verificado en crudo) | **netlab** (paquete `networklab` 26.7, **MIT**) por encima; GNS3/EVE-NG y `vrnetlab` si sólo hay imágenes de VM. **Las imágenes de NOS tienen licencia propia y restricciones de redistribución: es un problema legal** |
-| Validación | **Pre-checks y post-checks de estado operativo**, más análisis estático de configuración y validación de intención | ❌ Validar sólo que la configuración quedó escrita |
-| Telemetría | **Streaming telemetry (gNMI `Subscribe`)** donde el NOS lo soporte; **SNMP como respaldo** | ❌ Sondeo SNMP masivo como única telemetría en flota grande |
+| Source of truth | **NetBox 4.6.7** (30 Jul 2026; **Apache-2.0**, verified in the raw `LICENSE.txt`) as the **intent** SoT | ❌ Spreadsheet; ❌ the device configuration as SoT; ❌ populating it by discovery and calling that intent |
+| Data model | **Versioned declarative intent** (YAML or NetBox objects) **with a schema validated in CI** | ❌ Intent embedded in the templates; ❌ schema-less data |
+| General orchestrator | **Ansible** (`ansible-core` 2.21.2, **GPL-3.0-or-later**) with network collections, if it is already the house standard | Slow execution model on large fleets and crude per-host error handling |
+| Python framework | **Nornir 3.6.0** (2 Aug 2026, **Apache-2.0**) when real logic, concurrency and tests are needed | Nornir is a framework, not a toolbox: it brings inventory and parallelism, **you supply the drivers** (`nornir-napalm` 0.6.0, `nornir-netmiko`) |
+| Multi-vendor abstraction | **NAPALM 5.2.0** (27 Jul 2026, **Apache-2.0**) for normalised `get_*`, `compare_config` and confirmed commit | Limited and uneven platform coverage: **verify the driver for your NOS before designing on top of it** |
+| CLI transport | **netmiko 4.7.0** (12 May 2026, **MIT**) as the safe option; **scrapli** (**MIT**) for performance, async or NETCONF | **scrapli is in transition** (§8): the latest non-prerelease on PyPI is `2026.2.20` and the 2.0 rewrite is at *release candidate*. **Do not pin it as the default yet** |
+| Templates | **Jinja 3.1.6** (**BSD-3-Clause**), with **dumb templates and rich data** | ❌ Business logic in the template: code without tests |
+| Device interface | **gNMI** for telemetry and, where support is solid, for configuration; **NETCONF (RFC 6241)** for transactional configuration | **CLI** only when there is no data model; **RESTCONF (RFC 8040)** where it is the only thing available |
+| gNMI client | **`gnmic` 0.46.0** (14 May 2026, **Apache-2.0**, under the **openconfig** organisation); **`pygnmi`** (BSD-3-Clause) from Python | Writing your own gRPC client without needing to |
+| YANG models | **OpenConfig** first in a multi-vendor environment; **IETF** for the basics (interfaces, IP, routing); **native** only for what neither covers | ❌ Designing the whole automation on native models: that is CLI with a different syntax |
+| Virtual lab | **containerlab v0.77.0** (28 Jun 2026; **BSD-3-Clause**, copyright **Nokia**, verified raw) | **netlab** (package `networklab` 26.7, **MIT**) on top; GNS3/EVE-NG and `vrnetlab` if only VM images exist. **NOS images have their own licence and redistribution restrictions: that is a legal problem** |
+| Validation | **Operational-state pre-checks and post-checks**, plus static configuration analysis and intent validation | ❌ Validating only that the configuration got written |
+| Telemetry | **Streaming telemetry (gNMI `Subscribe`)** where the NOS supports it; **SNMP as a fallback** | ❌ Mass SNMP polling as the only telemetry on a large fleet |
 
-## 3. El orden correcto y su estructura
+## 3. The right order and its structure
 
-**El orden, y no se salta ningún paso**
-1. **Leer y comprobar** — inventario, estado actual, deriva contra el SoT. Todo lo de sólo lectura se
-   automatiza primero: aporta valor sin riesgo y construye la confianza y el conocimiento del parque
-   real antes de tocar nada.
-2. **Generar** — configuración renderizada desde la intención, en un artefacto revisable. **El diff
-   es el objeto que se revisa**, no la plantilla.
-3. **Aplicar** — sólo al final, por lotes, con reversión armada.
+**The order, and no step gets skipped**
+1. **Read and check** — inventory, current state, drift against the SoT. Everything read-only is
+   automated first: it delivers value without risk and builds confidence and knowledge of the real
+   estate before touching anything.
+2. **Generate** — configuration rendered from the intent, into a reviewable artifact. **The diff is
+   the object under review**, not the template.
+3. **Apply** — only at the end, in batches, with rollback armed.
 
-**La fuente de verdad, decidida antes que la herramienta**
-- **SoT de intención y SoT de descubrimiento son cosas distintas y no se mezclan.** NetBox contiene
-  **lo que debe ser**; el descubrimiento produce **lo que hay**; la diferencia es **deriva**, y la
-  deriva es un hallazgo con dueño. Autopoblar el SoT desde la red borra justamente esa señal.
-- **Dónde vive cada cosa** (lo que `networking-standards` no decide): datos y relaciones en **NetBox**
-  (sitios, dispositivos, interfaces, prefijos, VLAN, circuitos); parámetros que modulan la plantilla en
-  **config contexts** jerárquicos; renderizado en **config templates** o en el repositorio Git. Regla
-  de reparto: **si dos sistemas pueden responder a la misma pregunta con respuestas distintas, uno
-  sobra.**
-- **Todo dato de intención tiene esquema y se valida en CI**: un YAML sin esquema es un fallo en
-  producción esperando al primer error tipográfico. Falla en el pipeline, no en el equipo.
-- **El SoT se cierra en ambos sentidos**: tras cada cambio, el SoT refleja la realidad pretendida o el
-  cambio no está terminado.
+**The source of truth, decided before the tool**
+- **An intent SoT and a discovery SoT are different things and do not get mixed.** NetBox holds
+  **what must be**; discovery produces **what there is**; the difference is **drift**, and drift is a
+  finding with an owner. Auto-populating the SoT from the network erases exactly that signal.
+- **Where each thing lives** (what `networking-standards` does not decide): data and relations in
+  **NetBox** (sites, devices, interfaces, prefixes, VLANs, circuits); parameters that modulate the
+  template in hierarchical **config contexts**; rendering in **config templates** or in the Git
+  repository. Split rule: **if two systems can answer the same question with different answers, one
+  of them is redundant.**
+- **Every piece of intent data has a schema and is validated in CI**: a schema-less YAML is a
+  production failure waiting for the first typo. Fail in the pipeline, not on the device.
+- **The SoT closes in both directions**: after every change, the SoT reflects the intended reality or
+  the change is not finished.
 
-**Interfaces del dispositivo: el modelo de datos es lo que hace portable la automatización**
-- **CLI por *screen-scraping*** funciona en todo y **se rompe con cualquier cosa**: un cambio de formato
-  en una versión menor, un banner, un aviso, una salida paginada. No hay contrato, ni transacción, ni
-  validación; y el parseo (TextFSM, TTP, plantillas propias) es código a mantener por plataforma y por
-  versión.
-- **NETCONF (RFC 6241) con YANG (RFC 7950)** aporta lo que la CLI no tiene: **datastore candidato,
-  transacción, validación previa y commit confirmado**. Con **NMDA (RFC 8342)** la separación entre
-  configuración pretendida, aplicada y estado operativo deja de ser ambigua — que es exactamente la
-  distinción que permite verificar intención frente a realidad.
-- **gNMI/gRPC** es la mejor opción para **telemetría** (suscripción, alta frecuencia, eficiente) y cada
-  vez más válida para configuración; **su punto débil declarado es la transacción**, donde es más
-  limitado que NETCONF.
-- **El modelo de datos es la portabilidad**: escribir contra **OpenConfig** o modelos IETF significa que
-  el mismo código sirve para otro fabricante; contra modelos nativos o CLI, significa reescribirlo en la
-  siguiente compra. **El realismo es híbrido**: OpenConfig es operacionalmente completo, no exhaustivo,
-  y la interoperabilidad real entre fabricantes sigue siendo imperfecta. Diseña con modelo estándar y
-  **aísla en un adaptador** lo que exija modelo nativo o CLI.
+**Device interfaces: the data model is what makes automation portable**
+- **CLI by *screen-scraping*** works on everything and **breaks with anything**: a format change in a
+  minor version, a banner, a warning, paginated output. There is no contract, no transaction and no
+  validation; and the parsing (TextFSM, TTP, home-made templates) is code to maintain per platform
+  and per version.
+- **NETCONF (RFC 6241) with YANG (RFC 7950)** brings what the CLI does not have: **candidate
+  datastore, transaction, prior validation and confirmed commit**. With **NMDA (RFC 8342)** the
+  separation between intended configuration, applied configuration and operational state stops being
+  ambiguous — which is exactly the distinction that lets you verify intent against reality.
+- **gNMI/gRPC** is the best option for **telemetry** (subscription, high frequency, efficient) and
+  increasingly valid for configuration; **its declared weak point is the transaction**, where it is
+  more limited than NETCONF.
+- **The data model is the portability**: writing against **OpenConfig** or IETF models means the same
+  code serves another vendor; against native models or CLI, it means rewriting it at the next
+  purchase. **The realistic answer is hybrid**: OpenConfig is operationally complete, not exhaustive,
+  and real interoperability between vendors is still imperfect. Design with a standard model and
+  **isolate in an adapter** whatever demands a native model or CLI.
 
-**Plantillas**: datos ricos, plantillas tontas — toda decisión que se pueda tomar en el dato se toma en
-el dato. Una plantilla por rol, componible por bloques, con **renderizado determinista** (mismo dato →
-mismo texto, byte a byte) para que el `diff` signifique algo.
+**Templates**: rich data, dumb templates — every decision that can be taken in the data is taken in
+the data. One template per role, composable in blocks, with **deterministic rendering** (same data →
+same text, byte for byte) so that the `diff` means something.
 
-## 4. Pruebas, validación y CI/CD de red
+## 4. Testing, validation and network CI/CD
 
-- **Laboratorio virtual con las mismas versiones de NOS que producción**, y con la topología
-  **generada desde el mismo SoT**: si el laboratorio se describe a mano, prueba otra red.
-- **Pipeline de red, por coste creciente**: (1) lint y **validación de esquema** de la intención;
-  (2) renderizado y **`diff` de configuración** como artefacto revisable en el PR; (3) análisis
-  estático de la configuración renderizada (alcanzabilidad, política, errores de diseño) donde la
-  herramienta lo permita; (4) despliegue en **laboratorio** y pruebas funcionales; (5) **lote canario**
-  en producción con post-checks; (6) resto de la flota **por lotes**, con criterio de aborto entre lotes.
-- **Pre-checks y post-checks sobre estado operativo, no sobre configuración**: lo que importa no es que
-  la línea esté escrita, sino que **las adyacencias siguen arriba, los prefijos esperados siguen ahí,
-  las interfaces no acumulan errores y el tráfico de aplicación pasa**. Se capturan antes, se comparan
-  después, y la comparación es automática.
-- **Validación de intención como gate continuo**: comprobación periódica de que la red se comporta como
-  dice el SoT (rutas, vecinos, VLAN, deriva cero). Un fallo aquí es un hallazgo con dueño.
-- **La regla dura: un cambio de red se revierte solo o no se aplica.** Reversión temporizada
-  (`commit-confirm` o equivalente) armada **antes** del cambio, con ventana ajustada al tiempo de
-  verificación, y el plan de reversión **probado en laboratorio** como parte del cambio: una reversión
-  no ensayada no es un plan, es una esperanza. Siempre con consola OOB disponible.
-- **Idempotencia comprobada**: la segunda ejecución no cambia nada. Si cambia, el playbook miente sobre
-  el estado y no sirve para detectar deriva.
+- **Virtual lab with the same NOS versions as production**, and with the topology **generated from
+  the same SoT**: if the lab is described by hand, it tests a different network.
+- **Network pipeline, in increasing cost order**: (1) lint and **schema validation** of the intent;
+  (2) rendering and **configuration `diff`** as a reviewable artifact in the PR; (3) static analysis
+  of the rendered configuration (reachability, policy, design errors) where the tooling allows it;
+  (4) deployment to the **lab** and functional tests; (5) **canary batch** in production with
+  post-checks; (6) the rest of the fleet **in batches**, with an abort criterion between batches.
+- **Pre-checks and post-checks on operational state, not on configuration**: what matters is not that
+  the line got written, but that **adjacencies are still up, the expected prefixes are still there,
+  interfaces are not accumulating errors and application traffic passes**. They are captured before,
+  compared after, and the comparison is automatic.
+- **Intent validation as a continuous gate**: periodic checking that the network behaves as the SoT
+  says (routes, neighbours, VLANs, zero drift). A failure here is a finding with an owner.
+- **The hard rule: a network change either rolls itself back or it is not applied.** Timed rollback
+  (`commit-confirm` or equivalent) armed **before** the change, with a window sized to the
+  verification time, and the rollback plan **tested in the lab** as part of the change: an unrehearsed
+  rollback is not a plan, it is a hope. Always with an OOB console available.
+- **Verified idempotence**: the second run changes nothing. If it changes something, the playbook is
+  lying about state and is useless for detecting drift.
 
-## 5. Seguridad: la automatización tiene las credenciales de toda la red
+## 5. Security: the automation holds the credentials to the whole network
 
-Es el riesgo dominante de esta skill: **quien controla el sistema de automatización controla todos los
-equipos a la vez, con cambios que además parecen legítimos.**
+This is the dominant risk of this skill: **whoever controls the automation system controls every
+device at once, with changes that also look legitimate.**
 
-- **Ninguna credencial en el repositorio ni en el inventario**: se obtienen en ejecución del gestor de
-  secretos (`secrets-management-standards`); en CI, **OIDC/identidad de carga de trabajo** frente a
-  claves estáticas de larga vida.
-- **Cuentas de servicio nominadas, con mínimo privilegio**: una de **sólo lectura** para inventario,
-  deriva y telemetría —que es la mayoría del trabajo— y otra distinta, de escritura, sólo para el paso
-  de aplicación. **TACACS+ permite autorización por comando**: úsala para acotar qué puede hacer la
-  cuenta de automatización (`routing-switching-standards`, `identity-access-management-standards`).
-- **Credenciales efímeras y rotación**; nunca una contraseña compartida entre humanos y automatismos,
-  porque destruye la trazabilidad de quién cambió qué.
-- **Registro de cada cambio correlacionable extremo a extremo**: quién lo pidió, qué PR lo aprobó, qué
-  ejecución lo aplicó, a qué dispositivos y con qué diff. Si los logs del dispositivo y los del
-  automatismo no se cruzan, un cambio malicioso es indistinguible de uno rutinario.
-- **El repositorio de configuración de red es un objetivo de alto valor**: contiene topología,
-  direccionamiento, política de filtrado y —si alguien se descuidó— credenciales. Acceso restringido,
-  revisión obligatoria, **firma de commits**, protección de rama y **escaneo de secretos como gate que
-  rompe el build**. Un secreto que llegó al histórico está comprometido: se **rota**.
-- **Configuraciones respaldadas: cifradas y saneadas** — contienen hashes de contraseñas, claves
-  precompartidas, comunidades SNMP y certificados.
-- **El sistema de automatización es infraestructura crítica**: red de gestión, superficie mínima,
-  parcheo al día, MFA para quien lo opera, y plan de recuperación propio (si cae, no puedes ni cambiar
-  ni revertir).
-- **Cadena de suministro**: colecciones, paquetes de PyPI e imágenes de NOS **fijados por versión o
-  digest**, con SCA en CI. Una colección comprometida ejecuta contra toda la flota.
+- **No credential in the repository or in the inventory**: they are fetched at run time from the
+  secrets manager (`secrets-management-standards`); in CI, **OIDC/workload identity** rather than
+  long-lived static keys.
+- **Named service accounts, with least privilege**: a **read-only** one for inventory, drift and
+  telemetry — which is most of the work — and a different, write-capable one only for the apply step.
+  **TACACS+ allows per-command authorisation**: use it to bound what the automation account can do
+  (`routing-switching-standards`, `identity-access-management-standards`).
+- **Ephemeral credentials and rotation**; never a password shared between humans and automation,
+  because it destroys the traceability of who changed what.
+- **A record of every change, correlatable end to end**: who requested it, which PR approved it, which
+  run applied it, to which devices and with which diff. If the device logs and the automation logs
+  cannot be cross-referenced, a malicious change is indistinguishable from a routine one.
+- **The network configuration repository is a high-value target**: it contains topology, addressing,
+  filtering policy and — if someone was careless — credentials. Restricted access, mandatory review,
+  **commit signing**, branch protection and **secret scanning as a gate that breaks the build**. A
+  secret that reached the history is compromised: it gets **rotated**.
+- **Backed-up configurations: encrypted and sanitised** — they contain password hashes, pre-shared
+  keys, SNMP communities and certificates.
+- **The automation system is critical infrastructure**: management network, minimal surface, patching
+  up to date, MFA for whoever operates it, and its own recovery plan (if it goes down, you can
+  neither change nor roll back).
+- **Supply chain**: collections, PyPI packages and NOS images **pinned by version or digest**, with
+  SCA in CI. A compromised collection runs against the entire fleet.
 
-## 6. Telemetría y operabilidad
+## 6. Telemetry and operability
 
-- **Streaming frente a sondeo**: la suscripción (gNMI `Subscribe`, dial-in o dial-out) da mayor
-  frecuencia, menor coste de CPU en el equipo y datos ya estructurados según el modelo YANG. El sondeo
-  SNMP masivo escala mal y pierde los eventos cortos. **Criterio**: streaming donde el NOS lo soporte,
-  **SNMP como respaldo** para el parque antiguo y lo que el modelo no exponga — no se apaga por dogma.
-  La plataforma que recibe, almacena y alerta es de `observability-standards`.
-- **Señales propias de la automatización**: tasa de éxito por ejecución y por dispositivo, **deriva
-  detectada** (número y antigüedad), tiempo desde el commit hasta el cambio aplicado, número de
-  reversiones, y **dispositivos no gestionados** — esos últimos son los que rompen los despliegues.
-- **Cobertura declarada**: qué porcentaje del parque está automatizado y qué queda fuera, con motivo.
-  Un parque medio automatizado es más peligroso que uno manual si nadie sabe cuál es cuál.
-- **Toil**: tarea manual repetida tres veces es candidata a automatizar; y automatización que requiere
-  intervención manual habitual está mal hecha (`sre-practice-standards`).
+- **Streaming versus polling**: subscription (gNMI `Subscribe`, dial-in or dial-out) gives higher
+  frequency, lower CPU cost on the device and data already structured per the YANG model. Mass SNMP
+  polling scales badly and misses short events. **Criterion**: streaming where the NOS supports it,
+  **SNMP as a fallback** for the older estate and for what the model does not expose — it is not
+  switched off out of dogma. The platform that receives, stores and alerts belongs to
+  `observability-standards`.
+- **The automation's own signals**: success rate per run and per device, **drift detected** (count and
+  age), time from commit to applied change, number of rollbacks, and **unmanaged devices** — those
+  last ones are what break rollouts.
+- **Declared coverage**: what percentage of the estate is automated and what is left out, with a
+  reason. A half-automated estate is more dangerous than a manual one if nobody knows which is which.
+- **Toil**: a manual task repeated three times is a candidate for automation; and automation that
+  requires routine manual intervention is badly built (`sre-practice-standards`).
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Empieza por lectura**: inventario, deriva y telemetría primero. Valor inmediato, riesgo nulo, y
-  construye lo que hace viable la fase de escritura.
-- **Cadencia**: revisar versión, **estado de mantenimiento y licencia** cada trimestre; fijar versiones
-  y actualizar deliberadamente. **Una herramienta que cambia de licencia o entra en modo mantenimiento
-  es una decisión de arquitectura**, no una nota al pie (`opensource-licensing-standards`).
-- **Deprecación**: plantillas, playbooks y scripts sin uso se borran — el código muerto se ejecuta por
-  accidente algún día.
+- **Start with reading**: inventory, drift and telemetry first. Immediate value, zero risk, and it
+  builds what makes the write phase viable.
+- **Cadence**: review version, **maintenance status and licence** every quarter; pin versions and
+  upgrade deliberately. **A tool that changes licence or goes into maintenance mode is an architecture
+  decision**, not a footnote (`opensource-licensing-standards`).
+- **Deprecation**: unused templates, playbooks and scripts get deleted — dead code gets executed by
+  accident one day.
 
-**PROHIBIDO**
-- ❌ **Aplicar a toda la flota sin lote de prueba.** Canario primero, lotes después, con criterio de
-  aborto escrito entre lotes.
-- ❌ **Automatizar sin inventario fiable**: sin SoT completo y correcto, se propagan errores a escala.
-- ❌ **Guardar configuraciones con credenciales en claro en el repositorio** (o secretos en inventarios,
-  variables de grupo, plantillas o logs de ejecución).
-- ❌ **Confiar en la CLI cuando hay modelo de datos** disponible en la plataforma.
-- ❌ Aplicar un cambio sin reversión armada y **probada**, o sin consola OOB disponible.
-- ❌ Cambiar configuración a mano en producción "y ya lo meteré en el repo luego".
-- ❌ Poblar el SoT por descubrimiento automático y llamarlo intención.
-- ❌ Datos de intención sin esquema ni validación en CI.
-- ❌ Lógica de negocio dentro de las plantillas Jinja.
-- ❌ Revisar la plantilla en el PR en lugar del **diff de configuración renderizada**.
-- ❌ Post-checks que sólo verifican que la configuración quedó escrita.
-- ❌ Ejecutar con una cuenta de administrador compartida, o con la misma credencial para lectura y
-  escritura.
-- ❌ Credenciales de larga vida en CI pudiendo usar OIDC/identidad de carga de trabajo.
-- ❌ Colecciones, paquetes o imágenes sin fijar versión ni digest.
-- ❌ Automatizar una red cuyo diseño no está resuelto: se arregla el diseño primero
+**FORBIDDEN**
+- ❌ **Applying to the whole fleet with no test batch.** Canary first, batches after, with a written
+  abort criterion between batches.
+- ❌ **Automating without a reliable inventory**: without a complete and correct SoT, errors propagate
+  at scale.
+- ❌ **Storing configurations with cleartext credentials in the repository** (or secrets in
+  inventories, group variables, templates or run logs).
+- ❌ **Relying on the CLI when there is a data model** available on the platform.
+- ❌ Applying a change without an armed and **tested** rollback, or without an OOB console available.
+- ❌ Changing configuration by hand in production "and I will put it in the repo later".
+- ❌ Populating the SoT by automatic discovery and calling it intent.
+- ❌ Intent data with no schema and no validation in CI.
+- ❌ Business logic inside the Jinja templates.
+- ❌ Reviewing the template in the PR instead of the **rendered configuration diff**.
+- ❌ Post-checks that only verify that the configuration got written.
+- ❌ Running with a shared administrator account, or with the same credential for reading and writing.
+- ❌ Long-lived credentials in CI when OIDC/workload identity is available.
+- ❌ Collections, packages or images without a pinned version or digest.
+- ❌ Automating a network whose design is not settled: fix the design first
   (`routing-switching-standards`, `datacenter-fabric-standards`).
-- ❌ Playbook no idempotente usado como detector de deriva.
-- ❌ Redistribuir imágenes de NOS de un laboratorio virtual sin comprobar su licencia.
+- ❌ A non-idempotent playbook used as a drift detector.
+- ❌ Redistributing virtual-lab NOS images without checking their licence.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-**Metodología**: versiones desde la **API JSON de PyPI** y los **feeds Atom de releases de GitHub**
-(`api.github.com` devuelve 403 sin autenticar); **licencias leídas del fichero `LICENSE` en crudo**, no
-de la etiqueta que muestra la interfaz de GitHub ni de un resumen.
+**Methodology**: versions from the **PyPI JSON API** and the **GitHub Atom release feeds**
+(`api.github.com` returns 403 unauthenticated); **licences read from the raw `LICENSE` file**, not
+from the label GitHub's interface shows nor from a summary.
 
-**Verificado ago-2026 (versión | fecha | licencia comprobada en crudo)**. **NetBox 4.6.7** |
-30-jul-2026 | **Apache-2.0** (`LICENSE.txt` en `main` y `master`; `LICENSE` a secas **da 404** — la
-ruta importa al verificar), con `v4.6.8-rc2` en vuelo (4-ago-2026). **Nornir 3.6.0** | 2-ago-2026 |
-**Apache-2.0** (cadencia lenta pero viva: 3.5.0 era de ene-2025). **NAPALM 5.2.0** | 27-jul-2026 |
-**Apache-2.0**. **netmiko 4.7.0** | 12-may-2026 | **MIT**. **Jinja2 3.1.6** | **BSD-3-Clause**.
-**ansible-core 2.21.2** | **GPL-3.0-or-later**. **pygnmi 0.8.15** | **BSD-3-Clause**.
-**gnmic 0.46.0** | 14-may-2026 | **Apache-2.0**, y **vive bajo la organización `openconfig`**, no bajo
-el repositorio personal original: proyecto **mudado**, y buscar el repo viejo da falsa impresión de
-abandono. **containerlab v0.77.0** | 28-jun-2026 | **BSD-3-Clause con copyright de Nokia** (leído en
-`LICENSE` en crudo): **no es Apache-2.0**, que es la suposición habitual. **netlab** = paquete PyPI
-**`networklab` 26.7** | **MIT** (ipspace y colaboradores), CalVer, y **el nombre del paquete no
-coincide con el del proyecto**.
+**Verified Aug 2026 (version | date | licence checked raw)**. **NetBox 4.6.7** |
+30 Jul 2026 | **Apache-2.0** (`LICENSE.txt` on `main` and `master`; plain `LICENSE` **returns 404** —
+the path matters when verifying), with `v4.6.8-rc2` in flight (4 Aug 2026). **Nornir 3.6.0** |
+2 Aug 2026 | **Apache-2.0** (slow but alive cadence: 3.5.0 was from Jan 2025). **NAPALM 5.2.0** |
+27 Jul 2026 | **Apache-2.0**. **netmiko 4.7.0** | 12 May 2026 | **MIT**. **Jinja2 3.1.6** |
+**BSD-3-Clause**. **ansible-core 2.21.2** | **GPL-3.0-or-later**. **pygnmi 0.8.15** |
+**BSD-3-Clause**. **gnmic 0.46.0** | 14 May 2026 | **Apache-2.0**, and it **lives under the
+`openconfig` organisation**, not under the original personal repository: the project **moved**, and
+searching for the old repo gives a false impression of abandonment. **containerlab v0.77.0** |
+28 Jun 2026 | **BSD-3-Clause with Nokia copyright** (read in the raw `LICENSE`): **it is not
+Apache-2.0**, which is the usual assumption. **netlab** = PyPI package **`networklab` 26.7** |
+**MIT** (ipspace and contributors), CalVer, and **the package name does not match the project name**.
 
-**Discrepancia declarada — scrapli**: **GitHub y PyPI dan versiones distintas para lo mismo.** El feed
-Atom muestra `v2.0.0-rc.16` (20-jul-2026); PyPI publica ese artefacto como `2026.7.20rc16` y declara
-como versión actual **`2026.2.20`** (feb-2026), porque bajo PEP 440 la CalVer ordena por encima de
-`2.0.0rc`. **Conclusión operativa**: la reescritura 2.0 está en *release candidate*, un
-`pip install scrapli` sin `--pre` instala la línea CalVer de feb-2026, y **fijar scrapli 2.0 como
-default hoy es prematuro**.
+**Declared discrepancy — scrapli**: **GitHub and PyPI give different versions for the same thing.**
+The Atom feed shows `v2.0.0-rc.16` (20 Jul 2026); PyPI publishes that artifact as `2026.7.20rc16` and
+declares **`2026.2.20`** (Feb 2026) as the current version, because under PEP 440 the CalVer sorts
+above `2.0.0rc`. **Operational conclusion**: the 2.0 rewrite is at *release candidate*, a
+`pip install scrapli` without `--pre` installs the Feb 2026 CalVer line, and **pinning scrapli 2.0 as
+the default today is premature**.
 
-**Estado de OpenConfig/gNMI (cualitativo)**: proyecto activo (gnmic, ygot, ygnmi, gNOI y
-`featureprofiles` con actividad en 2026). Los modelos se escriben en **YANG 1.0** y son
-"operacionalmente completos", no exhaustivos; **la interoperabilidad real entre fabricantes sigue
-siendo imperfecta**, y gNMI es **más débil que NETCONF para configuración transaccional** (aunque la
-especificación exige que un `SetRequest` que abarque varios *origins* se trate como una transacción con
-rollback). **No se encontró ningún dato autoritativo de cuota de adopción**: trata cualquier cifra sobre
-adopción de OpenConfig o gNMI como no verificada.
+**State of OpenConfig/gNMI (qualitative)**: active project (gnmic, ygot, ygnmi, gNOI and
+`featureprofiles` with activity in 2026). The models are written in **YANG 1.0** and are
+"operationally complete", not exhaustive; **real interoperability between vendors is still
+imperfect**, and gNMI is **weaker than NETCONF for transactional configuration** (although the
+specification requires that a `SetRequest` spanning several *origins* be treated as a transaction
+with rollback). **No authoritative adoption-share figure was found**: treat any number about
+OpenConfig or gNMI adoption as unverified.
 
-**RFC verificados uno a uno contra `rfc-editor.org`**: NETCONF **RFC 6241** (jun-2011, actualizado por
-7803 y 8526); RESTCONF **RFC 8040** (feb-2017, actualizado por 8527); YANG 1.1 **RFC 7950** (ago-2016,
-actualizado por 8342 y 8526); NMDA **RFC 8342** (mar-2018); YANG Library **RFC 8525** (mar-2019,
-obsoleta RFC 7895).
+**RFCs verified one by one against `rfc-editor.org`**: NETCONF **RFC 6241** (Jun 2011, updated by
+7803 and 8526); RESTCONF **RFC 8040** (Feb 2017, updated by 8527); YANG 1.1 **RFC 7950** (Aug 2016,
+updated by 8342 and 8526); NMDA **RFC 8342** (Mar 2018); YANG Library **RFC 8525** (Mar 2019,
+obsoletes RFC 7895).
 
-**Huecos declarados — NO rellenar de memoria**:
-1. **Versiones y estado de las colecciones de red de Ansible** (`ansible.netcommon`, `cisco.ios`,
-   `arista.eos`, `junipernetworks.junos`, `nokia.srlinux`): **no verificadas**; su cadencia es
-   independiente de `ansible-core`.
-2. **Cobertura real de NAPALM por plataforma y versión de NOS**: **no verificada**, y es lo que decide
-   si NAPALM sirve en tu parque.
-3. **Estado, versión y licencia de Batfish y de pyATS/Genie**: **no verificados**; se mencionan como
-   categoría, **no como default fijado**.
-4. **Estado y licencia de GNS3, EVE-NG y `vrnetlab`**: **no verificados**. EVE-NG tiene ediciones
-   comerciales: comprueba la edición concreta.
-5. **Licencia y redistribución de las imágenes de NOS** de laboratorio: **específicas de cada
-   fabricante y no verificadas**. Es cuestión legal (`opensource-licensing-standards`).
-6. **Soporte de gNMI y NETCONF por plataforma y versión de NOS**, y los modelos concretos expuestos:
-   **no verificado**. Compruébalo con `Capabilities` en el equipo real.
-7. **Relación entre NetBox Community (Apache-2.0) y las ofertas comerciales de NetBox Labs** y qué
-   funcionalidad queda fuera de la edición abierta: **no verificada**.
-8. **`ncclient`, `pyang`, TextFSM/`ntc-templates` y TTP**: versión, mantenimiento y licencia **no
-   verificados**.
+**Declared gaps — do NOT fill from memory**:
+1. **Versions and status of the Ansible network collections** (`ansible.netcommon`, `cisco.ios`,
+   `arista.eos`, `junipernetworks.junos`, `nokia.srlinux`): **not verified**; their cadence is
+   independent of `ansible-core`.
+2. **NAPALM's real coverage per platform and NOS version**: **not verified**, and it is what decides
+   whether NAPALM is usable in your estate.
+3. **Status, version and licence of Batfish and of pyATS/Genie**: **not verified**; they are mentioned
+   as a category, **not as a pinned default**.
+4. **Status and licence of GNS3, EVE-NG and `vrnetlab`**: **not verified**. EVE-NG has commercial
+   editions: check the specific edition.
+5. **Licence and redistribution of lab NOS images**: **vendor-specific and not verified**. It is a
+   legal question (`opensource-licensing-standards`).
+6. **gNMI and NETCONF support per platform and NOS version**, and the concrete models exposed: **not
+   verified**. Check it with `Capabilities` on the real device.
+7. **The relationship between NetBox Community (Apache-2.0) and NetBox Labs' commercial offerings**
+   and what functionality falls outside the open edition: **not verified**.
+8. **`ncclient`, `pyang`, TextFSM/`ntc-templates` and TTP**: version, maintenance and licence **not
+   verified**.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

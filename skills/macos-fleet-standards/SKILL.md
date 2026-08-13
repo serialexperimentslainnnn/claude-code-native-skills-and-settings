@@ -3,237 +3,236 @@ name: macos-fleet-standards
 description: Managing a fleet of corporate Macs — enrollment, MDM, compliance and lifecycle, not using one Mac. Use when working with Apple Business Manager or Apple School Manager, Automated Device Enrollment (ADE/DEP), supervision, MDM enrollment profiles and .mobileconfig payloads, declarative device management (DDM) declarations, activations, assets and status subscriptions, software update enforcement declarations, Jamf Pro or Jamf Connect, Kandji, Mosyle, Addigy, Workspace ONE, Intune for macOS, NanoMDM, MicroMDM, KMFDDM or NanoHUB, APNs push certificates and MDM server tokens, kernel extensions versus system extensions (DriverKit, NetworkExtension, EndpointSecurity, kmutil, systemextensionsctl), FileVault with personal or institutional recovery keys, escrow and bootstrap token, secure token, volume ownership, Secure Enclave, SIP (csrutil), Gatekeeper, notarization, spctl, XProtect and XProtect Remediator, TCC and PPPC configuration profiles, Platform SSO with Entra ID or Okta, Munki, Installomator, AutoPkg, Homebrew on a corporate Mac, productbuild/pkgutil and signed or notarized .pkg installers, profiles(1), sudo mdmclient, softwareupdate, or the CIS macOS Benchmark and the macOS Security Compliance Project (mSCP).
 ---
 
-# Estándares de flota macOS corporativa
+# Corporate macOS fleet standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**Esto va de gestionar una flota de Mac corporativos, no de usar un Mac.** La diferencia lo es
-todo: un Mac bien configurado por su dueño es un problema resuelto una vez; una flota es un
-problema de **propiedad del dispositivo, inscripción, estado declarado, evidencia y ciclo de vida**,
-donde nada que dependa de que alguien haga algo bien en su máquina cuenta como control.
+**This is about managing a fleet of corporate Macs, not about using a Mac.** The difference is
+everything: a Mac well configured by its owner is a problem solved once; a fleet is a
+problem of **device ownership, enrolment, declared state, evidence and lifecycle**,
+where nothing that depends on somebody doing something right on their own machine counts as a control.
 
-Las tres afirmaciones que ordenan el resto:
+The three statements that order everything else:
 
-1. **Una flota sin inscripción automatizada (ADE) no es una flota que controlas**: sin supervisión,
-   con el perfil de gestión **eliminable por la persona usuaria** y sin garantía de reinscripción
-   tras un borrado, es un dispositivo de confianza voluntaria.
-2. **El modelo actual es declarativo (DDM), no de comandos**: las vías antiguas **ya han dejado de
-   funcionar** en el ciclo 27 (§2).
-3. **Lo que rompe la automatización en macOS es el consentimiento (TCC)**, no la falta de
-   herramientas: lo que no se preconfigure por MDM acaba en un diálogo que alguien tiene que
-   pulsar — y en una flota eso significa que no ocurre.
+1. **A fleet without automated enrolment (ADE) is not a fleet you control**: with no supervision,
+   with the management profile **removable by the user** and with no guarantee of re-enrolment
+   after a wipe, it is a device you trust voluntarily.
+2. **The current model is declarative (DDM), not command-based**: the old routes **have already stopped
+   working** in the 27 cycle (§2).
+3. **What breaks automation on macOS is consent (TCC)**, not a lack of
+   tools: whatever is not pre-configured by MDM ends up in a dialogue somebody has to
+   click — and in a fleet that means it does not happen.
 
-**No aplica**:
-- `developer-workstation-standards` (**ya escrita — frontera crítica**): **suya la máquina de una
-  persona que programa** (entorno, endurecimiento personal, aprovisionamiento como código,
-  credenciales locales); **aquí la flota corporativa** (inscripción, MDM, línea base, cumplimiento,
-  ciclo de vida del activo). **Dos problemas distintos sobre el mismo hardware, y hay que resolver
-  los dos**: si el puesto de desarrollo se aprovisiona por fuera de la flota tienes una máquina no
-  gestionada; si la flota no deja sitio a lo que esa skill decide, tienes a alguien trabajando en su
-  portátil personal. **Ninguna manda sobre la otra.**
-- `mobile-standards` (**ya escrita**): **suyas iOS e iPadOS como plataforma de aplicación**;
-  **aquí la gestión del dispositivo** (ABM, ADE, MDM, DDM), común a todas las plataformas de Apple.
-- `identity-access-management-standards` (**ya escrita**): **suyo el proveedor de identidad**
-  (federación, MFA, ciclo de vida de cuentas); **aquí solo cómo lo consume el arranque de sesión del
-  equipo** (Platform SSO, §5).
-- `grc-compliance-standards` (**suyos marco de control y evidencia**; aquí la línea base técnica que
-  la produce), `detection-engineering-standards` (**suyas la detección en el endpoint y sus
-  reglas**), `endpoint-security-standards` (**suyo el producto de protección del puesto**: el EDR
-  de terceros, su exigencia y su medida, y **la postura del protector de cifrado en flota** —qué
-  se exige y cómo se mide; aquí el perfil MDM que lo aplica y custodia la clave de FileVault—),
+**Not applicable**:
+- `developer-workstation-standards` (**already written — a critical boundary**): **theirs is the machine of one
+  person who writes code** (environment, personal hardening, provisioning as code,
+  local credentials); **here the corporate fleet** (enrolment, MDM, baseline, compliance,
+  asset lifecycle). **Two different problems on the same hardware, and both have to be
+  solved**: if the development machine is provisioned outside the fleet you have an unmanaged
+  machine; if the fleet leaves no room for what that skill decides, you have somebody working on their
+  personal laptop. **Neither rules over the other.**
+- `mobile-standards` (**already written**): **theirs are iOS and iPadOS as an application platform**;
+  **here device management** (ABM, ADE, MDM, DDM), common to every Apple platform.
+- `identity-access-management-standards` (**already written**): **theirs is the identity provider**
+  (federation, MFA, account lifecycle); **here only how the machine's sign-in consumes it**
+  (Platform SSO, §5).
+- `grc-compliance-standards` (**theirs are the control framework and evidence**; here the technical baseline that
+  produces it), `detection-engineering-standards` (**theirs is endpoint detection and its
+  rules**), `endpoint-security-standards` (**theirs is the endpoint protection product**: the third-party
+  EDR, its requirement and its measurement, and **the fleet-wide posture of the encryption enforcer** — what
+  is required and how it is measured; here the MDM profile that applies it and escrows the FileVault key —),
   `secrets-management-standards`, `vulnerability-management-standards`.
-- `onprem-standards` (**paraguas de plataforma con la tabla de enrutado**), `homelab-standards`,
+- `onprem-standards` (**the platform umbrella with the routing table**), `homelab-standards`,
   `linux-administration-standards`, `rhel-fedora-standards`, `linux-hardening-standards`,
-  `linux-storage-standards` y `zfs-standards` (**ya escritas: Linux y ZFS son suyos**),
+  `linux-storage-standards` and `zfs-standards` (**already written: Linux and ZFS are theirs**),
   `firewall-policy-standards`, `networking-standards`, `iac-standards`,
   `os-provisioning-standards`, `server-hardware-standards`, `backup-recovery-standards`,
   `bcdr-standards`, `ha-clustering-standards`, `legacy-modernization-standards`,
   `migration-projects-standards`.
-- `aix-solaris-hpux-standards` y `bsd-systems-standards`: **macOS no es una flota de servidores** y
-  **BSD no es Unix propietario**. El apellido "Unix" junta a las tres y no comparten casi nada
-  operativo: aquí el objeto gestionado es un **puesto de trabajo con dueño humano**.
+- `aix-solaris-hpux-standards` and `bsd-systems-standards`: **macOS is not a server fleet** and
+  **BSD is not proprietary Unix**. The "Unix" surname lumps the three together and they share almost nothing
+  operationally: here the managed object is a **workstation with a human owner**.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Decisión | Criterio | Nota verificada |
+| Decision | Criterion | Verified note |
 |---|---|---|
-| Propiedad del dispositivo | **Todo Mac corporativo, comprado a través de Apple Business Manager (o School Manager) y asignado al servidor MDM antes de entregarlo** | Es lo que hace la inscripción **automatizada y no eliminable** |
-| Inscripción | **ADE obligatoria**; inscripción de usuario solo para BYOD, con expectativas reducidas | Sin ADE no hay supervisión ni garantía de reinscripción |
-| Modelo de gestión | **DDM por defecto**; el comando MDM clásico solo donde no haya declaración equivalente | Apple, WWDC26, literal: *"Legacy software update management no longer functions in all 27.0 operating systems. This includes: Software update commands, Software update queries, Recommended cadence settings, Software update restrictions, like deferrals and Background Security Improvements"* |
-| Versión objetivo | Línea **macOS 26 (Tahoe)** en producción; **macOS 27** en el ciclo anunciado por Apple para 2026 (§8) | macOS 26 es **la última versión compatible con Mac Intel**: eso convierte el parque Intel en un plan de retirada con fecha, no en una preferencia |
-| Actualizaciones | **Declaración DDM con versión objetivo y fecha límite** | Lo que sustituye a diferimientos y comandos. El aplazamiento indefinido ya no es una opción técnica |
-| MDM comercial | **Jamf Pro, Kandji o Mosyle** según tamaño y automatización necesaria; Intune si la organización ya vive en Microsoft y acepta su cobertura menor en macOS | **Precios: no verificados en tarifa oficial — hueco declarado (§8).** Todos cobran por dispositivo/mes con mínimos de compra y escalones; pídelo por escrito |
-| MDM de código abierto | **NanoMDM** — licencia **MIT** (verificada leyendo el `LICENSE` en crudo de `micromdm/nanomdm`). Solo con capacidad de ingeniería propia | **MicroMDM v1 pasó a mantenimiento en jun-2025**; NanoMDM es el sucesor activo. **No es un producto**: sin interfaz, sin catálogo, sin soporte. APNs, TLS, disponibilidad y guardia son tuyos, y por debajo de cierta capacidad **cuesta más que la suscripción** |
-| Extensiones, cifrado, identidad y línea base | Solo extensiones de sistema (§3.3); FileVault forzado con clave y token de arranque custodiados (§5); **Platform SSO** contra el proveedor corporativo (§5); **mSCP** como generador de la línea base (§4) | Un requisito de *kernel extension* es motivo de descarte del proveedor |
+| Device ownership | **Every corporate Mac bought through Apple Business Manager (or School Manager) and assigned to the MDM server before being handed over** | It is what makes enrolment **automated and non-removable** |
+| Enrolment | **ADE mandatory**; user enrolment only for BYOD, with reduced expectations | Without ADE there is no supervision and no guarantee of re-enrolment |
+| Management model | **DDM by default**; the classic MDM command only where there is no equivalent declaration | Apple, WWDC26, literally: *"Legacy software update management no longer functions in all 27.0 operating systems. This includes: Software update commands, Software update queries, Recommended cadence settings, Software update restrictions, like deferrals and Background Security Improvements"* |
+| Target version | The **macOS 26 (Tahoe)** line in production; **macOS 27** in the cycle Apple announced for 2026 (§8) | macOS 26 is **the last version compatible with Intel Macs**: that turns the Intel estate into a retirement plan with a date, not a preference |
+| Updates | **A DDM declaration with a target version and a deadline** | It is what replaces deferrals and commands. Indefinite postponement is no longer a technical option |
+| Commercial MDM | **Jamf Pro, Kandji or Mosyle** depending on size and the automation needed; Intune if the organisation already lives in Microsoft and accepts its lesser macOS coverage | **Pricing: not verified against official rate cards — declared gap (§8).** They all charge per device/month with purchase minimums and tiers; ask for it in writing |
+| Open source MDM | **NanoMDM** — **MIT** licence (verified by reading the raw `LICENSE` of `micromdm/nanomdm`). Only with in-house engineering capacity | **MicroMDM v1 went into maintenance in Jun 2025**; NanoMDM is the active successor. **It is not a product**: no interface, no catalogue, no support. APNs, TLS, availability and on-call are yours, and below a certain scale **it costs more than the subscription** |
+| Extensions, encryption, identity and baseline | System extensions only (§3.3); FileVault enforced with the key and bootstrap token escrowed (§5); **Platform SSO** against the corporate provider (§5); **mSCP** as the baseline generator (§4) | A *kernel extension* requirement is grounds for rejecting the vendor |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Inscripción y propiedad
-- **El Mac entra en ABM antes que en la mesa de nadie**: compra por canal que alimente ABM,
-  asignación al MDM y perfil de inscripción listos antes del desembalaje. Comprar en tienda para
-  "resolver rápido" crea deuda permanente — **añadir a ADE después solo es posible por vías
-  limitadas y con plazos**.
-- **Supervisado frente a no supervisado no es un matiz**: la supervisión (que llega con ADE) es lo
-  que habilita gestión no eliminable, restricciones adicionales y control del bloqueo de
-  activación. Un Mac no supervisado se gestiona **con su permiso**.
-- **BYOD es otro producto** (inscripción de usuario, solo lo corporativo, **ninguna expectativa de
-  cumplimiento de la máquina**). Y en la baja: liberar el bloqueo de activación y **retirar el
-  dispositivo de ABM** — un Mac vendido sin liberar es un ladrillo para el comprador.
+### 3.1 Enrolment and ownership
+- **The Mac enters ABM before it reaches anybody's desk**: purchase through a channel that feeds ABM,
+  assignment to the MDM and the enrolment profile ready before unboxing. Buying retail to
+  "solve it quickly" creates permanent debt — **adding to ADE afterwards is only possible through
+  limited routes and with deadlines**.
+- **Supervised versus unsupervised is not a nuance**: supervision (which arrives with ADE) is what
+  enables non-removable management, additional restrictions and control of Activation
+  Lock. An unsupervised Mac is managed **with its user's permission**.
+- **BYOD is a different product** (user enrolment, corporate data only, **no expectation of machine
+  compliance**). And at offboarding: release Activation Lock and **remove the device from ABM** —
+  a Mac sold without release is a brick for the buyer.
 
-### 3.2 MDM: el protocolo y sus límites
-El MDM de Apple es **una cola de comandos entregada por notificación push**: el servidor pide, el
-dispositivo responde cuando puede. **No es ejecución remota**: sin orden garantizado, sin tiempo
-garantizado, sin shell. DDM cambia el modelo —estado deseado declarado, aplicado y reportado por el
-dispositivo— pero no eso. Consecuencia: lo que no se exprese como perfil o declaración necesita un
-**agente**, y cuanto más dependa tu operación del agente, peor envejece con cada versión de macOS.
-**Lo que Apple sabe hacer de forma declarativa se hace declarativo.**
+### 3.2 MDM: the protocol and its limits
+Apple's MDM is **a command queue delivered by push notification**: the server asks, the
+device answers when it can. **It is not remote execution**: no guaranteed order, no guaranteed
+time, no shell. DDM changes the model — declared desired state, applied and reported by the
+device — but not that. Consequence: whatever cannot be expressed as a profile or a declaration needs an
+**agent**, and the more your operation depends on the agent, the worse it ages with each macOS version.
+**What Apple knows how to do declaratively is done declaratively.**
 
-**Elección de MDM**, por orden: (1) cobertura real de DDM y **velocidad de soporte de la versión
-nueva de macOS cada septiembre** —el criterio que más duele si falla—; (2) qué automatiza sin
-programar; (3) API y gestión como código; (4) precio con mínimos y escalones; (5) salida: cómo te
-llevas el inventario y cómo migras la inscripción.
+**Choosing an MDM**, in order: (1) real DDM coverage and **the speed of support for the new macOS
+version each September** — the criterion that hurts most when it fails —; (2) what it automates without
+programming; (3) API and management as code; (4) price with minimums and tiers; (5) exit: how you
+take your inventory with you and how you migrate enrolment.
 
-### 3.3 El fin de las extensiones de kernel
-- Sustituidas por **extensiones de sistema** en espacio de usuario: DriverKit (dispositivos),
-  NetworkExtension (red y VPN), EndpointSecurity (seguridad). En Apple Silicon cargar un kext exige
-  **bajar la política de arranque a "Seguridad reducida"** y aprobar en el equipo: degradar el
-  arranque seguro de toda la máquina y tocarla físicamente.
-- **Regla de compra**: si un producto exige kext, **está descartado**, y se dice en el pliego, no
-  al descubrirlo en el despliegue. Lo que suele romperse: antivirus antiguos, VPN heredadas,
-  virtualización, copia a bajo nivel y periféricos especializados.
-- Las extensiones de sistema se **preaprueban por MDM**; si no, la instalación acaba en un diálogo
-  que nadie debería tener que interpretar.
+### 3.3 The end of kernel extensions
+- Replaced by **system extensions** in user space: DriverKit (devices),
+  NetworkExtension (networking and VPN), EndpointSecurity (security). On Apple Silicon, loading a kext requires
+  **lowering the boot policy to "Reduced Security"** and approving on the machine: degrading secure
+  boot for the whole machine and touching it physically.
+- **Purchasing rule**: if a product requires a kext, **it is ruled out**, and that is stated in the tender, not
+  when it is discovered during deployment. What usually breaks: old antivirus products, legacy VPNs,
+  virtualisation, low-level backup and specialised peripherals.
+- System extensions are **pre-approved by MDM**; otherwise the installation ends in a dialogue
+  nobody should have to interpret.
 
-### 3.4 Actualizaciones
-- **El mecanismo actual es la declaración DDM con versión objetivo y fecha límite**; comandos,
-  consultas, restricciones y diferimientos **ya no funcionan en el ciclo 27** (§2, cita literal de
-  Apple). Si tu política de parcheo se apoyaba en diferimientos, **ya está rota** aunque nadie haya
-  avisado: los comandos se envían y el dispositivo los ignora.
-- **Retrasar actualizaciones en macOS es más caro que en Windows**: (a) **una versión mayor al año**
-  concentra funciones y cambios de gestión; (b) la corrección de seguridad va **acoplada a la
-  versión del sistema**, navegador incluido, sin parche desacoplado; (c) **el hardware nuevo llega
-  con la versión nueva y no se puede degradar**, así que quedarse atrás fragmenta el parque por
-  fecha de compra; (d) el soporte de versiones anteriores es corto y desigual. **La única política
-  sostenible es adoptar la versión mayor dentro del año**, por anillos: TI → voluntarios → piloto
-  representativo (con puestos de desarrollo y periféricos raros) → resto, con fecha límite en cada
-  uno.
+### 3.4 Updates
+- **The current mechanism is the DDM declaration with a target version and a deadline**; commands,
+  queries, restrictions and deferrals **no longer work in the 27 cycle** (§2, Apple's literal
+  quote). If your patching policy rested on deferrals, **it is already broken** even though nobody has
+  warned you: the commands are sent and the device ignores them.
+- **Delaying updates on macOS is more expensive than on Windows**: (a) **one major version a year**
+  concentrates features and management changes; (b) security fixes are **coupled to the system
+  version**, browser included, with no decoupled patch; (c) **new hardware arrives with the new
+  version and cannot be downgraded**, so falling behind fragments the estate by
+  purchase date; (d) support for earlier versions is short and uneven. **The only sustainable
+  policy is adopting the major version within the year**, in rings: IT → volunteers → a representative
+  pilot (with development machines and unusual peripherals) → the rest, with a deadline on each
+  one.
 
-### 3.5 Aplicaciones y paquetes
-- **Todo software corporativo sale de un catálogo**: compras de ABM y **paquetes propios firmados y
-  notarizados** (Munki para un catálogo real independiente del MDM; **Installomator** para instalar
-  y actualizar descargando del proveedor). Un `.pkg` sin firmar instalado saltando Gatekeeper enseña
-  a la plantilla el comportamiento exacto que un atacante necesita.
-- **Homebrew instala en el espacio del usuario y fuera de la cadena de gestión**: el MDM no lo ve,
-  no pasa por tu catálogo, se actualiza por decisión de cada persona y su procedencia es comunitaria.
-  **No es un gestor de software corporativo.** Es legítimo y a menudo necesario en un **puesto de
-  desarrollo** —decisión de `developer-workstation-standards`— y entonces se declara: qué máquinas,
-  qué inventario, qué riesgo aceptado. Lo vetado es que la herramienta corporativa llegue por ahí.
+### 3.5 Applications and packages
+- **All corporate software comes from a catalogue**: ABM purchases and **signed and
+  notarised in-house packages** (Munki for a real catalogue independent of the MDM; **Installomator** to install
+  and update by downloading from the vendor). An unsigned `.pkg` installed by bypassing Gatekeeper teaches
+  the workforce exactly the behaviour an attacker needs.
+- **Homebrew installs in the user's space and outside the management chain**: the MDM does not see it,
+  it does not go through your catalogue, it updates at each person's discretion and its provenance is community-based.
+  **It is not a corporate software manager.** It is legitimate and often necessary on a **development
+  machine** — a `developer-workstation-standards` decision — and then it is declared: which machines,
+  which inventory, which accepted risk. What is vetoed is the corporate tool arriving that way.
 
-## 4. Cumplimiento y evidencia
+## 4. Compliance and evidence
 
-- **La línea base se genera, no se escribe a mano.** El **macOS Security Compliance Project**
-  (implementación técnica de **NIST SP 800-219**) produce, a partir de la línea base elegida (CIS
-  Nivel 1/2, 800-53, 800-171, STIG, CMMC), **perfiles, scripts de comprobación y remediación y
-  documentación de auditoría**: control, ajuste y evidencia salen del mismo sitio. **CIS Benchmark
-  para macOS** está cubierto ahí — no mantengas dos fuentes de verdad. **Trabaja sobre la rama de
-  tu versión de macOS**, nunca sobre la principal (a ago-2026, *tahoe_rev2*, dic-2025, con mSCP 2.0
-  en curso — §8).
-- **La evidencia es la comprobación periódica en el dispositivo, no el perfil enviado.** Informe
-  con **cobertura** (cuántos equipos han reportado en los últimos N días) además de porcentaje:
-  **los que no reportan son el riesgo y desaparecen de la media**. El marco de control y las
-  excepciones son de `grc-compliance-standards`.
+- **The baseline is generated, not hand-written.** The **macOS Security Compliance Project**
+  (the technical implementation of **NIST SP 800-219**) produces, from the chosen baseline (CIS
+  Level 1/2, 800-53, 800-171, STIG, CMMC), **profiles, checking and remediation scripts and
+  audit documentation**: the control, the setting and the evidence come from the same place. **The CIS Benchmark
+  for macOS** is covered there — do not maintain two sources of truth. **Work on the branch for
+  your macOS version**, never on the main one (as of Aug 2026, *tahoe_rev2*, Dec 2025, with mSCP 2.0
+  in progress — §8).
+- **The evidence is the periodic check on the device, not the profile that was sent.** Report
+  with **coverage** (how many machines have reported in the last N days) as well as a percentage:
+  **the ones that do not report are the risk and they vanish from the average**. The control framework and the
+  exceptions belong to `grc-compliance-standards`.
 
-## 5. Seguridad de plataforma e identidad
+## 5. Platform security and identity
 
-- **FileVault forzado y clave custodiada.** Sin custodia (escrow) **verificada**, el cifrado es una
-  forma elegante de perder datos: comprueba que la clave está en el MDM, define quién puede
-  recuperarla con doble control y registro, y **rótala tras cada uso**. Igual con el **token de
-  arranque y la propiedad del volumen**, que es lo que permite que las actualizaciones y ciertos
-  cambios de gestión funcionen sin que alguien escriba su contraseña: si faltan, se manifiesta
-  mucho después como "actualizaciones que no se aplican".
-- **SIP, Gatekeeper y arranque seguro completo, activos**; desactivarlos cambia la postura de toda
-  la máquina. **XProtect y su remediador** al día y verificados en el inventario — no sustituyen a
-  la detección corporativa (`detection-engineering-standards`, `endpoint-security-standards`).
-- **TCC es el modelo de consentimiento y es lo que rompe la automatización.** Disco completo,
-  grabación de pantalla, accesibilidad, cámara, micrófono, carpetas del usuario: lo que necesiten
-  tu agente, tu herramienta de copia o tu producto de seguridad **se preconcede por perfil PPPC
-  antes de desplegar**. Lo que Apple reserva a la persona usuaria se documenta como paso manual del
-  onboarding, no se descubre en producción.
-- **Borrado y bloqueo remotos probados** y coordinados con el **bloqueo de activación**: bloquear
-  un equipo cuya liberación no controlas convierte un incidente en pérdida de activo.
-- **La trampa de la contraseña local frente a la identidad corporativa.** La cuenta del Mac tiene
-  **su propia contraseña**: no aplica la política corporativa y **no se revoca al desactivar la
-  cuenta en el proveedor de identidad** — un portátil en un cajón sigue abriéndose con la
-  contraseña de alguien que ya no trabaja aquí. La respuesta es **Platform SSO**, con sincronización
-  de contraseña o clave respaldada por el Secure Enclave; con **macOS 26** el registro ocurre
-  **durante el asistente de configuración** (*Simplified Setup*) y **la primera cuenta local se crea
-  desde la identidad corporativa**. **No apiles dos mecanismos de sincronización**: entran en
-  conflicto.
-- **Nadie es administrador local permanente**: cuenta estándar y elevación puntual, auditada y
-  temporal. La cuenta administrativa de gestión, **con contraseña única por equipo y rotada** — una
-  común a toda la flota es la vulnerabilidad más cara y frecuente de este dominio.
+- **FileVault enforced and the key escrowed.** Without **verified** escrow, encryption is an
+  elegant way of losing data: check that the key is in the MDM, define who can
+  recover it under dual control with logging, and **rotate it after every use**. The same goes for the **bootstrap
+  token and volume ownership**, which is what lets updates and certain
+  management changes work without somebody typing their password: if they are missing, it shows up
+  much later as "updates that do not apply".
+- **SIP, Gatekeeper and full secure boot, enabled**; disabling them changes the posture of the whole
+  machine. **XProtect and its remediator** up to date and verified in the inventory — they do not replace
+  corporate detection (`detection-engineering-standards`, `endpoint-security-standards`).
+- **TCC is the consent model and it is what breaks automation.** Full disk,
+  screen recording, accessibility, camera, microphone, user folders: whatever
+  your agent, your backup tool or your security product needs **is pre-granted by a PPPC profile
+  before deployment**. What Apple reserves to the user is documented as a manual step in
+  onboarding, not discovered in production.
+- **Remote wipe and lock tested** and coordinated with **Activation Lock**: locking
+  a machine whose release you do not control turns an incident into a lost asset.
+- **The trap of the local password versus corporate identity.** The Mac account has
+  **its own password**: the corporate policy does not apply to it and **it is not revoked when the
+  account is disabled in the identity provider** — a laptop in a drawer still opens with the
+  password of somebody who no longer works here. The answer is **Platform SSO**, with password
+  synchronisation or a key backed by the Secure Enclave; with **macOS 26** registration happens
+  **during Setup Assistant** (*Simplified Setup*) and **the first local account is created
+  from the corporate identity**. **Do not stack two synchronisation mechanisms**: they conflict.
+- **Nobody is a permanent local administrator**: a standard account and one-off elevation, audited and
+  time-limited. The management administrative account, **with a unique per-machine password that is rotated** — one
+  shared across the whole fleet is the most expensive and most frequent vulnerability in this domain.
 
-## 6. Operación
+## 6. Operation
 
-- **Inventario con frescura** (última comunicación, versión, FileVault, cobertura de perfiles,
-  XProtect): **un equipo con 45 días sin reportar es un incidente abierto**, no una fila más.
-- **Septiembre es la fecha crítica del año** (versión mayor, cambios de gestión, retiradas): se
-  reserva capacidad, validando en beta desde el verano MDM, seguridad, VPN y paquetes propios.
-- **La configuración de la flota es código** (perfiles, líneas base, declaraciones, catálogo), con
-  revisión y despliegue por anillos — el cómo, en `iac-standards`. Y **prueba de reconstrucción**
-  cronometrada de un equipo desde cero: sin ella, reponer un portátil perdido es una hipótesis.
+- **Inventory with freshness** (last check-in, version, FileVault, profile coverage,
+  XProtect): **a machine that has not reported for 45 days is an open incident**, not just another row.
+- **September is the critical date of the year** (major version, management changes, removals): capacity is
+  reserved, validating the MDM, security, VPN and in-house packages against the beta from the summer.
+- **The fleet's configuration is code** (profiles, baselines, declarations, catalogue), with
+  review and ring-based deployment — the how is in `iac-standards`. And a timed **rebuild test**
+  of a machine from scratch: without it, replacing a lost laptop is a hypothesis.
 
-## 7. Prohibiciones
+## 7. Prohibitions
 
-- ❌ **PROHIBIDO** un Mac corporativo **sin inscripción automatizada (ADE)** ni supervisión. Es la
-  prohibición raíz: todo lo demás de este documento se apoya en ella.
-- ❌ **FileVault sin custodia verificada de la clave**, custodia sin control de quién la recupera ni
-  rotación tras el uso, o **bootstrap token sin custodiar**.
-- ❌ **Depender de una cuenta de administrador local** —de la persona usuaria o compartida por la
-  flota— como mecanismo de gestión.
-- ❌ **Instalar software fuera del catálogo** o distribuir paquetes internos sin firmar y notarizar.
-  **Homebrew no es el catálogo corporativo** (§3.5).
-- ❌ Aceptar un producto que exija **extensión de kernel**, o dejar equipos en "Seguridad reducida"
-  de forma permanente. Desactivar SIP o Gatekeeper sin excepción escrita, nominal y caducable.
-- ❌ Apoyar la política de actualización en **diferimientos y comandos MDM** (ya no funcionan, §2) o
-  aplazar la versión mayor más de un ciclo anual.
-- ❌ Desplegar sin **preconceder por PPPC** los permisos TCC que tus herramientas necesitan.
-- ❌ Tratar el BYOD inscrito por usuario como equipo gestionado; dar de baja un equipo sin liberar
-  el bloqueo de activación ni sacarlo de ABM.
-- ❌ Adoptar un MDM sin comprobar su cobertura de **DDM** y su histórico de soporte el día del
-  lanzamiento de macOS; o montar NanoMDM "porque es gratis" sin equipo que sostenga APNs, TLS,
-  disponibilidad y guardia.
-- ❌ Contar como cumplimiento el porcentaje sobre los equipos que reportan, ignorando los que no
+- ❌ **FORBIDDEN**: a corporate Mac **without automated enrolment (ADE)** and without supervision. It is the
+  root prohibition: everything else in this document rests on it.
+- ❌ **FileVault with no verified key escrow**, escrow with no control over who recovers it and no
+  rotation after use, or **an unescrowed bootstrap token**.
+- ❌ **Depending on a local administrator account** — the user's or one shared across the
+  fleet — as a management mechanism.
+- ❌ **Installing software outside the catalogue** or distributing internal packages unsigned and unnotarised.
+  **Homebrew is not the corporate catalogue** (§3.5).
+- ❌ Accepting a product that requires a **kernel extension**, or leaving machines in "Reduced Security"
+  permanently. Disabling SIP or Gatekeeper without a written, named, expiring exception.
+- ❌ Basing the update policy on **deferrals and MDM commands** (they no longer work, §2) or
+  postponing the major version by more than one annual cycle.
+- ❌ Deploying without **pre-granting through PPPC** the TCC permissions your tools need.
+- ❌ Treating user-enrolled BYOD as a managed machine; offboarding a machine without releasing
+  Activation Lock and removing it from ABM.
+- ❌ Adopting an MDM without checking its **DDM** coverage and its track record of support on macOS
+  launch day; or standing up NanoMDM "because it is free" with no team to sustain APNs, TLS,
+  availability and on-call.
+- ❌ Counting compliance as the percentage over the machines that report, ignoring those that do not
   (§4).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar por web —y con **cita literal**, nunca con un
-resumen automático:
+Before pinning anything in a real project, check on the web — and with a **literal quote**, never with an
+automatic summary:
 
-1. **Versiones de macOS y su soporte**: a ago-2026 macOS 26 (Tahoe) es la línea desplegada y
-   **Apple documenta cambios para el ciclo 27** (iOS 27, iPadOS 27, macOS 27, tvOS 27, visionOS 27,
-   watchOS 27, citados literalmente en la nota de gestión de dispositivos de WWDC26). **Hueco
-   declarado: el nombre comercial y la fecha exacta de macOS 27 no fueron verificados.** Confirma
-   hasta qué versión reciben parches los modelos de tu parque.
-2. **Actualizaciones y DDM**: la retirada del mecanismo antiguo está verificada literalmente (§2).
-   Comprueba qué declaraciones existen hoy y **qué soporta tu MDM concreto** —casi nunca es lo
-   mismo—; el alcance de DDM crece cada ciclo y determina cuánto agente necesitas. Verifica también
-   el calendario de retirada de **extensiones de kernel** antes de aceptar un producto que las use.
-3. **mSCP**: rama de tu versión de macOS y estado del rediseño **mSCP 2.0**, en curso durante 2026.
-   **No trabajes desde la rama principal.** Y versión vigente del **CIS Benchmark** para macOS.
-4. **Soluciones MDM — estado, licencia y precio**. Verificado a ago-2026 leyendo el `LICENSE` en
-   crudo: **NanoMDM = MIT**; **MicroMDM v1 en mantenimiento desde jun-2025**. **Hueco declarado:
-   ningún precio de Jamf, Kandji, Mosyle, Addigy o Intune fue verificado en tarifa oficial** — las
-   cifras que circulan proceden de agregadores. **No cites precios desde aquí: pide oferta**, con
-   mínimos, escalones e incrementos de renovación. El feed de GitHub no prueba que un proyecto viva.
-5. **Platform SSO**: requisitos exactos de tu proveedor (versión mínima de macOS, aplicación,
-   certificados, modo de autenticación) y estado del registro durante el asistente.
-6. **Apple Business Manager**: cambios de términos, identidades federadas y procedimiento vigente
-   para añadir dispositivos comprados fuera de canal.
+1. **macOS versions and their support**: as of Aug 2026 macOS 26 (Tahoe) is the deployed line and
+   **Apple documents changes for the 27 cycle** (iOS 27, iPadOS 27, macOS 27, tvOS 27, visionOS 27,
+   watchOS 27, quoted literally in the WWDC26 device management note). **Declared
+   gap: the marketing name and the exact date of macOS 27 were not verified.** Confirm
+   up to which version the models in your estate receive patches.
+2. **Updates and DDM**: the removal of the old mechanism is verified literally (§2).
+   Check which declarations exist today and **what your specific MDM supports** — they are almost never the
+   same —; DDM's scope grows every cycle and determines how much agent you need. Also verify
+   the removal calendar for **kernel extensions** before accepting a product that uses them.
+3. **mSCP**: the branch for your macOS version and the status of the **mSCP 2.0** redesign, ongoing during 2026.
+   **Do not work from the main branch.** And the current version of the **CIS Benchmark** for macOS.
+4. **MDM solutions — status, licence and price**. Verified as of Aug 2026 by reading the raw `LICENSE`:
+   **NanoMDM = MIT**; **MicroMDM v1 in maintenance since Jun 2025**. **Declared gap:
+   no Jamf, Kandji, Mosyle, Addigy or Intune price was verified against an official rate card** — the
+   figures in circulation come from aggregators. **Do not quote prices from here: request a quote**, with
+   minimums, tiers and renewal increases. A GitHub feed does not prove a project is alive.
+5. **Platform SSO**: your provider's exact requirements (minimum macOS version, application,
+   certificates, authentication mode) and the status of registration during Setup Assistant.
+6. **Apple Business Manager**: changes to terms, federated identities and the current procedure
+   for adding devices bought outside the channel.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

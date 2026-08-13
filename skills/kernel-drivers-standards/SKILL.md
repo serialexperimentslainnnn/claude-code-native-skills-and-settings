@@ -3,25 +3,26 @@ name: kernel-drivers-standards
 description: Writing, reviewing and shipping code that runs inside an OS kernel, and deciding whether it should live there at all. Use when working on a Linux kernel module or driver (module_init/module_exit, MODULE_LICENSE, EXPORT_SYMBOL_GPL, struct file_operations, platform_driver, of_match_table and devicetree bindings, probe/remove, devm_* managed resources, misc/char/block/net/input subsystems, dma_alloc_coherent and DMA-API-HOWTO, request_irq and threaded IRQ handlers, spinlock_t vs mutex, might_sleep, in_atomic, RCU with rcu_read_lock and synchronize_rcu, copy_from_user/copy_to_user, an out-of-tree kmod or DKMS package), submitting patches upstream (scripts/checkpatch.pl, scripts/get_maintainer.pl, MAINTAINERS, git send-email, b4, Signed-off-by and the Developer Certificate of Origin, a linux-*@vger.kernel.org list, staging), kernel debugging and hardening (dmesg oops and taint flags, ftrace and trace_printk, kgdb/kdb, KASAN, UBSAN, KCSAN, KFENCE, lockdep, sparse, smatch, Coccinelle, KUnit, syzkaller), Rust in the kernel (rust/kernel crate, rustavailable, CONFIG_RUST, Rust MSRV), module signing under Secure Boot and kernel lockdown, or choosing a userspace alternative instead (FUSE, uio, vfio-pci, iommufd, spidev, i2c-dev, libusb, SPDK/DPDK) — and Windows KMDF/WDM/UMDF drivers with Partner Center attestation or WHQL signing, or macOS kexts versus DriverKit and System Extensions.
 ---
 
-# Estándares de desarrollo dentro del kernel
+# Standards for development inside the kernel
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **escribir código que se ejecuta en modo supervisor**: drivers y módulos del kernel Linux,
-su relación con el desarrollo upstream, el modelo de concurrencia y memoria del kernel, su
-depuración y su firma; y, en menor extensión pero con criterio propio, drivers de Windows y de
-macOS. Aplica **antes** de escribir la primera línea: la decisión más valiosa de esta skill es
-**decidir que no hace falta un driver de kernel**.
+Applies to **writing code that runs in supervisor mode**: Linux kernel drivers and modules, their
+relationship with upstream development, the kernel's concurrency and memory model, its debugging
+and its signing; and, to a lesser extent but with its own criteria, Windows and macOS drivers. It
+applies **before** the first line is written: the most valuable decision in this skill is
+**deciding that a kernel driver is not needed**.
 
 Triggers: `module_init`/`module_exit`, `MODULE_LICENSE`, `EXPORT_SYMBOL`/`EXPORT_SYMBOL_GPL`,
-`struct file_operations`, `platform_driver`, `probe`/`remove`, `of_match_table`, *bindings* de
-devicetree en `Documentation/devicetree/bindings/`, `devm_kzalloc` y familia `devm_*`, `misc_register`,
-`cdev_add`, `alloc_netdev`, `blk_mq`, `input_register_device`, `dma_alloc_coherent`, `dma_map_single`,
-`request_irq`/`request_threaded_irq`, `spinlock_t`, `mutex_lock`, `might_sleep`, `in_atomic`,
-`rcu_read_lock`, `synchronize_rcu`, `copy_from_user`/`copy_to_user`, `container_of`, `ERR_PTR`,
-`printk`/`pr_err`/`dev_err`, `Kbuild`/`Makefile` con `obj-m`, DKMS, `insmod`/`modprobe`/`modinfo`,
+`struct file_operations`, `platform_driver`, `probe`/`remove`, `of_match_table`, devicetree
+*bindings* in `Documentation/devicetree/bindings/`, `devm_kzalloc` and the `devm_*` family,
+`misc_register`, `cdev_add`, `alloc_netdev`, `blk_mq`, `input_register_device`,
+`dma_alloc_coherent`, `dma_map_single`, `request_irq`/`request_threaded_irq`, `spinlock_t`,
+`mutex_lock`, `might_sleep`, `in_atomic`, `rcu_read_lock`, `synchronize_rcu`,
+`copy_from_user`/`copy_to_user`, `container_of`, `ERR_PTR`,
+`printk`/`pr_err`/`dev_err`, `Kbuild`/`Makefile` with `obj-m`, DKMS, `insmod`/`modprobe`/`modinfo`,
 `scripts/checkpatch.pl`, `scripts/get_maintainer.pl`, `MAINTAINERS`, `git send-email`, `b4`,
 `Signed-off-by`, `vger.kernel.org`, `drivers/staging/`, `dmesg`, "Oops", "kernel panic",
 "tainted kernel", `ftrace`, `kgdb`, `KASAN`, `UBSAN`, `KCSAN`, `KFENCE`, `lockdep`, `sparse`,
@@ -29,437 +30,442 @@ devicetree en `Documentation/devicetree/bindings/`, `devm_kzalloc` y familia `de
 `CONFIG_MODULE_SIG_FORCE`, `sign-file`, *lockdown*, MOK/`mokutil`, KMDF/WDM/UMDF, `.inf`, WDK,
 Partner Center, WHQL, `kext`, DriverKit, System Extensions.
 
-**Principio rector**: **dentro del kernel no hay red de seguridad.** No hay proceso que matar, no hay
-`SIGSEGV` que contener, no hay reinicio del servicio: un puntero mal desreferenciado es el sistema
-entero, y un fallo desplegado a escala es un incidente global (§2.4). De ahí las dos reglas de la
-casa: **(1) el código que puede vivir en espacio de usuario, vive en espacio de usuario**; **(2) el
-código que sí debe estar en el kernel, va upstream** — todo lo demás es deuda que se paga cada
-versión, para siempre.
+**Governing principle**: **inside the kernel there is no safety net.** There is no process to
+kill, no `SIGSEGV` to contain, no service restart: a badly dereferenced pointer is the whole
+system, and a fault deployed at scale is a global incident (§2.4). Hence the two house rules:
+**(1) code that can live in userspace, lives in userspace**; **(2) code that does belong in the
+kernel, goes upstream** — everything else is debt paid on every version, forever.
 
-**Postura estrictamente defensiva.** Esta skill trata la firma de módulos, el *lockdown*, los
-drivers vulnerables y los mecanismos de persistencia en kernel **como riesgos a mitigar**. No
-contiene ni contendrá recetario de BYOVD, de rootkits ni de evasión (§7).
+**Strictly defensive posture.** This skill treats module signing, *lockdown*, vulnerable drivers
+and kernel persistence mechanisms **as risks to mitigate**. It contains and will contain no BYOVD,
+rootkit or evasion recipes (§7).
 
-**No aplica**: ver `operating-systems-standards` (**hermana directa, frontera declarada**: los
-**conceptos** de sistema operativo y sus consecuencias de ingeniería —planificación y latencia, coste
-de la llamada al sistema, paginación y TLB, OOM killer, `cgroup v2`, semántica de `fsync`, `epoll`
-frente a `io_uring`, namespaces, NUMA, microkernel frente a monolítico, tiempo real duro frente a
-blando— son **suyos**; **aquí el código que se escribe dentro del kernel y su proceso**. Regla de
-arbitraje: *"¿por qué el sistema se comporta así?" es suyo; "¿cómo escribo, depuro y subo este
-driver?" es de aquí*), `linux-administration-standards` (operar el host: unidades systemd,
-`journalctl`, diagnóstico de un servidor — **cargar un módulo para operar** es suyo; **escribirlo** es
-de aquí), `linux-hardening-standards` (baseline del sistema, Secure Boot como control del baseline,
-`sysctl`, auditd — **aquí la firma del módulo desde el lado del que lo produce**),
-`selinux-standards` (MAC y su política), `container-runtime-security-standards` (**el eBPF de
-seguridad y el agente de runtime son suyos**: Falco, Tetragon, Tracee, privilegios del agente eBPF —
-aquí solo por qué eBPF es la alternativa correcta a un módulo para observar el sistema),
-`c-standards` (**el C es suyo**: `-std=`, UB, MISRA/CERT, sanitizers de espacio de usuario,
-hardening del binario — **matiz obligatorio**: el kernel **no** se compila contra la libc, no usa
-`malloc`, tiene su propio estilo y sus propios sanitizers; **cuando una regla de `c-standards`
-choque con el kernel, manda el kernel**), `rust-standards` (**el Rust y su toolchain son suyos**;
-aquí solo el estado y las restricciones del Rust *dentro* del kernel), `assembly-standards` (el
-ensamblador y su justificación), `embedded-iot-standards` (**hermana**: el dispositivo físico,
-el arranque, el device tree como descripción del hardware del producto y la actualización en campo —
-**aquí el código del driver que ese device tree enlaza**), `gpu-computing-standards` (CUDA/HIP y el
-toolchain de GPU; el driver del kernel de la GPU es de aquí), `performance-engineering-standards`
-(metodología de perfilado y medición; **el `perf` y el `ftrace` como herramienta de diagnóstico de
-un driver son de aquí**), `appsec-standards` y `vulnerability-management-standards` (modelado de
-amenazas de aplicación, triaje CVSS/EPSS/KEV), `incident-response-forensics-standards` (análisis
-forense de un sistema con módulo hostil), `offensive-security-standards` (explotación, con alcance y
-autorización — **no está aquí**), `windows-server-ad-standards` y `macos-fleet-standards`
-(administración de esas plataformas; aquí solo el desarrollo del driver),
-`opensource-licensing-standards` (el análisis de licencia como programa; aquí `MODULE_LICENSE` y el
-símbolo GPL-only como hecho técnico), `git-workflow-standards` (**no aplica al kernel**: el kernel
-usa correo, `Signed-off-by`/DCO y `b4`, no *pull requests*).
+**Not applicable**: see `operating-systems-standards` (**direct sister, declared boundary**: the
+operating system **concepts** and their engineering consequences — scheduling and latency, system
+call cost, paging and TLB, OOM killer, `cgroup v2`, `fsync` semantics, `epoll` versus `io_uring`,
+namespaces, NUMA, microkernel versus monolithic, hard versus soft real time — are **theirs**;
+**here the code written inside the kernel and its process**. Arbitration rule: *"why does the
+system behave like this?" is theirs; "how do I write, debug and submit this driver?" belongs
+here*), `linux-administration-standards` (operating the host: systemd units, `journalctl`,
+diagnosing a server — **loading a module to operate** is theirs; **writing it** belongs here),
+`linux-hardening-standards` (system baseline, Secure Boot as a baseline control, `sysctl`, auditd —
+**here module signing from the producer's side**),
+`selinux-standards` (MAC and its policy), `container-runtime-security-standards` (**security eBPF
+and the runtime agent are theirs**: Falco, Tetragon, Tracee, eBPF agent privileges — here only why
+eBPF is the correct alternative to a module for observing the system),
+`c-standards` (**the C is theirs**: `-std=`, UB, MISRA/CERT, userspace sanitizers, binary
+hardening — **mandatory nuance**: the kernel is **not** compiled against libc, does not use
+`malloc`, has its own style and its own sanitizers; **when a `c-standards` rule clashes with the
+kernel, the kernel wins**), `rust-standards` (**Rust and its toolchain are theirs**; here only the
+status and the constraints of Rust *inside* the kernel), `assembly-standards` (assembly and its
+justification), `embedded-iot-standards` (**sister**: the physical device, boot, the device tree as
+a description of the product's hardware and field updates — **here the code of the driver that
+device tree binds**), `gpu-computing-standards` (CUDA/HIP and the GPU toolchain; the GPU kernel
+driver belongs here), `performance-engineering-standards` (profiling and measurement methodology;
+**`perf` and `ftrace` as a diagnostic tool for a driver belong here**), `appsec-standards` and
+`vulnerability-management-standards` (application threat modelling, CVSS/EPSS/KEV triage),
+`incident-response-forensics-standards` (forensic analysis of a system with a hostile module),
+`offensive-security-standards` (exploitation, with scope and authorisation — **it is not here**),
+`windows-server-ad-standards` and `macos-fleet-standards` (administration of those platforms; here
+only driver development), `opensource-licensing-standards` (licence analysis as a programme; here
+`MODULE_LICENSE` and the GPL-only symbol as a technical fact), `git-workflow-standards`
+(**does not apply to the kernel**: the kernel uses email, `Signed-off-by`/DCO and `b4`, not *pull
+requests*).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar versiones, estado y fechas por web antes de fijar nada (§8). Estado **verificado** a
-> agosto de 2026 contra `kernel.org` y el árbol de Torvalds — **el kernel Linux no vive en GitHub**.
+> Verify versions, status and dates on the web before fixing anything (§8). Status **verified** as
+> of August 2026 against `kernel.org` and Torvalds' tree — **the Linux kernel does not live on
+> GitHub**.
 
-### 2.1 Lo primero: ¿de verdad hace falta un driver de kernel?
+### 2.1 First things first: do you really need a kernel driver?
 
-**La respuesta por defecto es "no".** Antes de escribir un módulo se agota esta lista, en orden:
+**The default answer is "no".** Before writing a module this list is exhausted, in order:
 
-| Alternativa en espacio de usuario | Para qué | Coste real |
+| Userspace alternative | What for | Real cost |
 |---|---|---|
-| **`spidev` / `i2c-dev`** (`/dev/spidev*`, ioctl `I2C_SLAVE`) | Cualquier periférico SPI o I²C de baja velocidad | Ninguno: bus expuesto como *char device*, se pilota desde C o desde un script |
-| **`libusb`** | Dispositivo USB propietario, actualizadores de firmware, instrumentación | Latencia y throughput algo peores; a cambio, cero código en kernel |
-| **`uio`** | Registros memory-mapped e interrupción simple, típico en FPGA | **Sin IOMMU**: el dispositivo puede escribir en cualquier sitio por DMA. Aceptable solo sin DMA o con confianza total en el hardware |
-| **`vfio-pci` / `iommufd`** | Driver de usuario con DMA **y protección de IOMMU**, base de DPDK/SPDK y del passthrough a VM | Más complejo (ioctls, binding), pero es **la única forma segura** de hacer DMA desde usuario |
-| **FUSE** | Sistema de ficheros | Coste por cambio de contexto; irrelevante en la mayoría de casos y decisivo en pocos |
-| **eBPF** | Observar, filtrar o extender comportamiento del kernel sin código propio en él | Verificador, límites del programa, y una API que sí es estable |
-| **`gpiod`, `iio`, `hidraw`, `sg`/`bsg`, `serial`** | Ya existe subsistema que expone el dato | Cero: **primero se comprueba si el subsistema ya lo hace** |
+| **`spidev` / `i2c-dev`** (`/dev/spidev*`, `I2C_SLAVE` ioctl) | Any low-speed SPI or I²C peripheral | None: the bus is exposed as a *char device*, driven from C or from a script |
+| **`libusb`** | Proprietary USB device, firmware updaters, instrumentation | Somewhat worse latency and throughput; in exchange, zero kernel code |
+| **`uio`** | Memory-mapped registers and a simple interrupt, typical on FPGAs | **No IOMMU**: the device can write anywhere by DMA. Acceptable only with no DMA or with total trust in the hardware |
+| **`vfio-pci` / `iommufd`** | Userspace driver with DMA **and IOMMU protection**, the basis of DPDK/SPDK and of passthrough to a VM | More complex (ioctls, binding), but it is **the only safe way** to do DMA from userspace |
+| **FUSE** | A filesystem | Context switch cost; irrelevant in most cases and decisive in a few |
+| **eBPF** | Observing, filtering or extending kernel behaviour without your own code in it | The verifier, the program limits, and an API that actually is stable |
+| **`gpiod`, `iio`, `hidraw`, `sg`/`bsg`, `serial`** | A subsystem already exposing the data exists | Zero: **first check whether the subsystem already does it** |
 
-**Cuándo sí hay que estar en el kernel**: latencia de interrupción de microsegundos; DMA que exige
-configurar hardware y gestionar buffers del kernel; participación en un subsistema (una tarjeta de
-red **es** un `net_device`, un disco **es** un `blk_mq`); necesidad de primitivas que no existen
-fuera (spinlocks, RCU, contextos atómicos); o que el proceso de usuario pueda ser matado o
-suspendido y eso sea inaceptable. Un proceso de usuario **se puede matar; un módulo del kernel, no** —
-esa asimetría es el argumento válido, y también la razón de que un fallo cueste tanto.
+**When you do have to be in the kernel**: microsecond interrupt latency; DMA that requires
+configuring hardware and managing kernel buffers; participation in a subsystem (a network card
+**is** a `net_device`, a disk **is** a `blk_mq`); the need for primitives that do not exist outside
+(spinlocks, RCU, atomic contexts); or that the userspace process could be killed or suspended and
+that being unacceptable. A userspace process **can be killed; a kernel module cannot** — that
+asymmetry is the valid argument, and also the reason a fault costs so much.
 
-### 2.2 Upstream o fuera del árbol — no es una preferencia, es aritmética
+### 2.2 Upstream or out-of-tree — it is not a preference, it is arithmetic
 
-**La API interna del kernel no es estable, y no lo es por diseño.** No es un descuido ni una
-promesa incumplida: es política explícita, documentada en
+**The kernel's internal API is not stable, and it is not stable by design.** It is not an oversight
+or a broken promise: it is explicit policy, documented in
 `Documentation/process/stable-api-nonsense.rst`. Verbatim:
 
 > *"This is being written to try to explain why Linux **does not have a binary kernel interface, nor
 > does it have a stable kernel interface**."*
 
-Y su distinción crítica, que se confunde constantemente:
+And its critical distinction, which is constantly confused:
 
 > *"Please realize that this article describes the **in kernel** interfaces, not the kernel to
 > userspace interfaces. The kernel to userspace interface is the one that application programs use,
 > the syscall interface. That interface is **very** stable over time, and will not break."*
 
-Es decir: **la ABI hacia espacio de usuario es sagrada** (romperla es un `git revert`), y la API
-*interna* cambia cuando conviene. De ahí la conclusión del propio documento sobre qué hacer con un
-driver fuera del árbol:
+That is: **the ABI towards userspace is sacred** (breaking it is a `git revert`), and the
+*internal* API changes when convenient. Hence the same document's conclusion about what to do with
+an out-of-tree driver:
 
 > *"Simple, get your kernel driver into the main kernel tree … If your driver is in the tree, and a
 > kernel interface changes, it will be fixed up by the person who did the kernel change in the first
 > place."*
 
-**Qué cuesta subirlo** (y hay que decirlo entero, porque el coste es real): escribir al estilo del
-kernel, pasar `checkpatch.pl`, documentar los *bindings* de devicetree en su esquema YAML, encontrar
-al *maintainer* con `get_maintainer.pl`, enviar por correo en texto plano, y **aguantar varias
-rondas de revisión pública que serán directas**. Semanas o meses. **Qué cuesta no subirlo**: portar
-el driver a cada versión del kernel, para siempre, para cada distribución y cada rama de fabricante;
-empaquetarlo por DKMS y que se rompa en cada actualización de kernel del cliente; quedarse fuera de
-cualquier refactor que se lleve por delante la API que usas; y no poder usar símbolos `EXPORT_SYMBOL_GPL`
-si el módulo no es GPL (§5.3). **Es deuda permanente con interés compuesto.**
+**What it costs to submit it** (and it must be said in full, because the cost is real): writing in
+the kernel's style, passing `checkpatch.pl`, documenting the devicetree *bindings* in their YAML
+schema, finding the *maintainer* with `get_maintainer.pl`, sending by plain-text email, and
+**enduring several rounds of public review that will be blunt**. Weeks or months. **What it costs
+not to submit it**: porting the driver to every kernel version, forever, for every distribution and
+every vendor branch; packaging it with DKMS and having it break on every kernel update at the
+customer's site; being left out of any refactor that takes away the API you use; and not being able
+to use `EXPORT_SYMBOL_GPL` symbols if the module is not GPL (§5.3). **It is permanent debt with
+compound interest.**
 
-`drivers/staging/` existe como camino intermedio para código que aún no cumple el listón, con reglas
-propias y con la expectativa explícita de que sale de ahí o se borra. **No es un aparcamiento
-indefinido**, y un driver en staging no está mantenido por nadie más que su autor.
+`drivers/staging/` exists as an intermediate route for code that does not yet meet the bar, with
+its own rules and with the explicit expectation that it either gets out of there or is deleted.
+**It is not an indefinite car park**, and a driver in staging is maintained by nobody but its
+author.
 
-### 2.3 Versiones y toolchain — verificado en `kernel.org`
+### 2.3 Versions and toolchain — verified at `kernel.org`
 
-| Dato | Valor verificado (2026-08-05, `kernel.org/releases.json`) |
+| Datum | Verified value (2026-08-05, `kernel.org/releases.json`) |
 |---|---|
 | mainline | **7.2-rc6** |
 | stable | **7.1.6** |
 | longterm | **6.18.42**, **6.12.101**, **6.6.148**, **6.1.180**, **5.15.213**, **5.10.262** |
-| GCC mínimo | **8.1** (`Documentation/process/changes.rst`) |
-| Clang/LLVM mínimo (opcional) | **17.0.1** |
-| binutils mínimo | **2.30** |
-| Rust mínimo (opcional) | **1.85.0** |
-| bindgen mínimo (opcional) | **0.71.1** |
+| Minimum GCC | **8.1** (`Documentation/process/changes.rst`) |
+| Minimum Clang/LLVM (optional) | **17.0.1** |
+| Minimum binutils | **2.30** |
+| Minimum Rust (optional) | **1.85.0** |
+| Minimum bindgen (optional) | **0.71.1** |
 
-**Contra qué se desarrolla**: el trabajo nuevo se hace contra **mainline o `linux-next`**, no contra
-el kernel de la distribución. Un parche que solo aplica sobre el árbol de un fabricante no es
-enviable y no será revisado.
+**What you develop against**: new work is done against **mainline or `linux-next`**, not against
+the distribution's kernel. A patch that only applies on top of a vendor's tree is not submittable
+and will not be reviewed.
 
-### 2.4 Rust en el kernel — estado real, no folclore
+### 2.4 Rust in the kernel — real status, not folklore
 
-Es el tema del catálogo con más desinformación en ambas direcciones ("ya está todo en Rust" / "es un
-experimento que no compila"). Estado **verificado** a agosto de 2026:
+It is the topic in the catalogue with the most misinformation in both directions ("everything is
+already in Rust" / "it is an experiment that does not compile"). **Verified** status as of August
+2026:
 
-- **Es soporte de primera clase pero opcional**: `Documentation/process/changes.rst` lista Rust como
-  *"(optional)"* con mínimo **1.85.0**, y `bindgen` como *"(optional)"* con mínimo 0.71.1. Sin
-  `CONFIG_RUST`, el kernel se compila exactamente como siempre. `make rustavailable` dice por qué no
-  está disponible el toolchain.
-- **Política de versión mínima**: desde principios de 2026 el proyecto **sigue la versión de Rust de
-  Debian Stable** como mínimo soportado (Debian 13 *Trixie* → 1.85.0), en vigor desde Linux v7.1.
-  Las ramas LTS mantienen su propio mínimo (6.18.y sigue con 1.78.0): **no se asume el mínimo de
-  mainline al portar a una LTS**.
-- **Arquitecturas soportadas**, verbatim de `Documentation/rust/arch-support.rst`, todas con nivel
+- **It is first-class but optional support**: `Documentation/process/changes.rst` lists Rust as
+  *"(optional)"* with a minimum of **1.85.0**, and `bindgen` as *"(optional)"* with a minimum of
+  0.71.1. Without `CONFIG_RUST`, the kernel compiles exactly as it always did. `make rustavailable`
+  says why the toolchain is not available.
+- **Minimum version policy**: since early 2026 the project **follows Debian Stable's Rust version**
+  as the minimum supported one (Debian 13 *Trixie* → 1.85.0), in force since Linux v7.1. The LTS
+  branches keep their own minimum (6.18.y is still on 1.78.0): **do not assume mainline's minimum
+  when porting to an LTS**.
+- **Supported architectures**, verbatim from `Documentation/rust/arch-support.rst`, all at level
   *Maintained*: `arm` (*"ARMv7 Little Endian only"*), `arm64` (*"Little Endian only"*), `loongarch`,
-  `riscv` (*"riscv64 and LLVM/Clang only"*), `s390` (*"CONFIG_EXPOLINE must be disabled"*), `um`, y
-  `x86` (*"x86_64 only"*). **No es universal**: si el objetivo no está en esa tabla, no hay debate.
-- **Hay drivers reales**: Binder en Rust se fusionó en 6.18, junto con Tyr (GPU Mali CSF). Las
-  *bindings* de USB están presentes pero **desactivadas en el build** hasta que llegue un driver real
-  que las use.
-- **Sigue apoyándose en features inestables** del lenguaje dentro del *crate* `kernel`; fuera de él
-  (en drivers) solo se permite un conjunto mínimo. Ese es el trabajo abierto.
+  `riscv` (*"riscv64 and LLVM/Clang only"*), `s390` (*"CONFIG_EXPOLINE must be disabled"*), `um`, and
+  `x86` (*"x86_64 only"*). **It is not universal**: if the target is not in that table, there is no
+  debate.
+- **There are real drivers**: Binder in Rust was merged in 6.18, together with Tyr (Mali CSF GPU).
+  The USB *bindings* are present but **disabled in the build** until a real driver arrives that
+  uses them.
+- **It still relies on unstable language features** inside the `kernel` *crate*; outside it (in
+  drivers) only a minimal set is allowed. That is the open work.
 
-**Criterio de esta skill**: para un driver nuevo, en una arquitectura soportada, en un subsistema
-donde ya existen abstracciones Rust, **Rust es una elección defendible y hay que justificar la
-contraria**. Fuera de esas condiciones, **C sigue siendo el default del kernel** — y esa afirmación
-tiene fecha de caducidad: se re-verifica (§8), no se hereda.
+**This skill's criterion**: for a new driver, on a supported architecture, in a subsystem where
+Rust abstractions already exist, **Rust is a defensible choice and the contrary has to be
+justified**. Outside those conditions, **C remains the kernel's default** — and that statement has
+an expiry date: it is re-verified (§8), not inherited.
 
-### 2.5 Windows y macOS
+### 2.5 Windows and macOS
 
-**Windows.** Marco por defecto: **KMDF** (Kernel-Mode Driver Framework) para lo que deba estar en
-kernel, **UMDF** para lo que pueda estar en usuario — y esa es la primera decisión, igual que en
-Linux. **WDM crudo solo cuando KMDF no cubre el caso**, y con justificación escrita. Firma:
-**desde Windows 10 1607 un driver de kernel solo carga si lo ha firmado Microsoft**; el certificado
-EV del fabricante firma el CAB que se sube a Partner Center, y Microsoft devuelve el binario
-firmado (*attestation signing*, o **WHQL** con pruebas HLK si se quiere distribución por Windows
-Update y cobertura de Windows Server). **El *cross-signing* está muerto**: retirado desde 2021, con
-los certificados caducados, y la actualización de abril de 2026 eliminó la confianza por defecto en
-drivers *cross-signed* en Windows 11 24H2/25H2/26H1 y Windows Server 2025 — **cualquier driver
-antiguo que dependiera de ello hay que resubmitirlo**. Verificar el estado exacto antes de
-planificar (§8).
+**Windows.** Default framework: **KMDF** (Kernel-Mode Driver Framework) for what must be in the
+kernel, **UMDF** for what can be in userspace — and that is the first decision, just as in Linux.
+**Raw WDM only when KMDF does not cover the case**, and with a written justification. Signing:
+**since Windows 10 1607 a kernel driver only loads if Microsoft has signed it**; the vendor's EV
+certificate signs the CAB uploaded to Partner Center, and Microsoft returns the signed binary
+(*attestation signing*, or **WHQL** with HLK tests if you want distribution through Windows Update
+and Windows Server coverage). ***Cross-signing* is dead**: withdrawn since 2021, with the
+certificates expired, and the April 2026 update removed default trust in *cross-signed* drivers on
+Windows 11 24H2/25H2/26H1 and Windows Server 2025 — **any old driver depending on it has to be
+resubmitted**. Verify the exact status before planning (§8).
 
-**El precedente de CrowdStrike (julio de 2024) es el argumento de esta skill, no una anécdota.** Un
-proveedor de seguridad con driver de kernel **firmado por WHQL** distribuyó un fichero de contenido
-—no el driver— que el driver consumió mal, y el resultado fue un pantallazo azul en bucle en
-millones de máquinas, con recuperación manual por equipo. Las tres lecciones son de diseño y aplican
-a cualquier driver: **(1)** el radio de explosión de un fallo en kernel es la máquina entera y no hay
-degradación posible; **(2)** los **datos** que consume el driver son superficie de fallo con el mismo
-peso que el código, y hay que validarlos con la misma paranoia; **(3)** el despliegue de cualquier
-cosa que llegue al kernel exige **canario y despliegue por fases**, sin excepción por urgencia. La
-consecuencia estructural es que Microsoft está llevando la seguridad de endpoint **fuera del
-kernel** (Windows Endpoint Security Platform, dentro de la Windows Resiliency Initiative) — el mismo
-movimiento que en Linux ya ocurrió al pasar los agentes de módulo propio a **eBPF**.
+**The CrowdStrike precedent (July 2024) is this skill's argument, not an anecdote.** A security
+vendor with a **WHQL-signed** kernel driver distributed a content file — not the driver — that the
+driver consumed badly, and the result was a blue screen loop on millions of machines, with manual
+recovery per machine. The three lessons are design lessons and apply to any driver: **(1)** the
+blast radius of a kernel fault is the whole machine and no degradation is possible; **(2)** the
+**data** the driver consumes is failure surface with the same weight as the code, and it has to be
+validated with the same paranoia; **(3)** deploying anything that reaches the kernel demands a
+**canary and phased rollout**, with no exception for urgency. The structural consequence is that
+Microsoft is moving endpoint security **out of the kernel** (Windows Endpoint Security Platform,
+within the Windows Resiliency Initiative) — the same movement that in Linux already happened when
+agents moved from their own module to **eBPF**.
 
-**macOS.** Los **kexts están deprecados desde WWDC19**; desde Big Sur macOS no carga por defecto
-kexts que usen KPIs deprecadas, y la alternativa es **DriverKit** (USB, serie, red, HID) y
-**System Extensions** (Network Extension, Endpoint Security) — que **corren en espacio de usuario**.
-Verificado a 2026: **Apple no ha anunciado fecha de retirada total** y los kexts siguen cargando en
-las versiones actuales, con aprobación del usuario y seguridad reducida en Apple Silicon. Criterio:
-**nada nuevo en kext**; DriverKit/System Extensions y solicitar el *entitlement* correspondiente a
-Apple **antes** de comprometer el diseño, porque no es automático.
+**macOS.** **Kexts have been deprecated since WWDC19**; since Big Sur macOS does not load by
+default kexts that use deprecated KPIs, and the alternative is **DriverKit** (USB, serial, network,
+HID) and **System Extensions** (Network Extension, Endpoint Security) — which **run in userspace**.
+Verified as of 2026: **Apple has announced no full removal date** and kexts still load on current
+versions, with user approval and reduced security on Apple Silicon. Criterion: **nothing new in a
+kext**; DriverKit/System Extensions and request the corresponding *entitlement* from Apple
+**before** committing the design, because it is not automatic.
 
-## 3. Estructura y convenciones (Linux)
+## 3. Structure and conventions (Linux)
 
-- **Estilo**: `Documentation/process/coding-style.rst` es la norma y no se discute — tabulaciones de
-  8, llaves del kernel, líneas según el límite vigente del árbol. `clang-format` con el `.clang-format`
-  **del propio árbol**, nunca el del proyecto de fuera.
-- **`scripts/checkpatch.pl` antes de enviar nada.** Su propia documentación fija cómo se lee, verbatim
-  desde `Documentation/process/submitting-patches.rst`: *"the style checker should be viewed as a
-  guide, not as a replacement for human judgment"*, con tres niveles —*"ERROR: things that are very
-  likely to be wrong / WARNING: things requiring careful review / CHECK: things requiring thought"*— y
-  la regla que importa: *"You should be able to justify all violations that remain in your patch."*
-  Un `checkpatch` limpio no garantiza que el parche sea bueno; uno sucio garantiza que no será
-  leído.
-- **Destinatarios**: `scripts/get_maintainer.pl` sobre el propio parche. Verbatim del mismo
-  documento: *"If you cannot find a maintainer for the subsystem you are working on, Andrew Morton
-  (akpm@linux-foundation.org) serves as a maintainer of last resort"* y *"linux-kernel@vger.kernel.org
-  should be used by default for all patches"* — con la advertencia explícita de **no** enviar a
-  listas ni personas no relacionadas.
-- **Envío por correo, en texto plano**, serie ordenada, un cambio lógico por parche, mensaje que
-  explica **el porqué** (el qué ya está en el diff). `Signed-off-by:` es la **DCO**, no una
-  formalidad: es una declaración legal sobre la procedencia del código. **`b4` es la herramienta
-  recomendada** para gestionar series, dependencias y envío; el propio documento la cita como ayuda
+- **Style**: `Documentation/process/coding-style.rst` is the norm and is not up for debate — 8-wide
+  tabs, kernel braces, lines per the tree's current limit. `clang-format` with the `.clang-format`
+  **from the tree itself**, never the one from an outside project.
+- **`scripts/checkpatch.pl` before submitting anything.** Its own documentation sets out how it is
+  read, verbatim from `Documentation/process/submitting-patches.rst`: *"the style checker should be
+  viewed as a guide, not as a replacement for human judgment"*, with three levels — *"ERROR: things
+  that are very likely to be wrong / WARNING: things requiring careful review / CHECK: things
+  requiring thought"* — and the rule that matters: *"You should be able to justify all violations
+  that remain in your patch."* A clean `checkpatch` does not guarantee the patch is good; a dirty
+  one guarantees it will not be read.
+- **Recipients**: `scripts/get_maintainer.pl` on the patch itself. Verbatim from the same document:
+  *"If you cannot find a maintainer for the subsystem you are working on, Andrew Morton
+  (akpm@linux-foundation.org) serves as a maintainer of last resort"* and
+  *"linux-kernel@vger.kernel.org should be used by default for all patches"* — with the explicit
+  warning **not** to send to unrelated lists or people.
+- **Submission by email, in plain text**, an ordered series, one logical change per patch, a message
+  that explains **the why** (the what is already in the diff). `Signed-off-by:` is the **DCO**, not
+  a formality: it is a legal statement about the provenance of the code. **`b4` is the recommended
+  tool** for managing series, dependencies and submission; the document itself cites it as helping
   *"with things like tracking dependencies, running checkpatch and with formatting and sending
   mails"*.
-- **Elegir bien la capa**: no se escribe un *char device* propio cuando existe subsistema. Un sensor
-  es **IIO**; un botón, **input**; una tarjeta de red, **netdev**; un almacenamiento, **blk-mq**; un
-  regulador, **regulator**. Un driver que inventa su propio `ioctl` para lo que un subsistema ya
-  expone será rechazado upstream — y con razón: rompe todas las herramientas existentes.
-- **`ioctl` como último recurso, y cuando lo sea, con contrato blindado**: estructuras de tamaño fijo
-  y explícito, campos de padding a cero y verificados, sin punteros embebidos si se puede evitar,
-  compatibilidad 32/64 bits pensada desde el primer día. **Es ABI hacia espacio de usuario: una vez
-  publicado, no se cambia nunca.**
-- **Devicetree**: los *bindings* se documentan en esquema YAML en
-  `Documentation/devicetree/bindings/` y se validan con `make dt_binding_check`. El binding es
-  **contrato con el firmware de miles de placas** y también es ABI: no se rompe.
-- **Recursos gestionados** (`devm_kzalloc`, `devm_request_irq`, `devm_ioremap_resource`) por defecto:
-  eliminan la clase entera de fugas en el camino de error de `probe()`. Cuando no se puedan usar,
-  el camino de error se escribe con etiquetas en orden inverso a la adquisición, y se revisa entero.
+- **Choose the right layer**: you do not write your own *char device* when a subsystem exists. A
+  sensor is **IIO**; a button, **input**; a network card, **netdev**; a storage device, **blk-mq**;
+  a regulator, **regulator**. A driver that invents its own `ioctl` for what a subsystem already
+  exposes will be rejected upstream — and rightly so: it breaks every existing tool.
+- **`ioctl` as a last resort, and when it is, with a bulletproof contract**: fixed and explicit-size
+  structures, padding fields zeroed and verified, no embedded pointers if avoidable, 32/64-bit
+  compatibility thought through from day one. **It is ABI towards userspace: once published, it is
+  never changed.**
+- **Devicetree**: the *bindings* are documented in a YAML schema in
+  `Documentation/devicetree/bindings/` and validated with `make dt_binding_check`. The binding is a
+  **contract with the firmware of thousands of boards** and is also ABI: it does not get broken.
+- **Managed resources** (`devm_kzalloc`, `devm_request_irq`, `devm_ioremap_resource`) by default:
+  they eliminate the entire class of leaks on the error path of `probe()`. When they cannot be used,
+  the error path is written with labels in reverse order of acquisition, and is reviewed in full.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-En orden de coste creciente. Los cuatro primeros son **gates**: si no pasan, el parche no sale.
+In order of increasing cost. The first four are **gates**: if they do not pass, the patch does not
+go out.
 
-1. **`checkpatch.pl` limpio** (con las violaciones restantes justificadas) y compilación **sin
-   warnings nuevos** con `make W=1`.
-2. **`sparse`** (`make C=1`): comprueba las anotaciones de espacio de direcciones (`__user`,
-   `__iomem`, `__rcu`) y el endianness. **Es la herramienta que atrapa el error más caro y más
-   silencioso del kernel: desreferenciar un puntero de usuario directamente.**
-3. **`smatch` y `coccinelle`** (`make coccicheck`): fugas en caminos de error, comprobaciones de
-   nulo ausentes, patrones ya vetados en el árbol.
-4. **Compilar el módulo contra varias versiones** si —contra el criterio de §2.2— vive fuera del
-   árbol: mainline, `linux-next` y cada LTS soportada. Es el precio del que no sube.
-5. **Sanitizers, en un kernel de desarrollo, ejecutando la carga real**: `KASAN` (use-after-free y
-   desbordamientos; es **el** hallazgo típico de un driver), `UBSAN`, `KCSAN` (*data races*),
-   `KFENCE` (bajo coste, apto incluso en producción de flota grande), y **`lockdep`
-   (`CONFIG_PROVE_LOCKING`) siempre activado en desarrollo**: detecta el orden de bloqueo incorrecto
-   *antes* de que produzca el interbloqueo, no después. `CONFIG_DEBUG_ATOMIC_SLEEP` para cazar los
-   `might_sleep` en contexto atómico.
-6. **KUnit** para la lógica pura que se pueda aislar (parseo, cálculo, máquinas de estado). No todo
-   un driver es testeable así — pero la parte que decide **sí** lo es, y suele ser donde están los
-   fallos.
-7. **`syzkaller`** contra cualquier interfaz expuesta a espacio de usuario (`ioctl`, `read`/`write`,
-   `netlink`, sysfs). Si el driver acepta entrada de usuario y nunca ha visto un *fuzzer*, no está
-   probado: está sin estrenar.
-8. **Prueba de camino de error real**: fallo de asignación, `probe` que falla a mitad, `remove` con
-   el dispositivo en uso, desconexión en caliente durante una transferencia, `rmmod` con un fichero
-   abierto. **Los caminos de error de un driver son donde vive la mayoría de sus bugs**, porque son
-   los que nadie ejecuta.
+1. **Clean `checkpatch.pl`** (with the remaining violations justified) and compilation **with no
+   new warnings** using `make W=1`.
+2. **`sparse`** (`make C=1`): checks the address space annotations (`__user`, `__iomem`, `__rcu`)
+   and endianness. **It is the tool that catches the most expensive and most silent kernel error:
+   dereferencing a user pointer directly.**
+3. **`smatch` and `coccinelle`** (`make coccicheck`): leaks on error paths, missing null checks,
+   patterns already banned in the tree.
+4. **Building the module against several versions** if — against the criterion of §2.2 — it lives
+   out of tree: mainline, `linux-next` and every supported LTS. It is the price of not submitting.
+5. **Sanitizers, on a development kernel, running the real workload**: `KASAN` (use-after-free and
+   overflows; it is **the** typical driver finding), `UBSAN`, `KCSAN` (*data races*),
+   `KFENCE` (low cost, suitable even in production on a large fleet), and **`lockdep`
+   (`CONFIG_PROVE_LOCKING`) always enabled in development**: it detects incorrect lock ordering
+   *before* it produces the deadlock, not after. `CONFIG_DEBUG_ATOMIC_SLEEP` to catch `might_sleep`
+   in atomic context.
+6. **KUnit** for the pure logic that can be isolated (parsing, computation, state machines). Not all
+   of a driver is testable that way — but the part that decides **is**, and that is usually where
+   the faults are.
+7. **`syzkaller`** against any interface exposed to userspace (`ioctl`, `read`/`write`, `netlink`,
+   sysfs). If the driver accepts user input and has never seen a *fuzzer*, it is not tested: it is
+   unused.
+8. **A real error-path test**: allocation failure, `probe` failing halfway, `remove` with the device
+   in use, hot disconnection during a transfer, `rmmod` with an open file. **A driver's error paths
+   are where most of its bugs live**, because they are the ones nobody executes.
 
-**Depuración**: `dmesg` y las **banderas de taint** primero (dicen si hay módulo propietario, si el
-kernel ya había fallado antes, si se forzó una carga); `ftrace`/`trace_printk` para el flujo y la
-latencia sin parar el sistema; `dynamic_debug` (`pr_debug` activable en caliente) en vez de dejar
-`printk` a pelo; `kgdb`/`kdb` para el caso que lo exija; `crash`/`kdump` sobre el volcado cuando el
-fallo no se reproduce. **`printk` en camino caliente altera el propio problema** —serializa,
-sincroniza y cambia el *timing*—: el mismo argumento que el `printf` por UART en firmware.
+**Debugging**: `dmesg` and the **taint flags** first (they say whether there is a proprietary
+module, whether the kernel had already failed before, whether a load was forced);
+`ftrace`/`trace_printk` for flow and latency without stopping the system; `dynamic_debug`
+(`pr_debug` enabled at runtime) instead of leaving bare `printk`; `kgdb`/`kdb` for the case that
+demands it; `crash`/`kdump` on the dump when the failure does not reproduce. **`printk` on a hot
+path alters the problem itself** — it serialises, synchronises and changes the *timing* —: the same
+argument as `printf` over UART in firmware.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-### 5.1 La frontera con espacio de usuario es una frontera de confianza
-- **Todo dato que cruza desde usuario es hostil.** `copy_from_user`/`copy_to_user` **siempre** con
-  comprobación del retorno; nunca desreferenciar un puntero de usuario. Validar longitudes **antes**
-  de usarlas, con aritmética que no desborde, y comprobar `TOCTOU`: un valor copiado dos veces puede
-  haber cambiado entre ambas.
-- **Nunca se filtra memoria del kernel hacia usuario**: estructuras a copiar inicializadas a cero
-  completas (el *padding* también), sin punteros ni direcciones del kernel en salidas ni en logs
-  (`%p` está ofuscado por defecto y esa ofuscación no se anula "para depurar" en producción).
-- **Todo lo que se expone es ABI para siempre**: cada `ioctl`, cada fichero de sysfs y cada atributo
-  de debugfs que se publique habrá que sostenerlo. Lo experimental va a `debugfs` y se dice que lo
-  es; lo estable va donde corresponda y se documenta en `Documentation/ABI/`.
+### 5.1 The boundary with userspace is a trust boundary
+- **Every datum crossing from userspace is hostile.** `copy_from_user`/`copy_to_user` **always**
+  with the return value checked; never dereference a user pointer. Validate lengths **before**
+  using them, with arithmetic that does not overflow, and check for `TOCTOU`: a value copied twice
+  may have changed between the two reads.
+- **Kernel memory is never leaked to userspace**: structures to be copied fully zero-initialised
+  (the *padding* too), with no kernel pointers or addresses in outputs or in logs (`%p` is obscured
+  by default and that obscuring is not turned off "for debugging" in production).
+- **Everything exposed is ABI forever**: every `ioctl`, every sysfs file and every debugfs attribute
+  published will have to be sustained. Experimental things go to `debugfs` and are said to be
+  experimental; stable things go where they belong and are documented in `Documentation/ABI/`.
 
-### 5.2 Firma de módulos, Secure Boot y *lockdown*
-- El kernel firma módulos con certificados X.509 y verifica en la carga. Verbatim de
+### 5.2 Module signing, Secure Boot and *lockdown*
+- The kernel signs modules with X.509 certificates and verifies them at load time. Verbatim from
   `Documentation/admin-guide/module-signing.rst`: *"Module signing increases security by making it
   harder to load a malicious module into the kernel. The module signature checking is done by the
-  kernel so that it is not necessary to have trusted userspace bits."* Algoritmos soportados por la
-  facilidad integrada, verbatim: *"the built-in facility currently only supports the RSA, NIST P-384
-  ECDSA and NIST FIPS-204 ML-DSA public key signing standards"* — **ya hay firma post-cuántica en el
-  árbol; comprobar el soporte real de la rama que se usa**.
-- **`CONFIG_MODULE_SIG_FORCE`** (o `module.sig_enforce=1`) es lo que convierte la firma en un
-  control: sin él, un módulo sin firma se carga y solo *tainta* el kernel. Con Secure Boot activo,
-  la distribución activa además el **lockdown**, que restringe las vías por las que espacio de
-  usuario puede escribir en el kernel (`/dev/mem`, `kexec` no firmado, parámetros peligrosos).
-- **La clave privada de firma no vive en el sistema que arranca.** Firma en HSM o servicio de firma;
-  para desarrollo, MOK propia enrolada con `mokutil` **solo en máquinas de laboratorio** y nunca la
-  misma clave que en producción.
+  kernel so that it is not necessary to have trusted userspace bits."* Algorithms supported by the
+  built-in facility, verbatim: *"the built-in facility currently only supports the RSA, NIST P-384
+  ECDSA and NIST FIPS-204 ML-DSA public key signing standards"* — **there is already post-quantum
+  signing in the tree; check the real support in the branch you use**.
+- **`CONFIG_MODULE_SIG_FORCE`** (or `module.sig_enforce=1`) is what turns the signature into a
+  control: without it, an unsigned module loads and merely *taints* the kernel. With Secure Boot
+  active, the distribution also enables **lockdown**, which restricts the routes through which
+  userspace can write into the kernel (`/dev/mem`, unsigned `kexec`, dangerous parameters).
+- **The private signing key does not live on the system that boots.** Sign in an HSM or a signing
+  service; for development, your own MOK enrolled with `mokutil` **only on lab machines** and never
+  the same key as in production.
 
-### 5.3 Licencia: `MODULE_LICENSE` y el símbolo GPL-only
-`MODULE_LICENSE` **no es metadato decorativo**: determina si el módulo puede enlazar con símbolos
-exportados con `EXPORT_SYMBOL_GPL`. Verbatim de `include/linux/module.h`, sobre el propósito de la
-cadena: *"The sole purpose is to make the 'Proprietary' flagging work and to refuse to bind symbols
-which are exported with EXPORT_SYMBOL_GPL when a non free module is loaded."* Y el mismo comentario
-aclara los límites de lo que la etiqueta significa: *"the 'only/or later' distinction is completely
+### 5.3 Licence: `MODULE_LICENSE` and the GPL-only symbol
+`MODULE_LICENSE` is **not decorative metadata**: it determines whether the module can link against
+symbols exported with `EXPORT_SYMBOL_GPL`. Verbatim from `include/linux/module.h`, on the purpose
+of the string: *"The sole purpose is to make the 'Proprietary' flagging work and to refuse to bind
+symbols which are exported with EXPORT_SYMBOL_GPL when a non free module is loaded."* And the same
+comment clarifies the limits of what the tag means: *"the 'only/or later' distinction is completely
 irrelevant and does neither replace the proper license identifiers in the corresponding source file
-nor amends them in any way"* — es decir, **la licencia real está en el fichero fuente, no en la
-macro**. Sus tres razones declaradas, verbatim: *"1. So modinfo can show license info for users
+nor amends them in any way"* — that is, **the real licence is in the source file, not in the
+macro**. Its three declared reasons, verbatim: *"1. So modinfo can show license info for users
 wanting to vet their setup is free / 2. So the community can ignore bug reports including
 proprietary modules / 3. So vendors can do likewise based on their own policies"*.
 
-Consecuencias prácticas: un módulo propietario **taintea** el kernel, **no puede** usar la mayoría de
-la API moderna (que está exportada como GPL-only), **nadie va a mirar tu reporte de fallo**, y
-cualquier *shim* GPL que envuelva un blob propietario para sortear la comprobación es un problema
-legal, no un truco técnico. **Consultar con abogado, no con Stack Overflow** — el propio documento de
-Greg KH se niega explícitamente a tratar el tema legal.
+Practical consequences: a proprietary module **taints** the kernel, **cannot** use most of the
+modern API (which is exported as GPL-only), **nobody is going to look at your bug report**, and any
+GPL *shim* wrapping a proprietary blob to dodge the check is a legal problem, not a technical
+trick. **Consult a lawyer, not Stack Overflow** — Greg KH's own document explicitly refuses to
+address the legal side.
 
-### 5.4 Drivers vulnerables como riesgo (BYOVD), tratado como defensa
-Un driver firmado y con un fallo explotable es una llave para el kernel que **el atacante no tiene
-que fabricar: la trae puesta**. Esta skill lo trata exclusivamente desde dos lados:
+### 5.4 Vulnerable drivers as a risk (BYOVD), treated as defence
+A signed driver with an exploitable flaw is a key to the kernel that **the attacker does not have
+to manufacture: they bring it with them**. This skill treats it exclusively from two sides:
 
-- **Como autor**: tu driver firmado es infraestructura de ataque si expone primitivas genéricas.
-  **PROHIBIDO** exponer por `ioctl` lectura/escritura de memoria física arbitraria, acceso a MSR, a
-  puertos de E/S o mapeo de rangos arbitrarios "para una herramienta de diagnóstico" — es el patrón
-  exacto de los drivers que acaban en las listas de bloqueo. Todo `ioctl` privilegiado exige
-  comprobación de capacidad (`capable()`/`ns_capable()`) **y** rango cerrado de operaciones.
-- **Como defensor**: en Windows, la **lista de bloqueo de drivers vulnerables de Microsoft** está
-  activada por defecto y se refuerza con **HVCI**, Smart App Control o modo S; los bloqueos se ven en
-  el visor de eventos (IDs 3023 y 3033). Microsoft advierte explícitamente que **no garantiza
-  bloquear todo driver débil** por equilibrio con la compatibilidad, y hay al menos un hueco
-  documentado (CVE-2025-59033) en sistemas **sin HVCI**. Conclusión operativa: **la lista de bloqueo
-  no sustituye a un control de aplicaciones con lista de permitidos**, y su desactivación —que exige
-  desactivar antes HVCI— es una decisión de riesgo que se documenta. En Linux, el equivalente es
-  `CONFIG_MODULE_SIG_FORCE` + lockdown + no cargar módulos de terceros sin origen verificado.
+- **As an author**: your signed driver is attack infrastructure if it exposes generic primitives.
+  **FORBIDDEN** to expose via `ioctl` arbitrary physical memory read/write, MSR access, I/O port
+  access or mapping of arbitrary ranges "for a diagnostic tool" — it is the exact pattern of the
+  drivers that end up on the block lists. Every privileged `ioctl` requires a capability check
+  (`capable()`/`ns_capable()`) **and** a closed range of operations.
+- **As a defender**: on Windows, **Microsoft's vulnerable driver blocklist** is enabled by default
+  and is reinforced with **HVCI**, Smart App Control or S mode; the blocks appear in the event
+  viewer (IDs 3023 and 3033). Microsoft explicitly warns that it **does not guarantee blocking every
+  weak driver** for compatibility balance, and there is at least one documented gap
+  (CVE-2025-59033) on systems **without HVCI**. Operational conclusion: **the blocklist does not
+  replace application control with an allowlist**, and disabling it — which requires disabling HVCI
+  first — is a risk decision that gets documented. On Linux, the equivalent is
+  `CONFIG_MODULE_SIG_FORCE` + lockdown + not loading third-party modules with unverified
+  provenance.
 
-**PROHIBIDO en este documento**: procedimientos de BYOVD, listas de drivers explotables con su
-primitiva, técnicas de ocultación en kernel, o cualquier variante de rootkit. La postura es
-defensiva; el trabajo ofensivo requiere alcance y autorización y es de `offensive-security-standards`.
+**FORBIDDEN in this document**: BYOVD procedures, lists of exploitable drivers with their
+primitive, kernel hiding techniques, or any rootkit variant. The posture is defensive; offensive
+work requires scope and authorisation and belongs to `offensive-security-standards`.
 
-## 6. Concurrencia, memoria y operabilidad
+## 6. Concurrency, memory and operability
 
-- **Saber en qué contexto se ejecuta cada función es requisito, no detalle.** Contexto de proceso
-  (puede dormir) frente a contexto atómico —ISR, con spinlock tomado, RCU de lectura— donde **dormir
-  es un fallo**: nada de `mutex_lock`, `kmalloc(GFP_KERNEL)`, `copy_from_user` ni `msleep`. Se
-  documenta el contexto esperado de cada función, y `might_sleep()` + `CONFIG_DEBUG_ATOMIC_SLEEP`
-  lo comprueban en tiempo de ejecución.
-- **Elección de primitiva**: `mutex` por defecto en contexto de proceso; `spinlock` solo cuando se
-  comparte con una ISR o la sección es de nanosegundos (y entonces la sección crítica **debe** ser
-  minúscula); `spin_lock_irqsave` cuando el dato se toca desde interrupción; **RCU** cuando la
-  lectura domina abrumadoramente y la escritura es rara — con la disciplina que impone (el lector no
-  puede dormir en la sección clásica, el escritor publica con barreras y libera con `call_rcu`).
-  **Un orden de bloqueo documentado por escrito** y `lockdep` activado, siempre.
-- **Interrupciones**: el *top half* hace lo mínimo y despacha; el trabajo va a *threaded IRQ*
-  (`request_threaded_irq`), *workqueue* o *tasklet* según la latencia exigida. Una ISR larga es
-  latencia para todo el sistema, no solo para tu dispositivo.
-- **Memoria**: `GFP_KERNEL` solo donde se puede dormir, `GFP_ATOMIC` es un recurso escaso que se
-  agota y hay que justificarlo; nada de asignaciones grandes y contiguas si `vmalloc` o una lista de
-  fragmentos sirve; la pila del kernel es **pequeña y fija** — sin arrays grandes en pila, sin VLA,
-  sin recursión.
-- **DMA**: se usa la **DMA API** (`dma_alloc_coherent`, `dma_map_single`/`dma_map_sg`), nunca
-  direcciones físicas a mano; se respetan las máscaras del dispositivo (`dma_set_mask_and_coherent`)
-  y la propiedad del buffer (mientras está mapeado al dispositivo, **la CPU no lo toca**). Con
-  IOMMU y en VM, esto no es teoría: es la diferencia entre funcionar y corromper memoria ajena.
-- **Camino de descarga (`remove`/`rmmod`)**: es el que menos se prueba y el que más rompe. Todo lo
-  registrado se desregistra en orden inverso, los temporizadores y *workqueues* se cancelan y se
-  espera a que terminen, y no queda ninguna referencia viva. Un `rmmod` que provoca *use-after-free*
-  es el bug clásico.
-- **Logging con criterio**: `dev_err`/`dev_warn`/`dev_info` (que identifican el dispositivo) frente
-  a `pr_*`; **nada de logs por operación en camino caliente** —inundan el journal y son un vector de
-  DoS desde usuario—; `dev_err_ratelimited` para lo que pueda repetirse.
+- **Knowing which context each function runs in is a requirement, not a detail.** Process context
+  (can sleep) versus atomic context — ISR, with a spinlock held, RCU read side — where **sleeping is
+  a fault**: no `mutex_lock`, no `kmalloc(GFP_KERNEL)`, no `copy_from_user`, no `msleep`. The
+  expected context of each function is documented, and `might_sleep()` +
+  `CONFIG_DEBUG_ATOMIC_SLEEP` check it at runtime.
+- **Choice of primitive**: `mutex` by default in process context; `spinlock` only when sharing with
+  an ISR or when the section is nanoseconds long (and then the critical section **must** be tiny);
+  `spin_lock_irqsave` when the data is touched from an interrupt; **RCU** when reads overwhelmingly
+  dominate and writes are rare — with the discipline it imposes (the reader cannot sleep in the
+  classic section, the writer publishes with barriers and frees with `call_rcu`).
+  **A lock order documented in writing** and `lockdep` enabled, always.
+- **Interrupts**: the *top half* does the minimum and dispatches; the work goes to a *threaded IRQ*
+  (`request_threaded_irq`), a *workqueue* or a *tasklet* depending on the latency required. A long
+  ISR is latency for the whole system, not just for your device.
+- **Memory**: `GFP_KERNEL` only where sleeping is possible, `GFP_ATOMIC` is a scarce resource that
+  runs out and has to be justified; no large contiguous allocations if `vmalloc` or a scatter list
+  will do; the kernel stack is **small and fixed** — no large arrays on the stack, no VLAs, no
+  recursion.
+- **DMA**: the **DMA API** is used (`dma_alloc_coherent`, `dma_map_single`/`dma_map_sg`), never
+  physical addresses by hand; the device's masks are respected (`dma_set_mask_and_coherent`) as is
+  buffer ownership (while it is mapped to the device, **the CPU does not touch it**). With an IOMMU
+  and in a VM, this is not theory: it is the difference between working and corrupting somebody
+  else's memory.
+- **The unload path (`remove`/`rmmod`)**: it is the least tested and the one that breaks most.
+  Everything registered is deregistered in reverse order, timers and *workqueues* are cancelled and
+  waited on, and no live reference remains. An `rmmod` that causes a *use-after-free* is the classic
+  bug.
+- **Logging with judgement**: `dev_err`/`dev_warn`/`dev_info` (which identify the device) rather
+  than `pr_*`; **no per-operation logs on a hot path** — they flood the journal and are a DoS vector
+  from userspace —; `dev_err_ratelimited` for anything that can repeat.
 
-## 7. Sostenibilidad a largo plazo y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-- **Cadencia**: si el código está upstream, sigue el árbol y el trabajo de mantenimiento lo absorbe
-  la comunidad. Si está fuera, el proyecto asume un compromiso explícito: **probar contra cada nueva
-  LTS y contra `linux-next`**, con presupuesto asignado. Un módulo fuera del árbol sin nadie
-  asignado a portarlo no es un producto: es una fecha de caducidad sin escribir.
-- **Backports**: los parches de corrección van primero a mainline y de ahí a estable; **nunca al
-  revés**. Un fix que solo existe en la rama del fabricante desaparece en la siguiente versión.
+- **Cadence**: if the code is upstream, it follows the tree and the community absorbs the
+  maintenance work. If it is out of tree, the project takes on an explicit commitment: **testing
+  against every new LTS and against `linux-next`**, with an assigned budget. An out-of-tree module
+  with nobody assigned to port it is not a product: it is an unwritten expiry date.
+- **Backports**: fix patches go first to mainline and from there to stable; **never the other way
+  round**. A fix that only exists in the vendor's branch disappears in the next version.
 
-Prohibiciones explícitas:
-- ❌ **Escribir un driver de kernel sin haber descartado las alternativas de §2.1 por escrito.**
-- ❌ **Desreferenciar un puntero de espacio de usuario** o usar un tamaño venido de usuario sin
-  validar. PROHIBIDO, sin matices.
-- ❌ **Dormir en contexto atómico** (`mutex`, `GFP_KERNEL`, `copy_*_user`, `msleep` con spinlock
-  tomado o dentro de una ISR).
-- ❌ **Ignorar el retorno** de `copy_from_user`, `kmalloc`, `register_*` o cualquier función que pueda
-  fallar. En el kernel no hay excepciones que recojan el descuido.
-- ❌ **`ioctl` que exponga lectura/escritura de memoria física, MSR o puertos arbitrarios.** Es
-  fabricar un BYOVD firmado con tu nombre (§5.4).
-- ❌ **Exponer ABI nueva sin pensarla como permanente**, y **PROHIBIDO romper ABI de usuario ya
-  publicada**: es la única regla verdaderamente inviolable del kernel.
-- ❌ **`MODULE_LICENSE("GPL")` en un módulo que no lo es**, o cualquier *shim* GPL que envuelva un
-  blob para acceder a símbolos `EXPORT_SYMBOL_GPL`.
-- ❌ **Desactivar la comprobación de firma o el lockdown en producción** para cargar un módulo. Si
-  hace falta, el módulo se firma; no se baja el control.
-- ❌ **Desplegar a la flota sin canario y sin fases** ningún módulo, driver ni **fichero de datos que
-  el driver consuma**. La lección de julio de 2024 (§2.5) es exactamente esta.
-- ❌ **`printk` sin límite de tasa en camino caliente** o dependiente de entrada de usuario.
-- ❌ **Recursión, VLA o arrays grandes en la pila del kernel.**
-- ❌ **Parchear el árbol de la distribución en lugar de enviar upstream** cuando el cambio es de
-  interés general: garantiza tener que rehacerlo en cada actualización.
-- ❌ **Kext nuevo en macOS** habiendo DriverKit o System Extension que cubra el caso.
-- ❌ **PROHIBIDO en esta skill**: recetario de BYOVD, técnicas de rootkit, ocultación de módulos,
-  evasión de EDR o abuso de drivers vulnerables de terceros. Solo mitigación.
+Explicit prohibitions:
+- ❌ **Writing a kernel driver without having ruled out the alternatives in §2.1 in writing.**
+- ❌ **Dereferencing a userspace pointer** or using a size coming from userspace without validating
+  it. FORBIDDEN, with no nuance.
+- ❌ **Sleeping in atomic context** (`mutex`, `GFP_KERNEL`, `copy_*_user`, `msleep` with a spinlock
+  held or inside an ISR).
+- ❌ **Ignoring the return value** of `copy_from_user`, `kmalloc`, `register_*` or any function that
+  can fail. In the kernel there are no exceptions to catch the oversight.
+- ❌ **An `ioctl` that exposes physical memory read/write, MSRs or arbitrary ports.** It is
+  manufacturing a BYOVD signed with your name (§5.4).
+- ❌ **Exposing new ABI without thinking of it as permanent**, and **FORBIDDEN to break already
+  published user ABI**: it is the only truly inviolable rule of the kernel.
+- ❌ **`MODULE_LICENSE("GPL")` on a module that is not**, or any GPL *shim* wrapping a blob to
+  access `EXPORT_SYMBOL_GPL` symbols.
+- ❌ **Disabling signature checking or lockdown in production** to load a module. If it is needed,
+  the module gets signed; the control is not lowered.
+- ❌ **Deploying to the fleet without a canary and without phases** any module, driver or **data
+  file the driver consumes**. The July 2024 lesson (§2.5) is exactly this.
+- ❌ **`printk` without rate limiting on a hot path** or dependent on user input.
+- ❌ **Recursion, VLAs or large arrays on the kernel stack.**
+- ❌ **Patching the distribution's tree instead of submitting upstream** when the change is of
+  general interest: it guarantees having to redo it on every update.
+- ❌ **A new kext on macOS** when DriverKit or a System Extension covers the case.
+- ❌ **FORBIDDEN in this skill**: BYOVD recipes, rootkit techniques, module hiding, EDR evasion or
+  abuse of third-party vulnerable drivers. Mitigation only.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-**El kernel Linux no vive en GitHub.** Las fuentes autoritativas son `kernel.org`, `git.kernel.org`
-(en formato **plano**, `.../plain/...`, para leer el fichero sin resumidor de por medio),
-`docs.kernel.org`, `lore.kernel.org` para las listas y `lwn.net` para el contexto. Comprobar antes de
-fijar nada:
+**The Linux kernel does not live on GitHub.** The authoritative sources are `kernel.org`,
+`git.kernel.org` (in **plain** format, `.../plain/...`, to read the file with no summariser in
+between), `docs.kernel.org`, `lore.kernel.org` for the lists and `lwn.net` for context. Check
+before fixing anything:
 
-1. **Versiones vigentes** en `kernel.org/releases.json`: mainline, stable y **qué ramas LTS siguen
-   soportadas y hasta cuándo** — el calendario de EOL de las longterm cambia y decide a qué se
-   portea.
-2. **Mínimos de toolchain** en `Documentation/process/changes.rst` del árbol concreto: GCC, Clang,
-   binutils, Rust, bindgen. Difieren entre mainline y cada LTS.
-3. **Estado de Rust en el kernel**: `Documentation/rust/arch-support.rst` (la tabla de arquitecturas
-   cambia), la política de versión mínima en `rust-for-linux.com/rust-version-policy`, y qué
-   subsistemas tienen abstracciones utilizables. **Es el dato que peor envejece de este documento.**
-4. **Los documentos de proceso citados aquí verbatim** (`stable-api-nonsense.rst`,
+1. **Current versions** in `kernel.org/releases.json`: mainline, stable and **which LTS branches
+   are still supported and until when** — the longterm EOL calendar changes and decides what you
+   backport to.
+2. **Toolchain minimums** in `Documentation/process/changes.rst` of the specific tree: GCC, Clang,
+   binutils, Rust, bindgen. They differ between mainline and each LTS.
+3. **Status of Rust in the kernel**: `Documentation/rust/arch-support.rst` (the architecture table
+   changes), the minimum version policy at `rust-for-linux.com/rust-version-policy`, and which
+   subsystems have usable abstractions. **It is the datum in this document that ages worst.**
+4. **The process documents quoted verbatim here** (`stable-api-nonsense.rst`,
    `submitting-patches.rst`, `coding-style.rst`, `module-signing.rst`, `include/linux/module.h`):
-   leerlos del árbol contra el que se trabaja, porque el texto se edita.
-5. **El subsistema concreto**: `MAINTAINERS`, la lista correspondiente en `lore.kernel.org`, si hay
-   refactor en curso (`linux-next`) que cambie la API que vas a usar, y si ya existe un driver para
-   ese hardware.
-6. **Windows**: estado de *attestation signing* frente a WHQL en `learn.microsoft.com`, el estado del
-   *cross-signing* retirado, la versión vigente de la lista de bloqueo de drivers vulnerables, y el
-   estado (preview o disponibilidad general) de la plataforma de seguridad de endpoint fuera del
-   kernel.
-7. **macOS**: si Apple ha anunciado ya fecha de retirada de kexts, qué KPIs se han eliminado en la
-   versión objetivo y qué *entitlements* de DriverKit/Endpoint Security siguen requiriendo
-   aprobación.
-8. **CVE del subsistema** en el que se trabaja y si la rama LTS objetivo recibe el parche.
+   read them from the tree you are working against, because the text gets edited.
+5. **The specific subsystem**: `MAINTAINERS`, the corresponding list on `lore.kernel.org`, whether
+   there is a refactor in flight (`linux-next`) that changes the API you are going to use, and
+   whether a driver for that hardware already exists.
+6. **Windows**: the status of *attestation signing* versus WHQL on `learn.microsoft.com`, the status
+   of withdrawn *cross-signing*, the current version of the vulnerable driver blocklist, and the
+   status (preview or general availability) of the out-of-kernel endpoint security platform.
+7. **macOS**: whether Apple has announced a kext removal date yet, which KPIs have been removed in
+   the target version and which DriverKit/Endpoint Security *entitlements* still require approval.
+8. **CVEs of the subsystem** you are working in and whether the target LTS branch receives the
+   patch.
 
-**Huecos declarados**: (a) el estado de disponibilidad general de la plataforma de seguridad de
-endpoint de Windows fuera del kernel **no se ha podido confirmar con fuente primaria fechada en
-2026**; se documenta como iniciativa anunciada, no como hecho consumado. (b) La fecha de retirada
-definitiva de los kexts de macOS **no existe**: Apple no la ha anunciado, y cualquier documento que
-la dé está inventando. (c) No se dan aquí cifras de latencia, *throughput* ni sobrecoste de las
-alternativas de §2.1 porque **dependen del hardware y de la carga**: se miden en el sistema objetivo.
+**Declared gaps**: (a) the general availability status of Windows' out-of-kernel endpoint security
+platform **could not be confirmed with a primary source dated 2026**; it is documented as an
+announced initiative, not as an accomplished fact. (b) The definitive removal date of macOS kexts
+**does not exist**: Apple has not announced it, and any document giving one is inventing it. (c) No
+latency, *throughput* or overhead figures for the alternatives in §2.1 are given here because **they
+depend on the hardware and the workload**: they are measured on the target system.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

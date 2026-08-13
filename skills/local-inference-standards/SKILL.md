@@ -71,7 +71,7 @@ belongs here; index design, chunking and reranking belong there**) and
 Additionally: `llm-evaluation-standards` (**measuring whether
 the local model is good enough for the task belongs there**: this skill measures
 *performance*, not *quality*), `mlsecops-standards` (**provenance, signing and scanning of the
-model artefact: shared boundary** — the supply chain criteria are theirs, the
+model artifact: shared boundary** — the supply chain criteria are theirs, the
 operational rule of "which weights does this server accept" belongs here), `mlops-standards`
 (training, fine-tuning and model lifecycle, as opposed to serving it),
 `ai-governance-standards` (AI Act, AI system inventory, impact assessment).
@@ -287,7 +287,7 @@ Mandatory readings of the calculation:
 **CI gates that break the build** (in increasing order of cost):
 
 1. **Valid declarative configuration**: unit/manifest linted; no loose flag outside
-   the versioned artefact.
+   the versioned artifact.
 2. **Weight provenance verified**: immutable revision pinned + file hash
    checked against the source repository's manifest (§5.1). Without this it is not deployed.
 3. **API contract test**: the endpoint answers the OpenAI subset the application
@@ -336,7 +336,7 @@ Hard rules:
   published in an internal store. The production server **does not download from the Internet at
   start-up** (besides security, it is availability: a failure of the external repository takes
   down your service's start-up).
-- Scanning and signing of the model artefact is a shared boundary with `mlsecops-standards`:
+- Scanning and signing of the model artifact is a shared boundary with `mlsecops-standards`:
   **the supply chain criteria are theirs**; here the operational rule of what this server
   accepts wins.
 
@@ -442,7 +442,7 @@ authentication is giving away compute (and, with *tool calling*, a foothold insi
     than one instance with TP=N.
 - **Weight backups**: normally **public weights are not backed up** — they are re-downloaded
   from the internal store, which is backed up along with its hash manifest. **What is backed
-  up**: your own fine-tuned models, artefacts no longer publicly available
+  up**: your own fine-tuned models, artifacts no longer publicly available
   and the provenance manifest. Criteria and RTO/RPO in `backup-recovery-standards` and
   `bcdr-standards`; the input datum is "how long does it take to re-download 200 GB", which has to
   be measured.

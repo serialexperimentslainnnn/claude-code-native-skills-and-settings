@@ -3,402 +3,404 @@ name: graph-db-standards
 description: Use when a graph engine or a graph query is on the table — proving the traversal is variable-depth before adding an engine (friend-of-a-friend, shortest path, cycle detection, propagation) instead of a two-hop JOIN or a recursive CTE, Neo4j (cypher-shell, neo4j.conf, Bolt, 5.26 LTS versus CalVer releases, Community versus Enterprise, GDS algorithms), Memgraph, MemGQL, FalkorDB, ArangoDB, JanusGraph, TigerGraph GSQL, Amazon Neptune or Neptune Analytics, Apache AGE and SQL/PGQ GRAPH_TABLE on Postgres, DuckPGQ, writing Cypher or openCypher MATCH patterns and reading their PROFILE/EXPLAIN plan, GQL as ISO/IEC 39075 and how little of it is really implemented, Gremlin and TinkerPop traversals, RDF triplestores with SPARQL, OWL ontologies, Fuseki, GraphDB or Virtuoso, deciding what is a node versus a relationship, supernodes and dense relationships, anchoring a traversal on a starting index, graph partitioning and single-machine limits, or knowledge graphs built to feed an LLM.
 ---
 
-# Estándares de bases de datos de grafo
+# Graph database standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **decidir, modelar, consultar y operar** un almacén de grafo: grafo de
-propiedades (Neo4j, Memgraph, FalkorDB, ArangoDB, JanusGraph, TigerGraph, Neptune) y
-RDF/triplestore (Jena/Fuseki, GraphDB, Virtuoso, Neptune en modo SPARQL). Cubre la
-justificación previa frente a SQL, los lenguajes de consulta y su portabilidad real, el
-modelado (nodo vs relación, supernodos, temporalidad), el rendimiento (anclaje de la
-consulta, plan de ejecución), los límites de escala, la operación, las licencias y las
-alternativas sobre PostgreSQL antes de adoptar nada.
+Applies to **deciding on, modelling, querying and operating** a graph store: property
+graph (Neo4j, Memgraph, FalkorDB, ArangoDB, JanusGraph, TigerGraph, Neptune) and
+RDF/triplestore (Jena/Fuseki, GraphDB, Virtuoso, Neptune in SPARQL mode). It covers the
+prior justification against SQL, query languages and their real portability, the
+modelling (node vs relationship, supernodes, temporality), performance (query
+anchoring, execution plan), scale limits, operation, licences and the
+alternatives on PostgreSQL before adopting anything.
 
-Triggers: "grafo", "graph database", "Cypher", "openCypher", "GQL", "Gremlin", "SPARQL",
+Triggers: "graph", "graph database", "Cypher", "openCypher", "GQL", "Gremlin", "SPARQL",
 "Neo4j", "Memgraph", "Neptune", "JanusGraph", "TigerGraph", "ArangoDB", "Apache AGE",
-"SQL/PGQ", "camino más corto", "amigos de amigos", "recorrido", "traversal", "supernodo",
-"ontología", "RDF", "triple", "grafo de conocimiento".
+"SQL/PGQ", "shortest path", "friends of friends", "traversal", "traversal", "supernode",
+"ontology", "RDF", "triple", "knowledge graph".
 
-**No aplica**: ver `data-platform-standards` (**skill madre**: PostgreSQL como default,
-modelado relacional, índices, réplicas, PITR, backups, clasificación del dato; y el
-principio "un almacén por necesidad, no por moda", que aquí se aplica con especial dureza),
-`nosql-standards` (documental, clave-valor y columna ancha: MongoDB, DynamoDB,
-Cassandra/ScyllaDB; **el grafo es un modelo de datos distinto, no una familia más de
-NoSQL** — la agrupación es histórica y comercial, no técnica: allí se modela por patrón de
-acceso y se renuncia al JOIN, aquí el recorrido *es* el patrón de acceso),
-`rag-standards` (**GraphRAG y la recuperación para IA son suyas**: chunking, embeddings,
-recuperación híbrida, reranking, evaluación de recall; aquí solo el motor y el modelado del
-grafo que eventualmente alimente esa recuperación), `llm-app-engineering-standards` y
-`mlops-standards`, `microservices-architecture-standards` (propiedad del dato por servicio:
-un grafo que cruza dominios de varios servicios es una señal de límites mal cortados),
-`privacy-engineering-standards` (un grafo de relaciones entre personas es un tratamiento de
-alto riesgo: DPIA, minimización y derechos del interesado son suyos),
-`identity-access-management-standards` (ReBAC con OpenFGA/SpiceDB/Zanzibar: **son motores
-de autorización, no bases de datos de grafo** — no se resuelve aquí),
+**Not applicable**: see `data-platform-standards` (**mother skill**: PostgreSQL as the default,
+relational modelling, indexes, replicas, PITR, backups, data classification; and the
+principle "one store because it is needed, not because it is fashionable", which applies here with
+particular severity),
+`nosql-standards` (document, key-value and wide-column: MongoDB, DynamoDB,
+Cassandra/ScyllaDB; **the graph is a different data model, not one more family of
+NoSQL** — the grouping is historical and commercial, not technical: there you model by access
+pattern and give up the JOIN, here the traversal *is* the access pattern),
+`rag-standards` (**GraphRAG and retrieval for AI are hers**: chunking, embeddings,
+hybrid retrieval, reranking, recall evaluation; here only the engine and the modelling of the
+graph that may eventually feed that retrieval), `llm-app-engineering-standards` and
+`mlops-standards`, `microservices-architecture-standards` (per-service data ownership:
+a graph that crosses the domains of several services is a sign of badly cut boundaries),
+`privacy-engineering-standards` (a graph of relationships between people is a high-risk
+processing operation: DPIA, minimisation and data subject rights are hers),
+`identity-access-management-standards` (ReBAC with OpenFGA/SpiceDB/Zanzibar: **they are
+authorisation engines, not graph databases** — not resolved here),
 `observability-standards`, `sre-practice-standards`, `backup-recovery-standards`,
 `bcdr-standards`, `kubernetes-standards`, `linux-storage-standards`, `iac-standards`,
 `cicd-standards`, `secrets-management-standards`, `cryptography-pki-standards`,
 `grc-compliance-standards`, `vulnerability-management-standards`,
 `aws-standards`/`azure-standards`/`gcp-standards` (Neptune, Cosmos DB Gremlin API, Spanner
-Graph como servicios gestionados: cuotas, IAM y factura son suyas; **el criterio de
-modelado y de consulta es de aquí**), las skills de lenguaje (drivers Bolt/Gremlin y OGM),
-`vector-db-standards` (**búsqueda vectorial y operación de un índice ANN: suyas**, aunque
-los motores de grafo hayan añadido índices vectoriales), `data-engineering-standards` (los
-pipelines que cargan el grafo), `data-warehouse-modeling-standards` (modelado analítico).
-Además: `search-engines-standards` (búsqueda
-por relevancia), `timeseries-db-standards`, `lakehouse-standards`
-(analítica), `streaming-cdc-standards`, `data-governance-quality-standards`,
+Graph as managed services: quotas, IAM and the bill are theirs; **the modelling and query
+criteria are ours**), the language skills (Bolt/Gremlin drivers and OGM),
+`vector-db-standards` (**vector search and operating an ANN index: hers**, even though
+graph engines have added vector indexes), `data-engineering-standards` (the
+pipelines that load the graph), `data-warehouse-modeling-standards` (analytical modelling).
+Also: `search-engines-standards` (relevance
+search), `timeseries-db-standards`, `lakehouse-standards`
+(analytics), `streaming-cdc-standards`, `data-governance-quality-standards`,
 `analytics-bi-standards`, `caching-cdn-standards`, `message-brokers-standards`,
 `oracle-dba-standards`, `sqlserver-dba-standards`, `mysql-mariadb-dba-standards`.
 
-### Principio rector: el grafo se justifica por la **forma de la consulta**, nunca por la del dato
+### Governing principle: the graph is justified by the **shape of the query**, never by that of the data
 
-"Mis datos están conectados" no es un argumento: **todos** los datos relacionales lo están;
-para eso existe la clave ajena. El grafo gana cuando la **consulta** tiene esta forma:
+"My data is connected" is not an argument: **all** relational data is;
+that is what the foreign key is for. The graph wins when the **query** has this shape:
 
-- **Profundidad variable o desconocida**: "todo lo que alcanza X en 1..n saltos", "¿existe
-  camino entre A y B?", detección de ciclos (fraude, dependencias circulares), cierre
-  transitivo (jerarquías de propiedad, listas de materiales, permisos heredados).
-- **Caminos como resultado**: ruta más corta, k caminos, camino con restricciones sobre
-  los tipos de relación atravesados — no solo los extremos, sino **el camino en sí**.
-- **Propagación e influencia** sobre la topología: centralidad, comunidades, PageRank,
-  similitud estructural.
-- **Topología muy irregular** donde el número de saltos depende del dato, no del esquema,
-  y el plan relacional se convierte en una escalera de auto-JOINs recursivos cuyo coste
-  explota.
+- **Variable or unknown depth**: "everything that reaches X in 1..n hops", "is there a
+  path between A and B?", cycle detection (fraud, circular dependencies), transitive
+  closure (ownership hierarchies, bills of materials, inherited permissions).
+- **Paths as the result**: shortest path, k paths, path with constraints on
+  the types of relationship traversed — not just the endpoints, but **the path itself**.
+- **Propagation and influence** over the topology: centrality, communities, PageRank,
+  structural similarity.
+- **Highly irregular topology** where the number of hops depends on the data, not on the schema,
+  and the relational plan turns into a staircase of recursive self-JOINs whose cost
+  explodes.
 
-**Y cuándo NO — este es el error dominante del dominio y hay que decirlo sin rodeos**: si
-tus consultas son de **uno o dos saltos fijos** ("los pedidos de un cliente", "los
-seguidores de un usuario", "las etiquetas de un artículo"), un `JOIN` es más simple, más
-rápido, más barato y **no añade un motor a la operación**. Un `JOIN` sobre índices en
-PostgreSQL bate a cualquier grafo en ese terreno, y encima conserva transacciones,
-agregaciones, informes ad-hoc y un ecosistema de herramientas que el grafo no tiene.
-Adoptar un motor de grafo cuesta: una licencia que revisar (§2.1), un lenguaje que casi
-nadie del equipo sabe, un modelo que no encaja con el ORM, una copia del dato que hay que
-sincronizar desde el sistema de registro, y un componente más en la guardia.
+**And when NOT — this is the dominant mistake of the domain and it has to be said bluntly**: if
+your queries are **one or two fixed hops** ("a customer's orders", "a user's
+followers", "an article's tags"), a `JOIN` is simpler, faster, cheaper and
+**does not add an engine to operations**. A `JOIN` over indexes in
+PostgreSQL beats any graph on that ground, and on top of that it keeps transactions,
+aggregations, ad-hoc reporting and an ecosystem of tools the graph does not have.
+Adopting a graph engine costs: a licence to review (§2.1), a language that almost
+nobody on the team knows, a model that does not fit the ORM, a copy of the data that has to be
+synchronised from the system of record, and one more component on call.
 
-Antes de adoptar, **agota las alternativas de §2.2** (CTE recursiva, `Apache AGE`, SQL/PGQ)
-y escribe en un ADR: la consulta concreta que no se puede resolver así, su volumen real, su
-presupuesto de latencia y la medición que demuestra que la vía relacional no llega. Sin ese
-párrafo, la respuesta es no.
+Before adopting, **exhaust the alternatives in §2.2** (recursive CTE, `Apache AGE`, SQL/PGQ)
+and write in an ADR: the specific query that cannot be resolved that way, its real volume, its
+latency budget and the measurement proving the relational route does not get there. Without that
+paragraph, the answer is no.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar versión, EOL, CVE y **licencia vigente** por web antes de fijar nada (§8). Los
-> datos son de agosto 2026 y este ecosistema cambia de licencia con frecuencia.
+> Verify version, EOL, CVEs and **current licence** on the web before committing to anything (§8).
+> The data is from August 2026 and this ecosystem changes licence frequently.
 
-| Necesidad | Por defecto | Alternativa justificable |
+| Need | Default | Justifiable alternative |
 |---|---|---|
-| Recorridos de 1-2 saltos, jerarquías pequeñas | **PostgreSQL** con `JOIN` o `WITH RECURSIVE` | — |
-| Grafo de propiedades como funcionalidad secundaria de un sistema ya en PostgreSQL | **Apache AGE** (extensión, Apache-2.0) | Motor dedicado si la medición lo exige |
-| Grafo de propiedades como caso de uso central, autogestionado | **Neo4j** (el ecosistema, la documentación y el mercado laboral más maduros) — asumiendo los límites de su Community Edition (§2.1) | Memgraph si el perfil es *streaming*/en memoria; FalkorDB si prima la latencia en cargas tipo GraphRAG |
-| Grafo gestionado en AWS | **Amazon Neptune** (openCypher + Gremlin + SPARQL sobre el mismo dato) | — |
-| Semántica, vocabularios compartidos, federación e inferencia | **RDF/triplestore**: Apache Jena/Fuseki (Apache-2.0) | GraphDB/Virtuoso/Stardog comerciales; Neptune en modo SPARQL |
-| Analítica de grafo puntual sobre datos que ya viven en el almacén analítico | Exportar y usar una librería (NetworkX, igraph, GraphFrames) o **DuckPGQ** | Motor dedicado solo si la analítica es continua |
+| 1-2 hop traversals, small hierarchies | **PostgreSQL** with `JOIN` or `WITH RECURSIVE` | — |
+| Property graph as a secondary feature of a system already on PostgreSQL | **Apache AGE** (extension, Apache-2.0) | A dedicated engine if measurement demands it |
+| Property graph as the central use case, self-managed | **Neo4j** (the most mature ecosystem, documentation and job market) — accepting the limits of its Community Edition (§2.1) | Memgraph if the profile is *streaming*/in-memory; FalkorDB if latency dominates in GraphRAG-type workloads |
+| Managed graph on AWS | **Amazon Neptune** (openCypher + Gremlin + SPARQL over the same data) | — |
+| Semantics, shared vocabularies, federation and inference | **RDF/triplestore**: Apache Jena/Fuseki (Apache-2.0) | Commercial GraphDB/Virtuoso/Stardog; Neptune in SPARQL mode |
+| One-off graph analytics over data that already lives in the analytical store | Export and use a library (NetworkX, igraph, GraphFrames) or **DuckPGQ** | A dedicated engine only if the analytics is continuous |
 
-Estado verificado (agosto 2026):
+Verified status (August 2026):
 
-| Pieza | Estado | Nota que cambia decisiones |
+| Component | Status | Note that changes decisions |
 |---|---|---|
-| Neo4j | CalVer mensual desde 2025 (etiqueta verificada más reciente: **2026.06.0**) y rama **5.26 LTS** viva (5.26.28) | La serie CalVer exige **Java 21**; 5.26 LTS acepta 17 o 21. 5.26 es *checkpoint* obligatorio para venir de 4.4/5.x |
-| Memgraph | **3.12.0** (jul 2026) | Publica **MemGQL**, motor federado de consultas **GQL** que traduce a backends (Memgraph, Neo4j, y relacionales: PostgreSQL, DuckDB, Iceberg) vía Bolt |
-| ArangoDB | 3.12.9.x | **BUSL-1.1** desde 3.12 (§2.1) |
-| JanusGraph | **1.1.0** (nov 2024) como última release oficial; desarrollo vivo con *per-commit releases* hacia 1.2.0, sin fecha | Cadencia lenta: evaluarlo con los ojos abiertos. Solo backend CQL (Cassandra/ScyllaDB) |
-| Apache TinkerPop / Gremlin | **3.8.1** estable; **4.0.0-beta.3** (jul 2026) | Gremlin 4 aún en beta: no fijarlo en producción |
-| Apache AGE | Releases por rama de PostgreSQL (1.7.x para PG17/PG18; 1.8.0-rc para PG18/**PG19**); release de ene-2026 añadió RLS e índice sobre columnas id | **Proyecto ASF top-level activo**, Apache-2.0, presente en Azure Database for PostgreSQL. La versión va atada a la mayor de PG: verificar antes de planificar un upgrade de PG |
-| Apache Jena / Fuseki | Línea **6.x** (artefacto 6.1.0 en Maven Central) | Jena 6 requiere **Java 21+** |
-| Blazegraph | Sin releases desde 2.1.5 (2019) | **Congelado**: no adoptar. Neptune es su sucesor comercial |
+| Neo4j | Monthly CalVer since 2025 (most recent verified tag: **2026.06.0**) and the **5.26 LTS** branch alive (5.26.28) | The CalVer series requires **Java 21**; 5.26 LTS accepts 17 or 21. 5.26 is a mandatory *checkpoint* when coming from 4.4/5.x |
+| Memgraph | **3.12.0** (Jul 2026) | It publishes **MemGQL**, a federated **GQL** query engine that translates to backends (Memgraph, Neo4j, and relational ones: PostgreSQL, DuckDB, Iceberg) via Bolt |
+| ArangoDB | 3.12.9.x | **BUSL-1.1** since 3.12 (§2.1) |
+| JanusGraph | **1.1.0** (Nov 2024) as the last official release; development alive with *per-commit releases* towards 1.2.0, with no date | Slow cadence: evaluate it with eyes open. Only the CQL backend (Cassandra/ScyllaDB) |
+| Apache TinkerPop / Gremlin | **3.8.1** stable; **4.0.0-beta.3** (Jul 2026) | Gremlin 4 still in beta: do not commit to it in production |
+| Apache AGE | Releases per PostgreSQL branch (1.7.x for PG17/PG18; 1.8.0-rc for PG18/**PG19**); the Jan 2026 release added RLS and an index on id columns | **Active ASF top-level project**, Apache-2.0, present in Azure Database for PostgreSQL. The version is tied to the PG major: verify before planning a PG upgrade |
+| Apache Jena / Fuseki | The **6.x** line (artifact 6.1.0 on Maven Central) | Jena 6 requires **Java 21+** |
+| Blazegraph | No releases since 2.1.5 (2019) | **Frozen**: do not adopt. Neptune is its commercial successor |
 
-### 2.1 Licencias — verificar antes de elegir
+### 2.1 Licences — verify before choosing
 
-| Motor | Licencia verificada | Qué implica |
+| Engine | Verified licence | What it implies |
 |---|---|---|
-| **Neo4j** | Community Edition libre (históricamente GPLv3 — confirmar en la página de licencias vigente); Enterprise bajo licencia comercial de Neo4j | **La CE no tiene clustering, ni RBAC/control de acceso fino, ni backups en caliente, y está limitada a una única base de datos de usuario.** Es decir: sin HA y sin autorización por rol. Cualquier producción con requisitos de disponibilidad o multi-tenancy ⇒ Enterprise o Aura. Presupuestarlo **antes** de elegir Neo4j |
-| **Neo4j GDS** (algoritmos) | Edición Community por defecto; Enterprise con fichero de licencia. La parte abierta se ensambla como **OpenGDS** bajo GPLv3 | GDS Community incluye todos los algoritmos pero limita la **concurrencia a 4 núcleos** y el catálogo de modelos a 3, y no soporta escrituras GDS en clúster. Un cálculo de grafo grande con 4 hilos no es una opción de producción |
-| **Memgraph** | Community Edition bajo **BSL 1.1** (convierte a Apache-2.0 a los 4 años); Enterprise bajo licencia propietaria (MEL) | HA, autenticación avanzada y multi-tenancy son Enterprise; la licencia se aplica **por volumen de datos**: al alcanzar el límite se **bloquean las escrituras** (solo lectura y borrado). Dimensionarlo antes |
-| **ArangoDB** | Código bajo **BUSL-1.1** desde 3.12 (antes Apache-2.0); binarios CE bajo *ArangoDB Community License* | Tope de **100 GiB** en producción y solo uso interno; prohibido ofrecerlo como servicio o redistribuirlo con tu producto sin acuerdo comercial |
-| **FalkorDB** | **SSPLv1** | Uso interno sin obligación; ofrecerlo como servicio a terceros obliga a publicar el servicio completo bajo SSPL o comprar licencia |
-| **JanusGraph** | Apache-2.0 | Sin restricciones; el coste está en operar además Cassandra/Scylla + índice externo |
-| **Apache AGE**, **Apache Jena/Fuseki**, **openCypher (spec)** | Apache-2.0 | Sin restricciones |
-| **TigerGraph / GSQL** | Producto y lenguaje **propietarios** (librerías del ecosistema, como `gsql-graph-algorithms`, sí Apache-2.0) | Lock-in de lenguaje: GSQL no existe fuera de TigerGraph |
-| **Neptune / Cosmos DB / Spanner Graph** | Servicio gestionado propietario | La "licencia" es el contrato y el coste de salida |
+| **Neo4j** | Community Edition free (historically GPLv3 — confirm on the current licensing page); Enterprise under Neo4j's commercial licence | **The CE has no clustering, no RBAC/fine-grained access control, no hot backups, and is limited to a single user database.** That is: no HA and no role-based authorisation. Any production with availability or multi-tenancy requirements ⇒ Enterprise or Aura. Budget it **before** choosing Neo4j |
+| **Neo4j GDS** (algorithms) | Community edition by default; Enterprise with a licence file. The open part is assembled as **OpenGDS** under GPLv3 | GDS Community includes all the algorithms but limits **concurrency to 4 cores** and the model catalogue to 3, and does not support GDS writes in a cluster. A large graph computation with 4 threads is not a production option |
+| **Memgraph** | Community Edition under **BSL 1.1** (converts to Apache-2.0 after 4 years); Enterprise under a proprietary licence (MEL) | HA, advanced authentication and multi-tenancy are Enterprise; the licence applies **by data volume**: on reaching the limit, **writes are blocked** (read and delete only). Size it beforehand |
+| **ArangoDB** | Code under **BUSL-1.1** since 3.12 (previously Apache-2.0); CE binaries under the *ArangoDB Community License* | A **100 GiB** cap in production and internal use only; forbidden to offer it as a service or redistribute it with your product without a commercial agreement |
+| **FalkorDB** | **SSPLv1** | Internal use with no obligation; offering it as a service to third parties requires publishing the complete service under SSPL or buying a licence |
+| **JanusGraph** | Apache-2.0 | No restrictions; the cost is in also operating Cassandra/Scylla + an external index |
+| **Apache AGE**, **Apache Jena/Fuseki**, **openCypher (spec)** | Apache-2.0 | No restrictions |
+| **TigerGraph / GSQL** | **Proprietary** product and language (ecosystem libraries, such as `gsql-graph-algorithms`, are Apache-2.0) | Language lock-in: GSQL does not exist outside TigerGraph |
+| **Neptune / Cosmos DB / Spanner Graph** | Proprietary managed service | The "licence" is the contract and the cost of leaving |
 
-**PROHIBIDO** afirmar cualquiera de estas licencias de memoria: se lee la página oficial
-vigente (§8). ArangoDB, Memgraph y FalkorDB no son open source, aunque su marketing lo
-sugiera.
+**FORBIDDEN** to state any of these licences from memory: the current official page is read
+(§8). ArangoDB, Memgraph and FalkorDB are not open source, even though their marketing
+suggests it.
 
-### 2.2 Alternativas sobre PostgreSQL antes de adoptar un motor
+### 2.2 Alternatives on PostgreSQL before adopting an engine
 
-- **`WITH RECURSIVE`**: resuelve jerarquías, cierre transitivo y caminos de profundidad
-  moderada. Reglas para que no se vuelva inmanejable: índice sobre la columna de enlace,
-  **corte de profundidad explícito** (`WHERE depth < n`), y **detección de ciclos**
-  (`CYCLE ... SET ... USING ...` en PostgreSQL, o array de visitados). Rinde bien hasta que
-  el abanico por nivel explota; ahí se mide y se decide, no antes.
-- **Apache AGE**: extensión ASF que da Cypher (subconjunto) dentro de PostgreSQL, con las
-  transacciones y el respaldo del motor que ya operas. Es la primera opción cuando el grafo
-  es una **parte** del sistema y no el sistema. Coste: rendimiento inferior al de un motor
-  nativo en recorridos profundos, cobertura parcial de Cypher, y su versión va atada a la
-  mayor de PostgreSQL.
-- **SQL/PGQ** (parte 16 de SQL:2023, `GRAPH_TABLE`, vistas de grafo sobre tablas
-  existentes): estado real verificado — **Oracle Database 23ai** es la implementación
-  comercial madura; **PostgreSQL lo tiene en desarrollo apuntando a PG 19** (no dar por
-  hecha su llegada); **DuckDB** vía la extensión comunitaria **DuckPGQ**, útil pero con
-  riesgo de proyecto de investigación. Vigilarlo: si llega a PostgreSQL, cambia la
-  ecuación de adopción de muchos casos.
-- **Precalcular**: si el recorrido siempre parte de los mismos nodos y cambia poco, una
-  tabla materializada de alcanzabilidad (recalculada por lote o por evento) resuelve el
-  problema sin motor nuevo. Es la opción que casi nadie evalúa y que suele ganar.
+- **`WITH RECURSIVE`**: it solves hierarchies, transitive closure and paths of moderate
+  depth. Rules to keep it manageable: an index on the link column,
+  an **explicit depth cut-off** (`WHERE depth < n`), and **cycle detection**
+  (`CYCLE ... SET ... USING ...` in PostgreSQL, or a visited array). It performs well until
+  the fan-out per level explodes; that is where you measure and decide, not before.
+- **Apache AGE**: an ASF extension that gives Cypher (a subset) inside PostgreSQL, with the
+  transactions and the backing of the engine you already operate. It is the first option when the
+  graph is a **part** of the system and not the system. Cost: lower performance than a native
+  engine in deep traversals, partial Cypher coverage, and its version is tied to the
+  PostgreSQL major.
+- **SQL/PGQ** (part 16 of SQL:2023, `GRAPH_TABLE`, graph views over existing
+  tables): verified real status — **Oracle Database 23ai** is the mature commercial
+  implementation; **PostgreSQL has it in development targeting PG 19** (do not take
+  its arrival for granted); **DuckDB** via the community extension **DuckPGQ**, useful but with
+  the risk of a research project. Keep an eye on it: if it reaches PostgreSQL, it changes the
+  adoption equation for many cases.
+- **Precompute**: if the traversal always starts from the same nodes and changes little, a
+  materialised reachability table (recomputed by batch or by event) solves the
+  problem with no new engine. It is the option almost nobody evaluates and the one that usually
+  wins.
 
-## 3. Lenguajes de consulta y portabilidad
+## 3. Query languages and portability
 
-- **Cypher / openCypher**: el dialecto de facto del grafo de propiedades. openCypher sigue
-  vivo pero **ha redefinido su misión como rampa hacia GQL**: la especificación evoluciona
-  incorporando características de GQL. El repositorio openCypher es Apache-2.0 y se declara
-  mantenido por empleados/contribuidores de Neo4j a título personal, sin garantías ni
-  soporte — no es un estándar con gobernanza neutral.
-- **GQL — ISO/IEC 39075**, publicado en **abril de 2024** por ISO/IEC JTC1/SC32/WG3 (el
-  mismo grupo que SQL): primer lenguaje de consulta estandarizado nuevo en más de 35 años.
-  Lo interesante **no es la norma, es su adopción**, y ahí toca ser honesto:
-  - **No existe un régimen de certificación de conformidad independiente** (nada análogo a
-    la validación NIST del SQL de los 90). Toda afirmación de conformidad es
-    **autodeclarada por el fabricante**.
-  - Neo4j publica un apéndice de conformidad GQL en su manual de Cypher, versionado por
-    release, e incluye una lista de **características obligatorias de GQL aún no
-    soportadas**. Es la contabilidad pública más detallada que existe — y admite huecos.
-  - Memgraph lo aborda por otra vía: **MemGQL**, un motor federado de GQL que traduce a
-    los lenguajes nativos de los backends.
-  - Conclusión operativa: **GQL es una dirección, no una garantía de portabilidad hoy**.
-    No planifiques una migración entre motores apoyándote en "los dos hablan GQL".
-- **Gremlin (Apache TinkerPop)**: imperativo, portable entre implementaciones de TinkerPop
-  (Neptune, JanusGraph, Cosmos DB). 3.8.1 estable, **4.0 aún en beta**. Es la opción cuando
-  la portabilidad entre motores TinkerPop pesa más que la legibilidad.
-- **SPARQL / RDF**: otro paradigma. Estado normativo verificado: las especificaciones de
-  **SPARQL 1.2 siguen en Working Draft**; **RDF 1.2 Concepts y RDF 1.2 Semantics están en
-  Candidate Recommendation** (abril 2026), pendientes de dos implementaciones
-  independientes que pasen el test suite. En producción hoy se trabaja con **SPARQL 1.1**.
-- **Realidad transversal: la portabilidad entre motores sigue siendo pobre.** Aunque dos
-  motores acepten "Cypher", divergen en funciones, procedimientos (`CALL`), índices,
-  tipos, semántica de caminos y extensiones. Consecuencia de diseño: **aísla el acceso al
-  grafo detrás de un repositorio propio** en el código, y trata las consultas como
-  artefactos versionados y testeados; cambiar de motor será una reescritura de consultas
-  con o sin norma.
+- **Cypher / openCypher**: the de facto dialect of the property graph. openCypher is still
+  alive but **has redefined its mission as a ramp towards GQL**: the specification evolves
+  by incorporating GQL features. The openCypher repository is Apache-2.0 and is declared
+  to be maintained by Neo4j employees/contributors in a personal capacity, with no guarantees or
+  support — it is not a standard with neutral governance.
+- **GQL — ISO/IEC 39075**, published in **April 2024** by ISO/IEC JTC1/SC32/WG3 (the
+  same group as SQL): the first new standardised query language in more than 35 years.
+  What is interesting **is not the standard, it is its adoption**, and there one has to be honest:
+  - **There is no independent conformance certification regime** (nothing analogous to
+    the NIST validation of SQL in the 90s). Every conformance claim is
+    **self-declared by the vendor**.
+  - Neo4j publishes a GQL conformance appendix in its Cypher manual, versioned by
+    release, and it includes a list of **mandatory GQL features not yet
+    supported**. It is the most detailed public accounting that exists — and it admits gaps.
+  - Memgraph approaches it another way: **MemGQL**, a federated GQL engine that translates to
+    the backends' native languages.
+  - Operational conclusion: **GQL is a direction, not a guarantee of portability today**.
+    Do not plan a migration between engines on the basis of "both speak GQL".
+- **Gremlin (Apache TinkerPop)**: imperative, portable between TinkerPop implementations
+  (Neptune, JanusGraph, Cosmos DB). 3.8.1 stable, **4.0 still in beta**. It is the option when
+  portability between TinkerPop engines weighs more than readability.
+- **SPARQL / RDF**: another paradigm. Verified standards status: the **SPARQL 1.2**
+  specifications are **still in Working Draft**; **RDF 1.2 Concepts and RDF 1.2 Semantics are in
+  Candidate Recommendation** (April 2026), pending two independent implementations
+  passing the test suite. In production today you work with **SPARQL 1.1**.
+- **Cross-cutting reality: portability between engines is still poor.** Even if two
+  engines accept "Cypher", they diverge in functions, procedures (`CALL`), indexes,
+  types, path semantics and extensions. Design consequence: **isolate access to the
+  graph behind a repository of your own** in the code, and treat queries as versioned and
+  tested artifacts; changing engine will be a rewrite of queries
+  with or without a standard.
 
-## 4. Modelado y calidad — gates
+## 4. Modelling and quality — gates
 
-### 4.1 Modelado (donde más se equivoca la gente)
+### 4.1 Modelling (where people get it most wrong)
 
-- **Qué es nodo y qué es relación** es *la* decisión del dominio. Regla de trabajo: es
-  **nodo** lo que puede ser el **origen o destino de un recorrido** o lo que necesita
-  atributos propios, identidad y sus propias relaciones; es **relación** la conexión
-  dirigida y tipada entre dos nodos. Si una conexión necesita relacionarse a su vez con
-  otra cosa (un pedido que conecta cliente y producto pero también tiene líneas, pagos y
-  envíos), **es un nodo**, no una relación con propiedades: reificarla después implica
-  reescribir consultas y migrar datos.
-- **Propiedad frente a nodo**: un valor descriptivo es propiedad; un valor por el que se
-  **filtra o se navega desde muchos nodos** (categoría, etiqueta, país, estado) se
-  convierte en nodo... y ahí nace el **supernodo**. Decidir con la consulta en la mano.
-- **Supernodos y relaciones densas** son *el* problema de rendimiento del grafo: un nodo
-  con millones de aristas convierte cualquier recorrido que lo atraviese en un escaneo.
-  Mitigaciones: no modelar como nodo lo que es un atributo de baja cardinalidad; tipar las
-  relaciones de forma fina para poder filtrar por tipo antes de expandir; particionar el
-  supernodo (por tiempo, por región, por *bucket*); dirección explícita en el recorrido; y
-  como última opción, desnormalizar en el nodo lo que se necesita para evitar la expansión.
-  **Detectarlos es tarea de diseño y de operación**: consulta periódica de grado máximo.
-- **Modelado temporal**: si la relación tiene vigencia (empleos, participaciones,
-  titularidades), decidir explícitamente entre (a) propiedades `desde`/`hasta` en la
-  relación —simple, obliga a filtrar en cada consulta—, (b) relación reificada en nodo
-  "estado/versión" —modelo más limpio, más nodos y más saltos— o (c) instantáneas por
-  periodo. Es una decisión ADR: cambiarla después es una migración completa.
-- **Dirección y tipos**: las relaciones se crean **una sola vez y con dirección**; la
-  consulta puede recorrerlas en ambos sentidos. Duplicar la arista en ambos sentidos
-  duplica escrituras y crea inconsistencias.
-- **El grafo casi nunca es el sistema de registro**: suele ser una proyección del dato que
-  vive en el relacional. Si es así, la reconstrucción completa del grafo desde la fuente
-  debe ser un procedimiento probado y cronometrado — y entonces el respaldo del grafo pesa
-  menos que el del sistema de registro.
+- **What is a node and what is a relationship** is *the* decision of the domain. Working rule: it is
+  a **node** if it can be the **origin or destination of a traversal** or if it needs
+  attributes of its own, identity and its own relationships; it is a **relationship** if it is a
+  directed and typed connection between two nodes. If a connection in turn needs to relate to
+  something else (an order that connects customer and product but also has lines, payments and
+  shipments), **it is a node**, not a relationship with properties: reifying it later means
+  rewriting queries and migrating data.
+- **Property versus node**: a descriptive value is a property; a value that is
+  **filtered on or navigated from many nodes** (category, tag, country, status)
+  becomes a node... and that is where the **supernode** is born. Decide with the query in hand.
+- **Supernodes and dense relationships** are *the* performance problem of the graph: a node
+  with millions of edges turns any traversal that crosses it into a scan.
+  Mitigations: do not model as a node what is a low-cardinality attribute; type the
+  relationships finely so you can filter by type before expanding; partition the
+  supernode (by time, by region, by *bucket*); explicit direction in the traversal; and
+  as a last resort, denormalise into the node whatever is needed to avoid the expansion.
+  **Detecting them is a design and an operations task**: a periodic maximum-degree query.
+- **Temporal modelling**: if the relationship has a validity period (employments, holdings,
+  ownerships), decide explicitly between (a) `from`/`to` properties on the
+  relationship —simple, forces filtering in every query—, (b) the relationship reified into a
+  "state/version" node —a cleaner model, more nodes and more hops— or (c) snapshots per
+  period. It is an ADR decision: changing it later is a full migration.
+- **Direction and types**: relationships are created **once and with a direction**; the
+  query can traverse them in both directions. Duplicating the edge in both directions
+  doubles writes and creates inconsistencies.
+- **The graph is almost never the system of record**: it is usually a projection of data that
+  lives in the relational store. If that is so, the full rebuild of the graph from the source
+  must be a tested and timed procedure — and then the graph's backup matters
+  less than the system of record's.
 
-### 4.2 Gates de CI
+### 4.2 CI gates
 
-1. **Esquema declarado y versionado**: restricciones de unicidad y existencia, y los
-   índices, como migraciones en el repositorio (nunca creados a mano en producción). En
-   Neo4j, `CREATE CONSTRAINT`/`CREATE INDEX` versionados; en RDF, SHACL para validar
-   forma. Un grafo sin restricciones acumula nodos duplicados en semanas.
-2. **Consultas como artefactos**: cada consulta de la aplicación vive en el repositorio,
-   con su test de integración **contra el motor real** (Testcontainers), sobre un grafo
-   sintético con la topología que importa — incluidos **ciclos, nodos aislados y al menos
-   un supernodo**. Nada de mocks del driver.
-3. **Presupuesto de recorrido**: toda consulta de profundidad variable declara su cota
-   (`*1..n` acotado, `LIMIT`, timeout de transacción). Una consulta sin cota es un fallo de
-   revisión: en un grafo, la diferencia entre 3 y 4 saltos puede ser tres órdenes de
-   magnitud.
-4. **Plan de ejecución revisado**: `PROFILE`/`EXPLAIN` de las consultas críticas adjunto en
-   el PR, con los `db hits` y el operador de arranque visibles. **Gate duro**: ninguna
-   consulta caliente puede empezar por un escaneo de etiqueta (`AllNodesScan`/`NodeByLabel
-   Scan`) donde debía usar índice.
-5. **Regresión de rendimiento** con un grafo de tamaño y **forma** representativos: el
-   coste de un recorrido depende del abanico real, no del número de nodos. Medir p99.
-6. **Restore probado** del respaldo, cronometrado, con la reconstrucción desde la fuente
-   como plan alternativo verificado.
+1. **Declared and versioned schema**: uniqueness and existence constraints, and the
+   indexes, as migrations in the repository (never created by hand in production). In
+   Neo4j, versioned `CREATE CONSTRAINT`/`CREATE INDEX`; in RDF, SHACL to validate
+   shape. A graph without constraints accumulates duplicate nodes within weeks.
+2. **Queries as artifacts**: every application query lives in the repository,
+   with its integration test **against the real engine** (Testcontainers), over a synthetic
+   graph with the topology that matters — including **cycles, isolated nodes and at least
+   one supernode**. No driver mocks.
+3. **Traversal budget**: every variable-depth query declares its bound
+   (bounded `*1..n`, `LIMIT`, transaction timeout). A query with no bound is a review
+   failure: in a graph, the difference between 3 and 4 hops can be three orders of
+   magnitude.
+4. **Execution plan reviewed**: `PROFILE`/`EXPLAIN` of the critical queries attached in
+   the PR, with the `db hits` and the starting operator visible. **Hard gate**: no
+   hot query may start with a label scan (`AllNodesScan`/`NodeByLabel
+   Scan`) where it should use an index.
+5. **Performance regression** with a graph of representative size and **shape**: the
+   cost of a traversal depends on the real fan-out, not on the number of nodes. Measure p99.
+6. **Tested restore** of the backup, timed, with the rebuild from the source
+   as a verified alternative plan.
 
-## 5. Rendimiento: anclaje y plan
+## 5. Performance: anchoring and plan
 
-- **Todo recorrido empieza en un punto.** Sin un **índice de arranque** que localice el
-  nodo o el pequeño conjunto inicial, no hay grafo rápido: el motor escanea la etiqueta
-  entera y el recorrido posterior da igual. Regla: **cada consulta identifica su nodo
-  ancla y ese ancla tiene índice** (o restricción de unicidad, que lo implica).
-- **El plan de ejecución importa más que en SQL**, y por una razón concreta: en SQL un mal
-  plan suele degradar linealmente con el tamaño de la tabla; en un grafo, expandir por el
-  extremo equivocado hace que el coste crezca con el **producto de los abanicos** de cada
-  salto. La misma consulta, anclada en el otro extremo, puede ser instantánea o eterna.
-  De ahí que `PROFILE` sea obligatorio (§4.2) y que convenga fijar la dirección de
-  expansión cuando se conoce la cardinalidad de cada lado.
-- Otras palancas: filtrar por **tipo de relación** antes de expandir; acotar la profundidad;
-  usar la variante de camino más corto del motor en vez de expandir a mano; evitar
-  `OPTIONAL MATCH` encadenados que multiplican filas; y proyectar solo lo necesario.
-- **Escrituras**: por lotes y con transacciones cortas; las cargas iniciales masivas usan
-  la herramienta de importación en bloque del motor, no un bucle de `MERGE` (que además
-  necesita índice para no escanear en cada iteración).
-- **Algoritmos de grafo** (PageRank, comunidades, centralidad) no son consultas: son cargas
-  analíticas que se ejecutan sobre una proyección, con su ventana, sus recursos y su
-  cadencia; nunca en el camino de una petición de usuario. Y ojo con el límite de
-  concurrencia de la edición Community (§2.1).
+- **Every traversal starts at a point.** Without a **starting index** that locates the
+  node or the small initial set, there is no fast graph: the engine scans the whole
+  label and the subsequent traversal makes no difference. Rule: **every query identifies its anchor
+  node and that anchor has an index** (or a uniqueness constraint, which implies one).
+- **The execution plan matters more than in SQL**, and for a specific reason: in SQL a bad
+  plan usually degrades linearly with the size of the table; in a graph, expanding from the
+  wrong end makes the cost grow with the **product of the fan-outs** of each
+  hop. The same query, anchored at the other end, can be instantaneous or eternal.
+  Hence `PROFILE` is mandatory (§4.2) and it is worth fixing the direction of
+  expansion when the cardinality of each side is known.
+- Other levers: filter by **relationship type** before expanding; bound the depth;
+  use the engine's shortest-path variant instead of expanding by hand; avoid
+  chained `OPTIONAL MATCH`es that multiply rows; and project only what is needed.
+- **Writes**: in batches and with short transactions; massive initial loads use
+  the engine's bulk import tool, not a `MERGE` loop (which also
+  needs an index to avoid scanning on every iteration).
+- **Graph algorithms** (PageRank, communities, centrality) are not queries: they are
+  analytical workloads run over a projection, with their window, their resources and their
+  cadence; never in the path of a user request. And watch out for the concurrency
+  limit of the Community edition (§2.1).
 
-## 6. Escala y operación
+## 6. Scale and operation
 
-- **La mayoría de los grafos caben en una máquina** — y esa es la buena noticia: escalar
-  verticalmente (RAM suficiente para que el grafo caliente resida en memoria, NVMe, CPU) es
-  la estrategia correcta durante mucho más tiempo del que la gente supone. Diseña para eso
-  antes que para repartir.
-- **El particionado de un grafo es un problema difícil de verdad**, no una casilla de
-  configuración: cualquier corte deja aristas cruzando particiones, y cada arista cruzada
-  convierte un salto local en una llamada de red dentro de un recorrido que puede dar
-  muchos saltos. Por eso los motores nativos escalan lecturas con **réplicas** y no
-  particionan el grafo por defecto, y los que sí lo hacen (JanusGraph sobre Cassandra,
-  TigerGraph) trasladan el coste a la latencia del recorrido distribuido. Si crees que
-  necesitas particionar, primero verifica que no te cabe en una máquina grande y que el
-  problema no es un supernodo (§4.1).
-- **Alta disponibilidad**: réplicas y failover son **de pago** en varios motores (§2.1). Si
-  la arquitectura exige HA y el presupuesto no cubre la edición Enterprise, la decisión
-  correcta no es montar HA artesanal: es no usar ese motor, o mantener el grafo como
-  proyección reconstruible desde el sistema de registro y aceptar un RTO de reconstrucción.
-- **Copias de seguridad**: en Community suele haber solo copia **en frío** (con el servicio
-  parado o inconsistente en caliente): planifica ventana o reconstrucción. Copia cifrada,
-  fuera del host, con una copia inmutable, y **restore ensayado y cronometrado** (§4.2).
-- **Actualizaciones**: leer las release notes completas y ensayar en staging. En Neo4j hay
-  dos trenes —LTS (5.26) y CalVer mensual— con requisitos de Java distintos (21 en CalVer)
-  y **5.26 como *checkpoint* obligatorio** para llegar desde versiones anteriores; el
-  formato de almacenamiento puede impedir el rollback, así que la vuelta atrás se planifica
-  como restauración o clúster paralelo.
-- **Seguridad**: nunca exponer Bolt/HTTP/Gremlin/SPARQL a Internet; cambiar credenciales
-  por defecto; TLS en tránsito y cifrado en reposo; y asumir que **sin RBAC (Community) el
-  control de acceso lo hace enteramente la aplicación**, lo que descarta multi-tenancy en
-  el mismo grafo. CVE recientes verificados en Neo4j: **CVE-2026-1497** (autorización
-  incorrecta en bases compuestas de Enterprise; corregido en 2026.02 / 5.26.22) y
-  **CVE-2026-1622** (la opción `obfuscate_literals` del log de consultas no redacta la
-  información de error; corregido en 5.26.21 / 2026.01.3). Suscribirse a los avisos del
-  fabricante.
-- **Inyección de consultas**: existe igual que en SQL. **Siempre parámetros** (`$param`),
-  nunca concatenación de entrada de usuario en Cypher/Gremlin/SPARQL — que además destroza
-  la caché de planes. En SPARQL, cuidado adicional con `SERVICE` (federación) como vector
-  de SSRF.
-- **Observabilidad**: latencia p99 por consulta con nombre, `db hits`/páginas leídas,
-  consultas lentas registradas, memoria del grafo residente frente a total, grado máximo de
-  nodo (supernodos emergentes), tamaño del *store*, y lag de la proyección respecto al
-  sistema de registro. Esta última es la métrica que más incidentes explica.
+- **Most graphs fit on one machine** — and that is the good news: scaling
+  vertically (enough RAM for the hot graph to reside in memory, NVMe, CPU) is
+  the correct strategy for far longer than people assume. Design for that
+  before designing to spread out.
+- **Partitioning a graph is a genuinely hard problem**, not a configuration
+  checkbox: any cut leaves edges crossing partitions, and every crossed edge
+  turns a local hop into a network call inside a traversal that may make
+  many hops. That is why native engines scale reads with **replicas** and do not
+  partition the graph by default, and those that do (JanusGraph over Cassandra,
+  TigerGraph) shift the cost to the latency of the distributed traversal. If you think you
+  need to partition, first verify that it does not fit on a big machine and that the
+  problem is not a supernode (§4.1).
+- **High availability**: replicas and failover are **paid for** in several engines (§2.1). If
+  the architecture requires HA and the budget does not cover the Enterprise edition, the
+  correct decision is not to build artisanal HA: it is not to use that engine, or to keep the graph
+  as a projection rebuildable from the system of record and accept a rebuild RTO.
+- **Backups**: in Community there is usually only a **cold** copy (with the service
+  stopped, or inconsistent while hot): plan a window or a rebuild. An encrypted copy,
+  off the host, with an immutable copy, and a **rehearsed and timed restore** (§4.2).
+- **Upgrades**: read the full release notes and rehearse in staging. In Neo4j there are
+  two trains —LTS (5.26) and monthly CalVer— with different Java requirements (21 in CalVer)
+  and **5.26 as a mandatory *checkpoint*** to get there from earlier versions; the
+  storage format may prevent rollback, so going back is planned
+  as a restore or a parallel cluster.
+- **Security**: never expose Bolt/HTTP/Gremlin/SPARQL to the Internet; change default
+  credentials; TLS in transit and encryption at rest; and assume that **without RBAC (Community)
+  access control is done entirely by the application**, which rules out multi-tenancy in
+  the same graph. Recent verified CVEs in Neo4j: **CVE-2026-1497** (incorrect authorisation
+  in Enterprise composite databases; fixed in 2026.02 / 5.26.22) and
+  **CVE-2026-1622** (the query log's `obfuscate_literals` option does not redact
+  error information; fixed in 5.26.21 / 2026.01.3). Subscribe to the vendor's
+  advisories.
+- **Query injection**: it exists just as in SQL. **Always parameters** (`$param`),
+  never concatenation of user input in Cypher/Gremlin/SPARQL — which also destroys
+  the plan cache. In SPARQL, additional care with `SERVICE` (federation) as an
+  SSRF vector.
+- **Observability**: p99 latency per named query, `db hits`/pages read,
+  slow queries logged, resident graph memory versus total, maximum node
+  degree (emerging supernodes), *store* size, and the projection's lag relative to the
+  system of record. That last one is the metric that explains the most incidents.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **ADR obligatorio** con: la consulta concreta que justifica el grafo, la medición de la
-  alternativa relacional, el modelo (qué es nodo y qué relación, y por qué), la estrategia
-  temporal, el motor y **su licencia y edición en el momento de decidir**.
-- **Revisar la licencia en cada upgrade mayor**: ArangoDB (BUSL desde 3.12) y Memgraph (BSL
-  con límite por volumen) son ejemplos de cambios que alteran obligaciones sin tocar tu
-  código.
-- **Ruta de salida**: mantener documentada la reconstrucción del grafo desde el sistema de
-  registro y evitar que el grafo acumule dato que no exista en ningún otro sitio. Un grafo
-  que se ha convertido en fuente de verdad sin querer es la trampa clásica.
-- **Grafos de conocimiento para IA (GraphRAG)** — el caso de uso de moda, y por tanto el
-  que más despliegues injustificados produce. La recuperación, la evaluación y la decisión
-  de arquitectura son de **`rag-standards`**; desde aquí, tres avisos honestos verificados:
-  (a) el coste de **construcción** del grafo es la partida dominante y es de LLM, no de
-  base de datos —extracción de entidades y relaciones sobre todo el corpus, más resumen de
-  comunidades—, con cifras públicas que fueron de decenas de miles de dólares para corpus
-  medianos en 2024 y que las variantes perezosas (LazyGraphRAG, HippoRAG) han reducido
-  drásticamente; (b) hay un **coste de consulta** en tokens y latencia notablemente mayor
-  que el de la recuperación vectorial, y una reindexación cara cuando el corpus cambia a
-  menudo; (c) buena parte de los *benchmarks* favorables los publican fabricantes de bases
-  de datos de grafo. Criterio: **agotar primero la recuperación híbrida (BM25 + denso con
-  fusión RRF) y el reranking**; el grafo entra cuando el problema es genuinamente
-  multi-salto o de agregación global sobre el corpus, y el pipeline de extracción se trata
-  como lo que es —un generador de datos con alucinaciones— con validación y corrección.
+- **Mandatory ADR** with: the specific query that justifies the graph, the measurement of the
+  relational alternative, the model (what is a node and what a relationship, and why), the
+  temporal strategy, the engine and **its licence and edition at the moment of deciding**.
+- **Review the licence at every major upgrade**: ArangoDB (BUSL since 3.12) and Memgraph (BSL
+  with a volume limit) are examples of changes that alter obligations without touching your
+  code.
+- **Exit route**: keep documented the rebuild of the graph from the system of
+  record and avoid the graph accumulating data that exists nowhere else. A graph
+  that has accidentally become the source of truth is the classic trap.
+- **Knowledge graphs for AI (GraphRAG)** — the fashionable use case, and therefore the
+  one that produces the most unjustified deployments. Retrieval, evaluation and the architecture
+  decision belong to **`rag-standards`**; from here, three honest verified warnings:
+  (a) the graph's **construction** cost is the dominant item and it is an LLM cost, not a
+  database one —entity and relationship extraction over the whole corpus, plus community
+  summarisation—, with public figures that were tens of thousands of dollars for medium-sized
+  corpora in 2024 and that the lazy variants (LazyGraphRAG, HippoRAG) have reduced
+  drastically; (b) there is a **query cost** in tokens and latency notably higher
+  than that of vector retrieval, and an expensive reindexing when the corpus changes
+  often; (c) a good share of the favourable *benchmarks* are published by graph database
+  vendors. Criterion: **exhaust hybrid retrieval first (BM25 + dense with
+  RRF fusion) and reranking**; the graph comes in when the problem is genuinely
+  multi-hop or one of global aggregation over the corpus, and the extraction pipeline is treated
+  as what it is —a data generator with hallucinations— with validation and correction.
 
-**PROHIBIDO**
-- ❌ Adoptar un motor de grafo porque "los datos están conectados" o porque el dominio se
-  dibuja bonito como grafo.
-- ❌ Sustituir por un grafo consultas de **uno o dos saltos fijos**: eso es un `JOIN`.
-- ❌ Adoptarlo sin haber evaluado y medido `WITH RECURSIVE`, Apache AGE o la
-  precomputación.
-- ❌ Recorridos de profundidad **ilimitada** o sin `LIMIT`/timeout en producción.
-- ❌ Consultas calientes sin **índice de arranque**, o mergeadas sin `PROFILE` revisado.
-- ❌ Modelar como relación algo que necesita sus propias relaciones (reificación tardía).
-- ❌ Convertir en nodo un atributo de baja cardinalidad y fabricarse un supernodo.
-- ❌ Duplicar aristas en ambos sentidos "para que las consultas sean más fáciles".
-- ❌ Construir consultas por concatenación de entrada de usuario (Cypher, Gremlin o SPARQL).
-- ❌ Exponer Bolt/Gremlin/SPARQL a Internet, o dejar credenciales por defecto.
-- ❌ Confiar en la Community Edition para producción con requisitos de HA, RBAC,
-  multi-tenancy o backup en caliente (§2.1) — o descubrir ese límite después de firmar.
-- ❌ Dar por hecha la portabilidad entre motores por "hablar Cypher" o "ser GQL".
-- ❌ Llevar a producción TinkerPop/Gremlin 4 mientras siga en beta.
-- ❌ Adoptar Blazegraph u otro motor sin releases recientes.
-- ❌ Ejecutar algoritmos de grafo pesados en el camino de una petición de usuario.
-- ❌ Dejar que el grafo se convierta en sistema de registro sin decidirlo.
-- ❌ Montar GraphRAG sin haber agotado la recuperación híbrida y sin presupuestar el coste
-  de construcción y reindexación.
-- ❌ Afirmar versiones, estado de normas o **licencias** de memoria, sin la verificación de §8.
+**FORBIDDEN**
+- ❌ Adopting a graph engine because "the data is connected" or because the domain
+  draws nicely as a graph.
+- ❌ Replacing with a graph queries of **one or two fixed hops**: that is a `JOIN`.
+- ❌ Adopting it without having evaluated and measured `WITH RECURSIVE`, Apache AGE or
+  precomputation.
+- ❌ **Unbounded** depth traversals, or ones with no `LIMIT`/timeout in production.
+- ❌ Hot queries without a **starting index**, or merged without a reviewed `PROFILE`.
+- ❌ Modelling as a relationship something that needs relationships of its own (late reification).
+- ❌ Turning a low-cardinality attribute into a node and manufacturing a supernode.
+- ❌ Duplicating edges in both directions "so that queries are easier".
+- ❌ Building queries by concatenating user input (Cypher, Gremlin or SPARQL).
+- ❌ Exposing Bolt/Gremlin/SPARQL to the Internet, or leaving default credentials.
+- ❌ Relying on the Community Edition for production with HA, RBAC,
+  multi-tenancy or hot backup requirements (§2.1) — or discovering that limit after signing.
+- ❌ Taking portability between engines for granted because they "speak Cypher" or "are GQL".
+- ❌ Taking TinkerPop/Gremlin 4 to production while it remains in beta.
+- ❌ Adopting Blazegraph or another engine with no recent releases.
+- ❌ Running heavy graph algorithms in the path of a user request.
+- ❌ Letting the graph become the system of record without deciding it.
+- ❌ Building GraphRAG without having exhausted hybrid retrieval and without budgeting the cost
+  of construction and reindexing.
+- ❌ Stating versions, standards status or **licences** from memory, without the verification in §8.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier dato de este documento en un entregable:
+Before committing any datum from this document to a deliverable:
 
-1. **Licencia y edición vigentes**: página de licencias de Neo4j (y qué incluye exactamente
-   la Community Edition hoy), licencia de GDS, BSL de Memgraph y su límite por volumen,
-   BUSL de ArangoDB y el tope de la Community License, SSPL de FalkorDB. Es el dato que más
-   cambia y el que más caro sale equivocar.
-2. **Versiones y soporte**: release CalVer actual de Neo4j y fecha de EOL de **5.26 LTS**;
-   Memgraph; estado de **TinkerPop 4.0** (¿sigue en beta?); release oficial de JanusGraph
-   (¿ha salido 1.2.0?); rama de Apache AGE para tu mayor de PostgreSQL; línea de Jena.
-3. **Estado real de GQL (ISO/IEC 39075)**: si ha aparecido una segunda edición o enmienda,
-   y **qué motores la implementan de verdad** — apéndice de conformidad de Neo4j (lista de
-   características obligatorias aún no soportadas) y estado de MemGQL. Desconfiar de toda
-   afirmación de conformidad: no hay certificación independiente.
-4. **Estado de SQL/PGQ en PostgreSQL** (¿ha entrado en PG 19?): si llega, muchas
-   adopciones de motor dedicado dejan de justificarse.
-5. **Estado normativo de RDF 1.2 / SPARQL 1.2** en la página del W3C (en agosto 2026: RDF
-   1.2 en Candidate Recommendation, SPARQL 1.2 en Working Draft).
-6. **CVE** de los motores a recomendar y su versión de parche; presencia en el catálogo KEV
-   de CISA.
-7. **Incidentes de cadena de suministro** en drivers y librerías (Bolt, Gremlin, OGM): npm
-   y PyPI siguen bajo campañas de gusano recurrentes en 2026; fijar versiones y hashes.
+1. **Current licence and edition**: Neo4j's licensing page (and what exactly the Community
+   Edition includes today), the GDS licence, Memgraph's BSL and its volume limit,
+   ArangoDB's BUSL and the Community License cap, FalkorDB's SSPL. It is the datum that changes
+   the most and the one that costs the most to get wrong.
+2. **Versions and support**: Neo4j's current CalVer release and the EOL date of **5.26 LTS**;
+   Memgraph; the state of **TinkerPop 4.0** (still in beta?); JanusGraph's official release
+   (has 1.2.0 come out?); the Apache AGE branch for your PostgreSQL major; the Jena line.
+3. **Real status of GQL (ISO/IEC 39075)**: whether a second edition or amendment has appeared,
+   and **which engines really implement it** — Neo4j's conformance appendix (list of
+   mandatory features not yet supported) and the state of MemGQL. Distrust every
+   conformance claim: there is no independent certification.
+4. **Status of SQL/PGQ in PostgreSQL** (has it landed in PG 19?): if it arrives, many
+   dedicated-engine adoptions stop being justified.
+5. **Standards status of RDF 1.2 / SPARQL 1.2** on the W3C page (in August 2026: RDF
+   1.2 in Candidate Recommendation, SPARQL 1.2 in Working Draft).
+6. **CVEs** of the engines to be recommended and their patch version; presence in CISA's KEV
+   catalogue.
+7. **Supply chain incidents** in drivers and libraries (Bolt, Gremlin, OGM): npm
+   and PyPI are still under recurring worm campaigns in 2026; pin versions and hashes.
 
-**Huecos declarados** (no verificados en la sesión de agosto 2026; **no rellenar de
-memoria**):
-- **Licencia exacta de Neo4j Community Edition hoy** (históricamente GPLv3): no se pudo
-  leer la página oficial —`neo4j.com/docs` devolvió 403— y las fuentes secundarias no la
-  citaban textualmente. **Verificar antes de afirmarla.**
-- **Fecha de EOL de Neo4j 5.26 LTS**: una fuente secundaria indicaba junio de 2028; sin
-  confirmar en fuente oficial.
-- **Texto verbatim del apéndice de conformidad GQL de Neo4j** y la lista concreta de
-  características obligatorias no soportadas: no accesible (403). Lo afirmado aquí procede
-  de fuentes secundarias.
-- **TigerGraph**: versión actual, límites del *free tier* (la cifra de 50 GB circula desde
-  2020) y estado de su soporte de openCypher: no verificados.
-- **Amazon Neptune**: versión de motor actual, Neptune Analytics y sus cuotas: no
-  verificados en esta sesión.
-- **CVE de Memgraph, ArangoDB, JanusGraph, FalkorDB y Jena/Fuseki**: no revisados.
-- **Estado de Wikidata/Wikibase respecto a Blazegraph** (migración en curso o no): no
-  verificado.
+**Declared gaps** (not verified in the August 2026 session; **do not fill in from
+memory**):
+- **The exact licence of Neo4j Community Edition today** (historically GPLv3): it was not
+  possible to read the official page —`neo4j.com/docs` returned 403— and the secondary sources did
+  not quote it verbatim. **Verify before asserting it.**
+- **The EOL date of Neo4j 5.26 LTS**: a secondary source indicated June 2028; not
+  confirmed in an official source.
+- **The verbatim text of Neo4j's GQL conformance appendix** and the specific list of
+  mandatory features not supported: not accessible (403). What is asserted here comes
+  from secondary sources.
+- **TigerGraph**: current version, *free tier* limits (the 50 GB figure has circulated since
+  2020) and the state of its openCypher support: not verified.
+- **Amazon Neptune**: current engine version, Neptune Analytics and its quotas: not
+  verified in this session.
+- **CVEs of Memgraph, ArangoDB, JanusGraph, FalkorDB and Jena/Fuseki**: not reviewed.
+- **The state of Wikidata/Wikibase with respect to Blazegraph** (migration in progress or not): not
+  verified.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

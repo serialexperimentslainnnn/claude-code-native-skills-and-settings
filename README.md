@@ -1,7 +1,7 @@
 # claudeonstereoids
 
-Claude Code configuration and an **IT engineering skill catalogue**: 218 criteria documents,
-~81,500 lines, written and verified one by one against primary sources.
+Claude Code configuration and an **IT engineering skill catalogue**: 219 criteria documents,
+~81,800 lines, written and verified one by one against primary sources.
 
 A skill in this catalogue **does not teach** — the model already knows how to program. It fixes
 **what gets decided, what is forbidden and what must be verified before asserting it**.
@@ -55,7 +55,7 @@ cd claudeonstereoids && claude
 
 ## State
 
-**218 skills — the catalogue is complete.** Waves 0-7 done, trigger-collision test re-run and
+**219 skills — the catalogue is complete.** Waves 0-7 done, trigger-collision test re-run and
 arbitrated, delegation graph clean, and a composition pass over eight multi-domain scenarios
 applied. The exact state and the pending tasks in order live in the `PUNTO DE CONTINUACIÓN` block of
 `SKILLS-ROADMAP.md`, which is **the first thing to read** when picking the work back up.

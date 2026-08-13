@@ -53,7 +53,7 @@ A/B updates at scale; a house is not a fleet), `ot-ics-security-standards` (**in
 building, BMS, KNX/BACnet in a professional installation, personal safety in a physical process**:
 theirs. A single-family home belongs here; a building with contracted maintenance and certified
 safety systems, theirs), `networking-standards` (**network design, VLANs, addressing,
-routing, mDNS across segments**: theirs) and `firewall-policy-standards` (**the rule as an artefact**:
+routing, mDNS across segments**: theirs) and `firewall-policy-standards` (**the rule as an artifact**:
 default-deny, flow matrix, lifecycle. **Here it is decided which segment exists and what has to be
 able to talk to what; there the rule is written and governed**), `wireless-standards` (Wi-Fi, channels,
 coverage and coexistence on 2.4 GHz — which is the real cause of half the Zigbee problems),

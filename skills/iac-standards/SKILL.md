@@ -3,155 +3,155 @@ name: iac-standards
 description: Infrastructure as Code standards (staff/principal level). Use when writing or reviewing Terraform/OpenTofu code (*.tf, *.tfvars, *.tofu, modules, backend/state config, providers), Ansible content (playbooks, roles, inventories, ansible.cfg, molecule scenarios), IaC scanning configs (trivy, checkov), policy as code for infra (OPA/Conftest, Sentinel), or IaC CI/CD pipelines (plan/apply, drift detection).
 ---
 
-# Estándares IaC (Terraform/OpenTofu y Ansible)
+# IaC standards (Terraform/OpenTofu and Ansible)
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al crear o revisar: `*.tf`, `*.tofu`, `*.tfvars`, módulos y root modules, configuración de backend/state, playbooks y roles Ansible (`*.yml` con tasks/hosts), inventarios, escenarios Molecule, pipelines de plan/apply, políticas de infra (Conftest/OPA) y configuración de escáneres (trivy, checkov). No aplica a manifiestos K8s/Helm (ver skill `kubernetes-standards`); el solape (providers `kubernetes`/`helm` en TF) se decide aquí: **cluster y plataforma con TF/Tofu; workloads vía GitOps**, no con `helm_release` desde Terraform.
+Applies when creating or reviewing: `*.tf`, `*.tofu`, `*.tfvars`, modules and root modules, backend/state configuration, Ansible playbooks and roles (`*.yml` with tasks/hosts), inventories, Molecule scenarios, plan/apply pipelines, infrastructure policies (Conftest/OPA) and scanner configuration (trivy, checkov). Does not apply to K8s/Helm manifests (see the `kubernetes-standards` skill); the overlap (the `kubernetes`/`helm` providers in TF) is decided here: **cluster and platform with TF/Tofu; workloads via GitOps**, not with `helm_release` from Terraform.
 
-**No aplica** (resto de fronteras): ver `aws-standards`/`azure-standards`/`gcp-standards` (**qué** servicio elegir y con qué configuración segura; aquí el **cómo** se escribe, versiona y aplica el código que lo crea — Bicep/ARM y CloudFormation/CDK viven en la skill de su nube), `cicd-standards` (el pipeline que ejecuta `plan`/`apply`, su OIDC y sus gates; aquí qué debe comprobar ese pipeline sobre el código IaC), `ruby-standards` (**Chef y Puppet están escritos en Ruby y esa cercanía confunde**: el **DSL de infraestructura** —recursos, idempotencia, convergencia, inventario— se decide aquí; el **Ruby que se escribe** —estilo, gems, tests, `rubocop`— es suyo), `bash-linux-scripting-standards` y `powershell-standards` (scripts sueltos: si Ansible puede hacerlo de forma idempotente, no se escribe un script — y si el objetivo es Windows, el script que Ansible o el `provisioner` invoque se escribe con el criterio de `powershell-standards`; **DSC y la configuración declarativa de Windows se deciden aquí**), `onprem-standards` (el servidor y el SO que Ansible configura, y su hardening), `kubernetes-standards`, `grc-compliance-standards` (marco normativo y evidencia; aquí las políticas OPA/Conftest que lo hacen verificable), `vulnerability-management-standards` (triaje de los hallazgos que produzca checkov/OSV-Scanner), `git-workflow-standards` (rama, PR y revisión del repo de IaC), `cmdb-inventory-standards` (**el `.tfstate` no es una CMDB**: describe lo que este código creó, no el activo ni su ciclo de vida — el modelo, el identificador estable, el descubrimiento y la reconciliación son suyos, y el inventario **lee** el state, no se sustituye por él), `os-provisioning-standards` (**la frontera del aprovisionamiento es el primer arranque**: PXE/HTTP Boot, instalador desatendido, `cloud-init` de primer arranque y alta del host son suyos; a partir de que la máquina existe y responde, el `apply` es de aquí), `identity-access-management-standards` (credenciales y federación de la identidad que ejecuta el `apply`), `finops-standards` (**la política de etiquetas —qué etiquetas, con qué valores permitidos y para qué unidad de asignación— es suya**; **el gate que la impone en el código y en la admisión es de aquí**. Una política de etiquetado sin este gate no existe), `platform-engineering-standards` (**el módulo de Terraform/OpenTofu y su calidad son de aquí**; **la abstracción que se ofrece encima al equipo de producto —camino pavimentado, plantilla, Crossplane o composición— y qué se le oculta, es suya**).
+**Not applicable** (remaining boundaries): see `aws-standards`/`azure-standards`/`gcp-standards` (**which** service to choose and with what secure configuration; here the **how** the code that creates it is written, versioned and applied — Bicep/ARM and CloudFormation/CDK live in their own cloud's skill), `cicd-standards` (the pipeline that runs `plan`/`apply`, its OIDC and its gates; here what that pipeline must check about the IaC code), `ruby-standards` (**Chef and Puppet are written in Ruby and that closeness confuses people**: the **infrastructure DSL** — resources, idempotency, convergence, inventory — is decided here; the **Ruby that gets written** — style, gems, tests, `rubocop` — is theirs), `bash-linux-scripting-standards` and `powershell-standards` (standalone scripts: if Ansible can do it idempotently, no script gets written — and if the target is Windows, the script that Ansible or the `provisioner` invokes is written to the criteria of `powershell-standards`; **DSC and declarative Windows configuration are decided here**), `onprem-standards` (the server and the OS that Ansible configures, and its hardening), `kubernetes-standards`, `grc-compliance-standards` (regulatory framework and evidence; here the OPA/Conftest policies that make it verifiable), `vulnerability-management-standards` (triaging the findings checkov/OSV-Scanner produce), `git-workflow-standards` (branch, PR and review of the IaC repository), `cmdb-inventory-standards` (**the `.tfstate` is not a CMDB**: it describes what this code created, not the asset or its lifecycle — the model, the stable identifier, discovery and reconciliation are theirs, and the inventory **reads** the state, it is not replaced by it), `os-provisioning-standards` (**the provisioning boundary is first boot**: PXE/HTTP Boot, unattended installer, first-boot `cloud-init` and host registration are theirs; from the moment the machine exists and responds, the `apply` belongs here), `identity-access-management-standards` (credentials and federation of the identity that runs the `apply`), `finops-standards` (**the tagging policy — which tags, with which allowed values and for which allocation unit — is theirs**; **the gate that enforces it in the code and at admission belongs here**. A tagging policy without this gate does not exist), `platform-engineering-standards` (**the Terraform/OpenTofu module and its quality belong here**; **the abstraction offered on top to the product team — paved road, template, Crossplane or composition — and what is hidden from them, is theirs**).
 
-## 2. Toolchain por defecto
+## 2. Default toolchain
 
-> **Verificación web obligatoria**: comprobado en **agosto 2026**. Re-verifica versiones y estado de licencias con WebSearch antes de fijar nada en un proyecto real.
+> **Mandatory web verification**: checked in **August 2026**. Re-verify versions and licence status with WebSearch before pinning anything in a real project.
 
-| Herramienta | Línea estable (2026-08) | Criterio |
+| Tool | Stable line (2026-08) | Criterion |
 |---|---|---|
-| **OpenTofu** | **1.12.x** (MPL 2.0, Linux Foundation/CNCF) | **Default para proyectos nuevos**: licencia OSI, state encryption nativo, provider `for_each`, registry OCI; mismos providers que TF |
-| Terraform | 1.15.x (BSL 1.1, IBM/HashiCorp) | Válido si ya hay inversión en HCP/Terraform Enterprise o Stacks; la BSL exige revisión legal si compites con HashiCorp |
-| ansible-core | **2.21.x** (Python ≥3.12); paquete community 14.x | Solo la última major del paquete community recibe mantenimiento garantizado |
-| **checkov** (IaC misconfig) + **OSV-Scanner**/**Grype** (dependencias) + escáner de secretos — **verifica cuál antes de fijarlo: a ago-2026 `gitleaks` se declaró *feature complete* (solo parches de seguridad) y su README apunta a Betterleaks; además `gitleaks-action` dejó MIT en v2.0.0 y exige licencia comercial para organizaciones. El criterio lo fija `secrets-management-standards`** | última estable | Default tras el **compromiso de cadena de suministro de Trivy (marzo 2026)**: tag poisoning de `trivy-action`/`setup-trivy`, binarios e imágenes maliciosos y robo de secretos de CI. Trivy sigue siendo técnicamente bueno: si lo usas, **pin por SHA de commit** (actions) y **digest** (imágenes), verifica firma/checksum y sigue sus advisories |
-| terraform-docs, tflint, ansible-lint, Molecule | última estable | Obligatorios en CI |
-| Infracost | última estable | Coste visible en PR (FinOps shift-left) |
+| **OpenTofu** | **1.12.x** (MPL 2.0, Linux Foundation/CNCF) | **Default for new projects**: OSI licence, native state encryption, provider `for_each`, OCI registry; same providers as TF |
+| Terraform | 1.15.x (BSL 1.1, IBM/HashiCorp) | Valid if there is already investment in HCP/Terraform Enterprise or Stacks; the BSL requires legal review if you compete with HashiCorp |
+| ansible-core | **2.21.x** (Python ≥3.12); community package 14.x | Only the community package's latest major receives guaranteed maintenance |
+| **checkov** (IaC misconfig) + **OSV-Scanner**/**Grype** (dependencies) + a secrets scanner — **verify which one before pinning it: as of Aug 2026 `gitleaks` declared itself *feature complete* (security patches only) and its README points to Betterleaks; on top of that `gitleaks-action` left MIT in v2.0.0 and requires a commercial licence for organisations. The criterion is set by `secrets-management-standards`** | latest stable | Default after the **Trivy supply-chain compromise (March 2026)**: tag poisoning of `trivy-action`/`setup-trivy`, malicious binaries and images, and CI secret theft. Trivy is still technically good: if you use it, **pin by commit SHA** (actions) and **digest** (images), verify signature/checksum and follow its advisories |
+| terraform-docs, tflint, ansible-lint, Molecule | latest stable | Mandatory in CI |
+| Infracost | latest stable | Cost visible in the PR (FinOps shift-left) |
 
-- **Estado del fork (verificado 2026-08)**: state binario compatible en ambos sentidos **salvo** si activas state encryption de OpenTofu (decisión de ida única). Adopción OpenTofu ~12% y creciendo (Fidelity migró >50k state files); Terraform mantiene la mayor cuota. Elige **un** motor por organización y documenta la decisión en un ADR; no mezcles motores sobre el mismo state.
-- Fija versión de motor con `required_version` (rango pesimista `~>`) y providers con `required_providers` + lockfile (`.terraform.lock.hcl`) commiteado.
+- **Fork status (verified 2026-08)**: binary state compatible in both directions **except** if you enable OpenTofu's state encryption (a one-way decision). OpenTofu adoption ~12% and growing (Fidelity migrated >50k state files); Terraform retains the larger share. Choose **one** engine per organisation and document the decision in an ADR; do not mix engines over the same state.
+- Pin the engine version with `required_version` (pessimistic range `~>`) and the providers with `required_providers` + a committed lockfile (`.terraform.lock.hcl`).
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
 ### Terraform/OpenTofu
-- **Módulos**: estructura estándar (`main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`, `README.md` generado con terraform-docs, `examples/`, `tests/`). Un módulo = una responsabilidad componible; ni "módulo dios" ni wrappers de un solo recurso sin lógica.
-- **Root modules por entorno** (`envs/prod`, `envs/staging`) que componen módulos versionados, **con state separado por entorno y por dominio** (blast radius acotado). Workspaces solo para variantes efímeras (previews de PR), **no** para separar prod/staging: un workspace comparte backend, credenciales y versión de código — un `terraform workspace select` equivocado es un incidente.
+- **Modules**: standard structure (`main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`, a `README.md` generated with terraform-docs, `examples/`, `tests/`). One module = one composable responsibility; neither a "god module" nor single-resource wrappers with no logic.
+- **Root modules per environment** (`envs/prod`, `envs/staging`) composing versioned modules, **with state separated per environment and per domain** (bounded blast radius). Workspaces only for ephemeral variants (PR previews), **not** to separate prod/staging: a workspace shares backend, credentials and code version — a mistaken `terraform workspace select` is an incident.
 
-Layout de referencia:
+Reference layout:
 
 ```
 infra/
-├── modules/              # módulos propios, versionados (tags SemVer)
+├── modules/              # own modules, versioned (SemVer tags)
 │   └── vpc/
 │       ├── main.tf  variables.tf  outputs.tf  versions.tf
-│       ├── README.md         # generado con terraform-docs
-│       ├── examples/basic/   # ejemplo aplicable = test de integración
+│       ├── README.md         # generated with terraform-docs
+│       ├── examples/basic/   # an appliable example = integration test
 │       └── tests/vpc.tftest.hcl
 └── envs/
-    ├── prod/             # root module: backend + composición + valores
+    ├── prod/             # root module: backend + composition + values
     │   ├── backend.tf  main.tf  providers.tf  terraform.tfvars
-    └── staging/          # mismo código de módulos, valores distintos
+    └── staging/          # same module code, different values
 ```
 
-Backend de referencia (S3, cifrado + locking nativo):
+Reference backend (S3, encryption + native locking):
 
 ```hcl
 terraform {
-  required_version = "~> 1.12"          # OpenTofu; "~> 1.15" si Terraform
+  required_version = "~> 1.12"          # OpenTofu; "~> 1.15" if Terraform
   backend "s3" {
     bucket       = "org-tfstate-prod"
-    key          = "network/terraform.tfstate"   # un key por dominio
+    key          = "network/terraform.tfstate"   # one key per domain
     region       = "eu-west-1"
     encrypt      = true
     kms_key_id   = "alias/tfstate"
-    use_lockfile = true                  # locking nativo S3 (sin DynamoDB)
+    use_lockfile = true                  # native S3 locking (no DynamoDB)
   }
 }
 ```
-- **State remoto cifrado con locking, siempre**: S3+DynamoDB/lockfile nativo, GCS, Azure Blob o backend gestionado; cifrado at-rest (KMS) y acceso por rol con mínimo privilegio. Con OpenTofu, evalúa state encryption (client-side) para state con datos sensibles — documenta que rompe la compatibilidad con Terraform.
-- Variables tipadas con `type` estricto y `validation`; `sensitive = true` en todo lo secreto; nada de `default` para valores que deben decidirse por entorno.
-- Módulos consumidos **por versión** (tag SemVer en registry/Git, o registry OCI con OpenTofu), nunca por rama (`ref=main` prohibido).
-- Nombres: `snake_case`, recursos nombrados por rol (`this` en módulos de un recurso principal), tags/labels obligatorios (owner, env, cost-center, managed-by).
-- Sin `local-exec`/`null_resource` como pegamento salvo último recurso documentado con TODO/issue.
+- **Remote state, encrypted, with locking, always**: S3+DynamoDB/native lockfile, GCS, Azure Blob or a managed backend; encryption at rest (KMS) and access by role with least privilege. With OpenTofu, evaluate state encryption (client-side) for state holding sensitive data — document that it breaks compatibility with Terraform.
+- Variables typed with a strict `type` and `validation`; `sensitive = true` on everything secret; no `default` for values that must be decided per environment.
+- Modules consumed **by version** (SemVer tag in a registry/Git, or an OCI registry with OpenTofu), never by branch (`ref=main` forbidden).
+- Naming: `snake_case`, resources named by role (`this` in modules with one main resource), mandatory tags/labels (owner, env, cost-center, managed-by).
+- No `local-exec`/`null_resource` as glue except as a last resort documented with a TODO/issue.
 
 ### Ansible
-- **Idempotencia como contrato**: toda tarea usa módulos declarativos (`ansible.builtin.*`, colecciones certificadas); `shell`/`command` solo con `creates`/`changed_when` y justificación. Segunda ejecución = 0 changed.
-- Estructura en **roles** (galaxy layout: `tasks/`, `defaults/`, `handlers/`, `templates/`, `meta/`) empaquetados en colecciones si se comparten; playbooks finos que orquestan roles.
-- Inventarios por entorno (preferir inventario dinámico contra el proveedor); `group_vars`/`host_vars` versionados; **Ansible Vault o lookup a gestor de secretos** para todo dato sensible — jamás en claro.
-- FQCN siempre (`ansible.builtin.copy`, no `copy`); `become` explícito y mínimo, no global.
-- `ansible.cfg` versionado en el repo; ejecución reproducible vía execution environments (imagen con dependencias fijadas) en CI.
-- Layout de rol de referencia:
+- **Idempotency as a contract**: every task uses declarative modules (`ansible.builtin.*`, certified collections); `shell`/`command` only with `creates`/`changed_when` and a justification. Second run = 0 changed.
+- Structure in **roles** (galaxy layout: `tasks/`, `defaults/`, `handlers/`, `templates/`, `meta/`) packaged into collections when shared; thin playbooks that orchestrate roles.
+- Inventories per environment (prefer a dynamic inventory against the provider); versioned `group_vars`/`host_vars`; **Ansible Vault or a lookup to a secrets manager** for every sensitive value — never in the clear.
+- FQCN always (`ansible.builtin.copy`, not `copy`); `become` explicit and minimal, not global.
+- `ansible.cfg` versioned in the repository; reproducible execution through execution environments (an image with pinned dependencies) in CI.
+- Reference role layout:
 
 ```
 roles/nginx/
-├── defaults/main.yml     # única capa de defaults (documentada)
-├── tasks/main.yml        # tareas idempotentes, FQCN
-├── handlers/main.yml     # reinicios/reloads, nunca en tasks
-├── templates/            # *.j2 con {{ ansible_managed }}
-├── meta/main.yml         # deps, plataformas soportadas
+├── defaults/main.yml     # the single defaults layer (documented)
+├── tasks/main.yml        # idempotent tasks, FQCN
+├── handlers/main.yml     # restarts/reloads, never in tasks
+├── templates/            # *.j2 with {{ ansible_managed }}
+├── meta/main.yml         # deps, supported platforms
 └── molecule/default/     # create→converge→idempotence→verify→destroy
 ```
 
-## 4. Calidad y testing (gates de CI)
+## 4. Quality and testing (CI gates)
 
-**Flujo obligatorio TF/Tofu — plan en PR, apply automatizado:**
-1. PR: `fmt -check` → `validate` → `tflint` → escaneo (Trivy/checkov) → **`plan` con salida publicada en el PR** (artefacto del plan guardado) → Infracost diff → revisión humana del plan (CODEOWNERS en rutas de prod).
-2. Merge a main: **apply automatizado del plan aprobado** (el mismo artefacto: apply-what-you-planned, no re-plan ciego) desde el pipeline con OIDC — **nunca apply desde portátiles**.
-3. **Drift detection programada** (plan nocturno/cron con `-detailed-exitcode`): drift = alerta accionable + issue; se corrige en Git (o se importa), no se ignora.
+**Mandatory TF/Tofu flow — plan in the PR, automated apply:**
+1. PR: `fmt -check` → `validate` → `tflint` → scan (Trivy/checkov) → **`plan` with its output published in the PR** (plan artifact saved) → Infracost diff → human review of the plan (CODEOWNERS on prod paths).
+2. Merge to main: **automated apply of the approved plan** (the same artifact: apply-what-you-planned, not a blind re-plan) from the pipeline with OIDC — **never apply from laptops**.
+3. **Scheduled drift detection** (nightly/cron plan with `-detailed-exitcode`): drift = actionable alert + issue; it is fixed in Git (or imported), not ignored.
 
-**Tests por nivel:**
-- Unit/contract: `terraform test`/`tofu test` (ficheros `.tftest.hcl`) para lógica de módulos, validaciones y outputs; Terratest solo si necesitas aserciones que el framework nativo no cubre.
-- Integración: `examples/` de cada módulo aplicado en cuenta/proyecto sandbox efímero en el CI del módulo (crear → verificar → destruir).
-- Ansible: `ansible-lint` (profile production) como gate + **Molecule** por rol (create → converge → **idempotence** → verify → destroy) contra contenedores o VMs efímeras; el paso de idempotencia es innegociable.
-- Todo repo de IaC: pre-commit hooks (fmt, lint, docs, secret scan) espejo de los gates de CI.
+**Tests by level:**
+- Unit/contract: `terraform test`/`tofu test` (`.tftest.hcl` files) for module logic, validations and outputs; Terratest only if you need assertions the native framework does not cover.
+- Integration: each module's `examples/` applied in an ephemeral sandbox account/project in the module's CI (create → verify → destroy).
+- Ansible: `ansible-lint` (production profile) as a gate + **Molecule** per role (create → converge → **idempotence** → verify → destroy) against containers or ephemeral VMs; the idempotence step is non-negotiable.
+- Every IaC repository: pre-commit hooks (fmt, lint, docs, secret scan) mirroring the CI gates.
 
-## 5. Seguridad
+## 5. Security
 
-- **Secretos: nunca en código, state en claro, tfvars commiteados ni logs.** Fuente única: Vault/Secrets Manager/SSM, consumidos en runtime (data sources, lookups de Ansible) o inyectados por el CI. Recuerda: **el state de TF contiene secretos en claro** → trátalo como secreto (cifrado, acceso mínimo, sin descargas locales).
-- **Credenciales efímeras**: OIDC del CI hacia el cloud (roles de corta duración); prohibidas access keys estáticas en CI o en portátiles para prod.
-- **Escaneo como gate que rompe el build**: Trivy (misconfig IaC + secret scanning) y/o checkov en cada PR; hallazgos CRITICAL/HIGH bloquean con excepciones vía baseline versionado y justificado (inline skip con comentario e issue, nunca silencioso).
-- **Policy as code**: OPA/Conftest (o Sentinel en HCP) sobre el plan JSON — reglas de organización verificables: regiones permitidas, cifrado obligatorio, prohibido `0.0.0.0/0` en ingress, tags obligatorios, tipos de instancia aprobados. Mismas políticas en CI y (si existe) en el TACOS.
-- Providers y módulos de terceros: pin de versión + revisión de fuente; módulos externos auditados antes de adoptar (un módulo es código con tus credenciales).
-- Mínimo privilegio en el rol del pipeline: el rol de plan es read-only; el de apply, acotado por dominio/state.
+- **Secrets: never in code, in state in the clear, in committed tfvars or in logs.** Single source: Vault/Secrets Manager/SSM, consumed at runtime (data sources, Ansible lookups) or injected by CI. Remember: **TF state contains secrets in the clear** → treat it as a secret (encrypted, least access, no local downloads).
+- **Ephemeral credentials**: CI OIDC towards the cloud (short-lived roles); static access keys in CI or on laptops for prod are forbidden.
+- **Scanning as a build-breaking gate**: Trivy (IaC misconfig + secret scanning) and/or checkov on every PR; CRITICAL/HIGH findings block, with exceptions via a versioned and justified baseline (inline skip with a comment and an issue, never silent).
+- **Policy as code**: OPA/Conftest (or Sentinel in HCP) over the plan JSON — verifiable organisational rules: allowed regions, mandatory encryption, `0.0.0.0/0` forbidden on ingress, mandatory tags, approved instance types. The same policies in CI and (if one exists) in the TACOS.
+- Third-party providers and modules: version pin + source review; external modules audited before adoption (a module is code running with your credentials).
+- Least privilege on the pipeline role: the plan role is read-only; the apply role is scoped by domain/state.
 
-## 6. Operabilidad
+## 6. Operability
 
-- **Entornos idénticos por construcción**: mismo código de módulos con valores por entorno; staging valida el cambio antes que prod (promoción = mismo commit/versión de módulo).
-- **Cambios destructivos visibles**: revisar `plan` buscando `destroy`/`replace`; `lifecycle.prevent_destroy` en recursos con datos (BD, buckets); `create_before_destroy` donde el reemplazo deba ser sin corte.
-- **Rollback probado**: revert del commit en Git + apply es el camino estándar; para recursos con estado (datos), el rollback es restore probado de backup, no un revert de HCL — documenta RTO/RPO por recurso crítico.
-- Observabilidad del pipeline: histórico de plans/applies auditable (quién, qué, cuándo, con qué plan), notificación de applies a prod, métricas de drift.
-- Ansible en prod: `--check --diff` como fase previa en el pipeline; `serial` + `max_fail_percentage` para rollouts progresivos; handlers para reinicios controlados.
-- Runbooks para operaciones de state (import, `state mv`, unlock): son cirugía — con backup del state previo, en pareja, y registradas.
+- **Environments identical by construction**: the same module code with per-environment values; staging validates the change before prod (promotion = same commit/module version).
+- **Destructive changes made visible**: review the `plan` looking for `destroy`/`replace`; `lifecycle.prevent_destroy` on resources holding data (databases, buckets); `create_before_destroy` where the replacement must be without downtime.
+- **Tested rollback**: reverting the commit in Git + apply is the standard path; for stateful resources (data), rollback is a tested restore from backup, not an HCL revert — document RTO/RPO per critical resource.
+- Pipeline observability: an auditable history of plans/applies (who, what, when, with which plan), notification of applies to prod, drift metrics.
+- Ansible in production: `--check --diff` as a preceding phase in the pipeline; `serial` + `max_fail_percentage` for progressive rollouts; handlers for controlled restarts.
+- Runbooks for state operations (import, `state mv`, unlock): these are surgery — with a prior state backup, in pairs, and recorded.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia de upgrades**: motor (Tofu/TF) y providers al día con revisión **mensual** vía Renovate/Dependabot (PR automático + plan en CI como test de regresión); nunca más de una minor mayor por detrás. ansible-core: solo 3 majors reciben fixes — planifica el salto anual. Leer changelogs de providers mayores (breaking changes en majors) antes de mergear.
-- Refactors de state (`moved`, `removed`, `import` en bloque) en PRs dedicados, separados de cambios funcionales.
-- Un ADR por decisión estructural: motor elegido, layout de states, estrategia de entornos, TACOS (Atlantis/env0/Spacelift/Scalr) si se adopta.
+- **Upgrade cadence**: engine (Tofu/TF) and providers kept current with a **monthly** review via Renovate/Dependabot (automatic PR + plan in CI as a regression test); never more than one minor behind. ansible-core: only 3 majors receive fixes — plan the annual jump. Read the changelogs of major providers (breaking changes in majors) before merging.
+- State refactors (`moved`, `removed`, `import` in a block) in dedicated PRs, separate from functional changes.
+- One ADR per structural decision: chosen engine, state layout, environment strategy, TACOS (Atlantis/env0/Spacelift/Scalr) if adopted.
 
-**PROHIBIDO** (gate automático donde sea posible):
-- **State local** o en el repo; state sin cifrar o sin locking; descargar state a un portátil.
-- `apply` manual desde máquinas locales a prod; cambios de infra por consola/CLI del cloud fuera de Git (excepto break-glass documentado y reconciliado con `import`).
-- Secretos en claro en `.tf`, `.tfvars`, playbooks, inventarios, vars de CI o salidas de log; tfvars con secretos commiteados.
-- Credenciales cloud estáticas de larga duración en CI.
-- Módulos referenciados por rama (`ref=main`) o sin versión; providers sin pin ni lockfile.
-- Workspaces para separar prod/no-prod; un único state monolítico para toda la organización.
-- `-auto-approve` interactivo fuera del pipeline; apply de un plan distinto al revisado.
-- Ignorar drift o "arreglarlo" editando el state a mano sin runbook.
-- `shell`/`command` en Ansible sin idempotencia declarada; roles sin Molecule en repos compartidos.
-- Deshabilitar el escáner o saltarse un gate "temporalmente" sin excepción registrada con issue y caducidad.
+**FORBIDDEN** (automatic gate wherever possible):
+- **Local state** or state in the repository; state without encryption or without locking; downloading state to a laptop.
+- Manual `apply` from local machines to prod; infrastructure changes through the cloud console/CLI outside Git (except documented break-glass, reconciled with `import`).
+- Secrets in the clear in `.tf`, `.tfvars`, playbooks, inventories, CI variables or log output; committed tfvars containing secrets.
+- Static long-lived cloud credentials in CI.
+- Modules referenced by branch (`ref=main`) or with no version; providers with no pin and no lockfile.
+- Workspaces to separate prod/non-prod; a single monolithic state for the whole organisation.
+- Interactive `-auto-approve` outside the pipeline; applying a plan different from the one reviewed.
+- Ignoring drift or "fixing" it by hand-editing the state without a runbook.
+- `shell`/`command` in Ansible without declared idempotency; roles without Molecule in shared repositories.
+- Disabling the scanner or skipping a gate "temporarily" without a registered exception with an issue and an expiry date.
 
-### Checklist de revisión rápida (todo PR de IaC)
+### Quick review checklist (every IaC PR)
 
-- [ ] `plan` publicado en el PR y revisado (atención a `destroy`/`replace` no esperados); apply usará ese mismo artefacto.
-- [ ] fmt + validate + tflint/ansible-lint + Trivy/checkov + Conftest en verde; excepciones con issue y caducidad.
-- [ ] Sin secretos ni credenciales estáticas; variables sensibles con `sensitive = true`/Vault; OIDC en el pipeline.
-- [ ] Providers/módulos con pin de versión y lockfile actualizado; módulos por tag, no por rama.
-- [ ] State correcto (backend cifrado+locking del entorno objetivo); refactors de state en PR separado.
-- [ ] Coste (Infracost) revisado; tags/labels obligatorios presentes; cambio probado en staging o example/Molecule.
+- [ ] `plan` published in the PR and reviewed (watch for unexpected `destroy`/`replace`); the apply will use that same artifact.
+- [ ] fmt + validate + tflint/ansible-lint + Trivy/checkov + Conftest green; exceptions with an issue and an expiry date.
+- [ ] No secrets and no static credentials; sensitive variables with `sensitive = true`/Vault; OIDC in the pipeline.
+- [ ] Providers/modules version-pinned and lockfile up to date; modules by tag, not by branch.
+- [ ] Correct state (encrypted backend with locking for the target environment); state refactors in a separate PR.
+- [ ] Cost (Infracost) reviewed; mandatory tags/labels present; change tested in staging or example/Molecule.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar versiones, sintaxis de features recientes o recomendaciones de motor:
-1. **WebSearch/WebFetch** de releases oficiales (opentofu.org, releases de HashiCorp, PyPI ansible-core) y endoflife.date — cadencias rápidas, este documento envejece.
-2. **Re-verifica el estado Terraform vs OpenTofu** (licencia, features divergentes, adopción): el fork diverge activamente (state encryption, OCI registry, `terraform query`/Actions solo en TF) y la recomendación puede cambiar.
-3. Confirma breaking changes de providers mayores (aws/azurerm/google) para la versión objetivo antes de escribir constraints.
-4. Si no puedes verificar, dilo explícitamente en la entrega en lugar de suponer.
+Before pinning versions, the syntax of recent features or engine recommendations:
+1. **WebSearch/WebFetch** the official releases (opentofu.org, HashiCorp releases, PyPI ansible-core) and endoflife.date — the cadences are fast and this document ages.
+2. **Re-verify the Terraform versus OpenTofu situation** (licence, diverging features, adoption): the fork is actively diverging (state encryption, OCI registry, `terraform query`/Actions only in TF) and the recommendation may change.
+3. Confirm breaking changes in major providers (aws/azurerm/google) for the target version before writing constraints.
+4. If you cannot verify, say so explicitly in the deliverable instead of assuming.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

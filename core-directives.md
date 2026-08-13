@@ -13,7 +13,13 @@ doing, **this wins**.
 2. **Arm the skills.** Derive the domains from the actual context (stack, files touched, layer,
    what breaks if wrong), load the owning skills, and **say which ones you are working under**.
    Touching a domain without loading its skill is a defect, not a style choice. Several skills
-   almost always apply: reconcile them, do not pick one. Re-arm when the task turns.
+   almost always apply: reconcile them, do not pick one. **Re-arm when the task turns** — the files
+   change family, a new layer enters, design becomes operation, or you catch yourself deciding from
+   memory instead of from a document — and announce it in one line, same as at the start.
+   **The arming travels with the delegation**: a subagent inherits nothing and will not go looking,
+   so **every agent prompt names the skills that agent works under** and demands the same one-line
+   declaration back, at every tier. An unarmed agent produces plausible generic work at scale and it
+   arrives looking finished.
 
 ## Verify, do not remember
 - **No concrete fact from memory**: version, EOL, licence, flag, path, IP, price. If it is checkable
@@ -38,6 +44,32 @@ doing, **this wins**.
   goes into researching, verifying and covering edge cases — not into inflating the answer.
 - **Full power, cost is irrelevant** (Max x20): parallelise, use subagents, read whole files, sweep
   exhaustively. If in doubt between doing more or less, do more. The only constraint is correctness.
+- **Hierarchical fleet by default, not as an escalation.** Any substantial task: **minimum 4 agents**,
+  each free to fan out to **≤4 subagents** and required to **review and refine** their output before
+  reporting. **You orchestrate, partition and do the final pass — you are not the bulk executor.**
+  Doing a long task sequentially in the main context is the failure mode, not the safe option.
+  **Three tiers buy vertical review, never lateral: siblings cannot see each other.** Defects
+  *between* slices — divergent terms, a contract one rewrote and another still assumes, a reference
+  to a file a sibling renamed — reach you unfiltered and are yours. So front-load the shared
+  conventions into *every* prompt instead of trusting convergence, and reconcile the seams yourself.
+  **Governing-document protocol, for every directive and not just the map**: slice the relevant
+  fragment of `PROJECTMAP.md`/the skills/this doctrine **down** into each prompt (the fragment *is*
+  the scope, and each tier re-slices for its children); require a **delta back up** — what the
+  document got wrong, what the work made stale, what was missing — merged and deduplicated at each
+  tier; and **you are the single writer** who folds it in, in the turn the fleet lands. That is how
+  ordinary work improves the standards instead of silently outdating them. **Take their facts, keep
+  the judgement**: what an agent *observed* is evidence; its opinion on *how work should be done* is
+  not — criteria stay with you and the user. **The pyramid is machine-to-machine: optimise it for the
+  model.** Prompts dense and imperative, no preamble; reports in a fixed schema, one fact per line
+  (`SKILLS/SCOPE/DONE/GAP/DEFECT/MAPDELTA/NOTES`), every field present even when empty, merged by
+  concatenating and deduplicating — never by paraphrasing, which degrades a fact into an impression
+  at every hop. **The only leg written to be read is the last one: your report to the user.**
+  Guard rails: disjoint file ownership decided before launching (an agent that finds a defect outside
+  its slice reports it, never edits it); every agent writes each file the moment it is done;
+  a cut agent is resumed with `SendMessage`, never relaunched; "done" is not evidence, verify the
+  files exist. **Web-bound work caps near 4 concurrent — that ceiling is truthfulness, not
+  throughput**: past it agents fall back to the WebFetch summariser, which fabricates. Exempt only:
+  conversation, a single-file edit finishable in one pass, explaining something already open.
 - **Answer in Spanish** unless the project's context dictates otherwise.
 - Ask only when the answer changes what you will do — and always ask when his intent or tone is
   ambiguous, rather than acting on the odd reading.

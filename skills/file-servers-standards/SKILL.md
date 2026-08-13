@@ -3,193 +3,194 @@ name: file-servers-standards
 description: Classic file-sharing servers — the protocol that exposes a directory tree to other machines, and its blast radius. Use when working with Samba (smb.conf, testparm, smbcontrol, smbstatus, smbd/nmbd/winbindd, net ads join, net usershare, "server min protocol", "server smb encrypt", "vfs objects", vfs_shadow_copy2, vfs_full_audit, vfs_worm, vfs_recycle, vfs_acl_xattr, vfs_fruit, idmap config, wbinfo, pdbedit, "valid users", "force group", "veto files", msdfs root and msdfs proxy), ksmbd (ksmbd.conf, ksmbd.mountd, ksmbd.addshare) and whether an in-kernel SMB server belongs in production, NFS exports (/etc/exports, exports.d, exportfs -ra, /var/lib/nfs/etab, rpc.mountd, rpc.gssd, nfsdcltrack, nfs.conf, fsid=0 and the v4 pseudo-root, no_root_squash, all_squash, anonuid/anongid, subtree_check, sec=sys/krb5/krb5i/krb5p, nfsvers=3 vs 4.1 vs 4.2, nconnect, xprtsec=tls and xprtsec=mtls, tlshd and ktls-utils per RFC 9289), POSIX ACLs versus NT ACLs (getfacl/setfacl, acl_xattr, security.NTACL), project or user quotas on a share, DFS namespaces, SMB signing and encryption enforcement, share-level auditing, and containing ransomware that arrives through a mapped drive or an NFS mount.
 ---
 
-# Estándares de servidores de ficheros (SMB/CIFS y NFS)
+# File server standards (SMB/CIFS and NFS)
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **protocolo de compartición de ficheros y a su exposición**: qué se publica, con qué
-dialecto, autenticado contra qué, cifrado o no, con qué mapeo de identidad y con qué permisos
-efectivos; y cómo se audita, se limita y se contiene cuando el cliente es hostil.
+Applies to the **file-sharing protocol and its exposure**: what is published, with which
+dialect, authenticated against what, encrypted or not, with which identity mapping and with which
+effective permissions; and how it is audited, limited and contained when the client is hostile.
 
-**Principio rector: un servidor de ficheros es un ejecutor remoto de escrituras arbitrarias sobre
-un árbol de directorios, con la identidad del cliente.** No es "un disco en la red". El ransomware
-que cifra un recurso compartido no explota nada: usa el recurso como fue diseñado.
+**Governing principle: a file server is a remote executor of arbitrary writes over a
+directory tree, with the client's identity.** It is not "a disk on the network". Ransomware
+that encrypts a share exploits nothing: it uses the share as designed.
 
-Disparadores: los del frontmatter. **Si la respuesta se escribe en `smb.conf` o en `/etc/exports`,
-es de aquí.**
+Triggers: those in the frontmatter. **If the answer is written in `smb.conf` or in `/etc/exports`,
+it belongs here.**
 
-**No aplica**: ver `linux-storage-standards` (**el bloque y el filesystem POSIX debajo**, y **el
-lado cliente de NFS e iSCSI**. **Un `target` iSCSI no es compartición de ficheros: es un disco
-crudo con un solo dueño** — si la pregunta lleva `targetcli`, `LUN` o `initiator`, es de allí),
-`zfs-standards` (pool, dataset, snapshots y `zfs send`; **el snapshot que alimenta las *Previous
-Versions* se crea allí y se publica aquí** vía `shadow_copy2`), `object-storage-standards` (S3:
-**si necesitas semántica POSIX es de aquí; si no la necesitas, no montes un recurso compartido**),
-`windows-server-ad-standards` (**el directorio y Kerberos/NTLM como protocolos del dominio**; aquí
-solo el **miembro de dominio**: `net ads join`, `winbindd`, `idmap` y qué SID acaba siendo qué
-UID), `identity-access-management-standards` (federación y ciclo de vida; aquí el mapeo
-identidad→permiso efectivo), `backup-recovery-standards` (**la copia** — **una *shadow copy*
-publicada por `shadow_copy2` no es un backup**, §5), `bcdr-standards` (RTO/RPO y orden de
-recuperación), `cryptography-pki-standards` (CA y custodia de la clave que usa `tlshd`),
-`networking-standards`, `firewall-policy-standards` y `dns-standards` (quién llega a 445/2049, y el
-`A`/`PTR`/SPN que Kerberos necesita para no caer a NTLM), `linux-hardening-standards` (baseline
-CIS), `selinux-standards` (`samba_export_all_rw`, `nfs_export_all_rw` y los booleanos que la gente
-desactiva para "que funcione"), `observability-standards` (retención de los eventos que aquí se
-generan), `detection-engineering-standards` (la regla que detecta el cifrado masivo; aquí el evento
-que la alimenta), `incident-response-forensics-standards` (el caso vivo),
-`web-app-servers-standards` (otro servicio expuesto, otro criterio).
+**Not applicable**: see `linux-storage-standards` (**the block layer and the POSIX filesystem
+underneath**, and **the client side of NFS and iSCSI**. **An iSCSI `target` is not file sharing: it
+is a raw disk with a single owner** — if the question involves `targetcli`, `LUN` or `initiator`, it
+belongs there), `zfs-standards` (pool, dataset, snapshots and `zfs send`; **the snapshot that feeds
+*Previous Versions* is created there and published here** through `shadow_copy2`),
+`object-storage-standards` (S3: **if you need POSIX semantics it belongs here; if you do not need
+them, do not mount a share**), `windows-server-ad-standards` (**the directory and Kerberos/NTLM as
+domain protocols**; here only the **domain member**: `net ads join`, `winbindd`, `idmap` and which
+SID ends up as which UID), `identity-access-management-standards` (federation and lifecycle; here
+the identity→effective-permission mapping), `backup-recovery-standards` (**the copy** — **a *shadow
+copy* published by `shadow_copy2` is not a backup**, §5), `bcdr-standards` (RTO/RPO and recovery
+order), `cryptography-pki-standards` (the CA and custody of the key `tlshd` uses),
+`networking-standards`, `firewall-policy-standards` and `dns-standards` (who reaches 445/2049, and
+the `A`/`PTR`/SPN Kerberos needs so it does not fall back to NTLM), `linux-hardening-standards` (CIS
+baseline), `selinux-standards` (`samba_export_all_rw`, `nfs_export_all_rw` and the booleans people
+disable "to make it work"), `observability-standards` (retention of the events generated here),
+`detection-engineering-standards` (the rule that detects mass encryption; here the event
+that feeds it), `incident-response-forensics-standards` (the live case),
+`web-app-servers-standards` (another exposed service, other criteria).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before pinning it in a real project (§8).
 
-| Decisión | Criterio | Nota verificada |
+| Decision | Criterion | Verified note |
 |---|---|---|
-| Implementación SMB | **Samba en espacio de usuario**, salvo caso medido que lo justifique | Serie estable a ago-2026: **4.24** (4.24.5, 28-jul-2026); **4.23** en mantenimiento (4.23.11, 3-ago-2026); **4.22** solo seguridad; **4.21 EOL desde el 12-sep-2025**. Ciclo declarado: ~6 meses *current* + 6 mantenimiento + 6 solo seguridad |
-| Licencia de Samba | **GPLv3** | Leído en crudo: `COPYING` = *"GNU GENERAL PUBLIC LICENSE / Version 3, 29 June 2007"* |
-| ksmbd (SMB en el kernel) | **Vetado en cualquier cosa expuesta a clientes no confiables** | Su ventaja es rendimiento; su coste es que **un fallo suyo es un fallo del kernel, no de un proceso**. 2026 acumula CVEs remotos serios (p. ej. **CVE-2026-31704**, desbordamiento en el manejo de DACL con explotación pública reportada; **CVE-2026-23226**, UAF por *lock* ausente). Si se usa: red segmentada, parcheo de kernel disciplinado y 445 cerrado en el borde |
-| Dialecto SMB mínimo | **SMB3 (`SMB3_11`)**; SMB2_02 solo si un cliente lo obliga. **SMB1/NT1/CIFS vetado sin excepción** | Samba fija `client min protocol`/`server min protocol = SMB2_02` **por defecto desde 4.11**, con SMB1 "oficialmente *deprecated*". El defecto ya excluye SMB1: **subirlo a SMB3 es tuyo**, y reactivar SMB1 es un cambio explícito de configuración — si alguien lo hizo, es un hallazgo |
-| Firma SMB | **Obligatoria** en servidor y cliente | Windows 11 24H2 y Windows Server 2025 la exigen **por defecto** (24H2 Pro/Enterprise/Education entrante y saliente; Server 2025 saliente; Home no). **Consecuencia operativa: rompe el acceso *guest* y los NAS de terceros que no firman** — eso es la señal, no el problema |
-| Cifrado SMB | **Exigido** (`server smb encrypt = required`) fuera de la LAN de servidores | La firma protege integridad, **no confidencialidad**. Si el dato es personal o regulado, se exige cifrado aunque la red sea "interna" |
-| SMB sobre QUIC | Alternativa real a publicar 445, **no sustituto de una VPN por defecto** | En Windows Server 2025 está en **todas** las ediciones (en 2022 era solo Azure Edition). En Samba, **4.23** introdujo SMB3 sobre QUIC, y en Linux el **servidor requiere un módulo `quic.ko` fuera del árbol** — eso lo descalifica como base de producción hasta que esté en el kernel (§8) |
-| Versión NFS | **NFSv4.2**; v4.1 como suelo | v3 solo para clientes que no soportan v4, con fecha de retirada. v3 **no tiene mecanismo de identidad**: `AUTH_SYS` es un UID sin prueba |
-| Seguridad NFS | **`sec=krb5p`** cuando hay dato sensible; **`sec=sys` nunca cruza un límite de confianza** | `krb5` autentica, `krb5i` añade integridad, `krb5p` añade confidencialidad. Coste de CPU creciente: mídelo, no lo supongas |
-| NFS sobre TLS (RFC 9289) | Opción cuando Kerberos no es viable; **no sustituye la autenticación de usuario** | `xprtsec=tls` / `xprtsec=mtls` en montaje y en `exports(5)`; kTLS en kernel (servidor desde 6.4; cliente necesita `CONFIG_NET_HANDSHAKE=y`) + `tlshd` de **ktls-utils** con `/etc/tlshd.conf` en ambos extremos. **No soporta PSK.** Protege el transporte; con `sec=sys` detrás, la identidad sigue sin probarse |
-| `no_root_squash` | ❌ **Veto duro** | Concede root del servidor a root del cliente. Si "hace falta", el diseño está mal: usa `anonuid`/`anongid` o un export dedicado |
-| ACL | **NT ACL sobre `acl_xattr`** en recursos SMB de dominio; POSIX ACL en recursos solo-UNIX | No se mezclan en el mismo árbol: el modelo NT tiene herencia y denegaciones que POSIX no representa, y "casi equivalente" produce permisos efectivos que nadie predice |
-| Cuotas | **De filesystem/proyecto, siempre** | Un recurso compartido sin cuota es un DoS que se dispara solo |
+| SMB implementation | **Samba in user space**, unless a measured case justifies otherwise | Stable series as of Aug 2026: **4.24** (4.24.5, 28 Jul 2026); **4.23** in maintenance (4.23.11, 3 Aug 2026); **4.22** security only; **4.21 EOL since 12 Sept 2025**. Declared cycle: ~6 months *current* + 6 maintenance + 6 security only |
+| Samba's licence | **GPLv3** | Read raw: `COPYING` = *"GNU GENERAL PUBLIC LICENSE / Version 3, 29 June 2007"* |
+| ksmbd (SMB in the kernel) | **Vetoed on anything exposed to untrusted clients** | Its advantage is performance; its cost is that **a failure in it is a kernel failure, not a process failure**. 2026 has accumulated serious remote CVEs (e.g. **CVE-2026-31704**, an overflow in DACL handling with public exploitation reported; **CVE-2026-23226**, a UAF from a missing lock). If it is used: segmented network, disciplined kernel patching and 445 closed at the edge |
+| Minimum SMB dialect | **SMB3 (`SMB3_11`)**; SMB2_02 only if a client forces it. **SMB1/NT1/CIFS vetoed without exception** | Samba sets `client min protocol`/`server min protocol = SMB2_02` **by default since 4.11**, with SMB1 "officially *deprecated*". The default already excludes SMB1: **raising it to SMB3 is on you**, and re-enabling SMB1 is an explicit configuration change — if somebody did it, that is a finding |
+| SMB signing | **Mandatory** on server and client | Windows 11 24H2 and Windows Server 2025 require it **by default** (24H2 Pro/Enterprise/Education inbound and outbound; Server 2025 outbound; Home does not). **Operational consequence: it breaks *guest* access and third-party NAS boxes that do not sign** — that is the signal, not the problem |
+| SMB encryption | **Required** (`server smb encrypt = required`) outside the server LAN | Signing protects integrity, **not confidentiality**. If the data is personal or regulated, encryption is required even if the network is "internal" |
+| SMB over QUIC | A real alternative to publishing 445, **not a substitute for a VPN by default** | On Windows Server 2025 it is in **every** edition (in 2022 it was Azure Edition only). In Samba, **4.23** introduced SMB3 over QUIC, and on Linux the **server requires an out-of-tree `quic.ko` module** — that disqualifies it as a production base until it is in the kernel (§8) |
+| NFS version | **NFSv4.2**; v4.1 as the floor | v3 only for clients that do not support v4, with a retirement date. v3 **has no identity mechanism**: `AUTH_SYS` is a UID with no proof |
+| NFS security | **`sec=krb5p`** where there is sensitive data; **`sec=sys` never crosses a trust boundary** | `krb5` authenticates, `krb5i` adds integrity, `krb5p` adds confidentiality. Increasing CPU cost: measure it, do not assume it |
+| NFS over TLS (RFC 9289) | An option when Kerberos is not viable; **it does not replace user authentication** | `xprtsec=tls` / `xprtsec=mtls` at mount time and in `exports(5)`; in-kernel kTLS (server from 6.4; the client needs `CONFIG_NET_HANDSHAKE=y`) + `tlshd` from **ktls-utils** with `/etc/tlshd.conf` at both ends. **It does not support PSK.** It protects the transport; with `sec=sys` behind it, identity remains unproven |
+| `no_root_squash` | ❌ **Hard veto** | It grants the server's root to the client's root. If it "is needed", the design is wrong: use `anonuid`/`anongid` or a dedicated export |
+| ACLs | **NT ACLs over `acl_xattr`** on domain SMB shares; POSIX ACLs on UNIX-only shares | They are not mixed in the same tree: the NT model has inheritance and denials that POSIX does not represent, and "almost equivalent" produces effective permissions nobody predicts |
+| Quotas | **Filesystem/project quotas, always** | A share without a quota is a DoS that fires on its own |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- **Un recurso = un propósito = un grupo.** `valid users = @grupo`, nunca usuarios sueltos ni
-  `@Domain Users`. El permiso se administra en el directorio, no en `smb.conf`.
-- **La ACL del filesystem manda; la de `smb.conf` es un tope, no el modelo.** Diseña la ACL en el
-  árbol y usa los parámetros del recurso solo para *restringir* (`read only`, `valid users`).
-  Duplicar el modelo en dos sitios garantiza que divergen.
-- **`net usershare`**: permite a usuarios no-root publicar recursos. **Desactivado**
-  (`usershare max shares = 0`) salvo caso de uso escrito; es publicación de datos sin revisión.
-- **`vfs objects`: el orden importa** y cada módulo cuesta latencia por operación. Conjunto base:
-  `acl_xattr` (ACL NT), `shadow_copy2` (versiones anteriores desde snapshots ZFS/LVM),
-  `full_audit` (§5), `recycle` solo si el negocio lo pide (**no es papelera de seguridad: el
-  ransomware la vacía**), y `fruit`+`streams_xattr` **solo** si hay clientes macOS.
-- **`vfs_worm` no es inmutabilidad.** Verificado: **CVE-2026-2340** — el módulo WORM se saltaba
-  renombrando un fichero nuevo sobre el protegido. La inmutabilidad real vive en el repositorio de
-  copias (Object Lock / *append-only*), no en un módulo VFS.
-- **NFSv4: `fsid=0` define la pseudo-raíz** y todo lo demás cuelga de ahí. `nohide` es de v3; v4 se
-  comporta siempre como si estuviera activo. **Exporta el punto exacto, no un padre "por comodidad",
-  y nunca a `*` como cliente.**
-- **`/etc/exports.d/` con un fichero por consumidor**, en control de versiones, aplicado con
-  `exportfs -ra`. Verifica el resultado en `/var/lib/nfs/etab`, **no en el fichero fuente**: es
-  donde se ve lo que el servidor aplica de verdad.
-- **DFS (`msdfs root`)** desacopla la ruta lógica del servidor físico: es lo que permite retirar un
-  servidor sin tocar 4.000 unidades de red mapeadas. Se decide **antes** de la primera migración.
-- **Mapeo de identidad (`idmap config`)**: rango explícito y **documentado por dominio**, backend
-  determinista (`rid`, `ad` o `autorid`) — nunca `tdb` en más de un servidor. Dos servidores que
-  mapean el mismo SID a UIDs distintos producen permisos incoherentes que solo se ven al restaurar.
+- **One share = one purpose = one group.** `valid users = @group`, never individual users and never
+  `@Domain Users`. Permissions are administered in the directory, not in `smb.conf`.
+- **The filesystem ACL rules; the `smb.conf` one is a ceiling, not the model.** Design the ACL in the
+  tree and use the share parameters only to *restrict* (`read only`, `valid users`).
+  Duplicating the model in two places guarantees they diverge.
+- **`net usershare`**: lets non-root users publish shares. **Disabled**
+  (`usershare max shares = 0`) unless there is a written use case; it is publishing data without review.
+- **`vfs objects`: order matters** and every module costs latency per operation. Base set:
+  `acl_xattr` (NT ACLs), `shadow_copy2` (previous versions from ZFS/LVM snapshots),
+  `full_audit` (§5), `recycle` only if the business asks for it (**it is not a security bin: the
+  ransomware empties it**), and `fruit`+`streams_xattr` **only** if there are macOS clients.
+- **`vfs_worm` is not immutability.** Verified: **CVE-2026-2340** — the WORM module was bypassed by
+  renaming a new file over the protected one. Real immutability lives in the backup
+  repository (Object Lock / *append-only*), not in a VFS module.
+- **NFSv4: `fsid=0` defines the pseudo-root** and everything else hangs off it. `nohide` is a v3
+  thing; v4 always behaves as if it were on. **Export the exact point, not a parent "for
+  convenience", and never to `*` as a client.**
+- **`/etc/exports.d/` with one file per consumer**, under version control, applied with
+  `exportfs -ra`. Verify the result in `/var/lib/nfs/etab`, **not in the source file**: that is
+  where you see what the server actually applies.
+- **DFS (`msdfs root`)** decouples the logical path from the physical server: it is what lets you
+  retire a server without touching 4,000 mapped network drives. It is decided **before** the first
+  migration.
+- **Identity mapping (`idmap config`)**: an explicit range, **documented per domain**, with a
+  deterministic backend (`rid`, `ad` or `autorid`) — never `tdb` on more than one server. Two servers
+  mapping the same SID to different UIDs produce incoherent permissions that only show up on restore.
 
-## 4. Calidad, cambios y pruebas
+## 4. Quality, changes and testing
 
-- **Gates antes de recargar**: `testparm -s` sin avisos y `exportfs -ra` sin errores son
-  obligatorios, no opcionales; más una prueba de acceso **con una cuenta sin privilegios** desde un
-  cliente real — que monte como admin no prueba nada.
-- **Prueba de permiso negativo, siempre**: comprobar que quien *no* debe leer, no lee. Casi todas
-  las fugas por recurso compartido pasan el test positivo.
-- **Configuración versionada y desplegada por IaC** (`iac-standards`): editar `smb.conf` a mano en
-  producción no es reversible.
-- **Comprobación periódica de deriva**: dialecto negociado real (`smbstatus`), firma y cifrado
-  efectivos por sesión, exports vivos vs. declarados, y **recursos huérfanos** sin dueño
-  identificable — que se retiran, no se heredan.
+- **Gates before reloading**: `testparm -s` with no warnings and `exportfs -ra` with no errors are
+  mandatory, not optional; plus an access test **with an unprivileged account** from a real
+  client — mounting as admin proves nothing.
+- **Negative permission test, always**: check that whoever must *not* read, does not read. Almost every
+  share-based leak passes the positive test.
+- **Configuration versioned and deployed by IaC** (`iac-standards`): editing `smb.conf` by hand in
+  production is not reversible.
+- **Periodic drift check**: the actually negotiated dialect (`smbstatus`), effective signing and
+  encryption per session, live exports versus declared ones, and **orphaned shares** with no
+  identifiable owner — which get retired, not inherited.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **Superficie**: 445/TCP (SMB), 2049/TCP (NFS), 139/137/138 (NetBIOS — **apagados**), y el
-  *portmapper* 111 en v3. **Ninguno cruza un perímetro sin control adicional.**
-- **Autenticación**: Kerberos. NTLM se bloquea o se restringe explícitamente; si todo cae a NTLM,
-  la causa casi siempre es DNS/SPN (`dns-standards`), y arreglarla es parte del trabajo.
-- **Anónimo/guest: prohibido.** `map to guest = never`. Y ojo: exigir firma **ya deshabilita el
-  acceso guest** — si alguien "arregló" una incidencia desactivando la firma, deshizo dos controles.
-- **Auditoría de acceso obligatoria** en recursos con dato sensible: `vfs_full_audit` con las
-  operaciones que importan (`pwrite`, `rename`, `unlink`, `mkdir`, `set_nt_acl`), enviada **fuera
-  del servidor** (`observability-standards`). Sin ella el forense no puede responder "quién borró
-  esto" y la detección de cifrado masivo no tiene señal.
-- **Contención de ransomware — es un problema de *permisos*, no de antivirus**:
-  1. **Escritura mínima**: el recurso "todos escriben en todo" es la condición que convierte un
-     puesto comprometido en una parada de la empresa.
-  2. **Ningún recurso da acceso al repositorio de copias**: la credencial de backup no vive en el
-     cliente y el repositorio no se monta como unidad de red (`backup-recovery-standards`).
-  3. **Snapshots del filesystem** como recuperación de primer nivel, con retención propia y **fuera
-     del alcance de la credencial del cliente**. `shadow_copy2` los publica en solo lectura;
-     publicarlos no los protege.
-  4. **Señal de detección**: tasa anómala de `rename`/`pwrite` por sesión y entropía de extensiones
-     nuevas. La regla es de `detection-engineering-standards`; el evento se genera aquí.
-- **Cifrado en tránsito por defecto**: SMB3 cifrado o NFS con `krb5p`/`xprtsec=tls`. "Es la red
-  interna" no es un control.
-- **Parcheo**: Samba publica CVEs remotos con regularidad y algunos son **RCE sin autenticar**
-  (verificado en 4.23.8: **CVE-2026-4408** en el servidor SAMR con `%u` en el script de
-  comprobación de contraseña; **CVE-2026-4480** en el subsistema de impresión con `%J`). Corolario:
-  **desactiva lo que no usas** —impresión, WINS, AD DC— porque su superficie te alcanza aunque no
-  la uses. SLA de parcheo por `vulnerability-management-standards`.
-- **Booleanos de SELinux**: `samba_export_all_rw` / `nfs_export_all_rw` desactivan el confinamiento
-  del servicio sobre el árbol entero. Activarlos "para que funcione" es un hallazgo, no una
-  solución (`selinux-standards`).
+- **Surface**: 445/TCP (SMB), 2049/TCP (NFS), 139/137/138 (NetBIOS — **switched off**), and the
+  *portmapper* on 111 in v3. **None of them crosses a perimeter without additional control.**
+- **Authentication**: Kerberos. NTLM is blocked or explicitly restricted; if everything falls back to
+  NTLM, the cause is almost always DNS/SPN (`dns-standards`), and fixing it is part of the job.
+- **Anonymous/guest: forbidden.** `map to guest = never`. And note: requiring signing **already
+  disables guest access** — if somebody "fixed" an incident by disabling signing, they undid two controls.
+- **Access auditing mandatory** on shares holding sensitive data: `vfs_full_audit` with the
+  operations that matter (`pwrite`, `rename`, `unlink`, `mkdir`, `set_nt_acl`), shipped **off
+  the server** (`observability-standards`). Without it the forensic analyst cannot answer "who deleted
+  this" and mass-encryption detection has no signal.
+- **Ransomware containment — it is a *permissions* problem, not an antivirus one**:
+  1. **Minimum write**: the "everyone writes everywhere" share is the condition that turns a
+     compromised workstation into a company outage.
+  2. **No share gives access to the backup repository**: the backup credential does not live on the
+     client and the repository is not mounted as a network drive (`backup-recovery-standards`).
+  3. **Filesystem snapshots** as first-level recovery, with their own retention and **outside
+     the reach of the client's credential**. `shadow_copy2` publishes them read-only;
+     publishing them does not protect them.
+  4. **Detection signal**: an anomalous rate of `rename`/`pwrite` per session and the entropy of new
+     extensions. The rule belongs to `detection-engineering-standards`; the event is generated here.
+- **Encryption in transit by default**: encrypted SMB3 or NFS with `krb5p`/`xprtsec=tls`. "It is the
+  internal network" is not a control.
+- **Patching**: Samba publishes remote CVEs regularly and some are **unauthenticated RCE**
+  (verified in 4.23.8: **CVE-2026-4408** in the SAMR server with `%u` in the password-check
+  script; **CVE-2026-4480** in the printing subsystem with `%J`). Corollary:
+  **disable what you do not use** — printing, WINS, AD DC — because their surface reaches you even
+  if you never use it. Patching SLA per `vulnerability-management-standards`.
+- **SELinux booleans**: `samba_export_all_rw` / `nfs_export_all_rw` disable the service's confinement
+  over the whole tree. Enabling them "to make it work" is a finding, not a
+  solution (`selinux-standards`).
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Mide antes de tocar**: el grueso de los "SMB va lento" son latencia de red, antivirus en el
-  cliente o metadatos (directorios con decenas de miles de entradas), no parámetros del servidor.
-- `nconnect=` en NFS multiplica conexiones TCP por montaje: ayuda con latencia y **no es gratis**
-  en el servidor. Fija un valor medido, no el máximo.
-- **Cifrado y `krb5p` cuestan CPU**: no es motivo para quitarlos; es motivo para dimensionar.
-- **Vigila**: sesiones y dialecto por sesión, profundidad de cola de `nfsd`, errores de
-  autenticación, ocupación y cuota por recurso, latencia por operación de metadatos.
-- **Recarga con `smbcontrol`**: reiniciar `smbd` con ficheros abiertos corrompe datos en
-  aplicaciones que no reintentan.
+- **Measure before touching anything**: most "SMB is slow" cases are network latency, antivirus on the
+  client or metadata (directories with tens of thousands of entries), not server parameters.
+- `nconnect=` in NFS multiplies TCP connections per mount: it helps with latency and **is not free**
+  on the server. Set a measured value, not the maximum.
+- **Encryption and `krb5p` cost CPU**: that is not a reason to drop them; it is a reason to size for them.
+- **Watch**: sessions and dialect per session, `nfsd` queue depth, authentication
+  errors, usage and quota per share, latency per metadata operation.
+- **Reload with `smbcontrol`**: restarting `smbd` with open files corrupts data in
+  applications that do not retry.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: mantente en la serie *current* de Samba o, como mucho, en la de mantenimiento;
-  **una serie en "solo seguridad" es un plan de actualización con fecha**, no un estado estable.
-- **Todo recurso tiene dueño, propósito y fecha de revisión.** Los servidores de ficheros mueren de
-  acumulación: recursos de proyectos cerrados en 2014 con permisos de 2014.
+- **Cadence**: stay on Samba's *current* series or, at most, the maintenance one;
+  **a series in "security only" is an upgrade plan with a date**, not a stable state.
+- **Every share has an owner, a purpose and a review date.** File servers die of
+  accumulation: shares from projects closed in 2014 with 2014's permissions.
 
-- ❌ **PROHIBIDO habilitar SMB1/NT1/CIFS.** Ni "temporalmente" para un escáner o una máquina
-  industrial: se segmenta ese dispositivo, no se degrada el servidor.
-- ❌ **PROHIBIDO `no_root_squash`.** Y exportar por NFS a `*` o a una subred sin justificación.
-- ❌ Desactivar la firma SMB para "arreglar" un cliente incompatible: se arregla o se aísla.
-- ❌ Acceso *guest*/anónimo de escritura. Y de lectura, solo con dato explícitamente público.
-- ❌ Publicar 445 o 2049 hacia Internet.
-- ❌ Tratar `vfs_recycle`, `vfs_worm` o las *shadow copies* publicadas como copia de seguridad o
-  como inmutabilidad (§5, CVE-2026-2340).
-- ❌ ksmbd expuesto a clientes no confiables, o con parcheo de kernel no garantizado.
-- ❌ Mezclar POSIX ACL y NT ACL en el mismo árbol. ❌ Recursos sin cuota.
-- ❌ `net usershare` habilitado sin caso de uso aprobado.
-- ❌ Montar el repositorio de copias como recurso compartido accesible desde puestos.
-- ❌ Activar `samba_export_all_rw`/`nfs_export_all_rw` como remedio de un problema de permisos.
-- ❌ Dar por buena una configuración porque monta desde una cuenta de administrador (§4).
+- ❌ **FORBIDDEN to enable SMB1/NT1/CIFS.** Not even "temporarily" for a scanner or an industrial
+  machine: that device gets segmented, the server does not get degraded.
+- ❌ **FORBIDDEN: `no_root_squash`.** And exporting over NFS to `*` or to a subnet without justification.
+- ❌ Disabling SMB signing to "fix" an incompatible client: it gets fixed or isolated.
+- ❌ *Guest*/anonymous write access. And read access only with explicitly public data.
+- ❌ Publishing 445 or 2049 to the Internet.
+- ❌ Treating `vfs_recycle`, `vfs_worm` or published shadow copies as a backup or
+  as immutability (§5, CVE-2026-2340).
+- ❌ ksmbd exposed to untrusted clients, or with no guaranteed kernel patching.
+- ❌ Mixing POSIX ACLs and NT ACLs in the same tree. ❌ Shares without quotas.
+- ❌ `net usershare` enabled without an approved use case.
+- ❌ Mounting the backup repository as a share reachable from workstations.
+- ❌ Enabling `samba_export_all_rw`/`nfs_export_all_rw` as a remedy for a permissions problem.
+- ❌ Accepting a configuration as good because it mounts from an administrator account (§4).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar por web:
+Before pinning anything in a real project, check on the web:
 
-1. **Serie de Samba vigente y su calendario** en `samba.org/samba/history/` y en la wiki de
-   *Release Planning* (a ago-2026: 4.24 *current*, 4.23 mantenimiento, 4.22 solo seguridad, 4.21
-   EOL desde 12-sep-2025). **La fuente es samba.org, no un feed de GitHub.**
-2. **CVEs de Samba desde tu versión** (las notas de release las listan con descripción; hay RCE sin
-   autenticar recientes, §5) y **CVEs de ksmbd en tu kernel** si lo usas.
-3. **Estado de SMB3 sobre QUIC en Samba**: si el servidor en Linux sigue exigiendo el módulo
-   `quic.ko` fuera del árbol, o si ya está en el kernel. **De eso depende que sea usable.**
-4. **Defaults exactos de `smb.conf`** (`server min protocol`, `server smb encrypt`, `map to guest`)
-   **en el manpage de tu versión**, no de memoria. **Hueco declarado**: no pude citar verbatim el
-   valor por defecto de `server min protocol` en 4.24 —el manpage es demasiado grande para
-   extraerlo con garantías—, así que aquí solo se afirma el cambio documentado en las notas de
-   **4.11** (`SMB2_02`); confírmalo con `testparm -v`, que es la fuente definitiva.
-5. **Política de firma y cifrado SMB del lado Windows** (`learn.microsoft.com`, *SMB security
-   hardening*): los defaults cambian por edición y versión, y determinan qué clientes rompen.
-6. **NFS sobre TLS**: kernel y `ktls-utils`/`tlshd` mínimos en tu distro, y si tu cabina o tu
-   cliente lo soportan (hay incompatibilidades documentadas, p. ej. con NFS sobre RDMA). Y
-   **`exports(5)`/`nfs(5)` de tu distro** para el comportamiento exacto de `sec=` y `xprtsec=`:
-   hay bugs históricos de opciones que se ignoran en silencio.
-7. **Licencias leídas en crudo** (`COPYING` de Samba = GPLv3, verificado).
+1. **Samba's current series and its calendar** at `samba.org/samba/history/` and in the
+   *Release Planning* wiki (as of Aug 2026: 4.24 *current*, 4.23 maintenance, 4.22 security only, 4.21
+   EOL since 12 Sept 2025). **The source is samba.org, not a GitHub feed.**
+2. **Samba CVEs since your version** (the release notes list them with descriptions; there are recent
+   unauthenticated RCEs, §5) and **ksmbd CVEs in your kernel** if you use it.
+3. **The state of SMB3 over QUIC in Samba**: whether the Linux server still requires the out-of-tree
+   `quic.ko` module, or whether it is already in the kernel. **Its usability depends on that.**
+4. **The exact `smb.conf` defaults** (`server min protocol`, `server smb encrypt`, `map to guest`)
+   **in your version's manpage**, not from memory. **Declared gap**: I could not quote verbatim the
+   default value of `server min protocol` in 4.24 — the manpage is too large to extract it with
+   confidence — so all that is asserted here is the change documented in the **4.11** release notes
+   (`SMB2_02`); confirm it with `testparm -v`, which is the definitive source.
+5. **Windows-side SMB signing and encryption policy** (`learn.microsoft.com`, *SMB security
+   hardening*): the defaults change per edition and version, and they determine which clients break.
+6. **NFS over TLS**: minimum kernel and `ktls-utils`/`tlshd` in your distribution, and whether your
+   array or your client supports it (there are documented incompatibilities, e.g. with NFS over RDMA). And
+   **your distribution's `exports(5)`/`nfs(5)`** for the exact behaviour of `sec=` and `xprtsec=`:
+   there are historical bugs where options are silently ignored.
+7. **Licences read raw** (Samba's `COPYING` = GPLv3, verified).
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

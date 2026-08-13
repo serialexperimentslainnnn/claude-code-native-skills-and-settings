@@ -3,411 +3,407 @@ name: air-gapped-standards
 description: Operating systems with no Internet path — what a real air gap is, how software gets in and what breaks when nothing can phone home. Use when designing or auditing an isolated, disconnected or "offline" environment, a unidirectional gateway or data diode, a sneakernet transfer process with one-time media and chain of custody, an internal mirror of dnf/apt/pip/npm/crates/maven or a container registry (Pulp with pulp export / pulp import and its toc.json, Foreman/Katello, Harbor proxy cache and replication, Sonatype Nexus Repository Community Edition and its usage limits, JFrog Artifactory, reposync, createrepo_c, apt-mirror, devpi, verdaccio), moving images with skopeo copy --dir, docker save, oras pull or a local registry:2 for cephadm/Rook/Kubernetes bootstrap, verifying signatures on the isolated side (rpm --import, gpgcheck, apt Signed-By, cosign verify --key/--trusted-root/--insecure-ignore-tlog, cosign save and --local-image), running a vulnerability scanner without feed access (trivy self-hosted DB, --offline-scan, --skip-version-check, --disable-telemetry, grype db import), patching and CVE triage with no NVD access, GNSS/GPS stratum-1 time and chrony when NTP has no upstream (Kerberos clockskew, expired TLS certificates), an offline root CA with internal CRL distribution and nextUpdate expiry, software licences that require activation or a license server reachable over the Internet, backups and DR inside the isolated enclave, telemetry and observability that cannot leave, or deciding whether the air gap is the right control at all or expensive theatre that makes patching impossible.
 ---
 
-# Estándares de entornos aislados (air-gapped)
+# Isolated (air-gapped) environment standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-> **Premisa dura**: **el air gap no es un control de seguridad, es una restricción de red que
-> desplaza el riesgo.** Lo que elimina —el acceso remoto directo— lo cambia por otros dos que casi
-> nadie presupuesta: **un canal de entrada humano y físico** (que es el vector documentado) y
-> **la incapacidad estructural de parchear a tiempo**. Un entorno aislado mal operado es menos
-> seguro que uno conectado y bien parcheado. La decisión no es "aislar o no", es **si puedes
-> pagar el coste operativo de estar aislado**.
+> **Hard premise**: **an air gap is not a security control, it is a network restriction that shifts
+> the risk.** What it removes — direct remote access — it swaps for two others that almost nobody
+> budgets for: **a human, physical entry channel** (which is the documented vector) and **the
+> structural inability to patch in time**. A badly operated isolated environment is less secure than
+> a connected and well-patched one. The decision is not "isolate or not", it is **whether you can
+> pay the operational cost of being isolated**.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al **diseño y la operación de un entorno sin ruta a Internet**: qué modelo de aislamiento
-se elige y qué garantiza, cómo entra el software y cómo se verifica **dentro**, la transferencia
-física y su gobierno, el parcheo y el triaje de vulnerabilidades sin feeds, el tiempo, la PKI
-interna, las licencias que llaman a casa, la copia y la recuperación dentro del recinto, la
-observabilidad que no puede salir, y el criterio de cuándo el aislamiento es la respuesta correcta.
+Applies to the **design and operation of an environment with no Internet path**: which isolation
+model is chosen and what it guarantees, how software gets in and how it is verified **inside**,
+physical transfer and its governance, patching and vulnerability triage without feeds, time,
+internal PKI, licences that phone home, backup and recovery inside the enclave, observability that
+cannot leave, and the criterion for when isolation is the right answer.
 
-Disparadores: "air gap", "air-gapped", "entorno aislado", "sin salida a Internet", "red separada",
-"offline", "sneakernet", "diodo de datos", "gateway unidireccional", `pulp export`/`pulp import`,
-`toc.json`, `reposync`, `createrepo_c`, `apt-mirror`, `debmirror`, `devpi`, `verdaccio`,
-`skopeo copy --dir`, `docker save`/`load`, `oras pull`, `registry:2` local, `cosign save`,
+Triggers: "air gap", "air-gapped", "isolated environment", "no Internet access", "separate
+network", "offline", "sneakernet", "data diode", "unidirectional gateway", `pulp export`/`pulp
+import`, `toc.json`, `reposync`, `createrepo_c`, `apt-mirror`, `debmirror`, `devpi`, `verdaccio`,
+`skopeo copy --dir`, `docker save`/`load`, `oras pull`, local `registry:2`, `cosign save`,
 `cosign verify --trusted-root`/`--insecure-ignore-tlog`/`--local-image`, `rpm --import`,
 `gpgcheck=1`, `Signed-By`, `trivy --offline-scan`/`--skip-version-check`, `grype db import`,
-`chronyc sources` sin upstream, GNSS/GPS estrato 1, `clockskew`, CRL `nextUpdate`, servidor de
-licencias, "activación", "no puede llamar a casa".
+`chronyc sources` with no upstream, GNSS/GPS stratum 1, `clockskew`, CRL `nextUpdate`, licence
+server, "activation", "cannot phone home".
 
-**No aplica**: ver `ot-ics-security-standards` (**la frontera hermana y la más probable**: el
-aislamiento **industrial** —modelo Purdue, DMZ de nivel 3.5, zonas y conductos de IEC 62443-3-2,
-diodo entre planta y corporativo, EWS, ficheros de proyecto de PLC, activos de 20 años que no se
-parchean por seguridad física— es **suyo**. Aquí, el aislamiento **como modo de operación
-general**, aplicable también a un enclave de I+D, una bóveda de backup, una CA raíz offline, un
-laboratorio de malware o un entorno regulado no industrial. Regla de arbitraje: **si al otro lado
-del diodo hay un proceso físico que puede matar a alguien, manda `ot-ics`; si al otro lado hay
-datos y servidores, manda esta skill**. Y el orden de prioridades cambia con ella: allí *safety*
-por encima de todo; aquí la confidencialidad suele ser lo que motivó el aislamiento),
-`ctf-lab-standards` (laboratorio de seguridad desechable y detonación de muestras: **el
-aislamiento allí protege al mundo del laboratorio; aquí protege al recinto del mundo** — son dos
-direcciones de amenaza distintas y dos diseños distintos), `firewall-policy-standards` (la regla
-como artefacto y su ciclo de vida; **aquí se decide si existe camino, allí se escribe la regla**.
-Corolario de §2.1: un entorno con reglas de firewall **no está aislado**, está segmentado),
-`networking-standards` y `routing-switching-standards` (VLAN, VRF, direccionamiento y switching
-del recinto), `vulnerability-management-standards` (**triaje, CVSS/EPSS/KEV, VEX y SLA de
-remediación son suyos**; aquí **por qué el calendario cambia** y cómo llegan los datos sin
-conexión), `backup-recovery-standards` (mecánica de la copia y restore probado; aquí la
-restricción de que el repositorio y sus claves no pueden estar fuera del recinto),
-`bcdr-standards` (RTO/RPO y ejercicios: **un plan de DR que asume descargar algo de Internet no
-es un plan en este entorno**), `secrets-management-standards` (gestor de secretos, rotación;
-aquí que **no puede depender de un KMS de nube**), `cryptography-pki-standards` (algoritmos,
-custodia y la **CA raíz offline como práctica** — la raíz offline es un air gap y su dueña es
-aquella skill; aquí la PKI *del recinto* y la disponibilidad de sus CRL),
-`identity-access-management-standards` (IdP, MFA y federación: **la federación con un IdP de
-nube es exactamente el camino de datos que el aislamiento niega**),
-`opensource-licensing-standards` (obligaciones de licencia del software espejado; aquí solo el
-estado de licencia verificado de las herramientas de §2.3),
-`cicd-standards` (pipeline y sus gates; aquí el pipeline **partido en dos** por el corte),
-`iac-standards` (Terraform/Ansible y sus proveedores y colecciones, que también hay que espejar),
-`kubernetes-standards` (registro, admisión y firma verificada en el clúster),
-`ceph-standards` (**hermana**: `cephadm` documenta explícitamente el despliegue en entorno
-aislado contra un registro de contenedores local; el registro es de aquí, el cluster es suyo),
-`observability-standards` (stack de telemetría; aquí que **no puede exportar**),
-`grc-compliance-standards` (marco normativo, evidencia y la eventual acreditación del recinto),
-`incident-response-forensics-standards` (respuesta y forense dentro del recinto, incluida la
-extracción de evidencia a través del mismo canal físico que todo lo demás),
-`detection-engineering-standards` (reglas y su actualización sin feed).
+**Not applicable**: see `ot-ics-security-standards` (**the sibling boundary and the most likely
+one**: **industrial** isolation — the Purdue model, the level 3.5 DMZ, IEC 62443-3-2 zones and
+conduits, a diode between plant and corporate, EWS, PLC project files, 20-year-old assets that are
+not patched for physical safety reasons — is **theirs**. Here, isolation **as a general operating
+mode**, applicable also to an R&D enclave, a backup vault, an offline root CA, a malware lab or a
+non-industrial regulated environment. Arbitration rule: **if on the other side of the diode there
+is a physical process that can kill somebody, `ot-ics` rules; if on the other side there is data
+and servers, this skill rules**. And the order of priorities changes with it: there *safety* above
+everything; here confidentiality is usually what motivated the isolation),
+`ctf-lab-standards` (a disposable security lab and sample detonation: **isolation there protects
+the world from the lab; here it protects the enclave from the world** — they are two different
+threat directions and two different designs), `firewall-policy-standards` (the rule as an artifact
+and its life cycle; **here it is decided whether a path exists, there the rule is written**.
+Corollary of §2.1: an environment with firewall rules **is not isolated**, it is segmented),
+`networking-standards` and `routing-switching-standards` (VLANs, VRFs, addressing and switching of
+the enclave), `vulnerability-management-standards` (**triage, CVSS/EPSS/KEV, VEX and remediation
+SLAs are theirs**; here **why the calendar changes** and how the data arrives with no connection),
+`backup-recovery-standards` (the mechanics of the copy and the tested restore; here the constraint
+that the repository and its keys cannot be outside the enclave),
+`bcdr-standards` (RTO/RPO and exercises: **a DR plan that assumes downloading something from the
+Internet is not a plan in this environment**), `secrets-management-standards` (secrets manager,
+rotation; here that it **cannot depend on a cloud KMS**), `cryptography-pki-standards` (algorithms,
+custody and the **offline root CA as a practice** — the offline root is an air gap and that skill
+owns it; here the PKI *of the enclave* and the availability of its CRLs),
+`identity-access-management-standards` (IdP, MFA and federation: **federating with a cloud IdP is
+exactly the data path that isolation denies**),
+`opensource-licensing-standards` (licence obligations of the mirrored software; here only the
+verified licence status of the tools in §2.3),
+`cicd-standards` (the pipeline and its gates; here the pipeline **split in two** by the cut),
+`iac-standards` (Terraform/Ansible and their providers and collections, which also have to be
+mirrored), `kubernetes-standards` (registry, admission and verified signatures in the cluster),
+`ceph-standards` (**sister**: `cephadm` explicitly documents deployment in an isolated environment
+against a local container registry; the registry belongs here, the cluster is theirs),
+`observability-standards` (telemetry stack; here that it **cannot export**),
+`grc-compliance-standards` (regulatory framework, evidence and the eventual accreditation of the
+enclave), `incident-response-forensics-standards` (response and forensics inside the enclave,
+including the extraction of evidence through the same physical channel as everything else),
+`detection-engineering-standards` (rules and their update with no feed).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar por web antes de fijar nada en un proyecto real (§8). Licencias y límites de uso de
-> las herramientas de espejado cambian, y son la clase de dato que más se escribe de memoria.
+> Verify on the web before fixing anything in a real project (§8). Licences and usage limits of the
+> mirroring tools change, and they are the kind of datum most often written from memory.
 
-### 2.1 Qué es un air gap de verdad
+### 2.1 What a real air gap is
 
-**Definición operativa, no comercial**: un entorno está aislado si **no existe ningún camino de
-datos** entre él y una red no confiable. Un camino de datos es cualquier cosa que mueva bytes,
-tenga o no dirección IP.
+**Operational, not commercial definition**: an environment is isolated if **no data path exists**
+between it and an untrusted network. A data path is anything that moves bytes, whether or not it
+has an IP address.
 
-| Lo que se llama air gap | Lo que es | Qué asumir |
+| What gets called an air gap | What it is | What to assume |
 |---|---|---|
-| VLAN separada con firewall y reglas de salida | **Red segmentada** | Hay camino. Si hay una regla, hay un flujo, y una regla mal puesta lo abre |
-| Red separada + jump host / bastión | **Red segmentada con un cuello** | Hay camino, y el cuello es el objetivo |
-| Red separada + diodo de datos (salida) | **Aislamiento unidireccional** | Nada entra por red **por diseño físico**; sigue habiendo un camino de entrada humano |
-| Red separada, sin enlace, con transferencia por soporte | **Air gap con sneakernet** | El USB **es** el camino, y es el vector documentado |
-| Sin enlace y sin transferencia de ningún tipo | Aislamiento total | Existe muy poco: el software hay que meterlo alguna vez |
+| A separate VLAN with a firewall and egress rules | **Segmented network** | There is a path. If there is a rule, there is a flow, and a badly placed rule opens it |
+| Separate network + jump host / bastion | **Segmented network with a bottleneck** | There is a path, and the bottleneck is the target |
+| Separate network + data diode (egress) | **Unidirectional isolation** | Nothing enters over the network **by physical design**; there is still a human entry path |
+| Separate network, no link, transfer by media | **Air gap with sneakernet** | The USB **is** the path, and it is the documented vector |
+| No link and no transfer of any kind | Total isolation | Very little of this exists: the software has to get in at some point |
 
-**Los tres caminos que nadie dibuja en el diagrama**: el **soporte extraíble**, el **portátil del
-proveedor o del integrador** que se conecta a hacer una intervención, y la **actualización de
-firmware** (BMC, BIOS, cabina, switch) que llega en una imagen descargada por alguien. Si tu
-modelo de amenaza no los cubre, no has modelado el air gap: has dibujado una VLAN.
+**The three paths nobody draws on the diagram**: **removable media**, the **vendor's or
+integrator's laptop** that gets plugged in to do a job, and the **firmware update** (BMC, BIOS,
+storage array, switch) that arrives in an image downloaded by somebody. If your threat model does
+not cover them, you have not modelled the air gap: you have drawn a VLAN.
 
-### 2.2 Modelos y cuándo usarlos
+### 2.2 Models and when to use them
 
-| Modelo | Encaja cuando | Coste real |
+| Model | Fits when | Real cost |
 |---|---|---|
-| **Aislado total** | El recinto no necesita datos frescos y su contenido no sale nunca (bóveda de backup, CA raíz offline, archivo legal) | Bajo. Es el único caso donde el air gap sale barato |
-| **Unidireccional con diodo de datos** | Necesitas **sacar** telemetría, logs o resultados sin admitir nada de vuelta | Alto: hardware específico, protocolos que toleren no tener ACK, y **cero canal de retorno** — ni siquiera para confirmar que llegó |
-| **Sneakernet controlado** | Necesitas **meter** software y datos con regularidad | El más caro en personas y el más peligroso. Es un proceso, no un cable |
+| **Totally isolated** | The enclave needs no fresh data and its content never leaves (backup vault, offline root CA, legal archive) | Low. It is the only case where the air gap comes cheap |
+| **Unidirectional with a data diode** | You need to **get out** telemetry, logs or results without admitting anything back | High: specific hardware, protocols that tolerate having no ACK, and **zero return channel** — not even to confirm arrival |
+| **Controlled sneakernet** | You need to **bring in** software and data regularly | The most expensive in people and the most dangerous. It is a process, not a cable |
 
-**El diodo no resuelve la entrada.** Un diodo garantiza que nada entra por ese enlace; el software
-sigue teniendo que entrar por otro sitio, y ese otro sitio es donde vive el riesgo. Diseñar el
-diodo y dejar el USB sin gobierno es optimizar la puerta blindada de una casa con la ventana
-abierta.
+**The diode does not solve entry.** A diode guarantees that nothing enters over that link; the
+software still has to get in somewhere else, and that somewhere else is where the risk lives.
+Designing the diode and leaving USB ungoverned is optimising the armoured door of a house with the
+window open.
 
-### 2.3 Espejado interno: elección y licencia verificada
+### 2.3 Internal mirroring: choice and verified licence
 
-| Herramienta | Licencia (verificada en crudo) | Criterio |
+| Tool | Licence (verified raw) | Criterion |
 |---|---|---|
-| **Pulp 3** (`pulpcore`) | **GPLv2** — fichero `LICENSE` de `pulp/pulpcore@main` | **Default para RPM/DEB/PyPI/contenedores** cuando el caso es exactamente "instancia downstream aislada": es el único con un flujo de **export/import** diseñado para ello (§3.1) |
-| **Foreman** / **Katello** | Foreman **GPL-3.0**, Katello **GPL-2.0** — ficheros `LICENSE`/`LICENSE.txt` de `theforeman/foreman@develop` y `Katello/katello@master` | Si ya gestionas la flota RHEL/Debian con Foreman; Katello es Pulp con gestión de contenido encima |
-| **Harbor** | **Apache-2.0** — fichero `LICENSE` de `goharbor/harbor@main` | **Default para registro de contenedores**: proyecto CNCF, con *proxy cache*, replicación entre instancias, etiquetas inmutables y verificación de firmas cosign en la política del proyecto |
-| **Sonatype Nexus Repository Community Edition** | **EPL-1.0** — fichero `LICENSE.txt` de `sonatype/nexus-public@master` | **Trampa de licencia**: el código es EPL, pero la edición gratuita **tiene límites de uso** — la documentación vigente cita **40.000 componentes y 100.000 peticiones/día**, con pausa de ingesta al superarlos (tras un periodo de gracia). **Un espejo completo de una distribución supera 40.000 componentes con facilidad**: si tu caso es un espejo de sistema operativo, esta herramienta te obliga a comprar. Verifica los números vigentes antes de elegirla (§8) |
-| **JFrog Artifactory** | **Propietario** | No hay repositorio público de fuentes que leer (`jfrog/artifactory-oss` devuelve 404). Válido si ya está pagado; **no cuentes con un escalón gratuito** sin verificarlo. **Hueco declarado**: no se ha verificado el estado actual de sus ediciones gratuitas |
-| `reposync` + `createrepo_c`, `apt-mirror`/`debmirror`, `devpi`, `verdaccio`, `registry:2` | Cada una la suya | **Válido y a menudo suficiente.** Menos gobierno y menos trazabilidad, pero sin límites de uso ni licencia sorpresa. Para un recinto pequeño, un `reposync` en cron y un `rsync` a soporte baten a una plataforma que nadie mantiene |
+| **Pulp 3** (`pulpcore`) | **GPLv2** — `LICENSE` file of `pulp/pulpcore@main` | **Default for RPM/DEB/PyPI/containers** when the case is exactly "isolated downstream instance": it is the only one with an **export/import** flow designed for it (§3.1) |
+| **Foreman** / **Katello** | Foreman **GPL-3.0**, Katello **GPL-2.0** — `LICENSE`/`LICENSE.txt` files of `theforeman/foreman@develop` and `Katello/katello@master` | If you already manage the RHEL/Debian fleet with Foreman; Katello is Pulp with content management on top |
+| **Harbor** | **Apache-2.0** — `LICENSE` file of `goharbor/harbor@main` | **Default for a container registry**: a CNCF project, with a *proxy cache*, replication between instances, immutable tags and cosign signature verification in the project policy |
+| **Sonatype Nexus Repository Community Edition** | **EPL-1.0** — `LICENSE.txt` file of `sonatype/nexus-public@master` | **Licence trap**: the code is EPL, but the free edition **has usage limits** — the current documentation cites **40,000 components and 100,000 requests/day**, with ingest paused when exceeded (after a grace period). **A full mirror of a distribution exceeds 40,000 components easily**: if your case is an operating system mirror, this tool forces you to buy. Verify the current numbers before choosing it (§8) |
+| **JFrog Artifactory** | **Proprietary** | There is no public source repository to read (`jfrog/artifactory-oss` returns 404). Valid if it is already paid for; **do not count on a free tier** without verifying it. **Declared gap**: the current status of its free editions has not been verified |
+| `reposync` + `createrepo_c`, `apt-mirror`/`debmirror`, `devpi`, `verdaccio`, `registry:2` | Each with its own | **Valid and often sufficient.** Less governance and less traceability, but no usage limits and no surprise licence. For a small enclave, a `reposync` in cron and an `rsync` to media beat a platform nobody maintains |
 
-**Regla previa a la elección**: enumera **todos** los ecosistemas que el recinto consume —RPM/DEB,
-PyPI, npm, crates, Maven, Go modules, imágenes OCI, colecciones de Ansible, proveedores de
-Terraform, charts de Helm, extensiones del IDE, bases de datos de escáneres— y comprueba cuáles
-soporta la herramienta. **El que falte lo va a meter alguien en un USB**, y ese es exactamente el
-fallo que querías evitar.
+**Rule before choosing**: enumerate **all** the ecosystems the enclave consumes — RPM/DEB, PyPI,
+npm, crates, Maven, Go modules, OCI images, Ansible collections, Terraform providers, Helm charts,
+IDE extensions, scanner databases — and check which ones the tool supports. **Whatever is missing,
+somebody will bring in on a USB**, and that is exactly the failure you wanted to avoid.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Cómo entra el software
+### 3.1 How software gets in
 
-Flujo canónico, en tres tramos, con la verificación **repetida en el lado interno**:
+Canonical flow, in three legs, with the verification **repeated on the internal side**:
 
-1. **Fuera (zona conectada)**: se sincroniza contra el origen upstream con **verificación de firma
-   activada** (`gpgcheck=1`/`repo_gpgcheck=1` en `dnf`, `Signed-By` en los `.sources` de `apt`,
-   hashes fijados en los *lockfiles* de lenguaje, `cosign verify` de las imágenes). Se produce un
-   **artefacto de transferencia** con su manifiesto de hashes.
-2. **Cruce**: soporte físico o diodo. El manifiesto viaja **junto** al contenido y, si el modelo
-   de amenaza lo pide, **firmado con una clave del recinto interno**, no con la de fuera.
-3. **Dentro**: se verifica **otra vez**, con la clave pública que ya vive dentro del recinto y que
-   llegó por un canal distinto (ceremonia de instalación, no el mismo USB).
+1. **Outside (connected zone)**: it is synchronised against the upstream origin with **signature
+   verification enabled** (`gpgcheck=1`/`repo_gpgcheck=1` in `dnf`, `Signed-By` in `apt`'s
+   `.sources`, hashes pinned in the language *lockfiles*, `cosign verify` for images). A **transfer
+   artifact** is produced with its hash manifest.
+2. **Crossing**: physical media or diode. The manifest travels **alongside** the content and, if
+   the threat model demands it, **signed with a key of the internal enclave**, not with the outside
+   one.
+3. **Inside**: it is verified **again**, with the public key that already lives inside the enclave
+   and that arrived through a different channel (an installation ceremony, not the same USB).
 
-**Regla no negociable**: **una firma que solo se verifica en el lado conectado no protege de
-nada.** El atacante que te preocupa está en el trayecto, no en el origen. Si el importador interno
-acepta lo que le llega porque "ya se verificó fuera", el air gap solo ha añadido latencia.
+**Non-negotiable rule**: **a signature verified only on the connected side protects nothing.** The
+attacker you are worried about is in transit, not at the origin. If the internal importer accepts
+what arrives because "it was already verified outside", the air gap has only added latency.
 
-**Pulp export/import** es el mecanismo que implementa esto de fábrica: la instancia *upstream*
-genera un `.tar` de las versiones de repositorio seleccionadas más un fichero **`-toc.json` con el
-hash SHA-256 global y por fichero**, que la instancia *downstream* —descrita en la documentación
-como **network-isolated**— usa para verificar e importar. Soporta **exportación incremental**
-(`full=False`, con `start_versions=` para fijar el punto de partida) y **troceado** por
-`chunk_size` para que quepa en el soporte. Ese es el patrón a replicar aunque no uses Pulp:
-**contenido + manifiesto firmado + verificación en destino + incrementalidad**.
+**Pulp export/import** is the mechanism that implements this out of the box: the *upstream*
+instance generates a `.tar` of the selected repository versions plus a **`-toc.json` file with the
+global and per-file SHA-256 hash**, which the *downstream* instance — described in the
+documentation as **network-isolated** — uses to verify and import. It supports **incremental
+export** (`full=False`, with `start_versions=` to fix the starting point) and **chunking** by
+`chunk_size` so it fits on the media. That is the pattern to replicate even if you do not use Pulp:
+**content + signed manifest + verification at the destination + incrementality**.
 
-**Imágenes de contenedor**: `skopeo copy --dest-dir` o `oras` producen un directorio OCI
-transportable; `docker save`/`load` funciona pero pierde firmas y metadatos. Dentro se empujan a
-Harbor o a un `registry:2` local. Si el consumidor es `cephadm`, Rook o Kubernetes, **el registro
-interno debe existir antes del bootstrap**: la documentación de `cephadm` describe exactamente
-este escenario y exige que todas las imágenes (Ceph, Prometheus, node-exporter, Grafana) estén ya
-dentro.
+**Container images**: `skopeo copy --dest-dir` or `oras` produce a transportable OCI directory;
+`docker save`/`load` works but loses signatures and metadata. Inside, they are pushed to Harbor or
+to a local `registry:2`. If the consumer is `cephadm`, Rook or Kubernetes, **the internal registry
+must exist before the bootstrap**: `cephadm`'s documentation describes exactly this scenario and
+requires all the images (Ceph, Prometheus, node-exporter, Grafana) to be inside already.
 
-**Firma en el lado aislado con cosign**: `cosign verify` puede trabajar sin salir a Internet con
-`--key` y un **`--trusted-root` (fichero JSON de raíz de confianza de Sigstore) copiado dentro**,
-y con `--local-image` sobre imágenes guardadas con `cosign save`. `--insecure-ignore-tlog` existe
-y a veces es inevitable, pero **es una degradación**: renuncia a la prueba de inclusión en el log
-de transparencia. Si lo usas, que sea una decisión escrita, no un flag copiado de un blog.
+**Signing on the isolated side with cosign**: `cosign verify` can work without going out to the
+Internet with `--key` and a **`--trusted-root` (Sigstore trusted root JSON file) copied inside**,
+and with `--local-image` over images saved with `cosign save`. `--insecure-ignore-tlog` exists and
+is sometimes unavoidable, but **it is a degradation**: it gives up the inclusion proof in the
+transparency log. If you use it, make it a written decision, not a flag copied from a blog.
 
-### 3.2 La transferencia física
+### 3.2 The physical transfer
 
-El USB es el vector documentado. No es teoría:
+USB is the documented vector. This is not theory:
 
-- **Stuxnet** entró en una instalación de enriquecimiento aislada por soporte extraíble. Es el
-  caso canónico y la razón por la que "aislado" dejó de significar "seguro".
-- **Agent.BTZ / Operación Buckshot Yankee (2008)**: una memoria USB infectada conectada a un
-  portátil de US CENTCOM propagó el gusano a **SIPRNet**, la red clasificada del Departamento de
-  Defensa. La limpieza llevó del orden de **14 meses**, provocó la prohibición de soportes
-  extraíbles y contribuyó a la creación de US Cyber Command. Un aislamiento de manual, derrotado
-  por una unidad extraíble.
-- **GoldenJackal** (investigación de ESET, publicada en octubre de 2024): grupo de
-  ciberespionaje con **dos juegos de herramientas distintos, diseñados específicamente para saltar
-  a sistemas aislados**, usados contra una embajada en Bielorrusia (2019) y contra un organismo
-  gubernamental europeo (mayo 2022 – marzo 2024). El patrón: un componente en el USB recolecta del
-  equipo aislado y **espera a que el mismo USB vuelva a un equipo conectado** para exfiltrar. No
-  hace falta una conexión: hace falta un ciclo.
+- **Stuxnet** got into an isolated enrichment facility through removable media. It is the canonical
+  case and the reason "isolated" stopped meaning "secure".
+- **Agent.BTZ / Operation Buckshot Yankee (2008)**: an infected USB stick plugged into a US CENTCOM
+  laptop propagated the worm to **SIPRNet**, the Department of Defense's classified network. The
+  cleanup took on the order of **14 months**, prompted the ban on removable media and contributed to
+  the creation of US Cyber Command. Textbook isolation, defeated by a removable drive.
+- **GoldenJackal** (ESET research, published in October 2024): a cyberespionage group with **two
+  different toolsets, specifically designed to jump into isolated systems**, used against an embassy
+  in Belarus (2019) and against a European government body (May 2022 – March 2024). The pattern: a
+  component on the USB collects from the isolated machine and **waits for that same USB to go back
+  to a connected machine** in order to exfiltrate. You do not need a connection: you need a cycle.
 
-Controles mínimos, y son de proceso, no de producto:
+Minimum controls, and they are process, not product:
 
-- **Soporte de un solo sentido y de un solo uso** para la entrada: se etiqueta, se usa una vez, se
-  destruye o se reformatea con procedimiento. **Nada de USB que va y viene**: el ciclo de ida y
-  vuelta es literalmente el mecanismo de exfiltración de GoldenJackal.
-- **Estación de escaneo intermedia** dedicada, con motores distintos de los del recinto, aislada
-  ella misma y con imagen reconstruible. Es un equipo sacrificable, no el portátil de nadie.
-- **Cadena de custodia**: quién generó el artefacto, quién lo transportó, quién lo importó, con
-  qué hash y a qué hora. Es el registro que necesitarás cuando haya que reconstruir un incidente.
-- **Autorun deshabilitado y control de dispositivos** en todo el recinto: solo soportes
-  registrados, por identificador, y solo en las máquinas designadas.
-- **El portátil del proveedor no entra.** Si tiene que intervenir, lo hace desde un equipo del
-  recinto, con cuenta nominal y sesión registrada. Es el punto que más se negocia y el que más
-  cuesta cuando se cede.
+- **One-way, single-use media** for entry: labelled, used once, destroyed or reformatted with a
+  procedure. **No USBs that come and go**: the round trip is literally GoldenJackal's exfiltration
+  mechanism.
+- **A dedicated intermediate scanning station**, with different engines from the enclave's,
+  isolated itself and with a rebuildable image. It is a sacrificial machine, not anybody's laptop.
+- **Chain of custody**: who generated the artifact, who transported it, who imported it, with what
+  hash and at what time. It is the record you will need when an incident has to be reconstructed.
+- **Autorun disabled and device control** across the enclave: only registered media, by identifier,
+  and only on the designated machines.
+- **The vendor's laptop does not come in.** If they have to work, they do it from an enclave
+  machine, with a named account and a logged session. It is the point that gets negotiated most and
+  the one that costs most when conceded.
 
-### 3.3 Parcheo y vulnerabilidades sin conexión
+### 3.3 Patching and vulnerabilities with no connection
 
-**El aislamiento no exime del parcheo: le cambia el calendario y el coste.** Y ese cambio es el
-argumento real contra el air gap innecesario — un entorno donde un parche tarda semanas en entrar
-es un entorno donde una vulnerabilidad explotada activamente vive semanas.
+**Isolation does not exempt you from patching: it changes its calendar and its cost.** And that
+change is the real argument against an unnecessary air gap — an environment where a patch takes
+weeks to get in is an environment where an actively exploited vulnerability lives for weeks.
 
-- **Los datos de vulnerabilidad hay que meterlos como cualquier otro artefacto**: bases de datos
-  de escáner, avisos del fabricante, OVAL de la distribución. Trivy documenta explícitamente el
-  escenario: sus bases (vulnerabilidades, Java, *checks*, VEX Hub) se empaquetan como **imágenes
-  OCI auto-alojables** en tu propio registro; el *bundle* de *checks* va **embebido en el binario**
-  como respaldo, con la fecha de la release que uses; `--offline-scan` evita las llamadas a Maven
-  Central; y `--skip-version-check --disable-telemetry` —**las dos, una sola no basta**— cortan las
-  conexiones a `check.trivy.dev`. Verifica el equivalente de tu escáner antes de asumirlo.
-- **El escáner es software que también entra por el canal físico**, y los escáneres son objetivo
-  de cadena de suministro: `kubernetes-standards` §2 documenta el compromiso de las *actions* de
-  Trivy en marzo de 2026. Fija por digest y verifica firma **también** para las herramientas de
-  seguridad.
-- **Calendario honesto**: define un SLA de importación (p. ej. ventana semanal de contenido, más
-  una vía **de emergencia ensayada** para un KEV crítico) y mídelo. El triaje sigue las reglas de
-  `vulnerability-management-standards`; lo que cambia aquí es que **el reloj empieza cuando el dato
-  entra, no cuando el CVE se publica**, y esa diferencia hay que medirla y reportarla, no ocultarla.
-- **Inventario y SBOM son más importantes aquí, no menos**: sin ellos no puedes responder "¿me
-  afecta?" cuando el aviso llega por un canal lento.
+- **Vulnerability data has to be brought in like any other artifact**: scanner databases, vendor
+  advisories, the distribution's OVAL. Trivy explicitly documents the scenario: its databases
+  (vulnerabilities, Java, *checks*, VEX Hub) are packaged as **self-hostable OCI images** in your
+  own registry; the *checks* bundle is **embedded in the binary** as a fallback, with the date of
+  the release you use; `--offline-scan` avoids the calls to Maven Central; and
+  `--skip-version-check --disable-telemetry` — **both, one alone is not enough** — cut the
+  connections to `check.trivy.dev`. Verify the equivalent for your scanner before assuming it.
+- **The scanner is software that also comes in through the physical channel**, and scanners are a
+  supply chain target: `kubernetes-standards` §2 documents the compromise of Trivy's *actions* in
+  March 2026. Pin by digest and verify signatures **also** for security tools.
+- **Honest calendar**: define an import SLA (e.g. a weekly content window, plus a **rehearsed
+  emergency route** for a critical KEV) and measure it. Triage follows the rules of
+  `vulnerability-management-standards`; what changes here is that **the clock starts when the datum
+  gets in, not when the CVE is published**, and that difference has to be measured and reported,
+  not hidden.
+- **Inventory and SBOM are more important here, not less**: without them you cannot answer "does it
+  affect me?" when the advisory arrives through a slow channel.
 
-### 3.4 Tiempo
+### 3.4 Time
 
-Sin fuente externa, **el reloj deriva**, y la deriva rompe cosas que nadie asocia con el reloj:
+With no external source, **the clock drifts**, and the drift breaks things nobody associates with
+the clock:
 
-- **Kerberos**: el desfase máximo tolerado por defecto en MIT krb5 es de **300 segundos (cinco
-  minutos)** (`clockskew` en `krb5.conf`). Superado, la autenticación falla en bloque y el síntoma
-  es "no puedo entrar en nada", no "el reloj va mal".
-- **TLS**: un reloj adelantado invalida certificados vigentes; uno atrasado acepta caducados. Y en
-  un recinto aislado **nadie recibe el aviso de caducidad por correo**.
-- **Logs y forense**: sin una referencia común, correlacionar dos servidores es imposible.
+- **Kerberos**: the maximum tolerated skew by default in MIT krb5 is **300 seconds (five
+  minutes)** (`clockskew` in `krb5.conf`). Once exceeded, authentication fails wholesale and the
+  symptom is "I can't log in to anything", not "the clock is wrong".
+- **TLS**: a fast clock invalidates valid certificates; a slow one accepts expired ones. And in an
+  isolated enclave **nobody gets the expiry warning by email**.
+- **Logs and forensics**: with no common reference, correlating two servers is impossible.
 
-Diseño: **fuente de estrato 1 dentro del recinto** —receptor GNSS/GPS con antena, u oscilador
-disciplinado— y `chrony` como servidor interno, con **al menos dos fuentes** para poder detectar
-que una miente. Sin GNSS, el patrón mínimo aceptable es un procedimiento **documentado y
-periódico** de ajuste manual contra una referencia fiable, con registro. Vigila la deriva como una
-métrica de primer nivel: es de las pocas que degrada en silencio hasta que rompe todo a la vez.
+Design: **a stratum-1 source inside the enclave** — a GNSS/GPS receiver with an antenna, or a
+disciplined oscillator — and `chrony` as the internal server, with **at least two sources** so you
+can detect that one is lying. Without GNSS, the minimum acceptable pattern is a **documented and
+periodic** manual adjustment procedure against a reliable reference, with a record. Watch drift as
+a first-class metric: it is one of the few that degrades silently until it breaks everything at
+once.
 
-### 3.5 PKI interna
+### 3.5 Internal PKI
 
-- El recinto necesita **su propia jerarquía**: raíz offline (dentro del propio recinto, o custodia
-  aparte), CA emisora en línea, y **puntos de distribución de CRL/OCSP internos y alcanzables**.
-- **El fallo clásico**: certificados emitidos por una CA cuyo CRL DP apunta a una URL de Internet.
-  Los clientes que validan revocación de forma estricta fallan; los que no, aceptan certificados
-  revocados. Ninguna de las dos es la que querías.
-- **El CRL caduca**: su `nextUpdate` es una bomba de relojería si nadie republica. Automatiza la
-  regeneración y **monitoriza el tiempo restante**, igual que monitorizas la caducidad de los
-  certificados.
-- Nada de anclas de confianza que dependan de un servicio externo. La cadena entera se resuelve
-  dentro.
+- The enclave needs **its own hierarchy**: an offline root (inside the enclave itself, or held
+  separately), an online issuing CA, and **internal and reachable CRL/OCSP distribution points**.
+- **The classic failure**: certificates issued by a CA whose CRL DP points at an Internet URL.
+  Clients that validate revocation strictly fail; those that do not, accept revoked certificates.
+  Neither is what you wanted.
+- **The CRL expires**: its `nextUpdate` is a time bomb if nobody republishes. Automate the
+  regeneration and **monitor the remaining time**, just as you monitor certificate expiry.
+- No trust anchors that depend on an external service. The whole chain is resolved inside.
 
-### 3.6 Licencias y dependencias que llaman a casa
+### 3.6 Licences and dependencies that phone home
 
-**Es el fallo de diseño que se descubre el día del corte, no antes.** Antes de aislar, inventaria
-qué componente necesita hablar con el exterior para **funcionar**, no solo para actualizarse:
+**It is the design failure discovered on cut-over day, not before.** Before isolating, inventory
+which component needs to talk to the outside to **function**, not just to update:
 
-- Activación de producto y servidores de licencia (incluidos los que solo comprueban "de vez en
-  cuando" y fallan al cabo de N días).
-- Comprobaciones de revocación de certificados y de sellado de tiempo (RFC 3161).
-- Telemetría obligatoria y comprobaciones de versión.
-- Resolución DNS de dominios externos, incluidas las que hace una librería en el arranque.
-- Autenticación federada contra un IdP de nube. **Federar con un IdP externo es tener un camino de
-  datos**: o el IdP vive dentro, o el recinto no está aislado.
-- Modelos, diccionarios y bases de datos que un servicio descarga en el primer arranque.
+- Product activation and licence servers (including those that only check "every now and then" and
+  fail after N days).
+- Certificate revocation checks and timestamping (RFC 3161).
+- Mandatory telemetry and version checks.
+- DNS resolution of external domains, including the ones a library does at start-up.
+- Federated authentication against a cloud IdP. **Federating with an external IdP means having a
+  data path**: either the IdP lives inside, or the enclave is not isolated.
+- Models, dictionaries and databases that a service downloads on first start.
 
-Exige por contrato, **antes de comprar**, la respuesta a "¿funciona sin salida a Internet y por
-cuánto tiempo?" y una vía de licenciamiento offline. Verifícalo **en un entorno realmente cortado**
-—no con una regla de firewall que puedas quitar—, porque la respuesta comercial y la técnica
-raramente coinciden.
+Demand contractually, **before buying**, the answer to "does it work with no Internet access and
+for how long?" and an offline licensing route. Verify it **in a genuinely cut-off environment** —
+not with a firewall rule you can remove — because the commercial answer and the technical one
+rarely match.
 
-### 3.7 Copia, recuperación y observabilidad
+### 3.7 Backup, recovery and observability
 
-- **La copia vive dentro del recinto** y su clave también: un repositorio cifrado cuyo secreto está
-  en un KMS de nube es un backup que no puedes restaurar. Mecánica en `backup-recovery-standards`;
-  la restricción es de aquí.
-- **El plan de DR no puede asumir descargas.** Todo lo necesario para reconstruir —imágenes ISO,
-  paquetes, imágenes de contenedor, binarios de las herramientas de restauración, la propia
-  documentación— tiene que estar dentro y **probado desde dentro**. Un runbook que empieza con
-  `curl https://…` no es un runbook en este entorno.
-- **Telemetría**: métricas, logs y trazas se quedan dentro; el stack de observabilidad se despliega
-  completo en el recinto. Si hay que sacar algo (informes, alertas al SOC corporativo), **el diodo
-  es el mecanismo correcto** y hay que aceptar que no habrá canal de retorno: nadie podrá "pedir
-  más contexto" desde fuera. Diseña lo que sale para ser autosuficiente.
-- **El SOC de fuera no ve el recinto.** O hay analistas dentro, o hay un flujo unidireccional bien
-  diseñado, o el recinto es un punto ciego de detección — que es exactamente donde un atacante que
-  ya entró quiere estar.
+- **The copy lives inside the enclave** and so does its key: an encrypted repository whose secret
+  is in a cloud KMS is a backup you cannot restore. The mechanics are in
+  `backup-recovery-standards`; the constraint belongs here.
+- **The DR plan cannot assume downloads.** Everything needed to rebuild — ISO images, packages,
+  container images, the restore tools' binaries, the documentation itself — has to be inside and
+  **tested from inside**. A runbook that starts with `curl https://…` is not a runbook in this
+  environment.
+- **Telemetry**: metrics, logs and traces stay inside; the observability stack is deployed in full
+  within the enclave. If something has to get out (reports, alerts to the corporate SOC), **the
+  diode is the correct mechanism** and you have to accept that there will be no return channel:
+  nobody will be able to "ask for more context" from outside. Design what leaves to be
+  self-sufficient.
+- **The SOC outside does not see the enclave.** Either there are analysts inside, or there is a
+  well-designed unidirectional flow, or the enclave is a detection blind spot — which is exactly
+  where an attacker who is already in wants to be.
 
-## 4. Verificación
+## 4. Verification
 
-El aislamiento se demuestra, no se declara.
+Isolation is demonstrated, not declared.
 
-1. **Prueba de camino**: desde varios hosts del recinto, intento activo de salida por HTTP(S), DNS,
-   NTP, ICMP y protocolos comunes hacia destinos externos controlados. Debe fallar **todo**, y hay
-   que revisar también qué se registró en el borde. Repetir tras cada cambio de red.
-2. **Inventario de caminos físicos**: puertos USB habilitados, unidades ópticas, BMC y su red de
-   gestión, consolas serie, Wi-Fi y Bluetooth en portátiles y servidores, y **cualquier
-   interfaz de gestión fuera de banda** que alguien haya conectado a la red corporativa "solo para
-   monitorizar". Esta última es la más común y la que rompe el aislamiento entero.
-3. **Prueba de la cadena de importación**: mete un artefacto **con la firma manipulada** a
-   propósito y comprueba que **el lado interno lo rechaza**. Si pasa, tu verificación es decorativa.
-4. **Prueba del reloj**: desvía el reloj de un servidor más allá de `clockskew` y comprueba que la
-   detección salta antes de que rompa la autenticación.
-5. **Prueba de licencias y arranque en frío**: reinicia el recinto completo sin ninguna
-   conectividad y comprueba qué no arranca. Hacerlo la primera vez en un desastre es el escenario
-   que se quería evitar.
-6. **Ensayo de la vía de emergencia**: cronometra cuánto tarda un parche crítico en estar aplicado
-   dentro, de extremo a extremo. Ese número es tu exposición real, y va en el registro de riesgos.
+1. **Path test**: from several enclave hosts, an active attempt to get out over HTTP(S), DNS, NTP,
+   ICMP and common protocols towards controlled external destinations. **Everything** must fail,
+   and you also have to review what was logged at the edge. Repeat after every network change.
+2. **Inventory of physical paths**: enabled USB ports, optical drives, BMCs and their management
+   network, serial consoles, Wi-Fi and Bluetooth on laptops and servers, and **any out-of-band
+   management interface** somebody has connected to the corporate network "just for monitoring".
+   That last one is the most common and the one that breaks the whole isolation.
+3. **Import chain test**: bring in an artifact **with a deliberately tampered signature** and check
+   that **the internal side rejects it**. If it goes through, your verification is decorative.
+4. **Clock test**: shift a server's clock beyond `clockskew` and check that detection fires before
+   it breaks authentication.
+5. **Licence and cold start test**: restart the whole enclave with no connectivity at all and check
+   what does not come up. Doing it for the first time during a disaster is the scenario you were
+   trying to avoid.
+6. **Emergency route rehearsal**: time how long it takes for a critical patch to be applied inside,
+   end to end. That number is your real exposure, and it goes in the risk register.
 
-## 5. Seguridad
+## 5. Security
 
-- **Modelo de amenaza correcto**: el aislamiento elimina el atacante remoto oportunista. **No
-  elimina** al insider, al proveedor, a la cadena de suministro del software que importas ni al
-  atacante paciente que espera a que un USB haga el ciclo de vuelta. Diseña para esos cuatro.
-- **Defensa en profundidad dentro del recinto**: el error más caro es tratar el interior como zona
-  de confianza. Sin salida a Internet, un movimiento lateral es igual de fácil y **mucho menos
-  visible**. Segmentación interna, mínimo privilegio, MFA, EDR y hardening siguen siendo
-  obligatorios (`linux-hardening-standards`, `identity-access-management-standards`).
-- **La exfiltración también es física.** Los mismos controles de soporte que aplicas a la entrada
-  aplican a la salida, y con más razón si lo que motivó el aislamiento fue la confidencialidad.
-- **Vigila lo que sí queda**: intentos de salida a Internet desde el recinto son una señal de
-  detección de altísimo valor —o hay una fuga de configuración, o hay algo intentando llamar a
-  casa—. Que fallen no significa que no haya que alertar. Al contrario: son la alerta más limpia
-  que vas a tener.
-- **Criptografía**: el recinto no puede apoyarse en servicios externos de sellado de tiempo,
-  transparencia ni gestión de claves. Todo dentro, con custodia y rotación propias.
+- **Correct threat model**: isolation removes the opportunistic remote attacker. It **does not
+  remove** the insider, the vendor, the supply chain of the software you import or the patient
+  attacker waiting for a USB to make the return trip. Design for those four.
+- **Defence in depth inside the enclave**: the most expensive mistake is treating the interior as a
+  trust zone. With no Internet access, lateral movement is just as easy and **much less visible**.
+  Internal segmentation, least privilege, MFA, EDR and hardening remain mandatory
+  (`linux-hardening-standards`, `identity-access-management-standards`).
+- **Exfiltration is physical too.** The same media controls you apply on entry apply on exit, and
+  all the more so if what motivated the isolation was confidentiality.
+- **Watch what remains**: attempts to reach the Internet from the enclave are an extremely
+  high-value detection signal — either there is a configuration leak, or there is something trying
+  to phone home. That they fail does not mean you should not alert. On the contrary: they are the
+  cleanest alert you are going to get.
+- **Cryptography**: the enclave cannot lean on external timestamping, transparency or key
+  management services. Everything inside, with its own custody and rotation.
 
-## 6. Cuándo el air gap es la respuesta correcta
+## 6. When the air gap is the right answer
 
-| Situación | Veredicto |
+| Situation | Verdict |
 |---|---|
-| Bóveda de backup inmutable, CA raíz offline, archivo de largo plazo | **Correcto y barato.** Poco contenido, poca frecuencia, poco coste operativo |
-| Sistema cuyo compromiso tiene consecuencias físicas o de seguridad nacional, con vida útil larga y sin capacidad de parcheo rápido | **Correcto**, y el coste está justificado (aquí la doctrina la fija `ot-ics-security-standards`) |
-| Datos con clasificación que lo exige por norma | **Correcto por obligación**; el trabajo es hacerlo bien, no discutirlo |
-| Laboratorio de análisis de malware o de I+D con material sensible | **Correcto**, con la dirección de amenaza invertida (`ctf-lab-standards`) |
-| Aplicación de negocio normal, "por si acaso" | **Teatro caro.** Degrada la seguridad: el parcheo se vuelve lento, la observabilidad ciega, y el equipo acaba abriendo excepciones que nadie audita |
-| Sustituir una gestión de accesos y una segmentación que no se quieren hacer | **Incorrecto.** El air gap no es un atajo para no hacer IAM ni política de red; es un control adicional **encima** de ambos |
+| Immutable backup vault, offline root CA, long-term archive | **Correct and cheap.** Little content, low frequency, low operational cost |
+| A system whose compromise has physical or national security consequences, with a long service life and no capacity for fast patching | **Correct**, and the cost is justified (here the doctrine is set by `ot-ics-security-standards`) |
+| Data whose classification requires it by rule | **Correct by obligation**; the work is doing it well, not arguing about it |
+| A malware analysis or R&D lab with sensitive material | **Correct**, with the threat direction inverted (`ctf-lab-standards`) |
+| A normal business application, "just in case" | **Expensive theatre.** It degrades security: patching becomes slow, observability blind, and the team ends up opening exceptions nobody audits |
+| Replacing access management and segmentation nobody wants to do | **Incorrect.** The air gap is not a shortcut for skipping IAM or network policy; it is an additional control **on top of** both |
 
-**Criterio en una línea**: el air gap se justifica cuando **el coste de estar desconectado es menor
-que el riesgo de estar conectado**, y ese cálculo hay que escribirlo con números —tiempo de
-parcheo, personas dedicadas, coste del espejo— no con adjetivos.
+**Criterion in one line**: the air gap is justified when **the cost of being disconnected is lower
+than the risk of being connected**, and that calculation has to be written with numbers — patching
+time, dedicated people, cost of the mirror — not with adjectives.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Long-term sustainability and prohibitions
 
-- **Coste recurrente, no proyecto**: el espejo, la ventana de importación, la estación de escaneo,
-  la fuente de tiempo, la PKI y el ensayo de DR son trabajo **continuo y con dueño nombrado**. Un
-  air gap sin presupuesto operativo se degrada a "red vieja sin parchear con reglas de firewall".
-- **Revisa la decisión cada año**: ¿sigue habiendo motivo? Un recinto aislado que se mantiene por
-  inercia es puro coste, y un recinto donde ya se han abierto tres excepciones "temporales" ya no
-  está aislado — está peor que segmentado, porque nadie revisa sus reglas.
+- **A recurring cost, not a project**: the mirror, the import window, the scanning station, the
+  time source, the PKI and the DR rehearsal are **continuous work with a named owner**. An air gap
+  with no operational budget degrades to "an old unpatched network with firewall rules".
+- **Review the decision every year**: is there still a reason? An isolated enclave kept by inertia
+  is pure cost, and an enclave where three "temporary" exceptions have already been opened is no
+  longer isolated — it is worse than segmented, because nobody reviews its rules.
 
-Prohibiciones explícitas:
+Explicit prohibitions:
 
-- ❌ Llamar "air gap" a una red con reglas de firewall hacia Internet. **PROHIBIDO** en cualquier
-  documento de diseño o de auditoría: la palabra fija expectativas de riesgo que la realidad no
-  cumple.
-- ❌ Verificar la firma **solo** en el lado conectado.
-- ❌ Soportes extraíbles que entran y salen del recinto (el ciclo de ida y vuelta).
-- ❌ Soportes personales, y equipos de proveedor conectados a la red del recinto.
-- ❌ Autorun habilitado; escritura sin control de dispositivos.
-- ❌ "Aquí no hace falta parchear porque está aislado". Es la afirmación que convierte el
-  aislamiento en una vulnerabilidad de larga duración.
-- ❌ Un recinto sin fuente de tiempo definida y monitorizada.
-- ❌ CRL o puntos de distribución que apunten fuera; anclas de confianza que dependan de un
-  servicio externo.
-- ❌ Excepciones "temporales" al aislamiento sin fecha de caducidad y sin revisión.
-- ❌ Federar la identidad del recinto contra un IdP externo.
-- ❌ Backups o claves de cifrado del recinto custodiadas fuera y solo fuera.
-- ❌ Un plan de DR que en algún paso requiera descargar algo.
-- ❌ Aislar sin haber inventariado qué componentes necesitan llamar a casa para funcionar.
-- ❌ Elegir una plataforma de espejado por su licencia de código sin comprobar los **límites de uso
-  del binario gratuito** (§2.3).
-- ❌ Tratar el interior del recinto como zona de confianza plana.
+- ❌ Calling a network with firewall rules towards the Internet an "air gap". **FORBIDDEN** in any
+  design or audit document: the word sets risk expectations that reality does not meet.
+- ❌ Verifying the signature **only** on the connected side.
+- ❌ Removable media that go in and out of the enclave (the round trip).
+- ❌ Personal media, and vendor machines connected to the enclave's network.
+- ❌ Autorun enabled; writing with no device control.
+- ❌ "There is no need to patch here because it is isolated". It is the statement that turns
+  isolation into a long-lived vulnerability.
+- ❌ An enclave with no defined and monitored time source.
+- ❌ CRLs or distribution points pointing outside; trust anchors that depend on an external
+  service.
+- ❌ "Temporary" exceptions to the isolation with no expiry date and no review.
+- ❌ Federating the enclave's identity against an external IdP.
+- ❌ Backups or encryption keys of the enclave held outside and only outside.
+- ❌ A DR plan that at some step requires downloading something.
+- ❌ Isolating without having inventoried which components need to phone home to function.
+- ❌ Choosing a mirroring platform by its code licence without checking the **usage limits of the
+  free binary** (§2.3).
+- ❌ Treating the inside of the enclave as a flat trust zone.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada de este documento en un diseño real:
+Before fixing anything from this document in a real design:
 
-1. **Licencias y límites de las plataformas de espejado**: verificadas en crudo a ago-2026 —
+1. **Licences and limits of the mirroring platforms**: verified raw as of August 2026 —
    Pulp **GPLv2** (`pulp/pulpcore@main:LICENSE`), Harbor **Apache-2.0**
    (`goharbor/harbor@main:LICENSE`), Nexus **EPL-1.0** (`sonatype/nexus-public@master:LICENSE.txt`),
-   Foreman **GPL-3.0**, Katello **GPL-2.0**. **JFrog Artifactory es propietario** y no tiene
-   repositorio de fuentes público. Re-verifica **siempre leyendo el fichero de licencia**, no la
-   etiqueta de GitHub ni la web comercial.
-2. **Límites de uso de Nexus Repository Community Edition**: la documentación vigente cita
-   **40.000 componentes / 100.000 peticiones diarias**; el anuncio original de Sonatype citó cifras
-   distintas (100.000 componentes / 200.000 peticiones). **Discrepancia declarada**: comprueba
-   `help.sonatype.com` para tu versión antes de dimensionar. **Hueco declarado**: no se ha podido
-   leer esa página en crudo (aplicación JS); el dato entró por búsqueda web, no verbatim.
-3. **Estado de las ediciones gratuitas de JFrog** (Artifactory OSS, JFrog Container Registry):
-   **hueco declarado**, no verificado.
-4. **Requisitos de conectividad de tu escáner**: la guía de air-gap de Trivy es la referencia
-   verificada aquí (bases como imágenes OCI auto-alojables, *checks* embebidos, `--offline-scan`,
-   `--skip-version-check` **y** `--disable-telemetry`). Para Grype, Wazuh, OpenSCAP u otro,
-   verifica el equivalente en su documentación — no lo asumas por analogía.
-5. **Flags de `cosign verify`** (`--key`, `--trusted-root`, `--local-image`,
-   `--insecure-ignore-tlog`): verificados contra `doc/cosign_verify.md` de `sigstore/cosign@main`.
-   Cambian entre versiones mayores; comprueba los de tu binario.
-6. **`clockskew` de Kerberos**: 300 s por defecto según la documentación de MIT krb5. Active
-   Directory tiene su propio parámetro y su propia política — verifícalo aparte si el recinto es
+   Foreman **GPL-3.0**, Katello **GPL-2.0**. **JFrog Artifactory is proprietary** and has no public
+   source repository. Always re-verify **by reading the licence file**, not the GitHub label or the
+   commercial site.
+2. **Usage limits of Nexus Repository Community Edition**: the current documentation cites
+   **40,000 components / 100,000 daily requests**; Sonatype's original announcement cited different
+   figures (100,000 components / 200,000 requests). **Declared discrepancy**: check
+   `help.sonatype.com` for your version before sizing. **Declared gap**: that page could not be read
+   raw (a JS application); the datum came in through a web search, not verbatim.
+3. **Status of JFrog's free editions** (Artifactory OSS, JFrog Container Registry):
+   **declared gap**, not verified.
+4. **Your scanner's connectivity requirements**: Trivy's air-gap guide is the reference verified
+   here (databases as self-hostable OCI images, embedded *checks*, `--offline-scan`,
+   `--skip-version-check` **and** `--disable-telemetry`). For Grype, Wazuh, OpenSCAP or anything
+   else, verify the equivalent in its documentation — do not assume it by analogy.
+5. **`cosign verify` flags** (`--key`, `--trusted-root`, `--local-image`,
+   `--insecure-ignore-tlog`): verified against `doc/cosign_verify.md` of `sigstore/cosign@main`.
+   They change between major versions; check the ones in your binary.
+6. **Kerberos `clockskew`**: 300 s by default according to MIT krb5's documentation. Active
+   Directory has its own parameter and its own policy — verify it separately if the enclave is
    Windows.
-7. **Casos citados**: Stuxnet, Agent.BTZ / Buckshot Yankee (2008, SIPRNet) y GoldenJackal (ESET,
-   octubre de 2024). Si necesitas citarlos formalmente, ve a la publicación original de ESET y a
-   las fuentes primarias del caso de 2008; los detalles de atribución están disputados y **este
-   documento no toma partido en la atribución**, solo usa los casos como prueba de que el vector
-   existe.
-8. **Normativa aplicable al recinto** (ENS, esquemas de clasificación nacionales, IEC 62443 si es
-   industrial): la fija `grc-compliance-standards` u `ot-ics-security-standards`. **Hueco
-   declarado**: este documento no cita requisitos de entornos clasificados; las fuentes de defensa
-   consultadas históricamente en este catálogo bloquean el acceso automatizado.
+7. **Cases cited**: Stuxnet, Agent.BTZ / Buckshot Yankee (2008, SIPRNet) and GoldenJackal (ESET,
+   October 2024). If you need to cite them formally, go to ESET's original publication and to the
+   primary sources of the 2008 case; the attribution details are disputed and **this document takes
+   no side on attribution**, it only uses the cases as proof that the vector exists.
+8. **Regulation applicable to the enclave** (ENS, national classification schemes, IEC 62443 if it
+   is industrial): it is set by `grc-compliance-standards` or `ot-ics-security-standards`.
+   **Declared gap**: this document cites no requirements for classified environments; the defence
+   sources consulted historically in this catalogue block automated access.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

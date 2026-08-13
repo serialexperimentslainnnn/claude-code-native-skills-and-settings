@@ -236,7 +236,7 @@ domain, licence or deployment restriction (§7).
 
 - Framework, CUDA and driver versions pinned in the image and updated deliberately: a major
   change can move the metrics and is treated as an experiment, not as maintenance. A model
-  trained without recoverable code, data and configuration **is a dead artefact**: it is not
+  trained without recoverable code, data and configuration **is a dead artifact**: it is not
   debugged or reproduced, and retiring it is the only honest option.
 
 **FORBIDDEN**:

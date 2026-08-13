@@ -3,17 +3,17 @@ name: mysql-mariadb-dba-standards
 description: Use when operating MySQL, MariaDB or Percona Server — my.cnf/mariadb.cnf and mysqld/mariadbd flags, innodb_buffer_pool_size, innodb_flush_log_at_trx_commit, innodb_redo_log_capacity, utf8mb4 charsets and collations, EXPLAIN/EXPLAIN ANALYZE plans, performance_schema and the sys schema, slow query log, mysqldump, mydumper, xtrabackup, mariabackup, binlog and GTID replication, semisync, InnoDB Cluster, Group Replication, Galera wsrep, ALGORITHM=INSTANT online DDL, gh-ost and pt-online-schema-change, Percona Toolkit, mysql_upgrade/mariadb-upgrade, or choosing between Oracle MySQL and MariaDB.
 ---
 
-# Estándares de MySQL / MariaDB / Percona (DBA)
+# MySQL / MariaDB / Percona standards (DBA)
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al elegir, diseñar, operar, ajustar o migrar servidores de la familia MySQL:
-**Oracle MySQL**, **MariaDB Server**, **Percona Server for MySQL** y **Percona XtraDB
-Cluster**. Cubre motor InnoDB y su dimensionado, diseño de esquema e índices, lectura de
-planes, DDL en línea, replicación y clústeres, respaldo lógico/físico, diagnóstico de
-rendimiento, actualizaciones mayores y superficie de seguridad del servidor.
+Applies when choosing, designing, operating, tuning or migrating servers of the MySQL family:
+**Oracle MySQL**, **MariaDB Server**, **Percona Server for MySQL** and **Percona XtraDB
+Cluster**. Covers the InnoDB engine and its sizing, schema and index design, plan reading,
+online DDL, replication and clusters, logical/physical backup, performance
+diagnostics, major upgrades and the server's security surface.
 
 Triggers: `my.cnf`, `mariadb.cnf`, `/etc/mysql/conf.d/*`, `mysqld`, `mariadbd`, `mysql`,
 `mariadb`, `mysqladmin`, `mysqlbinlog`, `mysqldump`, `mydumper`/`myloader`, `xtrabackup`,
@@ -24,495 +24,498 @@ Triggers: `my.cnf`, `mariadb.cnf`, `/etc/mysql/conf.d/*`, `mysqld`, `mariadbd`, 
 `binlog`, `GTID`, `gtid_mode`, `rpl_semi_sync`, `wsrep_*`, Galera, InnoDB Cluster,
 Group Replication, `ALGORITHM=INSTANT`, `ROW_FORMAT`, `ibd`, `ib_logfile`.
 
-**Tesis de la skill**: *MySQL y MariaDB llevan más de una década divergiendo y ya no son
-intercambiables*. "Es lo mismo, MariaDB es un drop-in" es una creencia falsa que sigue
-causando incidentes de migración, de replicación y de backup. **Elegir uno es una decisión
-de arquitectura con ADR**, no un detalle de empaquetado (§2, §3.1).
+**Thesis of the skill**: *MySQL and MariaDB have been diverging for more than a decade and are no
+longer interchangeable*. "It is the same thing, MariaDB is a drop-in" is a false belief that keeps
+causing migration, replication and backup incidents. **Choosing one is an architecture decision with
+an ADR**, not a packaging detail (§2, §3.1).
 
-**No aplica**: ver `data-platform-standards` (**skill madre**: PostgreSQL es el default
-relacional del catálogo y el principio rector es *un almacén por necesidad, no por moda* —
-esta skill se activa cuando MySQL/MariaDB **ya está ahí** o cuando un requisito duro lo
-impone, no para proponerlo por defecto; también fija Valkey/Redis y Kafka),
-`caching-cdn-standards` (la caché delante de la base de datos; **frontera explícita**: si
-el problema es una consulta sin índice o un N+1, la solución es arreglar la consulta, **no**
-añadir una caché — ver §6), `oracle-dba-standards` (Oracle Database: RMAN, Data Guard,
-RAC, AWR/ASH, licenciamiento y salida hacia PostgreSQL) y `sqlserver-dba-standards`
-(T-SQL, DBCC CHECKDB, Always On, Query Store, licenciamiento por core), `nosql-standards`/`search-engines-standards`/`vector-db-standards`/
-`timeseries-db-standards` (otros modelos de dato; la última cubre además la decisión de
-particionar por rango en PostgreSQL antes de adoptar un motor temporal),
-`message-brokers-standards` (colas, brokers y logs distribuidos),
-`streaming-cdc-standards` (**la captura desde el binlog es suya**: Debezium, conectores,
-esquema de eventos; **el impacto en el motor es de esta skill**: `binlog_format=ROW`,
-`binlog_row_image`, retención de binlogs, coste de I/O y de purga, réplica dedicada para el
-conector), `backup-recovery-standards` (mecánica genérica del repositorio, retención GFS,
-inmutabilidad, cifrado de la copia; aquí solo la herramienta específica del motor y la
-consistencia del punto de recuperación), `bcdr-standards` (**el plan**: BIA, RTO/RPO
-derivados del negocio, orden de recuperación, declaración de desastre),
-`ha-clustering-standards` (Pacemaker/Corosync, STONITH, VIP y clustering genérico de SO;
-aquí los clústeres nativos del motor), `linux-storage-standards` y `onprem-standards`
-(filesystem, I/O scheduler, NVMe, RAID y el hardware bajo el datadir),
-`observability-standards` (plataforma de métricas, trazas y alertas; aquí qué SLI exportar),
-`sre-practice-standards` e `incident-management-standards` (SLO y proceso de incidente),
-`vulnerability-management-standards` (triaje y cadencia de parcheo; aquí qué CVE del motor
-mirar), `linux-hardening-standards` y `firewall-policy-standards` (hardening del host y
-exposición de red), `identity-access-management-standards` (identidad corporativa; aquí
-cuentas y privilegios *dentro* del servidor), `cryptography-pki-standards` (algoritmos y
-ciclo de vida de los certificados que usa el TLS del motor), `secrets-management-standards`
-(dónde vive la contraseña de la aplicación), `privacy-engineering-standards` (qué dato
-personal puede almacenarse y su borrado; aquí cómo se ejecuta en el motor),
+**Not applicable**: see `data-platform-standards` (**parent skill**: PostgreSQL is the catalogue's
+relational default and the governing principle is *a store by need, not by fashion* —
+this skill activates when MySQL/MariaDB is **already there** or when a hard requirement
+imposes it, not to propose it by default; it also sets Valkey/Redis and Kafka),
+`caching-cdn-standards` (the cache in front of the database; **explicit boundary**: if
+the problem is a query with no index or an N+1, the solution is to fix the query, **not**
+to add a cache — see §6), `oracle-dba-standards` (Oracle Database: RMAN, Data Guard,
+RAC, AWR/ASH, licensing and the exit towards PostgreSQL) and `sqlserver-dba-standards`
+(T-SQL, DBCC CHECKDB, Always On, Query Store, per-core licensing),
+`nosql-standards`/`search-engines-standards`/`vector-db-standards`/
+`timeseries-db-standards` (other data models; the last one also covers the decision to
+partition by range in PostgreSQL before adopting a temporal engine),
+`message-brokers-standards` (queues, brokers and distributed logs),
+`streaming-cdc-standards` (**capture from the binlog is theirs**: Debezium, connectors,
+event schema; **the impact on the engine belongs to this skill**: `binlog_format=ROW`,
+`binlog_row_image`, binlog retention, I/O and purge cost, a dedicated replica for the
+connector), `backup-recovery-standards` (generic repository mechanics, GFS retention,
+immutability, encryption of the copy; here only the engine-specific tool and the
+consistency of the recovery point), `bcdr-standards` (**the plan**: BIA, RTO/RPO
+derived from the business, recovery order, disaster declaration),
+`ha-clustering-standards` (Pacemaker/Corosync, STONITH, VIP and generic OS clustering;
+here the engine's native clusters), `linux-storage-standards` and `onprem-standards`
+(filesystem, I/O scheduler, NVMe, RAID and the hardware under the datadir),
+`observability-standards` (metrics, traces and alerting platform; here which SLIs to export),
+`sre-practice-standards` and `incident-management-standards` (SLOs and the incident process),
+`vulnerability-management-standards` (triage and patching cadence; here which engine CVEs
+to look at), `linux-hardening-standards` and `firewall-policy-standards` (host hardening and
+network exposure), `identity-access-management-standards` (corporate identity; here
+accounts and privileges *inside* the server), `cryptography-pki-standards` (algorithms and
+lifecycle of the certificates the engine's TLS uses), `secrets-management-standards`
+(where the application's password lives), `privacy-engineering-standards` (which personal
+data may be stored and its erasure; here how it is executed in the engine),
 `aws-standards`/`azure-standards`/`gcp-standards` (RDS/Aurora MySQL, Azure Database for
-MySQL/MariaDB, Cloud SQL for MySQL como **servicios gestionados**: el criterio de esquema,
-índices y replicación de aquí sigue aplicando; la operación del plano de control, no),
-`kubernetes-standards` (operadores y statefulsets), `iac-standards` (aprovisionamiento),
-`php-standards`/`python-standards`/`typescript-standards`/`jvm-spring-standards` (**MySQL es
-el motor clásico de LAMP y de muchos frameworks**: ORM, driver, pool y migraciones desde el
-código son suyos; el esquema resultante y su coste, de aquí),
-`data-engineering-standards`/`analytics-bi-standards`/`lakehouse-standards` (analítica sobre
-el dato una vez extraído; **MySQL no es un almacén analítico**),
-`sql-standards` (**el lenguaje SQL**; regla de arbitraje espejada desde su §1: *si la pregunta
-cambia cómo se escribe la consulta o el DDL, es de `sql-standards`; si cambia qué motor se
-elige, cómo se dimensiona, respalda, replica o restaura, es de aquí*. Las peculiaridades de
-dialecto de MySQL/MariaDB que **cambian el código** —`ONLY_FULL_GROUP_BY` y el resto de
-`sql_mode`, `INSERT ... ON DUPLICATE KEY UPDATE` en ausencia de `MERGE`, colaciones y
-comparación de cadenas— son suyas; **el parámetro del servidor que las activa y su impacto
-operativo, de aquí**).
+MySQL/MariaDB, Cloud SQL for MySQL as **managed services**: the schema, index and
+replication criteria here still apply; control-plane operation does not),
+`kubernetes-standards` (operators and statefulsets), `iac-standards` (provisioning),
+`php-standards`/`python-standards`/`typescript-standards`/`jvm-spring-standards` (**MySQL is
+the classic engine of LAMP and of many frameworks**: ORM, driver, pool and migrations from the
+code are theirs; the resulting schema and its cost, from here),
+`data-engineering-standards`/`analytics-bi-standards`/`lakehouse-standards` (analytics over
+the data once extracted; **MySQL is not an analytical store**),
+`sql-standards` (**the SQL language**; arbitration rule mirrored from their §1: *if the question
+changes how the query or the DDL is written, it belongs to `sql-standards`; if it changes which
+engine is chosen, how it is sized, backed up, replicated or restored, it belongs here*. The
+MySQL/MariaDB dialect quirks that **change the code** —`ONLY_FULL_GROUP_BY` and the rest of
+`sql_mode`, `INSERT ... ON DUPLICATE KEY UPDATE` in the absence of `MERGE`, collations and string
+comparison— are theirs; **the server parameter that enables them and its operational impact,
+here**).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión y las fechas de EOL por web antes de fijarlas en un proyecto
-> real (§8). Los datos siguientes son de **agosto 2026** y caducan rápido.
+> Verify the latest version and the EOL dates on the web before committing to them in a real
+> project (§8). The following data are from **August 2026** and go stale fast.
 
-| Decisión | Por defecto | Motivo / alternativa justificable |
+| Decision | Default | Reason / justifiable alternative |
 |---|---|---|
-| Motor relacional del catálogo | **PostgreSQL** (ver `data-platform-standards`) | MySQL/MariaDB solo por sistema existente, requisito de producto (WordPress, Zabbix, Moodle…), competencia del equipo o servicio gestionado impuesto — **con ADR** |
-| Si es MySQL | **MySQL 9.7.x LTS** (GA 2026-04-21, EOL 2034-04-21; 9.7.2 de 2026-07-28) | **8.4 LTS** solo si hay bloqueo de compatibilidad (premier hasta 2029-04-30, extendido hasta 2032-04-30). **8.0 murió el 2026-04-30**: cualquier 8.0 en producción hoy es riesgo abierto |
-| Releases *Innovation* de MySQL | **PROHIBIDAS en producción** | Desde 9.7, Oracle pasa a **CalVer `YY.M`** (26.7 es la de julio-2026, siguiente 26.10). Una Innovation solo se soporta **hasta que sale la siguiente**: es un canal de vista previa, no una rama de producción |
-| Si es MariaDB | **MariaDB 12.3 LTS** (GA 2026-05-28) o **11.8 LTS** (EOL 2028-06-04, extendido 2033-10-22) | 11.4 LTS (EOL 2029-05-29) y 10.11 LTS (EOL 2028-02-16) siguen vivas para sistemas heredados. **10.6 murió el 2026-07-06**. Rolling releases trimestrales (12.0/12.1/12.2…): **no en producción** |
-| Percona | **Percona Server for MySQL 8.4.x** (8.4.10-10, 2026-06-30) | **No existe Percona Server 9.7**: si necesitas MySQL 9.7 LTS, es Oracle MySQL. Percona Server 8.0 EOL jun-2026 |
-| Motor de tablas | **InnoDB, sin excepciones** | MyISAM/Aria como motor de datos de negocio está **vetado** (§7) |
-| Juego de caracteres | **`utf8mb4`** + colación explícita y única en todo el esquema | `utf8`/`utf8mb3` es el desastre histórico de 3 bytes: no es UTF-8, rompe emoji y buena parte del BMP extendido |
-| Clave primaria | `BIGINT UNSIGNED AUTO_INCREMENT` o **UUIDv7 binario** (`BINARY(16)`) | **UUIDv4 como PK está vetado** en tablas de inserción intensiva (§3.2) |
-| Durabilidad | `innodb_flush_log_at_trx_commit=1` + `sync_binlog=1` | Cualquier otro valor es **pérdida de datos aceptada conscientemente**, con ADR (§3.1) |
-| Cambio de esquema | **`ALGORITHM=INSTANT` explícito** cuando la operación lo soporta; si no, `INPLACE`; si tampoco, **gh-ost** (o `pt-online-schema-change` si hay FK que no puedes tocar) | Nunca dejar que el servidor elija el algoritmo en silencio |
-| Respaldo físico | **XtraBackup 8.4** en MySQL/Percona; **`mariabackup`** en MariaDB | **XtraBackup no sirve para MariaDB** y puede producir copias corruptas en silencio: es una divergencia real de internals de InnoDB (§3.6) |
-| Respaldo lógico | **mydumper/myloader** para volumen; `mysqldump`/`mariadb-dump` solo para esquemas o tablas pequeñas | `mysqldump` es monohilo y su restauración no escala |
-| Herramientas | **Percona Toolkit 3.7.1-3** (2026-04-17) | `pt-query-digest`, `pt-archiver`, `pt-online-schema-change`, `pt-upgrade` siguen mantenidos |
-| Alta disponibilidad | **Replicación asíncrona con GTID + failover orquestado y ensayado** | Los clústeres síncronos (InnoDB Cluster/Group Replication, Galera/PXC) solo con necesidad medida y coste operativo asumido (§3.5) |
-| Migraciones DDL | Herramienta versionada (Flyway/Liquibase/Alembic/dbmate/Skeema) en repo y CI | Ver `data-platform-standards` §3; DDL manual en producción está vetado |
+| The catalogue's relational engine | **PostgreSQL** (see `data-platform-standards`) | MySQL/MariaDB only because of an existing system, a product requirement (WordPress, Zabbix, Moodle…), team competence or an imposed managed service — **with an ADR** |
+| If it is MySQL | **MySQL 9.7.x LTS** (GA 2026-04-21, EOL 2034-04-21; 9.7.2 of 2026-07-28) | **8.4 LTS** only if there is a compatibility blocker (premier until 2029-04-30, extended until 2032-04-30). **8.0 died on 2026-04-30**: any 8.0 in production today is open risk |
+| MySQL *Innovation* releases | **FORBIDDEN in production** | From 9.7, Oracle moves to **CalVer `YY.M`** (26.7 is the July-2026 one, next 26.10). An Innovation release is only supported **until the next one comes out**: it is a preview channel, not a production branch |
+| If it is MariaDB | **MariaDB 12.3 LTS** (GA 2026-05-28) or **11.8 LTS** (EOL 2028-06-04, extended 2033-10-22) | 11.4 LTS (EOL 2029-05-29) and 10.11 LTS (EOL 2028-02-16) are still alive for legacy systems. **10.6 died on 2026-07-06**. Quarterly rolling releases (12.0/12.1/12.2…): **not in production** |
+| Percona | **Percona Server for MySQL 8.4.x** (8.4.10-10, 2026-06-30) | **There is no Percona Server 9.7**: if you need MySQL 9.7 LTS, it is Oracle MySQL. Percona Server 8.0 EOL Jun-2026 |
+| Table engine | **InnoDB, no exceptions** | MyISAM/Aria as a business data engine is **vetoed** (§7) |
+| Character set | **`utf8mb4`** + an explicit, single collation across the whole schema | `utf8`/`utf8mb3` is the historic 3-byte disaster: it is not UTF-8, it breaks emoji and a good part of the extended BMP |
+| Primary key | `BIGINT UNSIGNED AUTO_INCREMENT` or **binary UUIDv7** (`BINARY(16)`) | **UUIDv4 as a PK is vetoed** in insert-heavy tables (§3.2) |
+| Durability | `innodb_flush_log_at_trx_commit=1` + `sync_binlog=1` | Any other value is **consciously accepted data loss**, with an ADR (§3.1) |
+| Schema change | **Explicit `ALGORITHM=INSTANT`** when the operation supports it; otherwise `INPLACE`; failing that, **gh-ost** (or `pt-online-schema-change` if there are FKs you cannot touch) | Never let the server choose the algorithm silently |
+| Physical backup | **XtraBackup 8.4** on MySQL/Percona; **`mariabackup`** on MariaDB | **XtraBackup does not work for MariaDB** and can produce corrupt copies silently: it is a real divergence of InnoDB internals (§3.6) |
+| Logical backup | **mydumper/myloader** for volume; `mysqldump`/`mariadb-dump` only for schemas or small tables | `mysqldump` is single-threaded and its restore does not scale |
+| Tooling | **Percona Toolkit 3.7.1-3** (2026-04-17) | `pt-query-digest`, `pt-archiver`, `pt-online-schema-change`, `pt-upgrade` are still maintained |
+| High availability | **Asynchronous replication with GTID + orchestrated, rehearsed failover** | Synchronous clusters (InnoDB Cluster/Group Replication, Galera/PXC) only with a measured need and the operational cost accepted (§3.5) |
+| DDL migrations | A versioned tool (Flyway/Liquibase/Alembic/dbmate/Skeema) in the repo and in CI | See `data-platform-standards` §3; manual DDL in production is vetoed |
 
-### 2.1 El mapa real de la familia (agosto 2026)
+### 2.1 The real map of the family (August 2026)
 
-| Producto | Qué es hoy | Criterio |
+| Product | What it is today | Criterion |
 |---|---|---|
-| **Oracle MySQL** | Upstream propietario de Oracle, Community (GPLv2) + Enterprise. Modelo Innovation/LTS, ahora CalVer | Default si ya estás en MySQL. Vigila: la actividad de desarrollo y el tamaño de la base de contribuidores es objeto de crítica pública en 2026 — factor de riesgo a monitorizar, no motivo automático de huida |
-| **MariaDB Server** | Fork de 2009 (Monty Widenius). **MariaDB plc es propiedad de K1 Investment Management desde sep-2024** (adquisición de ~37 M$ tras un paso desastroso por bolsa vía SPAC); la **MariaDB Foundation** gobierna el proyecto abierto y es independiente (AWS entró como patrocinador *diamond*) | Adoptable: el código es GPLv2 y la Foundation es la salvaguarda de gobernanza. **Pero el respaldo comercial está en manos de capital riesgo**: registra en el ADR el riesgo de cambio de modelo y verifica el estado societario antes de comprometerte a soporte de pago |
-| **Percona Server for MySQL** | Drop-in *real* de Oracle MySQL con instrumentación extra (mejor `performance_schema`, thread pool, auditoría, cifrado). GPLv2 | Elección sensata cuando quieres MySQL con herramientas de diagnóstico serias. Coste: **va por detrás de Oracle** (mainline 8.4, sin 9.7) |
-| **Percona XtraDB Cluster (PXC)** | Percona Server + Galera | Ver §3.5 antes de adoptarlo |
-| **Otros forks** (Aurora MySQL, TiDB, Vitess, Dolt, MyRocks…) | Compatibles por *protocolo de cable*, no por motor | Compatibilidad de wire protocol ≠ compatibilidad semántica. Cada uno es una decisión propia con su propio ADR |
+| **Oracle MySQL** | Oracle's proprietary upstream, Community (GPLv2) + Enterprise. Innovation/LTS model, now CalVer | The default if you are already on MySQL. Watch out: development activity and the size of the contributor base are the subject of public criticism in 2026 — a risk factor to monitor, not an automatic reason to flee |
+| **MariaDB Server** | A 2009 fork (Monty Widenius). **MariaDB plc has been owned by K1 Investment Management since Sep-2024** (a ~$37M acquisition after a disastrous spell on the stock market via a SPAC); the **MariaDB Foundation** governs the open project and is independent (AWS came in as a *diamond* sponsor) | Adoptable: the code is GPLv2 and the Foundation is the governance safeguard. **But the commercial backing is in the hands of private equity**: record in the ADR the risk of a model change and verify the corporate status before committing to paid support |
+| **Percona Server for MySQL** | A *real* drop-in for Oracle MySQL with extra instrumentation (better `performance_schema`, thread pool, auditing, encryption). GPLv2 | A sensible choice when you want MySQL with serious diagnostic tooling. Cost: **it lags behind Oracle** (mainline 8.4, no 9.7) |
+| **Percona XtraDB Cluster (PXC)** | Percona Server + Galera | See §3.5 before adopting it |
+| **Other forks** (Aurora MySQL, TiDB, Vitess, Dolt, MyRocks…) | Compatible by *wire protocol*, not by engine | Wire protocol compatibility ≠ semantic compatibility. Each is a decision of its own with its own ADR |
 
-## 3. Criterio técnico
+## 3. Technical criteria
 
-### 3.1 La divergencia MySQL ↔ MariaDB (verificado, agosto 2026)
+### 3.1 The MySQL ↔ MariaDB divergence (verified, August 2026)
 
-Hasta MariaDB 5.5 fue drop-in; desde el salto a 10.0 (2014) dejó de serlo, y **MariaDB ya
-no garantiza compatibilidad drop-in**. Lo que sigue siendo cierto: la **compatibilidad de
-protocolo de cable** — casi todos los drivers y clientes MySQL hablan con MariaDB. Lo que
-no lo es, y rompe migraciones:
+Up to MariaDB 5.5 it was a drop-in; since the jump to 10.0 (2014) it stopped being one, and
+**MariaDB no longer guarantees drop-in compatibility**. What remains true: **wire protocol
+compatibility** — almost all MySQL drivers and clients talk to MariaDB. What is not true, and
+breaks migrations:
 
-- **JSON**: MySQL usa un tipo `JSON` **binario nativo**, con índices multivaluados sobre
-  arrays, columnas generadas indexables y operadores `->`/`->>`. En MariaDB, `JSON` es un
-  **alias de `LONGTEXT`** con `CHECK (json_valid(...))`: cada operación reparsea el texto y
-  no hay operadores de flecha. Migrar en cualquier dirección exige tocar esquema y consultas.
-- **Replicación**: los **formatos de GTID son incompatibles**. No puedes poner una MariaDB
-  como réplica de un primario MySQL (ni viceversa) con GTID. Es la trampa que más veces
-  convierte una "migración transparente" en una parada.
-- **Alta disponibilidad**: **Group Replication / InnoDB Cluster** (MySQL) y **Galera** (MariaDB,
-  PXC) resuelven lo mismo con implementaciones distintas e **inmezclables**.
-- **Vectores**: **MariaDB 11.8 LTS** trae `VECTOR(N)` y **`VECTOR INDEX` nativo (HNSW
-  modificado)**, con `VEC_DISTANCE_EUCLIDEAN`/`VEC_DISTANCE_COSINE` y tuning
-  (`mhnsw_ef_search`, `mhnsw_default_m`). **MySQL 9.7 tiene el tipo `VECTOR` pero no índice
-  ANN en la edición comunitaria**: el índice y `DISTANCE()` viven en HeatWave (nube de
-  Oracle). Si necesitas búsqueda vectorial *en el motor MySQL-family*, hoy es MariaDB — o,
-  mejor, un almacén dedicado (ver `vector-db-standards`).
-- **Solo en MariaDB**: `SEQUENCE`, tablas versionadas por sistema (`SYSTEM VERSIONING`), modo
-  de compatibilidad Oracle, **thread pool en la edición comunitaria** (en MySQL es Enterprise),
+- **JSON**: MySQL uses a **native binary** `JSON` type, with multi-valued indexes over
+  arrays, indexable generated columns and the `->`/`->>` operators. In MariaDB, `JSON` is an
+  **alias for `LONGTEXT`** with `CHECK (json_valid(...))`: every operation re-parses the text and
+  there are no arrow operators. Migrating in either direction requires touching schema and queries.
+- **Replication**: the **GTID formats are incompatible**. You cannot set a MariaDB as
+  a replica of a MySQL primary (or vice versa) with GTID. It is the trap that most often
+  turns a "transparent migration" into an outage.
+- **High availability**: **Group Replication / InnoDB Cluster** (MySQL) and **Galera** (MariaDB,
+  PXC) solve the same thing with different, **unmixable** implementations.
+- **Vectors**: **MariaDB 11.8 LTS** brings `VECTOR(N)` and a native **`VECTOR INDEX` (modified
+  HNSW)**, with `VEC_DISTANCE_EUCLIDEAN`/`VEC_DISTANCE_COSINE` and tuning
+  (`mhnsw_ef_search`, `mhnsw_default_m`). **MySQL 9.7 has the `VECTOR` type but no ANN index
+  in the community edition**: the index and `DISTANCE()` live in HeatWave (Oracle's
+  cloud). If you need vector search *in the MySQL-family engine*, today that is MariaDB — or,
+  better, a dedicated store (see `vector-db-standards`).
+- **MariaDB only**: `SEQUENCE`, system-versioned tables (`SYSTEM VERSIONING`), Oracle
+  compatibility mode, **thread pool in the community edition** (in MySQL it is Enterprise),
   ColumnStore.
-- **Solo en MySQL**: JSON binario, índices invisibles, diccionario de datos transaccional,
-  MySQL Shell y su AdminAPI, Group Replication, derivadas laterales, CIDR en cuentas de usuario.
-- **Autenticación**: `caching_sha2_password` (MySQL) y el SHA-256 de MySQL **no son
-  trasladables** a MariaDB; `mysql_native_password` está desactivado por defecto desde 8.4.
-  Los usuarios se recrean, no se migran.
+- **MySQL only**: binary JSON, invisible indexes, transactional data dictionary,
+  MySQL Shell and its AdminAPI, Group Replication, lateral derived tables, CIDR in user accounts.
+- **Authentication**: `caching_sha2_password` (MySQL) and MySQL's SHA-256 are **not
+  transferable** to MariaDB; `mysql_native_password` has been disabled by default since 8.4.
+  Users are recreated, not migrated.
 
-**Criterio**: una migración MySQL↔MariaDB es un **proyecto de migración completo** —
-conversión de esquema, reescritura de consultas, recreación de cuentas, sincronización por
-volcado lógico (nunca por GTID), y ventana de corte con rollback. Presupuéstala como tal o
-no la hagas.
+**Criterion**: a MySQL↔MariaDB migration is a **full migration project** —
+schema conversion, query rewriting, account recreation, synchronisation by
+logical dump (never by GTID), and a cutover window with rollback. Budget it as such or
+do not do it.
 
-### 3.2 InnoDB: lo que de verdad mueve la aguja
+### 3.2 InnoDB: what really moves the needle
 
-- **`innodb_buffer_pool_size` es el ajuste de mayor impacto, con diferencia.** Punto de
-  partida en servidor dedicado: **50-75 % de la RAM**, dejando margen real para conexiones,
-  `sort_buffer`/`join_buffer` por sesión, el SO y el page cache. En servidor compartido o
-  contenedor con `memory.limit`, dimensiona por debajo del límite y **verifica que no muere
-  por OOM**. Métrica de decisión: tasa de lecturas físicas
-  (`Innodb_buffer_pool_reads` / `Innodb_buffer_pool_read_requests`) — si el *working set*
-  cabe, esa tasa tiende a cero y añadir RAM deja de rendir.
-- **Redo log**: dimensionado insuficiente → checkpoints agresivos y bloqueo de escrituras.
-  MySQL 8.0.30+/8.4/9.7 usan `innodb_redo_log_capacity` (sustituye a
-  `innodb_log_file_size`×`innodb_log_files_in_group`); MariaDB mantiene `innodb_log_file_size`.
-  **Verifica el nombre del parámetro contra la versión exacta antes de escribirlo** (§8).
-- **Durabilidad — el compromiso real**: `innodb_flush_log_at_trx_commit`
-  - `1` (default, **obligatorio para datos que importan**): fsync del redo en cada commit.
-    Durable ante caída del SO/host.
-  - `2`: escribe al page cache del SO en cada commit, fsync cada segundo. Sobrevive a la
-    caída del *proceso*, **no a la del host**. Ventana de pérdida ≈1 s.
-  - `0`: ventana de pérdida ≈1 s incluso ante caída del proceso.
-  El "truco de rendimiento" de bajarlo a 2 es **aceptar pérdida de datos**: solo con ADR, solo
-  en réplicas de lectura, entornos de test o cargas reconstruibles. Con `sync_binlog=1` y
-  `=1` obtienes durabilidad *y* consistencia binlog↔InnoDB; cualquier relajación rompe el
-  punto de recuperación de §3.6. Si el fsync duele, la respuesta correcta suele ser
-  **agrupar escrituras y usar almacenamiento con caché protegida por batería**, no relajar
-  la durabilidad.
-- **`innodb_flush_method`/`innodb_flush_neighbors`**: en NVMe/SSD, `O_DIRECT` y
-  `innodb_flush_neighbors=0`; el default heredado está pensado para discos rotativos.
-- **`innodb_io_capacity`/`_max`** acordes al almacenamiento real, medido — no copiados de un blog.
-- **MyISAM está muerto**: sin transacciones, sin recuperación ante caída, bloqueo a nivel de
-  tabla y corrupción silenciosa. Solo puede quedar en tablas internas del sistema donde el
-  motor lo imponga. Cualquier tabla de negocio en MyISAM/Aria es deuda a convertir, y su
-  presencia invalida cualquier estrategia de backup consistente.
+- **`innodb_buffer_pool_size` is by far the highest-impact setting.** Starting
+  point on a dedicated server: **50-75% of RAM**, leaving real headroom for connections,
+  per-session `sort_buffer`/`join_buffer`, the OS and the page cache. On a shared server or a
+  container with a `memory.limit`, size below the limit and **verify it does not die
+  by OOM**. Decision metric: the physical read rate
+  (`Innodb_buffer_pool_reads` / `Innodb_buffer_pool_read_requests`) — if the *working set*
+  fits, that rate tends to zero and adding RAM stops paying off.
+- **Redo log**: insufficient sizing → aggressive checkpoints and write stalls.
+  MySQL 8.0.30+/8.4/9.7 use `innodb_redo_log_capacity` (which replaces
+  `innodb_log_file_size`×`innodb_log_files_in_group`); MariaDB keeps `innodb_log_file_size`.
+  **Verify the parameter name against the exact version before writing it down** (§8).
+- **Durability — the real trade-off**: `innodb_flush_log_at_trx_commit`
+  - `1` (default, **mandatory for data that matters**): fsync of the redo on every commit.
+    Durable against an OS/host crash.
+  - `2`: writes to the OS page cache on every commit, fsync every second. Survives the
+    crash of the *process*, **not that of the host**. Loss window ≈1 s.
+  - `0`: loss window ≈1 s even on a process crash.
+  The "performance trick" of lowering it to 2 is **accepting data loss**: only with an ADR, only
+  on read replicas, test environments or rebuildable workloads. With `sync_binlog=1` and
+  `=1` you get durability *and* binlog↔InnoDB consistency; any relaxation breaks the
+  recovery point of §3.6. If the fsync hurts, the right answer is usually
+  **to batch writes and use storage with a battery-backed cache**, not to relax
+  durability.
+- **`innodb_flush_method`/`innodb_flush_neighbors`**: on NVMe/SSD, `O_DIRECT` and
+  `innodb_flush_neighbors=0`; the inherited default is designed for spinning disks.
+- **`innodb_io_capacity`/`_max`** matched to the real storage, measured — not copied off a blog.
+- **MyISAM is dead**: no transactions, no crash recovery, table-level
+  locking and silent corruption. It may only remain in internal system tables where the
+  engine imposes it. Any business table on MyISAM/Aria is debt to be converted, and its
+  presence invalidates any consistent backup strategy.
 
-### 3.3 Esquema: el índice agrupado manda
+### 3.3 Schema: the clustered index rules
 
-- **InnoDB organiza la tabla físicamente por la clave primaria** (índice agrupado). De ahí
-  todo lo demás:
-  - Una PK **monótona creciente** (`AUTO_INCREMENT`, UUIDv7, ULID, Snowflake) inserta siempre
-    al final: páginas llenas, poco split, índice compacto.
-  - Una **PK aleatoria (UUIDv4)** inserta en posiciones dispersas: *page splits* constantes,
-    fragmentación, páginas medio vacías, buffer pool desperdiciado y escritura amplificada.
-    Es el antipatrón más caro y más frecuente de la familia. **Veto** en tablas grandes.
-  - Si necesitas identificadores opacos hacia fuera: **UUIDv7/ULID en `BINARY(16)`** (nunca
-    `CHAR(36)`), o PK interna `BIGINT` + columna pública única.
-- **Toda tabla lleva PK explícita**. Sin ella InnoDB inventa una interna oculta que no puedes
-  usar, y la replicación por filas se degrada a escaneos completos en la réplica.
-- **PK estrecha**: cada índice secundario almacena la PK como puntero. Una PK ancha infla
-  *todos* los índices.
-- **Tipos**: `DATETIME`/`TIMESTAMP` con criterio explícito de zona horaria (documenta cuál y
-  por qué; `TIMESTAMP` convierte por `time_zone`, `DATETIME` no) — y verifica el estado del
-  **problema del año 2038** en tu versión (MariaDB 11.8 amplió el rango de `TIMESTAMP`).
-  `DECIMAL` para dinero, **nunca `FLOAT`/`DOUBLE`**. `ENUM` solo para conjuntos verdaderamente
-  fijos (añadir un valor es un DDL). `TEXT`/`BLOB` fuera de la fila caliente si no se leen
-  siempre. `NOT NULL` por defecto.
-- **Trampas clásicas**: `sql_mode` sin `STRICT_TRANS_TABLES` acepta truncados silenciosos —
-  **fija `sql_mode` explícitamente y versiónalo**; comparar `VARCHAR` con número provoca
-  conversión implícita y anula el índice; `utf8mb4` cambia el tamaño máximo de clave de índice
-  (767→3072 bytes con `DYNAMIC`), así que prefijos e índices largos hay que revisarlos.
-- **Colación**: elige **una** para todo el esquema y para las conexiones. Mezclar colaciones
-  en un `JOIN` fuerza conversión y mata el índice. Ten en cuenta que el default de colación
-  `utf8mb4` **cambió entre versiones mayores** (`general_ci` → `0900_ai_ci` en MySQL 8+,
-  `uca1400` en MariaDB reciente): declara la colación, no la heredes.
+- **InnoDB organises the table physically by the primary key** (clustered index). Everything
+  else follows from that:
+  - A **monotonically increasing** PK (`AUTO_INCREMENT`, UUIDv7, ULID, Snowflake) always inserts
+    at the end: full pages, few splits, a compact index.
+  - A **random PK (UUIDv4)** inserts at scattered positions: constant *page splits*,
+    fragmentation, half-empty pages, wasted buffer pool and write amplification.
+    It is the most expensive and most frequent antipattern of the family. **Vetoed** on large
+    tables.
+  - If you need opaque identifiers on the outside: **UUIDv7/ULID in `BINARY(16)`** (never
+    `CHAR(36)`), or an internal `BIGINT` PK + a unique public column.
+- **Every table has an explicit PK**. Without one, InnoDB invents a hidden internal one you cannot
+  use, and row-based replication degrades into full scans on the replica.
+- **Narrow PK**: every secondary index stores the PK as a pointer. A wide PK inflates
+  *all* the indexes.
+- **Types**: `DATETIME`/`TIMESTAMP` with an explicit time-zone criterion (document which one and
+  why; `TIMESTAMP` converts by `time_zone`, `DATETIME` does not) — and verify the status of the
+  **year 2038 problem** in your version (MariaDB 11.8 extended the `TIMESTAMP` range).
+  `DECIMAL` for money, **never `FLOAT`/`DOUBLE`**. `ENUM` only for genuinely
+  fixed sets (adding a value is a DDL). `TEXT`/`BLOB` out of the hot row if they are not read
+  every time. `NOT NULL` by default.
+- **Classic traps**: `sql_mode` without `STRICT_TRANS_TABLES` accepts silent truncation —
+  **set `sql_mode` explicitly and version it**; comparing a `VARCHAR` with a number causes
+  implicit conversion and cancels the index; `utf8mb4` changes the maximum index key size
+  (767→3072 bytes with `DYNAMIC`), so prefixes and long indexes have to be reviewed.
+- **Collation**: choose **one** for the whole schema and for the connections. Mixing collations
+  in a `JOIN` forces conversion and kills the index. Bear in mind that the `utf8mb4` collation
+  default **changed between major versions** (`general_ci` → `0900_ai_ci` in MySQL 8+,
+  `uca1400` in recent MariaDB): declare the collation, do not inherit it.
 
-### 3.4 Cambios de esquema en línea
+### 3.4 Online schema changes
 
-Estado verificado (agosto 2026):
+Verified status (August 2026):
 
-- **`ALGORITHM=INSTANT`** es el default en MySQL 8.4+ cuando la operación lo permite, y cubre:
-  añadir/quitar columna (en cualquier posición), añadir/quitar columna virtual o `DEFAULT`,
-  ampliar `ENUM`/`SET`, cambiar tipo de índice, renombrar tabla. **No cubre construir índices,
-  cambiar la PK ni la mayoría de cambios de tipo.**
-- Límites duros de INSTANT que muerden en producción: **máximo 64 versiones de fila** (255
-  desde MySQL 9.1) antes de exigir una reconstrucción; **no** en `ROW_FORMAT=COMPRESSED`, ni
-  con índice `FULLTEXT`, ni en tablas temporales; tope de 1022 columnas internas; solo
-  `LOCK=DEFAULT`. `OPTIMIZE TABLE` (reconstrucción) resetea el contador.
-- **Regla**: **especifica siempre `ALGORITHM=` y `LOCK=` explícitamente**, incluso el default.
-  Que el servidor elija en silencio un `COPY` sobre una tabla de 400 GB es un incidente.
-- Cuando INSTANT/INPLACE no llegan: **gh-ost** por defecto (sin triggers, lee el binlog,
-  corte controlado por ti — mejor bajo carga de escritura alta) o **`pt-online-schema-change`**
-  si hay claves foráneas que no puedes soltar o versiones antiguas. Ambos siguen mantenidos.
-  Ambos exigen espacio para una copia completa de la tabla y una ventana de corte.
-- Toda migración con la disciplina **expand/contract** de `data-platform-standards` §3, con
-  `lock_wait_timeout` acotado y reintento: un DDL que espera un *metadata lock* **encola todas
-  las consultas posteriores sobre esa tabla**, incluidos los `SELECT`. Es el mecanismo por el
-  que "un ALTER pequeño" tumba un servicio entero.
+- **`ALGORITHM=INSTANT`** is the default in MySQL 8.4+ when the operation allows it, and covers:
+  adding/dropping a column (in any position), adding/dropping a virtual column or `DEFAULT`,
+  extending `ENUM`/`SET`, changing index type, renaming a table. **It does not cover building
+  indexes, changing the PK or most type changes.**
+- Hard INSTANT limits that bite in production: **a maximum of 64 row versions** (255
+  since MySQL 9.1) before requiring a rebuild; **not** on `ROW_FORMAT=COMPRESSED`, nor
+  with a `FULLTEXT` index, nor on temporary tables; a cap of 1022 internal columns; only
+  `LOCK=DEFAULT`. `OPTIMIZE TABLE` (a rebuild) resets the counter.
+- **Rule**: **always specify `ALGORITHM=` and `LOCK=` explicitly**, even the default.
+  Letting the server silently choose a `COPY` on a 400 GB table is an incident.
+- When INSTANT/INPLACE do not reach: **gh-ost** by default (no triggers, reads the binlog,
+  the cutover controlled by you — better under heavy write load) or **`pt-online-schema-change`**
+  if there are foreign keys you cannot drop or old versions. Both are still maintained.
+  Both require space for a full copy of the table and a cutover window.
+- Every migration with the **expand/contract** discipline of `data-platform-standards` §3, with
+  a bounded `lock_wait_timeout` and retry: a DDL waiting on a *metadata lock* **queues every
+  subsequent query on that table**, including the `SELECT`s. It is the mechanism by which
+  "a small ALTER" takes down an entire service.
 
-### 3.5 Índices, consultas y replicación
+### 3.5 Indexes, queries and replication
 
-**Índices y planes**
-- `EXPLAIN` primero, `EXPLAIN ANALYZE` (MySQL 8.0.18+ / MariaAB con `ANALYZE FORMAT=JSON`)
-  para contrastar estimación con realidad. Lo que se mira: `type` (`ALL` = escaneo completo,
-  `index` = escaneo del índice completo — tampoco es bueno), `rows` estimadas vs reales,
-  `key` usada, `Extra` (`Using filesort`, `Using temporary`, `Using index` = cobertura).
-- **Índice compuesto: el orden importa** — prefijo por igualdad, luego rango, luego orden.
-  Un índice `(a,b,c)` sirve para `a`, `(a,b)`, `(a,b,c)`; **no** para `b` ni `(b,c)`. Una
-  condición de rango consume el resto del índice para ordenación.
-- **Cobertura**: si el índice contiene todas las columnas de la consulta, no toca la tabla
-  (`Using index`). Es la optimización de mayor retorno en lecturas calientes.
-- **Antipatrones que anulan el índice**: función o aritmética sobre la columna indexada
-  (`WHERE DATE(created_at) = …`), `LIKE '%algo'`, `OR` sobre columnas distintas sin índices
-  adecuados, conversión implícita de tipo o de colación, `SELECT *` cuando existía cobertura,
-  paginación con `OFFSET` grande (usa paginación por clave/*keyset*).
-- Índices duplicados o redundantes (`(a)` cuando existe `(a,b)`) cuestan escrituras y espacio:
-  revisión periódica con `pt-duplicate-key-checker` y `sys.schema_unused_indexes`.
+**Indexes and plans**
+- `EXPLAIN` first, `EXPLAIN ANALYZE` (MySQL 8.0.18+ / MariaAB with `ANALYZE FORMAT=JSON`)
+  to contrast the estimate with reality. What to look at: `type` (`ALL` = full scan,
+  `index` = full index scan — not good either), estimated vs actual `rows`,
+  the `key` used, `Extra` (`Using filesort`, `Using temporary`, `Using index` = covering).
+- **Composite index: order matters** — prefix by equality, then range, then ordering.
+  An index `(a,b,c)` serves `a`, `(a,b)`, `(a,b,c)`; **not** `b` or `(b,c)`. A
+  range condition consumes the rest of the index for ordering.
+- **Covering**: if the index contains all the columns of the query, it does not touch the table
+  (`Using index`). It is the highest-return optimisation on hot reads.
+- **Antipatterns that cancel the index**: a function or arithmetic on the indexed column
+  (`WHERE DATE(created_at) = …`), `LIKE '%something'`, `OR` over different columns without
+  suitable indexes, implicit type or collation conversion, `SELECT *` when covering existed,
+  pagination with a large `OFFSET` (use key/*keyset* pagination).
+- Duplicate or redundant indexes (`(a)` when `(a,b)` exists) cost writes and space:
+  periodic review with `pt-duplicate-key-checker` and `sys.schema_unused_indexes`.
 
-**Replicación**
-- **GTID activado siempre** (`gtid_mode=ON`+`enforce_gtid_consistency` en MySQL;
-  `gtid_strict_mode` en MariaDB): sin GTID, el failover y el reenganche de réplicas son
-  manuales y propensos a error.
-- `binlog_format=ROW` (default moderno) y `binlog_row_image` decidido conscientemente:
-  `FULL` es lo que necesita CDC (ver `streaming-cdc-standards`), `MINIMAL` reduce volumen
-  pero rompe consumidores que esperan la fila completa.
-- **Asíncrona** (default): rápida, con ventana de pérdida en failover igual al lag.
-  **Semisíncrona** (plugin en MySQL, `rpl_semi_sync_master_wait_point=AFTER_SYNC`): el
-  primario espera acuse de al menos una réplica → RPO≈0 a costa de latencia de commit y de un
-  modo degradado (con timeout, **cae a asíncrona silenciosamente**: alerta sobre ese estado o
-  no sabrás que perdiste la garantía).
-- **Lag de réplica — causas reales**, en orden de frecuencia: aplicador monohilo por falta de
-  paralelismo (`replica_parallel_workers` + `binlog_transaction_dependency_tracking=WRITESET`),
-  transacciones grandes o DDL largo, falta de PK en tablas (escaneos completos por fila),
-  I/O saturado, y consultas de lectura pesadas compitiendo en la réplica. Métrica útil:
-  `Seconds_Behind_Source` **miente** en varios escenarios — complementa con
-  heartbeat (`pt-heartbeat`) o marca de tiempo propia.
-- **Nunca escribas en una réplica** salvo `super_read_only=ON` desactivado deliberadamente
-  durante un failover controlado. `read_only` no basta para usuarios con `SUPER`.
-- **Clústeres — criterio honesto**:
-  - **InnoDB Cluster / Group Replication** (MySQL) y **Galera / PXC** (MariaDB/Percona) dan
-    consistencia y failover automático, pero su coste real es alto: sensibilidad extrema a la
-    latencia de red, **penalización en escrituras de una sola fila caliente** (conflictos de
-    certificación en Galera son errores que la aplicación **debe** reintentar), DDL que
-    bloquea el clúster (TOI) o requiere procedimiento rodante (RSU), escrituras multi-primario
-    que casi nunca compensan, y SST (transferencia de estado) que puede tardar horas en un
-    dataset grande.
-  - **Default**: primario + réplicas asíncronas con GTID y **failover orquestado y ensayado**
-    (Orchestrator, MySQL Shell/MySQL Router, MaxScale, ProxySQL según el caso). Adopta un
-    clúster síncrono solo con requisito medido de RPO≈0 y equipo capaz de operarlo —
-    documentado en ADR. Un clúster mal operado tiene *menos* disponibilidad que un primario
-    con réplica.
-  - Recuerda: `wsrep_notify_cmd` y la superficie SST son **la clase de vulnerabilidad más
-    grave de 2026 en esta familia** (§5).
+**Replication**
+- **GTID always enabled** (`gtid_mode=ON`+`enforce_gtid_consistency` in MySQL;
+  `gtid_strict_mode` in MariaDB): without GTID, failover and reattaching replicas are
+  manual and error-prone.
+- `binlog_format=ROW` (the modern default) and `binlog_row_image` consciously decided:
+  `FULL` is what CDC needs (see `streaming-cdc-standards`), `MINIMAL` reduces volume
+  but breaks consumers that expect the full row.
+- **Asynchronous** (default): fast, with a failover loss window equal to the lag.
+  **Semisynchronous** (a plugin in MySQL, `rpl_semi_sync_master_wait_point=AFTER_SYNC`): the
+  primary waits for an acknowledgement from at least one replica → RPO≈0 at the cost of commit
+  latency and a degraded mode (on timeout, **it silently falls back to asynchronous**: alert on
+  that state or you will not know you lost the guarantee).
+- **Replica lag — real causes**, in order of frequency: a single-threaded applier for lack of
+  parallelism (`replica_parallel_workers` + `binlog_transaction_dependency_tracking=WRITESET`),
+  large transactions or long DDL, missing PKs on tables (full scans per row),
+  saturated I/O, and heavy read queries competing on the replica. A useful metric:
+  `Seconds_Behind_Source` **lies** in several scenarios — complement it with
+  a heartbeat (`pt-heartbeat`) or a timestamp of your own.
+- **Never write to a replica** except with `super_read_only=ON` deliberately disabled
+  during a controlled failover. `read_only` is not enough for users with `SUPER`.
+- **Clusters — the honest criterion**:
+  - **InnoDB Cluster / Group Replication** (MySQL) and **Galera / PXC** (MariaDB/Percona) give
+    consistency and automatic failover, but their real cost is high: extreme sensitivity to
+    network latency, **a write penalty on a single hot row** (certification conflicts in Galera
+    are errors the application **must** retry), DDL that
+    blocks the cluster (TOI) or requires a rolling procedure (RSU), multi-primary writes
+    that almost never pay off, and SST (state transfer) that can take hours on a
+    large dataset.
+  - **Default**: primary + asynchronous replicas with GTID and **orchestrated, rehearsed
+    failover** (Orchestrator, MySQL Shell/MySQL Router, MaxScale, ProxySQL as the case may be).
+    Adopt a synchronous cluster only with a measured RPO≈0 requirement and a team capable of
+    operating it — documented in an ADR. A badly operated cluster has *less* availability than a
+    primary with a replica.
+  - Remember: `wsrep_notify_cmd` and the SST surface are **the most serious vulnerability class
+    of 2026 in this family** (§5).
 
-### 3.6 Respaldo y punto de recuperación
+### 3.6 Backup and recovery point
 
-- **Lógico** (`mysqldump`, `mariadb-dump`, **mydumper/myloader**): portable entre versiones
-  y motores, permite restaurar una tabla, **pero** su restauración es lenta y el tiempo crece
-  con el dataset. Consistencia solo con `--single-transaction` (**y solo si todo es InnoDB**:
-  una tabla MyISAM rompe la consistencia del volcado en silencio).
-- **Físico** (**XtraBackup 8.4** para MySQL/Percona; **`mariabackup`** para MariaDB): copia en
-  caliente a nivel de fichero, restauración rápida, es lo que hace viable el RTO. Reglas:
-  - **La versión mayor de la herramienta debe coincidir con la del servidor.** XtraBackup 8.4
-    no respalda datos creados por versiones anteriores a 8.4. XtraBackup 8.0 llegó a EOL en
-    junio de 2026.
-  - **XtraBackup no vale para MariaDB** (los internals de InnoDB divergieron): usar
-    `mariabackup`. Esta confusión produce copias que restauran y luego corrompen.
-  - Registra el **LSN/posición de binlog** de cada copia: es el ancla del PITR.
-- **PITR**: copia base + **binlogs archivados fuera del host**, con retención definida y
-  `binlog_expire_logs_seconds` coherente con esa retención. Sin binlogs archivados, tu RPO es
-  la antigüedad del último backup, digan lo que digan las diapositivas.
-- **Gate no negociable**: *un backup sin restauración probada no existe*. El SLI es la **edad
-  de la última restauración validada** en un host limpio, con verificación de integridad
-  (`mysqlcheck`/`CHECKSUM TABLE` o comparación con `pt-table-checksum`) — no "el job terminó
-  en verde".
-- El plan (RTO/RPO, orden de recuperación, quién declara el desastre, escenario ransomware)
-  vive en `bcdr-standards`; el repositorio, la inmutabilidad y el cifrado, en
-  `backup-recovery-standards`. Aquí solo la mecánica del motor.
+- **Logical** (`mysqldump`, `mariadb-dump`, **mydumper/myloader**): portable across versions
+  and engines, allows restoring a single table, **but** its restore is slow and the time grows
+  with the dataset. Consistency only with `--single-transaction` (**and only if everything is
+  InnoDB**: one MyISAM table silently breaks the dump's consistency).
+- **Physical** (**XtraBackup 8.4** for MySQL/Percona; **`mariabackup`** for MariaDB): a hot
+  file-level copy, fast restore, it is what makes the RTO viable. Rules:
+  - **The tool's major version must match the server's.** XtraBackup 8.4
+    does not back up data created by versions earlier than 8.4. XtraBackup 8.0 reached EOL in
+    June 2026.
+  - **XtraBackup is no good for MariaDB** (InnoDB internals diverged): use
+    `mariabackup`. This confusion produces copies that restore and then corrupt.
+  - Record the **LSN/binlog position** of each copy: it is the anchor for PITR.
+- **PITR**: base copy + **binlogs archived off the host**, with a defined retention and
+  `binlog_expire_logs_seconds` consistent with that retention. Without archived binlogs, your RPO is
+  the age of the last backup, whatever the slides say.
+- **Non-negotiable gate**: *a backup with no tested restore does not exist*. The SLI is the **age
+  of the last validated restore** on a clean host, with an integrity check
+  (`mysqlcheck`/`CHECKSUM TABLE` or comparison with `pt-table-checksum`) — not "the job finished
+  green".
+- The plan (RTO/RPO, recovery order, who declares the disaster, the ransomware scenario)
+  lives in `bcdr-standards`; the repository, immutability and encryption, in
+  `backup-recovery-standards`. Here only the engine mechanics.
 
-## 4. Calidad y gates de CI
+## 4. Quality and CI gates
 
-En orden de coste creciente. Los marcados **rompen el build**:
+In increasing order of cost. The ones marked **break the build**:
 
-1. **Lint de SQL y de esquema** (sqlfluff, o `skeema lint`): estilo, `sql_mode` estricto,
-   `utf8mb4` obligatorio, `ENGINE=InnoDB` obligatorio. **Gate**.
-2. **PK obligatoria en toda tabla nueva** y **veto de `FLOAT`/`DOUBLE` para importes** y de
-   `utf8`/`utf8mb3`, comprobados sobre el DDL del PR. **Gate**.
-3. **Migraciones aplicadas sobre un motor real** de la **misma versión mayor y misma
-   distribución que producción** (contenedor/Testcontainers): MySQL 9.7 se prueba contra MySQL
-   9.7, no contra MariaDB ni contra SQLite. Los dialectos mienten (§3.1). **Gate**.
-4. **Compatibilidad N-1** (expand/contract): el código actual funciona con el esquema nuevo y
-   el nuevo con el esquema previo. **Gate**.
-5. **Presupuesto de DDL**: el pipeline calcula si el `ALTER` es INSTANT/INPLACE/COPY y, si es
-   COPY o toca una tabla por encima de un umbral de filas, **exige aprobación explícita** y
-   ruta por gh-ost/pt-osc. **Gate**.
-6. **Revisión de planes en consultas críticas** con volumen representativo: un plan sobre
-   1.000 filas no predice nada sobre 100 M. Presupuesto de latencia p95 por consulta caliente.
-7. **`pt-upgrade`** antes de cada actualización mayor: compara resultados y planes de un
-   corpus real de consultas entre la versión actual y la destino.
-8. **Consistencia primario-réplica** con `pt-table-checksum` en calendario (la deriva
-   silenciosa existe, sobre todo tras incidentes de replicación).
-9. **Restauración de prueba automatizada** con cadencia y su resultado como métrica publicada.
-10. Datos de prueba sintéticos o anonimizados: **prohibido** clonar producción con datos
-    personales a entornos no productivos sin enmascarar.
+1. **SQL and schema lint** (sqlfluff, or `skeema lint`): style, strict `sql_mode`,
+   mandatory `utf8mb4`, mandatory `ENGINE=InnoDB`. **Gate**.
+2. **Mandatory PK on every new table** and **a veto on `FLOAT`/`DOUBLE` for amounts** and on
+   `utf8`/`utf8mb3`, checked against the PR's DDL. **Gate**.
+3. **Migrations applied against a real engine** of the **same major version and same
+   distribution as production** (container/Testcontainers): MySQL 9.7 is tested against MySQL
+   9.7, not against MariaDB nor against SQLite. Dialects lie (§3.1). **Gate**.
+4. **N-1 compatibility** (expand/contract): the current code works with the new schema and
+   the new code with the previous schema. **Gate**.
+5. **DDL budget**: the pipeline computes whether the `ALTER` is INSTANT/INPLACE/COPY and, if it is
+   COPY or touches a table above a row threshold, **requires explicit approval** and
+   a route via gh-ost/pt-osc. **Gate**.
+6. **Plan review on critical queries** with representative volume: a plan over
+   1,000 rows predicts nothing about 100M. A p95 latency budget per hot query.
+7. **`pt-upgrade`** before every major upgrade: it compares results and plans from a
+   real corpus of queries between the current version and the target.
+8. **Primary-replica consistency** with `pt-table-checksum` on a schedule (silent
+   drift is real, especially after replication incidents).
+9. **Automated test restore** on a cadence, with its result as a published metric.
+10. Synthetic or anonymised test data: **forbidden** to clone production with
+    personal data to non-production environments without masking.
 
-## 5. Seguridad
+## 5. Security
 
-- **Superficie de red**: el puerto 3306 **no se expone a Internet jamás**, ni "temporalmente".
-  Bind a interfaz interna, filtrado por defecto-denegar (`firewall-policy-standards`), acceso
-  administrativo por bastión. Un MySQL con `root@%` accesible es un incidente esperando fecha.
-- **Cuentas**: la identidad en esta familia es **`usuario@host`** — el `host` es parte de la
-  credencial y es un control de acceso real. **Prohibido `%`** salvo justificación con red
-  compensatoria; usuarios distintos para aplicación, migraciones, lectura, backup y
-  monitorización, cada uno con el mínimo privilegio (`SELECT,INSERT,UPDATE,DELETE` en **su**
-  esquema; nunca `ALL PRIVILEGES ON *.*`, nunca `SUPER`/`GRANT OPTION` para la aplicación).
-  Retirar cuentas anónimas y bases de datos de ejemplo en el aprovisionamiento.
-- **TLS obligatorio** también intra-red (`require_secure_transport=ON`, `REQUIRE SSL` o mTLS
-  por cuenta). Certificados y su ciclo de vida: `cryptography-pki-standards`.
-- **Autenticación**: `caching_sha2_password` en MySQL 8.4+/9.7 (`mysql_native_password`
-  desactivado por defecto — no lo reactives "para que funcione el driver viejo": actualiza el
-  driver). Contraseñas desde el gestor de secretos, nunca en `my.cnf` legible ni en variables
-  de entorno del contenedor en claro. `local_infile=OFF` salvo necesidad (vector de lectura de
-  ficheros del cliente). `secure_file_priv` acotado o vacío para desactivar `INTO OUTFILE`.
-- **CVEs a vigilar (verificados a agosto 2026 — re-verificar, §8)**:
-  - **Galera/wsrep**: `CVE-2026-49261` (**CVSS 10.0**, ejecución de comandos vía
-    `wsrep_notify_cmd` con el nombre de un nodo *joiner*), `CVE-2026-48165`, `CVE-2026-48163`
-    y `CVE-2026-44168` (comandos arbitrarios en el donante durante SST por rsync y mariabackup).
-    **Si tienes Galera/PXC, esto es prioridad uno**; mitigación temporal: desactivar
-    `wsrep_notify_cmd`. Es además el argumento operativo contra adoptar un clúster síncrono
-    sin equipo que lo parchee a ritmo.
-  - **MariaDB Connector/C `CVE-2026-44172`**: `mysql_real_escape_string()` **no escapa
-    correctamente con el charset `big5`** en protocolo de texto (fix en 3.3.19 / 3.4.9). Es la
-    demostración de por qué el escapado manual está vetado: **usa consultas preparadas del
-    lado del servidor**, siempre.
-  - MySQL entra en el **Oracle Critical Patch Update** trimestral (enero/abril/julio/octubre);
-    `CVE-2026-46850` (MySQL Shell, 9.9) y `CVE-2026-46860` (MySQL Router, 9.8) muestran que
-    **las herramientas del ecosistema son superficie de ataque igual que el servidor**.
-- **Cadena de suministro**: los repositorios de paquetes (Oracle, MariaDB, Percona), las
-  imágenes de contenedor y los operadores de Kubernetes son código privilegiado sobre tu dato.
-  Fija por *digest*, verifica firma y suma de comprobación del repositorio. **Precedente
-  obligatorio de 2026**: *Mini Shai-Hulud* / **CVE-2026-45321** demostró que se pueden
-  **falsificar atestaciones SLSA de nivel 3** — la procedencia ya **no** es prueba suficiente
-  por sí sola; combínala con pinning por digest, revisión de cambios y detección en ejecución
-  (ver `vulnerability-management-standards` y `cicd-standards`).
-- **Auditoría**: plugin de auditoría (Percona/MariaDB/Enterprise) donde haya requisito;
-  registro de accesos administrativos y de exportaciones masivas (control de exfiltración).
-  El **log general está prohibido en producción** (registra credenciales y mata el rendimiento).
-- **Datos personales**: clasificación, minimización y borrado real según
-  `privacy-engineering-standards`. Recuerda que los **binlogs y los backups también contienen
-  el dato borrado** durante su ventana de retención: documéntala.
+- **Network surface**: port 3306 is **never exposed to the Internet**, not even "temporarily".
+  Bind to an internal interface, deny-by-default filtering (`firewall-policy-standards`),
+  administrative access via a bastion. A MySQL with a reachable `root@%` is an incident waiting
+  for a date.
+- **Accounts**: identity in this family is **`user@host`** — the `host` is part of the
+  credential and is a real access control. **`%` is forbidden** except with justification and a
+  compensating network; different users for the application, migrations, reads, backup and
+  monitoring, each with least privilege (`SELECT,INSERT,UPDATE,DELETE` on **its**
+  schema; never `ALL PRIVILEGES ON *.*`, never `SUPER`/`GRANT OPTION` for the application).
+  Remove anonymous accounts and sample databases at provisioning time.
+- **TLS mandatory** intra-network too (`require_secure_transport=ON`, `REQUIRE SSL` or per-account
+  mTLS). Certificates and their lifecycle: `cryptography-pki-standards`.
+- **Authentication**: `caching_sha2_password` in MySQL 8.4+/9.7 (`mysql_native_password`
+  disabled by default — do not re-enable it "so the old driver works": update the
+  driver). Passwords from the secrets manager, never in a readable `my.cnf` nor in container
+  environment variables in the clear. `local_infile=OFF` unless needed (a vector for reading
+  client files). `secure_file_priv` restricted or empty to disable `INTO OUTFILE`.
+- **CVEs to watch (verified as of August 2026 — re-verify, §8)**:
+  - **Galera/wsrep**: `CVE-2026-49261` (**CVSS 10.0**, command execution via
+    `wsrep_notify_cmd` with the name of a *joiner* node), `CVE-2026-48165`, `CVE-2026-48163`
+    and `CVE-2026-44168` (arbitrary commands on the donor during SST via rsync and mariabackup).
+    **If you have Galera/PXC, this is priority one**; temporary mitigation: disable
+    `wsrep_notify_cmd`. It is also the operational argument against adopting a synchronous cluster
+    without a team that patches it at pace.
+  - **MariaDB Connector/C `CVE-2026-44172`**: `mysql_real_escape_string()` **does not escape
+    correctly with the `big5` charset** in the text protocol (fixed in 3.3.19 / 3.4.9). It is the
+    demonstration of why manual escaping is vetoed: **use server-side prepared statements**,
+    always.
+  - MySQL is part of the quarterly **Oracle Critical Patch Update** (January/April/July/October);
+    `CVE-2026-46850` (MySQL Shell, 9.9) and `CVE-2026-46860` (MySQL Router, 9.8) show that
+    **the ecosystem's tools are attack surface just like the server**.
+- **Supply chain**: the package repositories (Oracle, MariaDB, Percona), the
+  container images and the Kubernetes operators are privileged code over your data.
+  Pin by *digest*, verify the repository's signature and checksum. **A mandatory
+  2026 precedent**: *Mini Shai-Hulud* / **CVE-2026-45321** demonstrated that SLSA level 3
+  attestations **can be forged** — provenance is **no longer** sufficient proof
+  on its own; combine it with digest pinning, change review and runtime detection
+  (see `vulnerability-management-standards` and `cicd-standards`).
+- **Auditing**: an audit plugin (Percona/MariaDB/Enterprise) where there is a requirement;
+  logging of administrative access and of bulk exports (exfiltration control).
+  The **general log is forbidden in production** (it logs credentials and kills performance).
+- **Personal data**: classification, minimisation and real erasure per
+  `privacy-engineering-standards`. Remember that the **binlogs and the backups also contain
+  the deleted data** during their retention window: document it.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **El mito de "hay que optimizar la base"**: en la inmensa mayoría de los casos el motor está
-  bien y el problema es **la aplicación**: un **N+1** del ORM que emite 3.000 consultas por
-  petición, ausencia de índice, `SELECT *` sobre tablas anchas, paginación por `OFFSET`, o una
-  transacción abierta durante una llamada HTTP. **Diagnostica antes de tocar `my.cnf`.** Subir
-  el buffer pool no arregla un N+1; solo lo hace más rápido de ejecutar 3.000 veces.
-  → **Frontera con `caching-cdn-standards`**: poner una caché delante de una consulta sin
-  índice es esconder el problema y duplicar estado. Primero el índice o la consulta; la caché,
-  después y con criterio.
-- **Instrumentación**: `performance_schema` **activado** (con consumers acotados si la memoria
-  aprieta) y **el esquema `sys` como interfaz de lectura**: `sys.statement_analysis`,
+- **The myth of "the database needs optimising"**: in the vast majority of cases the engine is
+  fine and the problem is **the application**: an ORM **N+1** issuing 3,000 queries per
+  request, a missing index, `SELECT *` over wide tables, `OFFSET` pagination, or a
+  transaction left open during an HTTP call. **Diagnose before touching `my.cnf`.** Raising
+  the buffer pool does not fix an N+1; it only makes it faster to run 3,000 times.
+  → **Boundary with `caching-cdn-standards`**: putting a cache in front of a query with no
+  index is hiding the problem and duplicating state. First the index or the query; the cache
+  afterwards and with judgement.
+- **Instrumentation**: `performance_schema` **enabled** (with bounded consumers if memory
+  is tight) and **the `sys` schema as the read interface**: `sys.statement_analysis`,
   `sys.schema_unused_indexes`, `sys.schema_tables_with_full_table_scans`,
   `sys.io_global_by_file_by_bytes`, `sys.innodb_lock_waits`.
-- **Consultas lentas**: `slow_query_log` con `long_query_time` bajo (0.1-0.5 s) y
-  `log_queries_not_using_indexes` **de forma temporal** (inunda el disco), digerido con
-  `pt-query-digest`. La unidad de trabajo es el **agregado por huella de consulta**, no la
-  consulta lenta aislada: mil consultas de 20 ms pesan más que una de 2 s.
-- **SLI mínimos** a exportar (ver `observability-standards` para la plataforma):
-  conexiones usadas vs `max_connections` (y rechazos), QPS por tipo, latencia p95/p99,
-  tasa de lecturas físicas del buffer pool, **lag de réplica** (con heartbeat, no solo
-  `Seconds_Behind_Source`), espera de bloqueos y deadlocks, tamaño de la lista de historial
-  (`History list length` — su crecimiento delata transacciones abiertas), uso de disco del
-  datadir y de los binlogs, **edad de la última restauración validada**.
-- **Conexiones**: MySQL usa un hilo por conexión; `max_connections` alto es una trampa de
-  memoria y de cambio de contexto. **Pool en la aplicación** dimensionado (no 200 conexiones
-  por pod), o **ProxySQL/MaxScale** como multiplexor cuando el número de clientes lo exige.
-  Thread pool: comunitario en MariaDB y Percona, Enterprise en Oracle MySQL.
-- **Transacciones cortas**, `innodb_lock_wait_timeout` y `wait_timeout` acotados,
-  `MAX_EXECUTION_TIME` en consultas de lectura de la aplicación. Nada de transacciones abiertas
-  esperando a un servicio externo.
-- **Deadlocks**: son normales en carga concurrente; la aplicación **debe reintentar** con
-  backoff. Si son frecuentes, la causa es orden de bloqueo inconsistente entre transacciones,
-  no el motor. `SHOW ENGINE INNODB STATUS` para el último; `innodb_print_all_deadlocks` para
-  investigar un patrón.
-- **Capacidad**: proyecta tamaño de tablas e índices, IOPS y conexiones con datos; revisa
-  trimestralmente. El coste (FinOps) es atributo de diseño: archivado con `pt-archiver` y
-  particionado por rango de fecha antes que "más disco".
-- **Configuración como código**: `my.cnf` versionado y desplegado por IaC. Cero cambios
-  manuales en producción; cada parámetro con motivo escrito y medición antes/después.
+- **Slow queries**: `slow_query_log` with a low `long_query_time` (0.1-0.5 s) and
+  `log_queries_not_using_indexes` **temporarily** (it floods the disk), digested with
+  `pt-query-digest`. The unit of work is the **aggregate by query fingerprint**, not the
+  isolated slow query: a thousand 20 ms queries weigh more than one 2 s query.
+- **Minimum SLIs** to export (see `observability-standards` for the platform):
+  connections used vs `max_connections` (and rejections), QPS by type, p95/p99 latency,
+  buffer pool physical read rate, **replica lag** (with a heartbeat, not just
+  `Seconds_Behind_Source`), lock waits and deadlocks, history list size
+  (`History list length` — its growth betrays open transactions), disk usage of the
+  datadir and of the binlogs, **the age of the last validated restore**.
+- **Connections**: MySQL uses one thread per connection; a high `max_connections` is a trap
+  of memory and context switching. **A pool in the application** properly sized (not 200
+  connections per pod), or **ProxySQL/MaxScale** as a multiplexer when the number of clients
+  demands it. Thread pool: community in MariaDB and Percona, Enterprise in Oracle MySQL.
+- **Short transactions**, bounded `innodb_lock_wait_timeout` and `wait_timeout`,
+  `MAX_EXECUTION_TIME` on the application's read queries. No transactions left open
+  waiting on an external service.
+- **Deadlocks**: they are normal under concurrent load; the application **must retry** with
+  backoff. If they are frequent, the cause is inconsistent lock ordering between transactions,
+  not the engine. `SHOW ENGINE INNODB STATUS` for the last one; `innodb_print_all_deadlocks` to
+  investigate a pattern.
+- **Capacity**: project table and index size, IOPS and connections with data; review
+  quarterly. Cost (FinOps) is a design attribute: archiving with `pt-archiver` and
+  partitioning by date range before "more disk".
+- **Configuration as code**: `my.cnf` versioned and deployed by IaC. Zero manual
+  changes in production; every parameter with a written reason and a before/after measurement.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Actualizaciones**
-- **No se salta versión mayor**: la ruta desde MySQL 8.0 es **8.0 → 8.4 → 9.7**, secuencial;
-  el diccionario de datos se actualiza en cada salto. Presupuéstalo como dos proyectos.
-- Antes de cada salto: leer las notas de incompatibilidades, correr **`pt-upgrade`** con
-  consultas reales, y revisar **palabras reservadas nuevas** (8.4 añadió `MANUAL`, `PARALLEL`,
-  `QUALIFY`, `TABLESAMPLE`, entre otras — un nombre de columna sin comillas rompe en el
-  arranque de la aplicación, no en la migración).
-- Ensayo en preproducción con datos representativos y **ruta de rollback definida** (réplica
-  de la versión antigua mantenida hasta validar; una vez actualizado el diccionario, no hay
-  vuelta atrás en el mismo datadir).
-- Cadencia mínima: parches trimestrales alineados con el CPU de Oracle / las releases de
-  MariaDB y Percona; **salto de LTS planificado con 12 meses de antelación** al EOL, no al
-  llegar la fecha.
-- Revisa cada semestre el estado de la serie que usas contra §8: en esta familia, las fechas
-  de EOL se cumplen y dejan sistemas sin parches de seguridad (8.0 y 10.6 murieron en 2026).
+**Upgrades**
+- **Major versions are not skipped**: the route from MySQL 8.0 is **8.0 → 8.4 → 9.7**, sequential;
+  the data dictionary is upgraded at each jump. Budget it as two projects.
+- Before each jump: read the incompatibility notes, run **`pt-upgrade`** with
+  real queries, and review **new reserved words** (8.4 added `MANUAL`, `PARALLEL`,
+  `QUALIFY`, `TABLESAMPLE`, among others — an unquoted column name breaks at
+  application startup, not at migration time).
+- A rehearsal in pre-production with representative data and a **defined rollback route** (a
+  replica of the old version kept until validation; once the dictionary is upgraded, there is no
+  going back on the same datadir).
+- Minimum cadence: quarterly patches aligned with Oracle's CPU / the MariaDB and Percona
+  releases; **an LTS jump planned 12 months ahead** of EOL, not when the date arrives.
+- Review every six months the status of the series you use against §8: in this family, the EOL
+  dates are enforced and leave systems without security patches (8.0 and 10.6 died in 2026).
 
-**Lista de prohibiciones**
-- ❌ Afirmar o asumir que **MariaDB es un drop-in de MySQL** (o viceversa). No lo es desde 2014.
-- ❌ Replicación cruzada MySQL↔MariaDB con GTID, o mezclar Group Replication con Galera.
-- ❌ **XtraBackup contra MariaDB** (usa `mariabackup`), o herramienta de versión mayor distinta
-  a la del servidor.
-- ❌ Correr una serie **fuera de soporte** (MySQL 8.0 tras 2026-04-30, MariaDB 10.6 tras
-  2026-07-06, Percona Server 8.0 tras jun-2026) sin plan de salida con fecha.
-- ❌ **Releases *Innovation* de MySQL o rolling de MariaDB en producción.**
-- ❌ MyISAM/Aria para datos de negocio; tablas sin clave primaria explícita.
-- ❌ **UUIDv4 como PK** en tablas grandes de inserción intensiva; UUID en `CHAR(36)`.
-- ❌ `utf8`/`utf8mb3`; colaciones mezcladas dentro de un esquema o entre `JOIN`.
-- ❌ `FLOAT`/`DOUBLE` para importes monetarios.
-- ❌ `sql_mode` no fijado explícitamente, o sin modo estricto.
-- ❌ `ALTER TABLE` sin `ALGORITHM=`/`LOCK=` explícitos sobre tablas grandes en caliente.
-- ❌ `innodb_flush_log_at_trx_commit != 1` o `sync_binlog != 1` en datos que importan, sin ADR
-  que documente la ventana de pérdida aceptada.
-- ❌ **Concatenar entrada en SQL** o confiar en escapado manual del cliente (ver
-  `CVE-2026-44172`): consultas preparadas del lado del servidor, siempre.
-- ❌ `root@%`, `ALL PRIVILEGES ON *.*` para la aplicación, cuentas sin restricción de `host`,
-  o 3306 accesible desde fuera de la red de servicio.
-- ❌ Log general activado en producción; contraseñas en `my.cnf` sin permisos restringidos.
-- ❌ Escribir en una réplica; `read_only` sin `super_read_only`.
-- ❌ Adoptar Galera/PXC/InnoDB Cluster sin requisito de RPO≈0 medido, sin ensayo de failover
-  **y** de SST, y sin capacidad de parcheo rápido (§5).
-- ❌ Backup sin restauración probada; PITR sin binlogs archivados fuera del host.
-- ❌ Copiar producción con datos personales a entornos no productivos sin anonimizar.
-- ❌ Tocar `my.cnf` antes de haber diagnosticado la consulta (§6), o **añadir una caché para
-  tapar una consulta sin índice**.
-- ❌ Fijar versiones, EOL o comportamiento de un parámetro **de memoria**, sin §8.
+**List of prohibitions**
+- ❌ Stating or assuming that **MariaDB is a drop-in for MySQL** (or vice versa). It has not been
+  since 2014.
+- ❌ Cross MySQL↔MariaDB replication with GTID, or mixing Group Replication with Galera.
+- ❌ **XtraBackup against MariaDB** (use `mariabackup`), or a tool of a major version different
+  from the server's.
+- ❌ Running a series that is **out of support** (MySQL 8.0 after 2026-04-30, MariaDB 10.6 after
+  2026-07-06, Percona Server 8.0 after Jun-2026) without a dated exit plan.
+- ❌ **MySQL *Innovation* releases or MariaDB rolling releases in production.**
+- ❌ MyISAM/Aria for business data; tables without an explicit primary key.
+- ❌ **UUIDv4 as a PK** on large insert-heavy tables; a UUID in `CHAR(36)`.
+- ❌ `utf8`/`utf8mb3`; mixed collations within a schema or across a `JOIN`.
+- ❌ `FLOAT`/`DOUBLE` for monetary amounts.
+- ❌ `sql_mode` not set explicitly, or without strict mode.
+- ❌ `ALTER TABLE` without explicit `ALGORITHM=`/`LOCK=` on large tables in production.
+- ❌ `innodb_flush_log_at_trx_commit != 1` or `sync_binlog != 1` on data that matters, without an
+  ADR documenting the accepted loss window.
+- ❌ **Concatenating input into SQL** or trusting manual client-side escaping (see
+  `CVE-2026-44172`): server-side prepared statements, always.
+- ❌ `root@%`, `ALL PRIVILEGES ON *.*` for the application, accounts with no `host` restriction,
+  or 3306 reachable from outside the service network.
+- ❌ The general log enabled in production; passwords in `my.cnf` without restricted permissions.
+- ❌ Writing to a replica; `read_only` without `super_read_only`.
+- ❌ Adopting Galera/PXC/InnoDB Cluster without a measured RPO≈0 requirement, without a failover
+  **and** SST rehearsal, and without the capacity to patch quickly (§5).
+- ❌ A backup with no tested restore; PITR without binlogs archived off the host.
+- ❌ Copying production with personal data to non-production environments without anonymising.
+- ❌ Touching `my.cnf` before having diagnosed the query (§6), or **adding a cache to
+  cover up a query with no index**.
+- ❌ Stating versions, EOL or the behaviour of a parameter **from memory**, without §8.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Nada de lo anterior en materia de versiones, fechas o licencias se da por bueno sin
-comprobarlo. Antes de fijarlo en un entregable:
+None of the above regarding versions, dates or licences is taken as good without
+checking it. Before committing it to a deliverable:
 
-1. **MySQL**: serie LTS vigente y fechas — `endoflife.date/api/mysql.json` (datos crudos, no
-   la página HTML) y el ciclo de vida de Oracle. Confirmar el **modelo CalVer `YY.M`** para
-   Innovation/LTS posterior a 9.7 y cuál es la LTS recomendada hoy.
-2. **MariaDB**: series LTS y EOL — `endoflife.date/api/mariadb.json` y
-   `mariadb.org/about/maintenance-policy/`. **Hueco declarado**: no se ha verificado la fecha
-   exacta de EOL de **MariaDB 12.3 LTS** (la política publicada y el feed no coincidían al
-   redactar: *binarios comunitarios 3 años + 2 de parches en fuente* frente a EOL a 5 años en
-   otras series). **Verifícalo antes de comprometer una ventana de soporte.**
-3. **Percona**: versión actual de Percona Server, XtraBackup, Percona Toolkit y PXC en
-   `docs.percona.com`; y si ya existe una línea alineada con MySQL 9.7 (a agosto 2026 **no
-   existía**).
-4. **Divergencia MySQL↔MariaDB**: matriz de compatibilidad oficial de MariaDB
-   (`mariadb.com/docs/.../mysql-to-mariadb-compatibility-matrix` e "Incompatibilities and
-   Feature Differences") antes de planificar cualquier migración. Cambia con cada release.
-5. **Nombres exactos de parámetros** en la versión concreta: `innodb_redo_log_capacity` vs
-   `innodb_log_file_size`, defaults de colación `utf8mb4`, defaults de
-   `binlog_transaction_dependency_tracking`, y estado del plugin semisíncrono. **Contra el
-   manual de la versión, no de memoria.**
-6. **CVEs**: Oracle CPU del trimestre (`oracle.com/security-alerts/`), listas de CVE de
-   MariaDB Community/Enterprise, avisos de Percona, y el estado de los CVE de Galera/wsrep de
-   2026 (`CVE-2026-49261` y familia) y de Connector/C (`CVE-2026-44172`). Priorizar con
+1. **MySQL**: current LTS series and dates — `endoflife.date/api/mysql.json` (raw data, not
+   the HTML page) and Oracle's lifecycle. Confirm the **CalVer `YY.M` model** for
+   Innovation/LTS after 9.7 and which LTS is recommended today.
+2. **MariaDB**: LTS series and EOL — `endoflife.date/api/mariadb.json` and
+   `mariadb.org/about/maintenance-policy/`. **Declared gap**: the exact EOL date of
+   **MariaDB 12.3 LTS** has not been verified (the published policy and the feed did not agree at
+   the time of writing: *3 years of community binaries + 2 of source patches* versus a 5-year EOL
+   in other series). **Verify it before committing to a support window.**
+3. **Percona**: the current version of Percona Server, XtraBackup, Percona Toolkit and PXC on
+   `docs.percona.com`; and whether a line aligned with MySQL 9.7 already exists (as of August 2026
+   it did **not**).
+4. **MySQL↔MariaDB divergence**: MariaDB's official compatibility matrix
+   (`mariadb.com/docs/.../mysql-to-mariadb-compatibility-matrix` and "Incompatibilities and
+   Feature Differences") before planning any migration. It changes with every release.
+5. **Exact parameter names** in the specific version: `innodb_redo_log_capacity` vs
+   `innodb_log_file_size`, `utf8mb4` collation defaults, defaults for
+   `binlog_transaction_dependency_tracking`, and the status of the semisynchronous plugin.
+   **Against the version's manual, not from memory.**
+6. **CVEs**: the quarter's Oracle CPU (`oracle.com/security-alerts/`), MariaDB
+   Community/Enterprise CVE lists, Percona advisories, and the status of the 2026 Galera/wsrep
+   CVEs (`CVE-2026-49261` and family) and of Connector/C (`CVE-2026-44172`). Prioritise with
    CVSS + EPSS + KEV (`vulnerability-management-standards`).
-7. **Cadena de suministro**: incidentes vigentes en repositorios de paquetes e imágenes;
-   revisar el estado de **CVE-2026-45321 / Mini Shai-Hulud** y qué garantías de procedencia
-   siguen siendo válidas.
-8. **Huecos declarados** (no verificados por web en esta redacción — **no rellenar de memoria**):
-   - EOL exacto de **MariaDB 12.3 LTS** (punto 2).
-   - Estado de soporte de **MariaDB 12.3 en las distribuciones** (Debian/RHEL/Fedora) y qué
-     serie empaqueta cada una hoy.
-   - Estado de **mantenimiento activo de gh-ost** (última release y cadencia): se verificó que
-     sigue siendo la herramienta de referencia recomendada, **no** la actividad del repositorio.
-   - Cifras de rendimiento comparadas MariaDB Vector vs pgvector: aparecen en material de
-     marketing del proveedor; **no reproducidas ni verificadas de forma independiente**.
-   - Fecha exacta de EOL de **Percona Server 8.4** y de XtraBackup 8.4.
+7. **Supply chain**: current incidents in package and image repositories;
+   review the status of **CVE-2026-45321 / Mini Shai-Hulud** and which provenance guarantees
+   are still valid.
+8. **Declared gaps** (not verified on the web in this drafting — **do not fill from memory**):
+   - The exact EOL of **MariaDB 12.3 LTS** (point 2).
+   - The support status of **MariaDB 12.3 in the distributions** (Debian/RHEL/Fedora) and which
+     series each one packages today.
+   - The **active maintenance status of gh-ost** (latest release and cadence): it was verified
+     that it is still the recommended reference tool, **not** the repository's activity.
+   - Comparative performance figures for MariaDB Vector vs pgvector: they appear in the vendor's
+     marketing material; **neither reproduced nor independently verified**.
+   - The exact EOL date of **Percona Server 8.4** and of XtraBackup 8.4.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

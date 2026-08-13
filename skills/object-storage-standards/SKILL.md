@@ -3,521 +3,530 @@ name: object-storage-standards
 description: Object storage as a model distinct from block and file — the S3 API, its self-hosted implementations and its failure modes. Use when working with aws s3 / aws s3api, mc, or rclone remotes and rclone mount, s3fs, goofys or mountpoint-s3, designing bucket names and key prefixes for listing and throughput, bucket policies versus IAM versus ACLs, BucketOwnerEnforced object ownership, Block Public Access, presigned URLs and their TTL, SSE-S3 / SSE-KMS / SSE-C and TLS enforcement via aws:SecureTransport, Object Lock in governance or compliance mode, legal hold, bucket versioning with noncurrent-version expiration, lifecycle transitions to Glacier Instant Retrieval, Flexible Retrieval or Deep Archive and their restore latency, egress and per-request cost, multipart uploads and AbortIncompleteMultipartUpload, ETag pitfalls and CRC32C or CRC64-NVME checksums, cross-region or cross-provider replication, Storage Lens and request-level metrics, or running MinIO, Ceph RGW, Garage or SeaweedFS on-premise with erasure coding and failure domains.
 ---
 
-# Estándares de almacenamiento de objetos
+# Object storage standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-> **Premisa dura**: el almacenamiento de objetos **no es un disco lento ni un NAS barato**. Es un
-> modelo distinto —objeto inmutable, sin jerarquía real, con coste por petición y por salida— y casi
-> todos los problemas graves del dominio nacen de tratarlo como si fuera un filesystem.
+> **Hard premise**: object storage **is not a slow disk nor a cheap NAS**. It is a
+> different model —immutable object, no real hierarchy, with a cost per request and per egress— and
+> almost every serious problem in the domain is born of treating it as if it were a filesystem.
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al diseño y operación de almacenamiento de objetos: el modelo y sus consecuencias, la API S3
-como estándar de facto y su compatibilidad real, diseño de buckets y claves, seguridad y exposición
-pública, inmutabilidad y versionado, ciclo de vida y clases de almacenamiento con su coste y su
-**tiempo** de recuperación, integridad y multipart, replicación, observabilidad de peticiones y coste,
-y el criterio para montar object storage propio.
+Applies to the design and operation of object storage: the model and its consequences, the S3 API
+as the de facto standard and its actual compatibility, bucket and key design, security and public
+exposure, immutability and versioning, life cycle and storage classes with their cost and their
+**retrieval time**, integrity and multipart, replication, request and cost observability,
+and the criteria for running your own object storage.
 
-Disparadores: `aws s3`, `aws s3api`, `mc` (MinIO Client), `s3cmd`, `rclone` y sus *remotes*,
-`s3fs`, `goofys`, `mount-s3`/`mountpoint-s3`, `boto3`/`aws-sdk` contra S3, `radosgw-admin`,
+Triggers: `aws s3`, `aws s3api`, `mc` (MinIO Client), `s3cmd`, `rclone` and its *remotes*,
+`s3fs`, `goofys`, `mount-s3`/`mountpoint-s3`, `boto3`/`aws-sdk` against S3, `radosgw-admin`,
 `garage`, `weed`, `bucket policy`, `BucketOwnerEnforced`, `BlockPublicAcls`, `PutObjectLockConfiguration`,
 `ObjectLockLegalHold`, `NoncurrentVersionExpiration`, `AbortIncompleteMultipartUpload`,
 `CreateMultipartUpload`, `x-amz-checksum-*`, `presigned URL`, `STANDARD_IA`, `GLACIER`,
-`DEEP_ARCHIVE`, `Cool`/`Archive` de Azure Blob, `Nearline`/`Coldline`/`Archive` de GCS.
+`DEEP_ARCHIVE`, Azure Blob `Cool`/`Archive`, GCS `Nearline`/`Coldline`/`Archive`.
 
-**No aplica**: ver
-- `backup-recovery-standards` (**skill hermana; cruce declarado en ambos lados**): el object storage
-  es hoy el **destino** más común del respaldo y el que aporta la inmutabilidad, pero es un dominio
-  propio con vida más allá del respaldo (datalake, artefactos, medios, estáticos, logs). **Aquí se
-  explica Object Lock, versionado, ciclo de vida, clases y coste; allí se exigen** como requisito del
-  repositorio de copias, junto con la retención GFS, el `check`, el restore probado y el catálogo.
-  Regla de arbitraje: si la pregunta es sobre el **bucket** (política, lock, clase, coste, replicación,
-  clave de objeto), es de aquí; si es sobre la **copia** (qué se copia, con qué cadena, cuánto se
-  guarda y cómo se demuestra el restore), es de allí.
-- `bcdr-standards`: RTO/RPO, orden de recuperación y ejercicios. **Cruce que importa**: el tiempo de
-  rescate de una clase de archivo (§5.2) es un dato de ingeniería de esta skill que **condiciona** un
-  RTO fijado allí; se le devuelve el número, no se ajusta el compromiso aquí.
-- `aws-standards` / `azure-standards` / `gcp-standards`: S3, Azure Blob Storage y Cloud Storage como
-  **servicios gestionados del proveedor** — integración con el resto del catálogo, cuentas y
-  organizaciones, controles de la plataforma (SCP, Azure Policy, VPC Service Controls), facturación y
-  FinOps del proveedor. Aquí, el **modelo de object storage** transversal y el criterio que aplica
-  igual en los tres y en las implementaciones auto-alojadas.
-- `identity-access-management-standards`: diseño de identidades, roles, federación OIDC y el
-  principio de mínimo privilegio como práctica. Aquí, su aplicación concreta: política de bucket
-  frente a IAM frente a ACL, y credencial de escritura sin borrado.
-- `cryptography-pki-standards`: elección de algoritmo, gestión y rotación de claves en KMS/HSM. Aquí,
-  solo la decisión operativa: clave gestionada por el proveedor frente a clave propia, y qué protege
-  cada una.
-- `secrets-management-standards`: dónde viven y cómo rotan las claves de acceso; sustituir credencial
-  estática por identidad federada de corta vida.
-- `privacy-engineering-standards`: dato personal en objetos — clasificación, minimización, supresión.
-  **Cruce**: la supresión frente a un objeto bloqueado por Object Lock en modo *compliance* es
-  imposible por diseño; la resolución (*crypto-shredding*, ventana acotada) se decide en aquella skill
-  y en `backup-recovery-standards` §3.6. Aquí solo se declara la restricción técnica.
-- `grc-compliance-standards`: retención por obligación normativa y evidencia de auditoría; aquí, el
-  mecanismo (Object Lock, *legal hold*) que la implementa.
-- `data-platform-standards`: formatos de tabla y datalake (Parquet, Iceberg, Delta), particionado
-  **lógico** del dato y motores de consulta. Aquí, el **layout de claves** que ese particionado
-  produce y su efecto sobre listados y peticiones.
-- `kubernetes-standards`: CSI, `PersistentVolume` y el object storage consumido desde un *pod*
-  (incluido el CSI de S3, que arrastra los mismos problemas de §2.2).
-- `linux-storage-standards` (**existe ya en disco**): bloques y filesystems POSIX de verdad — LVM,
-  ext4/XFS/btrfs, NFS, iSCSI. **La frontera es exactamente el antipatrón de §2.2**: si necesitas
-  semántica POSIX (renombrado atómico, escritura aleatoria en sitio, `flock`, *hardlinks*), el
-  problema es de aquella skill, no de esta — no montes S3.
-- `zfs-standards`: pools, datasets y `zfs send`. Un backend de objetos no sustituye a un pool local ni
-  al revés.
-- `ceph-standards`: **la topología del clúster RADOS, `ceph osd`, el mapa CRUSH, los pools y el
-  esquema de protección (réplica frente a *erasure coding*) son suyos**; aquí S3 como interfaz —
-  política de bucket, versionado, Object Lock, clases y ciclo de vida— por delante de RGW.
-- `proxmox-ve-standards` (**existe ya en disco**): *datastores* de Proxmox Backup Server sobre S3 —
-  el producto y su configuración son suyos; las propiedades exigibles al bucket (Object Lock,
-  versionado, credencial, clase, coste), de aquí.
-- `networking-standards` y `firewall-policy-standards`: endpoints privados, egreso y resolución;
-  `dns-standards`: nombres de bucket, *virtual-hosted style* y CNAME hacia el endpoint, y el riesgo de
-  **subdominio colgante** cuando un bucket se borra y su registro sobrevive.
-- `observability-standards`: diseño de métricas, alertas y paneles. Aquí, **qué** hay que medir.
-- `iac-standards`: buckets y políticas como código. `cicd-standards`: artefactos y caché en objetos.
-- `homelab-standards`: object storage en laboratorio, donde el criterio es coste y simplicidad y se
-  admite lo que aquí se veta.
+**Not applicable**: see
+- `backup-recovery-standards` (**sister skill; crossover declared on both sides**): object storage
+  is today the most common backup **destination** and the one that provides immutability, but it is
+  a domain of its own with a life beyond backup (data lake, artifacts, media, static assets, logs).
+  **Here Object Lock, versioning, life cycle, classes and cost are explained; there they are
+  required** as a requirement of the backup repository, together with GFS retention, `check`, the
+  tested restore and the catalog.
+  Arbitration rule: if the question is about the **bucket** (policy, lock, class, cost, replication,
+  object key), it is ours; if it is about the **copy** (what is copied, with what chain, how long it
+  is kept and how the restore is proven), it is theirs.
+- `bcdr-standards`: RTO/RPO, recovery order and exercises. **Crossover that matters**: the
+  retrieval time of an archive class (§5.2) is an engineering figure from this skill that
+  **constrains** an RTO set there; the number is handed back to them, the commitment is not adjusted
+  here.
+- `aws-standards` / `azure-standards` / `gcp-standards`: S3, Azure Blob Storage and Cloud Storage as
+  **managed provider services** — integration with the rest of the catalogue, accounts and
+  organisations, platform controls (SCP, Azure Policy, VPC Service Controls), provider billing and
+  FinOps. Here, the cross-cutting **object storage model** and the criteria that apply
+  equally in all three and in self-hosted implementations.
+- `identity-access-management-standards`: identity design, roles, OIDC federation and the
+  least-privilege principle as a practice. Here, its concrete application: bucket policy
+  versus IAM versus ACL, and a write credential without delete.
+- `cryptography-pki-standards`: algorithm choice, key management and rotation in KMS/HSM. Here,
+  only the operational decision: provider-managed key versus your own key, and what each one
+  protects.
+- `secrets-management-standards`: where access keys live and how they rotate; replacing a static
+  credential with a short-lived federated identity.
+- `privacy-engineering-standards`: personal data in objects — classification, minimisation, erasure.
+  **Crossover**: erasure of an object locked by Object Lock in *compliance* mode is
+  impossible by design; the resolution (*crypto-shredding*, bounded window) is decided in that skill
+  and in `backup-recovery-standards` §3.6. Here only the technical constraint is declared.
+- `grc-compliance-standards`: retention as a regulatory obligation and audit evidence; here, the
+  mechanism (Object Lock, *legal hold*) that implements it.
+- `data-platform-standards`: table and data lake formats (Parquet, Iceberg, Delta), **logical**
+  partitioning of the data and query engines. Here, the **key layout** that partitioning
+  produces and its effect on listings and requests.
+- `kubernetes-standards`: CSI, `PersistentVolume` and object storage consumed from a *pod*
+  (including the S3 CSI, which drags along the same problems as §2.2).
+- `linux-storage-standards` (**already on disk**): real POSIX blocks and filesystems — LVM,
+  ext4/XFS/btrfs, NFS, iSCSI. **The boundary is exactly the antipattern in §2.2**: if you need
+  POSIX semantics (atomic rename, random in-place write, `flock`, *hardlinks*), the
+  problem belongs to that skill, not this one — do not mount S3.
+- `zfs-standards`: pools, datasets and `zfs send`. An object backend does not replace a local pool
+  nor the other way round.
+- `ceph-standards`: **the RADOS cluster topology, `ceph osd`, the CRUSH map, the pools and the
+  protection scheme (replica versus *erasure coding*) are hers**; here S3 as an interface —
+  bucket policy, versioning, Object Lock, classes and life cycle— in front of RGW.
+- `proxmox-ve-standards` (**already on disk**): Proxmox Backup Server *datastores* over S3 —
+  the product and its configuration are hers; the properties required of the bucket (Object Lock,
+  versioning, credential, class, cost), ours.
+- `networking-standards` and `firewall-policy-standards`: private endpoints, egress and resolution;
+  `dns-standards`: bucket names, *virtual-hosted style* and CNAME to the endpoint, and the risk of a
+  **dangling subdomain** when a bucket is deleted and its record survives.
+- `observability-standards`: metrics, alerts and dashboard design. Here, **what** must be measured.
+- `iac-standards`: buckets and policies as code. `cicd-standards`: artifacts and cache in objects.
+- `homelab-standards`: object storage in a lab, where the criteria are cost and simplicity and what
+  is vetoed here is accepted.
 
-## 2. El modelo, y el antipatrón que domina el dominio
+## 2. The model, and the antipattern that dominates the domain
 
-### 2.1 Objeto frente a fichero
+### 2.1 Object versus file
 
-| | Fichero (POSIX) | Objeto (S3) |
+| | File (POSIX) | Object (S3) |
 |---|---|---|
-| Unidad | Fichero mutable, escritura aleatoria en sitio | **Objeto inmutable**: se reemplaza entero, no se modifica |
-| Jerarquía | Directorios reales | **Clave plana**; el `/` es una convención de prefijo, **no una carpeta** |
-| Renombrar | Operación de metadatos, atómica | **No existe**: es copiar + borrar, con coste, tiempo y una ventana no atómica |
-| Metadatos | `stat`, permisos, dueño, xattrs | Cabeceras y *tags*; sin uid/gid ni modo salvo que los emules |
-| Listar | Barato, ordenado por directorio | **Petición paginada y facturada**; un prefijo con millones de claves es un problema operativo |
-| Bloqueo | `flock`, `fcntl` | **No existe** el bloqueo entre clientes; la última escritura gana |
-| Coste | Espacio | **Espacio + peticiones + salida**, y las tres importan |
-| Consistencia | Del filesystem | Lectura-tras-escritura **fuerte** en S3 desde 2020; **el versionado y el listado tienen sus propios matices** — verifica el modelo de tu implementación (§8) |
+| Unit | Mutable file, random in-place write | **Immutable object**: replaced whole, not modified |
+| Hierarchy | Real directories | **Flat key**; the `/` is a prefix convention, **not a folder** |
+| Rename | Metadata operation, atomic | **Does not exist**: it is copy + delete, with cost, time and a non-atomic window |
+| Metadata | `stat`, permissions, owner, xattrs | Headers and *tags*; no uid/gid nor mode unless you emulate them |
+| List | Cheap, ordered by directory | **Paginated and billed request**; a prefix with millions of keys is an operational problem |
+| Locking | `flock`, `fcntl` | Inter-client locking **does not exist**; the last write wins |
+| Cost | Space | **Space + requests + egress**, and all three matter |
+| Consistency | The filesystem's | **Strong** read-after-write in S3 since 2020; **versioning and listing have their own nuances** — verify your implementation's model (§8) |
 
-Consecuencias de diseño que se derivan directamente de la tabla: no diseñes flujos que dependan de
-renombrar, no uses el listado como índice (usa una base de datos), no esperes escritura concurrente
-coordinada, y **empaqueta los ficheros muy pequeños** en objetos mayores: un millón de objetos de 4 KB
-es un problema de peticiones y de coste, no de espacio.
+Design consequences that follow directly from the table: do not design flows that depend on
+renaming, do not use listing as an index (use a database), do not expect coordinated concurrent
+writes, and **pack very small files** into larger objects: a million 4 KB objects
+is a request and cost problem, not a space one.
 
-### 2.2 "Montar S3 como si fuera un disco": antipatrón
+### 2.2 "Mounting S3 as if it were a disk": antipattern
 
-`s3fs`, `goofys`, `rclone mount` y `mountpoint-s3` **traducen** llamadas POSIX a una API que no tiene
-semántica POSIX. Lo que se rompe, y por qué no es un problema de calidad de la herramienta sino de
-impedancia:
+`s3fs`, `goofys`, `rclone mount` and `mountpoint-s3` **translate** POSIX calls to an API that has no
+POSIX semantics. What breaks, and why it is not a tool quality problem but one of
+impedance:
 
-- **Renombrado no atómico** (copia + borrado): cualquier patrón "escribe a `.tmp` y renombra" —el
-  patrón de escritura segura más común que existe— deja de ser seguro.
-- **Escritura aleatoria en sitio**: o no existe, o se emula reescribiendo el objeto entero (amplificación
-  brutal de I/O y de coste).
-- **Sin bloqueo entre clientes**: dos escritores concurrentes corrompen sin avisar.
-- **Metadatos caros**: cada `stat` es una petición. Un `ls -l`, un `find` o un `rsync` sobre un
-  montaje son una factura y una latencia, no una operación local.
-- **Fallos que POSIX no contempla**: cortes de red, 429/503 y reintentos aparecen como errores de I/O
-  o como montajes que desaparecen sin registro.
-- **Espacio de nombres desalineado**: las claves S3 admiten cosas que POSIX no; hay claves que
-  simplemente **no son visibles** desde el montaje (por ejemplo, las que contienen bytes nulos), y la
-  traducción parte por `/`.
+- **Non-atomic rename** (copy + delete): any "write to `.tmp` and rename" pattern —the
+  most common safe-write pattern there is— stops being safe.
+- **Random in-place write**: either it does not exist, or it is emulated by rewriting the whole
+  object (brutal amplification of I/O and cost).
+- **No inter-client locking**: two concurrent writers corrupt without warning.
+- **Expensive metadata**: every `stat` is a request. An `ls -l`, a `find` or an `rsync` over a
+  mount is a bill and a latency, not a local operation.
+- **Failures POSIX does not contemplate**: network cuts, 429/503 and retries show up as I/O errors
+  or as mounts that disappear without a record.
+- **Misaligned namespace**: S3 keys admit things POSIX does not; there are keys that
+  simply **are not visible** from the mount (for example, those containing null bytes), and the
+  translation splits on `/`.
 
-**Criterio**:
-- **VETADO** para: bases de datos de cualquier tipo, backend de una aplicación con estado, home de
-  usuario, destino de compilación, workloads con muchos ficheros pequeños o con escritura concurrente.
-- **Admisible, acotado y documentado**: lectura secuencial de objetos grandes por procesos que no
-  pueden hablar S3 (ingesta de medios, entrenamiento, ETL de solo lectura), o exposición temporal de
-  solo lectura. Para ese caso, **`mountpoint-s3`** (1.23.0, 21-jul-2026) es la opción con el contrato
-  más honesto: **AWS declara explícitamente que no es un filesystem de propósito general**, optimizado
-  para lectura de alto rendimiento y escritura secuencial de objetos nuevos desde **un solo cliente**,
-  y remite a EFS/FSx si necesitas semántica de verdad.
-- **`s3fs-fuse`** (v1.97, 8-dic-2025; repositorio activo) es la única de las tres que da un subconjunto
-  POSIX amplio y la que funciona contra endpoints no-AWS, a costa de ser la más lenta en metadatos y
-  con historial de problemas de caché y de montajes que se caen. Úsala solo dentro del caso acotado.
-- **`goofys` está muerto**: último release **v0.24.0 (abril de 2020)** y último *push* al repositorio
-  en julio de 2024. **VETADO** en despliegues nuevos.
-- **`rclone mount`** (rclone 1.75.0, 31-jul-2026, proyecto muy activo) es aceptable para sincronización
-  y acceso puntual; **no** como almacenamiento de una aplicación.
-- La alternativa correcta casi siempre es **hablar S3 directamente desde la aplicación**, o usar un
-  filesystem de red real (`linux-storage-standards`).
+**Criteria**:
+- **VETOED** for: databases of any kind, backend of a stateful application, user
+  home, build destination, workloads with many small files or with concurrent writes.
+- **Admissible, bounded and documented**: sequential reading of large objects by processes that
+  cannot speak S3 (media ingest, training, read-only ETL), or temporary read-only
+  exposure. For that case, **`mountpoint-s3`** (1.23.0, 21 Jul 2026) is the option with the
+  most honest contract: **AWS explicitly states that it is not a general-purpose filesystem**,
+  optimised for high-throughput reading and sequential writing of new objects from **a single
+  client**, and refers you to EFS/FSx if you need real semantics.
+- **`s3fs-fuse`** (v1.97, 8 Dec 2025; active repository) is the only one of the three that gives a
+  broad POSIX subset and the one that works against non-AWS endpoints, at the cost of being the
+  slowest in metadata and with a history of cache problems and mounts that fall over. Use it only
+  within the bounded case.
+- **`goofys` is dead**: last release **v0.24.0 (April 2020)** and last *push* to the repository
+  in July 2024. **VETOED** in new deployments.
+- **`rclone mount`** (rclone 1.75.0, 31 Jul 2026, very active project) is acceptable for
+  synchronisation and occasional access; **not** as an application's storage.
+- The correct alternative is almost always to **speak S3 directly from the application**, or to use
+  a real network filesystem (`linux-storage-standards`).
 
-## 3. Decisiones por defecto
+## 3. Default decisions
 
-> Verificar versión, licencia, estado de mantenimiento y **compatibilidad S3 real** por web antes de
-> fijarlas (§8). Datos de **agosto de 2026**, con versiones y fechas tomadas de `api.github.com` y de
-> las notas oficiales, **nunca del render HTML de GitHub Releases**.
+> Verify version, licence, maintenance status and **real S3 compatibility** on the web before
+> committing to them (§8). Data as of **August 2026**, with versions and dates taken from
+> `api.github.com` and from the official notes, **never from the HTML render of GitHub Releases**.
 
-| Decisión | Por defecto | Alternativa justificable / Prohibido |
+| Decision | Default | Justifiable alternative / Forbidden |
 |---|---|---|
-| API | **S3 como estándar de facto**. Todo lo que escribas, contra el SDK de S3 | APIs propietarias solo si aportan algo que S3 no da; la portabilidad vale más de lo que parece el día que cambias de proveedor |
-| Servicio gestionado frente a propio | **Gestionado por defecto** (S3, Blob, GCS). Se paga por durabilidad, disponibilidad y por no operar discos | Auto-alojado solo con los criterios de §7 |
-| Auto-alojado, escala grande y multi-servicio | **Ceph RGW** — Tentacle **v20.2.3** (05-ago-2026); v20.2.0 nov-2025, v20.2.1 abr-2026, v20.2.2 jun-2026. **Squid 19.2.x tiene EOL estimado el 31-10-2026**: no arranques nada nuevo ahí. Topología, `ceph osd`, pools y EC en `ceph-standards`. Object Lock en *governance* y *compliance*; en Tentacle, `PutObjectLockConfiguration` **ya permite habilitar Object Lock en un bucket versionado existente** (antes solo en la creación) | Coste real: operar Ceph es un trabajo, no una tarea |
-| Auto-alojado, pequeño y geo-distribuido | **Garage** v2.3.0 (16-abr-2026), AGPL-3.0, ligero y honesto sobre sus límites | **NO SIRVE como ancla de inmutabilidad**: no implementa versionado de bucket (`GetBucketVersioning` es un *stub* que responde "no habilitado") y por tanto **no hay Object Lock**; tampoco implementa ACL ni políticas S3 (usa su propio modelo de claves por bucket) ni *erasure coding* |
-| Auto-alojado con licencia permisiva | **SeaweedFS** 4.40 (20-jul-2026), núcleo **Apache-2.0** | **Open-core**: reparación automática de *erasure coding*, PITR y admin OIDC están en la Enterprise de pago por TB. Y hay **incidencia abierta de que el modo *compliance* de Object Lock no impide el borrado** (issue #8350, v4.12): **valida el WORM en tu versión antes de confiar en él** |
-| **MinIO** | **No es la opción por defecto para un despliegue nuevo.** AGPLv3; la UI de administración se retiró de la Community Edition (commit de feb-2025, polémica en jun-2025) y quedó en la comercial **AIStor**; el proyecto de GitHub pasó a **modo mantenimiento** y **su última release era RELEASE.2025-10-15**, es decir ~9,5 meses sin publicar a ago-2026 | Justificable solo si ya está desplegado y operado, o si se compra AIStor con los ojos abiertos (tarifa de partida citada públicamente en el orden de **96.000 $/año hasta 400 TB útiles** — verifícala). Existe un *fork* del navegador (OpenMaxIO), que **no resuelve** el mantenimiento del servidor. **Este es el dato que más se cita de memoria y peor envejecido está: verifícalo (§8)** |
-| CLI | **`aws s3`/`aws s3api`** contra AWS; **`rclone`** para sincronización, migración y multi-proveedor; **`mc`** solo en ecosistema MinIO | `s3cmd`: legado, sin motivo para elegirlo hoy |
-| Acceso público | **Bloqueado por defecto y a nivel de cuenta**, no solo de bucket | Excepción: distribución pública deliberada, servida por CDN, con el bucket **privado** detrás (OAC/OAI o firma), no abierto |
-| Modelo de permisos | **Política de bucket + IAM**. **ACLs deshabilitadas** (`BucketOwnerEnforced`) | Las ACL están en retirada de facto: desde **abril de 2023** los buckets nuevos de S3 se crean con BPA activado y ACLs deshabilitadas **por cualquier vía** (consola, CLI, SDK, CloudFormation). No las reactives |
-| Cifrado en reposo | **Gestionado por el proveedor por defecto**; **clave propia (KMS/CMEK) cuando el control de acceso a la clave sea un control real** (separación de funciones, revocación, auditoría) | **SSE-C** solo con un motivo fuerte: la gestión de la clave por petición es tuya, y perderla es perder el dato |
-| Cifrado en tránsito | **Obligatorio y forzado por política** (`aws:SecureTransport = false` → `Deny`) | Confiar en que el cliente use HTTPS |
-| Inmutabilidad | **Object Lock con versionado** (§5.1); *compliance* para la copia ancla, *governance* para lo operativo | Sin Object Lock no hay defensa real frente a un compromiso con credenciales válidas |
-| Versionado | **Activado en buckets con dato no reproducible**, **siempre con `NoncurrentVersionExpiration`** | **PROHIBIDO** versionado sin política de expiración: es una factura creciente que nadie mira |
-| Multipart | **Regla de ciclo de vida `AbortIncompleteMultipartUpload` en todos los buckets** | Sin ella, las partes huérfanas se facturan indefinidamente y **no se ven** en `aws s3 ls` ni en la pestaña de objetos |
-| Credencial | **Identidad federada de corta vida** (rol, OIDC); estática solo si no hay alternativa, con rotación | Clave de acceso permanente en la aplicación |
-| Credencial del repositorio de backups | **Escritura sin borrado** (`PutObject` sí, `DeleteObject`/`DeleteObjectVersion` no; sin `s3:BypassGovernanceRetention`) | Ver `backup-recovery-standards` §3.4 |
+| API | **S3 as the de facto standard**. Everything you write, against the S3 SDK | Proprietary APIs only if they give something S3 does not; portability is worth more than it seems on the day you change provider |
+| Managed service versus your own | **Managed by default** (S3, Blob, GCS). You pay for durability, availability and for not operating disks | Self-hosted only with the criteria of §7 |
+| Self-hosted, large scale and multi-service | **Ceph RGW** — Tentacle **v20.2.3** (05 Aug 2026); v20.2.0 Nov 2025, v20.2.1 Apr 2026, v20.2.2 Jun 2026. **Squid 19.2.x has an estimated EOL of 31-10-2026**: do not start anything new there. Topology, `ceph osd`, pools and EC in `ceph-standards`. Object Lock in *governance* and *compliance*; in Tentacle, `PutObjectLockConfiguration` **now allows enabling Object Lock on an existing versioned bucket** (previously only at creation) | Real cost: operating Ceph is a job, not a task |
+| Self-hosted, small and geo-distributed | **Garage** v2.3.0 (16 Apr 2026), AGPL-3.0, lightweight and honest about its limits | **NO USE AS AN IMMUTABILITY ANCHOR**: it does not implement bucket versioning (`GetBucketVersioning` is a *stub* that answers "not enabled") and therefore **there is no Object Lock**; it does not implement S3 ACLs or policies either (it uses its own per-bucket key model) nor *erasure coding* |
+| Self-hosted with a permissive licence | **SeaweedFS** 4.40 (20 Jul 2026), **Apache-2.0** core | **Open-core**: automatic *erasure coding* repair, PITR and OIDC admin are in the per-TB paid Enterprise edition. And there is an **open issue that Object Lock's *compliance* mode does not prevent deletion** (issue #8350, v4.12): **validate WORM in your version before trusting it** |
+| **MinIO** | **It is not the default option for a new deployment.** AGPLv3; the administration UI was removed from the Community Edition (Feb 2025 commit, controversy in Jun 2025) and stayed in the commercial **AIStor**; the GitHub project went into **maintenance mode** and **its last release was RELEASE.2025-10-15**, that is, ~9.5 months without publishing as of Aug 2026 | Justifiable only if it is already deployed and operated, or if AIStor is bought with eyes open (starting rate publicly quoted in the order of **$96,000/year up to 400 TB usable** — verify it). There is a *fork* of the browser (OpenMaxIO), which **does not solve** server maintenance. **This is the figure most often quoted from memory and the worst aged: verify it (§8)** |
+| CLI | **`aws s3`/`aws s3api`** against AWS; **`rclone`** for synchronisation, migration and multi-provider; **`mc`** only in the MinIO ecosystem | `s3cmd`: legacy, no reason to choose it today |
+| Public access | **Blocked by default and at account level**, not only per bucket | Exception: deliberate public distribution, served by a CDN, with the bucket **private** behind it (OAC/OAI or signing), not open |
+| Permission model | **Bucket policy + IAM**. **ACLs disabled** (`BucketOwnerEnforced`) | ACLs are de facto being retired: since **April 2023** new S3 buckets are created with BPA enabled and ACLs disabled **by any route** (console, CLI, SDK, CloudFormation). Do not re-enable them |
+| Encryption at rest | **Provider-managed by default**; **your own key (KMS/CMEK) when access control over the key is a real control** (separation of duties, revocation, audit) | **SSE-C** only with a strong reason: per-request key management is yours, and losing it is losing the data |
+| Encryption in transit | **Mandatory and enforced by policy** (`aws:SecureTransport = false` → `Deny`) | Trusting the client to use HTTPS |
+| Immutability | **Object Lock with versioning** (§5.1); *compliance* for the anchor copy, *governance* for the operational one | Without Object Lock there is no real defence against a compromise with valid credentials |
+| Versioning | **Enabled on buckets with non-reproducible data**, **always with `NoncurrentVersionExpiration`** | **FORBIDDEN** versioning without an expiration policy: it is a growing bill nobody looks at |
+| Multipart | **`AbortIncompleteMultipartUpload` lifecycle rule on every bucket** | Without it, orphan parts are billed indefinitely and **are not visible** in `aws s3 ls` nor in the objects tab |
+| Credential | **Short-lived federated identity** (role, OIDC); static only if there is no alternative, with rotation | A permanent access key in the application |
+| Backup repository credential | **Write without delete** (`PutObject` yes, `DeleteObject`/`DeleteObjectVersion` no; no `s3:BypassGovernanceRetention`) | See `backup-recovery-standards` §3.4 |
 
-## 4. Buckets y claves
+## 4. Buckets and keys
 
-- **Un bucket no es una carpeta**: es una **frontera de política, de cifrado, de ciclo de vida, de
-  versionado, de replicación, de registro y a menudo de facturación**. Se crea un bucket cuando alguna
-  de esas propiedades difiere, no para "organizar".
-- **Nomenclatura**: el nombre es **global** en S3 y aparece en el DNS. Convención estable y
-  predecible (`<org>-<entorno>-<dominio>-<propósito>-<región>`), en minúsculas y sin puntos —**los
-  puntos rompen el TLS con el acceso *virtual-hosted style***. Nada de nombres adivinables que
-  inviten a un *bucket squatting*, y nada de nombres que revelen estructura interna sensible.
-- **Dominio de fallo administrativo**: el aislamiento fuerte es la **cuenta**, no el bucket. La copia
-  ancla de un respaldo vive en otra cuenta (`backup-recovery-standards` §3.4).
-- **Claves y prefijos**:
-  - El prefijo es lo único que el servicio entiende de jerarquía. **Diseña el prefijo para el patrón
-    de lectura**, no para que quede bonito en la consola.
-  - **Prefijo temporal al principio** (`año/mes/día/`) cuando la consulta y el ciclo de vida son por
-    fecha: hace baratos el filtrado de lifecycle y el borrado por rango.
-  - **Alta cardinalidad al principio** (hash corto, id de tenant) cuando el patrón es de escritura
-    masiva y hay que repartir. En S3 el escalado por prefijo hoy es automático, pero el reparto sigue
-    ayudando y en implementaciones auto-alojadas puede ser determinante. **Verifica los límites
-    vigentes de tu proveedor (§8) en vez de arrastrar consejos de 2015.**
-  - **El listado es el enemigo**: `ListObjectsV2` es paginado, facturado y lento sobre prefijos
-    enormes. Si tu aplicación lista para encontrar algo, **te falta un índice** en una base de datos.
-    El listado es para inventario y reconciliación, no para servir peticiones.
-  - **Sin secretos ni dato personal en la clave**: la clave aparece en logs de acceso, en métricas, en
-    URLs y en referrers.
-  - **Delimitadores consistentes**; evita claves que empiecen por `/`, que contengan `//`, caracteres
-    de control o secuencias que rompan la traducción a fichero en un restore.
-- **Etiquetado de objetos y de bucket**: *tags* de bucket para coste y propiedad (dueño, entorno,
-  clasificación); *tags* de objeto solo si los vas a usar en políticas o en reglas de ciclo de vida —
-  se facturan y se olvidan.
+- **A bucket is not a folder**: it is a **boundary of policy, of encryption, of life cycle, of
+  versioning, of replication, of logging and often of billing**. A bucket is created when any
+  of those properties differs, not to "organise".
+- **Naming**: the name is **global** in S3 and appears in DNS. A stable and
+  predictable convention (`<org>-<environment>-<domain>-<purpose>-<region>`), in lower case and
+  without dots —**dots break TLS with *virtual-hosted style* access***. No guessable names that
+  invite *bucket squatting*, and no names that reveal sensitive internal structure.
+- **Administrative failure domain**: strong isolation is the **account**, not the bucket. The anchor
+  copy of a backup lives in another account (`backup-recovery-standards` §3.4).
+- **Keys and prefixes**:
+  - The prefix is the only thing the service understands about hierarchy. **Design the prefix for
+    the read pattern**, not so that it looks nice in the console.
+  - **Time prefix first** (`year/month/day/`) when queries and life cycle are by
+    date: it makes lifecycle filtering and range deletion cheap.
+  - **High cardinality first** (short hash, tenant id) when the pattern is heavy writing and it
+    has to be spread out. In S3 per-prefix scaling is automatic today, but spreading still
+    helps and in self-hosted implementations it can be decisive. **Verify your provider's current
+    limits (§8) instead of dragging along advice from 2015.**
+  - **Listing is the enemy**: `ListObjectsV2` is paginated, billed and slow over huge
+    prefixes. If your application lists in order to find something, **you are missing an index** in
+    a database. Listing is for inventory and reconciliation, not for serving requests.
+  - **No secrets or personal data in the key**: the key appears in access logs, in metrics, in
+    URLs and in referrers.
+  - **Consistent delimiters**; avoid keys that begin with `/`, that contain `//`, control
+    characters or sequences that break translation to a file during a restore.
+- **Object and bucket tagging**: bucket *tags* for cost and ownership (owner, environment,
+  classification); object *tags* only if you are going to use them in policies or in lifecycle rules
+  — they are billed and forgotten.
 
-## 5. Seguridad, inmutabilidad y ciclo de vida
+## 5. Security, immutability and life cycle
 
-### 5.1 Exposición: donde ocurren las filtraciones
+### 5.1 Exposure: where the leaks happen
 
-- **Bloqueo de acceso público activado a nivel de cuenta**, además de por bucket, y aplicado por
-  política de organización para que no se pueda desactivar sin pasar por gobierno. Comprobación
-  vigente a ago-2026: los buckets nuevos de S3 se crean con **BPA activado y ACLs deshabilitadas**
-  desde abril de 2023, por cualquier vía; los *directory buckets* tienen BPA fijo y **no modificable**.
-  **Esto no te salva de los buckets antiguos**: el cambio no tocó los existentes. Auditar los viejos
-  es trabajo aparte, y es donde están las filtraciones.
-- **Jerarquía de controles**, y por qué las ACL sobran: la ACL es un modelo por objeto, invisible en
-  auditoría, que sobrevive a la política del bucket y que produce exactamente el fallo clásico
-  ("bucket privado, objeto público"). Con `BucketOwnerEnforced` **desaparece el problema**: el dueño
-  del bucket posee todos los objetos y el acceso se gobierna solo con políticas. Es la
-  configuración por defecto y **no se revierte**.
-- **Política de bucket frente a IAM**: IAM dice qué puede hacer una identidad; la política de bucket
-  dice quién puede tocar el recurso y es el sitio correcto para los controles **negativos** que deben
-  valer para todos: denegar sin TLS, denegar sin cifrado, denegar fuera de la organización o del
-  endpoint privado, denegar `s3:BypassGovernanceRetention` salvo a un rol nominal. **Un `Deny`
-  explícito gana siempre**: úsalo para los invariantes.
-- **URLs prefirmadas**: **TTL corto** (minutos, no días), el mínimo verbo posible, sin reutilizar y
-  sin registrarlas en logs — la URL **es** la credencial. Ojo con el límite duro: una URL firmada con
-  credenciales temporales **no sobrevive a la caducidad de esas credenciales** aunque su propio TTL
-  sea mayor. Para descarga pública sostenida, CDN con firma, no prefirmado a mano.
-- **Registro de acceso activado** (logs de acceso o eventos de datos), con destino en **otro bucket y
-  preferiblemente otra cuenta**. Sin registro, una exfiltración por objeto es invisible.
-- **Egreso controlado**: en cargas sensibles, endpoint privado y política que restrinja el origen —
-  un bucket alcanzable desde cualquier sitio con una clave filtrada es exfiltración en un `aws s3 sync`.
-- **Subdominio colgante**: un CNAME hacia un bucket que se borra permite que otro lo reclame. Al
-  retirar un bucket, retira el registro DNS **primero** (`dns-standards`).
+- **Block public access enabled at account level**, in addition to per bucket, and applied by
+  organisation policy so that it cannot be disabled without going through governance. Check
+  current as of Aug 2026: new S3 buckets are created with **BPA enabled and ACLs disabled**
+  since April 2023, by any route; *directory buckets* have BPA fixed and **not modifiable**.
+  **This does not save you from old buckets**: the change did not touch existing ones. Auditing the
+  old ones is separate work, and it is where the leaks are.
+- **Hierarchy of controls**, and why ACLs are superfluous: an ACL is a per-object model, invisible
+  in audit, that survives the bucket policy and that produces exactly the classic failure
+  ("private bucket, public object"). With `BucketOwnerEnforced` **the problem disappears**: the
+  bucket owner owns all the objects and access is governed only with policies. It is the
+  default configuration and **it is not reverted**.
+- **Bucket policy versus IAM**: IAM says what an identity can do; the bucket policy
+  says who can touch the resource and is the right place for the **negative** controls that must
+  hold for everybody: deny without TLS, deny without encryption, deny outside the organisation or
+  the private endpoint, deny `s3:BypassGovernanceRetention` except to a named role. **An explicit
+  `Deny` always wins**: use it for the invariants.
+- **Presigned URLs**: **short TTL** (minutes, not days), the smallest possible verb, not reused and
+  not recorded in logs — the URL **is** the credential. Watch out for the hard limit: a URL signed
+  with temporary credentials **does not survive the expiry of those credentials** even if its own
+  TTL is longer. For sustained public download, a CDN with signing, not hand-rolled presigning.
+- **Access logging enabled** (access logs or data events), with the destination in **another bucket
+  and preferably another account**. Without logging, a per-object exfiltration is invisible.
+- **Controlled egress**: on sensitive workloads, a private endpoint and a policy restricting the
+  origin — a bucket reachable from anywhere with a leaked key is exfiltration in one `aws s3 sync`.
+- **Dangling subdomain**: a CNAME to a bucket that gets deleted lets somebody else claim it. When
+  retiring a bucket, retire the DNS record **first** (`dns-standards`).
 
-### 5.2 Inmutabilidad y retención
+### 5.2 Immutability and retention
 
-**Object Lock** (WORM), con el detalle verificado a ago-2026:
+**Object Lock** (WORM), with the detail verified as of Aug 2026:
 
-- **Requiere versionado**, y el bloqueo se aplica a **versiones de objeto**, no a claves. Habilitar
-  Object Lock en un bucket **no se puede deshacer**.
-- **Modo *governance***: nadie borra ni altera el bloqueo **salvo** quien tenga
-  `s3:BypassGovernanceRetention` y envíe la cabecera `x-amz-bypass-governance-retention`. Es el modo
-  correcto para lo operativo y para **probar** una política antes de comprometerla.
-- **Modo *compliance***: **nadie** —incluida la cuenta raíz— puede borrar, sobrescribir, acortar la
-  retención ni cambiar el modo hasta que expire. Es la protección real frente a un atacante con
-  credenciales de administrador, y **es también un riesgo operativo y de coste**: una retención mal
-  fijada (6 años en vez de 6 días) es irreversible y se paga entera. **Práctica obligatoria: probar en
-  *governance*, promover a *compliance*.**
-- **Retención mínima 1 día, sin máximo.** Fija la retención por defecto del bucket y no la dejes al
-  cliente.
-- ***Legal hold***: independiente de la retención, sin fecha, se retira explícitamente, y **el ciclo
-  de vida no lo vence**. Retención y *hold* coexisten: si cualquiera está activo, no se borra. Es el
-  mecanismo para una investigación o un litigio (`grc-compliance-standards`,
+- **It requires versioning**, and the lock applies to **object versions**, not to keys. Enabling
+  Object Lock on a bucket **cannot be undone**.
+- ***Governance* mode**: nobody deletes or alters the lock **except** whoever has
+  `s3:BypassGovernanceRetention` and sends the `x-amz-bypass-governance-retention` header. It is the
+  correct mode for operational data and for **testing** a policy before committing to it.
+- ***Compliance* mode**: **nobody** —including the root account— can delete, overwrite, shorten the
+  retention or change the mode until it expires. It is the real protection against an attacker with
+  administrator credentials, and **it is also an operational and cost risk**: a badly set retention
+  (6 years instead of 6 days) is irreversible and is paid for in full. **Mandatory practice: test in
+  *governance*, promote to *compliance*.**
+- **Minimum retention 1 day, no maximum.** Set the bucket's default retention and do not leave it
+  to the client.
+- ***Legal hold***: independent of retention, with no date, removed explicitly, and **the life
+  cycle does not override it**. Retention and *hold* coexist: if either is active, nothing is
+  deleted. It is the mechanism for an investigation or litigation (`grc-compliance-standards`,
   `incident-response-forensics-standards`).
-- **Sobre existentes**: se aplica o extiende con **S3 Batch Operations**. En **Ceph RGW ≥ Tentacle**,
-  `PutObjectLockConfiguration` ya permite habilitar Object Lock en un bucket versionado que no se creó
-  con él — antes obligaba a crear bucket nuevo y migrar.
-- **Object Lock ha sido evaluado por terceros frente a SEC 17a-4(f), FINRA 4511 y CFTC 1.31**: si esa
-  evaluación es tu justificación de cumplimiento, verifica su vigencia y su alcance
-  (`grc-compliance-standards`), no la cites de memoria.
-- **La compatibilidad no se presupone**: hay implementaciones S3 que exponen la API de Object Lock y
-  **no la aplican** (caso documentado y abierto en SeaweedFS, §3). Si tu inmutabilidad depende de esto,
-  **pruébalo**: escribe, bloquea, intenta borrar con credencial de administrador y comprueba que
-  falla. Ese es el gate §6.4.
-- **Restricción que hay que declarar, no esquivar**: el borrado por derecho de supresión **no es
-  posible** dentro de un objeto en modo *compliance*. Ver `privacy-engineering-standards` y
-  `backup-recovery-standards` §3.6: se resuelve con *crypto-shredding* y ventana acotada, no editando
-  la copia.
+- **On existing objects**: it is applied or extended with **S3 Batch Operations**. In **Ceph RGW ≥
+  Tentacle**, `PutObjectLockConfiguration` now allows enabling Object Lock on a versioned bucket
+  that was not created with it — previously it forced you to create a new bucket and migrate.
+- **Object Lock has been assessed by third parties against SEC 17a-4(f), FINRA 4511 and CFTC 1.31**:
+  if that assessment is your compliance justification, verify its currency and its scope
+  (`grc-compliance-standards`), do not cite it from memory.
+- **Compatibility is not presumed**: there are S3 implementations that expose the Object Lock API
+  and **do not enforce it** (a documented and open case in SeaweedFS, §3). If your immutability
+  depends on this, **test it**: write, lock, try to delete with an administrator credential and
+  check that it fails. That is the §6.4 gate.
+- **A constraint to be declared, not dodged**: erasure under the right to erasure **is not
+  possible** within an object in *compliance* mode. See `privacy-engineering-standards` and
+  `backup-recovery-standards` §3.6: it is resolved with *crypto-shredding* and a bounded window, not
+  by editing the copy.
 
-**Versionado**: es la defensa contra el borrado y la sobrescritura accidentales, y **el mecanismo que
-convierte un `DELETE` en un marcador reversible**. Dos verdades incómodas:
-1. **El versionado sin política de expiración es una factura creciente** — todas las versiones no
-   actuales siguen ocupando y facturando, indefinidamente, y no aparecen en un listado normal. Regla:
-   versionado y `NoncurrentVersionExpiration` **se configuran en el mismo cambio**, siempre.
-2. **El versionado no es inmutabilidad**: quien puede borrar versiones (`DeleteObjectVersion`) o
-   suspender el versionado se lleva todo. La inmutabilidad la da el Object Lock.
+**Versioning**: it is the defence against accidental deletion and overwriting, and **the mechanism
+that turns a `DELETE` into a reversible marker**. Two uncomfortable truths:
+1. **Versioning without an expiration policy is a growing bill** — all noncurrent
+   versions keep occupying space and being billed, indefinitely, and they do not appear in a normal
+   listing. Rule: versioning and `NoncurrentVersionExpiration` **are configured in the same change**,
+   always.
+2. **Versioning is not immutability**: whoever can delete versions (`DeleteObjectVersion`) or
+   suspend versioning takes everything. Immutability is given by Object Lock.
 
-### 5.3 Ciclo de vida y clases de almacenamiento
+### 5.3 Life cycle and storage classes
 
-- **El error clásico del dominio**: diseñar con la clase de archivo porque es barata de almacenar y
-  descubrir el **plazo de rescate** durante un incidente. Datos vigentes de AWS a ago-2026:
-  **Deep Archive** restaura típicamente en **~12 h** con *Standard* (9-12 h vía S3 Batch Operations,
-  con rendimiento del orden de 1-2 PB/día) y en **~48 h** con *Bulk*. Precios de recuperación citados
-  públicamente: ~**0,02 $/GB** *Standard* y ~**0,0025 $/GB** *Bulk* (verifícalos, §8).
-  **Regla dura: si el RTO es inferior al plazo de rescate de la clase, esa clase no es tu nivel de
-  recuperación.** Ese número se devuelve a `bcdr-standards`.
-- **Costes ocultos del rescate**, todos reales y todos olvidados: el objeto restaurado se **copia
-  temporalmente a una clase caliente** y esa copia se factura mientras dure; el original sigue en
-  archivo; el **mínimo de permanencia** (180 días en Deep Archive) se paga entero aunque borres al
-  día 30; y hay **coste por petición** por objeto restaurado, que domina si son millones de objetos
-  pequeños.
-- **Diseño de transición**: transición por edad basada en un patrón de acceso **medido**, no supuesto
-  (Storage Lens / analítica de clase). Objetos pequeños no compensan la transición (hay un tamaño
-  mínimo efectivo y un coste por transición por objeto): **empaquétalos**.
-- **Coste de salida (egress) y de petición como restricción de diseño**: la salida entre proveedores
-  o hacia Internet es el eje que decide arquitecturas enteras (y el que hace caro salir). Un
-  repositorio de respaldo se diseña asumiendo que **algún día se lee entero**, y ese día se factura.
-- **Equivalentes**: Azure Blob (*Cool*, *Cold*, *Archive*, con rehidratación de horas y su propio
-  mínimo de permanencia) y GCS (*Nearline*, *Coldline*, *Archive*, sin espera de rehidratación pero
-  con coste de recuperación y mínimos de permanencia) **no son intercambiables** con S3 ni entre sí.
-  **Verifica plazos, mínimos y coste de cada uno antes de diseñar (§8): están explícitamente marcados
-  como hueco en esta revisión salvo lo indicado de AWS.**
-- **Las reglas de ciclo de vida se despliegan como código y se revisan**: `put-bucket-lifecycle-
-  configuration` **reemplaza la configuración entera, no la fusiona** — un despliegue descuidado borra
-  reglas existentes (incluida la de abortar multipart). Es un fallo silencioso clásico.
+- **The classic mistake of the domain**: designing with the archive class because it is cheap to
+  store and discovering the **retrieval time** during an incident. Current AWS data as of Aug 2026:
+  **Deep Archive** typically restores in **~12 h** with *Standard* (9-12 h via S3 Batch Operations,
+  with throughput of the order of 1-2 PB/day) and in **~48 h** with *Bulk*. Retrieval prices quoted
+  publicly: ~**$0.02/GB** *Standard* and ~**$0.0025/GB** *Bulk* (verify them, §8).
+  **Hard rule: if the RTO is shorter than the class's retrieval time, that class is not your
+  recovery tier.** That number is handed back to `bcdr-standards`.
+- **Hidden costs of retrieval**, all real and all forgotten: the restored object is **temporarily
+  copied to a hot class** and that copy is billed for as long as it lasts; the original stays in
+  archive; the **minimum storage duration** (180 days in Deep Archive) is paid in full even if you
+  delete on day 30; and there is a **per-request cost** for each restored object, which dominates if
+  they are millions of small objects.
+- **Transition design**: transition by age based on a **measured** access pattern, not an assumed
+  one (Storage Lens / class analytics). Small objects do not pay off for a transition (there is an
+  effective minimum size and a per-object transition cost): **pack them**.
+- **Egress and request cost as a design constraint**: egress between providers
+  or to the Internet is the axis that decides entire architectures (and the one that makes leaving
+  expensive). A backup repository is designed assuming that **one day it will be read in full**, and
+  that day it is billed.
+- **Equivalents**: Azure Blob (*Cool*, *Cold*, *Archive*, with rehydration measured in hours and its
+  own minimum storage duration) and GCS (*Nearline*, *Coldline*, *Archive*, with no rehydration wait
+  but with a retrieval cost and minimum storage durations) **are not interchangeable** with S3 nor
+  with each other. **Verify times, minimums and cost of each before designing (§8): they are
+  explicitly flagged as a gap in this revision except for what is indicated for AWS.**
+- **Lifecycle rules are deployed as code and reviewed**: `put-bucket-lifecycle-
+  configuration` **replaces the whole configuration, it does not merge it** — a careless deployment
+  deletes existing rules (including the one that aborts multipart). It is a classic silent failure.
 
 ## 6. Gates
 
-Rompen la entrega:
+They break the delivery:
 
-1. **Bucket y política como código**, con `Deny` explícito de tráfico sin TLS y de escritura sin
-   cifrado. Creado a mano en la consola = hallazgo.
-2. **Escaneo de exposición pública** en CI y en continuo: BPA a nivel de cuenta, ACLs deshabilitadas,
-   ausencia de `Principal: "*"` sin condición. Alerta en tiempo real ante un cambio de política que
-   abra un bucket.
-3. **`AbortIncompleteMultipartUpload` presente en todos los buckets**, con `DaysAfterInitiation` mayor
-   que la sesión legítima más larga (7 días es un valor razonable por defecto). Verificado por
-   inventario, no por confianza.
-4. **Prueba de inmutabilidad ejecutada**, no supuesta: escribir un objeto bajo Object Lock, intentar
-   borrarlo con la credencial más privilegiada disponible y **comprobar que falla**. Obligatorio en
-   cualquier implementación no-AWS.
-5. **Versionado y `NoncurrentVersionExpiration` juntos**, siempre. Versionado sin expiración es un
-   fallo de gate.
-6. **Reconciliación de inventario**: contraste periódico entre lo que se cree que hay y lo que hay
-   (inventario del proveedor o listado), con detección de partes incompletas y de versiones
-   huérfanas.
-7. **Alerta de coste por eje**, no solo por total: espacio, **peticiones**, salida y recuperación de
-   archivo por separado. Un pico de peticiones es una anomalía de aplicación o una exfiltración.
-8. **Registro de acceso activo**, en otro bucket y a ser posible en otra cuenta, con retención
-   definida.
-9. **Prueba de recuperación desde la clase fría**, cronometrada, al menos una vez: el plazo real es el
-   dato, y suele desmentir la hoja de cálculo.
-10. **Integridad verificada extremo a extremo** (§7.2): checksum comprobado en subida y en descarga,
-    no confiado al ETag.
+1. **Bucket and policy as code**, with an explicit `Deny` of non-TLS traffic and of writing without
+   encryption. Created by hand in the console = finding.
+2. **Public exposure scan** in CI and continuously: account-level BPA, ACLs disabled,
+   absence of `Principal: "*"` without a condition. Real-time alert on a policy change that
+   opens a bucket.
+3. **`AbortIncompleteMultipartUpload` present on every bucket**, with a `DaysAfterInitiation`
+   greater than the longest legitimate session (7 days is a reasonable default). Verified by
+   inventory, not by trust.
+4. **Immutability test executed**, not assumed: write an object under Object Lock, try to
+   delete it with the most privileged credential available and **check that it fails**. Mandatory on
+   any non-AWS implementation.
+5. **Versioning and `NoncurrentVersionExpiration` together**, always. Versioning without expiration
+   is a gate failure.
+6. **Inventory reconciliation**: periodic comparison between what is believed to be there and what
+   is there (provider inventory or listing), with detection of incomplete parts and orphan
+   versions.
+7. **Cost alert per axis**, not only on the total: space, **requests**, egress and archive
+   retrieval separately. A spike in requests is an application anomaly or an exfiltration.
+8. **Access logging active**, in another bucket and if possible in another account, with defined
+   retention.
+9. **Recovery test from the cold class**, timed, at least once: the real time is the
+   figure, and it usually contradicts the spreadsheet.
+10. **Integrity verified end to end** (§7.2): checksum checked on upload and on download,
+    not entrusted to the ETag.
 
-## 7. Operación
+## 7. Operation
 
-### 7.1 Replicación, migración y herramientas
+### 7.1 Replication, migration and tools
 
-- **Replicación entre regiones**: protege del fallo regional; **no protege del borrado**, que se
-  replica igual salvo que se configure lo contrario, ni de un compromiso de la cuenta. Para respaldo,
-  lo que cuenta es **otro dominio de fallo administrativo** (otra cuenta u otro proveedor) más Object
-  Lock en el destino.
-- **Replicación entre proveedores**: defendible como seguro contra el riesgo de proveedor entero
-  (`bcdr-standards`), y cara en salida. Decisión con ADR y coste cuantificado, no reflejo.
-- **La replicación no es retroactiva** por defecto: los objetos anteriores a la regla no se copian sin
-  una operación explícita de *batch*. Fallo silencioso muy frecuente.
-- **`rclone`** (1.75.0, 31-jul-2026) es la herramienta correcta para sincronizar y migrar entre
-  proveedores. Reglas: `--checksum` mejor que `--size-only`; **`--dry-run` antes de cualquier
-  `sync`** (que borra en destino); `copy` por defecto y `sync` solo cuando el borrado sea la
-  intención; paralelismo y tamaño de *chunk* ajustados, sabiendo que el paralelismo se paga en
-  peticiones.
-- **`aws s3 sync`** para lo cotidiano en AWS; **`aws s3api`** cuando necesites control fino (lock,
-  versiones, checksums). **`mc`** solo en ecosistema MinIO.
-- **Migraciones grandes**: cuenta las **peticiones**, no solo los TB; considera transferencia física
-  del proveedor si el volumen lo justifica; y valida por **inventario y checksum**, no por "el comando
-  terminó".
+- **Cross-region replication**: protects against a regional failure; **it does not protect against
+  deletion**, which is replicated too unless configured otherwise, nor against a compromise of the
+  account. For backup, what counts is **another administrative failure domain** (another account or
+  another provider) plus Object Lock at the destination.
+- **Cross-provider replication**: defensible as insurance against whole-provider risk
+  (`bcdr-standards`), and expensive in egress. A decision with an ADR and quantified cost, not a
+  reflex.
+- **Replication is not retroactive** by default: objects predating the rule are not copied without
+  an explicit *batch* operation. A very frequent silent failure.
+- **`rclone`** (1.75.0, 31 Jul 2026) is the right tool to synchronise and migrate between
+  providers. Rules: `--checksum` rather than `--size-only`; **`--dry-run` before any
+  `sync`** (which deletes at the destination); `copy` by default and `sync` only when deletion is
+  the intent; parallelism and *chunk* size tuned, knowing that parallelism is paid for in
+  requests.
+- **`aws s3 sync`** for day-to-day work on AWS; **`aws s3api`** when you need fine control (lock,
+  versions, checksums). **`mc`** only in the MinIO ecosystem.
+- **Large migrations**: count the **requests**, not just the TB; consider the provider's physical
+  transfer if the volume justifies it; and validate with **inventory and checksum**, not with "the
+  command finished".
 
-### 7.2 Multipart e integridad
+### 7.2 Multipart and integrity
 
-- **Multipart es obligatorio por encima del umbral del SDK** y deseable para objetos grandes: permite
-  paralelismo y reintento por parte. Su residuo es el problema.
-- **Partes incompletas: basura que se factura y que no se ve.** Se almacenan y se cobran a la tarifa
-  de la clase indicada al subirlas, indefinidamente, y **no aparecen en `aws s3 ls` ni en la lista de
-  objetos de la consola**. En archivo se facturan como *staging* a tarifa caliente. El control es la
-  regla de ciclo de vida (§6.3) y la métrica de Storage Lens
-  (`IncompleteMultipartUploadStorageBytes`, actualización diaria).
-- **ETag: trampa clásica.** El ETag **no es necesariamente el MD5 del objeto**; en multipart es un
-  compuesto (hash de hashes con sufijo `-N`) que depende del **tamaño de parte usado**, así que dos
-  copias idénticas subidas con tamaños de parte distintos tienen ETag distinto. **VETADO usar el ETag
-  como prueba de integridad o como criterio de comparación entre orígenes.**
-- **Checksums, que es lo que sí sirve**: usa checksums adicionales (`x-amz-checksum-*`). Estado
-  verificado a ago-2026: si no se especifica ninguno, S3 aplica por defecto **CRC-64/NVME** y calcula
-  el checksum de objeto completo al terminar la subida. En multipart se declara **`COMPOSITE` o
-  `FULL_OBJECT`** en `CreateMultipartUpload` (`FULL_OBJECT` solo con algoritmos CRC, y en ese caso no
-  se envía algoritmo por parte); un desajuste devuelve **`BadDigest`**. Con checksum adicional por
-  parte, los números de parte deben **empezar en 1 y ser consecutivos** o se obtiene
+- **Multipart is mandatory above the SDK's threshold** and desirable for large objects: it allows
+  parallelism and per-part retry. Its residue is the problem.
+- **Incomplete parts: rubbish that is billed and not visible.** They are stored and charged at the
+  rate of the class indicated when uploading them, indefinitely, and **they do not appear in
+  `aws s3 ls` nor in the console's object list**. In archive they are billed as *staging* at the hot
+  rate. The control is the lifecycle rule (§6.3) and the Storage Lens metric
+  (`IncompleteMultipartUploadStorageBytes`, daily update).
+- **ETag: classic trap.** The ETag **is not necessarily the object's MD5**; in multipart it is a
+  composite (hash of hashes with an `-N` suffix) that depends on the **part size used**, so two
+  identical copies uploaded with different part sizes have different ETags. **VETOED to use the
+  ETag as proof of integrity or as a comparison criterion between sources.**
+- **Checksums, which is what does work**: use additional checksums (`x-amz-checksum-*`). Status
+  verified as of Aug 2026: if none is specified, S3 applies **CRC-64/NVME** by default and computes
+  the full-object checksum when the upload finishes. In multipart, **`COMPOSITE` or
+  `FULL_OBJECT`** is declared in `CreateMultipartUpload` (`FULL_OBJECT` only with CRC algorithms, and
+  in that case no per-part algorithm is sent); a mismatch returns **`BadDigest`**. With an additional
+  per-part checksum, part numbers must **start at 1 and be consecutive** or you get
   **`InvalidPartOrder`**.
-- **Verificación extremo a extremo**: el productor calcula y guarda el checksum del contenido; el
-  consumidor lo comprueba tras descargar. La comprobación del proveedor cubre el transporte y el
-  almacenamiento, no cubre que subieras el fichero equivocado.
+- **End-to-end verification**: the producer computes and stores the content's checksum; the
+  consumer checks it after downloading. The provider's check covers transport and
+  storage, it does not cover you having uploaded the wrong file.
 
-### 7.3 Observabilidad y coste
+### 7.3 Observability and cost
 
-- **Mide peticiones, no solo espacio.** Es la lección de operación más cara del dominio: la factura de
-  un bucket con muchos objetos pequeños la domina el `GET`/`PUT`/`LIST`, no el GB.
-- Series mínimas: bytes por clase, número de objetos, **peticiones por tipo**, tasa de error 4xx/5xx,
-  **429/503 y reintentos** (indican mal reparto o límite de tasa), latencia p50/p99, **bytes de salida**,
-  bytes en partes incompletas, bytes en versiones no actuales, y **coste de recuperación de archivo**.
-- **Alertas útiles**: pico de `GET` o de salida fuera de patrón (exfiltración o bucle de cliente),
-  crecimiento de versiones no actuales (falta la expiración), crecimiento de partes incompletas (falta
-  la regla de aborto), aparición de `Principal: "*"`, y fallo de replicación con retraso creciente.
-- **Coste por bucket y por dueño**, vía etiquetado, o la conversación de FinOps es imposible.
-- **Reconciliación con el inventario del proveedor** (informe de inventario diario) en lugar de
-  listados masivos: listar millones de objetos para saber qué hay es caro y lento.
+- **Measure requests, not just space.** It is the most expensive operational lesson of the domain:
+  the bill of a bucket with many small objects is dominated by `GET`/`PUT`/`LIST`, not by the GB.
+- Minimum series: bytes per class, number of objects, **requests by type**, 4xx/5xx error rate,
+  **429/503 and retries** (they indicate poor spreading or a rate limit), p50/p99 latency, **egress
+  bytes**, bytes in incomplete parts, bytes in noncurrent versions, and **archive retrieval cost**.
+- **Useful alerts**: a spike in `GET` or in egress outside the pattern (exfiltration or a client
+  loop), growth in noncurrent versions (the expiration is missing), growth in incomplete parts (the
+  abort rule is missing), the appearance of `Principal: "*"`, and replication failure with growing
+  lag.
+- **Cost per bucket and per owner**, via tagging, or the FinOps conversation is impossible.
+- **Reconciliation with the provider's inventory** (daily inventory report) instead of massive
+  listings: listing millions of objects to know what is there is expensive and slow.
 
-### 7.4 On-premise: cuándo montar el tuyo
+### 7.4 On-premise: when to run your own
 
-Montar object storage propio es un **compromiso operativo permanente**, no un despliegue. Solo se
-justifica con al menos uno de estos motivos, escrito en un ADR:
+Running your own object storage is a **permanent operational commitment**, not a deployment. It is
+only justified with at least one of these reasons, written in an ADR:
 
-- **Soberanía o requisito legal** que impide el proveedor.
-- **Volumen y patrón** donde el coste de salida y de peticiones domina y hay personal para operarlo.
-- **Latencia o adyacencia** al cómputo local.
-- **Hardware ya amortizado** y capacidad de operación ya existente.
+- **Sovereignty or a legal requirement** that rules out the provider.
+- **Volume and pattern** where egress and request cost dominate and there are people to operate it.
+- **Latency or adjacency** to local compute.
+- **Already amortised hardware** and already existing operational capability.
 
-Y lo que implica de verdad:
+And what it really implies:
 
-- **Erasure coding frente a réplica**: EC da eficiencia de espacio (típicamente 1,3-1,5x frente a 3x
-  de la triple réplica) a cambio de CPU, latencia y **reconstrucciones caras**. La réplica es simple y
-  rápida de reconstruir. La decisión depende del tamaño de objeto y del perfil de acceso, y es de las
-  difíciles de cambiar después.
-- **Dominios de fallo explícitos**: el esquema de distribución debe repartir por nodo, rack y
-  alimentación, no solo por disco. Un EC que sobrevive a dos discos pero no a un rack **no protege de
-  lo que realmente falla**.
-- **La durabilidad es un trabajo continuo**: *scrub*, detección de corrupción silenciosa, sustitución
-  de discos y control del tiempo de reconstrucción, que crece con la capacidad del disco y es cuando
-  el cluster es vulnerable.
-- **Actualizaciones y compatibilidad**: la API S3 auto-alojada **nunca es 100 % compatible**. Prueba
-  con **tu** cliente y **tus** funciones —Object Lock, versionado, políticas, lifecycle, multipart,
-  checksums— antes de comprometerte. Es exactamente donde Garage no llega y donde SeaweedFS tiene una
-  incidencia abierta (§3).
-- **Comparación honesta**: el coste del hardware es la parte fácil. Súmale energía, espacio,
-  reemplazo, **personal con guardia**, actualizaciones, y el hecho de que la durabilidad y la
-  disponibilidad que consigues no serán las del proveedor. Si el resultado sale parecido, **paga el
-  servicio**: el argumento de "es más barato" casi nunca sobrevive a contar el personal.
-- **Y aun con object storage propio, la copia ancla sigue necesitando otro dominio de fallo
-  administrativo** (`backup-recovery-standards` §3.4). Tu MinIO/Ceph en el mismo CPD no es la copia
-  externa.
+- **Erasure coding versus replica**: EC gives space efficiency (typically 1.3-1.5x versus 3x
+  for triple replication) in exchange for CPU, latency and **expensive rebuilds**. Replication is
+  simple and fast to rebuild. The decision depends on object size and access profile, and it is one
+  of the hard ones to change afterwards.
+- **Explicit failure domains**: the distribution scheme must spread across node, rack and
+  power feed, not only across disks. An EC that survives two disks but not a rack **does not protect
+  against what actually fails**.
+- **Durability is continuous work**: *scrub*, silent corruption detection, disk
+  replacement and control of rebuild time, which grows with disk capacity and is when
+  the cluster is vulnerable.
+- **Upgrades and compatibility**: a self-hosted S3 API is **never 100 % compatible**. Test
+  with **your** client and **your** features —Object Lock, versioning, policies, lifecycle, multipart,
+  checksums— before committing. It is exactly where Garage falls short and where SeaweedFS has an
+  open issue (§3).
+- **Honest comparison**: the hardware cost is the easy part. Add energy, space,
+  replacement, **staff with on-call**, upgrades, and the fact that the durability and
+  availability you achieve will not be the provider's. If the result comes out similar, **pay for
+  the service**: the "it is cheaper" argument almost never survives counting the staff.
+- **And even with your own object storage, the anchor copy still needs another administrative
+  failure domain** (`backup-recovery-standards` §3.4). Your MinIO/Ceph in the same data centre is
+  not the offsite copy.
 
-## 8. Sostenibilidad y prohibiciones
+## 8. Sustainability and prohibitions
 
-**Cadencia**: revisión semestral de versiones, licencias y estado de mantenimiento de la
-implementación auto-alojada (§9); revisión trimestral de políticas de bucket y de exposición pública;
-revisión anual de reglas de ciclo de vida contra el patrón de acceso real y contra la factura;
-comprobación de la prueba de inmutabilidad tras cada actualización mayor del backend.
+**Cadence**: half-yearly review of versions, licences and maintenance status of the
+self-hosted implementation (§9); quarterly review of bucket policies and public exposure;
+annual review of lifecycle rules against the real access pattern and against the bill;
+checking the immutability test after every major backend upgrade.
 
-**PROHIBIDO**
-- ❌ Montar S3 como filesystem para una base de datos, un backend con estado, un home o una compilación.
-- ❌ Usar `goofys` en nada nuevo (muerto desde 2020/2024).
-- ❌ Depender de renombrado atómico, escritura aleatoria en sitio o bloqueo entre clientes sobre objetos.
-- ❌ Usar el listado como índice de la aplicación.
-- ❌ Desactivar el bloqueo de acceso público, o reactivar las ACL, sin decisión documentada y revisada.
-- ❌ `Principal: "*"` sin condición restrictiva en una política de bucket.
-- ❌ Bucket sin `Deny` de tráfico sin TLS.
-- ❌ Versionado sin `NoncurrentVersionExpiration`.
-- ❌ Bucket sin regla `AbortIncompleteMultipartUpload`.
-- ❌ Usar el **ETag** como prueba de integridad o para comparar objetos entre orígenes.
-- ❌ Confiar en la inmutabilidad de una implementación S3 **sin haber probado** que el borrado falla.
-- ❌ Anclar la inmutabilidad de un respaldo en **Garage** (no tiene versionado, luego no tiene Object
-  Lock) o en **SeaweedFS** sin validar el modo *compliance* en tu versión.
-- ❌ Desplegar **MinIO** en un sistema nuevo sin haber verificado su estado de mantenimiento y su
-  modelo comercial actual (§9).
-- ❌ Aplicar Object Lock en modo *compliance* sin haber probado antes la política en *governance*.
-- ❌ Diseñar con clase de archivo sin conocer y medir su **plazo de rescate**, su mínimo de permanencia
-  y su coste de recuperación.
-- ❌ Presuponer que la replicación protege del borrado, o que es retroactiva.
-- ❌ URLs prefirmadas con TTL largo, reutilizadas o registradas en logs.
-- ❌ Secretos o dato personal en el nombre del bucket o en la clave del objeto.
-- ❌ Borrar un bucket sin retirar antes su registro DNS (subdominio colgante).
-- ❌ Desplegar `put-bucket-lifecycle-configuration` sin saber que **reemplaza** la configuración entera.
-- ❌ Vigilar solo el espacio y no las **peticiones** ni la salida.
-- ❌ Montar object storage propio sin ADR, sin personal de guardia y sin prueba de compatibilidad S3
-  con tu cliente real.
-- ❌ Fijar versiones, licencias, precios, plazos de rescate o comportamiento de servicio **de memoria**
+**FORBIDDEN**
+- ❌ Mounting S3 as a filesystem for a database, a stateful backend, a home directory or a build.
+- ❌ Using `goofys` in anything new (dead since 2020/2024).
+- ❌ Depending on atomic rename, random in-place write or inter-client locking over objects.
+- ❌ Using listing as the application's index.
+- ❌ Disabling block public access, or re-enabling ACLs, without a documented and reviewed decision.
+- ❌ `Principal: "*"` without a restrictive condition in a bucket policy.
+- ❌ A bucket without a `Deny` of non-TLS traffic.
+- ❌ Versioning without `NoncurrentVersionExpiration`.
+- ❌ A bucket without an `AbortIncompleteMultipartUpload` rule.
+- ❌ Using the **ETag** as proof of integrity or to compare objects across sources.
+- ❌ Trusting the immutability of an S3 implementation **without having tested** that deletion fails.
+- ❌ Anchoring the immutability of a backup on **Garage** (it has no versioning, therefore no Object
+  Lock) or on **SeaweedFS** without validating *compliance* mode in your version.
+- ❌ Deploying **MinIO** on a new system without having verified its maintenance status and its
+  current commercial model (§9).
+- ❌ Applying Object Lock in *compliance* mode without having first tested the policy in
+  *governance*.
+- ❌ Designing with an archive class without knowing and measuring its **retrieval time**, its
+  minimum storage duration and its retrieval cost.
+- ❌ Presuming that replication protects against deletion, or that it is retroactive.
+- ❌ Presigned URLs with a long TTL, reused or recorded in logs.
+- ❌ Secrets or personal data in the bucket name or in the object key.
+- ❌ Deleting a bucket without first retiring its DNS record (dangling subdomain).
+- ❌ Deploying `put-bucket-lifecycle-configuration` without knowing that it **replaces** the whole
+  configuration.
+- ❌ Watching only space and not **requests** or egress.
+- ❌ Running your own object storage without an ADR, without on-call staff and without an S3
+  compatibility test with your real client.
+- ❌ Stating versions, licences, prices, retrieval times or service behaviour **from memory**
   (§9).
 
-## 9. Verificación web obligatoria
+## 9. Mandatory web verification
 
-Antes de fijar cualquier versión, licencia, precio, plazo o comportamiento, **búscalo — no lo
-recuerdes**. **Aviso metodológico**: toda fecha o versión de GitHub debe salir de **`api.github.com` o
-de los feeds Atom**, nunca del render HTML de la página de Releases.
+Before committing to any version, licence, price, timing or behaviour, **search for it — do not
+remember it**. **Methodological warning**: every GitHub date or version must come from
+**`api.github.com` or the Atom feeds**, never from the HTML render of the Releases page.
 
-1. **MinIO** — el dato más volátil y peor recordado del dominio. Verificado a ago-2026: AGPLv3; UI de
-   administración retirada de la Community Edition (commit de feb-2025, polémica pública en jun-2025)
-   y disponible solo en **AIStor** comercial (tarifa citada públicamente en el orden de 96.000 $/año
-   hasta 400 TB útiles); proyecto de GitHub declarado en **modo mantenimiento**; **última release
-   `RELEASE.2025-10-15T17-29-55Z`**, confirmada vía `api.github.com` — ~9,5 meses sin publicar.
-   Existe el *fork* del navegador OpenMaxIO. **Comprueba si ha habido releases nuevas, si el modo
-   mantenimiento sigue, y qué funciones adicionales se han movido a AIStor** antes de recomendarlo o
-   descartarlo.
-2. **Ceph RGW**: versión estable vigente (a ago-2026, **Tentacle v20.2.3**, 05-ago-2026, con EOL
-   estimado 01-06-2027; Squid 19.2.x muere el 31-10-2026), y el estado de
-   Object Lock —incluida la novedad de Tentacle de poder habilitarlo sobre un bucket versionado
-   existente— y de la corrección del `RetainUntilDate` posterior a 2106 (**no repara bloqueos ya
-   escritos**).
-3. **Garage** (v2.3.0, 16-abr-2026, AGPL-3.0): confirma en su **tabla oficial de compatibilidad S3**
-   si sigue sin versionado de bucket, sin Object Lock, sin ACL/políticas S3 y sin *erasure coding*.
-   Estos límites cambian entre versiones y son los que deciden si sirve para tu caso.
-4. **SeaweedFS** (4.40, 20-jul-2026, núcleo Apache-2.0): estado de la incidencia sobre el modo
-   *compliance* de Object Lock (issue #8350 sobre v4.12, borrado que sigue teniendo éxito) y qué sigue
-   siendo exclusivo de la Enterprise de pago por TB (reparación automática de EC, PITR, admin OIDC).
-5. **S3 Object Lock**: modos vigentes, límites reales, `s3:BypassGovernanceRetention`, mínimos y
-   máximos de retención, aplicación sobre objetos existentes vía Batch Operations, y el alcance y la
-   vigencia de la evaluación frente a SEC 17a-4(f) / FINRA 4511 / CFTC 1.31.
-6. **Comportamiento por defecto de los proveedores**: verificado a ago-2026 que S3 sigue creando los
-   buckets nuevos con **Block Public Access activado y ACLs deshabilitadas** (`BucketOwnerEnforced`)
-   desde abril de 2023, por cualquier vía, y que los *directory buckets* lo tienen fijo. **Comprueba si
-   ha cambiado, y comprueba los equivalentes de Azure y GCP — no verificados en esta revisión.**
-7. **Clases frías y de archivo**: verificado a ago-2026 para AWS **Deep Archive**: *Standard* ~12 h
-   (9-12 h con S3 Batch Operations, del orden de 1-2 PB/día), *Bulk* ~48 h, mínimo de permanencia 180
-   días, coste de recuperación citado en fuentes secundarias en ~0,02 $/GB (*Standard*) y ~0,0025 $/GB
-   (*Bulk*). **Contrasta los precios contra la página oficial de precios de S3 antes de usarlos**.
-   **Hueco declarado**: no verificados en esta revisión los plazos, mínimos y costes de **Azure Blob
-   Archive** (rehidratación) ni de **GCS Coldline/Archive**, ni el coste de salida vigente de ningún
-   proveedor.
-8. **Montaje**: estado y contrato de **`mountpoint-s3`** (1.23.0, 21-jul-2026; AWS declara que no es
-   un filesystem de propósito general), **`s3fs-fuse`** (v1.97, dic-2025, repo activo) y **`rclone`**
-   (1.75.0, 31-jul-2026). Confirmado a ago-2026 que **`goofys` está abandonado** (último release
-   v0.24.0 de abril de 2020, último *push* en julio de 2024).
-9. **Límites de rendimiento y de tasa por prefijo** de tu proveedor: el consejo de aleatorizar el
-   prefijo procede de un modelo antiguo. Consulta los límites vigentes en la documentación oficial en
-   vez de arrastrar recetas.
-10. **Integridad**: comportamiento vigente de los checksums por defecto (a ago-2026, **CRC-64/NVME**
-    cuando no se especifica), la distinción `COMPOSITE`/`FULL_OBJECT` en multipart y los errores
-    `BadDigest` e `InvalidPartOrder`.
-11. **Incidentes de cadena de suministro** de cualquier herramienta o imagen que recomiendes (`rclone`,
-    `mc`, clientes S3, imágenes de MinIO/Ceph/Garage/SeaweedFS), en sus canales de aviso. Precedentes
-    del catálogo que justifican comprobarlo: el compromiso de **Trivy** (marzo de 2026), la oleada
-    contra repositorios y GitHub Actions de 2026 (Nx / CVE-2026-48027 en el KEV de CISA, campaña
-    "Megalodon", *Miasma*). **Hueco declarado**: no se ha revisado el historial de CVE de Ceph RGW,
-    Garage ni SeaweedFS en esta pasada.
-12. **Modelo de consistencia** de tu implementación concreta (listado, versionado, replicación): S3 da
-    lectura-tras-escritura fuerte desde 2020, pero **las implementaciones auto-alojadas y los matices
-    de listado varían**. No lo des por hecho.
+1. **MinIO** — the most volatile and worst-remembered figure of the domain. Verified as of Aug 2026:
+   AGPLv3; administration UI removed from the Community Edition (Feb 2025 commit, public
+   controversy in Jun 2025) and available only in the commercial **AIStor** (rate publicly quoted in
+   the order of $96,000/year up to 400 TB usable); GitHub project declared in **maintenance mode**;
+   **last release `RELEASE.2025-10-15T17-29-55Z`**, confirmed via `api.github.com` — ~9.5 months
+   without publishing. There is the OpenMaxIO browser *fork*. **Check whether there have been new
+   releases, whether maintenance mode still holds, and which additional features have been moved to
+   AIStor** before recommending or discarding it.
+2. **Ceph RGW**: current stable version (as of Aug 2026, **Tentacle v20.2.3**, 05 Aug 2026, with an
+   estimated EOL of 01-06-2027; Squid 19.2.x dies on 31-10-2026), and the status of
+   Object Lock —including the Tentacle novelty of being able to enable it on an existing versioned
+   bucket— and of the fix for `RetainUntilDate` beyond 2106 (**it does not repair locks already
+   written**).
+3. **Garage** (v2.3.0, 16 Apr 2026, AGPL-3.0): confirm in its **official S3 compatibility table**
+   whether it still lacks bucket versioning, Object Lock, S3 ACLs/policies and *erasure coding*.
+   These limits change between versions and they are what decides whether it works for your case.
+4. **SeaweedFS** (4.40, 20 Jul 2026, Apache-2.0 core): status of the issue about Object Lock's
+   *compliance* mode (issue #8350 on v4.12, deletion still succeeding) and what remains
+   exclusive to the per-TB paid Enterprise edition (automatic EC repair, PITR, OIDC admin).
+5. **S3 Object Lock**: current modes, real limits, `s3:BypassGovernanceRetention`, minimum and
+   maximum retention, application to existing objects via Batch Operations, and the scope and
+   currency of the assessment against SEC 17a-4(f) / FINRA 4511 / CFTC 1.31.
+6. **Providers' default behaviour**: verified as of Aug 2026 that S3 still creates new
+   buckets with **Block Public Access enabled and ACLs disabled** (`BucketOwnerEnforced`)
+   since April 2023, by any route, and that *directory buckets* have it fixed. **Check whether
+   it has changed, and check the Azure and GCP equivalents — not verified in this revision.**
+7. **Cold and archive classes**: verified as of Aug 2026 for AWS **Deep Archive**: *Standard* ~12 h
+   (9-12 h with S3 Batch Operations, of the order of 1-2 PB/day), *Bulk* ~48 h, minimum storage
+   duration 180 days, retrieval cost quoted in secondary sources at ~$0.02/GB (*Standard*) and
+   ~$0.0025/GB (*Bulk*). **Cross-check the prices against the official S3 pricing page before using
+   them**. **Declared gap**: not verified in this revision are the times, minimums and costs of
+   **Azure Blob Archive** (rehydration) or of **GCS Coldline/Archive**, nor the current egress cost
+   of any provider.
+8. **Mounting**: status and contract of **`mountpoint-s3`** (1.23.0, 21 Jul 2026; AWS states that it
+   is not a general-purpose filesystem), **`s3fs-fuse`** (v1.97, Dec 2025, active repo) and
+   **`rclone`** (1.75.0, 31 Jul 2026). Confirmed as of Aug 2026 that **`goofys` is abandoned** (last
+   release v0.24.0 from April 2020, last *push* in July 2024).
+9. **Per-prefix performance and rate limits** of your provider: the advice to randomise the
+   prefix comes from an old model. Check the current limits in the official documentation instead
+   of dragging along recipes.
+10. **Integrity**: current behaviour of default checksums (as of Aug 2026, **CRC-64/NVME**
+    when none is specified), the `COMPOSITE`/`FULL_OBJECT` distinction in multipart and the
+    `BadDigest` and `InvalidPartOrder` errors.
+11. **Supply chain incidents** of any tool or image you recommend (`rclone`,
+    `mc`, S3 clients, MinIO/Ceph/Garage/SeaweedFS images), in their advisory channels. Precedents
+    from the catalogue that justify checking: the compromise of **Trivy** (March 2026), the 2026
+    wave against repositories and GitHub Actions (Nx / CVE-2026-48027 in CISA's KEV, the
+    "Megalodon" campaign, *Miasma*). **Declared gap**: the CVE history of Ceph RGW,
+    Garage and SeaweedFS has not been reviewed in this pass.
+12. **Consistency model** of your specific implementation (listing, versioning, replication): S3
+    gives strong read-after-write since 2020, but **self-hosted implementations and listing nuances
+    vary**. Do not take it for granted.
 
-Si no puedes verificar, **dilo explícitamente en vez de suponer**.
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If you cannot verify, **say so explicitly instead of assuming**.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,602 +3,602 @@ name: rag-standards
 description: Retrieval-augmented generation treated as a retrieval problem. Use when deciding RAG versus long context versus fine-tuning, parsing and chunking documents for indexing (PDF tables, multi-column, scans, overlap, structure-aware splits), picking an embedding model and dimensionality and paying the reindex cost of changing it, running pgvector versus Qdrant/Weaviate/Milvus/Chroma/LanceDB, tuning HNSW or IVFFlat parameters (m, ef_construction, ef_search, lists, probes), hybrid dense-plus-BM25 retrieval with RRF fusion, cross-encoder reranking, metadata filters, multi-query or HyDE expansion, grounding answers with citations and refusing when the context does not support them, measuring recall@k / MRR / nDCG separately from faithfulness, per-document access control on retrieved chunks, incremental index updates and deleting embeddings on erasure requests, or judging whether GraphRAG and agentic RAG earn their cost.
 ---
 
-# Estándares de RAG (recuperación aumentada con generación)
+# RAG standards (retrieval-augmented generation)
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica al diseñar, construir, operar o auditar un sistema de **recuperación aumentada**: la decisión
-de si RAG es la arquitectura correcta, la ingesta y el parseo por tipo de documento, el chunking, los
-embeddings y su ciclo de vida, el almacén vectorial y sus índices, la recuperación híbrida y el
-reranking, el prompt de generación anclado en el contexto, la evaluación separada de recuperación y
-generación, y la operación del índice (actualización incremental, borrado, control de acceso, coste
-y latencia de la cadena completa).
+Applies to designing, building, operating or auditing a **retrieval-augmented** system: the decision
+of whether RAG is the right architecture, ingestion and parsing per document type, chunking,
+embeddings and their lifecycle, the vector store and its indexes, hybrid retrieval and
+reranking, the generation prompt grounded in the context, the separate evaluation of retrieval and
+generation, and the operation of the index (incremental update, deletion, access control, cost
+and latency of the whole chain).
 
-Triggers: "chunking", "chunk", "solape", "overlap", "splitter", "embedding", "reindexar",
-"dimensionalidad", "normalizar vectores", "búsqueda por similitud", "coseno", `pgvector`,
+Triggers: "chunking", "chunk", "overlap", "splitter", "embedding", "reindex",
+"dimensionality", "normalise vectors", "similarity search", "cosine", `pgvector`,
 `vector(1536)`, `halfvec`, `HNSW`, `IVFFlat`, `m`, `ef_construction`, `ef_search`, `lists`,
-`probes`, Qdrant, Weaviate, Milvus, Chroma, LanceDB, "búsqueda híbrida", `BM25`, `tsvector`, `RRF`,
-"reranker", "cross-encoder", "filtrado por metadatos", "multi-query", "HyDE", "citar fuentes",
-"alucina con el contexto delante", `recall@k`, `MRR`, `nDCG`, "fidelidad al contexto", "GraphRAG",
-"RAG agéntico", "borrar del índice", "un usuario ve un chunk que no debería".
+`probes`, Qdrant, Weaviate, Milvus, Chroma, LanceDB, "hybrid search", `BM25`, `tsvector`, `RRF`,
+"reranker", "cross-encoder", "metadata filtering", "multi-query", "HyDE", "cite sources",
+"it hallucinates with the context right there", `recall@k`, `MRR`, `nDCG`, "faithfulness to the context", "GraphRAG",
+"agentic RAG", "delete from the index", "a user sees a chunk they should not".
 
-**Tesis del dominio — se aplica en todo el documento**: **RAG es un problema de recuperación, no de
-generación.** La inmensa mayoría de los fallos ("el modelo alucina", "responde mal") son fallos de
-recuperación: el fragmento correcto nunca llegó al contexto. **Corolario operativo: mide la
-recuperación por separado antes de tocar el prompt, el modelo o la temperatura.** Un equipo que
-depura un fallo de RAG cambiando el prompt de generación, sin haber medido `recall@k`, está
-adivinando.
+**Thesis of the domain — it applies throughout this document**: **RAG is a retrieval problem, not a
+generation one.** The vast majority of failures ("the model hallucinates", "it answers badly") are retrieval
+failures: the right fragment never reached the context. **Operational corollary: measure
+retrieval separately before touching the prompt, the model or the temperature.** A team that
+debugs a RAG failure by changing the generation prompt, without having measured `recall@k`, is
+guessing.
 
-**No aplica**:
+**Not applicable**:
 
-- `llm-app-engineering-standards`: la **aplicación completa** sobre LLM — elección de modelo,
-  prompting como código, salida estructurada, presupuesto de ventana de contexto, caché de prefijo,
-  streaming, fiabilidad, límites de gasto, inyección de prompt, testing de lo no determinista. **La
-  app puede no usar RAG; RAG se usa desde la app.** Aquí solo el prompt **de generación anclada**
-  (§3.7) — citación y negativa —, no el prompting en general.
-- **`claude-api`** (sin sufijo `-standards`, **skill instalada, referencia canónica del lado
-  Anthropic**): todo lo **específico de Anthropic** es suyo — IDs de modelo, precios, ventanas de
-  contexto, parámetros, caché de prompt, tool use, MCP, Managed Agents, migración. Si necesitas un
-  dato de la API de Claude para el generador o para contexto largo, **sale de ahí**, no de aquí ni
-  de memoria. Esta skill es agnóstica de proveedor.
-- `llm-evaluation-standards`: **la evaluación es suya** — construcción de
-  eval sets, LLM-as-judge y su calibración, significancia estadística, regresión en CI. Aquí se
-  define **qué se mide en RAG y por qué separado** (§4), y se exige como gate; la maquinaria de
-  evaluación vive allí.
-- `ai-agents-standards`: el bucle agéntico autónomo. **RAG agéntico** (§3.10) se
-  cubre aquí solo como **patrón de recuperación y su coste**; el bucle autónomo, sus herramientas y
-  su memoria son suyos.
-- `data-platform-standards`: **el motor PostgreSQL** — modelado, migraciones, tuning general,
-  réplicas, PITR, backups, particionado. **Frontera explícita con `pgvector`: el índice vectorial y
-  su parametrización (`HNSW`/`IVFFlat`, `m`, `ef_*`, `lists`, `probes`, `halfvec`) son de esta
-  skill; el motor que lo aloja, su operación y su respaldo son suyos.** Redis/Valkey y Kafka en la
-  ingesta, también suyos.
-- `multimodal-genai-standards`: **el parseo del documento no textual** — convertir un PDF, un
-  escaneo o una imagen en texto utilizable (OCR clásico frente a VLM, anclaje espacial, coste por
-  página) es suyo. **Aquí, qué se indexa de ese texto, cómo se trocea y cómo se recupera.**
-  Frontera recíproca, ya declarada en su §1.
-- `object-storage-standards`: el almacenamiento de los documentos originales (S3/MinIO/Ceph),
-  ciclo de vida, versionado y coste de egreso.
-- `privacy-engineering-standards`: dato personal, minimización, DPIA, consentimiento. **El derecho
-  de supresión aplica también al índice y a los embeddings** (§6): aquí la mecánica del borrado en
-  el almacén vectorial, allí el derecho y su alcance.
-- `appsec-standards`: clases de vulnerabilidad clásicas y triaje. El control de acceso a nivel de
-  documento en la recuperación (§5) es **de esta skill**, pero su modelo de autorización subyacente
-  es de `identity-access-management-standards`.
-- `mcp-standards`: exponer recuperación como servidor MCP y su seguridad.
+- `llm-app-engineering-standards`: the **whole application** on top of an LLM — model choice,
+  prompting as code, structured output, context window budget, prefix caching,
+  streaming, reliability, spend limits, prompt injection, testing the non-deterministic. **The
+  app may not use RAG; RAG is used from the app.** Here only the **grounded generation** prompt
+  (§3.7) — citation and refusal —, not prompting in general.
+- **`claude-api`** (no `-standards` suffix, **an installed skill, the canonical reference on the
+  Anthropic side**): everything **Anthropic-specific** is theirs — model IDs, prices, context
+  windows, parameters, prompt caching, tool use, MCP, Managed Agents, migration. If you need a
+  fact about the Claude API for the generator or for long context, **it comes from there**, not from here nor
+  from memory. This skill is provider-agnostic.
+- `llm-evaluation-standards`: **evaluation is theirs** — building
+  eval sets, LLM-as-judge and its calibration, statistical significance, regression in CI. Here what
+  **is measured in RAG and why separately** is defined (§4), and it is demanded as a gate; the evaluation
+  machinery lives there.
+- `ai-agents-standards`: the autonomous agent loop. **Agentic RAG** (§3.10) is
+  covered here only as a **retrieval pattern and its cost**; the autonomous loop, its tools and
+  its memory are theirs.
+- `data-platform-standards`: **the PostgreSQL engine** — modelling, migrations, general tuning,
+  replicas, PITR, backups, partitioning. **An explicit boundary with `pgvector`: the vector index and
+  its parameterisation (`HNSW`/`IVFFlat`, `m`, `ef_*`, `lists`, `probes`, `halfvec`) belong to this
+  skill; the engine hosting it, its operation and its backup are theirs.** Redis/Valkey and Kafka in
+  ingestion are theirs too.
+- `multimodal-genai-standards`: **parsing the non-textual document** — turning a PDF, a
+  scan or an image into usable text (classic OCR versus VLM, spatial grounding, cost per
+  page) is theirs. **Here, what gets indexed from that text, how it is chunked and how it is retrieved.**
+  A reciprocal boundary, already declared in their §1.
+- `object-storage-standards`: storage of the original documents (S3/MinIO/Ceph),
+  lifecycle, versioning and egress cost.
+- `privacy-engineering-standards`: personal data, minimisation, DPIA, consent. **The right
+  to erasure applies to the index and to the embeddings too** (§6): here the mechanics of deletion in
+  the vector store, there the right and its scope.
+- `appsec-standards`: classic vulnerability classes and triage. Document-level access control
+  in retrieval (§5) belongs **to this skill**, but its underlying authorisation model
+  belongs to `identity-access-management-standards`.
+- `mcp-standards`: exposing retrieval as an MCP server and its security.
 - `mlsecops-standards`, `local-inference-standards`, `gpu-computing-standards`, `mlops-standards`,
-  `ai-governance-standards`: seguridad del ciclo de vida del modelo,
-  servir embeddings/rerankers propios (vLLM, TEI, llama.cpp), hardware, y gobierno del AI Act.
-- `observability-standards`: OTel, backends y cardinalidad. Las **métricas de la cadena RAG**
-  (recall, latencia por etapa, coste por consulta) son de esta skill; el transporte y el backend,
-  suyos.
-- `api-design-standards`: el contrato de tu API de búsqueda hacia fuera.
-- `python-standards` / `typescript-standards`: implementación; `cicd-standards`: los gates de §4;
+  `ai-governance-standards`: model lifecycle security,
+  serving your own embeddings/rerankers (vLLM, TEI, llama.cpp), hardware, and AI Act governance.
+- `observability-standards`: OTel, backends and cardinality. The **RAG chain's metrics**
+  (recall, latency per stage, cost per query) belong to this skill; the transport and the backend,
+  to theirs.
+- `api-design-standards`: the contract of your search API to the outside.
+- `python-standards` / `typescript-standards`: implementation; `cicd-standards`: the gates in §4;
   `kubernetes-standards`, `iac-standards`, `secrets-management-standards`,
-  `backup-recovery-standards`, `sre-practice-standards`, `grc-compliance-standards`: sus dominios.
+  `backup-recovery-standards`, `sre-practice-standards`, `grc-compliance-standards`: their domains.
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión, licencia y estado por web antes de fijar nada (§8). Este sector tiene
-> **cambios de licencia frecuentes** y adquisiciones; lo verificado aquí es de agosto 2026.
+> Verify the latest version, licence and status on the web before pinning anything (§8). This sector has
+> **frequent licence changes** and acquisitions; what is verified here is from August 2026.
 
-### 2.1 ¿RAG, contexto largo o fine-tuning?
+### 2.1 RAG, long context or fine-tuning?
 
-La pregunta se contesta **antes** de montar nada. En 2026 las ventanas de 1M tokens son habituales,
-así que "el corpus no cabe" ya no es automático.
+The question is answered **before** building anything. In 2026 1M-token windows are commonplace,
+so "the corpus does not fit" is no longer automatic.
 
-| Situación | Arquitectura | Motivo |
+| Situation | Architecture | Reason |
 |---|---|---|
-| El corpus cabe holgadamente en la ventana y el volumen de consultas es bajo | **Contexto largo directo** | RAG aquí es **complejidad gratuita**: pipeline de ingesta, índice, y un modo de fallo nuevo, para nada |
-| Corpus órdenes de magnitud mayor que cualquier ventana | **RAG** | Es la única arquitectura que funciona |
-| Volumen alto de consultas sobre el mismo corpus grande | **RAG** | El coste de entrada escala linealmente: pagar por leer todo el archivo en cada petición es insostenible |
-| Se exige trazabilidad de qué documento fundamentó la respuesta | **RAG** | La citación es un requisito de auditoría, no una funcionalidad |
-| El corpus cambia constantemente | **RAG** | El índice se actualiza; reentrenar no |
-| Latencia crítica sobre corpus grande | **RAG** | Enviar 1M tokens es más lento que recuperar 5 fragmentos |
-| Razonamiento holístico sobre un conjunto acotado (comparar dos contratos, revisar un repositorio, sintetizar N artículos) | **Contexto largo** | La evidencia está distribuida; trocear la destruye |
-| Necesitas **forma**: tono, formato, taxonomía propia, comportamiento | **Fine-tuning** (o prompting) | El fine-tuning enseña **forma, no hechos**. Usarlo para inyectar conocimiento es caro, se desactualiza y alucina |
-| Existe una API con la respuesta (precio, stock, saldo, estado) | **Llamada a la API** | Vectorizar datos estructurados con respuesta exacta es un error de diseño |
-| Mixto (lo habitual en producción) | **Híbrido**: recuperar y razonar en contexto largo sobre lo recuperado | Enruta por forma de la consulta |
+| The corpus fits comfortably in the window and query volume is low | **Direct long context** | RAG here is **free complexity**: an ingestion pipeline, an index, and a new failure mode, for nothing |
+| A corpus orders of magnitude larger than any window | **RAG** | It is the only architecture that works |
+| High query volume over the same large corpus | **RAG** | Input cost scales linearly: paying to read the whole archive on every request is unsustainable |
+| Traceability of which document grounded the answer is required | **RAG** | Citation is an audit requirement, not a feature |
+| The corpus changes constantly | **RAG** | The index gets updated; retraining does not |
+| Latency-critical over a large corpus | **RAG** | Sending 1M tokens is slower than retrieving 5 fragments |
+| Holistic reasoning over a bounded set (comparing two contracts, reviewing a repository, synthesising N articles) | **Long context** | The evidence is distributed; chunking destroys it |
+| You need **form**: tone, format, your own taxonomy, behaviour | **Fine-tuning** (or prompting) | Fine-tuning teaches **form, not facts**. Using it to inject knowledge is expensive, goes stale and hallucinates |
+| There is an API with the answer (price, stock, balance, status) | **An API call** | Vectorising structured data with an exact answer is a design error |
+| Mixed (the usual case in production) | **Hybrid**: retrieve and reason in long context over what was retrieved | Route by the shape of the query |
 
-**Dos hechos que sostienen el criterio y hay que reverificar (§8)**: la calidad degrada con la
-longitud de entrada mucho antes del límite anunciado (*context rot*), y la información en mitad del
-contexto se aprovecha peor que la de los extremos (*lost in the middle*). Una ventana grande es
-capacidad, no garantía.
+**Two facts that underpin the criteria and must be re-verified (§8)**: quality degrades with input
+length well before the announced limit (*context rot*), and information in the middle of the
+context is used less well than that at the extremes (*lost in the middle*). A large window is
+capacity, not a guarantee.
 
-**Regla de decisión honesta**: si dudas, empieza **sin** RAG. Añádelo cuando midas que hace falta.
+**Honest decision rule**: if in doubt, start **without** RAG. Add it when you measure that it is needed.
 
 ### 2.2 Toolchain
 
-| Ámbito | Default | Motivo / alternativa |
+| Area | Default | Reason / alternative |
 |---|---|---|
-| Almacén vectorial | **`pgvector` sobre el PostgreSQL que ya tienes** (0.8.x; 0.8.6 jul-2026, licencia PostgreSQL) | **Criterio real: si ya operas PostgreSQL y el volumen es moderado (hasta ~decenas de millones de vectores), pgvector evita una pieza de operación entera** — backup, HA, monitorización, autenticación y transaccionalidad ya resueltos, y el filtrado por metadatos es simplemente SQL |
-| Motor dedicado | **Qdrant** (Rust, Apache-2.0, 1.18.x jul-2026) como default cuando pgvector no llega | Filtrado con payload muy bueno, operación sencilla, licencia limpia |
-| Alternativas | **Milvus** (Apache-2.0; **3.0.0 en jul-2026**, además de la serie 2.6.x) escala masiva a cambio de complejidad operativa alta; **Weaviate** (core BSD-3, 1.38.x/1.39-rc) módulos integrados; **Chroma** (Apache-2.0) prototipado, **no** producción seria; **LanceDB** (Apache-2.0) formato columnar sobre object storage, buen encaje analítico | Cambio de major reciente en Milvus: no adoptar 3.x sin leer la migración |
-| Búsqueda léxica | **La que ya tenga tu almacén**: `tsvector`/`ParadeDB` en PostgreSQL, sparse vectors en Qdrant, BM25 nativo donde exista | Añadir OpenSearch/Elasticsearch **solo** por BM25 es una pieza cara |
-| Índice ANN | **HNSW** por defecto | Mejor compromiso velocidad/recall; se puede crear sobre tabla vacía (sin fase de entrenamiento) |
-| IVFFlat | Solo si la memoria es la restricción dominante y aceptas peor recall | Requiere datos representativos ya cargados antes de indexar |
-| Métrica de distancia | **La que el modelo de embedding declare** (casi siempre coseno / producto interno sobre vectores normalizados) | Usar una métrica distinta a la del entrenamiento degrada silenciosamente |
-| Reranker | **Cross-encoder**, `BGE reranker v2-m3` o `mxbai-rerank` (**ambos Apache-2.0**) autoalojado; API gestionada (Cohere, Voyage) si no quieres servir modelo | ⚠️ **Los pesos de Jina Reranker son CC-BY-NC**: no desplegables en producto comercial; su uso comercial pasa por la API. **Verifica la licencia de cada reranker antes de desplegarlo** |
-| Modelo de embedding | **Decisión por evaluación propia** (§2.4). Familias vigentes a ago-2026: Qwen3-Embedding y BGE-M3 (abiertos), y las de OpenAI/Google/Voyage/Cohere (API) | ⚠️ **Nombres y versiones exactas NO fijados aquí** — cambian mensualmente y las fuentes públicas se contradicen. Verificar (§8) |
-| Evaluación de RAG | **RAGAS** (Apache-2.0) como punto de partida, con conjunto propio | ⚠️ Cadencia lenta: última release **0.4.3 (ene-2026)**, ~7 meses sin publicar a ago-2026. **Verifica su estado antes de depender de él**; detalle en `llm-evaluation-standards` |
-| Framework de ingesta | **LlamaIndex** (0.14.x) si quieres los conectores hechos; código propio si el corpus es de pocos tipos | Un pipeline de ingesta propio de 300 líneas suele ser más mantenible que un framework para 3 formatos |
+| Vector store | **`pgvector` on the PostgreSQL you already have** (0.8.x; 0.8.6 Jul 2026, PostgreSQL licence) | **The real criterion: if you already operate PostgreSQL and the volume is moderate (up to ~tens of millions of vectors), pgvector saves you a whole operational component** — backup, HA, monitoring, authentication and transactionality already solved, and metadata filtering is simply SQL |
+| Dedicated engine | **Qdrant** (Rust, Apache-2.0, 1.18.x Jul 2026) as the default when pgvector is not enough | Very good payload filtering, simple operation, clean licence |
+| Alternatives | **Milvus** (Apache-2.0; **3.0.0 in Jul 2026**, in addition to the 2.6.x line) scales massively at the cost of high operational complexity; **Weaviate** (core BSD-3, 1.38.x/1.39-rc) integrated modules; **Chroma** (Apache-2.0) prototyping, **not** serious production; **LanceDB** (Apache-2.0) columnar format over object storage, a good analytical fit | A recent major change in Milvus: do not adopt 3.x without reading the migration guide |
+| Lexical search | **Whatever your store already has**: `tsvector`/`ParadeDB` in PostgreSQL, sparse vectors in Qdrant, native BM25 where it exists | Adding OpenSearch/Elasticsearch **just** for BM25 is an expensive component |
+| ANN index | **HNSW** by default | The best speed/recall compromise; it can be created on an empty table (no training phase) |
+| IVFFlat | Only if memory is the dominant constraint and you accept worse recall | It requires representative data already loaded before indexing |
+| Distance metric | **The one the embedding model declares** (almost always cosine / inner product over normalised vectors) | Using a metric different from the training one degrades silently |
+| Reranker | **A cross-encoder**, `BGE reranker v2-m3` or `mxbai-rerank` (**both Apache-2.0**) self-hosted; a managed API (Cohere, Voyage) if you do not want to serve a model | ⚠️ **The Jina Reranker weights are CC-BY-NC**: not deployable in a commercial product; commercial use goes through the API. **Verify the licence of each reranker before deploying it** |
+| Embedding model | **A decision made by your own evaluation** (§2.4). Current families as of Aug 2026: Qwen3-Embedding and BGE-M3 (open), and those of OpenAI/Google/Voyage/Cohere (API) | ⚠️ **Exact names and versions are NOT pinned here** — they change monthly and the public sources contradict each other. Verify (§8) |
+| RAG evaluation | **RAGAS** (Apache-2.0) as a starting point, with your own set | ⚠️ Slow cadence: latest release **0.4.3 (Jan 2026)**, ~7 months without publishing as of Aug 2026. **Verify its status before depending on it**; detail in `llm-evaluation-standards` |
+| Ingestion framework | **LlamaIndex** (0.14.x) if you want the connectors ready-made; your own code if the corpus has few types | A 300-line home-made ingestion pipeline is usually more maintainable than a framework for 3 formats |
 
-### 2.3 Parámetros de índice (compromiso exactitud / memoria / velocidad)
+### 2.3 Index parameters (the accuracy / memory / speed trade-off)
 
-Los índices ANN son **aproximados**: cambian recall por velocidad. Fijar sus parámetros a ciegas es
-la causa más común de "el sistema recupera mal" sin que nadie lo note.
+ANN indexes are **approximate**: they trade recall for speed. Setting their parameters blind is
+the most common cause of "the system retrieves badly" without anyone noticing.
 
-| Parámetro | Efecto | Criterio |
+| Parameter | Effect | Criterion |
 |---|---|---|
-| `m` (HNSW) | Conexiones por nodo. ↑ = mejor recall, más memoria, construcción más lenta | Empieza en el default; súbelo solo si el recall medido no llega |
-| `ef_construction` (HNSW) | Esfuerzo al construir. ↑ = mejor grafo, construcción mucho más lenta | Se paga una vez; ser generoso aquí suele salir rentable |
-| `ef_search` (HNSW) | Candidatos en consulta. ↑ = mejor recall, más latencia | **Único parámetro ajustable en caliente. Es tu dial recall↔latencia en producción** |
-| `lists` (IVFFlat) | Número de particiones | Depende del tamaño del corpus; reindexar es obligatorio si el corpus crece mucho |
-| `probes` (IVFFlat) | Particiones visitadas en consulta | Dial recall↔latencia equivalente a `ef_search` |
-| Cuantización (`halfvec`, escalar, binaria) | Reduce memoria drásticamente, cuesta recall | **Mide el recall antes y después.** Nunca la actives "por eficiencia" sin medir |
+| `m` (HNSW) | Connections per node. ↑ = better recall, more memory, slower construction | Start at the default; raise it only if the measured recall falls short |
+| `ef_construction` (HNSW) | Effort at build time. ↑ = a better graph, much slower construction | It is paid once; being generous here usually pays off |
+| `ef_search` (HNSW) | Candidates at query time. ↑ = better recall, more latency | **The only parameter tunable at runtime. It is your recall↔latency dial in production** |
+| `lists` (IVFFlat) | Number of partitions | It depends on the corpus size; reindexing is mandatory if the corpus grows a lot |
+| `probes` (IVFFlat) | Partitions visited at query time | A recall↔latency dial equivalent to `ef_search` |
+| Quantisation (`halfvec`, scalar, binary) | Drastically reduces memory, costs recall | **Measure recall before and after.** Never enable it "for efficiency" without measuring |
 
-**Regla dura**: **el recall del índice se mide contra búsqueda exacta (fuerza bruta) sobre una
-muestra**, no se asume. Un índice mal parametrizado no da error: da respuestas peores, en silencio.
+**Hard rule**: **the index's recall is measured against exact (brute force) search over a
+sample**, not assumed. A badly parameterised index does not raise an error: it gives worse answers, silently.
 
-**Interacción con el filtrado**: un filtro restrictivo combinado con un índice ANN puede devolver
-menos resultados de los pedidos, o degradar a escaneo. Verifica el comportamiento de tu motor
-(pgvector 0.8+ tiene *iterative scans* precisamente para esto) y **mide el recall con filtro
-aplicado**, no solo sin él.
+**Interaction with filtering**: a restrictive filter combined with an ANN index can return
+fewer results than requested, or degrade into a scan. Verify your engine's behaviour
+(pgvector 0.8+ has *iterative scans* precisely for this) and **measure recall with the filter
+applied**, not just without it.
 
-### 2.4 Embeddings: la decisión de ida única
+### 2.4 Embeddings: the one-way decision
 
-| Decisión | Criterio |
+| Decision | Criterion |
 |---|---|
-| Elección de modelo | **Por evaluación sobre tu corpus**, con tus consultas reales |
-| MTEB | **Señal, no verdad.** Está contaminado: muchos modelos entrenan sobre datos que solapan con sus datasets, así que el ranking no predice calidad en un corpus privado. Además MTEB v2 no es comparable con v1. **Úsalo para preseleccionar 3-4 candidatos, no para decidir** |
-| Multilingüe | **Obligatorio si el corpus o las consultas lo son.** Un modelo entrenado en inglés sobre corpus en español recupera mal, y no da ningún error |
-| Dominio especializado (legal, médico, código) | Los modelos genéricos degradan. Evalúa modelos de dominio o fine-tuning del embedder — es de los pocos fine-tunings con retorno claro |
-| Dimensionalidad | **Más dimensiones no es mejor por defecto.** Cuestan memoria de índice, latencia y almacenamiento, linealmente. Si el modelo soporta reducción tipo Matryoshka, evalúa la versión reducida: a menudo el coste cae mucho y el recall casi nada |
-| Normalización | Normaliza si la métrica lo requiere, **y hazlo igual en indexación y en consulta**. Un desajuste aquí destroza la búsqueda sin error visible |
-| Simetría | Muchos modelos exigen **prefijo/instrucción distinta para consulta y para documento**. Olvidarlo es un bug silencioso muy común |
+| Model choice | **By evaluation over your corpus**, with your real queries |
+| MTEB | **A signal, not a truth.** It is contaminated: many models train on data overlapping with its datasets, so the ranking does not predict quality on a private corpus. Besides, MTEB v2 is not comparable with v1. **Use it to shortlist 3-4 candidates, not to decide** |
+| Multilingual | **Mandatory if the corpus or the queries are.** A model trained in English over a Spanish corpus retrieves badly, and raises no error |
+| Specialised domain (legal, medical, code) | Generic models degrade. Evaluate domain models or fine-tuning the embedder — it is one of the few fine-tunings with a clear return |
+| Dimensionality | **More dimensions is not better by default.** They cost index memory, latency and storage, linearly. If the model supports Matryoshka-style reduction, evaluate the reduced version: often the cost drops a lot and recall barely at all |
+| Normalisation | Normalise if the metric requires it, **and do it the same way at indexing and at query time**. A mismatch here wrecks the search with no visible error |
+| Symmetry | Many models require **a different prefix/instruction for the query and for the document**. Forgetting it is a very common silent bug |
 
-**El coste de reindexar es la decisión de ida única del dominio.** Cambiar de modelo de embedding
-implica **recalcular todos los vectores del corpus**: coste de inferencia proporcional al corpus
-entero, ventana de reindexación, y almacenamiento doble si quieres hacerlo sin caída. En la práctica
-esto significa:
+**The cost of reindexing is the domain's one-way decision.** Changing embedding model
+means **recomputing every vector in the corpus**: inference cost proportional to the whole
+corpus, a reindexing window, and double storage if you want to do it without downtime. In practice
+this means:
 
-1. **Elige bien la primera vez**, con evaluación real.
-2. **Guarda el texto original de cada chunk** junto al vector. Sin el texto no puedes reindexar sin
-   reprocesar los documentos fuente.
-3. **Versiona el índice** (`chunks_v3`) e incluye modelo y versión en los metadatos de cada vector.
-   Mezclar vectores de dos modelos en un mismo índice produce resultados sin sentido y sin error.
-4. **Diseña el camino de migración desde el día uno**: doble escritura a índice nuevo, comparación
-   de recall, corte con bandera de funcionalidad, y rollback.
+1. **Choose well the first time**, with a real evaluation.
+2. **Store each chunk's original text** alongside the vector. Without the text you cannot reindex without
+   reprocessing the source documents.
+3. **Version the index** (`chunks_v3`) and include the model and version in each vector's metadata.
+   Mixing vectors from two models in the same index produces nonsensical results with no error.
+4. **Design the migration path from day one**: double writes to a new index, recall comparison,
+   cutover behind a feature flag, and rollback.
 
-## 3. Estructura y convenciones de la cadena
+## 3. Structure and conventions of the chain
 
-### 3.1 Ingesta y parseo
+### 3.1 Ingestion and parsing
 
-**Basura entrando es basura saliendo.** Ningún chunking, embedding ni reranker recupera de un texto
-que se extrajo mal. El parseo es la etapa con **mayor retorno por esfuerzo** de toda la cadena y la
-que más se subestima.
+**Garbage in is garbage out.** No chunking, embedding or reranker retrieves from text
+that was extracted badly. Parsing is the stage with the **highest return per unit of effort** in the whole chain and the
+one most underestimated.
 
-- **PDF es el problema difícil**, y su dificultad es escalonada: PDF con capa de texto limpia →
-  trivial; **multi-columna** → el orden de lectura se rompe y el texto sale intercalado;
-  **tablas** → se aplanan y pierden la relación fila/columna, que suele ser justo el dato;
-  **escaneado** → requiere OCR y su tasa de error se propaga a todo lo demás.
-- **Verifica el texto extraído sobre una muestra representativa antes de indexar nada.** Es el paso
-  que más equipos se saltan. Un corpus de 100k documentos con orden de lectura roto es dinero
-  quemado en embeddings.
-- Las **tablas se tratan aparte**: extraerlas a una representación estructurada (Markdown, CSV,
-  descripción textual) preserva la semántica que el texto plano destruye.
-- **Limpieza**: cabeceras/pies repetidos, numeración de página, marcas de agua, navegación y
-  *boilerplate* son ruido que compite en la similitud. Quítalos.
-- **Metadatos desde el origen**: fuente, título, sección, fecha, versión, idioma, autor, y **todo lo
-  necesario para el control de acceso (§5)**. Los metadatos que no captures en la ingesta no
-  existirán jamás en el índice.
-- **Deduplicación** antes de indexar: el mismo documento en tres versiones llena el top-k de
-  duplicados y desplaza evidencia útil.
-- Pipeline **idempotente y reejecutable**, con identificador estable por documento y por chunk.
+- **PDF is the hard problem**, and its difficulty is tiered: a PDF with a clean text layer →
+  trivial; **multi-column** → the reading order breaks and the text comes out interleaved;
+  **tables** → they get flattened and lose the row/column relationship, which is usually exactly the data;
+  **scanned** → it requires OCR and its error rate propagates into everything else.
+- **Verify the extracted text over a representative sample before indexing anything.** It is the step
+  most teams skip. A corpus of 100k documents with a broken reading order is money
+  burned on embeddings.
+- **Tables get handled separately**: extracting them into a structured representation (Markdown, CSV,
+  a textual description) preserves the semantics that plain text destroys.
+- **Cleaning**: repeated headers/footers, page numbering, watermarks, navigation and
+  *boilerplate* are noise competing in the similarity. Remove them.
+- **Metadata from the source**: source, title, section, date, version, language, author, and **everything
+  needed for access control (§5)**. Metadata you do not capture at ingestion will never
+  exist in the index.
+- **Deduplication** before indexing: the same document in three versions fills the top-k with
+  duplicates and displaces useful evidence.
+- An **idempotent and re-runnable** pipeline, with a stable identifier per document and per chunk.
 
 ### 3.2 Chunking
 
-El chunk es la **unidad de recuperación *y* la unidad de contexto** a la vez. El tamaño óptimo
-depende de las dos cosas: si es demasiado grande, la similitud se diluye y recuperas ruido; si es
-demasiado pequeño, recuperas un fragmento que por sí solo no responde nada.
+The chunk is the **unit of retrieval *and* the unit of context** at the same time. The optimal size
+depends on both: if it is too large, the similarity gets diluted and you retrieve noise; if it is
+too small, you retrieve a fragment that on its own answers nothing.
 
-| Estrategia | Cuándo |
+| Strategy | When |
 |---|---|
-| **Por estructura del documento** (sección, encabezado, artículo, celda, función) | **Default cuando el documento tiene estructura.** Respeta límites semánticos reales y produce citación natural |
-| Por tamaño fijo con solape | Cuando no hay estructura aprovechable. Simple, predecible, barato |
-| Semántico (corte donde cambia el tema) | Cuando el texto es continuo y sin marcas. Más caro; **mide si aporta antes de adoptarlo** |
-| Por elemento para tablas/código | Nunca partas una tabla o una función por la mitad por llegar al límite de caracteres |
+| **By document structure** (section, heading, article, cell, function) | **The default when the document has structure.** It respects real semantic boundaries and produces natural citation |
+| By fixed size with overlap | When there is no usable structure. Simple, predictable, cheap |
+| Semantic (cut where the topic changes) | When the text is continuous and unmarked. More expensive; **measure whether it helps before adopting it** |
+| Per element for tables/code | Never split a table or a function in half just to hit a character limit |
 
-Reglas:
+Rules:
 
-- **El solape existe para no partir una respuesta en dos.** Un solape moderado es sano; un solape
-  grande infla el índice y llena el top-k con near-duplicates.
-- **Mide el tamaño en tokens del modelo de embedding**, no en caracteres, y respeta su longitud
-  máxima: lo que exceda se trunca **silenciosamente** y pierdes el final de cada chunk.
-- **Enriquece el chunk con su contexto**: título del documento y ruta de secciones antepuestos al
-  texto. Es barato, mejora recuperación y es lo que permite citar bien.
-- **Guarda punteros al documento y a la posición** (página, offset, sección) en los metadatos: es lo
-  que hace posible la citación verificable (§3.7) y ampliar el contexto en la generación.
-- **No hay tamaño universal.** Es un hiperparámetro: barre 2-3 configuraciones contra tu conjunto de
-  evaluación y elige por `recall@k` medido, no por lo que diga un tutorial.
+- **Overlap exists so an answer is not split in two.** A moderate overlap is healthy; a large
+  overlap inflates the index and fills the top-k with near-duplicates.
+- **Measure the size in the embedding model's tokens**, not in characters, and respect its maximum
+  length: whatever exceeds it gets truncated **silently** and you lose the end of every chunk.
+- **Enrich the chunk with its context**: the document title and the section path prepended to the
+  text. It is cheap, it improves retrieval and it is what makes good citation possible.
+- **Store pointers to the document and to the position** (page, offset, section) in the metadata: that is
+  what makes verifiable citation possible (§3.7) and what lets you widen the context at generation time.
+- **There is no universal size.** It is a hyperparameter: sweep 2-3 configurations against your evaluation
+  set and choose by measured `recall@k`, not by what a tutorial says.
 
-### 3.3 Recuperación híbrida: el default serio
+### 3.3 Hybrid retrieval: the serious default
 
-**Denso solo no es suficiente.** La búsqueda vectorial falla justo donde el usuario es más
-específico: identificadores, referencias de norma, códigos de producto, nombres propios raros,
-siglas, errores literales. La búsqueda léxica falla en sinónimos y paráfrasis. Las dos juntas se
-cubren mutuamente.
+**Dense alone is not enough.** Vector search fails exactly where the user is most
+specific: identifiers, standard references, product codes, rare proper nouns,
+acronyms, literal errors. Lexical search fails on synonyms and paraphrase. Together they cover
+each other.
 
-- **Default: denso + léxico (BM25 / `tsvector`), fusionados con RRF** (*Reciprocal Rank Fusion*).
-- **RRF es el default de fusión** porque combina rankings sin necesidad de calibrar puntuaciones
-  entre sistemas cuyas escalas no son comparables. Una suma ponderada de puntuaciones crudas exige
-  normalización y se descalibra sola.
-- **Recupera generosamente antes de refinar**: un top-k amplio (decenas) en cada recuperador es
-  barato; lo que cuesta es meterlo todo en el contexto. Para eso está el reranker.
-- **Filtrado por metadatos** en la propia consulta (fecha, tipo, idioma, tenant, permisos): reduce
-  el espacio de búsqueda y es donde pgvector brilla, porque es un `WHERE` normal.
+- **Default: dense + lexical (BM25 / `tsvector`), fused with RRF** (*Reciprocal Rank Fusion*).
+- **RRF is the fusion default** because it combines rankings without needing to calibrate scores
+  across systems whose scales are not comparable. A weighted sum of raw scores requires
+  normalisation and decalibrates on its own.
+- **Retrieve generously before refining**: a wide top-k (tens) from each retriever is
+  cheap; what costs is putting it all into the context. That is what the reranker is for.
+- **Metadata filtering** in the query itself (date, type, language, tenant, permissions): it reduces
+  the search space and it is where pgvector shines, because it is a normal `WHERE`.
 
-### 3.4 Reranking: la mejora de mayor retorno por esfuerzo
+### 3.4 Reranking: the highest return per unit of effort
 
-Un **cross-encoder** puntúa consulta y documento **juntos**, no por separado, y por eso ordena mucho
-mejor que un bi-encoder. El patrón:
-
-```
-consulta → [denso top-50 ∥ BM25 top-50] → RRF → reranker cross-encoder → top-5 → contexto
-```
-
-- **Es la primera mejora que se prueba** cuando la recuperación falla, antes de cambiar embeddings,
-  chunking o arquitectura. Suele mover más el `nDCG` que cualquiera de ellas y cuesta un componente.
-- **Coste**: latencia proporcional al número de candidatos rerankeados. Con reranker autoalojado
-  evitas el viaje de red, a cambio de servir un modelo (`local-inference-standards`).
-- **Verifica la licencia de los pesos** (§2.2): hay rerankers de calidad con licencia no comercial.
-- **Diagnóstico útil**: si tu top-50 contiene el pasaje correcto pero tu top-5 no, tu problema es de
-  ordenación → reranker. Si no está en el top-50, es de recuperación → híbrido, chunking o
-  embeddings. **Esta distinción se hace midiendo `recall@50` frente a `recall@5`.**
-
-### 3.5 Expansión de consulta: cuándo aporta
-
-- **Multi-consulta** (reformular la pregunta en N variantes y fusionar): aporta en consultas
-  ambiguas o multi-parte. Cuesta N recuperaciones + una llamada al modelo.
-- **HyDE** (generar una respuesta hipotética y buscar con su embedding): puede ayudar cuando la
-  consulta y el documento están redactados de forma muy distinta. Añade una llamada al modelo en el
-  camino crítico **y puede alucinar la hipótesis y desviar la búsqueda**.
-- **Criterio**: son optimizaciones, no cimientos. **Híbrido + reranker primero; expansión solo si la
-  evaluación demuestra que el problema persiste y que esto lo arregla.** Ambas añaden latencia y
-  coste en cada consulta, incluidas las que ya funcionaban.
-
-### 3.6 Enrutado por complejidad
-
-No todas las consultas merecen la misma cadena. Una búsqueda factual simple no necesita
-multi-consulta, ni grafo, ni bucle agéntico. **Enruta: cadena barata por defecto, cadena cara solo
-cuando la consulta lo justifique.** Aplicar el arsenal completo a todo es la forma más rápida de que
-el coste por consulta se descontrole sin mejora medible.
-
-### 3.7 El prompt de generación anclada
-
-Es la única parte de prompting que vive en esta skill (el resto: `llm-app-engineering-standards`).
-
-- **Citar fuentes es obligatorio** cuando la respuesta afirma hechos. La cita debe apuntar a un
-  fragmento recuperado concreto e identificable, no a "los documentos".
-- **Verifica las citas por código**, no por confianza: que el identificador citado esté entre los
-  recuperados. Una cita inventada es peor que ninguna cita.
-- **Decir "no lo sé" cuando el contexto no lo soporta es un requisito funcional, no una cortesía.**
-  Instrucción explícita, y en la evaluación: **casos cuya respuesta correcta es la negativa.**
-- **La alucinación con el contexto delante es el fallo que destruye la confianza** — el usuario ve
-  las fuentes citadas y la respuesta que no se sigue de ellas, y a partir de ahí no vuelve a creer
-  al sistema. Se mide como **fidelidad al contexto** (§4) y es la métrica de generación que más
-  importa.
-- **Separa contexto recuperado de instrucciones.** El contenido recuperado es entrada **no
-  confiable**: un documento del corpus puede llevar instrucciones inyectadas
-  (`llm-app-engineering-standards` §5). Un corpus donde cualquiera puede escribir es un vector de
-  inyección indirecta.
-- Ordena el contexto: lo más relevante en los extremos, no enterrado en el medio (§2.1).
-
-### 3.8 Convenciones de esquema
+A **cross-encoder** scores the query and the document **together**, not separately, and that is why it orders much
+better than a bi-encoder. The pattern:
 
 ```
-documento(id, uri, titulo, tipo, version, hash, fecha, idioma, acl_ref, creado_en)
-chunk(id, documento_id, orden, texto, tokens, pagina, seccion, hash)
-embedding(chunk_id, modelo, modelo_version, dim, vector, creado_en)
+query → [dense top-50 ∥ BM25 top-50] → RRF → cross-encoder reranker → top-5 → context
 ```
 
-- **Texto del chunk siempre persistido** (§2.4): sin él no hay reindexación barata ni depuración.
-- `modelo` + `modelo_version` en cada vector: sin esto no puedes migrar ni detectar mezcla.
-- `hash` de documento y de chunk: es lo que hace la ingesta incremental e idempotente (§6).
-- `acl_ref`: la referencia de autorización viaja **con el chunk** (§5).
-- Índice versionado por nombre (`chunks_v3`), no mutado en sitio.
+- **It is the first improvement to try** when retrieval fails, before changing embeddings,
+  chunking or architecture. It usually moves `nDCG` more than any of them and costs one component.
+- **Cost**: latency proportional to the number of candidates reranked. With a self-hosted reranker
+  you avoid the network round trip, at the cost of serving a model (`local-inference-standards`).
+- **Verify the licence of the weights** (§2.2): there are quality rerankers with a non-commercial licence.
+- **A useful diagnostic**: if your top-50 contains the right passage but your top-5 does not, your problem is
+  ordering → reranker. If it is not in the top-50, it is retrieval → hybrid, chunking or
+  embeddings. **This distinction is made by measuring `recall@50` against `recall@5`.**
 
-### 3.9 Métricas de la cadena
+### 3.5 Query expansion: when it helps
 
-Instrumenta **por etapa**, no solo de extremo a extremo: latencia y coste de embedding de consulta,
-de recuperación densa, de léxica, de fusión, de reranking y de generación. Sin el desglose no sabes
-qué optimizar, y la respuesta suele sorprender.
+- **Multi-query** (reformulating the question into N variants and fusing): it helps on ambiguous
+  or multi-part queries. It costs N retrievals + a model call.
+- **HyDE** (generating a hypothetical answer and searching with its embedding): it can help when the
+  query and the document are worded very differently. It adds a model call on the
+  critical path **and it can hallucinate the hypothesis and derail the search**.
+- **Criterion**: they are optimisations, not foundations. **Hybrid + reranker first; expansion only if the
+  evaluation shows the problem persists and that this fixes it.** Both add latency and
+  cost on every query, including the ones that already worked.
 
-### 3.10 Más allá del RAG básico — con honestidad sobre su coste
+### 3.6 Routing by complexity
 
-| Arquitectura | Qué es | Cuándo **sí** | El coste que se omite en los blogs |
+Not every query deserves the same chain. A simple factual search does not need
+multi-query, nor a graph, nor an agent loop. **Route: the cheap chain by default, the expensive chain only
+when the query justifies it.** Applying the full arsenal to everything is the fastest way for
+the cost per query to run away with no measurable improvement.
+
+### 3.7 The grounded generation prompt
+
+It is the only part of prompting that lives in this skill (the rest: `llm-app-engineering-standards`).
+
+- **Citing sources is mandatory** when the answer asserts facts. The citation must point to a
+  concrete, identifiable retrieved fragment, not to "the documents".
+- **Verify the citations in code**, not on trust: that the cited identifier is among those
+  retrieved. An invented citation is worse than no citation.
+- **Saying "I do not know" when the context does not support it is a functional requirement, not a courtesy.**
+  An explicit instruction, and in the evaluation: **cases whose correct answer is the refusal.**
+- **Hallucinating with the context right there is the failure that destroys trust** — the user sees
+  the cited sources and the answer that does not follow from them, and from then on never believes
+  the system again. It is measured as **faithfulness to the context** (§4) and it is the generation metric that matters
+  most.
+- **Separate retrieved context from instructions.** Retrieved content is **untrusted**
+  input: a document in the corpus can carry injected instructions
+  (`llm-app-engineering-standards` §5). A corpus anyone can write to is an indirect injection
+  vector.
+- Order the context: the most relevant at the extremes, not buried in the middle (§2.1).
+
+### 3.8 Schema conventions
+
+```
+document(id, uri, title, type, version, hash, date, language, acl_ref, created_at)
+chunk(id, document_id, position, text, tokens, page, section, hash)
+embedding(chunk_id, model, model_version, dim, vector, created_at)
+```
+
+- **The chunk's text is always persisted** (§2.4): without it there is no cheap reindexing and no debugging.
+- `model` + `model_version` on every vector: without this you cannot migrate nor detect mixing.
+- A `hash` per document and per chunk: it is what makes ingestion incremental and idempotent (§6).
+- `acl_ref`: the authorisation reference travels **with the chunk** (§5).
+- An index versioned by name (`chunks_v3`), not mutated in place.
+
+### 3.9 Chain metrics
+
+Instrument **per stage**, not only end to end: latency and cost of the query embedding,
+of dense retrieval, of lexical retrieval, of fusion, of reranking and of generation. Without the breakdown you do not know
+what to optimise, and the answer is usually surprising.
+
+### 3.10 Beyond basic RAG — with honesty about its cost
+
+| Architecture | What it is | When it is **worth it** | The cost the blogs leave out |
 |---|---|---|---|
-| **GraphRAG** | Extrae entidades y relaciones a un grafo; recupera recorriéndolo | Preguntas de "conectar puntos" entre documentos, cadenas de dependencia (precedente legal, cumplimiento, cadena de suministro), y **resolución de entidades** cuando la misma entidad aparece con nombres, siglas y códigos distintos | **Coste de indexación muy alto** (extracción por LLM sobre todo el corpus) y un pipeline nuevo que mantener y reconstruir. Las variantes de indexación diferida reducen mucho ese coste — **verifica cifras y madurez (§8), no las asumas** |
-| **RAG agéntico** | El modelo descompone la consulta, recupera, evalúa suficiencia y decide si sigue | Consultas complejas y multi-salto donde una sola pasada no basta | **Multiplica latencia y tokens**, y en consultas factuales simples es despilfarro puro. Exige enrutado por complejidad (§3.6) y tope de iteraciones. El bucle en sí es de `ai-agents-standards` |
-| **Late interaction** (ColBERT y similares) | Embeddings por token con puntuación tardía | Casos donde el vector único no basta: cláusula enterrada, dato dentro de una tabla, consultas multi-parte | Índice mucho mayor. El pipeline bi-encoder + cross-encoder es más simple y a menudo equivalente |
+| **GraphRAG** | It extracts entities and relations into a graph; retrieval traverses it | "Connect the dots" questions across documents, dependency chains (legal precedent, compliance, supply chain), and **entity resolution** when the same entity appears with different names, acronyms and codes | **A very high indexing cost** (LLM extraction over the whole corpus) and a new pipeline to maintain and rebuild. Lazy-indexing variants reduce that cost a lot — **verify the figures and the maturity (§8), do not assume them** |
+| **Agentic RAG** | The model decomposes the query, retrieves, evaluates sufficiency and decides whether to continue | Complex, multi-hop queries where a single pass is not enough | **It multiplies latency and tokens**, and on simple factual queries it is pure waste. It requires routing by complexity (§3.6) and an iteration cap. The loop itself belongs to `ai-agents-standards` |
+| **Late interaction** (ColBERT and similar) | Per-token embeddings with late scoring | Cases where a single vector is not enough: a buried clause, a value inside a table, multi-part queries | A much larger index. The bi-encoder + cross-encoder pipeline is simpler and often equivalent |
 
-**Criterio transversal**: **híbrido + reranker primero.** Arregla la mayoría de los fallos de
-recuperación. Todo lo demás se añade cuando **tus métricas** demuestren que lo simple no llega — no
-por lectura de un blog. La mayoría de las cifras espectaculares que circulan sobre estas
-arquitecturas vienen de blogs de proveedor sin condiciones reproducibles.
+**A cross-cutting criterion**: **hybrid + reranker first.** It fixes most retrieval
+failures. Everything else is added when **your metrics** show the simple approach falls short — not
+from reading a blog. Most of the spectacular figures circulating about these
+architectures come from vendor blogs with no reproducible conditions.
 
-## 4. Calidad y evaluación — gates
+## 4. Quality and evaluation — gates
 
-**La regla de oro del dominio: mide recuperación y generación por separado.** Una métrica de extremo
-a extremo te dice que el sistema falla; no te dice **dónde**, y en RAG casi siempre es en la
-recuperación. Sin la separación, el equipo optimiza el prompt durante semanas mientras el problema
-está en el chunking.
+**The golden rule of the domain: measure retrieval and generation separately.** An end-to-end
+metric tells you the system fails; it does not tell you **where**, and in RAG it is almost always in
+retrieval. Without the separation, the team optimises the prompt for weeks while the problem
+is in the chunking.
 
-### 4.1 Métricas de recuperación (sin LLM, deterministas, baratas)
+### 4.1 Retrieval metrics (no LLM, deterministic, cheap)
 
-| Métrica | Qué responde |
+| Metric | What it answers |
 |---|---|
-| `recall@k` | ¿Llegó el fragmento correcto al contexto? **La métrica más importante del sistema**: si es baja, ninguna mejora de generación puede salvarte |
-| `precision@k` | ¿Cuánto ruido acompaña a la señal? Ruido alto desplaza evidencia y encarece |
-| `MRR` | ¿Cómo de arriba aparece el primer resultado relevante? |
-| `nDCG@k` | Calidad del **orden** con relevancia graduada. **La que mueve el reranking** |
-| `recall@50` frente a `recall@5` | Diagnóstico: separa fallo de recuperación de fallo de ordenación (§3.4) |
+| `recall@k` | Did the right fragment reach the context? **The system's most important metric**: if it is low, no generation improvement can save you |
+| `precision@k` | How much noise accompanies the signal? High noise displaces evidence and costs more |
+| `MRR` | How high does the first relevant result appear? |
+| `nDCG@k` | The quality of the **ordering** with graded relevance. **The one reranking moves** |
+| `recall@50` against `recall@5` | Diagnosis: it separates a retrieval failure from an ordering failure (§3.4) |
 
-### 4.2 Métricas de generación
+### 4.2 Generation metrics
 
-| Métrica | Qué responde |
+| Metric | What it answers |
 |---|---|
-| **Fidelidad al contexto** | ¿Cada afirmación se sigue del contexto recuperado? Es la métrica anti-alucinación |
-| **Relevancia de la respuesta** | ¿Responde a lo que se preguntó? |
-| **Precisión de citación** | ¿Las citas existen entre lo recuperado y sostienen la afirmación? Verificable **por código** |
-| **Tasa de negativa correcta** | ¿Dice "no lo sé" cuando debe, y solo cuando debe? Requiere casos negativos en el conjunto |
+| **Faithfulness to the context** | Does every assertion follow from the retrieved context? It is the anti-hallucination metric |
+| **Answer relevance** | Does it answer what was asked? |
+| **Citation accuracy** | Do the citations exist among what was retrieved and do they support the assertion? Verifiable **in code** |
+| **Correct refusal rate** | Does it say "I do not know" when it should, and only when it should? It requires negative cases in the set |
 
-Cómo se calculan, con qué juez y con qué calibración: `llm-evaluation-standards`.
+How they are computed, with which judge and with what calibration: `llm-evaluation-standards`.
 
-### 4.3 Conjunto de evaluación propio del dominio
+### 4.3 Your own domain evaluation set
 
-**No se puede mejorar lo que no se mide, y ningún benchmark público mide tu corpus.** El conjunto
-mínimo viable:
+**You cannot improve what you do not measure, and no public benchmark measures your corpus.** The
+minimum viable set:
 
-- **50-200 pares consulta → chunks relevantes**, etiquetados sobre **tu** corpus.
-- Consultas **reales de usuarios** en cuanto las tengas. Las inventadas por el equipo son
-  sistemáticamente más fáciles y limpias que las reales.
-- Cobertura obligatoria de **bordes**: consultas cuya respuesta es que **no está en el corpus**;
-  consultas ambiguas; multi-salto (la respuesta exige dos documentos); específicas con identificador
-  o código; con errores tipográficos; en cada idioma del corpus; y **de un usuario que no debe ver
-  ciertos documentos** (§5).
-- Se versiona con el código. Crece cuando aparece un fallo real: **todo fallo de recuperación en
-  producción deja un caso de regresión.**
+- **50-200 query → relevant chunk pairs**, labelled over **your** corpus.
+- **Real user** queries as soon as you have them. The ones invented by the team are
+  systematically easier and cleaner than the real ones.
+- Mandatory coverage of **edges**: queries whose answer is that it **is not in the corpus**;
+  ambiguous queries; multi-hop (the answer requires two documents); specific ones with an identifier
+  or a code; with typos; in each language of the corpus; and **from a user who must not see
+  certain documents** (§5).
+- It is versioned with the code. It grows when a real failure appears: **every retrieval failure in
+  production leaves a regression case.**
 
-### 4.4 Gates que rompen el build
+### 4.4 Gates that break the build
 
-| # | Gate | Rompe si |
+| # | Gate | It breaks if |
 |---|---|---|
-| 1 | Lint + tipos (skill del lenguaje) | Falla |
-| 2 | Ingesta idempotente: reprocesar el mismo documento no duplica chunks | Duplica |
-| 3 | Todo vector lleva `modelo` + `modelo_version`; **ningún índice mezcla modelos** | Mezcla detectada |
-| 4 | Todo chunk conserva su texto y sus punteros (documento, posición) | Falta |
-| 5 | **Test de aislamiento por permisos**: un usuario sin acceso a un documento **nunca** recibe sus chunks (§5) | **Fuga. Este gate es innegociable** |
-| 6 | **`recall@k` sobre el conjunto de evaluación con umbral de no-regresión** | Regresión |
-| 7 | **`recall` del índice ANN frente a búsqueda exacta** sobre una muestra | Bajo umbral |
-| 8 | Precisión de citación verificada por código (toda cita apunta a un chunk recuperado) | Cita inventada |
-| 9 | Casos de negativa: el sistema no responde lo que el contexto no soporta | Responde |
-| 10 | **Evaluación obligatoria si el diff toca chunking, modelo de embedding, parámetros de índice, recuperación o reranker** | Regresión sobre umbral |
-| 11 | Test de borrado: eliminado un documento, sus chunks y vectores desaparecen del índice (§6) | Sobrevive alguno |
-| 12 | SCA sobre el stack (§5) | Crítica o dependencia sin fijar |
+| 1 | Lint + types (the language skill) | It fails |
+| 2 | Idempotent ingestion: reprocessing the same document does not duplicate chunks | It duplicates |
+| 3 | Every vector carries `model` + `model_version`; **no index mixes models** | Mixing detected |
+| 4 | Every chunk keeps its text and its pointers (document, position) | Missing |
+| 5 | **A permission isolation test**: a user without access to a document **never** receives its chunks (§5) | **A leak. This gate is non-negotiable** |
+| 6 | **`recall@k` over the evaluation set with a no-regression threshold** | Regression |
+| 7 | **The ANN index's `recall` against exact search** over a sample | Below threshold |
+| 8 | Citation accuracy verified in code (every citation points to a retrieved chunk) | An invented citation |
+| 9 | Refusal cases: the system does not answer what the context does not support | It answers |
+| 10 | **Mandatory evaluation if the diff touches chunking, the embedding model, index parameters, retrieval or the reranker** | Regression over the threshold |
+| 11 | Deletion test: with a document removed, its chunks and vectors disappear from the index (§6) | Any survive |
+| 12 | SCA over the stack (§5) | A critical, or an unpinned dependency |
 
-## 5. Seguridad
+## 5. Security
 
-### 5.1 Control de acceso a nivel de documento — el fallo clásico
+### 5.1 Document-level access control — the classic failure
 
-**El fallo de seguridad característico de RAG: un usuario recupera un chunk que no debería ver.** La
-aplicación tiene autorización impecable en su API y, por debajo, el índice vectorial devuelve
-cualquier cosa a cualquiera. El modelo entonces resume alegremente el documento confidencial.
+**RAG's characteristic security failure: a user retrieves a chunk they should not see.** The
+application has impeccable authorisation in its API and, underneath, the vector index returns
+anything to anyone. The model then cheerfully summarises the confidential document.
 
-Criterio, en orden de fiabilidad:
+The criteria, in order of reliability:
 
-1. **Filtra en la consulta al almacén, no después.** Filtrar los resultados en la aplicación tras
-   recuperarlos es frágil (un camino que olvida el filtro es una fuga) y además rompe el top-k: si
-   descartas 8 de 10, te quedan 2.
-2. **La referencia de autorización viaja con el chunk** (`acl_ref` en metadatos, §3.8) y se
-   materializa como filtro en cada consulta. En pgvector esto es un `WHERE` y, mejor aún, **Row-Level
-   Security** — la red que no depende de que la aplicación se acuerde (`data-platform-standards`).
-3. **Índices separados por frontera de confianza** cuando el aislamiento debe ser fuerte
-   (multi-tenant con datos regulados). Un filtro es una condición; un índice separado es un límite.
-4. **Sincronización de permisos**: si los permisos del origen cambian, el índice debe reflejarlo. Un
-   índice con permisos de hace un mes es una fuga con retardo. Define la frecuencia y **aliméntala
-   por eventos** cuando sea posible.
-5. **Test obligatorio en CI** (§4, gate 5), con usuarios de distintos niveles. Es el único control
-   que no se degrada solo.
-6. **Ojo con las citas y los metadatos**: el título de un documento, su ruta o su existencia pueden
-   ser información sensible aunque el contenido no se muestre. La fuga por metadatos es real.
+1. **Filter in the query to the store, not afterwards.** Filtering the results in the application after
+   retrieving them is fragile (a path that forgets the filter is a leak) and it also breaks the top-k: if
+   you discard 8 of 10, you are left with 2.
+2. **The authorisation reference travels with the chunk** (`acl_ref` in the metadata, §3.8) and gets
+   materialised as a filter on every query. In pgvector this is a `WHERE` and, better still, **Row-Level
+   Security** — the net that does not depend on the application remembering (`data-platform-standards`).
+3. **Separate indexes per trust boundary** when the isolation must be strong
+   (multi-tenant with regulated data). A filter is a condition; a separate index is a boundary.
+4. **Permission synchronisation**: if the source's permissions change, the index must reflect it. An
+   index with month-old permissions is a delayed leak. Define the frequency and **drive it
+   by events** where possible.
+5. **A mandatory test in CI** (§4, gate 5), with users at different levels. It is the only control
+   that does not degrade on its own.
+6. **Beware citations and metadata**: a document's title, its path or its very existence can
+   be sensitive information even if the content is not shown. Metadata leakage is real.
 
-### 5.2 Envenenamiento del corpus e inyección indirecta
+### 5.2 Corpus poisoning and indirect injection
 
-- **El contenido recuperado es entrada no confiable.** Si el corpus admite contenido de usuarios,
-  scraping, correo o tickets, un atacante puede plantar instrucciones que el modelo leerá como
-  tales. Esto es inyección de prompt indirecta: la contención se hace fuera del modelo
+- **Retrieved content is untrusted input.** If the corpus accepts user content,
+  scraping, email or tickets, an attacker can plant instructions the model will read as
+  such. This is indirect prompt injection: the containment happens outside the model
   (`llm-app-engineering-standards` §5).
-- **Corresponde a `LLM08` *Vector and Embedding Weaknesses* del OWASP Top 10 for LLM Applications
-  2025** (edición vigente; verificar §8).
-- **Procedencia y confianza por documento**: distingue en los metadatos el corpus curado del corpus
-  abierto, y trata el segundo con menos privilegio (no citable como autoridad, no accionable).
-- **Los embeddings pueden filtrar información del texto original** por ataques de inversión: no los
-  trates como una forma de anonimización. Un vector de un dato personal **es** un dato personal.
+- **It corresponds to `LLM08` *Vector and Embedding Weaknesses* of the OWASP Top 10 for LLM Applications
+  2025** (the current edition; verify §8).
+- **Provenance and trust per document**: distinguish the curated corpus from the open corpus in the
+  metadata, and treat the latter with less privilege (not citable as authority, not actionable).
+- **Embeddings can leak information from the original text** through inversion attacks: do not
+  treat them as a form of anonymisation. A vector of a piece of personal data **is** personal data.
 
-### 5.3 Cadena de suministro y dependencias
+### 5.3 Supply chain and dependencies
 
-Este ecosistema ya tiene incidentes reales: el compromiso de **LiteLLM en PyPI (marzo 2026,
-versiones `1.82.7`/`1.82.8`)** llegó por un pipeline que ejecutaba una herramienta sin versión
-fijada, y afectó a usuarios de varios frameworks de agentes y RAG. **Fija dependencias por hash**,
-verifica que el artefacto publicado se corresponde con un tag del repositorio, y trata como
-comprometido cualquier host que instalara una versión afectada. Detalle en
-`llm-app-engineering-standards` §5.4, `cicd-standards` y `vulnerability-management-standards`.
+This ecosystem already has real incidents: the compromise of **LiteLLM on PyPI (March 2026,
+versions `1.82.7`/`1.82.8`)** came through a pipeline running an unpinned tool,
+and it affected users of several agent and RAG frameworks. **Pin dependencies by hash**,
+verify that the published artifact corresponds to a repository tag, and treat as
+compromised any host that installed an affected version. Detail in
+`llm-app-engineering-standards` §5.4, `cicd-standards` and `vulnerability-management-standards`.
 
-Además: **pgvector 0.8.2 (feb-2026) corrigió CVE-2026-3172**, un desbordamiento en la construcción
-paralela de índices HNSW capaz de filtrar datos de otras relaciones o tumbar el servidor. El motor
-vectorial es superficie de ataque como cualquier otra: entra en el ciclo de parcheo.
+In addition: **pgvector 0.8.2 (Feb 2026) fixed CVE-2026-3172**, an overflow in the parallel
+construction of HNSW indexes capable of leaking data from other relations or taking down the server. The vector
+engine is attack surface like any other: it goes into the patching cycle.
 
-### 5.4 Datos personales en el índice
+### 5.4 Personal data in the index
 
-- Minimiza antes de indexar: lo que no entra al corpus no puede recuperarse ni filtrarse.
-- El índice vectorial es **una copia más** del dato a efectos de inventario, retención y borrado
-  (§6). Si tu registro de tratamiento no lo incluye, está incompleto.
-- Cifrado en reposo y control de acceso del almacén, como cualquier base de datos
+- Minimise before indexing: what does not enter the corpus cannot be retrieved or leaked.
+- The vector index is **one more copy** of the data for inventory, retention and erasure purposes
+  (§6). If your record of processing does not include it, it is incomplete.
+- Encryption at rest and access control on the store, like any database
   (`data-platform-standards`, `cryptography-pki-standards`).
-- Marco: `privacy-engineering-standards`.
+- Framework: `privacy-engineering-standards`.
 
-## 6. Operación
+## 6. Operation
 
-### 6.1 Actualización incremental
+### 6.1 Incremental update
 
-- **Nunca reindexes todo por un documento que cambió.** Ingesta por eventos o por barrido con
-  detección de cambios: `hash` de documento → si cambió, re-chunk y re-embed solo ese documento;
-  `hash` de chunk → si el chunk no cambió, reutiliza su vector (ahorro grande en documentos con
-  ediciones pequeñas).
-- Operación **atómica por documento**: borrar chunks viejos e insertar nuevos en una transacción, o
-  el índice queda inconsistente y sirve resultados de dos versiones a la vez.
-- **Frescura como métrica**: retraso entre el cambio en el origen y su disponibilidad en el índice.
-  Con SLO, si el producto depende de ello.
-- **Reindexación completa**: es una operación planificada, no un accidente. Índice nuevo en
-  paralelo, comparación de recall contra el actual, corte con bandera, rollback disponible (§2.4).
+- **Never reindex everything because one document changed.** Ingestion by events or by a sweep with
+  change detection: the document `hash` → if it changed, re-chunk and re-embed only that document;
+  the chunk `hash` → if the chunk did not change, reuse its vector (a big saving on documents with
+  small edits).
+- An **atomic operation per document**: delete the old chunks and insert the new ones in one transaction, or
+  the index stays inconsistent and serves results from two versions at once.
+- **Freshness as a metric**: the delay between the change at the source and its availability in the index.
+  With an SLO, if the product depends on it.
+- **A full reindex**: it is a planned operation, not an accident. A new index in
+  parallel, a recall comparison against the current one, cutover behind a flag, rollback available (§2.4).
 
-### 6.2 Borrado
+### 6.2 Deletion
 
-**El derecho de supresión aplica al índice y a los embeddings**, no solo a la base de datos de
-origen. Un documento borrado del origen que sigue en el índice se recupera, se cita y se resume.
+**The right to erasure applies to the index and to the embeddings**, not just to the source
+database. A document deleted from the source that remains in the index gets retrieved, cited and summarised.
 
-- El borrado se propaga a: chunks, vectores, índice léxico, cachés de consulta, cachés de resultados
-  y cualquier grafo derivado (GraphRAG).
-- **Borrado real, no lógico**, cuando la base legal es el derecho de supresión. Un `deleted_at` que
-  el filtro de recuperación puede olvidar no es un borrado.
-- **Los backups del índice también contienen el dato**: su tratamiento (crypto-shredding, retención
-  acotada, reindexación tras restore) se decide con `privacy-engineering-standards` y
+- The deletion propagates to: chunks, vectors, the lexical index, query caches, result caches
+  and any derived graph (GraphRAG).
+- **Real deletion, not logical**, when the legal basis is the right to erasure. A `deleted_at` that
+  the retrieval filter can forget is not a deletion.
+- **Backups of the index also contain the data**: their handling (crypto-shredding, bounded
+  retention, reindexing after a restore) is decided with `privacy-engineering-standards` and
   `backup-recovery-standards`.
-- **Test de borrado en CI** (§4, gate 11).
+- **A deletion test in CI** (§4, gate 11).
 
-### 6.3 Coste y latencia de la cadena completa
+### 6.3 Cost and latency of the whole chain
 
-Presupuesto explícito por consulta, con desglose por etapa (§3.9):
+An explicit budget per query, broken down by stage (§3.9):
 
-| Etapa | Coste dominante |
+| Stage | Dominant cost |
 |---|---|
-| Ingesta (una vez + incremental) | Parseo/OCR + inferencia de embeddings sobre todo el corpus |
-| Almacenamiento | Vectores (dimensiones × corpus) + índice en memoria + texto original |
-| Consulta | Embedding de consulta + búsqueda ANN + léxica + **reranking** + **generación** |
+| Ingestion (one-off + incremental) | Parsing/OCR + embedding inference over the whole corpus |
+| Storage | Vectors (dimensions × corpus) + the index in memory + the original text |
+| Query | Query embedding + ANN search + lexical search + **reranking** + **generation** |
 
-- **La generación domina casi siempre el coste por consulta**; el reranking domina la latencia
-  añadida. Optimizar la búsqueda ANN cuando el 90 % del gasto está en la generación es optimizar lo
-  que no importa: **mide antes**.
-- El **caché de consultas frecuentes** (por consulta normalizada + permisos) es la optimización de
-  coste más rentable en corpus estables. **Cachea siempre dentro de la frontera de permisos**: un
-  caché compartido entre usuarios con distinto acceso es una fuga.
-- Alerta sobre: recall que cae (deriva del corpus o del índice), latencia p95 por etapa, tasa de
-  negativas que sube (puede indicar recuperación rota), coste por consulta.
+- **Generation almost always dominates the cost per query**; reranking dominates the added
+  latency. Optimising the ANN search when 90% of the spend is in generation is optimising what
+  does not matter: **measure first**.
+- **A cache of frequent queries** (by normalised query + permissions) is the most profitable cost
+  optimisation on stable corpora. **Always cache inside the permission boundary**: a
+  cache shared between users with different access is a leak.
+- Alert on: falling recall (corpus or index drift), p95 latency per stage, a rising refusal
+  rate (it can indicate broken retrieval), cost per query.
 
-### 6.4 Runbook mínimo
+### 6.4 Minimum runbook
 
-Recuperación degradada tras reindexar; índice corrupto o incompleto; modelo de embedding
-indisponible; documento que debía borrarse y sigue apareciendo; usuario que ve lo que no debe
-(**incidente de seguridad**, no bug de calidad → `incident-management-standards`).
+Degraded retrieval after a reindex; a corrupt or incomplete index; the embedding model
+unavailable; a document that should have been deleted and still appears; a user seeing what they should not
+(**a security incident**, not a quality bug → `incident-management-standards`).
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-**Cadencia de revisión: 3 meses.** Modelos de embedding, rerankers, licencias de almacenes
-vectoriales y arquitecturas cambian trimestralmente.
+**Review cadence: 3 months.** Embedding models, rerankers, vector store licences
+and architectures change quarterly.
 
-- Revisar: versión y CVEs del almacén vectorial, **licencia** (cambio de licencia es el patrón
-  frecuente del sector), estado del modelo de embedding y del reranker, y si el conjunto de
-  evaluación sigue representando el tráfico real.
-- **El conjunto de evaluación es el activo con más valor a largo plazo del sistema.** Sobrevive a
-  cambios de modelo, de almacén y de framework. Trátalo como código de producción.
-- Deuda consciente registrada: evaluación pendiente, borrado no propagado, parámetros de índice sin
-  medir.
+- Review: the vector store's version and CVEs, the **licence** (a licence change is the sector's
+  frequent pattern), the status of the embedding model and the reranker, and whether the evaluation
+  set still represents real traffic.
+- **The evaluation set is the system's highest-value long-term asset.** It survives
+  changes of model, of store and of framework. Treat it as production code.
+- Conscious debt recorded: pending evaluation, deletion not propagated, index parameters
+  unmeasured.
 
-**PROHIBIDO**
+**FORBIDDEN**
 
-- ❌ Montar RAG sin haber comprobado que el corpus no cabe en contexto o que el volumen/latencia/
-  auditoría lo exigen.
-- ❌ Usar fine-tuning para inyectar hechos. Enseña forma, no conocimiento.
-- ❌ Vectorizar datos estructurados que una consulta o una API responden de forma exacta.
-- ❌ **Depurar un fallo de RAG tocando el prompt sin haber medido `recall@k` primero.**
-- ❌ Indexar sin verificar el texto extraído sobre una muestra (especialmente PDF).
-- ❌ Partir tablas, funciones o unidades semánticas por llegar a un límite de caracteres.
-- ❌ Medir el tamaño de chunk en caracteres en vez de en tokens del modelo de embedding.
-- ❌ Usar prefijo/instrucción distinta —o ninguna— entre indexación y consulta.
-- ❌ Elegir el modelo de embedding por posición en MTEB. Está contaminado y v2 no compara con v1.
-- ❌ Mezclar vectores de dos modelos o versiones en el mismo índice.
-- ❌ Indexar sin guardar el texto original del chunk ni los punteros al documento.
-- ❌ Cambiar de modelo de embedding sin plan de reindexación, comparación de recall y rollback.
-- ❌ Fijar parámetros de índice ANN sin medir el recall contra búsqueda exacta.
-- ❌ Activar cuantización "por eficiencia" sin medir la pérdida de recall.
-- ❌ **Recuperación solo densa** como arquitectura final: el híbrido con léxico es el default serio.
-- ❌ Saltar el reranker y pasar a GraphRAG o RAG agéntico. Es la mejora barata que hay que probar antes.
-- ❌ Aplicar la cadena cara a todas las consultas sin enrutar por complejidad.
-- ❌ Generar sin citar cuando se afirman hechos; o citar sin verificar la cita por código.
-- ❌ No permitir al sistema decir "no lo sé". La alucinación con contexto destruye la confianza.
-- ❌ Tratar el contenido recuperado como confiable.
-- ❌ **Filtrar permisos después de recuperar en vez de en la consulta al almacén.**
-- ❌ Caché de resultados compartido entre usuarios con distintos permisos.
-- ❌ Índice sin sincronización de permisos con el origen.
-- ❌ Borrado lógico como respuesta al derecho de supresión; borrado que no se propaga a vectores,
-  índice léxico, cachés y grafos derivados.
-- ❌ Tratar el embedding como una forma de anonimización.
-- ❌ Evaluar sin conjunto propio del dominio, o sin casos negativos y de borde.
-- ❌ Chroma en producción seria; adoptar un major nuevo (Milvus 3.x, Haystack 3.x) sin leer la migración.
-- ❌ Desplegar un reranker sin verificar la licencia de sus pesos (varios son no comerciales).
-- ❌ Añadir un motor vectorial dedicado teniendo PostgreSQL y volumen moderado, sin ADR que
-  justifique la pieza de operación extra.
-- ❌ Fijar de memoria un nombre de modelo de embedding, un precio o una cifra de benchmark (§8).
+- ❌ Building RAG without having checked that the corpus does not fit in the context or that
+  volume/latency/audit requirements demand it.
+- ❌ Using fine-tuning to inject facts. It teaches form, not knowledge.
+- ❌ Vectorising structured data that a query or an API answers exactly.
+- ❌ **Debugging a RAG failure by touching the prompt without having measured `recall@k` first.**
+- ❌ Indexing without verifying the extracted text over a sample (especially PDF).
+- ❌ Splitting tables, functions or semantic units just to hit a character limit.
+- ❌ Measuring the chunk size in characters instead of in the embedding model's tokens.
+- ❌ Using a different prefix/instruction — or none — between indexing and querying.
+- ❌ Choosing the embedding model by its MTEB position. It is contaminated and v2 does not compare with v1.
+- ❌ Mixing vectors from two models or versions in the same index.
+- ❌ Indexing without storing the chunk's original text or the pointers to the document.
+- ❌ Changing embedding model without a reindexing plan, a recall comparison and a rollback.
+- ❌ Setting ANN index parameters without measuring recall against exact search.
+- ❌ Enabling quantisation "for efficiency" without measuring the recall loss.
+- ❌ **Dense-only retrieval** as the final architecture: hybrid with lexical is the serious default.
+- ❌ Skipping the reranker and jumping to GraphRAG or agentic RAG. It is the cheap improvement to try first.
+- ❌ Applying the expensive chain to every query without routing by complexity.
+- ❌ Generating without citing when facts are asserted; or citing without verifying the citation in code.
+- ❌ Not allowing the system to say "I do not know". Hallucination with context destroys trust.
+- ❌ Treating retrieved content as trusted.
+- ❌ **Filtering permissions after retrieving instead of in the query to the store.**
+- ❌ A result cache shared between users with different permissions.
+- ❌ An index without permission synchronisation with the source.
+- ❌ Logical deletion as the answer to the right to erasure; a deletion that does not propagate to vectors,
+  the lexical index, caches and derived graphs.
+- ❌ Treating the embedding as a form of anonymisation.
+- ❌ Evaluating without your own domain set, or without negative and edge cases.
+- ❌ Chroma in serious production; adopting a new major (Milvus 3.x, Haystack 3.x) without reading the migration guide.
+- ❌ Deploying a reranker without verifying the licence of its weights (several are non-commercial).
+- ❌ Adding a dedicated vector engine when you have PostgreSQL and moderate volume, without an ADR that
+  justifies the extra operational component.
+- ❌ Pinning from memory an embedding model name, a price or a benchmark figure (§8).
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-1. **Almacenes vectoriales**: versión, **licencia** y estado de pgvector, Qdrant, Weaviate, Milvus,
-   Chroma, LanceDB. Verificado a ago-2026: pgvector 0.8.6 (licencia PostgreSQL), Qdrant 1.18.x
-   (Apache-2.0), Milvus **3.0.0** además de 2.6.x (Apache-2.0), Weaviate 1.38.x/1.39-rc (core
-   BSD-3), Chroma y LanceDB (Apache-2.0). **El cambio de licencia es un patrón frecuente en este
-   sector: reverifica antes de comprometerte, y comprueba si alguno ha sido abandonado o adquirido.**
-   Preferir feeds Atom de releases al resumen de una página HTML.
-2. **CVEs del almacén**: pgvector 0.8.2 corrigió CVE-2026-3172 (HNSW paralelo). Comprueba avisos
-   antes de fijar versión.
-3. **Modelos de embedding vigentes** y su longitud máxima, dimensionalidad, soporte multilingüe,
-   requisitos de prefijo y precio. **No fijados en este documento (§ huecos).**
-4. **Estado de MTEB**: si sigue siendo la referencia, si hay sucesor consolidado, y el alcance de la
-   contaminación/saturación. A ago-2026 sigue siendo la referencia de facto **con contaminación
-   documentada**, y MTEB v2 no es comparable con v1.
-5. **Rerankers disponibles y su licencia**: familias BGE y mixedbread (Apache-2.0), Jina
-   (pesos CC-BY-NC → uso comercial vía API), Cohere y Voyage (API cerrada). **Verifica la licencia y
-   la versión vigente antes de desplegar — las versiones exactas no se fijan aquí.**
-6. **RAGAS y frameworks de evaluación de RAG**: RAGAS 0.4.3 es de enero de 2026 y no había publicado
-   nada nuevo a agosto de 2026. **Comprueba si sigue mantenido** antes de depender de él (detalle en
+1. **Vector stores**: version, **licence** and status of pgvector, Qdrant, Weaviate, Milvus,
+   Chroma, LanceDB. Verified as of Aug 2026: pgvector 0.8.6 (PostgreSQL licence), Qdrant 1.18.x
+   (Apache-2.0), Milvus **3.0.0** in addition to 2.6.x (Apache-2.0), Weaviate 1.38.x/1.39-rc (core
+   BSD-3), Chroma and LanceDB (Apache-2.0). **A licence change is a frequent pattern in this
+   sector: re-verify before committing, and check whether any of them has been abandoned or acquired.**
+   Prefer Atom release feeds to the summary on an HTML page.
+2. **Store CVEs**: pgvector 0.8.2 fixed CVE-2026-3172 (parallel HNSW). Check advisories
+   before pinning a version.
+3. **Current embedding models** and their maximum length, dimensionality, multilingual support,
+   prefix requirements and price. **Not pinned in this document (see the gaps).**
+4. **The state of MTEB**: whether it is still the reference, whether there is a consolidated successor, and the extent of the
+   contamination/saturation. As of Aug 2026 it is still the de facto reference **with documented
+   contamination**, and MTEB v2 is not comparable with v1.
+5. **Available rerankers and their licence**: the BGE and mixedbread families (Apache-2.0), Jina
+   (CC-BY-NC weights → commercial use via the API), Cohere and Voyage (closed API). **Verify the licence and
+   the current version before deploying — the exact versions are not pinned here.**
+6. **RAGAS and RAG evaluation frameworks**: RAGAS 0.4.3 is from January 2026 and nothing new had been published
+   as of August 2026. **Check whether it is still maintained** before depending on it (detail in
    `llm-evaluation-standards`).
-7. **Frameworks de ingesta**: LlamaIndex (0.14.x), Haystack (**3.0.0**, jul-2026 — major con
-   ruptura), LangChain/LangGraph 1.x. Descarta lo abandonado.
-8. **OWASP Top 10 for LLM Applications**: confirmar si sigue vigente la edición **2025** (`LLM08`
-   *Vector and Embedding Weaknesses*) o si salió revisión.
-9. **Incidentes de cadena de suministro** en lo que recomiendes: precedentes en el catálogo — Trivy
-   (marzo 2026), LiteLLM `1.82.7`/`1.82.8` en PyPI (marzo 2026), `gitleaks` (*feature complete*).
-10. **Contexto largo frente a RAG**: los umbrales de degradación por longitud (*context rot*, *lost
-    in the middle*) y las cifras de coste relativo cambian con cada generación de modelos.
+7. **Ingestion frameworks**: LlamaIndex (0.14.x), Haystack (**3.0.0**, Jul 2026 — a breaking
+   major), LangChain/LangGraph 1.x. Rule out the abandoned ones.
+8. **OWASP Top 10 for LLM Applications**: confirm whether the **2025** edition is still current (`LLM08`
+   *Vector and Embedding Weaknesses*) or whether a revision came out.
+9. **Supply-chain incidents** in whatever you recommend: precedents in the catalogue — Trivy
+   (March 2026), LiteLLM `1.82.7`/`1.82.8` on PyPI (March 2026), `gitleaks` (*feature complete*).
+10. **Long context versus RAG**: the degradation thresholds by length (*context rot*, *lost
+    in the middle*) and the relative cost figures change with every generation of models.
 
-**Huecos declarados — NO rellenar de memoria**:
+**Declared gaps — do NOT fill from memory**:
 
-- **Nombres y versiones exactas de modelos de embedding**: no fijados. Las fuentes públicas
-  consultadas se contradicen entre sí en nombres y numeración de versión, y el ciclo es mensual.
-  Se verifican con la documentación del proveedor en cada uso.
-- **Versiones exactas de rerankers comerciales**: no fijadas por el mismo motivo. Las **licencias**
-  sí están verificadas por familia y son el dato que decide.
-- **Precios de embeddings, rerankers y generación**: no fijados en este documento.
-- **Valores numéricos concretos de `m`, `ef_construction`, `ef_search`, `lists`, `probes`, tamaño de
-  chunk y solape**: **deliberadamente no fijados.** Dependen del corpus, del modelo y del hardware;
-  cualquier cifra concreta sería un valor por defecto de tutorial disfrazado de criterio. Se
-  determinan midiendo (§2.3, §3.2).
-- **Multiplicadores de coste/latencia de GraphRAG y RAG agéntico**: las cifras públicas proceden en
-  su mayoría de blogs de proveedor sin condiciones reproducibles. **No se citan como hechos.**
-- **Umbral de volumen exacto** en el que pgvector deja de ser suficiente: la horquilla de "decenas
-  de millones de vectores" es orientativa y depende de dimensionalidad, filtrado y hardware.
-  Mídelo.
+- **Exact names and versions of embedding models**: not pinned. The public sources
+  consulted contradict each other on names and version numbering, and the cycle is monthly.
+  They are verified against the provider's documentation on each use.
+- **Exact versions of commercial rerankers**: not pinned, for the same reason. The **licences**
+  are verified per family and are the fact that decides.
+- **Prices of embeddings, rerankers and generation**: not pinned in this document.
+- **Concrete numeric values for `m`, `ef_construction`, `ef_search`, `lists`, `probes`, chunk size
+  and overlap**: **deliberately not pinned.** They depend on the corpus, the model and the hardware;
+  any concrete figure would be a tutorial default dressed up as criteria. They are
+  determined by measuring (§2.3, §3.2).
+- **Cost/latency multipliers of GraphRAG and agentic RAG**: the public figures come mostly
+  from vendor blogs with no reproducible conditions. **They are not cited as facts.**
+- **The exact volume threshold** at which pgvector stops being enough: the "tens of
+  millions of vectors" range is indicative and depends on dimensionality, filtering and hardware.
+  Measure it.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,191 +3,191 @@ name: gaming-infrastructure-standards
 description: Multiplayer game hosting infrastructure. Use when orchestrating dedicated game servers with Agones (GameServer, Fleet, FleetAutoscaler CRDs, agones-sdk), running session-based servers on Kubernetes, matchmaking as a service (Open Match / open-match2, matchmaker tickets and backfill), managed backends (Amazon GameLift Servers, Azure PlayFab Multiplayer Servers, Unity Multiplay, Epic Online Services, Nakama/Heroic Labs, Edgegap), fleet scaling and cost per CCU or per session, UDP DDoS protection for game traffic, server browser and session allocation, or in-game voice/chat services and their compliance.
 ---
 
-# Estándares de infraestructura de juego
+# Game infrastructure standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a la **infraestructura que aloja el multijugador**: hosting y orquestación de servidores
-dedicados de partida, asignación y ciclo de vida de sesiones, escalado y coste de flota,
-matchmaking como servicio, backends gestionados, protección del tráfico UDP y los servicios de
-voz/chat con su cumplimiento. Esta skill existe por cesión pactada: `game-development-standards`
-le cede **servidores dedicados, orquestación de sesiones, escalado y coste de flota, transporte,
-matchmaking como servicio**, y `xr-standards` le cede **servidores y sesiones multiusuario**.
+Applies to the **infrastructure that hosts multiplayer**: hosting and orchestration of dedicated
+match servers, session allocation and lifecycle, fleet scaling and cost,
+matchmaking as a service, managed backends, protecting UDP traffic, and voice/chat services with
+their compliance. This skill exists by an agreed cession: `game-development-standards`
+cedes it **dedicated servers, session orchestration, fleet scaling and cost, transport and
+matchmaking as a service**, and `xr-standards` cedes it **multi-user servers and sessions**.
 
-**Tesis**: un servidor de partida **no es un microservicio**. Es un proceso **con estado, de
-vida corta y no interrumpible**: no se balancea por petición, no se drena en segundos, no se
-mata en un rolling update sin echar a los jugadores. Toda la disciplina de la skill deriva de
-ahí: asignación de sesión en lugar de balanceo, apagado solo cuando la partida termina, escalado
-que protege las sesiones vivas, y coste medido por sesión/CCU porque la flota ociosa es el
-coste dominante.
+**Thesis**: a match server **is not a microservice**. It is a **stateful, short-lived,
+non-interruptible** process: it is not load-balanced per request, it does not drain in seconds, and
+it is not killed by a rolling update without throwing players out. The whole discipline of this
+skill derives from that: session allocation instead of load balancing, shutdown only when the match
+ends, scaling that protects live sessions, and cost measured per session/CCU because the idle fleet
+is the dominant cost.
 
 Triggers: `GameServer`, `Fleet`, `GameServerAllocation`, `FleetAutoscaler`, agones-sdk,
 `Allocated`/`Ready` states; Open Match tickets/backfill; GameLift (`fleet`, `game session`,
-FlexMatch), PlayFab MPS (build, pool, allocation), Multiplay, EOS, Nakama, Edgegap; "cuánto nos
-cuesta cada partida", "el autoscaler mata partidas vivas", "nos tiran el servidor por UDP flood",
-server browser, voz de proximidad.
+FlexMatch), PlayFab MPS (build, pool, allocation), Multiplay, EOS, Nakama, Edgegap; "how much does
+each match cost us", "the autoscaler kills live matches", "they take our server down with a UDP flood",
+server browser, proximity voice.
 
-**No aplica**: ver `game-development-standards` (**el protocolo y el modelo de autoridad del
-juego son suyos**: netcode, predicción/reconciliación, lockstep, anticheat, validación en
-servidor — aquí el proceso servidor ya existe y se trata como carga que alojar),
-`xr-standards` (la experiencia XR y su presupuesto de confort; aquí sus sesiones multiusuario),
-`kubernetes-standards` (el clúster como plataforma: RBAC, upgrades, nodos — aquí lo específico
-de la carga de juego sobre él), `load-balancing-standards` (el balanceador clásico L4/L7; la
-asignación de sesión de aquí es precisamente **no** balancear), `edge-computing-standards` (la
-plataforma de borde en general; aquí solo el criterio de colocar servidores cerca del jugador),
-`e-commerce-standards` y `fintech-payments-standards` (**la tienda del juego es una tienda**: el
-catálogo, el precio, el impuesto y el carrito son de la primera; **desde el cobro en adelante
-—pasarela, PCI DSS, SCA, reembolso y contracargo— es de la segunda**, y el hecho de que la moneda
-sea virtual no lo cambia. Lo que sí es de aquí: que el servidor valide el recibo y que el
-*webhook* de la tienda se verifique por firma, porque el cliente miente),
-`streaming-multimedia-standards` (**la retransmisión de partidas es un pipeline de vídeo y es
-suyo**: ingesta, transcodificación, empaquetado, latencia y el modo espectador como entrega;
-**aquí solo la voz en partida** y el hecho de que se compra antes que construirse),
-`chaos-engineering-standards` (**el experimento de resiliencia es legítimo aquí, con un límite**:
-se acota a los servidores `Ready` y a la ruta de reposición, nunca a los `Allocated` — §7),
+**Not applicable**: see `game-development-standards` (**the game's protocol and authority model
+are theirs**: netcode, prediction/reconciliation, lockstep, anticheat, server-side validation —
+here the server process already exists and is treated as a workload to host),
+`xr-standards` (the XR experience and its comfort budget; here its multi-user sessions),
+`kubernetes-standards` (the cluster as a platform: RBAC, upgrades, nodes — here what is specific
+to the game workload running on it), `load-balancing-standards` (the classic L4/L7 balancer; the
+session allocation here is precisely **not** balancing), `edge-computing-standards` (the edge
+platform in general; here only the criterion of placing servers close to the player),
+`e-commerce-standards` and `fintech-payments-standards` (**the game's shop is a shop**: the
+catalogue, price, tax and cart belong to the first; **from the charge onwards — gateway, PCI DSS,
+SCA, refund and chargeback — belongs to the second**, and the fact that the currency is virtual
+does not change it. What does belong here: the server validating the receipt, and the shop's
+*webhook* being verified by signature, because the client lies),
+`streaming-multimedia-standards` (**broadcasting matches is a video pipeline and is
+theirs**: ingest, transcoding, packaging, latency and spectator mode as delivery;
+**here only in-game voice** and the fact that it is bought rather than built),
+`chaos-engineering-standards` (**the resilience experiment is legitimate here, with one limit**:
+it is bounded to `Ready` servers and the replenishment path, never to `Allocated` ones — §7),
 `networking-standards`
-(la red como disciplina; aquí el perfil UDP del tráfico de juego), `finops-standards` (unidad
-económica y gobierno de coste; aquí la métrica de dominio: coste por sesión/CCU),
-`sre-practice-standards` (SLO y guardia; aquí qué SLI son los del dominio).
+(the network as a discipline; here the UDP profile of game traffic), `finops-standards` (economic
+unit and cost governance; here the domain metric: cost per session/CCU),
+`sre-practice-standards` (SLOs and on-call; here which SLIs are the domain's).
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión y el estado comercial por web antes de fijar nada (§8). **Este
-> mercado se movió fuerte en 2025-2026** (Multiplay deprecado, Agones a CNCF, GameLift cambió
-> su modelo de coste): casi todo lo que circula está caducado. Estado verificado a ago-2026:
+> Verify the latest version and the commercial status on the web before pinning anything (§8). **This
+> market moved hard in 2025-2026** (Multiplay deprecated, Agones into the CNCF, GameLift changed
+> its cost model): almost everything in circulation is out of date. Status verified as of Aug 2026:
 
-| Decisión | Por defecto | Alternativa justificable | Motivo |
+| Decision | Default | Justifiable alternative | Reason |
 |---|---|---|---|
-| ¿Backend gestionado u orquestación propia? | **Gestionado**, salvo escala/soberanía que lo justifique en ADR | Agones sobre Kubernetes propio | El on-call de una flota global 24/7 es el coste oculto; propio solo con equipo de plataforma real |
-| Orquestación propia | **Agones** (CNCF Sandbox desde dic-2025, donado por Google; v1.58.x, cadencia ~6 semanas, SDKs Go/C++/C#/Unity/Unreal/Python) | Kubernetes a pelo con StatefulSets: **no** — reimplementa mal el ciclo Ready/Allocated | Único orquestador de game servers con comunidad real (Google+Ubisoft de origen, 800+ contribuidores) |
-| Gestionado en AWS | **Amazon GameLift Servers** | Contenedores propios en EKS+Agones | Modelo de coste renovado en 2026: **ancho de banda gratis desde jun-2026 (instancias gen 6+)** y **scale-to-zero (ene-2026)** — re-presupuestar, las comparativas antiguas ya no valen |
-| Gestionado en Azure / consola Xbox | **PlayFab Multiplayer Servers** (activo, sin retirada anunciada; "Foundation Mode" GDC 2026) | — | Integración Xbox y LiveOps |
-| Unity Multiplay | **NO para diseño nuevo: deprecado el 1-abr-2026** (sin nuevas allocations; continuidad solo para quien migró a "Multiplay by Rocket Science") | GameLift, Edgegap, Agones | Aviso de cierre con ~3 meses: lección sobre riesgo de proveedor único |
-| Backend social/ligero (auth, leaderboards, matchmaking simple, salas) | **Nakama** (Heroic Labs; servidor Apache-2.0, clientes Apache-2.0; Heroic Cloud como gestionado) o **Epic Online Services** (gratuito, multiplataforma) | PlayFab | Para juegos sin servidor dedicado de simulación, esto basta y evita toda la flota |
-| Matchmaking como servicio | El del backend elegido (FlexMatch, PlayFab, Nakama, EOS) | **Open Match, solo con cautela**: el 1.x original (Apache-2.0) no está archivado pero su última release soporta Kubernetes 1.24/1.25 — mantenimiento de facto parado; existe `open-match2` con actividad baja. **No es base sólida para diseño nuevo sin evaluación fresca** (§8) | Un matchmaker propio es un sistema distribuido con colas, estado y picos: se compra salvo requisito de diseño de matching propio |
-| Colocación geográfica | Regiones según latencia medida de la base de jugadores; borde (Edgegap y similares) solo si el percentil de RTT lo justifica | — | La latencia del jugador la fija la física, no el marketing |
-| Unidad de coste | **Coste por sesión y por CCU**, con la flota ociosa como línea propia | — | El buffer de servidores Ready es el precio de la latencia de matchmaking: se dimensiona, no se elimina |
+| Managed backend or your own orchestration? | **Managed**, unless scale/sovereignty justifies otherwise in an ADR | Agones on your own Kubernetes | The on-call for a global 24/7 fleet is the hidden cost; self-hosted only with a real platform team |
+| Own orchestration | **Agones** (CNCF Sandbox since Dec 2025, donated by Google; v1.58.x, ~6-week cadence, Go/C++/C#/Unity/Unreal/Python SDKs) | Bare Kubernetes with StatefulSets: **no** — it badly reimplements the Ready/Allocated cycle | The only game-server orchestrator with a real community (Google+Ubisoft originally, 800+ contributors) |
+| Managed on AWS | **Amazon GameLift Servers** | Own containers on EKS+Agones | Cost model renewed in 2026: **free bandwidth since Jun 2026 (gen 6+ instances)** and **scale-to-zero (Jan 2026)** — re-budget, the old comparisons no longer hold |
+| Managed on Azure / Xbox console | **PlayFab Multiplayer Servers** (active, no retirement announced; "Foundation Mode" GDC 2026) | — | Xbox integration and LiveOps |
+| Unity Multiplay | **NOT for a new design: deprecated on 1 Apr 2026** (no new allocations; continuity only for those who migrated to "Multiplay by Rocket Science") | GameLift, Edgegap, Agones | A shutdown notice with ~3 months' warning: a lesson in single-vendor risk |
+| Social/lightweight backend (auth, leaderboards, simple matchmaking, rooms) | **Nakama** (Heroic Labs; server Apache-2.0, clients Apache-2.0; Heroic Cloud as managed) or **Epic Online Services** (free, cross-platform) | PlayFab | For games with no dedicated simulation server, this is enough and avoids the whole fleet |
+| Matchmaking as a service | Whatever the chosen backend offers (FlexMatch, PlayFab, Nakama, EOS) | **Open Match, only with caution**: the original 1.x (Apache-2.0) is not archived but its latest release supports Kubernetes 1.24/1.25 — de facto maintenance stopped; `open-match2` exists with low activity. **Not a solid base for a new design without a fresh evaluation** (§8) | An in-house matchmaker is a distributed system with queues, state and spikes: buy it unless there is a bespoke matching design requirement |
+| Geographic placement | Regions chosen by measured latency of the player base; edge (Edgegap and similar) only if the RTT percentile justifies it | — | Player latency is set by physics, not by marketing |
+| Cost unit | **Cost per session and per CCU**, with the idle fleet as its own line item | — | The buffer of Ready servers is the price of matchmaking latency: it gets sized, not eliminated |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-- **Ciclo de vida de sesión, el patrón canónico** (Agones lo nombra, todos lo implementan):
-  el servidor arranca → `Ready` (en el buffer caliente) → el matchmaker/allocator lo marca
-  `Allocated` y entrega la IP:puerto a los clientes → la partida transcurre → el servidor
-  **se autodeclara terminado y muere**; nunca se reutiliza proceso entre partidas sin motivo
-  (estado residual = bugs y ventaja de trampa).
-- **La asignación es del allocator, no de un balanceador**: los clientes se conectan directo
-  (o vía relay) al servidor asignado. Un L7 LB delante de UDP de partida es un anti-patrón.
-- **Escalado protege sesiones**: el autoscaler mantiene un buffer de `Ready` (tamaño = tasa de
-  inicio de partidas × tiempo de arranque, con margen para el pico diario) y **solo** recoge
-  servidores vacíos. Drenaje = dejar de asignar + esperar fin de partida (horas, no segundos);
-  los upgrades de nodo/imagen se hacen por rotación de flotas (verde/azul de flota), no por
-  rolling update de pods.
-- **El patrón de carga es de picos con huso horario**: pico vespertino por región, picos de
-  lanzamiento y de evento 10-100× la media. Scale-to-zero para entornos de prueba y juegos
-  pequeños; capacidad reservada + spot **solo para el buffer, jamás para sesiones vivas** (una
-  interrupción de spot echa a los jugadores).
-- **Sesión rastreable**: cada partida con ID, servidor, versión de build, región y jugadores —
-  es la unidad de observabilidad, de coste y de soporte.
+- **Session lifecycle, the canonical pattern** (Agones names it, everyone implements it):
+  the server starts → `Ready` (in the warm buffer) → the matchmaker/allocator marks it
+  `Allocated` and hands the IP:port to the clients → the match runs → the server
+  **declares itself finished and dies**; a process is never reused between matches without a
+  reason (residual state = bugs and a cheating advantage).
+- **Allocation belongs to the allocator, not to a balancer**: clients connect directly
+  (or via a relay) to the assigned server. An L7 LB in front of match UDP is an antipattern.
+- **Scaling protects sessions**: the autoscaler keeps a buffer of `Ready` servers (size = match
+  start rate × start-up time, with headroom for the daily peak) and **only** reclaims
+  empty servers. Draining = stop allocating + wait for the match to end (hours, not seconds);
+  node/image upgrades are done by fleet rotation (blue/green at the fleet level), not by a
+  rolling update of pods.
+- **The load pattern is time-zone peaks**: an evening peak per region, launch and event peaks
+  10-100× the average. Scale-to-zero for test environments and small games; reserved
+  capacity + spot **only for the buffer, never for live sessions** (a spot
+  interruption throws players out).
+- **A traceable session**: every match with an ID, server, build version, region and players —
+  it is the unit of observability, of cost and of support.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-Una línea (se omite como sección plena): la calidad de esta capa se prueba con **partidas
-sintéticas** — bots que llenan sesiones reales contra la flota de staging — midiendo tiempo de
-matchmaking, tiempo de arranque de servidor, y que el autoscaler y el drenaje no matan
-partidas; el test de carga del lanzamiento simula el pico de día 1, no la media. El resto →
-`testing-qa-standards` y `game-development-standards` (netcode).
+One line (omitted as a full section): the quality of this layer is tested with **synthetic
+matches** — bots filling real sessions against the staging fleet — measuring matchmaking time,
+server start-up time, and that the autoscaler and draining do not kill
+matches; the launch load test simulates the day-1 peak, not the average. The rest →
+`testing-qa-standards` and `game-development-standards` (netcode).
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **DDoS sobre UDP — postura defensiva**: el tráfico de juego es UDP con IP:puerto del servidor
-  expuestos a cada cliente, y el flood es el ataque barato estándar (incluido el jugador que
-  tira el servidor de su rival). Defensa en capas: protección del proveedor (GameLift/PlayFab
-  la traen; en propio, scrubbing del cloud o de un tercero), **rate limit y validación de
-  paquete en el primer salto** (paquete no conforme al protocolo se descarta sin procesar,
-  con token de sesión emitido en la asignación para filtrar tráfico no autenticado), y
-  **relays/IP efímeras por sesión** para no exponer la flota de forma estable. Nada de
-  recetario ofensivo: diseño de mitigación, no de ataque.
-- **El servidor de partida corre código del juego con entrada hostil**: proceso sin privilegios,
-  sin credenciales de plano de control en el pod/instancia (el SDK sidecar de Agones existe
-  exactamente para eso), y egress acotado — un game server comprometido no debe poder tocar la
-  base de datos de cuentas.
-- **Voz y chat — cumplimiento, no solo feature**: moderación y canal de denuncia obligatorios
-  si hay menores (DSA en la UE, COPPA en EE. UU.); retención mínima y base legal del audio
-  (grabar voz es dato personal, y biométrico si se analiza) → `privacy-engineering-standards`.
-  Comprar (Vivox, EOS Voice, Discord SDK…) antes que construir; verificar términos y regiones
-  del proveedor (§8).
-- Los secretos de plataforma (claves de tienda, backend) **nunca** en la imagen del servidor
-  distribuida; la imagen del server dedicado que se entrega a la comunidad (self-hosting) se
-  trata como publicada.
+- **DDoS over UDP — defensive posture**: game traffic is UDP with the server's IP:port
+  exposed to every client, and flooding is the standard cheap attack (including the player who
+  takes down their rival's server). Layered defence: provider protection (GameLift/PlayFab
+  include it; self-hosted, scrubbing from the cloud or a third party), **rate limiting and packet
+  validation at the first hop** (a packet not conforming to the protocol is dropped without
+  processing, with a session token issued at allocation time to filter unauthenticated traffic), and
+  **relays/ephemeral IPs per session** so the fleet is not stably exposed. No
+  offensive cookbook: mitigation design, not attack design.
+- **The match server runs game code with hostile input**: an unprivileged process,
+  with no control-plane credentials in the pod/instance (Agones's sidecar SDK exists
+  for exactly that), and bounded egress — a compromised game server must not be able to reach the
+  accounts database.
+- **Voice and chat — compliance, not just a feature**: moderation and a reporting channel are
+  mandatory if minors are present (DSA in the EU, COPPA in the US); minimum retention and a legal
+  basis for the audio (recording voice is personal data, and biometric if analysed) →
+  `privacy-engineering-standards`.
+  Buy (Vivox, EOS Voice, Discord SDK…) rather than build; verify the provider's terms and regions (§8).
+- Platform secrets (store keys, backend) **never** in the distributed server image;
+  the dedicated server image handed to the community (self-hosting) is
+  treated as published.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-Una línea (se omite como sección plena): los SLI del dominio son **tiempo de matchmaking (p95)**,
-**tiempo de sesión asignada→jugable**, **partidas muertas por causa de infraestructura** (el
-SLI sagrado: objetivo ≈0), RTT por región y **coste por sesión/CCU con la ociosidad como línea
-propia**; el marco de SLO/guardia es de `sre-practice-standards` y la plataforma de métricas de
+One line (omitted as a full section): the domain SLIs are **matchmaking time (p95)**,
+**time from session allocated → playable**, **matches killed by infrastructure** (the
+sacred SLI: target ≈0), RTT per region and **cost per session/CCU with idleness as its own line
+item**; the SLO/on-call framework belongs to `sre-practice-standards` and the metrics platform to
 `observability-standards`.
 
-## 7. Cuándo NO / Prohibiciones
+## 7. When NOT to / Prohibitions
 
-**Cuándo NO usar esta skill entera**: si el juego no tiene servidor dedicado (P2P/relay simple,
-un cooperativo con host jugador), la respuesta correcta suele ser un backend social (Nakama/EOS)
-y ningún orquestador — no montes flota para un juego que no la necesita.
+**When NOT to use this whole skill**: if the game has no dedicated server (simple P2P/relay,
+a co-op with a player host), the right answer is usually a social backend (Nakama/EOS)
+and no orchestrator at all — do not build a fleet for a game that does not need one.
 
-- ❌ Tratar un game server como microservicio: balanceo por petición, rolling updates que matan
-  pods `Allocated`, drenaje en segundos, health check que reinicia una partida "colgada" con
-  jugadores dentro.
-- ❌ Sesiones de jugadores sobre **instancias spot/preemptibles**.
-- ❌ Experimentos de caos (`chaos-engineering-standards`) sobre servidores `Allocated`. La
-  disciplina es legítima y útil aquí, pero **el blast radius se acota a los `Ready` y a la ruta
-  de reposición**: lo que se refuta es "si pierdo capacidad libre, ¿el autoescalado repone antes
-  de que falte?", no "¿qué pasa si echo a mil jugadores?".
-- ❌ Recomendar **Unity Multiplay** (deprecado abr-2026) o adoptar **Open Match** para diseño
-  nuevo sin evaluación fresca de su mantenimiento (§2, §8).
-- ❌ Kubernetes a pelo (Deployments/StatefulSets) reinventando el ciclo Ready/Allocated que
-  Agones ya resuelve.
-- ❌ Flota propia global "para ahorrar" sin contabilizar guardia 24/7, parcheo y DDoS: el
-  gestionado se descarta con números, no con instinto.
-- ❌ Proveedor único sin plan de salida: la muerte de Multiplay con ~3 meses de aviso es el
-  precedente. La imagen del servidor se mantiene portable (contenedor estándar, SDK de
-  orquestador aislado tras una interfaz propia).
-- ❌ Exponer la flota con IP:puerto estables y sin validación de primer paquete; procesar
-  paquetes sin token de sesión.
-- ❌ Reutilizar proceso de servidor entre partidas sin limpieza justificada.
-- ❌ Voz/chat sin moderación ni denuncia en un juego accesible a menores, o grabando audio sin
-  base legal declarada.
-- ❌ Presupuestar con comparativas de coste anteriores a 2026 (el ancho de banda gratis de
-  GameLift desde jun-2026 invalida las tablas previas).
-- ❌ Construir matchmaker propio sin requisito de matching que ningún servicio cubra, escrito
-  en ADR.
+- ❌ Treating a game server as a microservice: per-request balancing, rolling updates that kill
+  `Allocated` pods, draining in seconds, a health check that restarts a "hung" match with
+  players inside.
+- ❌ Player sessions on **spot/preemptible instances**.
+- ❌ Chaos experiments (`chaos-engineering-standards`) against `Allocated` servers. The
+  discipline is legitimate and useful here, but **the blast radius is bounded to `Ready` servers and
+  the replenishment path**: what gets refuted is "if I lose free capacity, does autoscaling
+  replenish before it runs short?", not "what happens if I throw a thousand players out?".
+- ❌ Recommending **Unity Multiplay** (deprecated Apr 2026) or adopting **Open Match** for a new
+  design without a fresh evaluation of its maintenance (§2, §8).
+- ❌ Bare Kubernetes (Deployments/StatefulSets) reinventing the Ready/Allocated cycle that
+  Agones already solves.
+- ❌ A global self-hosted fleet "to save money" without accounting for 24/7 on-call, patching and
+  DDoS: managed is ruled out with numbers, not with instinct.
+- ❌ A single vendor with no exit plan: the death of Multiplay with ~3 months' notice is the
+  precedent. The server image stays portable (a standard container, the orchestrator SDK isolated
+  behind an in-house interface).
+- ❌ Exposing the fleet with stable IP:port and no first-packet validation; processing
+  packets without a session token.
+- ❌ Reusing a server process between matches without justified cleanup.
+- ❌ Voice/chat with no moderation and no reporting in a game accessible to minors, or recording
+  audio without a declared legal basis.
+- ❌ Budgeting with cost comparisons predating 2026 (GameLift's free bandwidth since Jun 2026
+  invalidates the earlier tables).
+- ❌ Building an in-house matchmaker with no matching requirement that no service covers, written
+  in an ADR.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-1. **Agones**: última versión y Kubernetes soportados en `agones.dev` y
-   `api.github.com/repos/agones-dev/agones/releases` (v1.58.0, may-2026; K8s 1.33-1.35);
-   estado CNCF (Sandbox desde 2025-12-21 — ¿ha subido a incubating?).
-2. **Open Match**: estado real de `googleforgames/open-match` (verificado ago-2026:
-   `archived: false`, push 2026-07-12, Apache-2.0, pero última release para K8s 1.24/1.25) y
-   de `open-match2` — decidir con la actividad del mes, no con este documento.
-3. **GameLift Servers**: precios y novedades en `aws.amazon.com/gamelift` (ancho de banda
-   gratis gen 6+ desde 2026-06-15; scale-to-zero ene-2026; fin de Realtime scripts Node.js 10
-   el 2026-09-30).
-4. **PlayFab MPS**: `learn.microsoft.com` y `playfab.com/pricing` — sin retirada anunciada a
-   ago-2026; confirmar antes de comprometerse.
-5. **Unity Multiplay**: estado de la deprecación (2026-04-01) y de "Multiplay by Rocket
-   Science" en los avisos oficiales de Unity.
-6. **Nakama**: `LICENSE` en crudo del repo (`heroiclabs/nakama`, Apache-2.0) y qué exige la
-   edición Enterprise/Heroic Cloud; **EOS**: términos y catálogo vigente en
+1. **Agones**: latest version and supported Kubernetes at `agones.dev` and
+   `api.github.com/repos/agones-dev/agones/releases` (v1.58.0, May 2026; K8s 1.33-1.35);
+   CNCF status (Sandbox since 2025-12-21 — has it moved to incubating?).
+2. **Open Match**: the real status of `googleforgames/open-match` (verified Aug 2026:
+   `archived: false`, push 2026-07-12, Apache-2.0, but the latest release targets K8s 1.24/1.25) and
+   of `open-match2` — decide on this month's activity, not on this document.
+3. **GameLift Servers**: pricing and news at `aws.amazon.com/gamelift` (free bandwidth
+   gen 6+ since 2026-06-15; scale-to-zero Jan 2026; end of Realtime scripts on Node.js 10
+   on 2026-09-30).
+4. **PlayFab MPS**: `learn.microsoft.com` and `playfab.com/pricing` — no retirement announced as of
+   Aug 2026; confirm before committing.
+5. **Unity Multiplay**: the status of the deprecation (2026-04-01) and of "Multiplay by Rocket
+   Science" in Unity's official notices.
+6. **Nakama**: the raw `LICENSE` from the repository (`heroiclabs/nakama`, Apache-2.0) and what the
+   Enterprise/Heroic Cloud edition requires; **EOS**: current terms and catalogue at
    `dev.epicgames.com`.
-7. **Proveedor de voz** elegido: términos, regiones, retención y herramientas de moderación en
-   su documentación oficial.
-8. **Regulación de chat/voz con menores**: estado de DSA aplicado, COPPA y guías del regulador
-   local — dato en movimiento.
-9. **Huecos declarados** (no verificados — no rellenar de memoria): precios concretos de
-   Edgegap, Heroic Cloud y PlayFab MPS por unidad; estado de Multiplay by Rocket Science como
-   producto; paridad real de features entre open-match2 y Open Match 1.x; SLA de los
-   proveedores de voz.
+7. **The chosen voice provider**: terms, regions, retention and moderation tooling in
+   its official documentation.
+8. **Regulation of chat/voice with minors**: the status of the DSA as applied, COPPA and the local
+   regulator's guidance — a moving figure.
+9. **Declared gaps** (unverified — do not fill them from memory): concrete per-unit pricing for
+   Edgegap, Heroic Cloud and PlayFab MPS; the status of Multiplay by Rocket Science as a
+   product; the real feature parity between open-match2 and Open Match 1.x; the SLAs of the
+   voice providers.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

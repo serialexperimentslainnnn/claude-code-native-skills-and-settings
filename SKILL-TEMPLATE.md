@@ -85,7 +85,8 @@ names. Always close with:
 - `If the web contradicts this document, **the web wins** — flag the discrepancy.` — the §8 close.
 - `name:` in the front matter must equal the directory name.
 
-> **Migration note (August 2026)**: the catalogue was written in Spanish and is being translated to
-> English. While that lasts, `check.sh` accepts both the English strings above and their Spanish
-> originals (`**No aplica**:` and `manda la web`). Once no Spanish body remains, drop the
-> alternative from the gate patterns so a regression cannot pass unnoticed.
+> **Migration closed (13 August 2026)**: the catalogue was written in Spanish and was translated to
+> English in full — 219/219 bodies. While it lasted, `check.sh` accepted both the English strings
+> above and their Spanish originals; **the alternatives were retired the same day the last body
+> landed**, so the gates match only the English literals. Do not reintroduce them: a bilingual gate
+> cannot distinguish a finished migration from a regression.

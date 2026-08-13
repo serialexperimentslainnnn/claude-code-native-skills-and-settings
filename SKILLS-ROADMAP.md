@@ -281,7 +281,71 @@ falta**, y **cambiarle la prioridad a "guarda primero, investiga después"**. Co
 reanudado dos veces acabó entregando las dos skills. **Relanzarlo de cero habría tirado toda la
 investigación web ya pagada.**
 
-## CONTINUATION POINT — 2026-08-10, later session (READ THIS FIRST)
+## CONTINUATION POINT — 2026-08-13 (READ THIS FIRST; supersedes the 2026-08-10 blocks below)
+
+**State: 219 skills, 81,803 lines. `./check.sh` EXIT=0. Index cost 25,771 words/turn.**
+Trigger-collision gate re-run: **35 pairs, none ≥8, all inherent** — identical to the 2026-08-10
+run, and the new skill appears in none of them.
+
+### Done in this session
+
+1. **New skill `update-standards`** (the catalogue's 219th, and the second procedural one after
+   `project-map`). It owns the **refresh cycle of skills this project already emitted**: cadence,
+   how the refresh set is selected mechanically, the enforced literals, the gates, and — the
+   substance — the traps that made this catalogue emit a wrong criterion at least once each
+   (GitHub feeds that lie by omission, the WebFetch summariser fabricating dates and normative
+   wording, licences assumed permissive, the folklore figures). It **turns method lessons 10-16,
+   until now buried in this 1,498-line log, into an activatable procedure**. Reciprocal boundary
+   written into `claude-code-skills-standards` §1: *that one decides how a skill is built, this one
+   how an existing one stops being false.* Scope is hard-bounded to `skills/` in this repository —
+   skills this project did not author are reported, never rewritten.
+2. **`.gitignore` bug fixed — this one was losing a skill.** `backup-*/` was unanchored, so git
+   applied it at any depth and swallowed `skills/backup-recovery-standards/`: **217 tracked against
+   218 on disk**, never committed, absent from the remote. Invisible locally because `install.sh`
+   mirrors with `rsync`, total on a fresh clone. Now `/backup-*/`; the skill shows as untracked and
+   must go in the next commit.
+
+### Corrections to the "PENDING" list below — verified against disk, do not trust it as written
+
+- **Item 1 (translation): 68 pending, not 84.** `cd skills && grep -l 'No aplica' */SKILL.md | wc -l`
+  → 68. 151 already carry `Not applicable`.
+- **Item 6 (`./install.sh` "still never executed") is FALSE.** It has been run and `~/.claude` is
+  **in sync**: `diff -rq skills ~/.claude/skills` → no differences, `CLAUDE.md` and
+  `core-directives.md` byte-identical, the `UserPromptSubmit` hook present in `settings.json` with
+  `timeout: 10`. What is stale is the **destination copy of `SKILL-TEMPLATE.md`** (2 Aug, Spanish):
+  `install.sh:43` deliberately does not install it, yet `claude-code-skills-standards` §3 points at
+  `~/.claude/SKILL-TEMPLATE.md`. **The reference drifts by design — repoint it at the repo.**
+
+### New findings worth acting on
+
+- **17 skills carry no `Criteria verified as of` line at all**, and they are the Wave 0 ones, the
+  most consulted: `python`, `typescript`, `rust`, `go`, `php`, `dotnet`, `jvm-spring`, `mobile`,
+  `aws`, `azure`, `gcp`, `kubernetes`, `cicd`, `iac`, `onprem`, `data-platform`,
+  `microservices-architecture`. An undated criterion cannot be triaged — it is indistinguishable
+  from a fresh one. **This is the top of the `update-standards` queue.**
+- **The date line has five spellings** (`August 2026`, `Aug 2026`, `ago-2026`, `agosto 2026`,
+  `agosto de 2026`) and **the gap marker six** (`Declared gap`, `hueco declarado`, `unverified`,
+  `sin verificar`…). Both defeat mechanical selection; `update-standards` §2 fixes the canonical
+  form for each, and normalising them is cheap work to fold into the translation pass.
+- **`~/.claude` holds 7 unpruned `backup-*` directories.** `backup()` is called unconditionally for
+  `DIRS` (`install.sh:134`), so every install copies the whole 219-skill tree. Nothing prunes them.
+
+### Next, in this order
+
+1. **Finish the translation** — 68 files, regenerate the list, batches of ~12, **≤4 agents**.
+2. Fold the two normalisations into that pass (date line, gap marker), plus `artefact` → `artifact`
+   — every file rewritten during translation gets it for free, which is why it is not a separate
+   sweep. **`gis-geoespacial-standards` → `gis-geospatial-standards` is DONE (2026-08-13)**:
+   `git mv`, `name:` field, and the one live reference in `data-platform-standards`. Gate 1 caught
+   the intermediate state exactly as designed. Only historical blocks in this file and
+   `plans/` still mention the old slug, deliberately.
+3. Retire the Spanish alternatives from `check.sh` once no Spanish body remains.
+4. Regenerate `PROJECTMAP.md` with the full per-file index of the 219.
+5. Repoint the `SKILL-TEMPLATE.md` reference; decide whether to prune the stale installed copy.
+6. Still open for the user: the language of **this file**, and **commit** (never asked; the
+   `backup-recovery-standards` directory must be included when it happens).
+
+## CONTINUATION POINT — 2026-08-10, later session (historical)
 
 > From here on new entries are written in **English**: the whole repository is being migrated.
 > Everything below this block is the previous history, still in Spanish.
@@ -377,16 +441,17 @@ discrepancy.`, `Criteria verified as of **<date>**…`, section titles, `FORBIDD
 Batches of ~12 skills per agent (~4,500 lines), 6-7 agents in parallel, **each writing every file
 the moment it is done** — the lesson from Wave 6 that is now doctrine.
 
-**PENDING WHEN PICKING THIS BACK UP:**
-1. **Finish the translation.** Check progress with
-   `cd skills && grep -L 'No aplica' */SKILL.md | wc -l` (target: 218). Batch lists live in
-   `/tmp/lote*.txt` — **regenerate them if /tmp was cleared**: split by line count so batches are
-   balanced.
+**PENDING WHEN PICKING THIS BACK UP** (superseded by the 2026-08-13 block at the top of this file;
+kept for the batching notes):
+1. **Finish the translation.** ⚠️ **The selector below is wrong and overcounts**: `grep -L 'No
+   aplica'` matches the two files that *document* the literal (`claude-code-skills-standards`,
+   `update-standards`). Use `grep -lE '^\*\*No aplica\*\*' */SKILL.md`, which anchors on the §1
+   boundary line. Batch lists live in `/tmp/lote*.txt` — **regenerate them if /tmp was cleared**:
+   split by line count so batches are balanced.
 2. **Two normalisations, deliberately deferred to the end** so as not to collide with agents
    editing in parallel: (a) `artefact` → `artifact` everywhere; (b) rename
-   **`gis-geoespacial-standards` → `gis-geospatial-standards`** — the last Spanish name in the
-   catalogue, only 2 references plus the directory, and the `name:` field must change with it or
-   gate 1 breaks.
+   **`gis-geoespacial-standards` → `gis-geospatial-standards`** — **(b) DONE 2026-08-13**, see the
+   top block.
 3. **Then retire the Spanish patterns from `check.sh`** (see above).
 4. **Regenerate `PROJECTMAP.md` with the full 218-skill index** — deliberately left for last so the
    generated one-line summaries come out already in English instead of being written twice.
@@ -397,22 +462,25 @@ the moment it is done** — the lesson from Wave 6 that is now doctrine.
    copy and none of this is actually live.
 7. **Commit** when asked (not asked yet).
 
-### Factual problems reported by translating agents — NOT fixed, by instruction
+### Factual problems reported by translating agents — TRIAGED AND CLOSED 2026-08-13
 
-They were told to translate and report, never to silently fix. Worth triaging later:
-- **`crystal-standards` §7: the sponsorship arithmetic does not add up.** €22,000/month since Apr
-  2018 would be ≈€2.1M, not the stated ~€941,000; $5,000/month since 2009 ≈$1.02M, not ~$1,430,000.
-  One of the figures in each pair is wrong.
-- **`zig-standards` §7 cites `zig build --fork`**, a flag that looks invented or misremembered —
-  and it contradicts the file's own declared gap about local-override flags.
-- **`ruby-standards` §2 lists Minitest 6**; the real series is 5.x. It also cites a CVE that appears
-  nowhere else in the file.
-- **`linux-administration-standards` contradicts itself**: §2 says `systemd-networkd` on Debian
-  servers, its own §8 declared gap says `ifupdown`.
-- **`firewall-policy-standards` §4** calls five items "CI gates" when two of them are operational
-  procedures, not gates.
-- `home-automation`, `offensive-security`, `gcp`, `server-hardware`, `prolog` and `network-vendors`
-  carry version/date/advisory claims their own §8 already flags as unverified.
+They were told to translate and report, never to silently fix. **All five concrete reports were
+web-verified before acting, and two of them were wrong.** That is the lesson of this pass: *a defect
+report is itself a claim and expires like any other* — acting on it unverified would have
+introduced two falsehoods into files that were correct.
+
+| Report | Verdict | Action |
+|---|---|---|
+| `crystal-standards` §7 sponsorship arithmetic does not add up | **Real, but not the skill's error** | `crystal-lang.org/sponsors` states exactly those figures. €22,000/month since 1 Apr 2018 (101 months ≈ €2.2M) against an all-time total of €941,000, and $5,000/month since 19 Jun 2009 (206 months ≈ $1.03M) against $1,430,000: **the inconsistency is upstream's**. Rewritten to attribute the figures, state that the monthly rate is current rather than constant, and forbid deriving a duration from it |
+| `zig-standards` §7 cites `zig build --fork`, "a flag that looks invented" | **REPORT FALSE** | `--fork=[path]` is documented in the official Zig build-system reference under Package Management Options, and the ziglang.org devlog explains its rationale (ephemeral local override of a dependency tree). **The file was right; no change** |
+| `ruby-standards` §2 lists Minitest 6, "the real series is 5.x" | **REPORT FALSE** | Minitest 6.0.0 shipped 2025-12-17; 6.0.6 is current (2026-05-01, requires Ruby ≥3.2); the last 5.x was 5.27.0 (2025-12-11). The second half of the report ("cites a CVE that appears nowhere else") is also false: CVE-2026-41316 appears in §5 and again in §8. **No change** |
+| `linux-administration-standards` contradicts itself on the Debian default | **Real** | And **not fixable by picking a side**: the Debian Wiki `SystemdNetworkd` page and the official Debian Reference ch. 5 were both read and **neither names a default**. §2 no longer asserts one and tells you to run `systemctl is-enabled …` on the host; §8's gap now records which primary sources were checked and what they did not say |
+| `firewall-policy-standards` §4 mislabels operational procedures as CI gates | **Real** | Header now states that gates 1, 2, 3 and 5 are automatable and break the build, while **gate 4 (rescue session / `commit-confirm`) is a hard operational precondition, not a gate** — nothing in a pipeline can assert a console is open — with an explicit instruction not to report it as automated coverage |
+
+**Still open** (unchanged): `home-automation`, `offensive-security`, `gcp`, `server-hardware`,
+`prolog` and `network-vendors` carry version/date/advisory claims their own §8 already flags as
+unverified. These are declared gaps, not defects — closing them is `update-standards` work with a
+fresh search budget.
 
 ## PUNTO DE CONTINUACIÓN — actualizado 2026-08-10 (histórico de esta misma fecha, sesión anterior)
 

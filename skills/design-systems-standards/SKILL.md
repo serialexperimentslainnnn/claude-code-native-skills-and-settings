@@ -3,423 +3,443 @@ name: design-systems-standards
 description: Use when a UI component library is shipped as a versioned product for other teams - design tokens as tokens.json with DTCG $type/$value, style-dictionary config, Tokens Studio, semantic vs literal token naming, theming with CSS custom properties, color-scheme and light-dark(), choosing between headless primitives (radix-ui, @base-ui/react, react-aria-components, @ark-ui/react, @headlessui/react) and full libraries (@mui/material, antd, @chakra-ui/react, @mantine/core, @carbon/react), shadcn/ui components.json and copied-in component code, component public API design (props vs composition, slots, asChild, render props, boolean prop explosion), .storybook/main.ts and *.stories.tsx, Storybook 10 and the Vitest addon, Chromatic or Percy or Lost Pixel visual regression snapshots, per-component axe checks, changesets and semver for a component package, breaking-change policy and codemods, design system adoption metrics, contribution and exception process, or deciding whether to build a design system at all.
 ---
 
-# Estándares de sistemas de diseño
+# Design system standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**Eje**: un sistema de diseño es un **producto con dueño, versión y consumidores**, no una carpeta de
-componentes. Si no tiene mantenedor con nombre, versión publicada y política escrita de cambios
-rompientes, no es un sistema de diseño: es **deuda técnica con logotipo** y con una presentación bonita.
+**Core axis**: a design system is a **product with an owner, a version and consumers**, not a folder
+of components. If it has no named maintainer, no published version and no written breaking-change
+policy, it is not a design system: it is **technical debt with a logo** and a pretty slide deck.
 
-Esta skill decide **el contrato del componente y el gobierno del sistema**: cuándo hacer uno y cuándo no,
-sobre qué base construirlo, cómo se modelan los tokens, cómo se diseña la API pública de un componente,
-cómo se versiona, cómo se prueba y cómo se mide su adopción.
+This skill decides **the component contract and the system's governance**: when to build one and
+when not, what to build it on, how tokens are modelled, how a component's public API is designed,
+how it is versioned, how it is tested and how its adoption is measured.
 
-Triggers: `tokens.json` / `*.tokens.json` con `$type`/`$value`, `config.json`/`sd.config.js` de Style
-Dictionary, `components.json` de shadcn/ui, `.storybook/main.ts`, `*.stories.tsx`/`*.stories.ts`,
-`chromatic.config.json`, `.changeset/`, `packages/ui/` en un monorepo, `theme.ts`/`preset.ts` de una
-librería de UI, imports de `radix-ui`, `@base-ui/react`, `react-aria-components`, `@ark-ui/react`,
-`@headlessui/react`, `@mui/material`, `antd`, `@chakra-ui/react`, `@mantine/core`, `@carbon/react`,
-custom properties de tema, `color-scheme`, `light-dark()`, codemods de migración de componentes.
+Triggers: `tokens.json` / `*.tokens.json` with `$type`/`$value`, Style Dictionary's
+`config.json`/`sd.config.js`, shadcn/ui's `components.json`, `.storybook/main.ts`,
+`*.stories.tsx`/`*.stories.ts`, `chromatic.config.json`, `.changeset/`, `packages/ui/` in a
+monorepo, a UI library's `theme.ts`/`preset.ts`, imports of `radix-ui`, `@base-ui/react`,
+`react-aria-components`, `@ark-ui/react`, `@headlessui/react`, `@mui/material`, `antd`,
+`@chakra-ui/react`, `@mantine/core`, `@carbon/react`, theme custom properties, `color-scheme`,
+`light-dark()`, component migration codemods.
 
-**No aplica**:
-- `frontend-web-platform-standards` — **la plataforma del navegador es suya**: qué CSS y qué APIs se
-  pueden usar (política Baseline), el modelo de carga, CSP/Trusted Types, el presupuesto global de bytes
-  y la cadena de suministro npm. Aquí el sistema **consume** esa política; no la re-decide. `light-dark()`
-  o `@layer` se usan si allí están permitidos.
-- `frontend-frameworks-standards` — **elige el framework, el modelo de renderizado y la arquitectura de
-  la aplicación**. Aquí el componente como **unidad publicada y su contrato**, incluido el coste de que
-  ese componente traiga `"use client"` o requiera hidratación. Qué framework lo renderiza es de allí.
-- `accessibility-standards` — **el criterio de conformidad WCAG 2.2, el ARIA correcto, la auditoría y la
-  declaración de accesibilidad son suyos**. Aquí la consecuencia arquitectónica: **el componente del
-  sistema es donde ese criterio se implementa una sola vez** y desde donde se propaga. Un hallazgo de
-  auditoría se traduce a un cambio de componente; la auditoría en sí se cede.
-- `web-performance-standards` — Core Web Vitals, presupuestos y medición. Aquí solo el **peso del propio
-  sistema de componentes** (JS por componente importado, CSS de tema) como criterio de diseño de API.
-- `typescript-standards` — **el lenguaje, `tsconfig.json`, el tipado de las props, el empaquetado del
-  paquete npm (`exports`, ESM/CJS, `sideEffects`) y su publicación son suyos**. Aquí qué debe expresar
-  la API, no cómo se tipa ni cómo se publica.
-- `testing-qa-standards` — estrategia de prueba agnóstica y política de *flaky*. Aquí qué se prueba en
-  un componente publicado (§4).
-- `git-workflow-standards` — SemVer, Conventional Commits, changesets y CHANGELOG como mecánica. Aquí
-  **qué cuenta como cambio rompiente en una UI**, que es la parte que ninguna herramienta decide.
-- `cicd-standards` (la pipeline que publica el paquete y ejecuta los gates), `cms-jamstack-standards`
-  (**recíproca**: el sistema de diseño aporta la capa de presentación; el CMS aporta el contenido que
-  esa capa muestra — ninguno decide por el otro), `privacy-engineering-standards` (consentimiento en los
-  componentes de formulario), `mobile-standards` (componentes nativos y multiplataforma),
-  `observability-standards` (telemetría de uso; aquí solo qué métrica de adopción importa).
+**Not applicable**:
+- `frontend-web-platform-standards` — **the browser platform is theirs**: which CSS and which APIs
+  can be used (the Baseline policy), the loading model, CSP/Trusted Types, the global byte budget
+  and the npm supply chain. Here the system **consumes** that policy; it does not re-decide it.
+  `light-dark()` or `@layer` are used if they are allowed there.
+- `frontend-frameworks-standards` — **it chooses the framework, the rendering model and the
+  application's architecture**. Here the component as a **published unit and its contract**,
+  including the cost of that component bringing `"use client"` or requiring hydration. Which
+  framework renders it belongs there.
+- `accessibility-standards` — **the WCAG 2.2 conformance criterion, correct ARIA, the audit and the
+  accessibility statement are theirs**. Here the architectural consequence: **the system's component
+  is where that criterion is implemented once** and from where it propagates. An audit finding is
+  translated into a component change; the audit itself is ceded.
+- `web-performance-standards` — Core Web Vitals, budgets and measurement. Here only the **weight of
+  the component system itself** (JS per imported component, theme CSS) as an API design criterion.
+- `typescript-standards` — **the language, `tsconfig.json`, prop typing, the npm package's bundling
+  (`exports`, ESM/CJS, `sideEffects`) and its publication are theirs**. Here what the API must
+  express, not how it is typed nor how it is published.
+- `testing-qa-standards` — the language-agnostic test strategy and the *flaky* policy. Here what is
+  tested in a published component (§4).
+- `git-workflow-standards` — SemVer, Conventional Commits, changesets and CHANGELOG as mechanics.
+  Here **what counts as a breaking change in a UI**, which is the part no tool decides.
+- `cicd-standards` (the pipeline that publishes the package and runs the gates),
+  `cms-jamstack-standards` (**reciprocal**: the design system provides the presentation layer; the
+  CMS provides the content that layer displays — neither decides for the other),
+  `privacy-engineering-standards` (consent in form components), `mobile-standards` (native and
+  cross-platform components), `observability-standards` (usage telemetry; here only which adoption
+  metric matters).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
-> Versiones y licencias leídas del registro npm y del `LICENSE` en crudo a **ago-2026**.
+> Verify the latest version on the web before fixing it in a real project (§8).
+> Versions and licences read from the npm registry and the raw `LICENSE` as of **Aug-2026**.
 
-### Decisión 0: ¿hace falta un sistema de diseño?
+### Decision 0: is a design system needed at all?
 
-| Situación | Respuesta |
+| Situation | Answer |
 |---|---|
-| **Un producto, un equipo** | **No.** Adopta una librería existente y personalízala con tokens. Un sistema propio para un solo consumidor es coste sin beneficio: la ganancia del sistema es la **consistencia entre consumidores**, y con uno solo no hay nada que consistir |
-| Dos productos, mismo equipo | Todavía no. Un paquete `ui` compartido en el monorepo, sin gobierno, sin sitio de documentación y sin release independiente |
-| Tres o más productos, o dos equipos que no se coordinan a diario | **Sí**, y con dueño asignado y presupuesto de mantenimiento explícito |
-| Marca propia fuerte, requisito de accesibilidad transversal, o auditorías recurrentes | **Sí**: el sistema es el único sitio donde esos requisitos se pagan una vez |
-| "Lo queremos para que todo se vea igual" sin nadie que lo mantenga | **No.** Sin mantenedor nombrado, el sistema es abandonware a los seis meses y peor que no tenerlo, porque la gente lo copia y lo bifurca |
+| **One product, one team** | **No.** Adopt an existing library and customise it with tokens. Your own system for a single consumer is cost with no benefit: the system's gain is **consistency across consumers**, and with only one there is nothing to be consistent with |
+| Two products, same team | Not yet. A shared `ui` package in the monorepo, with no governance, no documentation site and no independent release |
+| Three or more products, or two teams that do not coordinate daily | **Yes**, and with an assigned owner and an explicit maintenance budget |
+| A strong brand of your own, a cross-cutting accessibility requirement, or recurring audits | **Yes**: the system is the only place where those requirements are paid for once |
+| "We want it so everything looks the same" with nobody to maintain it | **No.** With no named maintainer, the system is abandonware within six months and worse than not having it, because people copy and fork it |
 
-Un sistema de diseño es un **compromiso plurianual**: mantenimiento, soporte a consumidores, migraciones,
-documentación y respuesta a peticiones. Si nadie tiene ese trabajo en su rol, no se empieza.
+A design system is a **multi-year commitment**: maintenance, consumer support, migrations,
+documentation and answering requests. If nobody has that work in their role, do not start.
 
-### Decisión 1: base sobre la que construir
+### Decision 1: the base to build on
 
-Tres estrategias, con criterio, no con preferencia:
+Three strategies, chosen on criteria, not on preference:
 
-| Estrategia | Cuándo | Coste real |
+| Strategy | When | Real cost |
 |---|---|---|
-| **Adoptar una librería completa** (Material, Ant, Chakra, Mantine, Carbon) y tematizarla | Producto interno, herramienta de back-office, plazo corto, marca poco diferenciada | Te casas con su modelo de tema y sus majors. Salir de ella es un refactor total. El diseño acaba pareciéndose a la librería, no a tu marca |
-| **Construir sobre primitivas accesibles** (headless) | **Default para un sistema propio con marca**. Te dan comportamiento, foco, teclado y ARIA; tú pones todo el CSS | Mantienes tu capa de estilos y el pegamento. Dependes del ritmo de la primitiva |
-| **Partir de cero** | Solo si tienes requisitos que ninguna primitiva cubre **y** gente capaz de mantener accesibilidad de diálogos, menús, combobox y tablas | Reimplementar foco, `aria-activedescendant`, portales, colisiones de posición y navegación por teclado es **años-persona** de trabajo que se subestima siempre. Es la decisión más cara y la que más se toma por error |
+| **Adopt a full library** (Material, Ant, Chakra, Mantine, Carbon) and theme it | Internal product, back-office tool, short deadline, weakly differentiated brand | You marry its theme model and its majors. Leaving it is a total refactor. The design ends up looking like the library, not like your brand |
+| **Build on accessible primitives** (headless) | **Default for your own branded system**. They give you behaviour, focus, keyboard and ARIA; you supply all the CSS | You maintain your styling layer and the glue. You depend on the primitive's rhythm |
+| **Start from scratch** | Only if you have requirements no primitive covers **and** people capable of maintaining accessibility for dialogs, menus, comboboxes and tables | Reimplementing focus, `aria-activedescendant`, portals, positioning collisions and keyboard navigation is **person-years** of work that is always underestimated. It is the most expensive decision and the one most often taken by mistake |
 
-**Regla dura**: no reimplementes un `Dialog`, `Menu`, `Combobox`, `Select`, `Tooltip`, `Popover` ni
-`Tabs` desde cero. Son los componentes donde la accesibilidad y el manejo de foco fallan en silencio y
-donde la auditoría siempre pega.
+**Hard rule**: do not reimplement a `Dialog`, `Menu`, `Combobox`, `Select`, `Tooltip`, `Popover` or
+`Tabs` from scratch. They are the components where accessibility and focus management fail silently
+and where the audit always lands.
 
-### Primitivas headless (estado a ago-2026)
+### Headless primitives (status as of Aug-2026)
 
-| Librería | Versión | Licencia | Criterio |
+| Library | Version | Licence | Criterion |
 |---|---|---|---|
-| **Base UI** (`@base-ui/react`) | **1.6.0** | **MIT** | **Default para React nuevo.** Equipo dedicado (autores de Radix, Floating UI y MUI), API estable desde 1.0, composición por *render prop* en vez de `asChild`, y cubre combobox y multi-select que a Radix le faltan. **Ojo al paquete**: el antiguo `@base-ui-components/react` está congelado en `1.0.0-rc.0` — el nombre publicado es `@base-ui/react` |
-| **Radix Primitives** (`radix-ui`) | **1.6.7** | **MIT** (copyright **WorkOS**) | Sigue siendo la base más extendida y no está abandonada, pero su cadencia bajó tras la adquisición por WorkOS. **Base sólida para lo que ya existe; no la elección obvia para greenfield.** No migres por moda: no hay urgencia |
-| **React Aria Components** (`react-aria-components`) | **1.20.0** | **Apache-2.0**, no MIT | La implementación de accesibilidad e internacionalización más rigurosa (Adobe): teclado, táctil, RTL, `Intl`. Elígela cuando la accesibilidad y el i18n sean requisito contractual. Más verbosa y con más conceptos propios |
-| **Ark UI** (`@ark-ui/react`) | **5.38.0** | **MIT** | La única con paridad real **multi-framework** (React, Vue, Solid, Svelte) sobre máquinas de estado. Elígela si el sistema debe servir a productos con frameworks distintos — que es la situación que suele forzar un sistema de diseño en una empresa grande |
-| **Headless UI** (`@headlessui/react`) | **2.2.10** | **MIT** | Alcance pequeño y cerrado, pensado para acompañar a Tailwind. Suficiente para un puñado de componentes; **insuficiente como base de un sistema completo** |
+| **Base UI** (`@base-ui/react`) | **1.6.0** | **MIT** | **Default for new React.** Dedicated team (authors of Radix, Floating UI and MUI), stable API since 1.0, composition via *render prop* instead of `asChild`, and it covers the combobox and multi-select Radix lacks. **Watch the package**: the old `@base-ui-components/react` is frozen at `1.0.0-rc.0` — the published name is `@base-ui/react` |
+| **Radix Primitives** (`radix-ui`) | **1.6.7** | **MIT** (copyright **WorkOS**) | Still the most widespread base and not abandoned, but its cadence dropped after the WorkOS acquisition. **A solid base for what already exists; not the obvious choice for greenfield.** Do not migrate for fashion: there is no urgency |
+| **React Aria Components** (`react-aria-components`) | **1.20.0** | **Apache-2.0**, not MIT | The most rigorous accessibility and internationalisation implementation (Adobe): keyboard, touch, RTL, `Intl`. Choose it when accessibility and i18n are a contractual requirement. More verbose and with more concepts of its own |
+| **Ark UI** (`@ark-ui/react`) | **5.38.0** | **MIT** | The only one with real **multi-framework** parity (React, Vue, Solid, Svelte) on top of state machines. Choose it if the system must serve products on different frameworks — which is the situation that usually forces a design system in a large company |
+| **Headless UI** (`@headlessui/react`) | **2.2.10** | **MIT** | Small, closed scope, meant to accompany Tailwind. Enough for a handful of components; **insufficient as the base of a complete system** |
 
-### shadcn/ui no es una dependencia
+### shadcn/ui is not a dependency
 
-`shadcn` (CLI **4.16.1**, MIT) **copia código a tu repo**. No aparece en `package.json` como librería de
-componentes: aparece como ficheros tuyos. Consecuencias que hay que aceptar por escrito antes de usarlo:
+`shadcn` (CLI **4.16.1**, MIT) **copies code into your repo**. It does not appear in `package.json`
+as a component library: it appears as your own files. Consequences to accept in writing before using
+it:
 
-- **Tú eres el mantenedor** desde el minuto uno. No hay `npm update` que traiga arreglos de accesibilidad
-  ni parches de comportamiento: hay que ir a leer el upstream y aplicarlos a mano, componente a componente.
-- **Las actualizaciones son diffs manuales.** Si has modificado el componente (que es el motivo por el que
-  lo copiaste), el upstream y tu versión divergen y la reconciliación es trabajo humano cada vez.
-- A cambio: cero capa de abstracción, control total del markup y de los estilos, y **ninguna dependencia
-  que pueda cambiar de licencia o de rumbo**. Para un sistema propio con marca es un punto de partida
-  legítimo — **como andamio, no como sistema**.
-- Si se usa: se **versiona el resultado como paquete propio** con su changelog, y se registra de qué
-  revisión de upstream vino cada componente. Copiar sin dejar rastro de la procedencia es lo que convierte
-  esto en deuda.
-- Cambio verificado (jul-2026): **shadcn/ui adopta Base UI como default para proyectos nuevos**, con
-  Radix aún soportado y recomendación explícita de **no migrar** lo existente por sistema.
+- **You are the maintainer** from minute one. There is no `npm update` bringing accessibility fixes
+  or behavioural patches: you have to go read upstream and apply them by hand, component by
+  component.
+- **Updates are manual diffs.** If you have modified the component (which is why you copied it),
+  upstream and your version diverge and reconciliation is human work every time.
+- In exchange: zero abstraction layer, total control of markup and styles, and **no dependency that
+  can change licence or direction**. For your own branded system it is a legitimate starting point —
+  **as scaffolding, not as the system**.
+- If used: **version the result as your own package** with its changelog, and record which upstream
+  revision each component came from. Copying without leaving a trace of provenance is what turns
+  this into debt.
+- Verified change (Jul-2026): **shadcn/ui adopts Base UI as the default for new projects**, with
+  Radix still supported and an explicit recommendation **not to migrate** existing work as a matter
+  of course.
 
-### Librerías completas (si la Decisión 1 fue "adoptar")
+### Full libraries (if Decision 1 was "adopt")
 
-| Librería | Versión | Licencia | Nota de coste / bloqueo |
+| Library | Version | Licence | Cost / lock-in note |
 |---|---|---|---|
-| **Material UI** (`@mui/material`) | **9.2.0** | MIT | El core es MIT, pero **MUI X (data grid avanzado, pickers de rango, charts, tree view) es comercial y de pago por desarrollador**. Verificado: **desde el 2026-04-08 MUI X cambia a licencia por aplicación** (mono-aplicación vs. multi-aplicación) y sube precio; el plan Enterprise es siempre multi-aplicación con **mínimo 15 asientos**. Si tu roadmap incluye una tabla de datos seria, **eso es una línea de presupuesto**, no un detalle |
-| **Ant Design** (`antd`) | **6.5.3** | MIT | Estética muy marcada y difícil de despersonalizar; documentación y ecosistema con fuerte sesgo al mercado chino |
-| **Chakra UI** (`@chakra-ui/react`) | **3.36.1** | MIT | v3 reescrita sobre Ark UI. Buen equilibrio, pero el salto v2→v3 fue una migración real: **cuenta el churn histórico al comprometerte** |
-| **Mantine** (`@mantine/core`) | **9.5.1** | MIT | Cobertura amplísima lista para usar. Dependencia efectiva de un mantenedor principal: es el riesgo a nombrar |
-| **Carbon** (`@carbon/react`) | **1.113.0** | **Apache-2.0**, no MIT | Sistema de IBM, muy completo y accesible, pero **su lenguaje visual es la marca de IBM**: adoptarlo es adoptar su estética |
+| **Material UI** (`@mui/material`) | **9.2.0** | MIT | The core is MIT, but **MUI X (advanced data grid, range pickers, charts, tree view) is commercial and paid per developer**. Verified: **from 2026-04-08 MUI X moves to a per-application licence** (single-app vs. multi-app) and raises prices; the Enterprise plan is always multi-app with a **minimum of 15 seats**. If your roadmap includes a serious data table, **that is a budget line**, not a detail |
+| **Ant Design** (`antd`) | **6.5.3** | MIT | A very distinctive aesthetic and hard to depersonalise; documentation and ecosystem with a strong bias towards the Chinese market |
+| **Chakra UI** (`@chakra-ui/react`) | **3.36.1** | MIT | v3 rewritten on top of Ark UI. A good balance, but the v2→v3 jump was a real migration: **count the historical churn before committing** |
+| **Mantine** (`@mantine/core`) | **9.5.1** | MIT | Very broad ready-to-use coverage. Effective dependence on a single main maintainer: that is the risk to name |
+| **Carbon** (`@carbon/react`) | **1.113.0** | **Apache-2.0**, not MIT | IBM's system, very complete and accessible, but **its visual language is IBM's brand**: adopting it is adopting their aesthetic |
 
-**Nada de mezclar dos librerías completas** en el mismo producto: duplicas tokens, temas, portales,
-gestión de foco y peso, y ningún equipo consigue mantener las dos coherentes.
+**Do not mix two full libraries** in the same product: you duplicate tokens, themes, portals, focus
+management and weight, and no team manages to keep both coherent.
 
-### Tokens y documentación
+### Tokens and documentation
 
-| Pieza | Elección | Estado a ago-2026 |
+| Piece | Choice | Status as of Aug-2026 |
 |---|---|---|
-| Formato de tokens | **DTCG** (`$value`, `$type`, `$description`) | Primera versión **estable: 2025.10**. **Atención**: es un *Community Group Report* del W3C, **no es un W3C Standard ni está en la vía de estándares**. Los borradores posteriores en `designtokens.org/tr/drafts` se declaran a sí mismos como no implementables |
-| Transformación a plataformas | **Style Dictionary** | **5.5.0**, licencia **Apache-2.0** (no MIT) |
-| Autoría desde diseño | **Tokens Studio** para Figma | **Producto comercial con plan gratuito** (Starter, incluye sync a Git); las funciones de automatización, multi-fichero y la plataforma Studio son de pago. **Verifica precio y límites en su web antes de comprometerte** |
-| Documentación viva | **Storybook** | **10.5.6**, MIT. Sigue siendo el default por ecosistema. Alternativas: **Ladle** (React + Vite, mucho más rápido, sin ecosistema de addons) e **Histoire** (Vue/Svelte; su formato `.story.vue` **no es CSF**, así que salir de él es reescribir las historias) |
-| Regresión visual | Ver §4 — es la partida de coste real del sistema |
+| Token format | **DTCG** (`$value`, `$type`, `$description`) | First stable version: **2025.10**. **Note**: it is a W3C *Community Group Report*, **not a W3C Standard and not on the standards track**. The later drafts at `designtokens.org/tr/drafts` declare themselves not implementable |
+| Transformation to platforms | **Style Dictionary** | **5.5.0**, licence **Apache-2.0** (not MIT) |
+| Authoring from design | **Tokens Studio** for Figma | **A commercial product with a free plan** (Starter, includes Git sync); automation, multi-file and the Studio platform are paid. **Verify pricing and limits on their site before committing** |
+| Living documentation | **Storybook** | **10.5.6**, MIT. Still the default because of the ecosystem. Alternatives: **Ladle** (React + Vite, much faster, no addon ecosystem) and **Histoire** (Vue/Svelte; its `.story.vue` format **is not CSF**, so leaving it means rewriting the stories) |
+| Visual regression | See §4 — it is the system's real cost line |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### Tokens: semántica frente a valor literal
+### Tokens: semantics versus literal value
 
-La distinción que decide si el sistema sobrevive a un rediseño:
+The distinction that decides whether the system survives a redesign:
 
-| Capa | Ejemplo | Quién la consume |
+| Layer | Example | Who consumes it |
 |---|---|---|
-| **Primitivos** (valor literal) | `color.blue.600`, `space.4`, `font.size.14` | **Solo la capa semántica.** Un componente que use esto directamente es un bug |
-| **Semánticos** (intención) | `color.action.background`, `color.text.muted`, `space.stack.md`, `color.feedback.danger.border` | Los componentes y las aplicaciones |
-| **De componente** (opcional) | `button.primary.background` → alias de un semántico | Solo el componente. Útil en sistemas grandes; **innecesario en pequeños** |
+| **Primitives** (literal value) | `color.blue.600`, `space.4`, `font.size.14` | **Only the semantic layer.** A component using this directly is a bug |
+| **Semantic** (intent) | `color.action.background`, `color.text.muted`, `space.stack.md`, `color.feedback.danger.border` | Components and applications |
+| **Component-level** (optional) | `button.primary.background` → an alias of a semantic token | Only the component. Useful in large systems; **unnecessary in small ones** |
 
-- `color-primary-600` es un **valor**: dice qué es. `color-action-background` es **semántica**: dice para
-  qué sirve. En un rediseño, el primero hay que buscarlo y reemplazarlo en cada consumidor; el segundo
-  cambia una vez en la definición. **La segunda capa es todo el retorno del sistema de tokens.**
-- **Una aplicación consumidora nunca referencia un primitivo.** Si lo necesita, es que falta un token
-  semántico: la petición se atiende añadiéndolo, no abriendo la escala primitiva al público.
-- Escalas cerradas y pequeñas: espaciado en progresión definida (no valores arbitrarios), tipografía con
-  un número contado de tamaños, radios y sombras enumerados. **Una escala con 40 valores no es una
-  escala: es una paleta libre con más pasos de burocracia.**
-- Los tokens son **el contrato con diseño** y viven en un fichero versionado, no en Figma "y además" en
-  el código. Una sola fuente de verdad, exportada al resto. Si Figma y el código pueden divergir, ya
-  divergieron.
-- El pipeline de tokens es un **build reproducible** (Style Dictionary → CSS custom properties, JS/TS,
-  iOS/Android si aplica) y corre en CI. Tokens copiados a mano entre plataformas es la vía garantizada
-  a la incoherencia.
+- `color-primary-600` is a **value**: it says what it is. `color-action-background` is **semantics**:
+  it says what it is for. In a redesign, the first one must be found and replaced in every consumer;
+  the second changes once in the definition. **That second layer is the entire return on the token
+  system.**
+- **A consuming application never references a primitive.** If it needs one, a semantic token is
+  missing: the request is served by adding it, not by opening the primitive scale to the public.
+- Closed and small scales: spacing on a defined progression (not arbitrary values), typography with
+  a counted number of sizes, enumerated radii and shadows. **A scale with 40 values is not a scale:
+  it is a free palette with extra bureaucracy.**
+- Tokens are **the contract with design** and live in a versioned file, not in Figma "and also" in
+  the code. A single source of truth, exported to the rest. If Figma and the code can diverge, they
+  already have.
+- The token pipeline is a **reproducible build** (Style Dictionary → CSS custom properties, JS/TS,
+  iOS/Android where applicable) and runs in CI. Tokens copied by hand between platforms is the
+  guaranteed route to incoherence.
 
-### Temas y modo oscuro
+### Themes and dark mode
 
-- Los temas se implementan con **custom properties de CSS** redefinidas por ámbito. Nada de dos hojas
-  completas ni de recargar CSS al cambiar de tema.
-- `color-scheme` declarado (`light dark`) para que los controles nativos, las barras de scroll y los
-  formularios sigan el tema. Se olvida siempre y es lo que delata un modo oscuro a medias.
-- `light-dark()` reduce a la mitad las declaraciones de color **si tu política de Baseline lo permite**
-  (esa política es de `frontend-web-platform-standards`; **verifícala, no la asumas**).
-- **Respeta `prefers-color-scheme` por defecto** y permite override explícito del usuario, persistido.
-  Forzar un tema ignorando la preferencia del sistema es una decisión de producto que hay que justificar.
-- Un tema **no puede cambiar la semántica**: `color.feedback.danger` sigue significando peligro en todos
-  los temas. Si un tema reasigna significados, no es un tema: es otro sistema.
-- Contraste verificado **por combinación semántica en cada tema**, no una vez en el claro. El criterio
-  de conformidad es de `accessibility-standards`; la obligación de comprobarlo en ambos temas es de aquí.
+- Themes are implemented with **CSS custom properties** redefined per scope. No two full stylesheets
+  and no reloading CSS when switching theme.
+- `color-scheme` declared (`light dark`) so that native controls, scrollbars and forms follow the
+  theme. It is always forgotten and it is what gives away a half-finished dark mode.
+- `light-dark()` halves the colour declarations **if your Baseline policy allows it** (that policy
+  belongs to `frontend-web-platform-standards`; **verify it, do not assume it**).
+- **Respect `prefers-color-scheme` by default** and allow an explicit, persisted user override.
+  Forcing a theme while ignoring the system preference is a product decision that must be justified.
+- A theme **cannot change semantics**: `color.feedback.danger` still means danger in every theme. If
+  a theme reassigns meanings, it is not a theme: it is another system.
+- Contrast verified **per semantic combination in each theme**, not once in light mode. The
+  conformance criterion belongs to `accessibility-standards`; the obligation to check it in both
+  themes belongs here.
 
-### La API de un componente es un contrato público
+### A component's API is a public contract
 
-Una vez publicada, cambiarla cuesta a todos los consumidores. Se diseña como se diseña una API HTTP.
+Once published, changing it costs every consumer. It is designed the way an HTTP API is designed.
 
-- **Composición antes que configuración.** `<Card><Card.Header/><Card.Body/></Card>` escala; una `Card`
-  con `title`, `subtitle`, `icon`, `action`, `footer`, `variant`, `dense`, `bordered` no escala: crece
-  con cada petición hasta ser inmantenible.
-- **Veinte props booleanos son un fallo de diseño, no una API flexible.** Cada booleano multiplica los
-  estados posibles (2^n) y ninguno está probado. Señales de que hay que romper el componente en partes o
-  sustituir booleanos por una prop de variante enumerada: booleanos mutuamente excluyentes (`primary`,
-  `secondary`, `danger` → `variant`), booleanos que solo aplican si otro es cierto, y props que existen
-  para un único consumidor.
-- **Slots** para el contenido que el consumidor debe controlar; props para lo que el sistema debe decidir.
-  Si el consumidor necesita meter markup arbitrario donde no hay slot, la salida será un hack de CSS
-  contra tus clases internas — y ese hack se romperá en tu siguiente patch.
-- Polimorfismo del elemento raíz (`render` prop en Base UI, `asChild` en Radix, `as`) para no forzar un
-  `<div>` donde toca un `<a>` o un `<li>`. Sin esto, la semántica correcta se vuelve imposible.
-- **Pasa el resto de props al elemento subyacente** (`...rest`) y **acepta `ref`**: un componente que no
-  deja poner `id`, `aria-*`, `data-*` ni obtener el nodo obliga a bifurcarlo.
-- **Las clases y los nodos internos no son API pública.** Documenta explícitamente qué es público (props,
-  slots, tokens, atributos `data-*` de estado) y qué no. Sin esa frontera escrita, cualquier refactor
-  interno es un cambio rompiente de facto porque alguien estilaba `.ds-button__inner`.
-- Prohibido `style`/`className` como vía de escape universal sin diseño: o hay una prop de variante, o hay
-  un slot, o hay un token. Si aun así hace falta, ver "ruta de escape" en §7.
-- Estados obligatorios en todo componente interactivo: reposo, hover, **focus-visible**, activo,
-  deshabilitado, cargando, error. Un componente sin estado de foco visible no está terminado.
-- **Nada de lógica de negocio ni de fetch dentro de un componente del sistema.** Un `UserAvatar` que
-  llama a tu API deja de ser reutilizable y arrastra el cliente HTTP a todos los consumidores.
-- La API se escribe **antes** de implementar y se revisa con al menos un consumidor real. Diseñar en
-  abstracto produce componentes que nadie usa como se esperaba.
+- **Composition before configuration.** `<Card><Card.Header/><Card.Body/></Card>` scales; a `Card`
+  with `title`, `subtitle`, `icon`, `action`, `footer`, `variant`, `dense`, `bordered` does not: it
+  grows with every request until it is unmaintainable.
+- **Twenty boolean props are a design failure, not a flexible API.** Every boolean multiplies the
+  possible states (2^n) and none of them is tested. Signs that the component must be broken into
+  parts or the booleans replaced by an enumerated variant prop: mutually exclusive booleans
+  (`primary`, `secondary`, `danger` → `variant`), booleans that only apply if another is true, and
+  props that exist for a single consumer.
+- **Slots** for the content the consumer must control; props for what the system must decide. If the
+  consumer needs to put arbitrary markup where there is no slot, the outcome will be a CSS hack
+  against your internal classes — and that hack will break in your next patch.
+- Root element polymorphism (the `render` prop in Base UI, `asChild` in Radix, `as`) so as not to
+  force a `<div>` where an `<a>` or an `<li>` belongs. Without it, correct semantics becomes
+  impossible.
+- **Pass the remaining props to the underlying element** (`...rest`) and **accept `ref`**: a
+  component that does not let you set `id`, `aria-*`, `data-*` nor get the node forces a fork.
+- **Internal classes and nodes are not public API.** Document explicitly what is public (props,
+  slots, tokens, `data-*` state attributes) and what is not. Without that written boundary, any
+  internal refactor is a de facto breaking change because somebody was styling
+  `.ds-button__inner`.
+- Forbidden: `style`/`className` as a universal escape hatch with no design: either there is a
+  variant prop, or a slot, or a token. If it is still needed, see "escape route" in §7.
+- Mandatory states on every interactive component: rest, hover, **focus-visible**, active, disabled,
+  loading, error. A component with no visible focus state is not finished.
+- **No business logic and no fetching inside a system component.** A `UserAvatar` that calls your API
+  stops being reusable and drags the HTTP client into every consumer.
+- The API is written **before** implementing and reviewed with at least one real consumer. Designing
+  in the abstract produces components nobody uses the way you expected.
 
-### Organización
+### Organisation
 
-- **Un paquete publicado**, no un directorio compartido por ruta relativa: `@org/ui`, con versión, y
-  `@org/tokens` aparte si hay consumidores no-web. Los tokens se publican por separado porque su ciclo
-  de vida es más lento y su audiencia más amplia.
-- **Exportaciones granulares** y `sideEffects` correcto: importar un botón no puede arrastrar el paquete
-  entero. Un sistema que solo se puede importar en bloque impone su peso completo a cada consumidor.
-- Marca explícitamente los componentes que requieren cliente (`"use client"`) y **mantén el máximo
-  posible sin él**: en un sistema consumido por apps con RSC, un `"use client"` en el índice contamina
-  todo el árbol.
-- CSS del sistema en su propia capa (`@layer`) para que el consumidor pueda ganar especificidad sin
+- **A published package**, not a directory shared by relative path: `@org/ui`, versioned, with
+  `@org/tokens` separate if there are non-web consumers. Tokens are published separately because
+  their lifecycle is slower and their audience broader.
+- **Granular exports** and correct `sideEffects`: importing a button cannot drag in the whole
+  package. A system that can only be imported wholesale imposes its full weight on every consumer.
+- Explicitly mark the components that require the client (`"use client"`) and **keep as much as
+  possible without it**: in a system consumed by RSC apps, a `"use client"` in the index
+  contaminates the entire tree.
+- The system's CSS in its own layer (`@layer`) so the consumer can win specificity without
   `!important`.
 
-## 4. Calidad y testing de un sistema de diseño
+## 4. Quality and testing of a design system
 
-Un componente publicado se prueba **más** que uno de aplicación: su fallo se multiplica por el número de
-consumidores. Gates en orden de coste creciente, cada uno rompe el build:
+A published component is tested **more** than an application one: its failure is multiplied by the
+number of consumers. Gates in increasing order of cost, each one breaks the build:
 
-1. **Typecheck y lint** del paquete (reglas del lenguaje: `typescript-standards`).
-2. **API pública congelada**: un informe de la superficie pública (props exportadas, tipos) versionado en
-   el repo, cuyo cambio no revisado falla. Es el único gate que detecta un rompiente accidental **antes**
-   de publicarlo.
-3. **Tests de componente** (Vitest + Testing Library, o el addon de Vitest de Storybook desde v9/10, que
-   **sustituye al antiguo `@storybook/test-runner`**): interacción por teclado, estados de carga, error,
-   vacío y deshabilitado. Las historias son los casos de prueba: **una historia por estado**, no una
-   historia "playground" con controles.
-4. **Accesibilidad por componente**, automatizada (axe en cada historia). Cubre ~30-40% de los criterios:
-   **el resto es revisión manual y es responsabilidad de `accessibility-standards`**. Un gate de axe verde
-   no es una declaración de conformidad y afirmarlo es un riesgo legal, no solo técnico.
-5. **Contract tests con los consumidores**: construir al menos una aplicación consumidora real contra la
-   versión candidata antes de publicar. Es lo que convierte "creo que no rompe" en un hecho.
-6. **Regresión visual** — ver abajo.
+1. **Typecheck and lint** of the package (language rules: `typescript-standards`).
+2. **Frozen public API**: a report of the public surface (exported props, types) versioned in the
+   repo, whose unreviewed change fails. It is the only gate that catches an accidental breaking
+   change **before** publishing it.
+3. **Component tests** (Vitest + Testing Library, or Storybook's Vitest addon since v9/10, which
+   **replaces the old `@storybook/test-runner`**): keyboard interaction, loading, error, empty and
+   disabled states. Stories are the test cases: **one story per state**, not one "playground" story
+   with controls.
+4. **Per-component accessibility**, automated (axe on every story). It covers ~30-40% of the
+   criteria: **the rest is manual review and is the responsibility of `accessibility-standards`**. A
+   green axe gate is not a conformance statement and asserting it is a legal risk, not just a
+   technical one.
+5. **Contract tests with consumers**: build at least one real consuming application against the
+   candidate version before publishing. That is what turns "I think it does not break" into a fact.
+6. **Visual regression** — see below.
 
-### Regresión visual: elige con el coste delante
+### Visual regression: choose with the cost in front of you
 
-Es imprescindible (el CSS no tiene tipos: nada más detecta que un cambio de token movió un padding en
-30 componentes) y es **la partida de coste recurrente del sistema**. Se factura por *snapshot* =
-historia × viewport × navegador × tema, así que **el coste crece de forma multiplicativa** y la factura
-sorprende siempre.
+It is indispensable (CSS has no types: nothing else detects that a token change moved a padding in
+30 components) and it is **the system's recurring cost line**. It is billed per *snapshot* = story ×
+viewport × browser × theme, so **the cost grows multiplicatively** and the bill always surprises.
 
-| Opción | Modelo | Verificado a ago-2026 |
+| Option | Model | Verified as of Aug-2026 |
 |---|---|---|
-| **Playwright screenshots** / BackstopJS | Gratis, autoalojado | Coste = mantener las imágenes de referencia y el ruido entre entornos. **Exige runner con SO fijado** (contenedor), o el antialiasing produce falsos positivos eternos |
-| **Lost Pixel** | Open source + nube opcional | Plan gratuito citado en **7.000 snapshots/mes** — el más generoso de los comparados. **Confirmar en su web** |
-| **Chromatic** | SaaS, acoplado a Storybook | **5.000 snapshots/mes gratis**; al agotarlos, *"testing and review will pause until the next month"* — **no hay overage: se para**. De pago desde ~$149-179/mes según fuente (**las fuentes discrepan**). Solo Chrome estable; Firefox/Safari en beta. TurboSnap reduce el volumen |
-| **Percy** (BrowserStack) | SaaS | ~5.000 screenshots/mes gratis; factura **por screenshot** (página × navegador × ancho): 2 páginas × 2 navegadores × 3 anchos = **12**. Haz la multiplicación antes de firmar |
-| **Applitools** | Enterprise, sin precios públicos | Comparación visual con IA, la más madura en reducción de ruido. Sin tarifa pública = negociación y bloqueo |
+| **Playwright screenshots** / BackstopJS | Free, self-hosted | Cost = maintaining the reference images and the noise between environments. **Requires a runner with a pinned OS** (container), or antialiasing produces eternal false positives |
+| **Lost Pixel** | Open source + optional cloud | Free plan cited at **7,000 snapshots/month** — the most generous of those compared. **Confirm on their site** |
+| **Chromatic** | SaaS, coupled to Storybook | **5,000 snapshots/month free**; once exhausted, *"testing and review will pause until the next month"* — **there is no overage: it stops**. Paid from ~$149-179/month depending on the source (**the sources disagree**). Stable Chrome only; Firefox/Safari in beta. TurboSnap reduces the volume |
+| **Percy** (BrowserStack) | SaaS | ~5,000 screenshots/month free; billed **per screenshot** (page × browser × width): 2 pages × 2 browsers × 3 widths = **12**. Do the multiplication before signing |
+| **Applitools** | Enterprise, no public pricing | AI-based visual comparison, the most mature at noise reduction. No public rate = negotiation and lock-in |
 
-Criterio: empieza con el runner gratuito en contenedor fijado y **solo** paga cuando el ruido te esté
-costando más horas que la factura. Y en cuanto pagues, **limita el número de historias con snapshot**:
-no todas las historias necesitan captura en cuatro navegadores.
+Criterion: start with the free runner in a pinned container and **only** pay once the noise is
+costing you more hours than the invoice. And as soon as you pay, **limit the number of stories with
+snapshots**: not every story needs a capture in four browsers.
 
-## 5. Seguridad del sistema
+## 5. Security of the system
 
-- El sistema es **una dependencia de todos tus productos a la vez**: un compromiso de su paquete es un
-  compromiso de todo el portfolio. La higiene de la cadena de suministro npm es de
-  `frontend-web-platform-standards`; aquí la consecuencia: publicación con **trusted publishing/OIDC**,
-  sin tokens de larga vida, mínimo de mantenedores con permiso de publish y 2FA obligatorio.
-- **Ninguna prop de un componente publicado renderiza HTML crudo.** Si un `RichText` es inevitable, la
-  sanitización va **dentro** del componente y no es opcional ni desactivable por prop, porque el
-  consumidor la desactivará. Los sinks y la sanitización, en `frontend-web-platform-standards`.
-- Un componente del sistema no compone URLs de destino sin validar el esquema: un `<Link href>` que
-  acepta `javascript:` es un XSS distribuido a todos los consumidores.
-- Cero telemetría oculta en los componentes: un sistema de diseño que llama a casa desde la app de un
-  cliente es un incidente de privacidad, no una métrica de adopción (§7 explica cómo medir sin eso).
-- Iconos e ilustraciones SVG del sistema: **sanitizados en el build** (SVG puede llevar `<script>` y
-  handlers). Nunca se inyectan SVG de terceros en tiempo de ejecución.
-- Dependencias del propio sistema al mínimo: cada una la heredan todos los consumidores y ninguno la
-  eligió. Añadir una dependencia al sistema exige justificación escrita.
+- The system is **a dependency of all your products at once**: a compromise of its package is a
+  compromise of the whole portfolio. npm supply chain hygiene belongs to
+  `frontend-web-platform-standards`; here the consequence: publication with **trusted
+  publishing/OIDC**, no long-lived tokens, a minimum of maintainers with publish permission and
+  mandatory 2FA.
+- **No prop of a published component renders raw HTML.** If a `RichText` is unavoidable, sanitisation
+  goes **inside** the component and is neither optional nor disableable by prop, because the consumer
+  will disable it. Sinks and sanitisation live in `frontend-web-platform-standards`.
+- A system component does not compose destination URLs without validating the scheme: a `<Link href>`
+  that accepts `javascript:` is an XSS distributed to every consumer.
+- Zero hidden telemetry in the components: a design system that phones home from a customer's app is
+  a privacy incident, not an adoption metric (§7 explains how to measure without it).
+- The system's SVG icons and illustrations: **sanitised at build time** (SVG can carry `<script>` and
+  handlers). Third-party SVGs are never injected at runtime.
+- Keep the system's own dependencies to a minimum: every one of them is inherited by all consumers
+  and none of them chose it. Adding a dependency to the system requires a written justification.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Peso por componente medido y publicado**, no solo peso total del paquete: el consumidor necesita saber
-  qué le cuesta importar el date picker. Sin tree-shaking real verificada, el sistema impone su peor caso
-  a todos.
-- Presupuesto del propio sistema: un componente que arrastra una dependencia pesada (editor, gráficas,
-  máscara de fecha) se publica en **subpath aparte** y se documenta su coste. Los umbrales globales son de
+- **Per-component weight measured and published**, not just the package's total weight: the consumer
+  needs to know what importing the date picker costs them. Without verified real tree-shaking, the
+  system imposes its worst case on everyone.
+- The system's own budget: a component dragging a heavy dependency (editor, charts, date mask) is
+  published in a **separate subpath** and its cost documented. Global thresholds belong to
   `web-performance-standards`.
-- CSS de tema: una hoja de custom properties, no una por componente cargada a destiempo. Un cambio de
-  tema no debe provocar *flash* de contenido sin estilo ni recalculo global.
-- **El sitio de documentación es producción**: si Storybook está caído o desactualizado, el sistema no
-  existe para sus consumidores. Se despliega por CI en cada merge, con la versión visible en la propia
-  documentación.
-- Instrumentación útil: qué versión del sistema usa cada aplicación (lockfiles del monorepo o consulta
-  a los repos), no telemetría en runtime.
+- Theme CSS: one custom-properties stylesheet, not one per component loaded at the wrong time. A
+  theme change must not cause a flash of unstyled content nor a global recalculation.
+- **The documentation site is production**: if Storybook is down or out of date, the system does not
+  exist for its consumers. It is deployed by CI on every merge, with the version visible in the
+  documentation itself.
+- Useful instrumentation: which version of the system each application uses (monorepo lockfiles or
+  querying the repos), not runtime telemetry.
 
-## 7. Sostenibilidad, gobernanza y prohibiciones
+## 7. Sustainability, governance and prohibitions
 
-### El sistema es un producto: dueño, versión, consumidores
+### The system is a product: owner, version, consumers
 
-- **Dueño con nombre y tiempo asignado.** Sin eso, no se arranca (§2, Decisión 0).
-- **SemVer estricto en el paquete.** En una UI, cuenta como **rompiente**: quitar o renombrar una prop,
-  cambiar el default de una prop, cambiar el elemento HTML raíz, quitar un token, y **todo cambio visual
-  que un consumidor pueda haber compensado** (un padding, una altura de línea). Lo último es lo que casi
-  nadie versiona bien: si el cambio visual obliga a alguien a tocar su CSS, es un major.
-- **Política escrita de cambios rompientes**: el rompiente se agrupa en majors planificados, con período
-  de deprecación **mínimo de un major** en el que la API vieja sigue funcionando y avisa (`console.warn`
-  en desarrollo, marca `@deprecated` en los tipos).
-- **Codemod obligatorio** para toda migración mecánica de un major (renombrado de props, cambio de import,
-  sustitución de tokens). Publicar un major sin codemod es trasladar tu trabajo a N equipos y garantizar
-  que la mitad se queda en la versión vieja. La regla: **si el cambio se puede automatizar, se automatiza;
-  si no se puede, se documenta con un ejemplo antes/después por caso.**
-- Ventana de soporte declarada: qué majors reciben parches de seguridad y accesibilidad y hasta cuándo.
-- Changelog por componente, no solo por paquete: al consumidor le importa si cambió el `Select`, no leer
-  200 líneas.
+- **A named owner with allocated time.** Without that, do not start (§2, Decision 0).
+- **Strict SemVer on the package.** In a UI, the following count as **breaking**: removing or
+  renaming a prop, changing a prop's default, changing the root HTML element, removing a token, and
+  **every visual change a consumer may have compensated for** (a padding, a line height). That last
+  one is what almost nobody versions correctly: if the visual change forces someone to touch their
+  CSS, it is a major.
+- **A written breaking-change policy**: breaking changes are grouped into planned majors, with a
+  deprecation period of **at least one major** during which the old API keeps working and warns
+  (`console.warn` in development, an `@deprecated` mark in the types).
+- **A codemod is mandatory** for every mechanical migration in a major (prop renames, import
+  changes, token replacements). Publishing a major without a codemod is transferring your work to N
+  teams and guaranteeing half of them stay on the old version. The rule: **if the change can be
+  automated, it is automated; if it cannot, it is documented with a before/after example per case.**
+- A declared support window: which majors receive security and accessibility patches and until when.
+- A changelog per component, not just per package: the consumer cares whether the `Select` changed,
+  not about reading 200 lines.
 
-### Adopción y gobernanza
+### Adoption and governance
 
-- **Se mide la adopción**, o no hay forma de saber si el sistema sirve: (a) porcentaje de componentes de
-  cada aplicación que vienen del sistema frente a locales, (b) número de aplicaciones en la versión
-  vigente y en las anteriores, (c) número de *overrides* de CSS contra clases internas —**esta es la
-  métrica más honesta**: cada override es un sitio donde el sistema no cubría el caso.
-- **Proceso de contribución escrito**: quién propone, quién revisa, cuánto tarda y qué pasa si nadie
-  responde. Un proceso de contribución cuyo tiempo de respuesta es "cuando podamos" produce forks, y el
-  fork es la muerte del sistema.
-- **Las excepciones se registran, no se prohíben.** Un caso no cubierto se resuelve localmente, se
-  etiqueta como excepción y **se revisa cada trimestre**: si tres equipos hicieron lo mismo, eso es un
-  componente que falta, no tres desviaciones.
-- **Un sistema sin ruta de escape se evita en lugar de usarse.** Si el consumidor no puede resolver su
-  caso —vía slot, token, variante o composición con las primitivas—, no abandona el caso: abandona el
-  sistema, copia el componente y lo bifurca. Así que **la vía de escape se diseña a propósito**: primitivas
-  expuestas para componer, `@layer` para que su CSS gane sin `!important`, y un canal para pedir la
-  variante que falta. Cerrar la puerta no produce cumplimiento: produce copias fuera de tu control.
-- Estados de madurez por componente, visibles en la documentación: **experimental** (puede romper en
-  minor, marcado como tal), **estable** (bajo SemVer), **deprecado** (con sustituto y fecha). Publicar
-  todo como estable desde el día uno impide iterar.
-- **La accesibilidad se resuelve una vez, aquí.** Es el argumento económico más fuerte del sistema: el
-  foco, el teclado, el ARIA y el contraste se pagan en el componente y se cobran en cada consumidor.
-  Corolario: un componente del sistema con un fallo de accesibilidad es **incidente de prioridad alta**,
-  porque está desplegado en todos los productos a la vez. El criterio de conformidad es de
-  `accessibility-standards`; el sitio donde se implementa es este.
+- **Adoption is measured**, or there is no way to know whether the system is any use: (a) the
+  percentage of each application's components that come from the system versus local ones, (b) the
+  number of applications on the current version and on earlier ones, (c) the number of CSS
+  *overrides* against internal classes — **this is the most honest metric**: every override is a
+  place where the system did not cover the case.
+- **A written contribution process**: who proposes, who reviews, how long it takes and what happens
+  if nobody answers. A contribution process whose response time is "when we can" produces forks, and
+  the fork is the death of the system.
+- **Exceptions are recorded, not banned.** An uncovered case is solved locally, labelled as an
+  exception and **reviewed every quarter**: if three teams did the same thing, that is a missing
+  component, not three deviations.
+- **A system with no escape route gets avoided instead of used.** If the consumer cannot solve their
+  case — via slot, token, variant or composition with the primitives — they do not abandon the case:
+  they abandon the system, copy the component and fork it. So **the escape route is designed on
+  purpose**: primitives exposed for composition, `@layer` so their CSS wins without `!important`,
+  and a channel to request the missing variant. Closing the door does not produce compliance: it
+  produces copies outside your control.
+- Maturity states per component, visible in the documentation: **experimental** (may break in a
+  minor, marked as such), **stable** (under SemVer), **deprecated** (with a replacement and a date).
+  Publishing everything as stable from day one prevents iteration.
+- **Accessibility is solved once, here.** It is the system's strongest economic argument: focus,
+  keyboard, ARIA and contrast are paid for in the component and collected in every consumer.
+  Corollary: a system component with an accessibility failure is a **high-priority incident**,
+  because it is deployed across all products at once. The conformance criterion belongs to
+  `accessibility-standards`; the place where it is implemented is this one.
 
-**PROHIBIDO:**
-- ❌ Crear un sistema de diseño para **un solo producto y un solo equipo**. Usa una librería y tematízala.
-- ❌ Arrancar un sistema sin **mantenedor nombrado**, sin versión publicada y sin política de cambios
-  rompientes. Eso no es un sistema: es deuda con logotipo.
-- ❌ Reimplementar desde cero diálogos, menús, combobox, selects, tooltips o tabs habiendo primitivas
-  accesibles mantenidas.
-- ❌ Que una aplicación consumidora referencie un **token primitivo** (`color.blue.600`) en vez de uno
-  semántico. Y ❌ tener solo capa primitiva: entonces no tienes sistema de tokens, tienes constantes.
-- ❌ Un componente con veinte props booleanos, o con booleanos mutuamente excluyentes en vez de una
-  variante enumerada.
-- ❌ Componentes que no aceptan `ref`, no reenvían `...rest`, no permiten `aria-*`/`data-*` o fuerzan el
-  elemento raíz. Obligan a bifurcar.
-- ❌ Lógica de negocio, `fetch`, estado global de aplicación o cadenas de texto de producto dentro de un
-  componente del sistema.
-- ❌ Cambiar el aspecto de un componente en un **patch** o un **minor** porque "es solo un píxel".
-- ❌ Publicar un major sin codemod para lo automatizable ni guía de migración para lo demás.
-- ❌ Tratar clases y nodos internos como si fueran API pública — y ❌ no documentar cuáles no lo son.
-- ❌ Mezclar dos librerías de componentes completas en el mismo producto.
-- ❌ Usar shadcn/ui sin aceptar por escrito que **el mantenimiento y la reconciliación con upstream son
-  tuyos**, y sin registrar de qué revisión vino cada componente.
-- ❌ Prop que renderiza HTML sin sanitizar, o sanitización desactivable desde fuera del componente.
-- ❌ Declarar conformidad de accesibilidad porque axe está verde en CI.
-- ❌ Un sistema sin ruta de escape documentada; responder a un caso no cubierto con "no está soportado".
-- ❌ Afirmar de memoria la versión, la licencia o el modelo de precio de una librería de UI. Verificado a
-  ago-2026: **React Aria y Carbon son Apache-2.0**, **Style Dictionary es Apache-2.0**, **MUI X es de
-  pago y cambió de modelo de licencia en abr-2026**, y el paquete estable de Base UI es `@base-ui/react`,
-  no `@base-ui-components/react`.
+**FORBIDDEN:**
+- ❌ Creating a design system for **a single product and a single team**. Use a library and theme it.
+- ❌ Starting a system without a **named maintainer**, without a published version and without a
+  breaking-change policy. That is not a system: it is debt with a logo.
+- ❌ Reimplementing dialogs, menus, comboboxes, selects, tooltips or tabs from scratch when
+  maintained accessible primitives exist.
+- ❌ A consuming application referencing a **primitive token** (`color.blue.600`) instead of a
+  semantic one. And ❌ having only a primitive layer: then you do not have a token system, you have
+  constants.
+- ❌ A component with twenty boolean props, or with mutually exclusive booleans instead of an
+  enumerated variant.
+- ❌ Components that do not accept `ref`, do not forward `...rest`, do not allow `aria-*`/`data-*` or
+  force the root element. They force a fork.
+- ❌ Business logic, `fetch`, global application state or product copy inside a system component.
+- ❌ Changing a component's appearance in a **patch** or a **minor** because "it is only a pixel".
+- ❌ Publishing a major without a codemod for what is automatable nor a migration guide for the rest.
+- ❌ Treating internal classes and nodes as if they were public API — and ❌ not documenting which
+  ones are not.
+- ❌ Mixing two full component libraries in the same product.
+- ❌ Using shadcn/ui without accepting in writing that **maintenance and upstream reconciliation are
+  yours**, and without recording which revision each component came from.
+- ❌ A prop that renders unsanitised HTML, or sanitisation that can be disabled from outside the
+  component.
+- ❌ Declaring accessibility conformance because axe is green in CI.
+- ❌ A system with no documented escape route; answering an uncovered case with "it is not
+  supported".
+- ❌ Asserting from memory the version, licence or pricing model of a UI library. Verified as of
+  Aug-2026: **React Aria and Carbon are Apache-2.0**, **Style Dictionary is Apache-2.0**, **MUI X is
+  paid and changed its licence model in Apr-2026**, and Base UI's stable package is `@base-ui/react`,
+  not `@base-ui-components/react`.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada, comprobar online (registro npm y feeds Atom `https://github.com/OWNER/REPO/releases.atom`
-— **`api.github.com` da 403 sin autenticar**; web oficial del proyecto para contrastar, porque **el feed de
-GitHub no es la fuente de verdad**; `LICENSE` en crudo para licencias; página de precios del proveedor para
-el coste):
+Before fixing anything, check online (the npm registry and Atom feeds
+`https://github.com/OWNER/REPO/releases.atom` — **`api.github.com` returns 403 unauthenticated**; the
+project's official site to cross-check, because **the GitHub feed is not the source of truth**; the
+raw `LICENSE` for licences; the vendor's pricing page for cost):
 
-1. **Estado del DTCG**: ¿sigue **2025.10** siendo la última estable? ¿algún módulo nuevo estabilizado?
-   **No afirmes que existe un "estándar W3C de tokens": es un Community Group Report fuera de la vía de
-   estándares.** Comprobar en `designtokens.org` y en el blog del CG.
-2. **Style Dictionary** (¿sigue 5.x? ¿soporte DTCG completo?) y **Tokens Studio**: precio vigente, qué
-   incluye el plan gratuito y qué se pierde al superarlo.
-3. **Primitivas**: versión y licencia de `@base-ui/react`, `radix-ui`, `react-aria-components`,
-   `@ark-ui/react`, `@headlessui/react`. **Confirmar el nombre del paquete publicado** antes de instalar.
-4. **Cadencia de Radix**: ¿ha vuelto a acelerar bajo WorkOS, o sigue en mantenimiento de baja velocidad?
-   Es la variable que decide si es base válida para greenfield.
-5. **Librerías completas**: versión y licencia de MUI, Ant, Chakra, Mantine, Carbon, y sobre todo el
-   **modelo comercial de MUI X tras el cambio del 2026-04-08** (precio real por aplicación y por asiento).
-6. **Storybook**: versión mayor vigente, estado del addon de Vitest, y si `@storybook/test-runner` ya está
-   retirado del todo. Estado de mantenimiento de **Ladle** e **Histoire**.
-7. **Regresión visual**: precios y límites del plan gratuito de Chromatic, Percy, Lost Pixel y Argos —
-   **cambian y las fuentes secundarias se contradicen**. Fuente primaria, siempre.
-8. **Advisories** de las librerías que entren en el sistema (`github.com/advisories`, osv.dev): una CVE en
-   tu base de componentes es una CVE en todos tus productos.
+1. **DTCG status**: is **2025.10** still the latest stable? Any new stabilised module? **Do not
+   assert that a "W3C token standard" exists: it is a Community Group Report off the standards
+   track.** Check on `designtokens.org` and the CG's blog.
+2. **Style Dictionary** (still 5.x? full DTCG support?) and **Tokens Studio**: current pricing, what
+   the free plan includes and what is lost when you exceed it.
+3. **Primitives**: version and licence of `@base-ui/react`, `radix-ui`, `react-aria-components`,
+   `@ark-ui/react`, `@headlessui/react`. **Confirm the published package name** before installing.
+4. **Radix's cadence**: has it accelerated again under WorkOS, or is it still in low-speed
+   maintenance? It is the variable that decides whether it is a valid base for greenfield.
+5. **Full libraries**: version and licence of MUI, Ant, Chakra, Mantine, Carbon, and above all
+   **MUI X's commercial model after the 2026-04-08 change** (real price per application and per
+   seat).
+6. **Storybook**: the current major, the status of the Vitest addon, and whether
+   `@storybook/test-runner` is fully retired. Maintenance status of **Ladle** and **Histoire**.
+7. **Visual regression**: prices and free-plan limits of Chromatic, Percy, Lost Pixel and Argos —
+   **they change and secondary sources contradict each other**. Primary source, always.
+8. **Advisories** for the libraries entering the system (`github.com/advisories`, osv.dev): a CVE in
+   your component base is a CVE in all your products.
 
-**Huecos no verificados a ago-2026** (no rellenar de memoria):
-- **Precio exacto de MUI X Pro y Premium tras el 2026-04-08**: **no verificado**. El anuncio oficial
-  confirma la fecha, la licencia por aplicación y el mínimo de 15 asientos en Enterprise, pero **remite a
-  la página de precios para las cifras**. Los ~$15/dev/mes y ~$50/dev/mes que citan agregadores son
-  **anteriores al cambio**: no los uses.
-- **Precio de Tokens Studio** (Starter Plus, Essential, Organisation) y límites exactos del plan gratuito:
-  **no verificados** en fuente primaria (una fuente secundaria cita ~€39/mes para Starter Plus).
-- **Plan gratuito de Lost Pixel (7.000 snapshots/mes)**: tomado de fuente secundaria, **no verificado** en
-  su web.
-- Estado de mantenimiento actual de **Histoire** y de **Ladle**: **no verificado** más allá de cifras de
-  descargas de terceros.
-- Cuota de uso real de cada primitiva y librería: **no verificada** — las cifras de descargas que circulan
-  vienen de comparativas de terceros, no del registro.
-- Si `light-dark()` está dentro de tu política de Baseline: **es dato de
-  `frontend-web-platform-standards`, que lo marca como no verificado**. Compruébalo antes de usarlo.
+**Gaps not verified as of Aug-2026** (do not fill from memory):
+- **Exact price of MUI X Pro and Premium after 2026-04-08**: **not verified**. The official
+  announcement confirms the date, the per-application licence and the 15-seat minimum for
+  Enterprise, but **refers to the pricing page for the figures**. The ~$15/dev/month and
+  ~$50/dev/month cited by aggregators are **from before the change**: do not use them.
+- **Tokens Studio pricing** (Starter Plus, Essential, Organisation) and the exact free-plan limits:
+  **not verified** against a primary source (a secondary source cites ~€39/month for Starter Plus).
+- **Lost Pixel's free plan (7,000 snapshots/month)**: taken from a secondary source, **not
+  verified** on their site.
+- Current maintenance status of **Histoire** and **Ladle**: **not verified** beyond third-party
+  download figures.
+- Real usage share of each primitive and library: **not verified** — the download figures in
+  circulation come from third-party comparisons, not from the registry.
+- Whether `light-dark()` is within your Baseline policy: **that is
+  `frontend-web-platform-standards`' data, and they mark it as not verified**. Check it before using
+  it.
 
-**Discrepancias declaradas**:
-- **Base UI**: el paquete `@base-ui-components/react` sigue publicado y su `latest` es `1.0.0-rc.0`
-  (modificado jul-2026), lo que induce a creer que Base UI no ha llegado a estable. **La web oficial y el
-  registro coinciden en que el paquete vigente es `@base-ui/react`, versión 1.6.0 (jun-2026), MIT.** Es un
-  caso literal de "el nombre antiguo miente": verifica el paquete, no solo la versión.
-- **Precio de entrada de Chromatic**: una fuente lo sitúa en $149/mes y otra en $179/mes (Starter, jun-2026)
-  con 35.000 snapshots. **No resuelto**; manda su página de precios.
-- **Comparativas de Storybook**: varias páginas de 2026 comparan "Storybook 8" contra Ladle e Histoire
-  cuando el registro npm sirve **10.5.6**. Esas comparativas están desactualizadas y sus cifras de
-  descargas y arranque no son fiables.
-- **Radix**: el ecosistema lo describe como "ralentizado tras la adquisición"; los analizadores automáticos
-  lo marcan como "healthy" por publicar releases en los últimos tres meses. Ambas cosas son ciertas y miden
-  cosas distintas — mira el historial de commits y de issues cerradas, no el badge.
+**Declared discrepancies**:
+- **Base UI**: the package `@base-ui-components/react` is still published and its `latest` is
+  `1.0.0-rc.0` (modified Jul-2026), which leads people to believe Base UI never reached stable.
+  **The official site and the registry agree that the current package is `@base-ui/react`, version
+  1.6.0 (Jun-2026), MIT.** It is a literal case of "the old name lies": verify the package, not just
+  the version.
+- **Chromatic's entry price**: one source puts it at $149/month and another at $179/month (Starter,
+  Jun-2026) with 35,000 snapshots. **Unresolved**; their pricing page wins.
+- **Storybook comparisons**: several 2026 pages compare "Storybook 8" against Ladle and Histoire
+  while the npm registry serves **10.5.6**. Those comparisons are out of date and their download and
+  start-up figures are not reliable.
+- **Radix**: the ecosystem describes it as "slowed down after the acquisition"; automated analysers
+  mark it as "healthy" for publishing releases in the last three months. Both are true and they
+  measure different things — look at the commit and closed-issue history, not the badge.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

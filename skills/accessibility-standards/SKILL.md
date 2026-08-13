@@ -3,441 +3,427 @@ name: accessibility-standards
 description: Use when digital accessibility is a conformance requirement — WCAG 2.1/2.2 Level A/AA success criteria, EN 301 549, the European Accessibility Act (Directive 2019/882), Spain's Ley 11/2023 and Real Decreto 1112/2018, ADA Title II web rule and Section 508, axe-core, @axe-core/playwright, jest-axe, Pa11y and pa11y-ci with .pa11yci, Lighthouse accessibility category as a CI gate, WAVE, VPAT and Accessibility Conformance Report, an accessibility statement page, keyboard-only and screen-reader testing with NVDA/JAWS/VoiceOver/TalkBack, accessible name computation, aria-hidden, tabindex, role and aria-* attributes, focus management in dialogs and SPA route changes, focus-visible and outline, prefers-reduced-motion and prefers-contrast, alt text, form labels and error messaging, data table headers, captions transcripts and audio description, PDF/UA tagged documents, or accessibility overlay widgets.
 ---
 
-# Estándares de accesibilidad digital
+# Digital accessibility standards
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica cuando hay que **decidir si algo cumple** y **demostrarlo**: qué norma y qué nivel se
-exige, qué criterio de conformidad concreto se incumple, cómo se prueba, quién firma la
-declaración y qué obligación legal hay detrás. Cubre contenido web, aplicaciones web,
-documentos y correo. El **criterio de conformidad** es lo propio de esta skill.
+Applies when you have to **decide whether something conforms** and **prove it**: which standard
+and which level is required, which specific conformance criterion is being failed, how it is
+tested, who signs the statement and what legal obligation sits behind it. Covers web content, web
+applications, documents and email. The **conformance criterion** is what belongs to this skill.
 
-Triggers: WCAG 2.1 / 2.2, niveles A / AA / AAA, un número de criterio de éxito (1.4.3,
-2.4.7, 2.5.8, 4.1.2…), EN 301 549, Directiva (UE) 2019/882 (*European Accessibility Act*),
-Directiva (UE) 2016/2102, Ley 11/2023, Real Decreto 1112/2018, ADA Título II, Section 508,
-VPAT / ACR, declaración de accesibilidad, `axe-core`, `@axe-core/playwright`,
-`@axe-core/react`, `jest-axe`, `pa11y` / `pa11y-ci` / `.pa11yci`, categoría *accessibility*
-de Lighthouse, WAVE, ARC Toolkit, NVDA, JAWS, VoiceOver, TalkBack, Orca, nombre accesible,
-`aria-*`, `role`, `aria-hidden`, `aria-live`, `tabindex`, `:focus-visible`, `outline`,
-`prefers-reduced-motion`, `prefers-contrast`, `alt`, `<label>`/`aria-labelledby`,
-`<caption>`/`<th scope>`, subtítulos, transcripción, audiodescripción, PDF/UA, *overlay* de
-accesibilidad.
+Triggers: WCAG 2.1 / 2.2, levels A / AA / AAA, a success criterion number (1.4.3, 2.4.7, 2.5.8,
+4.1.2…), EN 301 549, Directive (EU) 2019/882 (*European Accessibility Act*), Directive (EU)
+2016/2102, Ley 11/2023, Real Decreto 1112/2018, ADA Title II, Section 508, VPAT / ACR,
+accessibility statement, `axe-core`, `@axe-core/playwright`, `@axe-core/react`, `jest-axe`,
+`pa11y` / `pa11y-ci` / `.pa11yci`, Lighthouse's *accessibility* category, WAVE, ARC Toolkit,
+NVDA, JAWS, VoiceOver, TalkBack, Orca, accessible name, `aria-*`, `role`, `aria-hidden`,
+`aria-live`, `tabindex`, `:focus-visible`, `outline`, `prefers-reduced-motion`,
+`prefers-contrast`, `alt`, `<label>`/`aria-labelledby`, `<caption>`/`<th scope>`, captions,
+transcript, audio description, PDF/UA, accessibility *overlay*.
 
-**Tesis de la skill**: **la accesibilidad es un requisito, no una mejora.** No se prioriza
-contra funcionalidades: es funcionalidad. Y en la UE, además, es **obligación legal con
-fecha ya vencida** — Directiva (UE) 2019/882, art. 31.2, verbatim: *"They shall apply those
-measures from 28 June 2025."* Corolario operativo: **un fallo de accesibilidad en producción
-es un defecto, con su bug y su regresión**, no una tarea de *backlog* con etiqueta `a11y`.
-Segundo corolario, incómodo: **la automatización no puede cerrarlo** (§4.1) — quien firma la
-conformidad es una persona que ha probado con teclado y con lector de pantalla.
+**Thesis of this skill**: **accessibility is a requirement, not an enhancement.** It is not
+prioritised against features: it *is* a feature. And in the EU it is, on top of that, a **legal
+obligation whose deadline has already passed** — Directive (EU) 2019/882, art. 31.2, verbatim:
+*"They shall apply those measures from 28 June 2025."* Operational corollary: **an accessibility
+failure in production is a defect, with its bug and its regression test**, not a backlog task
+tagged `a11y`. Second corollary, an uncomfortable one: **automation cannot close it** (§4.1) —
+whoever signs conformance is a person who has tested with a keyboard and with a screen reader.
 
-**No aplica**: ver `frontend-web-platform-standards` (**el HTML semántico, el CSS, las APIs
-del navegador, el modelo de carga y las herramientas de build son suyos** — qué elemento
-nativo existe, cómo se estila, qué *Baseline* soporta `:focus-visible` o `prefers-contrast`.
-**Aquí solo el criterio de conformidad**: qué exige WCAG, qué nivel, cómo se prueba y quién
-lo declara. Elegir `<button>` en vez de `<div role="button">` es decisión suya; **exigirlo**
-como conformidad es de aquí), `frontend-frameworks-standards` (el framework y su modelo de
-renderizado y enrutado son suyos; **aquí las consecuencias medibles**: el foco al cambiar de
-ruta en una SPA §3.5, el componente de diálogo que atrapa el foco, el anuncio de estado tras
-una mutación), `design-systems-standards` (**el sitio correcto para resolver la accesibilidad
-una sola vez es un componente del sistema de diseño**: el botón, el campo, el diálogo y el
-menú accesibles se construyen ahí y se auditan ahí — no en cada pantalla. Su gobierno,
-versionado y documentación son suyos; aquí el criterio que ese componente debe cumplir),
-`web-performance-standards` (**skill hermana**: se cruzan en `prefers-reduced-motion` — aquí
-como criterio de conformidad, allí como coste de renderizado — y en la percepción de
-velocidad; el presupuesto y las Core Web Vitals son suyos), `grc-compliance-standards` (el
-marco normativo, la evidencia de auditoría, el registro de riesgo legal y la relación con el
-regulador; **aquí el criterio técnico de conformidad y su prueba**), `mobile-standards`
-(accesibilidad de app nativa: `UIAccessibility`, `AccessibilityNodeInfo`, TalkBack/VoiceOver
-como API de plataforma y las pautas de cada tienda son suyas; aquí la web y el WebView),
-`privacy-engineering-standards` (tratamiento de datos personales; aquí solo la advertencia de
-que un *overlay* de terceros es un tercero con acceso al DOM, §5.2), `api-design-standards`
-(contratos de servicio; los mensajes de error legibles por humanos que devuelve la API son
-suyos, su presentación accesible es de aquí) y `cicd-standards` (la *pipeline*; **aquí qué
-gate ponerle**, §4.2), `technical-hiring-standards` (el diseño del proceso de selección es suyo; **la
-conformidad de sus herramientas y los ajustes razonables —formato alternativo, tiempo adicional,
-prueba accesible con lector de pantalla— se rigen por el criterio de aquí**. Aviso compartido: **un
-proceso de selección inaccesible descarta candidaturas antes de evaluarlas**, y eso no es un fallo
-de experiencia de usuario sino de validez del instrumento de medida),
-`webgl-webgpu-standards` (**un `<canvas>` es opaco para la tecnología asistiva** — no
-tiene estructura, ni texto, ni foco. El criterio de conformidad y la exigencia de alternativa
-equivalente son de aquí; **cómo se implementa el contenido del canvas y su rendimiento, suyo**),
-`i18n-standards` (frontera con solape real y concreto: el
-atributo `lang` correcto y la dirección del texto son **criterio de conformidad de aquí** —sin
-`lang` el lector de pantalla pronuncia mal—, mientras que **la elección de idiomas, el catálogo de
-mensajes, la pluralización, el formato regional y el flujo de traducción son suyos**. Aviso
-compartido: **una interfaz traducida a un idioma RTL no es la misma interfaz reflejada**, y el
-texto de otros idiomas se expande —un componente que solo cabe en inglés falla en ambas skills).
+**Not applicable**: see `frontend-web-platform-standards` (**semantic HTML, CSS, browser APIs,
+the loading model and build tooling are theirs** — which native element exists, how it is styled,
+which *Baseline* supports `:focus-visible` or `prefers-contrast`. **Here, only the conformance
+criterion**: what WCAG requires, at which level, how it is tested and who declares it. Choosing
+`<button>` instead of `<div role="button">` is their decision; **requiring it** as conformance is
+this skill's), `frontend-frameworks-standards` (the framework and its rendering and routing model
+are theirs; **here the measurable consequences**: focus on route change in an SPA §3.5, the dialog
+component that traps focus, the status announcement after a mutation), `design-systems-standards`
+(**the right place to solve accessibility once is a design-system component**: the accessible
+button, field, dialog and menu are built there and audited there — not on every screen. Its
+governance, versioning and documentation are theirs; here the criterion that component must
+satisfy), `web-performance-standards` (**sister skill**: they meet at `prefers-reduced-motion` —
+here as a conformance criterion, there as a rendering cost — and at perceived speed; the budget
+and Core Web Vitals are theirs), `grc-compliance-standards` (the regulatory framework, audit
+evidence, the legal risk register and the relationship with the regulator; **here the technical
+conformance criterion and its proof**), `mobile-standards` (native app accessibility:
+`UIAccessibility`, `AccessibilityNodeInfo`, TalkBack/VoiceOver as platform APIs and each store's
+guidelines are theirs; here the web and the WebView), `privacy-engineering-standards` (personal
+data processing; here only the warning that a third-party *overlay* is a third party with access
+to the DOM, §5.2), `api-design-standards` (service contracts; the human-readable error messages
+the API returns are theirs, their accessible presentation is this skill's) and `cicd-standards`
+(the *pipeline*; **here which gate to put on it**, §4.2), `technical-hiring-standards` (the design
+of the selection process is theirs; **the conformance of its tooling and reasonable adjustments —
+alternative format, extra time, an accessible screen-reader-testable exercise — are governed by
+the criterion here**. Shared warning: **an inaccessible selection process discards candidates
+before evaluating them**, and that is not a user-experience failure but a validity failure of the
+measuring instrument), `webgl-webgpu-standards` (**a `<canvas>` is opaque to assistive
+technology** — it has no structure, no text, no focus. The conformance criterion and the
+requirement of an equivalent alternative are this skill's; **how the canvas content is implemented
+and how it performs, theirs**), `i18n-standards` (a boundary with real, concrete overlap: the
+correct `lang` attribute and text direction are **a conformance criterion here** — without `lang`
+the screen reader mispronounces —, whereas **the choice of languages, the message catalogue,
+pluralisation, regional formatting and the translation workflow are theirs**. Shared warning: **an
+interface translated into an RTL language is not the same interface mirrored**, and text in other
+languages expands — a component that only fits in English fails in both skills).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión por web antes de fijarla en un proyecto real (§8).
+> Verify the latest version on the web before fixing it in a real project (§8).
 
-### 2.1 Norma objetivo
+### 2.1 Target standard
 
-| Decisión | Por defecto | Alternativa justificable |
+| Decision | Default | Justifiable alternative |
 |---|---|---|
-| Norma técnica | **WCAG 2.2 nivel AA** | WCAG 2.1 AA si el contrato/regulador la cita literalmente (ADA Título II, EN 301 549 V3.2.1) |
-| Nivel | **AA como objetivo operativo** | AAA solo en criterios concretos que aporten (p. ej. 1.4.6 contraste alto en contenido crítico) |
-| Norma UE | **EN 301 549**, versión citada en el DOUE | — |
-| Documento de conformidad | Declaración de accesibilidad (UE) / **VPAT-ACR** (mercado EE. UU.) | — |
+| Technical standard | **WCAG 2.2 Level AA** | WCAG 2.1 AA if the contract/regulator cites it literally (ADA Title II, EN 301 549 V3.2.1) |
+| Level | **AA as the operational target** | AAA only on specific criteria that add value (e.g. 1.4.6 enhanced contrast on critical content) |
+| EU standard | **EN 301 549**, the version cited in the OJEU | — |
+| Conformance document | Accessibility statement (EU) / **VPAT-ACR** (US market) | — |
 
-**Por qué AA y no AAA**: la propia WCAG lo dice — no es política de proyecto sino de la
-norma. WCAG 2.2, §5.2.1 Conformance Level, Nota 2, verbatim: *"It is not recommended that
-Level AAA conformance be required as a general policy for entire sites because it is not
-possible to satisfy all Level AAA success criteria for some content."* AA es el nivel que **todas** las normas
-legales citadas abajo referencian. AAA se aplica **por criterio elegido**, nunca como meta
-global.
+**Why AA and not AAA**: WCAG itself says so — it is not project policy but the standard's. WCAG
+2.2, §5.2.1 Conformance Level, Note 2, verbatim: *"It is not recommended that Level AAA
+conformance be required as a general policy for entire sites because it is not possible to satisfy
+all Level AAA success criteria for some content."* AA is the level that **every** legal standard
+cited below references. AAA is applied **per chosen criterion**, never as a global goal.
 
-**WCAG 2.2 es la Recomendación vigente**: publicada el **5 de octubre de 2023**, con
-actualización del **12 de diciembre de 2024**. No deroga las anteriores — W3C, verbatim:
-*"WCAG 2.2 does not deprecate or supersede WCAG 2.1, and WCAG 2.1 does not deprecate or
-supersede WCAG 2.0."* Único cambio de fondo respecto a 2.1: **4.1.1 Parsing** figura en el
-índice de WCAG 2.2 como *"4.1.1 Parsing (Obsolete and removed)"*.
+**WCAG 2.2 is the Recommendation in force**: published on **5 October 2023**, with an update on
+**12 December 2024**. It does not repeal the earlier ones — W3C, verbatim: *"WCAG 2.2 does not
+deprecate or supersede WCAG 2.1, and WCAG 2.1 does not deprecate or supersede WCAG 2.0."* The only
+substantive change relative to 2.1: **4.1.1 Parsing** appears in the WCAG 2.2 index as *"4.1.1
+Parsing (Obsolete and removed)"*.
 
-**WCAG 3.0 NO está vigente y no se planifica contra ella.** El borrador es *W3C Working
-Draft* de **03 March 2026**, y su propio "Status of This Document" dice verbatim: *"This is
-a draft document and may be updated, replaced, or obsoleted by other documents at any time.
-It is inappropriate to cite this document as other than a work in progress."* En WCAG 3.0
-las siglas cambian de significado (*W3C Accessibility Guidelines*) y el modelo de
-conformidad es distinto (niveles tipo bronce/plata/oro en vez de A/AA/AAA). **Un proveedor
-que venda "certificación WCAG 3.0" en 2026 está vendiendo humo** — no hay modelo de
-conformidad estable contra el que certificar. Fechas de Candidate Recommendation y
-Recommendation: **hueco, no verificadas por fuente primaria** (§8).
+**WCAG 3.0 is NOT in force and you do not plan against it.** The draft is a *W3C Working Draft* of
+**03 March 2026**, and its own "Status of This Document" says verbatim: *"This is a draft document
+and may be updated, replaced, or obsoleted by other documents at any time. It is inappropriate to
+cite this document as other than a work in progress."* In WCAG 3.0 the acronym changes meaning
+(*W3C Accessibility Guidelines*) and the conformance model is different (bronze/silver/gold-style
+levels instead of A/AA/AAA). **A vendor selling "WCAG 3.0 certification" in 2026 is selling smoke**
+— there is no stable conformance model to certify against. Candidate Recommendation and
+Recommendation dates: **gap, not verified against a primary source** (§8).
 
-### 2.2 Obligación legal — qué decide
+### 2.2 Legal obligation — what decides
 
-**No se elige el nivel: lo fija la norma que aplique al producto.** Antes de nada, determinar
-jurisdicción y sector.
+**You do not choose the level: it is set by whichever law applies to the product.** First of all,
+determine jurisdiction and sector.
 
-| Marco | Ámbito | Norma técnica | Fecha |
+| Framework | Scope | Technical standard | Date |
 |---|---|---|---|
-| Directiva (UE) 2019/882 (EAA) | Productos y servicios **al consumidor** (sector privado incluido) | EN 301 549 | **Aplicable desde 28-jun-2025** |
-| Directiva (UE) 2016/2102 | Webs y apps del **sector público** de la UE | EN 301 549 | En vigor |
-| España — Ley 11/2023 | Transposición de la EAA | EN 301 549 | Título I aplicable desde 28-jun-2025 |
-| España — RD 1112/2018 | Sector público español | EN 301 549 | En vigor |
-| EE. UU. — Section 508 | ICT federal | **WCAG 2.0 A y AA** | Vigente desde 18-ene-2018 |
-| EE. UU. — ADA Título II | Administración estatal y local | **WCAG 2.1 nivel AA** | **26-abr-2027 / 26-abr-2028** |
+| Directive (EU) 2019/882 (EAA) | Products and services **for consumers** (private sector included) | EN 301 549 | **Applicable since 28-Jun-2025** |
+| Directive (EU) 2016/2102 | **Public sector** websites and apps in the EU | EN 301 549 | In force |
+| Spain — Ley 11/2023 | Transposition of the EAA | EN 301 549 | Title I applicable since 28-Jun-2025 |
+| Spain — RD 1112/2018 | Spanish public sector | EN 301 549 | In force |
+| US — Section 508 | Federal ICT | **WCAG 2.0 A and AA** | In force since 18-Jan-2018 |
+| US — ADA Title II | State and local government | **WCAG 2.1 Level AA** | **26-Apr-2027 / 26-Apr-2028** |
 
-**EAA (Directiva (UE) 2019/882)** — citas verbatim de EUR-Lex:
+**EAA (Directive (EU) 2019/882)** — verbatim quotes from EUR-Lex:
 - Art. 31.1: *"Member States shall adopt and publish, by 28 June 2022, the laws, regulations
   and administrative provisions necessary to comply with this Directive."*
 - Art. 31.2: *"They shall apply those measures from 28 June 2025."*
 - Art. 31.3: *"By way of derogation from paragraph 2 of this Article, Member States may
   decide to apply the measures regarding the obligations set out in Article 4(8) at the
-  latest from 28 June 2027."* (comunicaciones de emergencia).
-- Art. 4.5, **la exención que más se invoca mal**: *"Microenterprises providing services
+  latest from 28 June 2027."* (emergency communications).
+- Art. 4.5, **the exemption most often invoked wrongly**: *"Microenterprises providing services
   shall be exempt from complying with the accessibility requirements referred to in paragraph
   3 of this Article and any obligations relating to the compliance with those requirements."*
-  → **la exención es para microempresas que prestan SERVICIOS, no para microempresas que
-  fabrican productos.** No se aplica de oído: se comprueba contra el texto.
-- Art. 32.1 (transitoria): *"Member States shall provide for a transitional period ending on
-  28 June 2030 during which service providers may continue to provide their services"* con
-  productos usados legalmente antes de la fecha. **No es una prórroga general hasta 2030.**
+  → **the exemption is for microenterprises providing SERVICES, not for microenterprises that
+  manufacture products.** Do not apply it from hearsay: check it against the text.
+- Art. 32.1 (transitional): *"Member States shall provide for a transitional period ending on
+  28 June 2030 during which service providers may continue to provide their services"* using
+  products lawfully used before the date. **It is not a general extension until 2030.**
 
-**España**: la transposición es la **Ley 11/2023, de 8 de mayo, de trasposición de Directivas
-de la Unión Europea en materia de accesibilidad de determinados productos y servicios,
-migración de personas altamente cualificadas, tributaria y digitalización de actuaciones
-notariales y registrales** (BOE-A-2023-11022); su Título I transpone la EAA. Desarrollo
-posterior verificado: **Real Decreto 143/2026, de 25 de febrero, por el que se crea y regula
-la Unidad técnica de apoyo y coordinación de las autoridades de vigilancia en materia de
-requisitos de accesibilidad** (BOE-A-2026-4520), que desarrolla el art. 28 de la Ley 11/2023
-— es decir, **la maquinaria de vigilancia ya existe**, no es una obligación sin autoridad
-detrás. El **RD 1112/2018, de 7 de septiembre, sobre accesibilidad de los sitios web y
-aplicaciones para dispositivos móviles del sector público** sigue siendo el que rige el
-sector público, con su **declaración de accesibilidad** obligatoria (§6.1). Las cuantías del
-régimen sancionador de la Ley 11/2023 y los plazos exactos de sus disposiciones transitorias:
-**hueco, verificar en el texto consolidado del BOE** (§8).
+**Spain**: the transposition is **Ley 11/2023, de 8 de mayo, de trasposición de Directivas de la
+Unión Europea en materia de accesibilidad de determinados productos y servicios, migración de
+personas altamente cualificadas, tributaria y digitalización de actuaciones notariales y
+registrales** (BOE-A-2023-11022); its Title I transposes the EAA. Verified subsequent development:
+**Real Decreto 143/2026, de 25 de febrero, por el que se crea y regula la Unidad técnica de apoyo
+y coordinación de las autoridades de vigilancia en materia de requisitos de accesibilidad**
+(BOE-A-2026-4520), which develops art. 28 of Ley 11/2023 — that is, **the enforcement machinery
+already exists**, this is not an obligation without an authority behind it. **Real Decreto
+1112/2018, de 7 de septiembre, sobre accesibilidad de los sitios web y aplicaciones para
+dispositivos móviles del sector público** remains the one governing the public sector, with its
+mandatory **accessibility statement** (§6.1). The amounts under the penalty regime of Ley 11/2023
+and the exact deadlines of its transitional provisions: **gap, check in the consolidated BOE text**
+(§8).
 
-**EN 301 549**: la versión con presunción de conformidad es la **citada en el DOUE**, no la
-última que ETSI haya publicado. Verificado: **V3.2.1 (2021-03)** es la referenciada; existe
-un borrador **V4.1.0 (2025-11)** publicado por ETSI que alinea las cláusulas 9, 10 y 11 con
-WCAG 2.2 y añade Anexo ZA (Directiva 2016/2102) y una cláusula A.2 para la Directiva
-2019/882. La Comisión Europea lo dice verbatim: *"New versions of the WCAG or of EN 301 549
-do not automatically change the legal obligations."* **La fecha de publicación de una V4.1.1
-en el DOUE es un hueco: circula "octubre de 2026" en fuentes secundarias, sin confirmación
-primaria** (§8). Consecuencia práctica: **construir contra WCAG 2.2 AA aunque la norma citada
-siga en 2.1 AA** — 2.2 es superconjunto salvo 4.1.1, y evita re-auditar cuando cambie la
-cita.
+**EN 301 549**: the version carrying presumption of conformity is the one **cited in the OJEU**,
+not the latest ETSI has published. Verified: **V3.2.1 (2021-03)** is the referenced one; there is
+a draft **V4.1.0 (2025-11)** published by ETSI that aligns clauses 9, 10 and 11 with WCAG 2.2 and
+adds Annex ZA (Directive 2016/2102) and a clause A.2 for Directive 2019/882. The European
+Commission puts it verbatim: *"New versions of the WCAG or of EN 301 549 do not automatically
+change the legal obligations."* **The publication date of a V4.1.1 in the OJEU is a gap: "October
+2026" circulates in secondary sources, without primary confirmation** (§8). Practical consequence:
+**build against WCAG 2.2 AA even if the cited standard is still 2.1 AA** — 2.2 is a superset
+except for 4.1.1, and it avoids re-auditing when the citation changes.
 
-**EE. UU. — corrección importante**: la regla de la ADA Título II se publicó el **24 de abril
-de 2024** con estándar técnico, verbatim de ada.gov: *"The Web Content Accessibility
-Guidelines (WCAG) Version 2.1, Level AA is the technical standard for state and local
-governments' web content and mobile apps."* **Las fechas de cumplimiento se ampliaron**:
-ada.gov, verbatim: *"On April 20, 2026, the Federal Register published the Department's
-Interim Final Rule (IFR) extending the compliance date for State and local government
-entities with a total population of 50,000 or more to April 26, 2027. The compliance date for
-public entities with a total population of less than 50,000, or any special district
-government, is extended to April 26, 2028."* **Discrepancia declarada**: buena parte de las
-fuentes secundarias (blogs de proveedores, guías "2026") siguen citando el **24/26 de abril
-de 2026** como fecha viva. Está desfasado. **Manda ada.gov.** Lo que **no** cambió: el
-estándar técnico ni el alcance del contenido cubierto.
+**US — important correction**: the ADA Title II rule was published on **24 April 2024** with a
+technical standard, verbatim from ada.gov: *"The Web Content Accessibility Guidelines (WCAG)
+Version 2.1, Level AA is the technical standard for state and local governments' web content and
+mobile apps."* **The compliance dates were extended**: ada.gov, verbatim: *"On April 20, 2026, the
+Federal Register published the Department's Interim Final Rule (IFR) extending the compliance date
+for State and local government entities with a total population of 50,000 or more to April 26,
+2027. The compliance date for public entities with a total population of less than 50,000, or any
+special district government, is extended to April 26, 2028."* **Declared discrepancy**: a good
+share of secondary sources (vendor blogs, "2026" guides) still cite **24/26 April 2026** as a live
+date. That is out of date. **ada.gov wins.** What did **not** change: the technical standard, nor
+the scope of covered content.
 
-**Section 508** no se ha actualizado a WCAG 2.1/2.2: sigue incorporando **WCAG 2.0 niveles A
-y AA**, con la regla final en vigor desde el **18 de enero de 2018**. Consecuencia: cumplir
-2.2 AA cubre 508; lo contrario no.
+**Section 508** has not been updated to WCAG 2.1/2.2: it still incorporates **WCAG 2.0 levels A
+and AA**, with the final rule in force since **18 January 2018**. Consequence: meeting 2.2 AA
+covers 508; the reverse does not.
 
-### 2.3 Herramientas
+### 2.3 Tooling
 
-| Uso | Por defecto | Versión / licencia verificada | Nota |
+| Use | Default | Verified version / licence | Note |
 |---|---|---|---|
-| Motor de reglas | **`axe-core`** | 4.12.1 — **MPL-2.0** | Estándar de facto; base de casi todo lo demás |
-| Test unitario/componente | `jest-axe` / `@axe-core/playwright` | Ver §8 | Auditar el componente del sistema de diseño, no la página entera |
-| Rastreo de sitio en CI | **`pa11y-ci`** (`.pa11yci`) | `pa11y` 9.1.1 — **LGPL-3.0-only** | **Licencia LGPL, no MIT**: relevante si se empaqueta o se enlaza |
-| Auditoría de página | **Lighthouse** | 13.4.1 — Apache-2.0 | Su categoría *accessibility* es axe-core con subconjunto de reglas |
-| Gate en CI | **Lighthouse CI** (`@lhci/cli`) | 0.15.1 — Apache-2.0 | Mismo binario que el presupuesto de rendimiento |
-| Exploratorio manual | WAVE, ARC Toolkit, *Accessibility Tree* de DevTools | — | No automatizable en CI |
-| Lectores de pantalla | **NVDA + Firefox/Chrome (Windows)**, **VoiceOver + Safari (macOS/iOS)**, **TalkBack + Chrome (Android)** | — | JAWS si el público objetivo es corporativo/AAPP (§4.3) |
+| Rules engine | **`axe-core`** | 4.12.1 — **MPL-2.0** | De facto standard; the basis of almost everything else |
+| Unit/component test | `jest-axe` / `@axe-core/playwright` | See §8 | Audit the design-system component, not the whole page |
+| Site crawl in CI | **`pa11y-ci`** (`.pa11yci`) | `pa11y` 9.1.1 — **LGPL-3.0-only** | **LGPL licence, not MIT**: relevant if it is packaged or linked |
+| Page audit | **Lighthouse** | 13.4.1 — Apache-2.0 | Its *accessibility* category is axe-core with a subset of rules |
+| CI gate | **Lighthouse CI** (`@lhci/cli`) | 0.15.1 — Apache-2.0 | Same binary as the performance budget |
+| Manual exploratory | WAVE, ARC Toolkit, DevTools *Accessibility Tree* | — | Not automatable in CI |
+| Screen readers | **NVDA + Firefox/Chrome (Windows)**, **VoiceOver + Safari (macOS/iOS)**, **TalkBack + Chrome (Android)** | — | JAWS if the target audience is corporate/public administration (§4.3) |
 
-**`pa11y` es LGPL-3.0-only** — no MIT, como suele asumirse. Comprobado en su `LICENSE` en
-crudo y en el campo `license` de npm. Uso como herramienta de CI: sin problema. Enlazarlo
-dentro de un producto distribuido: revisar con quien lleve licencias.
+**`pa11y` is LGPL-3.0-only** — not MIT, as is usually assumed. Checked in its raw `LICENSE` and in
+the npm `license` field. Use as a CI tool: no problem. Linking it inside a distributed product:
+review with whoever owns licensing.
 
-## 3. Criterios que más se incumplen (y qué exigen literalmente)
+## 3. Most commonly failed criteria (and what they literally require)
 
-**Base empírica, no intuición.** WebAIM Million, muestra de **febrero de 2026** sobre el
-millón de portadas más populares: **95,9 % de las portadas tenían fallos de WCAG 2
-detectados**, subiendo desde el 94,8 % de 2025 — *"reversing a trend of small improvements
-each of the previous 6 years"*. Y como solo se cuenta lo detectable automáticamente, el
-propio informe concluye verbatim: *"this suggests that the rate of full WCAG 2 A/AA
-conformance was certainly lower than 4.1%."*
+**Empirical base, not intuition.** WebAIM Million, **February 2026** sample over the million most
+popular home pages: **95.9% of home pages had detected WCAG 2 failures**, up from 94.8% in 2025 —
+*"reversing a trend of small improvements each of the previous 6 years"*. And since only what is
+automatically detectable is counted, the report itself concludes verbatim: *"this suggests that
+the rate of full WCAG 2 A/AA conformance was certainly lower than 4.1%."*
 
-Los seis fallos que concentran el **96 % de todos los errores detectados** (portadas
-afectadas, feb-2026):
+The six failures that account for **96% of all detected errors** (home pages affected, Feb-2026):
 
-| Fallo | % portadas | Criterio |
+| Failure | % of home pages | Criterion |
 |---|---|---|
-| Texto de bajo contraste | **83,9 %** | 1.4.3 |
-| Falta texto alternativo en imágenes | 53,1 % | 1.1.1 |
-| Falta etiqueta en campo de formulario | 51,0 % | 1.3.1 / 3.3.2 / 4.1.2 |
-| Enlaces vacíos | 46,3 % | 2.4.4 / 4.1.2 |
-| Botones vacíos | 30,6 % | 4.1.2 |
-| Falta idioma del documento | 13,5 % | 3.1.1 |
+| Low-contrast text | **83.9%** | 1.4.3 |
+| Missing alternative text on images | 53.1% | 1.1.1 |
+| Missing form field label | 51.0% | 1.3.1 / 3.3.2 / 4.1.2 |
+| Empty links | 46.3% | 2.4.4 / 4.1.2 |
+| Empty buttons | 30.6% | 4.1.2 |
+| Missing document language | 13.5% | 3.1.1 |
 
-**Criterio operativo**: si un proyecto no puede arreglarlo todo de golpe, **estos seis
-primero** — son baratos, automatizables y cubren la mayoría del volumen real.
+**Operational criterion**: if a project cannot fix everything at once, **these six first** — they
+are cheap, automatable and cover most of the real volume.
 
-### 3.1 Contraste y color (verbatim de WCAG 2.2)
+### 3.1 Contrast and colour (verbatim from WCAG 2.2)
 
 - **1.4.3 Contrast (Minimum) (Level AA)**: *"The visual presentation of text and images of
-  text has a contrast ratio of at least 4.5:1"*, con excepciones: *"Large-scale text and
-  images of large-scale text have a contrast ratio of at least 3:1"*; texto incidental,
-  inactivo o decorativo, y logotipos, sin requisito.
+  text has a contrast ratio of at least 4.5:1"*, with exceptions: *"Large-scale text and
+  images of large-scale text have a contrast ratio of at least 3:1"*; incidental, inactive or
+  decorative text, and logotypes, with no requirement.
 - **1.4.11 Non-text Contrast (Level AA)**: *"The visual presentation of the following have a
   contrast ratio of at least 3:1 against adjacent color(s): User Interface Components […]
-  Graphical Objects"*. → **el borde del campo, el estado *checked* y el indicador de foco
-  también tienen umbral**, no solo el texto.
+  Graphical Objects"*. → **the field border, the *checked* state and the focus indicator also
+  have a threshold**, not just text.
 - **1.4.1 Use of Color (Level A)**: *"Color is not used as the only visual means of conveying
   information, indicating an action, prompting a response, or distinguishing a visual
-  element."* → un campo en rojo sin texto de error **incumple**; una serie de gráfica
-  distinguida solo por color **incumple** (ver también la skill `dataviz` si está disponible).
+  element."* → a field in red with no error text **fails**; a chart series distinguished only by
+  colour **fails** (see also the `dataviz` skill if available).
 
-### 3.2 Foco
+### 3.2 Focus
 
 - **2.4.7 Focus Visible (Level AA)**: *"Any keyboard operable user interface has a mode of
   operation where the keyboard focus indicator is visible."*
-- **2.4.11 Focus Not Obscured (Minimum) (Level AA)**, nuevo en 2.2: *"When a user interface
+- **2.4.11 Focus Not Obscured (Minimum) (Level AA)**, new in 2.2: *"When a user interface
   component receives keyboard focus, the component is not entirely hidden due to
-  author-created content."* → **una barra fija (*sticky header*/*cookie banner*) que tapa el
-  elemento enfocado incumple.** Es el fallo típico que ninguna herramienta automática ve.
+  author-created content."* → **a fixed bar (*sticky header*/*cookie banner*) covering the
+  focused element fails.** It is the typical failure no automated tool sees.
 - **2.4.3 Focus Order (Level A)**: *"If a web page can be navigated sequentially and the
   navigation sequences affect meaning or operation, focusable components receive focus in an
   order that preserves meaning and operability."*
-- **2.4.13 Focus Appearance** es **AAA**, no AA: *"an area of the focus indicator […] is at
+- **2.4.13 Focus Appearance** is **AAA**, not AA: *"an area of the focus indicator […] is at
   least as large as the area of a 2 CSS pixel thick perimeter of the unfocused component […]
   and has a contrast ratio of at least 3:1 between the same pixels in the focused and
-  unfocused states."* Buen objetivo de diseño; **no exigible como AA**.
+  unfocused states."* A good design target; **not enforceable as AA**.
 
-### 3.3 Objetivo de puntero (nuevo en 2.2)
+### 3.3 Pointer target (new in 2.2)
 
 - **2.5.8 Target Size (Minimum) (Level AA)**: *"The size of the target for pointer inputs is
-  at least 24 by 24 CSS pixels"*, salvo espaciado equivalente (círculo de 24 px que no
-  interseca otro objetivo), control equivalente en la misma página, objetivo *inline* en una
-  frase, control del agente de usuario o presentación esencial.
+  at least 24 by 24 CSS pixels"*, except for equivalent spacing (a 24 px circle that does not
+  intersect another target), an equivalent control on the same page, an *inline* target within a
+  sentence, a user-agent control or essential presentation.
 - **2.5.7 Dragging Movements (Level AA)**: *"All functionality that uses a dragging movement
   for operation can be achieved by a single pointer without dragging, unless dragging is
-  essential"*. → **todo *drag & drop* necesita una alternativa sin arrastrar.** Es el criterio
-  que más rompe los reordenadores de listas y los *kanban*.
+  essential"*. → **every *drag & drop* needs a non-dragging alternative.** It is the criterion
+  that most often breaks list reorderers and *kanban* boards.
 
-### 3.4 ARIA y nombre accesible
+### 3.4 ARIA and accessible name
 
-**Primera regla de ARIA, verbatim de *Using ARIA* (W3C)**: *"If you can use a native HTML
-element or attribute with the semantics and behavior you require already built in, instead of
-re-purposing an element and adding an ARIA role, state or property to make it accessible,
-then do so."* Las excepciones que el propio documento admite: que la característica exista en
-HTML pero no esté implementada o sin soporte de accesibilidad; que las restricciones de
-diseño visual impidan usar el elemento nativo porque no se puede estilar como se requiere; o
-que la característica no exista hoy en HTML.
+**First rule of ARIA, verbatim from *Using ARIA* (W3C)**: *"If you can use a native HTML element
+or attribute with the semantics and behavior you require already built in, instead of re-purposing
+an element and adding an ARIA role, state or property to make it accessible, then do so."* The
+exceptions the document itself admits: that the feature exists in HTML but is not implemented or
+has no accessibility support; that visual design constraints prevent using the native element
+because it cannot be styled as required; or that the feature does not exist in HTML today.
 
-Reglas derivadas, exigibles:
-- **ARIA mal puesto es peor que nada.** `role="button"` sobre un `<div>` obliga a implementar
-  a mano foco, `Enter`, `Space` y estado deshabilitado. Si no están los cuatro, es un defecto.
-- **Todo control interactivo tiene nombre accesible** (4.1.2 Name, Role, Value, nivel A). El
-  nombre visible debe estar contenido en el nombre accesible (2.5.3 Label in Name, nivel A) —
-  si no, el usuario de control por voz no puede activarlo diciendo lo que ve.
-- **Un icono-botón sin texto necesita nombre**: `aria-label` o texto oculto visualmente. Un
-  `title` **no basta**.
-- **`aria-live` para lo que cambia sin recargar**: 4.1.3 Status Messages (AA), verbatim:
+Derived, enforceable rules:
+- **Badly applied ARIA is worse than none.** `role="button"` on a `<div>` forces you to implement
+  focus, `Enter`, `Space` and the disabled state by hand. If all four are not there, it is a defect.
+- **Every interactive control has an accessible name** (4.1.2 Name, Role, Value, Level A). The
+  visible name must be contained in the accessible name (2.5.3 Label in Name, Level A) — otherwise
+  a voice-control user cannot activate it by saying what they see.
+- **An icon-button with no text needs a name**: `aria-label` or visually hidden text. A `title` is
+  **not enough**.
+- **`aria-live` for what changes without a reload**: 4.1.3 Status Messages (AA), verbatim:
   *"status messages can be programmatically determined through role or properties such that
-  they can be presented to the user by assistive technologies without receiving focus."* La
-  región viva debe existir **en el DOM antes** de recibir el mensaje, o no se anuncia.
+  they can be presented to the user by assistive technologies without receiving focus."* The live
+  region must exist **in the DOM before** receiving the message, or nothing is announced.
 
-### 3.5 Regiones, encabezados y foco en SPA
+### 3.5 Regions, headings and focus in an SPA
 
-- **Landmarks**: `<header>`/`<nav>`/`<main>`/`<footer>` — un solo `<main>` por vista, y un
-  enlace "saltar al contenido" como primer elemento enfocable (2.4.1 Bypass Blocks, nivel A).
-- **Encabezados jerárquicos y sin saltos**; `<h1>` único y descriptivo de la vista. Un
-  encabezado no es un tamaño de letra.
-- **Cambio de ruta en una SPA — el fallo clásico**: navegar sin recarga **no** mueve el foco
-  ni anuncia nada. El usuario de lector de pantalla se queda donde estaba, con el foco en un
-  enlace que ya no existe. **Criterio obligatorio en toda SPA**: al completar un cambio de
-  ruta, (a) actualizar `document.title`, (b) **mover el foco** al `<h1>` de la vista nueva o a
-  su contenedor (`tabindex="-1"` + `.focus()`), y (c) anunciar el cambio por región viva si el
-  destino tarda en pintar. **Sin los tres, la navegación es inaccesible aunque cada pantalla
-  suelta pase axe.** El *router* es de `frontend-frameworks-standards`; **el requisito es de
-  aquí, y se prueba con teclado y lector, no con un test automático.**
-- **Diálogo modal**: foco al abrir dentro del diálogo, foco **atrapado** mientras esté
-  abierto, `Escape` cierra, y **el foco vuelve al elemento que lo abrió**. Usar `<dialog>` con
-  `showModal()` o un componente del sistema de diseño ya auditado; no reimplementarlo por
-  pantalla.
+- **Landmarks**: `<header>`/`<nav>`/`<main>`/`<footer>` — a single `<main>` per view, and a
+  "skip to content" link as the first focusable element (2.4.1 Bypass Blocks, Level A).
+- **Hierarchical headings with no skipped levels**; a single `<h1>` describing the view. A heading
+  is not a font size.
+- **Route change in an SPA — the classic failure**: navigating without a reload **does not** move
+  focus nor announce anything. The screen-reader user stays where they were, with focus on a link
+  that no longer exists. **Mandatory criterion in every SPA**: on completing a route change, (a)
+  update `document.title`, (b) **move focus** to the new view's `<h1>` or to its container
+  (`tabindex="-1"` + `.focus()`), and (c) announce the change via a live region if the destination
+  takes time to paint. **Without all three, navigation is inaccessible even if each individual
+  screen passes axe.** The *router* belongs to `frontend-frameworks-standards`; **the requirement
+  is this skill's, and it is tested with keyboard and screen reader, not with an automated test.**
+- **Modal dialog**: focus moves inside the dialog on open, focus is **trapped** while it is open,
+  `Escape` closes it, and **focus returns to the element that opened it**. Use `<dialog>` with
+  `showModal()` or an already-audited design-system component; do not reimplement it per screen.
 
-### 3.6 Formularios y errores
+### 3.6 Forms and errors
 
-- **Todo campo tiene `<label>` asociado** (`for`/`id`) o `aria-labelledby`. Un `placeholder`
-  **no es una etiqueta**: desaparece al escribir y suele fallar el contraste.
+- **Every field has an associated `<label>`** (`for`/`id`) or `aria-labelledby`. A `placeholder` is
+  **not a label**: it disappears as you type and usually fails contrast.
 - **3.3.1 Error Identification (Level A)**, verbatim: *"If an input error is automatically
   detected, the item that is in error is identified and the error is described to the user in
-  text."* → **en texto**, no solo con un borde rojo o un icono.
+  text."* → **in text**, not just with a red border or an icon.
 - **3.3.3 Error Suggestion (Level AA)**: *"If an input error is automatically detected and
   suggestions for correction are known, then the suggestions are provided to the user, unless
   it would jeopardize the security or purpose of the content."*
 - **3.3.2 Labels or Instructions (Level A)**: *"Labels or instructions are provided when
-  content requires user input."* Formato esperado, obligatoriedad y restricciones **antes** de
-  enviar, no después.
-- El mensaje de error se asocia al campo (`aria-describedby`), se marca `aria-invalid`, y el
-  foco va al primer campo erróneo o a un resumen de errores enfocable.
-- **3.3.8 Accessible Authentication (Minimum) (AA)**, nuevo en 2.2: no exigir una prueba
-  cognitiva (recordar, transcribir, resolver un puzle) sin alternativa. **Afecta directamente
-  a los CAPTCHA y a los códigos de un solo uso que bloquean el pegado** — si el campo impide
-  `paste`, incumple.
+  content requires user input."* Expected format, whether it is required and any constraints
+  **before** submitting, not after.
+- The error message is associated with the field (`aria-describedby`), `aria-invalid` is set, and
+  focus goes to the first erroneous field or to a focusable error summary.
+- **3.3.8 Accessible Authentication (Minimum) (AA)**, new in 2.2: do not require a cognitive test
+  (remembering, transcribing, solving a puzzle) without an alternative. **It directly affects
+  CAPTCHAs and one-time codes that block pasting** — if the field prevents `paste`, it fails.
 
-### 3.7 Tablas de datos
+### 3.7 Data tables
 
-`<table>` solo para datos, nunca para maquetar. `<caption>` con el título, `<th>` con
-`scope="col"`/`scope="row"`, `<thead>`/`<tbody>`. Tablas complejas: `headers`/`id`. Una
-"tabla" hecha de `<div>` requiere `role="table"`/`row`/`cell` completos — **es más trabajo que
-usar la etiqueta nativa** (§3.4).
+`<table>` only for data, never for layout. `<caption>` with the title, `<th>` with
+`scope="col"`/`scope="row"`, `<thead>`/`<tbody>`. Complex tables: `headers`/`id`. A "table" made of
+`<div>`s requires full `role="table"`/`row`/`cell` — **it is more work than using the native
+element** (§3.4).
 
-### 3.8 Movimiento y preferencias del usuario
+### 3.8 Motion and user preferences
 
-- **2.3.1 Three Flashes or Below Threshold (Level A)**: nada que destelle más de tres veces
-  por segundo. Es un criterio de **seguridad física** (epilepsia fotosensible), no estético.
-- **2.2.2 Pause, Stop, Hide (Level A)**: todo movimiento automático de más de 5 s se puede
-  pausar, parar u ocultar. Aplica a carruseles y a *marquees* de logos.
-- **`prefers-reduced-motion: reduce`**: respetar la preferencia del sistema **por defecto** —
-  animaciones de transformación/desplazamiento desactivadas o reducidas a un cambio de
-  opacidad. Cruce con `web-performance-standards`: allí la misma consulta se usa para no
-  gastar hilo principal; aquí es requisito de conformidad.
-- **`prefers-contrast: more`** y modo de contraste forzado del SO: la interfaz debe seguir
-  siendo usable; no anular los colores del sistema con `!important`.
+- **2.3.1 Three Flashes or Below Threshold (Level A)**: nothing that flashes more than three times
+  per second. It is a **physical safety** criterion (photosensitive epilepsy), not an aesthetic one.
+- **2.2.2 Pause, Stop, Hide (Level A)**: any automatic motion lasting more than 5 s can be paused,
+  stopped or hidden. Applies to carousels and logo *marquees*.
+- **`prefers-reduced-motion: reduce`**: respect the system preference **by default** —
+  transform/movement animations disabled or reduced to an opacity change. Crossover with
+  `web-performance-standards`: there the same query is used to avoid burning main-thread time;
+  here it is a conformance requirement.
+- **`prefers-contrast: more`** and the OS forced-contrast mode: the interface must remain usable;
+  do not override system colours with `!important`.
 
-### 3.9 Multimedia, documentos y correo
+### 3.9 Multimedia, documents and email
 
-| Contenido | Requisito mínimo (AA) |
+| Content | Minimum requirement (AA) |
 |---|---|
-| Vídeo con audio, pregrabado | **Subtítulos** (1.2.2, A) + **audiodescripción** (1.2.5, AA) |
-| Solo audio, pregrabado | Transcripción textual (1.2.1, A) |
-| Directo | Subtítulos en directo (1.2.4, AA) |
-| Reproductor | Controles operables por teclado, con nombre accesible; sin autoplay con sonido |
+| Video with audio, prerecorded | **Captions** (1.2.2, A) + **audio description** (1.2.5, AA) |
+| Audio-only, prerecorded | Text transcript (1.2.1, A) |
+| Live | Live captions (1.2.4, AA) |
+| Player | Keyboard-operable controls with an accessible name; no autoplay with sound |
 
-- **Los subtítulos automáticos sin revisar no cumplen**: 1.2.2 exige subtítulos, y unos
-  subtítulos con errores de transcripción no transmiten el contenido. Revisión humana.
-- **Transcripción ≠ subtítulos**: la transcripción no cubre 1.2.2 para vídeo.
-- **La entrega técnica de la pista es de `streaming-multimedia-standards`** (WebVTT/TTML/IMSC,
-  CEA-608/708, declaración en el manifiesto HLS/DASH, *rendition* de audiodescripción). Aquí el
-  criterio de conformidad y quién firma; allí, que llegue al reproductor. **Una pista producida
-  pero no declarada en el manifiesto incumple igual**: el gate es que se vea en el cliente.
-- **PDF**: si se publica un PDF, va **etiquetado** (estructura, orden de lectura, texto
-  alternativo, idioma, título del documento) — referencia **PDF/UA**. Criterio preferente:
-  **publicar HTML y ofrecer el PDF como descarga secundaria**, no al revés. Un PDF escaneado
-  sin capa de texto es contenido inaccesible, sin matices.
-- **Correo (HTML)**: texto alternativo en imágenes, contraste suficiente, jerarquía de
-  encabezados, y **versión de texto plano** en el `multipart/alternative`. El correo que solo
-  es una imagen enlazada es inaccesible.
+- **Unreviewed automatic captions do not conform**: 1.2.2 requires captions, and captions with
+  transcription errors do not convey the content. Human review.
+- **Transcript ≠ captions**: a transcript does not cover 1.2.2 for video.
+- **The technical delivery of the track belongs to `streaming-multimedia-standards`**
+  (WebVTT/TTML/IMSC, CEA-608/708, declaration in the HLS/DASH manifest, audio-description
+  *rendition*). Here the conformance criterion and who signs it; there, that it reaches the player.
+  **A track that is produced but not declared in the manifest fails all the same**: the gate is
+  that it shows up in the client.
+- **PDF**: if a PDF is published, it goes out **tagged** (structure, reading order, alternative
+  text, language, document title) — reference **PDF/UA**. Preferred criterion: **publish HTML and
+  offer the PDF as a secondary download**, not the other way round. A scanned PDF with no text
+  layer is inaccessible content, no nuance.
+- **Email (HTML)**: alternative text on images, sufficient contrast, heading hierarchy, and a
+  **plain-text version** in the `multipart/alternative`. An email that is just a linked image is
+  inaccessible.
 
-## 4. Método de prueba y gates de CI
+## 4. Testing method and CI gates
 
-### 4.1 Qué automatiza la automatización — el dato, no la intuición
+### 4.1 What automation actually automates — the data, not intuition
 
-**Ninguna herramienta automática cierra la conformidad.** Cifras verificadas, con su fuente y
-su sesgo declarado:
+**No automated tool closes conformance.** Verified figures, with their source and declared bias:
 
-- **Deque (fabricante de `axe-core`)**, sobre >2.000 auditorías, >13.000 páginas y ~300.000
-  incidencias: *"57.38% of total issues were identified using its automated tests"*. La
-  documentación de `axe-core` lo repite: *"With axe-core, you can find on average 57% of WCAG
-  issues automatically"*. **Es un estudio del fabricante sobre su propio producto**, y mide
-  **volumen de incidencias**, no porcentaje de criterios de éxito cubiertos.
-- **UK Government Digital Service**: la mejor herramienta que probó encontró **el 40 %** de
-  las barreras conocidas.
-- Deque sitúa sus *Intelligent Guided Tests* (semiautomáticas, con intervención humana) en
-  torno al **80 %**; el salto 57 %→80 % **no es automatización, es una persona guiada**.
+- **Deque (maker of `axe-core`)**, over >2,000 audits, >13,000 pages and ~300,000 issues:
+  *"57.38% of total issues were identified using its automated tests"*. The `axe-core`
+  documentation repeats it: *"With axe-core, you can find on average 57% of WCAG issues
+  automatically"*. **It is a vendor study about its own product**, and it measures **issue
+  volume**, not the percentage of success criteria covered.
+- **UK Government Digital Service**: the best tool it tested found **40%** of the known barriers.
+- Deque puts its *Intelligent Guided Tests* (semi-automated, with human intervention) at around
+  **80%**; the 57%→80% jump **is not automation, it is a guided person**.
 
-**Criterio fijado**: tratar el **~40 %** como cifra de trabajo conservadora y el **57 %** como
-cota superior optimista de fabricante. **Entre el 43 % y el 60 % de los problemas reales no
-los ve ninguna herramienta.** Consecuencia directa: **una puntuación de 100 en la categoría
-*accessibility* de Lighthouse no significa que el sitio sea accesible**, significa que pasaron
-las reglas que se pueden comprobar sin entender el contenido. Nada que sea juicio semántico
-—si el `alt` describe la imagen, si el orden del foco tiene sentido, si el error se entiende,
-si el diálogo devuelve el foco— es automatizable.
+**Fixed criterion**: treat **~40%** as the conservative working figure and **57%** as the
+optimistic vendor upper bound. **Between 43% and 60% of real problems are seen by no tool.**
+Direct consequence: **a score of 100 in Lighthouse's *accessibility* category does not mean the
+site is accessible**, it means it passed the rules that can be checked without understanding the
+content. Nothing that is a semantic judgement — whether the `alt` describes the image, whether the
+focus order makes sense, whether the error is understandable, whether the dialog returns focus —
+is automatable.
 
-### 4.2 Gates de CI (orden de coste creciente)
+### 4.2 CI gates (in increasing order of cost)
 
-1. **Lint estático** (`eslint-plugin-jsx-a11y` o equivalente del framework): sobre el
-   *diff*, en el *pre-commit*. Coste ~0.
-2. **`axe-core` a nivel de componente** (`jest-axe`) en los componentes del sistema de
-   diseño: **cero violaciones, rompe el build**. Es el gate más rentable porque un componente
-   arreglado arregla todas sus instancias.
-3. **`@axe-core/playwright` en los recorridos E2E críticos** (alta, login, compra, búsqueda),
-   **en cada estado relevante**: formulario vacío, formulario con errores, diálogo abierto,
-   menú desplegado. **Un análisis del estado inicial de la página no vale de nada**: los
-   fallos viven en los estados.
-4. **`pa11y-ci` con `.pa11yci`** rastreando el conjunto de URLs representativas en *nightly*,
-   no en cada PR.
-5. **Lighthouse CI** con aserción sobre la categoría *accessibility*: **umbral absoluto y
-   además prohibición de regresión** respecto a la rama principal. Mismo binario y misma
-   configuración que el presupuesto de `web-performance-standards`.
+1. **Static lint** (`eslint-plugin-jsx-a11y` or the framework's equivalent): over the *diff*, in
+   the *pre-commit*. Cost ~0.
+2. **`axe-core` at component level** (`jest-axe`) on design-system components: **zero violations,
+   breaks the build**. It is the most profitable gate because one fixed component fixes all its
+   instances.
+3. **`@axe-core/playwright` on the critical E2E journeys** (sign-up, login, checkout, search),
+   **in every relevant state**: empty form, form with errors, dialog open, menu expanded. **An
+   analysis of the page's initial state is worthless**: the failures live in the states.
+4. **`pa11y-ci` with `.pa11yci`** crawling the set of representative URLs *nightly*, not on every
+   PR.
+5. **Lighthouse CI** with an assertion on the *accessibility* category: **an absolute threshold
+   and, on top of that, a ban on regression** relative to the main branch. Same binary and same
+   configuration as the `web-performance-standards` budget.
 
-**Política de fallo**: `axe-core` **serious** y **critical** rompen el build sin excepción.
-`moderate`/`minor` avisan y entran en el registro. **Las exclusiones (`disableRules`,
-selectores excluidos) se declaran en el fichero de configuración con motivo e issue asociado,
-nunca en línea y nunca en silencio.**
+**Failure policy**: `axe-core` **serious** and **critical** break the build without exception.
+`moderate`/`minor` warn and go into the register. **Exclusions (`disableRules`, excluded
+selectors) are declared in the configuration file with a reason and an associated issue, never
+inline and never silently.**
 
-### 4.3 Lo que no se puede automatizar (y es obligatorio)
+### 4.3 What cannot be automated (and is mandatory)
 
-**Requisito no sustituible**: antes de declarar conformidad, cada recorrido crítico se prueba
+**Non-substitutable requirement**: before declaring conformance, every critical journey is tested
 
-- **Solo con teclado**, sin ratón: `Tab`/`Shift+Tab` recorren todo lo interactivo en orden
-  lógico, el foco es visible siempre (§3.2), no hay trampas de foco, `Escape` cierra lo que
-  se abre y **el foco vuelve donde debía**.
-- **Con al menos dos lectores de pantalla reales**, en su pareja natural de navegador:
-  **NVDA + Firefox o Chrome (Windows)** y **VoiceOver + Safari (macOS/iOS)**; **TalkBack +
-  Chrome** si hay web móvil; **JAWS** si el público objetivo es corporativo o administración
-  pública. Los lectores **no se comportan igual entre sí**: un patrón que funciona en
-  VoiceOver puede callar en NVDA. **Emular con el árbol de accesibilidad de DevTools no
-  sustituye la prueba**; el árbol dice qué hay, no qué se oye.
-- **Con zoom al 200 % y al 400 %** (1.4.4 Resize Text, 1.4.10 Reflow) y con espaciado de
-  texto forzado (1.4.12).
-- **Con usuarios con discapacidad** cuando el producto sea crítico o de uso masivo. Es la
-  única prueba que detecta problemas de usabilidad que técnicamente "cumplen".
+- **Keyboard-only**, no mouse: `Tab`/`Shift+Tab` traverse everything interactive in a logical
+  order, focus is always visible (§3.2), there are no focus traps, `Escape` closes what opens and
+  **focus returns where it should**.
+- **With at least two real screen readers**, in their natural browser pairing: **NVDA + Firefox or
+  Chrome (Windows)** and **VoiceOver + Safari (macOS/iOS)**; **TalkBack + Chrome** if there is a
+  mobile web; **JAWS** if the target audience is corporate or public administration. Screen readers
+  **do not behave the same as each other**: a pattern that works in VoiceOver may stay silent in
+  NVDA. **Emulating with the DevTools accessibility tree does not replace the test**; the tree says
+  what is there, not what is heard.
+- **At 200% and 400% zoom** (1.4.4 Resize Text, 1.4.10 Reflow) and with forced text spacing
+  (1.4.12).
+- **With users with disabilities** when the product is critical or mass-market. It is the only test
+  that catches usability problems that technically "conform".
 
-## 5. Seguridad y riesgos del stack
+## 5. Stack security and risks
 
-### 5.1 Los overlays de accesibilidad: PROHIBIDOS como estrategia de conformidad
+### 5.1 Accessibility overlays: FORBIDDEN as a conformance strategy
 
-**Posición formal de la comunidad**, verbatim del *Overlay Fact Sheet* (**1.031 firmantes** en
-la consulta de ago-2026):
+**Formal position of the community**, verbatim from the *Overlay Fact Sheet* (**1,031 signatories**
+as consulted in Aug-2026):
 
 > *"1. We will never advocate, recommend, or integrate an overlay which deceptively markets
 > itself as providing automated compliance with laws or standards
@@ -448,159 +434,154 @@ la consulta de ago-2026):
 > encourage the site owners who've implemented these products to use more robust, independent,
 > and permanent strategies to making their sites more accessible"*
 
-**Y hay resolución de un regulador, no solo opinión**: la **FTC** ordenó a **accessiBe** pagar
-**1.000.000 USD** por afirmaciones engañosas sobre su widget `accessWidget` (anuncio del
-3-ene-2025; orden final aprobada el 24-abr-2025). La orden le prohíbe representar que sus
-productos automáticos pueden hacer cualquier web conforme a WCAG o mantener esa conformidad
-sin pruebas que lo sustenten, y también hacer pasar reseñas propias por opiniones
-independientes. La FTC documentó en webs con el *overlay* instalado: `alt` ausente o
-incorrecto, indicador de foco ausente, trampas de teclado y niveles de encabezado erróneos —
-**es decir, el overlay ni siquiera arregla lo que dice arreglar**. Nota de rigor: fue un
-acuerdo **sin admisión** de las prácticas.
+**And there is a regulator's resolution, not just opinion**: the **FTC** ordered **accessiBe** to
+pay **USD 1,000,000** over deceptive claims about its `accessWidget` widget (announcement of
+3-Jan-2025; final order approved on 24-Apr-2025). The order bars it from representing that its
+automated products can make any website WCAG-conformant or maintain that conformance without
+substantiating evidence, and also from passing off its own reviews as independent opinions. The
+FTC documented on sites with the *overlay* installed: missing or incorrect `alt`, missing focus
+indicator, keyboard traps and wrong heading levels — **that is, the overlay does not even fix what
+it claims to fix**. Note for rigour: it was a settlement **without admission** of the practices.
 
-**Criterio**: un overlay **no** se instala como solución de conformidad. Si ya está instalado,
-**retirarlo** forma parte del plan de remediación. Un widget propio de preferencias
-(contraste, tamaño de texto) construido y auditado por el equipo **no es un overlay** y es
-legítimo — la diferencia es que no promete conformidad ni se inyecta sobre el DOM ajeno.
+**Criterion**: an overlay is **not** installed as a conformance solution. If one is already
+installed, **removing it** is part of the remediation plan. An in-house preferences widget
+(contrast, text size) built and audited by the team **is not an overlay** and is legitimate — the
+difference is that it does not promise conformance nor inject itself over someone else's DOM.
 
-### 5.2 Riesgo de terceros
+### 5.2 Third-party risk
 
-Un overlay o un widget de accesibilidad de terceros es **JavaScript de terceros con acceso
-total al DOM**, que a menudo intercepta el foco y la entrada de teclado. Implicaciones que
-suelen pasarse por alto: superficie de XSS y de cadena de suministro, incompatibilidad con
-una CSP estricta (obliga a `unsafe-inline` o a `unsafe-eval` con frecuencia), y **tratamiento
-de datos de usuarios con discapacidad** — categoría especialmente sensible bajo el RGPD (ver
-`privacy-engineering-standards`). Si aun así entra, entra con SRI, con revisión de CSP y con
-DPA firmado.
+An overlay or a third-party accessibility widget is **third-party JavaScript with full access to
+the DOM**, which often intercepts focus and keyboard input. Implications usually overlooked: XSS
+and supply-chain surface, incompatibility with a strict CSP (it frequently forces `unsafe-inline`
+or `unsafe-eval`), and **processing of data about users with disabilities** — a specially
+sensitive category under the GDPR (see `privacy-engineering-standards`). If it goes in anyway, it
+goes in with SRI, with a CSP review and with a signed DPA.
 
-### 5.3 Accesibilidad y controles de seguridad
+### 5.3 Accessibility and security controls
 
-- **CAPTCHA**: si es la única forma de pasar, incumple 3.3.8 (§3.6). Alternativas: detección
-  sin interacción, tokens de atestación, límite de tasa. Si hay CAPTCHA, **alternativa no
-  visual y no cognitiva obligatoria**.
-- **MFA**: los códigos de un solo uso deben poder **pegarse** y ser leídos por el gestor de
-  contraseñas (`autocomplete="one-time-code"`). Bloquear el pegado por "seguridad" es un
-  incumplimiento con coste de seguridad negativo.
-- **Timeouts de sesión**: 2.2.1 Timing Adjustable (nivel A) exige avisar y permitir extender.
-  Un cierre de sesión silencioso a los 15 minutos rompe a quien necesita más tiempo.
-- **Contenido oculto por seguridad**: `aria-hidden="true"` **nunca** sobre algo enfocable
-  (§7). Si debe ocultarse a todos, `hidden`/`display:none`/`inert`.
+- **CAPTCHA**: if it is the only way through, it fails 3.3.8 (§3.6). Alternatives: interaction-free
+  detection, attestation tokens, rate limiting. If there is a CAPTCHA, **a non-visual and
+  non-cognitive alternative is mandatory**.
+- **MFA**: one-time codes must be **pasteable** and readable by the password manager
+  (`autocomplete="one-time-code"`). Blocking paste "for security" is a failure with a negative
+  security cost.
+- **Session timeouts**: 2.2.1 Timing Adjustable (Level A) requires warning and allowing an
+  extension. A silent logout after 15 minutes breaks anyone who needs more time.
+- **Content hidden for security**: `aria-hidden="true"` **never** on anything focusable (§7). If it
+  must be hidden from everyone, `hidden`/`display:none`/`inert`.
 
-## 6. Operabilidad: declarar, medir y no regresar
+## 6. Operability: declare, measure and do not regress
 
-### 6.1 Declaración de accesibilidad
+### 6.1 Accessibility statement
 
-Cuando la ley la exige (sector público UE: Directiva 2016/2102; España: **RD 1112/2018**), la
-declaración **es un entregable con contenido tasado**, no una página de buenas intenciones.
-Debe incluir, como mínimo: estado de cumplimiento (conforme / parcialmente conforme / no
-conforme), **qué partes del contenido no son accesibles y por qué**, alternativas ofrecidas,
-mecanismo de comunicación y solicitud de información accesible, **procedimiento de queja y
-reclamación**, fecha de la declaración y **fecha de la última revisión**. El RD 1112/2018
-obliga además a **revisiones periódicas** y a mantenerla actualizada. **Una declaración que
-afirma conformidad total sin auditoría manual detrás es una falsedad documentada con nombre
-del responsable encima.** Redactar como parcialmente conforme con lista de excepciones
-sinceras es la opción correcta y la defendible.
+Where the law requires it (EU public sector: Directive 2016/2102; Spain: **RD 1112/2018**), the
+statement **is a deliverable with prescribed content**, not a page of good intentions. It must
+include, as a minimum: compliance status (conformant / partially conformant / non-conformant),
+**which parts of the content are not accessible and why**, alternatives offered, a feedback and
+accessible-information request mechanism, a **complaints and claims procedure**, the date of the
+statement and **the date of the last review**. RD 1112/2018 additionally requires **periodic
+reviews** and keeping it up to date. **A statement claiming full conformance without a manual audit
+behind it is a documented falsehood with the responsible person's name on it.** Drafting it as
+partially conformant with an honest list of exceptions is the correct and defensible option.
 
-Para el mercado estadounidense el documento equivalente es el **VPAT / ACR**, que lo pide el
-comprador en el pliego, no el regulador.
+For the US market the equivalent document is the **VPAT / ACR**, which the buyer asks for in the
+tender, not the regulator.
 
-### 6.2 Auditoría e informe
+### 6.2 Audit and report
 
-Alcance por **recorridos de usuario**, no por número de páginas. Cada hallazgo lleva:
-criterio de éxito incumplido (número y nivel), severidad por impacto en el usuario (no por
-facilidad de arreglo), pasos de reproducción, tecnología asistiva y navegador usados, y
-propuesta de remediación. **Los hallazgos entran en el mismo backlog que los demás bugs, con
-el mismo SLA de severidad.** Un tablero de accesibilidad aparte es un tablero que nadie mira.
+Scope by **user journeys**, not by page count. Every finding carries: the failed success criterion
+(number and level), severity by user impact (not by ease of fixing), reproduction steps, the
+assistive technology and browser used, and a remediation proposal. **Findings go into the same
+backlog as every other bug, with the same severity SLA.** A separate accessibility board is a board
+nobody looks at.
 
-### 6.3 No regresión
+### 6.3 Non-regression
 
-- Métrica que se sigue: **violaciones `serious`+`critical` por recorrido crítico**, tendencia
-  mensual. Objetivo: cero, y **sin regresión** entre releases.
-- **Cobertura de auditoría manual**: % de recorridos críticos probados con teclado y lector
-  de pantalla en los últimos N meses. Es la métrica honesta; el resto es el 40-57 %.
-- Los componentes del sistema de diseño se auditan al publicarse una versión mayor y su
-  informe se versiona con el componente.
+- Metric tracked: **`serious`+`critical` violations per critical journey**, monthly trend. Target:
+  zero, and **no regression** between releases.
+- **Manual audit coverage**: % of critical journeys tested with keyboard and screen reader in the
+  last N months. That is the honest metric; the rest is the 40-57%.
+- Design-system components are audited when a major version is published and their report is
+  versioned with the component.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Cadencia**: revisar por web el estado de WCAG, EN 301 549 y las fechas legales **cada
-  trimestre**; las herramientas, con la cadencia normal de dependencias. `axe-core` cambia de
-  reglas entre versiones menores: **fijar versión y revisar el *changelog*** antes de subir,
-  porque una versión nueva puede romper el build con hallazgos legítimos nuevos (eso es
-  bueno: se arreglan, no se silencian).
-- **No planificar contra WCAG 3.0** (§2.1). Planificar contra 2.2 AA.
-- **La accesibilidad se estima dentro de la historia**, no como historia aparte. Una historia
-  sin criterios de aceptación de accesibilidad no cumple la *Definition of Ready*.
+- **Cadence**: review on the web the state of WCAG, EN 301 549 and the legal dates **every
+  quarter**; the tooling, at the normal dependency cadence. `axe-core` changes rules between minor
+  versions: **pin the version and review the *changelog*** before bumping, because a new version
+  can break the build with legitimate new findings (that is good: they get fixed, not silenced).
+- **Do not plan against WCAG 3.0** (§2.1). Plan against 2.2 AA.
+- **Accessibility is estimated inside the story**, not as a separate story. A story without
+  accessibility acceptance criteria does not meet the *Definition of Ready*.
 
-Prohibiciones explícitas:
+Explicit prohibitions:
 
-- ❌ **Overlays de accesibilidad como solución de conformidad** (accessiBe, UserWay, AudioEye
-  y similares en modo *widget*). Ver §5.1: hay posición formal de 1.031 firmantes y una orden
-  de la FTC de 1 M USD.
-- ❌ **`outline: none` (o `outline: 0`) sin indicador de foco sustituto** que cumpla 1.4.11
-  y 2.4.7. Es el incumplimiento de una línea más repetido del sector.
-- ❌ **`aria-hidden="true"` sobre contenido interactivo o que lo contenga**. Crea un elemento
-  enfocable e invisible para la tecnología asistiva: el peor de los dos mundos. Usar `inert`.
-- ❌ **`tabindex` positivo** (`tabindex="1"` y superiores). Rompe el orden del documento en
-  toda la página, no solo donde se pone. Solo `0` y `-1`.
-- ❌ **Texto dentro de imágenes** para contenido (1.4.5 Images of Text, AA). No escala, no se
-  traduce, no se selecciona y suele fallar contraste. Excepciones: logotipos y casos donde la
-  presentación es esencial.
-- ❌ **`placeholder` como única etiqueta** de un campo.
-- ❌ **`<div>`/`<span>` con `onclick`** sin `role`, sin `tabindex="0"` y sin manejo de teclado.
-  Antes de eso, `<button>` (§3.4).
-- ❌ **Anunciar "conforme WCAG AA" sin auditoría manual** con teclado y lector de pantalla.
-  Con declaración legal firmada, además de falso es responsabilidad.
-- ❌ **Silenciar reglas de `axe-core` en línea** o excluir selectores sin motivo escrito e
-  issue asociado.
-- ❌ **`user-scalable=no` / `maximum-scale=1`** en el `viewport`: bloquea el zoom (1.4.4).
-- ❌ **Cambio de ruta en SPA sin gestión de foco ni anuncio** (§3.5).
-- ❌ **Subtítulos automáticos sin revisión humana** presentados como cumplimiento de 1.2.2.
-- ❌ **PDF sin etiquetar** como único formato de un contenido esencial.
-- ❌ **Tratar la accesibilidad como fase final** ("lo pasamos por axe antes de salir"). El 43-60
-  % que la automatización no ve se descubre entonces, cuando el rediseño ya no cabe.
+- ❌ **Accessibility overlays as a conformance solution** (accessiBe, UserWay, AudioEye and the
+  like in *widget* mode). See §5.1: there is a formal position with 1,031 signatories and an FTC
+  order of USD 1M.
+- ❌ **`outline: none` (or `outline: 0`) with no substitute focus indicator** meeting 1.4.11 and
+  2.4.7. It is the industry's most repeated one-line failure.
+- ❌ **`aria-hidden="true"` on interactive content or content containing it**. It creates an
+  element that is focusable and invisible to assistive technology: the worst of both worlds. Use
+  `inert`.
+- ❌ **Positive `tabindex`** (`tabindex="1"` and above). It breaks document order across the whole
+  page, not just where it is applied. Only `0` and `-1`.
+- ❌ **Text inside images** for content (1.4.5 Images of Text, AA). It does not scale, is not
+  translated, cannot be selected and usually fails contrast. Exceptions: logotypes and cases where
+  the presentation is essential.
+- ❌ **`placeholder` as a field's only label**.
+- ❌ **`<div>`/`<span>` with `onclick`** without `role`, without `tabindex="0"` and without
+  keyboard handling. Before that, `<button>` (§3.4).
+- ❌ **Announcing "WCAG AA conformant" without a manual audit** with keyboard and screen reader.
+  With a signed legal statement, it is not only false but a liability.
+- ❌ **Silencing `axe-core` rules inline** or excluding selectors with no written reason and
+  associated issue.
+- ❌ **`user-scalable=no` / `maximum-scale=1`** in the `viewport`: it blocks zoom (1.4.4).
+- ❌ **SPA route change with no focus management or announcement** (§3.5).
+- ❌ **Automatic captions with no human review** presented as compliance with 1.2.2.
+- ❌ **Untagged PDF** as the only format of essential content.
+- ❌ **Treating accessibility as a final phase** ("we'll run it through axe before shipping"). The
+  43-60% automation does not see is discovered then, when the redesign no longer fits.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier dato de este documento en un proyecto real, verificar en la fuente
-primaria:
+Before committing any fact from this document in a real project, verify against the primary source:
 
-1. **WCAG**: `w3.org/WAI/standards-guidelines/wcag/` — versión que es Recomendación hoy y
-   fecha de la última actualización. Texto normativo de cada criterio en `w3.org/TR/WCAG22/`,
-   **copiado verbatim**: un matiz mal transcrito cambia si algo cumple o no.
-2. **WCAG 3.0**: `w3.org/TR/wcag-3.0/` — comprobar que sigue siendo *Working Draft*.
-   **Hueco declarado**: fechas previstas de Candidate Recommendation y de Recommendation, sin
-   fuente primaria; las cifras que circulan (Q4-2027, ≥2028, 2029) son de terceros.
-3. **EAA**: EUR-Lex CELEX `32019L0882` — arts. 4, 31 y 32 en su texto consolidado. **No fiarse
-   de resúmenes**: el art. 31.1 (28-jun-2022, transposición) se confunde sistemáticamente con
-   el 31.2 (28-jun-2025, aplicación), y un resumidor automático los invirtió durante esta misma
-   verificación.
-4. **España**: BOE-A-2023-11022 (Ley 11/2023) — **huecos declarados**: no se han verificado en
-   fuente primaria las cuantías del régimen sancionador ni el plazo exacto de la disposición
-   transitoria sobre terminales de autoservicio (una fuente secundaria dice 10 años, la EAA
-   habla de vida útil económica con tope; **discrepancia sin resolver**). BOE-A-2018-12699
-   (RD 1112/2018) y BOE-A-2026-4520 (RD 143/2026).
-5. **EN 301 549**: página de ETSI y **la cita en el DOUE**, que es lo que da presunción de
-   conformidad. **Hueco declarado**: la publicación de V4.1.1 en el DOUE (se cita "octubre de
-   2026" en fuentes secundarias) no está confirmada por fuente primaria. Recordar el verbatim
-   de la Comisión: *"New versions of the WCAG or of EN 301 549 do not automatically change the
-   legal obligations."*
-6. **EE. UU.**: `ada.gov` para el Título II — **las fechas vigentes son 26-abr-2027 y
-   26-abr-2028**, no las de 2026 que siguen repitiendo las guías de proveedores
-   (**discrepancia declarada**, §2.2). `section508.gov` para confirmar si sigue en WCAG 2.0 AA.
-7. **Cifras de automatización**: el 57 % es de Deque sobre sus propias herramientas y el 40 %
-   es de GDS. Buscar si hay estudio independiente más reciente antes de citar cualquiera.
-8. **WebAIM Million**: se publica anualmente (última verificada: **febrero de 2026**).
-   Comprobar la edición vigente antes de citar porcentajes.
-9. **Overlays**: `overlayfactsheet.com` (número de firmantes, verificado: **1.031**) y
-   `ftc.gov` para el estado de la orden contra accessiBe y cualquier acción posterior contra
-   otros proveedores.
-10. **Herramientas — versión y licencia, leyendo el `LICENSE` en crudo**: `axe-core`
-    (verificado 4.12.1, **MPL-2.0**), `pa11y` (9.1.1, **LGPL-3.0-only** — no MIT),
-    `lighthouse` (13.4.1, Apache-2.0), `@lhci/cli` (0.15.1, Apache-2.0). Comprobar además si
-    alguna ha pasado a modo mantenimiento o ha cambiado de repositorio: **el feed de releases
-    de GitHub no es la fuente de verdad de un proyecto**; contrastar con su web oficial.
-11. **Hueco declarado**: la adopción de WCAG 2.2 como **ISO/IEC 40500** (se cita una edición
-    de 2025) no se ha verificado contra ISO ni contra W3C. No afirmarlo sin comprobarlo.
+1. **WCAG**: `w3.org/WAI/standards-guidelines/wcag/` — which version is a Recommendation today and
+   the date of the last update. Normative text of each criterion at `w3.org/TR/WCAG22/`, **copied
+   verbatim**: a mistranscribed nuance changes whether something conforms or not.
+2. **WCAG 3.0**: `w3.org/TR/wcag-3.0/` — check it is still a *Working Draft*. **Declared gap**:
+   expected Candidate Recommendation and Recommendation dates, with no primary source; the figures
+   circulating (Q4-2027, ≥2028, 2029) are third-party.
+3. **EAA**: EUR-Lex CELEX `32019L0882` — arts. 4, 31 and 32 in their consolidated text. **Do not
+   trust summaries**: art. 31.1 (28-Jun-2022, transposition) is systematically confused with 31.2
+   (28-Jun-2025, application), and an automatic summariser inverted them during this very
+   verification.
+4. **Spain**: BOE-A-2023-11022 (Ley 11/2023) — **declared gaps**: neither the amounts under the
+   penalty regime nor the exact deadline of the transitional provision on self-service terminals
+   have been verified against a primary source (a secondary source says 10 years, the EAA speaks of
+   economic useful life with a cap; **unresolved discrepancy**). BOE-A-2018-12699 (RD 1112/2018)
+   and BOE-A-2026-4520 (RD 143/2026).
+5. **EN 301 549**: the ETSI page and **the citation in the OJEU**, which is what confers
+   presumption of conformity. **Declared gap**: the publication of V4.1.1 in the OJEU ("October
+   2026" is cited in secondary sources) is not confirmed by a primary source. Remember the
+   Commission's verbatim: *"New versions of the WCAG or of EN 301 549 do not automatically change
+   the legal obligations."*
+6. **US**: `ada.gov` for Title II — **the dates in force are 26-Apr-2027 and 26-Apr-2028**, not the
+   2026 ones vendor guides keep repeating (**declared discrepancy**, §2.2). `section508.gov` to
+   confirm whether it is still on WCAG 2.0 AA.
+7. **Automation figures**: the 57% is Deque's about its own tooling and the 40% is GDS's. Check
+   whether there is a more recent independent study before citing either.
+8. **WebAIM Million**: published annually (last verified: **February 2026**). Check the current
+   edition before citing percentages.
+9. **Overlays**: `overlayfactsheet.com` (number of signatories, verified: **1,031**) and `ftc.gov`
+   for the status of the order against accessiBe and any subsequent action against other vendors.
+10. **Tooling — version and licence, reading the raw `LICENSE`**: `axe-core` (verified 4.12.1,
+    **MPL-2.0**), `pa11y` (9.1.1, **LGPL-3.0-only** — not MIT), `lighthouse` (13.4.1, Apache-2.0),
+    `@lhci/cli` (0.15.1, Apache-2.0). Also check whether any has gone into maintenance mode or
+    changed repository: **the GitHub releases feed is not a project's source of truth**; cross-check
+    against its official site.
+11. **Declared gap**: the adoption of WCAG 2.2 as **ISO/IEC 40500** (a 2025 edition is cited) has
+    not been verified against ISO or against W3C. Do not assert it without checking.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

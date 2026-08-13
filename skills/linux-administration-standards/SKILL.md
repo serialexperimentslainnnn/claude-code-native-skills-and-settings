@@ -117,7 +117,7 @@ look at both ends at once or put a sniffer in place, it is theirs).
 | Logging | **journald with persistent storage** (`Storage=persistent`) and explicit limits (`SystemMaxUse=`, `SystemMaxFileSize=`, `MaxRetentionSec=`) | The volatile default loses the log of the previous boot — exactly the one needed after a crash. With no explicit limit, `/var/log/journal` grows to 10% of the FS |
 | Log aggregation | **Forwarding to a central aggregator** from journald (`systemd-journal-upload`, or a vector/promtail/rsyslog agent) | The stack design is set by `observability-standards`. Here the invariant: **the log that only exists on the host that failed does not exist** |
 | Local syslog | Only if a consumer requires it (`ForwardToSyslog=yes`) | Keeping rsyslog **and** journald writing the same thing duplicates the disk and the work. Pick one as the source and the other as transport |
-| Host network management | **The distro's native one, only one**: NetworkManager (`nmcli`/`nmstate`) on RHEL/Fedora and on desktops; **netplan** on Ubuntu (renderer `networkd` on server, `NetworkManager` on desktop); `systemd-networkd` on Debian/minimalist servers and containers | Verified Aug 2026. **The hard rule is not to mix**: two managers on the same interface produce duplicate IPs, overwritten DNS and boots that hang for 2 minutes. NetworkManager is *greedy* (it manages whatever it is not forbidden); `networkd` only manages what is declared to it |
+| Host network management | **The distro's native one, only one** — and **check it on the host, do not assume it**: NetworkManager (`nmcli`/`nmstate`) on RHEL/Fedora and on desktops; **netplan** on Ubuntu (renderer `networkd` on server, `NetworkManager` on desktop). **On Debian the default is a declared gap, not a fact**: neither the Debian Wiki nor the Debian Reference names one (§8), so `ifupdown`, `systemd-networkd` and NetworkManager are all plausible depending on the installation profile. Settle it with `systemctl is-enabled networking systemd-networkd NetworkManager` before writing any configuration | **The hard rule is not to mix**: two managers on the same interface produce duplicate IPs, overwritten DNS and boots that hang for 2 minutes. NetworkManager is *greedy* (it manages whatever it is not forbidden); `networkd` only manages what is declared to it |
 | Host DNS resolution | **`systemd-resolved`** with `/etc/resolv.conf` → symlink to `/run/systemd/resolve/stub-resolv.conf`, and **`resolvectl status` as the source of truth** | `cat /etc/resolv.conf` **does not tell you what is resolving** when there is a stub, per-interface split-DNS or DNS via VPN. Editing `/etc/resolv.conf` by hand on a system with `resolved` is a change that is lost at the next network event |
 | Time | **chrony** on servers; `systemd-timesyncd` (SNTP) only on clients/VMs with no requirement | chrony converges faster, tolerates bad networks, supports NTS and serves as a server. `timesyncd` **is not an NTP server** nor does it discipline well after suspend |
 | Memory control | **Limits in the unit** (`MemoryMax=`, `MemoryHigh=`, `MemoryMin=`) per service, plus `systemd-oomd` where the distro ships it | Verified: `systemd-oomd` comes **enabled by default on Fedora** (since F34, it replaced earlyoom) and **packaged but disabled on RHEL** (`systemctl enable --now systemd-oomd`, `/etc/systemd/oomd.conf`). It acts on **PSI** before the kernel OOM killer, and kills the **cgroup**, not a lone process |
@@ -445,8 +445,14 @@ relying on them:**
   in blogs that "v260 disables cgroup v1 by default" which **contradicts** the v258 `NEWS`
   (where it is already removed): treat the blog source as unreliable and confirm in the `NEWS`.
 - **Debian 13/14 and Ubuntu 26.04: exact default network manager per installation profile** —
-  described here from secondary sources (`ifupdown` on Debian server, netplan+networkd on
-  Ubuntu Server, netplan+NM on Ubuntu Desktop). **Not confirmed against official documentation.**
+  **still a gap, and now a checked one (Aug 2026)**: the Debian Wiki `SystemdNetworkd` page and
+  the official Debian Reference ch. 5 were both read and **neither states which tool is the
+  default**; they present NetworkManager, `ifupdown`, `systemd-networkd` and netplan as options.
+  Secondary sources (blogs, hosting docs) do claim `ifupdown` remains the Debian default and that
+  `systemd-networkd` ships disabled — **that is not primary confirmation and is not asserted in
+  §2**. Ubuntu (netplan+networkd on Server, netplan+NM on Desktop) is likewise unconfirmed here.
+  Close this by reading the installer (`netcfg`) behaviour or `ifupdown`'s package priority, not
+  a blog. Until then: check the live host.
 - **systemd version packaged by each live distro** (Debian stable, Ubuntu LTS, RHEL 9/10,
   Fedora 43/44) — **not verified one by one**. Check on the host before using any
   recent directive.

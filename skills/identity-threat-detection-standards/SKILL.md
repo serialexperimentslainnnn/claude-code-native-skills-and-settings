@@ -3,446 +3,455 @@ name: identity-threat-detection-standards
 description: ITDR — detecting and responding to attacks against identity itself, which is where the perimeter actually is. Use when investigating or defending against password spraying, adversary-in-the-middle session-cookie theft and token replay that survives MFA, refresh-token and primary-refresh-token abuse, MFA fatigue and push bombing, consent phishing and malicious OAuth application grants, device-code-flow phishing, SIM swapping, forged federation assertions (Golden SAML, stolen token-signing certificate, cross-tenant trust abuse), credentials or certificates silently added to an existing application or service principal, illicit device registration, hybrid identity attack paths through directory synchronization and authentication agents in both directions, deciding which identity telemetry you actually retain and what your licence tier silently drops, writing high-value identity detections and their triage, and identity-specific containment where revoking sessions, refresh tokens and consents matters far more than resetting a password. Also covers emergency access accounts and administrative tiering as they are watched, not as they are designed.
 ---
 
-# Estándares de detección y respuesta ante amenazas de identidad (ITDR)
+# Identity threat detection and response (ITDR) standards
 
-Criterios verificados a **agosto de 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica a **el ataque contra la identidad, su detección y su respuesta**: por qué la identidad es
-el vector dominante y con qué evidencia se sostiene eso; las clases de ataque características y
-cómo se ven en los registros; qué telemetría hace falta y qué se pierde según licencia; las
-detecciones que de verdad valen; y la contención específica de identidad, que **no es cambiar la
-contraseña**. Incluye la vigilancia de las cuentas de emergencia y del nivel administrativo, no su
-diseño.
+Applies to **the attack against identity, its detection and its response**: why identity is
+the dominant vector and with what evidence that is sustained; the characteristic attack classes and
+how they look in the logs; what telemetry is needed and what is lost depending on licence; the
+detections that genuinely pay off; and identity-specific containment, which **is not changing the
+password**. It includes watching emergency accounts and the administrative tier, not their
+design.
 
-Triggers: "cuenta comprometida", "inicio de sesión imposible", "pulverización de contraseñas",
-"password spraying", "relleno de credenciales", "AiTM", "adversario en el medio", "robo de cookie
-de sesión", "replay de token", "token robado", "refresh token robado", "PRT", "fatiga de MFA",
-"bombardeo de notificaciones", "MFA push bombing", "consent phishing", "aplicación OAuth
-maliciosa", "concesión de consentimiento", "device code phishing", "flujo de código de
-dispositivo", "SIM swapping", "Golden SAML", "certificado de firma de tokens", "confianza entre
-tenants", "federación añadida al dominio", "credencial añadida a la aplicación",
-"`addPasswordCredential`", "`addKeyCredential`", "service principal con secreto nuevo",
-"registro de dispositivo no reconocido", "método de MFA añadido por el atacante", "regla de
-reenvío de correo creada", "sincronización de hash", "PTA", "agente de autenticación",
-"Entra Connect comprometido", "revocar sesiones", "ITDR".
+Triggers: "compromised account", "impossible travel sign-in", "password spraying",
+"password spraying", "credential stuffing", "AiTM", "adversary in the middle", "session cookie
+theft", "token replay", "stolen token", "stolen refresh token", "PRT", "MFA fatigue",
+"push bombing", "MFA push bombing", "consent phishing", "malicious OAuth
+application", "consent grant", "device code phishing", "device code
+flow", "SIM swapping", "Golden SAML", "token signing certificate", "cross-tenant
+trust", "federation added to the domain", "credential added to the application",
+"`addPasswordCredential`", "`addKeyCredential`", "service principal with a new secret",
+"unrecognised device registration", "MFA method added by the attacker", "mail forwarding
+rule created", "hash synchronisation", "PTA", "authentication agent",
+"Entra Connect compromised", "revoke sessions", "ITDR".
 
-**Principio rector**: **la identidad es hoy el perímetro, y un atacante que se autentica no está
-explotando nada: está usando el sistema como fue diseñado.** De ahí las tres consecuencias que
-ordenan el documento:
+**Governing principle**: **identity is the perimeter today, and an attacker who authenticates is
+not exploiting anything: they are using the system as it was designed.** Hence the three
+consequences that order this document:
 
-1. **La MFA no es una frontera, es un peaje**: se paga una vez y lo que sale del otro lado —una
-   cookie de sesión, un token de actualización— **es una credencial portátil que ya no vuelve a
-   pedir MFA**. Robado el artefacto post-autenticación, la MFA es irrelevante (§3.2).
-2. **No hay malware que buscar.** El ataque de identidad deja como única huella un registro de
-   inicio de sesión, uno de auditoría y uno de consentimiento. Sin esa telemetría retenida no hay
-   investigación posible — y **el nivel de licencia decide cuánta hay** (§3.5).
-3. **Restablecer la contraseña no expulsa a nadie.** Una contraseña nueva no invalida una cookie
-   robada ni un token de actualización vivo. La respuesta correcta revoca, y en un orden concreto
+1. **MFA is not a border, it is a toll**: it is paid once and what comes out the other side —a
+   session cookie, a refresh token— **is a portable credential that never asks for MFA again**.
+   Once the post-authentication artifact is stolen, MFA is irrelevant (§3.2).
+2. **There is no malware to look for.** An identity attack leaves as its only trace a sign-in log,
+   an audit log and a consent log. Without that telemetry retained there is no possible
+   investigation — and **the licence tier decides how much there is** (§3.5).
+3. **Resetting the password expels nobody.** A new password does not invalidate a stolen cookie
+   nor a live refresh token. The correct response revokes, and in a specific order
    (§3.7).
 
-**Postura estrictamente defensiva y autorizada.** Las técnicas se describen como **clase de
-riesgo, evidencia observable y control**, nunca como procedimiento reproducible. Aquí no hay
-payloads, ni herramientas de ataque parametrizadas, ni pasos de explotación.
+**Strictly defensive and authorised posture.** The techniques are described as a **risk class,
+observable evidence and control**, never as a reproducible procedure. There are no
+payloads here, no parameterised attack tools, no exploitation steps.
 
-**No aplica**: ver `identity-access-management-standards` (**frontera dura y la más importante de
-esta skill**: **la arquitectura de identidad es suya, sin excepción** — elección de IdP, flujos
-OAuth 2.1/OIDC y su diseño, SAML, passkeys/WebAuthn, **política de MFA y de acceso condicional**,
-SCIM y el ciclo joiner-mover-leaver, motores de autorización, PAM/JIT, **diseño** de las cuentas
-break-glass, identidad de carga de trabajo. **Aquí**: cómo se ataca todo eso, cómo se ve en los
-registros, qué se detecta y qué se hace cuando pasa. Regla de arbitraje en una línea: *si la
-pregunta es "cómo lo configuro", es suya; si es "cómo sé que me lo están rompiendo y qué hago", es
-de aquí*), `detection-engineering-standards` (**la regla es suya**: autoría en Sigma/KQL, tests,
-umbrales, tuning, cobertura ATT&CK, despliegue en el SIEM y normalización del esquema. **Aquí, qué
-hipótesis de identidad merece regla y por qué** — la regla nace aquí y se gobierna allí),
-`soc-operations-standards` (turno, cola, triaje, escalado y cierre de la alerta que esto genera),
-`incident-response-forensics-standards` (**el incidente confirmado y su investigación**: alcance,
-adquisición, timeline, erradicación y reconstrucción; **aquí solo la contención específica de
-identidad y por qué su orden importa**), `windows-server-ad-standards` (**el dominio en sí**:
-bosque, GPO, Kerberos/NTLM, `krbtgt`, AD CS, Tier 0/PAW, delegación, higiene del directorio y
-recuperación del bosque. **Aquí solo el puente**: cómo un compromiso en el directorio se convierte
-en compromiso del tenant en la nube y al revés), `azure-standards`/`aws-standards`/`gcp-standards`
-(**la configuración del tenant y de su IAM de plataforma**: acceso condicional, PIM, gobernanza,
-políticas y condiciones. Aquí, su abuso), `cloud-security-posture-standards` (**hermana**:
-el permiso excesivo **en frío** —derecho efectivo, comodines, caminos de ataque por permisos—;
-**aquí el uso indebido en caliente** de una identidad legítima), `endpoint-security-standards`
-(**el puesto y su EDR**: el infostealer que roba la cookie del navegador se detiene y se detecta
-allí; **aquí lo que pasa después con esa cookie**), `email-security-standards` (el correo como
-canal de entrega del phishing; aquí la consecuencia sobre la identidad),
-`threat-intelligence-standards` (el actor, el indicador y su caducidad),
-`vulnerability-management-standards` (CVE y SLA de parcheo — **el permiso y el token robado no
-tienen CVE**), `secrets-management-standards` (custodia y rotación del secreto de aplicación; aquí
-la detección de que alguien le ha **añadido** uno nuevo), `mobile-standards` (el dispositivo),
-`grc-compliance-standards` (obligación de notificar y evidencia), `privacy-engineering-standards`
-(dato personal dentro de los registros de inicio de sesión: base legal y retención),
-`offensive-security-standards` (simulación autorizada de estos ataques, con alcance por escrito).
+**Not applicable**: see `identity-access-management-standards` (**hard boundary and the most
+important of this skill**: **identity architecture is hers, without exception** — IdP choice, OAuth
+2.1/OIDC flows and their design, SAML, passkeys/WebAuthn, **MFA and conditional access policy**,
+SCIM and the joiner-mover-leaver cycle, authorisation engines, PAM/JIT, **design** of break-glass
+accounts, workload identity. **Here**: how all of that is attacked, how it looks in the
+logs, what is detected and what is done when it happens. One-line arbitration rule: *if the
+question is "how do I configure it", it is hers; if it is "how do I know they are breaking it and
+what do I do", it is ours*), `detection-engineering-standards` (**the rule is hers**:
+authoring in Sigma/KQL, tests, thresholds, tuning, ATT&CK coverage, deployment in the SIEM and
+schema normalisation. **Here, which identity hypothesis deserves a rule and why** — the rule is
+born here and governed there),
+`soc-operations-standards` (shift, queue, triage, escalation and closure of the alert this
+generates), `incident-response-forensics-standards` (**the confirmed incident and its
+investigation**: scoping, acquisition, timeline, eradication and rebuild; **here only
+identity-specific containment and why its order matters**), `windows-server-ad-standards` (**the
+domain itself**: forest, GPO, Kerberos/NTLM, `krbtgt`, AD CS, Tier 0/PAW, delegation, directory
+hygiene and forest recovery. **Here only the bridge**: how a compromise in the directory becomes a
+compromise of the cloud tenant and vice versa), `azure-standards`/`aws-standards`/`gcp-standards`
+(**tenant configuration and its platform IAM**: conditional access, PIM, governance,
+policies and conditions. Here, their abuse), `cloud-security-posture-standards` (**sister**:
+excessive permission **at rest** —effective entitlement, wildcards, permission attack paths—;
+**here the misuse in flight** of a legitimate identity), `endpoint-security-standards`
+(**the workstation and its EDR**: the infostealer that steals the browser cookie is stopped and
+detected there; **here what happens afterwards with that cookie**), `email-security-standards` (mail
+as the phishing delivery channel; here the consequence on identity),
+`threat-intelligence-standards` (the actor, the indicator and its expiry),
+`vulnerability-management-standards` (CVE and patching SLA — **a permission and a stolen token have
+no CVE**), `secrets-management-standards` (custody and rotation of the application secret; here
+the detection that somebody has **added** a new one), `mobile-standards` (the device),
+`grc-compliance-standards` (notification obligation and evidence), `privacy-engineering-standards`
+(personal data inside sign-in logs: legal basis and retention),
+`offensive-security-standards` (authorised simulation of these attacks, with scope in writing).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión y el nombre exacto de cada capacidad por web antes de fijarla (§8).
+> Verify the latest version and the exact name of each capability on the web before committing to it
+> (§8).
 
-| Decisión | Por defecto | Alternativa justificable / matiz |
+| Decision | Default | Justifiable alternative / nuance |
 |---|---|---|
-| Fuente primaria de detección | **Registros de inicio de sesión + auditoría del IdP**, exportados a almacenamiento propio desde el día 1 | Ninguna. Sin export, la retención por defecto te deja ciego (§3.5) |
-| Retención de telemetría de identidad | **≥ 12 meses en caliente o accesible** | Menos, solo con análisis explícito de qué investigación se renuncia a poder hacer |
-| Detección de riesgo del propio IdP | Activada y **enviada al SIEM**, tratada como una fuente más | No como única fuente: es una caja negra propietaria y sin *tuning* real |
-| Contención de cuenta comprometida | **Revocar sesiones y tokens de actualización → invalidar consentimientos → rotar credenciales → después la contraseña** | El orden inverso deja al atacante dentro (§3.7) |
-| Cuentas de emergencia | **Excluidas de las políticas que pueden bloquearte, y con alerta ante cualquier uso** | Ninguna. Su uso no anunciado es siempre incidente |
-| Flujo de código de dispositivo | **Bloqueado por política salvo excepción documentada por aplicación** | Permitido solo donde hay dispositivos sin teclado reales |
-| Aplicaciones OAuth de terceros | **Consentimiento de usuario deshabilitado o restringido a editores verificados y permisos de bajo impacto** | Flujo de aprobación por administrador si el negocio lo exige |
-| Vinculación del token al dispositivo | **Activar donde exista** (protección de token / vinculación criptográfica) | Piloto primero: la cobertura por cliente y recurso es parcial (§3.7) |
-| Identidades de servicio en la nube | **Federación / identidad gestionada**; credencial estática solo con caducidad corta y vigilada | Ninguna otra |
+| Primary detection source | **Sign-in logs + IdP audit logs**, exported to your own storage from day 1 | None. Without export, default retention leaves you blind (§3.5) |
+| Identity telemetry retention | **≥ 12 months hot or accessible** | Less, only with an explicit analysis of which investigation you are giving up on |
+| The IdP's own risk detection | Enabled and **sent to the SIEM**, treated as one more source | Not as the only source: it is a proprietary black box with no real *tuning* |
+| Containment of a compromised account | **Revoke sessions and refresh tokens → invalidate consents → rotate credentials → then the password** | The reverse order leaves the attacker inside (§3.7) |
+| Emergency accounts | **Excluded from the policies that can lock you out, and with an alert on any use** | None. Their unannounced use is always an incident |
+| Device code flow | **Blocked by policy except with a documented per-application exception** | Allowed only where there are real keyboard-less devices |
+| Third-party OAuth applications | **User consent disabled or restricted to verified publishers and low-impact permissions** | An admin approval flow if the business requires it |
+| Token binding to the device | **Enable where it exists** (token protection / cryptographic binding) | Pilot first: coverage by client and resource is partial (§3.7) |
+| Cloud service identities | **Federation / managed identity**; a static credential only with a short expiry and monitored | None other |
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 La evidencia, y qué es folclore
+### 3.1 The evidence, and what is folklore
 
-Sostener "la identidad es el vector dominante" con cifras exige método. Lo verificable a agosto de
-2026:
+Sustaining "identity is the dominant vector" with figures requires method. What is verifiable as of
+August 2026:
 
-- **Verizon DBIR 2025**: el abuso de credenciales figura como vector de acceso inicial en el
-  **22 %** de las brechas, seguido de la explotación de vulnerabilidades (20 %). **El denominador
-  no son todas las brechas**: es el subconjunto con vector conocido excluyendo error y uso indebido
-  (n=9.891 sobre 12.195 brechas confirmadas). El propio informe advierte de **trasvase entre las
-  categorías de credencial y de phishing**, porque a menudo no se puede determinar de dónde salió
-  la credencial. Y el DBIR **no es una muestra probabilística**: es la casuística de Verizon más
-  contribuciones voluntarias, con lista de contribuidores cambiante entre años y sin intervalos de
-  confianza. **Lectura defendible: el abuso de credenciales está consistentemente entre los dos
-  primeros vectores.** Lectura indefendible: "el 22 % de las brechas son por credenciales" como
-  parámetro poblacional. (Verificar la edición 2026 antes de citar cifras: §8.)
-- **Lo que hay que dejar de citar**: **"la MFA bloquea el 99,9 % de los ataques"**. Origen: entrada
-  del blog de seguridad de Microsoft de agosto de 2019. El dato subyacente **no era un experimento
-  controlado** sino una razón observacional —*más del 99,9 % de las cuentas comprometidas no tenían
-  MFA*— tomada cuando la adopción empresarial de MFA rondaba el 11 %: con esa base, casi cualquier
-  cuenta comprometida carecería de MFA aunque la MFA no hiciera nada. El propio Microsoft publicó
-  después un estudio con estimación más conservadora (**reducción de riesgo del 99,22 %**, y 98,56 %
-  en casos de credencial filtrada) y su documentación actual usa **"más del 99,2 % de los ataques de
-  compromiso de cuenta"**, no el 99,9 %. Además el enunciado se ha ido ensanchando al citarse: de
-  "ataques de compromiso de cuenta" a "ciberataques" en general. **Cita el 99,2 % con su fuente, o
-  no cites porcentaje: el argumento —la MFA elimina de golpe el ataque automatizado masivo— no lo
-  necesita.**
-- **"El 82 % de las brechas implican el factor humano"** y similares: son cifras de informes anuales
-  con la misma limitación muestral, y cambian de año y de definición. **No se citan sin edición,
-  denominador y definición de "factor humano".** Aquí no se escribe ninguna.
-- Regla general de esta skill: **cifra sin metodología publicada = no se escribe**. Desmentirla vale
-  más que repetirla.
+- **Verizon DBIR 2025**: credential abuse appears as the initial access vector in
+  **22 %** of breaches, followed by exploitation of vulnerabilities (20 %). **The denominator
+  is not all breaches**: it is the subset with a known vector excluding error and misuse
+  (n=9,891 out of 12,195 confirmed breaches). The report itself warns of **spill-over between the
+  credential and phishing categories**, because often it cannot be determined where
+  the credential came from. And the DBIR **is not a probability sample**: it is Verizon's caseload
+  plus voluntary contributions, with a contributor list that changes between years and with no
+  confidence intervals. **Defensible reading: credential abuse is consistently among the top two
+  vectors.** Indefensible reading: "22 % of breaches are due to credentials" as a population
+  parameter. (Verify the 2026 edition before citing figures: §8.)
+- **What must stop being cited**: **"MFA blocks 99.9 % of attacks"**. Origin: an entry
+  on Microsoft's security blog from August 2019. The underlying figure **was not a controlled
+  experiment** but an observational ratio —*more than 99.9 % of compromised accounts did not have
+  MFA*— taken when enterprise MFA adoption was around 11 %: on that base, almost any
+  compromised account would lack MFA even if MFA did nothing. Microsoft itself later published
+  a study with a more conservative estimate (**99.22 % risk reduction**, and 98.56 %
+  in leaked-credential cases) and its current documentation uses **"more than 99.2 % of account
+  compromise attacks"**, not 99.9 %. Besides, the statement has been broadened in the citing: from
+  "account compromise attacks" to "cyberattacks" in general. **Cite the 99.2 % with its source, or
+  do not cite a percentage at all: the argument —MFA eliminates mass automated attack at a stroke—
+  does not need it.**
+- **"82 % of breaches involve the human factor"** and similar: they are figures from annual reports
+  with the same sampling limitation, and they change year to year and by definition. **They are not
+  cited without the edition, the denominator and the definition of "human factor".** None is written
+  here.
+- General rule of this skill: **a figure with no published methodology = it is not written**.
+  Debunking it is worth more than repeating it.
 
-### 3.2 Por qué la MFA no cierra el caso: el artefacto post-autenticación
+### 3.2 Why MFA does not close the case: the post-authentication artifact
 
-Lo que el atacante quiere ya no es la contraseña, es lo que viene después:
+What the attacker wants is no longer the password, it is what comes afterwards:
 
-- **Cookie de sesión** de la aplicación: la emite y la controla **la aplicación**, no el IdP. El IdP
-  no puede revocar una sesión que él no gobierna; solo la aplicación puede invalidarla, cuando
-  decide revalidar.
-- **Token de actualización** (*refresh token*): la llave maestra. Larga vida —por defecto del orden
-  de **90 días** en las plataformas mayoritarias—, permite acuñar tokens de acceso nuevos en
-  silencio y **sobrevive a un cambio de contraseña** en varios escenarios.
-- **Token de actualización primario (PRT)** en escenarios de dispositivo unido: se invalida con el
-  cambio de contraseña **solo si la contraseña se usó para obtenerlo**. Los obtenidos por método sin
-  contraseña (aplicación autenticadora, FIDO2) **sobreviven**.
-- **Token de acceso**: normalmente ~1 hora de vida y **no revocable** por defecto. Ese es el suelo
-  del tiempo de contención salvo que el recurso soporte evaluación continua de acceso.
+- **The application's session cookie**: it is issued and controlled by **the application**, not the
+  IdP. The IdP cannot revoke a session it does not govern; only the application can invalidate it,
+  when it decides to revalidate.
+- **Refresh token**: the master key. Long-lived —by default of the order of
+  **90 days** on the major platforms—, it allows minting new access tokens
+  silently and **survives a password change** in several scenarios.
+- **Primary refresh token (PRT)** in joined-device scenarios: it is invalidated by a
+  password change **only if the password was used to obtain it**. Those obtained by a passwordless
+  method (authenticator app, FIDO2) **survive**.
+- **Access token**: normally ~1 hour of life and **not revocable** by default. That is the floor
+  of containment time unless the resource supports continuous access evaluation.
 
-Consecuencia operativa que hay que tener escrita antes del incidente: **entre el "he restablecido
-la contraseña" y "el atacante ha perdido el acceso" puede haber horas, y si solo se restableció la
-contraseña, puede no perderlo nunca.**
+An operational consequence that must be written down before the incident: **between "I have reset
+the password" and "the attacker has lost access" there may be hours, and if only the password was
+reset, they may never lose it.**
 
-### 3.3 Catálogo de ataque: qué es, qué deja y qué lo corta
+### 3.3 Attack catalogue: what it is, what it leaves and what cuts it
 
-Cada entrada = **mecanismo → evidencia observable → control**. Sin procedimiento.
+Each entry = **mechanism → observable evidence → control**. No procedure.
 
-- **Pulverización de contraseñas** (una contraseña común contra muchas cuentas, por debajo del
-  umbral de bloqueo). Evidencia: muchos fallos con **el mismo código de error** repartidos entre
-  **muchos usuarios distintos** desde pocos orígenes, a menudo contra puntos finales de
-  autenticación heredados que no soportan MFA. Control: eliminar la autenticación heredada,
-  bloqueo inteligente, listas de contraseñas prohibidas, y detección **por cuentas distintas
-  tocadas por origen**, no por fallos por cuenta.
-- **Relleno de credenciales**: mismo patrón, credenciales reales de filtraciones. Evidencia
-  adicional: **tasa de éxito no nula** en el mismo lote.
-- **AiTM (adversario en el medio)**: proxy inverso que retransmite el inicio de sesión legítimo y se
-  queda la cookie post-MFA. **La MFA se completa de verdad** — por eso el registro muestra un inicio
-  de sesión correcto con MFA satisfecha. Evidencia: sesión reproducida desde otra IP/ASN/geografía
-  poco después, cambio brusco de agente de usuario, y casi siempre **un nuevo método de MFA
-  registrado o una regla de reenvío de correo creada** en los minutos siguientes. Control real:
-  **credenciales resistentes a phishing (passkeys/FIDO2), cumplimiento de dispositivo y vinculación
-  del token al dispositivo** — no "más MFA".
-- **Robo de token por infostealer**: sin proxy y sin phishing. El malware extrae cookies y tokens
-  cacheados del perfil del navegador. Evidencia: uso de token válido desde un origen nuevo sin
-  evento de autenticación interactiva previo. Control: es un problema de puesto
-  (`endpoint-security-standards`) con consecuencia de identidad; aquí, detectar el uso anómalo y
-  revocar.
-- **Fatiga de MFA / bombardeo de notificaciones**: el atacante ya tiene la contraseña y repite el
-  intento hasta que la víctima aprueba por agotamiento. Evidencia: ráfaga de peticiones de MFA
-  denegadas seguida de una aprobación. Control: **coincidencia de números y contexto en la
-  notificación** (deja de ser "aprobar/denegar"), límite de intentos, y **la denegación repetida es
-  una alerta por sí misma**.
-- **Consent phishing y aplicaciones OAuth maliciosas**: no se roba credencial, se **pide permiso**.
-  La víctima consiente y la aplicación obtiene acceso duradero al correo o a los ficheros **sin
-  contraseña y sin MFA**; cambiar la contraseña no lo revoca. Evidencia: eventos de concesión de
-  consentimiento a aplicaciones no vistas, editor no verificado, permisos amplios de lectura de
-  correo o ficheros. Control: restringir el consentimiento de usuario, flujo de aprobación,
-  **revisión periódica de aplicaciones consentidas** y alerta ante toda concesión nueva de alto
-  impacto.
-- **Phishing del flujo de código de dispositivo**: se abusa de un flujo estándar de OAuth pensado
-  para dispositivos sin teclado. **La víctima se autentica en la página legítima del proveedor**, así
-  que no hay dominio falso que detectar ni proxy que interceptar, y los controles de red no disparan.
-  Documentado públicamente en campañas desde 2024–2025 y con oleadas posteriores que encadenan el
-  token obtenido con **registro de un dispositivo del atacante** para conseguir un PRT. Control
-  principal y casi único: **bloquear el flujo por política** donde no haga falta.
-- **SIM swapping**: la MFA por SMS y la recuperación por teléfono se transfieren con el número.
-  Control: **eliminar SMS y llamada como factor y como vía de recuperación** para cualquier cuenta
-  privilegiada; el resto es mitigación.
-- **Ataques a la federación (clase "Golden SAML")**: con la **clave de firma de tokens** del
-  proveedor de identidad federado, el atacante **fabrica aserciones válidas para cualquier usuario**,
-  con las reclamaciones que quiera —incluida la de haber hecho MFA—. No hay autenticación que
-  observar: **el registro del IdP muestra un inicio de sesión perfecto**. Es el caso extremo de "el
-  compromiso de la infraestructura de identidad no se detecta en el flujo de inicio de sesión".
-  Detección: correlacionar con el lado del origen (uso del certificado, acceso al material de firma,
-  emisión sin evento correspondiente en el proveedor federado), vigilar **cambios en la
-  configuración de federación del dominio y en las confianzas entre tenants** —añadir un dominio
-  federado o una confianza es un evento de auditoría de máxima prioridad— y tratar el servidor de
-  federación como **Tier 0** (eso es de `windows-server-ad-standards`).
-- **Persistencia por credencial añadida a una aplicación**: el atacante no crea una cuenta nueva
-  —eso se ve—; **añade un secreto o un certificado a una aplicación o principal de servicio ya
-  existente y legítimo**, y a partir de ahí se autentica como esa aplicación, sin usuario, sin MFA y
-  sin acceso condicional que aplique. Es la persistencia más limpia del ecosistema. Evidencia:
-  eventos de auditoría de adición de credencial a aplicación/principal de servicio, concesión de
-  permisos nuevos a una aplicación existente, asignación de roles a un principal de servicio.
-  **Detección obligatoria, sin excepciones.**
-- **Registro ilícito de dispositivo** y **adición de método de MFA**: ambos convierten un acceso
-  temporal en acceso duradero. Alerta por defecto.
-- **Identidad híbrida, el puente en los dos sentidos**: el servidor de sincronización de directorio
-  y los agentes de autenticación (sincronización de hash, autenticación de paso, SSO fluido) tienen,
-  por diseño, **credenciales o posición privilegiada en ambos lados**. Comprometido el servidor de
-  sincronización, se llega al tenant; comprometido el tenant con los privilegios adecuados, se puede
-  actuar sobre lo local. **Consecuencia dura: si tienes identidad híbrida, tu Tier 0 incluye el
-  tenant de nube, y el alcance de un compromiso de AD incluye la nube — y al revés.** Estos
-  servidores no son "servidores de aplicación": son infraestructura de identidad.
-- **Abuso de identidades de servicio y de carga de trabajo**: sin MFA posible, sin usuario que note
-  nada, a menudo con permisos excesivos heredados. Su vigilancia es **por comportamiento**: origen
-  nuevo, horario nuevo, API nunca antes llamada, volumen anómalo.
+- **Password spraying** (one common password against many accounts, below the
+  lockout threshold). Evidence: many failures with **the same error code** spread across
+  **many different users** from a few origins, often against legacy
+  authentication endpoints that do not support MFA. Control: remove legacy authentication,
+  smart lockout, banned-password lists, and detection **by distinct accounts
+  touched per origin**, not by failures per account.
+- **Credential stuffing**: same pattern, real credentials from leaks. Additional
+  evidence: **a non-zero success rate** in the same batch.
+- **AiTM (adversary in the middle)**: a reverse proxy that relays the legitimate sign-in and
+  keeps the post-MFA cookie. **MFA genuinely completes** — which is why the log shows a
+  successful sign-in with MFA satisfied. Evidence: the session replayed from another IP/ASN/geography
+  shortly afterwards, an abrupt change of user agent, and almost always **a new MFA method
+  registered or a mail forwarding rule created** in the following minutes. Real control:
+  **phishing-resistant credentials (passkeys/FIDO2), device compliance and token binding
+  to the device** — not "more MFA".
+- **Token theft by infostealer**: no proxy and no phishing. The malware extracts cookies and cached
+  tokens from the browser profile. Evidence: use of a valid token from a new origin with no
+  preceding interactive authentication event. Control: it is a workstation problem
+  (`endpoint-security-standards`) with an identity consequence; here, detecting the anomalous use
+  and revoking.
+- **MFA fatigue / push bombing**: the attacker already has the password and repeats the
+  attempt until the victim approves out of exhaustion. Evidence: a burst of denied MFA
+  requests followed by an approval. Control: **number matching and context in the
+  notification** (it stops being "approve/deny"), an attempt limit, and **repeated denial is
+  an alert in itself**.
+- **Consent phishing and malicious OAuth applications**: no credential is stolen, **permission is
+  requested**. The victim consents and the application obtains durable access to mail or files
+  **with no password and no MFA**; changing the password does not revoke it. Evidence: consent
+  grant events to previously unseen applications, an unverified publisher, broad
+  mail or file read permissions. Control: restrict user consent, an approval flow,
+  **periodic review of consented applications** and an alert on every new high-impact
+  grant.
+- **Device code flow phishing**: a standard OAuth flow designed for keyboard-less devices is abused.
+  **The victim authenticates on the provider's legitimate page**, so there is no fake
+  domain to detect nor proxy to intercept, and network controls do not fire.
+  Publicly documented in campaigns since 2024–2025 and with later waves that chain the
+  obtained token with **registration of an attacker's device** to obtain a PRT. Main and
+  almost only control: **block the flow by policy** where it is not needed.
+- **SIM swapping**: SMS MFA and phone recovery transfer with the number.
+  Control: **remove SMS and voice call as a factor and as a recovery route** for any
+  privileged account; the rest is mitigation.
+- **Attacks on federation ("Golden SAML" class)**: with the federated identity provider's
+  **token signing key**, the attacker **forges valid assertions for any user**,
+  with whatever claims they want —including having performed MFA—. There is no authentication to
+  observe: **the IdP log shows a perfect sign-in**. It is the extreme case of "a compromise of the
+  identity infrastructure is not detected in the sign-in flow".
+  Detection: correlate with the origin side (certificate use, access to the signing material,
+  issuance with no corresponding event at the federated provider), watch **changes in the
+  domain's federation configuration and in cross-tenant trusts** —adding a federated
+  domain or a trust is a top-priority audit event— and treat the federation server as
+  **Tier 0** (that belongs to `windows-server-ad-standards`).
+- **Persistence via a credential added to an application**: the attacker does not create a new
+  account —that is visible—; **they add a secret or a certificate to an already existing and
+  legitimate application or service principal**, and from then on authenticate as that application,
+  with no user, no MFA and no conditional access applying. It is the cleanest persistence in the
+  ecosystem. Evidence: audit events for adding a credential to an application/service principal,
+  granting new permissions to an existing application, assigning roles to a service principal.
+  **Mandatory detection, no exceptions.**
+- **Illicit device registration** and **MFA method addition**: both turn temporary
+  access into durable access. Alert by default.
+- **Hybrid identity, the bridge in both directions**: the directory synchronisation server
+  and the authentication agents (hash synchronisation, pass-through authentication, seamless SSO)
+  have, by design, **credentials or a privileged position on both sides**. Once the synchronisation
+  server is compromised, the tenant is reached; once the tenant is compromised with the right
+  privileges, action can be taken on-premise. **Hard consequence: if you have hybrid identity, your
+  Tier 0 includes the cloud tenant, and the scope of an AD compromise includes the cloud — and vice
+  versa.** These servers are not "application servers": they are identity infrastructure.
+- **Abuse of service and workload identities**: no MFA possible, no user who notices
+  anything, often with excessive inherited permissions. They are watched **by behaviour**: a new
+  origin, a new time of day, an API never called before, an anomalous volume.
 
-### 3.4 Detecciones de alto valor (qué merece regla; escribirla es de `detection-engineering`)
+### 3.4 High-value detections (what deserves a rule; writing it belongs to `detection-engineering`)
 
-Por orden de relación valor/ruido:
+In order of value/noise ratio:
 
-1. **Credencial o certificado añadido a una aplicación o principal de servicio**, y concesión de
-   permisos de alto impacto a una aplicación.
-2. **Cambio en la configuración de federación de un dominio, en el material de firma o en las
-   confianzas entre tenants.**
-3. **Uso de una cuenta de acceso de emergencia** (cualquier uso, siempre).
-4. **Consentimiento concedido a una aplicación nueva** con permisos de correo, ficheros o
-   directorio.
-5. **Método de MFA añadido / registro de dispositivo nuevo** poco después de un inicio de sesión
-   desde origen infrecuente.
-6. **Regla de reenvío o de manipulación de bandeja creada** tras un inicio de sesión anómalo (señal
-   clásica de compromiso de correo, y de las de mayor precisión).
-7. **Sesión usada desde un origen distinto al de la autenticación** (indicador de replay), y token
-   usado sin evento de autenticación interactiva previo.
-8. **Ráfaga de MFA denegadas seguida de aprobación.**
-9. **Pulverización**: N cuentas distintas fallando con el mismo error desde el mismo origen en una
-   ventana.
-10. **Autenticación heredada / sin MFA** contra cuentas privilegiadas: debería ser cero, y por eso
-    cualquier evento es señal.
-11. **Asignación de rol privilegiado** fuera del proceso, y elevación fuera de la ventana de
-    aprobación.
-12. **Identidad de servicio autenticándose desde una infraestructura nueva.**
+1. **A credential or certificate added to an application or service principal**, and the grant of
+   high-impact permissions to an application.
+2. **A change in a domain's federation configuration, in the signing material or in
+   cross-tenant trusts.**
+3. **Use of an emergency access account** (any use, always).
+4. **Consent granted to a new application** with mail, file or directory
+   permissions.
+5. **An MFA method added / a new device registered** shortly after a sign-in
+   from an infrequent origin.
+6. **A forwarding or inbox-manipulation rule created** after an anomalous sign-in (a classic
+   signal of mail compromise, and one of the highest-precision ones).
+7. **A session used from an origin different from the authentication's** (a replay indicator), and a
+   token used with no preceding interactive authentication event.
+8. **A burst of denied MFA prompts followed by an approval.**
+9. **Spraying**: N distinct accounts failing with the same error from the same origin in a
+   window.
+10. **Legacy / non-MFA authentication** against privileged accounts: it should be zero, and that is
+    why any event is a signal.
+11. **Privileged role assignment** outside the process, and elevation outside the approval
+    window.
+12. **A service identity authenticating from new infrastructure.**
 
-Antipatrón declarado: **"inicio de sesión imposible" como alerta principal**. Es la detección más
-famosa y una de las peores en solitario: la VPN, el móvil y el roaming la disparan constantemente, y
-un atacante con un proxy en la misma ciudad no la dispara nunca. Sirve como **enriquecimiento**, no
-como caso.
+Declared antipattern: **"impossible travel" as the primary alert**. It is the most famous
+detection and one of the worst on its own: VPN, mobile and roaming trigger it constantly, and
+an attacker with a proxy in the same city never triggers it. It serves as **enrichment**, not
+as a case.
 
-### 3.5 Telemetría, y lo que la licencia se lleva por delante
+### 3.5 Telemetry, and what the licence takes away
 
-**Dato que decide la arquitectura y que el fabricante no destaca.** Verificado verbatim en la
-documentación de Microsoft (`reference-reports-data-retention`, revisión de enero de 2026):
+**A figure that decides the architecture and that the vendor does not highlight.** Verified verbatim
+in Microsoft's documentation (`reference-reports-data-retention`, January 2026 revision):
 
-| Informe | Entra ID Free | Entra ID P1 | Entra ID P2 |
+| Report | Entra ID Free | Entra ID P1 | Entra ID P2 |
 |---|---|---|---|
-| Registros de auditoría | **7 días** | 30 días | 30 días |
-| Inicios de sesión | **7 días** | 30 días | 30 días |
-| Inicios de sesión de riesgo | 7 días | 30 días | **90 días** |
+| Audit logs | **7 days** | 30 days | 30 days |
+| Sign-ins | **7 days** | 30 days | 30 days |
+| Risky sign-ins | 7 days | 30 days | **90 days** |
 
-Además, en esa misma referencia: los registros de actividad de Microsoft Graph **solo están
-disponibles con P1 y P2** y no se retienen salvo que se archiven; y **el cambio de retención no es
-retroactivo** — al subir de nivel solo se conserva lo que aún estaba dentro de la ventana anterior.
+Furthermore, in that same reference: Microsoft Graph activity logs **are only available with P1 and
+P2** and are not retained unless archived; and **a retention change is not
+retroactive** — when upgrading a tier, only what was still within the previous window is kept.
 
-Consecuencias, y son las que hay que llevar a la reunión de presupuesto:
-- **Una investigación de identidad típica se descubre semanas después del acceso inicial.** Con 7 o
-  30 días de retención nativa, la evidencia **ya no existe** cuando llega la pregunta. No es un
-  problema de herramienta: es un problema de contrato.
-- **La exportación continua a almacenamiento propio (SIEM o almacenamiento barato) no es opcional**,
-  y es lo primero que se configura en un tenant nuevo. Cuesta poco y es irrecuperable a posteriori.
-- **La capacidad de detección también está por niveles**: las detecciones de riesgo posteriores a la
-  autenticación (sesión anómala, token anómalo) viven en los niveles altos. Comprar el nivel bajo y
-  esperar detección de robo de token es un error de expectativa, no de configuración.
-- Esta tabla es de un proveedor concreto por ser el mejor documentado; **el patrón se repite en los
-  demás**: la telemetría fina de identidad se vende aparte. **Verificar en tu proveedor qué registro
-  existe, cuánto dura y qué nivel hace falta, antes de diseñar la detección** (§8).
+Consequences, and these are the ones to take to the budget meeting:
+- **A typical identity investigation is discovered weeks after the initial access.** With 7 or
+  30 days of native retention, the evidence **no longer exists** when the question arrives. It is
+  not a tool problem: it is a contract problem.
+- **Continuous export to your own storage (SIEM or cheap storage) is not optional**,
+  and it is the first thing configured in a new tenant. It costs little and is unrecoverable after
+  the fact.
+- **Detection capability is also tiered**: post-authentication risk detections
+  (anomalous session, anomalous token) live in the high tiers. Buying the low tier and
+  expecting token theft detection is an expectation error, not a configuration one.
+- This table is from a specific vendor because it is the best documented; **the pattern repeats with
+  the others**: fine-grained identity telemetry is sold separately. **Verify with your provider what
+  log exists, how long it lasts and what tier is needed, before designing the detection** (§8).
 
-Mínimos de telemetría, con independencia del proveedor: inicios de sesión (interactivos **y no
-interactivos** — los no interactivos son donde vive el abuso de token), auditoría del directorio,
-**consentimientos y cambios en aplicaciones y principales de servicio**, emisión y actualización de
-token, registro de dispositivos y de métodos de autenticación, y cambios de configuración de
-federación.
+Telemetry minimums, regardless of provider: sign-ins (interactive **and non-interactive** — the
+non-interactive ones are where token abuse lives), directory audit,
+**consents and changes to applications and service principals**, token issuance and
+refresh, device and authentication-method registration, and federation configuration
+changes.
 
-### 3.6 Cuentas de emergencia y nivel administrativo (lo que aquí se vigila)
+### 3.6 Emergency accounts and administrative tiering (what is watched here)
 
-El **diseño** es de `identity-access-management-standards`; **la vigilancia es de aquí**:
-- Al menos **dos cuentas de acceso de emergencia**, en la nube, sin dependencia del directorio local
-  ni del servidor de federación, **excluidas de las políticas que podrían dejarte fuera**, con
-  credencial resistente a phishing custodiada fuera de banda. **Excluirlas del acceso condicional es
-  el motivo por el que su uso debe alertar siempre**: son las únicas identidades sin red de
-  seguridad.
-- **Prueba periódica documentada** de que funcionan. Una cuenta de emergencia que nadie ha probado
-  es un plan de continuidad no ensayado.
-- **Separación por niveles**: la cuenta que administra la identidad no navega, no lee correo y no se
-  usa desde un puesto de uso general. Aquí se vigila la violación de esa regla —administración desde
-  un dispositivo no conforme, elevación fuera de proceso— y **eso es una detección**, no una
-  observación de auditoría.
+The **design** belongs to `identity-access-management-standards`; **the watching is ours**:
+- At least **two emergency access accounts**, in the cloud, with no dependency on the on-premise
+  directory nor on the federation server, **excluded from the policies that could lock you out**,
+  with a phishing-resistant credential held out of band. **Excluding them from conditional access is
+  the reason their use must always alert**: they are the only identities with no safety
+  net.
+- **Documented periodic testing** that they work. An emergency account nobody has tested
+  is an unrehearsed continuity plan.
+- **Tier separation**: the account that administers identity does not browse, does not read mail and
+  is not used from a general-purpose workstation. Here the violation of that rule is watched
+  —administration from a non-compliant device, elevation outside the process— and **that is a
+  detection**, not an audit observation.
 
-### 3.7 Respuesta específica de identidad
+### 3.7 Identity-specific response
 
-**Un cambio de contraseña no invalida una cookie robada.** Orden de contención, y el orden importa:
+**A password change does not invalidate a stolen cookie.** Containment order, and the order matters:
 
-1. **Revocar los tokens de actualización y las sesiones** de la identidad (en la plataforma de
-   Microsoft, la acción de revocación de sesiones invalida los tokens de actualización y las
-   cookies del navegador, moviendo la marca temporal de validez de la sesión). **Primero esto**,
-   porque el token de actualización es la llave que reemite todo lo demás.
-2. **Revisar y revocar consentimientos de aplicaciones y credenciales añadidas**: si el atacante
-   dejó una aplicación consentida o un secreto en un principal de servicio, los pasos 1 y 3 no le
-   afectan en absoluto. **Este es el paso que más se olvida y el que deja al atacante dentro.**
-3. **Eliminar métodos de MFA y dispositivos registrados por el atacante.**
-4. **Cambiar la contraseña** y forzar reinscripción del factor.
-5. **Revisar reglas de correo, delegaciones y permisos de buzón** creadas durante la ventana.
-6. **Rotar cualquier secreto al que esa identidad tuviera acceso** (frontera con
+1. **Revoke the identity's refresh tokens and sessions** (on the Microsoft platform, the session
+   revocation action invalidates refresh tokens and browser cookies, moving the session validity
+   timestamp). **This first**, because the refresh token is the key that reissues everything else.
+2. **Review and revoke application consents and added credentials**: if the attacker
+   left a consented application or a secret on a service principal, steps 1 and 3 do not
+   affect them at all. **This is the most forgotten step and the one that leaves the attacker
+   inside.**
+3. **Remove MFA methods and devices registered by the attacker.**
+4. **Change the password** and force re-enrolment of the factor.
+5. **Review mail rules, delegations and mailbox permissions** created during the window.
+6. **Rotate any secret that identity had access to** (boundary with
    `secrets-management-standards`).
 
-Advertencias operativas que hay que conocer **antes** del incidente:
-- **La revocación no es instantánea.** Hay propagación de minutos, y **los tokens de acceso ya
-  emitidos siguen valiendo hasta caducar** (típicamente ~1 hora) salvo que el recurso soporte
-  **evaluación continua de acceso**. Con esa evaluación, la revocación es casi en tiempo real, con
-  latencia documentada de **hasta ~15 minutos** por propagación de eventos; **los clientes y
-  recursos que no la soportan quedan fuera**, y ahí el suelo vuelve a ser la vida del token.
-- **Matiz contraintuitivo**: en sesiones con evaluación continua la vida del token **se alarga**
-  (hasta el orden de 28 horas) porque la revocación pasa a depender de eventos, no del reloj. Un
-  token largo replicado contra una ruta que no evalúa continuamente es un problema, no una mejora.
-- **Las sesiones de aplicación las cierra la aplicación**, no el IdP. Cerrar la sesión del IdP no
-  garantiza cerrar todas las de abajo. Hay que enumerarlas.
-- **Cuentas federadas y usuarios externos**: la revocación en tu tenant no gobierna su tenant de
-  origen. Coordinación explícita.
-- **Si hay sospecha de compromiso de la infraestructura de identidad** (servidor de federación,
-  servidor de sincronización, material de firma), **la contención por cuenta no sirve**: hay que
-  asumir emisión arbitraria de identidad y escalar a la rotación del material de firma y a la
-  reconstrucción — territorio de `incident-response-forensics-standards` y
+Operational warnings that must be known **before** the incident:
+- **Revocation is not instantaneous.** There is propagation of minutes, and **access tokens already
+  issued remain valid until they expire** (typically ~1 hour) unless the resource supports
+  **continuous access evaluation**. With that evaluation, revocation is near real time, with a
+  documented latency of **up to ~15 minutes** due to event propagation; **clients and
+  resources that do not support it are left out**, and there the floor is again the token's
+  lifetime.
+- **Counter-intuitive nuance**: in sessions with continuous evaluation the token lifetime
+  **is extended** (up to the order of 28 hours) because revocation comes to depend on events, not on
+  the clock. A long token replayed against a path that does not evaluate continuously is a problem,
+  not an improvement.
+- **Application sessions are closed by the application**, not by the IdP. Closing the IdP session
+  does not guarantee closing all the ones below. They have to be enumerated.
+- **Federated accounts and external users**: revocation in your tenant does not govern their home
+  tenant. Explicit coordination.
+- **If there is suspicion of a compromise of the identity infrastructure** (federation server,
+  synchronisation server, signing material), **per-account containment is useless**: arbitrary
+  identity issuance must be assumed and it escalates to rotating the signing material and to
+  rebuilding — territory of `incident-response-forensics-standards` and
   `windows-server-ad-standards`.
-- **No avisar a la cuenta comprometida por el canal comprometido.** Si el atacante está en el
-  correo, lee la notificación.
+- **Do not notify the compromised account through the compromised channel.** If the attacker is in
+  the mailbox, they read the notification.
 
-## 4. Calidad y testing
+## 4. Quality and testing
 
-- **Toda detección de identidad se valida con la actividad real que dice detectar**, en un tenant de
-  pruebas o con ejercicio autorizado y **deconflictado** con el SOC. Una regla de pulverización que
-  nadie ha disparado no está probada.
-- **Ensayo de la respuesta**: cronometrar de extremo a extremo "detección → revocación efectiva →
-  confirmación de que el token ya no sirve". **Ese número es el SLA real**, y casi siempre sorprende.
-- **Prueba de cobertura de revocación**: verificar por aplicación cuáles honran la revocación
-  rápidamente y cuáles no. La lista resultante es un entregable de riesgo.
-- **Prueba de las cuentas de emergencia** con cadencia fija y registro.
-- **Prueba de telemetría**: generar un evento de cada tipo crítico (consentimiento, credencial
-  añadida a aplicación, registro de dispositivo) y **comprobar que llega al SIEM con los campos
-  necesarios**. Un evento que existe en el portal pero no se exporta no es telemetría.
-- **Medición honesta**: precisión por regla, tiempo hasta contener, y **porcentaje de cuentas
-  privilegiadas con credencial resistente a phishing** — esta última es la métrica que más mueve el
-  riesgo y la más fácil de medir.
+- **Every identity detection is validated against the real activity it claims to detect**, in a test
+  tenant or with an authorised exercise **deconflicted** with the SOC. A spraying rule
+  nobody has triggered is not tested.
+- **Response rehearsal**: time end to end "detection → effective revocation →
+  confirmation that the token no longer works". **That number is the real SLA**, and it almost
+  always comes as a surprise.
+- **Revocation coverage test**: verify per application which ones honour revocation
+  quickly and which do not. The resulting list is a risk deliverable.
+- **Testing of emergency accounts** on a fixed cadence and recorded.
+- **Telemetry test**: generate an event of each critical type (consent, credential
+  added to an application, device registration) and **check that it reaches the SIEM with the
+  necessary fields**. An event that exists in the portal but is not exported is not telemetry.
+- **Honest measurement**: precision per rule, time to contain, and **percentage of privileged
+  accounts with a phishing-resistant credential** — the last one is the metric that moves risk the
+  most and the easiest to measure.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **Las herramientas de ITDR piden permisos sobre el directorio**, a menudo de lectura amplia y a
-  veces de escritura para responder. Ese principal de servicio es un objetivo de primer orden y
-  entra en la lista de §3.4.1: **quien pueda añadirle una credencial es administrador de tu
-  identidad**. Permisos mínimos, revisión periódica, alerta ante su modificación.
-- **El SIEM que recibe los registros de identidad contiene el mapa de quién es quién**: control de
-  acceso propio y dato personal dentro (frontera con `privacy-engineering-standards`).
-- **Ningún flujo de respuesta automática debe poder deshabilitar cuentas en masa** sin control
-  humano: es un vector de denegación de servicio interno de manual.
-- **La cuenta que opera ITDR se administra como Tier 0**, no como una cuenta de analista más.
+- **ITDR tools request permissions over the directory**, often broad read and sometimes
+  write in order to respond. That service principal is a first-order target and
+  falls in the list of §3.4.1: **whoever can add a credential to it is an administrator of your
+  identity**. Minimum permissions, periodic review, alert on its modification.
+- **The SIEM that receives the identity logs contains the map of who is who**: its own access
+  control and personal data inside (boundary with `privacy-engineering-standards`).
+- **No automatic response flow should be able to disable accounts en masse** without human
+  control: it is a textbook internal denial-of-service vector.
+- **The account that operates ITDR is administered as Tier 0**, not as just another analyst
+  account.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-- **Volumen**: los inicios de sesión no interactivos son, con diferencia, el registro más voluminoso
-  de un tenant grande, y **es justo donde vive el abuso de token**. No se recorta por coste sin
-  decisión explícita y escrita.
-- **Latencia de la telemetría**: los registros de identidad de las plataformas SaaS tienen retardo
-  de minutos hasta decenas de minutos. **El tiempo de detección tiene ese suelo**, y prometer menos
-  en un SLA es mentir.
-- **Ruido esperable**: viajes, VPN, roaming móvil y despliegues automatizados. Se enriquece con
-  contexto de identidad (rol, ventana de cambio, dispositivo conforme) antes de alertar; el turno y
-  el triaje son de `soc-operations-standards`.
-- **Coste**: la retención larga de identidad es barata comparada con la de red o endpoint y es la
-  que más rinde por euro en investigación. Si hay que recortar, se recorta en otro sitio.
+- **Volume**: non-interactive sign-ins are by far the most voluminous log
+  of a large tenant, and **it is precisely where token abuse lives**. It is not trimmed for cost
+  without an explicit written decision.
+- **Telemetry latency**: identity logs from SaaS platforms have a delay
+  of minutes to tens of minutes. **Detection time has that floor**, and promising less
+  in an SLA is lying.
+- **Expected noise**: travel, VPN, mobile roaming and automated deployments. It is enriched with
+  identity context (role, change window, compliant device) before alerting; the shift and
+  the triage belong to `soc-operations-standards`.
+- **Cost**: long identity retention is cheap compared with network or endpoint retention and it is
+  the one that yields the most per euro in investigations. If something has to be cut, it is cut
+  elsewhere.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- **Esta superficie cambia por producto, no por versión**: flujos nuevos de autenticación,
-  capacidades nuevas de acceso condicional y clases de ataque nuevas aparecen entre trimestres.
-  Revisión trimestral del catálogo de §3.3 y de las detecciones de §3.4.
-- **Migración a credenciales resistentes a phishing como programa**, no como piloto perpetuo: es el
-  único cambio que retira de un golpe familias enteras de esta lista (AiTM, fatiga de MFA,
-  pulverización con éxito).
-- **Revisión periódica de aplicaciones consentidas y de credenciales de principales de servicio**:
-  crecen solas y nadie las retira. Caducidad obligatoria en secretos de aplicación.
+- **This surface changes by product, not by version**: new authentication flows,
+  new conditional access capabilities and new attack classes appear between quarters.
+  Quarterly review of the §3.3 catalogue and of the §3.4 detections.
+- **Migration to phishing-resistant credentials as a programme**, not as a perpetual pilot: it is
+  the only change that removes whole families from this list at a stroke (AiTM, MFA fatigue,
+  successful spraying).
+- **Periodic review of consented applications and of service principal credentials**:
+  they grow on their own and nobody retires them. Mandatory expiry on application secrets.
 
-**PROHIBIDO**:
-- ❌ Cerrar un incidente de identidad **solo con un cambio de contraseña**.
-- ❌ Revocar sesiones y **no revisar consentimientos ni credenciales añadidas a aplicaciones**: es
-  dejar la puerta de atrás abierta y creer que se ha cerrado.
-- ❌ Tratar la MFA como control terminal, o presentar "MFA al 100 %" como si el riesgo de identidad
-  estuviera resuelto.
-- ❌ SMS o llamada como factor o vía de recuperación en cuentas privilegiadas.
-- ❌ Citar **"la MFA bloquea el 99,9 % de los ataques"**, o cualquier porcentaje de informe anual
-  sin edición, denominador y metodología (§3.1).
-- ❌ Diseñar detección de identidad **antes** de confirmar qué registros existen, cuánto se retienen
-  y qué nivel de licencia hacen falta.
-- ❌ Depender de la retención nativa del proveedor sin exportación propia.
-- ❌ "Inicio de sesión imposible" como detección principal.
-- ❌ Cuentas de emergencia sin alerta de uso, sin prueba periódica o con dependencia del directorio
-  local o del servidor de federación.
-- ❌ Duplicar aquí el diseño de MFA, de acceso condicional o del ciclo de vida de la cuenta: es de
-  `identity-access-management-standards`. Ni escribir aquí la regla de SIEM: es de
+**FORBIDDEN**:
+- ❌ Closing an identity incident **with a password change alone**.
+- ❌ Revoking sessions and **not reviewing consents or credentials added to applications**: it is
+  leaving the back door open and believing it has been closed.
+- ❌ Treating MFA as a terminal control, or presenting "MFA at 100 %" as if identity risk
+  were solved.
+- ❌ SMS or voice call as a factor or recovery route on privileged accounts.
+- ❌ Citing **"MFA blocks 99.9 % of attacks"**, or any percentage from an annual report
+  without the edition, denominator and methodology (§3.1).
+- ❌ Designing identity detection **before** confirming which logs exist, how long they are retained
+  and what licence tier is needed.
+- ❌ Depending on the provider's native retention with no export of your own.
+- ❌ "Impossible travel" as the primary detection.
+- ❌ Emergency accounts with no use alert, with no periodic testing or with a dependency on the
+  on-premise directory or on the federation server.
+- ❌ Duplicating here the design of MFA, of conditional access or of the account life cycle: it
+  belongs to `identity-access-management-standards`. Nor writing the SIEM rule here: it belongs to
   `detection-engineering-standards`.
-- ❌ Ejecutar simulaciones de estos ataques sin alcance y autorización por escrito, y sin
-  deconfliction con el SOC. **Este documento no contiene procedimiento ofensivo y no debe
-  ampliarse en esa dirección.**
+- ❌ Running simulations of these attacks without scope and authorisation in writing, and without
+  deconfliction with the SOC. **This document contains no offensive procedure and must not
+  be extended in that direction.**
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada en un proyecto real, comprobar por web:
-1. **Retención de registros por nivel de licencia** en tu proveedor de identidad, y qué señales
-   requieren nivel superior. La tabla de §3.5 se transcribió verbatim de la documentación de
-   Microsoft con revisión de enero de 2026; **cambia sin aviso** y es el dato que más decisiones
-   condiciona.
-2. **Nombre exacto y disponibilidad actual** de las capacidades citadas sin marca: vinculación de
-   token al dispositivo, evaluación continua de acceso y su **cobertura por cliente y recurso**,
-   restricción de consentimiento, bloqueo del flujo de código de dispositivo. La cobertura parcial
-   es lo que decide si el control sirve.
-3. **Vidas de token por defecto** (acceso, actualización, PRT) y **qué las invalida** en tu tenant:
-   son las que fijan el suelo del tiempo de contención y han cambiado históricamente.
-4. **Campañas y avisos vigentes** sobre phishing de código de dispositivo, robo de token y abuso de
-   aplicaciones OAuth: el patrón se mueve rápido. Preferir avisos de los CERT nacionales y del
-   fabricante frente a resúmenes de terceros.
-5. **DBIR y equivalentes**: edición vigente, cifra exacta, **denominador y n**, antes de citar nada.
-   Lo escrito aquí corresponde a la edición 2025.
-6. **Hueco declarado**: no se pudo verificar contra fuente primaria una referencia normativa o de
-   organismo público sobre la clase "Golden SAML" y el compromiso del material de firma de la
-   federación; el mecanismo descrito en §3.3 es criterio de ingeniería consolidado, pero **si se va
-   a citar en un informe, buscar el aviso oficial correspondiente**. Tampoco se cita aquí la cifra
-   de la edición 2026 del DBIR: se vio mencionada en resúmenes de terceros y **no se verificó contra
-   el informe**.
-7. **Fin de soporte y sustitución** de los componentes de identidad híbrida citados (agentes de
-   sincronización y autenticación): su ciclo de vida cambia y el componente sin soporte en esa
-   posición es Tier 0 sin parches.
+Before committing to anything in a real project, check on the web:
+1. **Log retention by licence tier** at your identity provider, and which signals
+   require a higher tier. The table in §3.5 was transcribed verbatim from Microsoft's
+   documentation with a January 2026 revision; **it changes without notice** and it is the figure
+   that constrains the most decisions.
+2. **Exact name and current availability** of the capabilities cited without a brand: token
+   binding to the device, continuous access evaluation and its **coverage by client and resource**,
+   consent restriction, blocking the device code flow. Partial coverage
+   is what decides whether the control is any use.
+3. **Default token lifetimes** (access, refresh, PRT) and **what invalidates them** in your tenant:
+   they are what sets the floor of containment time and they have changed historically.
+4. **Current campaigns and advisories** on device code phishing, token theft and abuse of
+   OAuth applications: the pattern moves fast. Prefer advisories from national CERTs and from the
+   vendor over third-party summaries.
+5. **DBIR and equivalents**: current edition, exact figure, **denominator and n**, before citing
+   anything. What is written here corresponds to the 2025 edition.
+6. **Declared gap**: it was not possible to verify against a primary source a regulatory or
+   public-body reference on the "Golden SAML" class and the compromise of federation signing
+   material; the mechanism described in §3.3 is consolidated engineering criteria, but **if it is
+   going to be cited in a report, look for the corresponding official advisory**. Nor is the figure
+   from the 2026 DBIR edition cited here: it was seen mentioned in third-party summaries and **was
+   not verified against the report**.
+7. **End of support and replacement** of the hybrid identity components cited (synchronisation and
+   authentication agents): their life cycle changes and an unsupported component in that
+   position is Tier 0 without patches.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -3,475 +3,494 @@ name: cms-jamstack-standards
 description: Use when deciding where content lives and who edits it - choosing between Markdown/MDX files in the repo, a git-based CMS (Decap admin/config.yml, TinaCMS), self-hosted open-source headless (Strapi, Directus, Payload, Keystone), paid SaaS headless (Contentful, Sanity, Storyblok, Prismic, Hygraph) or a coupled CMS (WordPress wp-config.php and plugins, Drupal), content modeling with content types, fields, references, localization and schema migration, sanity.config.ts or contentful space migration scripts, content collections and frontmatter schemas, draft and preview modes, publish webhooks and on-demand revalidation or cache purge after publish, stale content after a publish, image CDNs and per-transformation billing (Cloudinary credits, Cloudflare Images, imgix), free-plan API-call quotas and what breaks when you exceed them, editor accounts roles and MFA, plugin supply chain, stored XSS from a rich-text editor, exposing the content API, webhook signature verification, or exporting content out of a CMS before you are locked in.
 ---
 
-# Estándares de CMS y Jamstack
+# CMS and Jamstack standards
 
-Criterios verificados a **ago-2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-**Eje**: elegir **dónde vive el contenido y quién lo edita**, con el **coste y el bloqueo explícitos**
-desde el primer día. No es una decisión de gusto tecnológico: es un contrato de duración indefinida con
-un proveedor, un modelo de datos y un flujo de trabajo humano. **Un CMS del que no sabes salir es un
-contrato indefinido**, y el precio de salida se negocia al entrar, no cuando ya duele.
+**Axis**: choosing **where the content lives and who edits it**, with **the cost and the lock-in
+explicit** from day one. It is not a matter of technological taste: it is an open-ended contract with
+a provider, a data model and a human workflow. **A CMS you do not know how to leave is an indefinite
+contract**, and the exit price is negotiated on the way in, not once it already hurts.
 
-Triggers: `content/**/*.md`/`*.mdx` con frontmatter, `content.config.ts` / colecciones de contenido,
-`admin/config.yml` de Decap, `tina/config.ts`, `sanity.config.ts`, `strapi/config/`, `docker-compose.yml`
-con Strapi/Directus, `payload.config.ts`, `keystone.ts`, `wp-config.php`, `composer.json` de Drupal,
-scripts de migración de espacio de Contentful, endpoints `/graphql` o `/api/content` de un CMS, webhooks
-de publicación, `revalidatePath`/`revalidateTag`/purga por tag tras publicar, URLs de un CDN de imágenes
-con parámetros de transformación, cuotas de llamadas API en un plan de CMS SaaS.
+Triggers: `content/**/*.md`/`*.mdx` with frontmatter, `content.config.ts` / content collections,
+Decap's `admin/config.yml`, `tina/config.ts`, `sanity.config.ts`, `strapi/config/`,
+`docker-compose.yml` with Strapi/Directus, `payload.config.ts`, `keystone.ts`, `wp-config.php`,
+Drupal's `composer.json`, Contentful space migration scripts, a CMS's `/graphql` or `/api/content`
+endpoints, publish webhooks, `revalidatePath`/`revalidateTag`/purge-by-tag after publishing, image
+CDN URLs with transformation parameters, API call quotas on a SaaS CMS plan.
 
-**No aplica**:
-- `frontend-frameworks-standards` — **el framework, el modelo de renderizado (SSG/SSR/ISR/islas) y cómo
-  se cargan los datos son suyos**. Aquí **qué evento de contenido dispara qué regeneración** y cuál es el
-  contrato de datos que el framework consume. Si `next/image` o `<Image>` de Astro es quien sirve la
-  imagen, eso es de allí; **cuánto cuesta cada transformación en el CDN de imágenes es de aquí**.
-- `frontend-web-platform-standards` — la plataforma del navegador, el HTML/CSS, el CSP y el peso de la
-  página. Aquí solo el contenido que se inyecta en ellos y su saneamiento en origen.
-- `design-systems-standards` — **recíproca**: el sistema de diseño aporta los componentes que pintan lo
-  que este contenido dice. El modelo de contenido **no** define componentes de UI, y el sistema de diseño
-  **no** define tipos de contenido. Si los tipos de contenido se llaman igual que los componentes, tienes
-  un CMS acoplado a un rediseño.
-- `caching-cdn-standards` — **la caché HTTP, el CDN, `Cache-Control`, las surrogate keys y la purga son
-  suyos**. Aquí solo el **evento de publicación** que dispara esa purga y qué claves debe purgar.
-- `api-design-standards` — **el contrato de la API de contenido** (REST/GraphQL, paginación, versionado,
-  códigos de error) es suyo. Aquí qué campos expone y a quién.
-- `php-standards` — **WordPress y Drupal son PHP: el código, los plugins propios, Composer y la calidad
-  del código son suyos**. Aquí la **decisión de plataforma y su operación**: si se elige WordPress, cómo
-  se actualiza, cómo se protege y cuándo se usa headless.
-- `appsec-standards` (metodología y modelado de amenazas; aquí los controles concretos del CMS),
-  `identity-access-management-standards` (**la identidad de los editores, SSO y MFA son suyos**; aquí que
-  son obligatorios y con qué roles), `secrets-management-standards` (custodia de los tokens de API del
-  CMS y de los secretos de webhook), `data-governance-quality-standards` (propiedad del dato y del
-  glosario), `privacy-engineering-standards` (datos personales en formularios, consentimiento de
-  cookies), `grc-compliance-standards`, `cicd-standards` (la pipeline que construye y despliega),
-  `object-storage-standards` (dónde viven los binarios), `kubernetes-standards` (si el CMS autoalojado
-  corre ahí), `observability-standards`, `backup-recovery-standards` (**la copia de la base de datos del
-  CMS y su restauración probada son suyas**; aquí que el contenido entra en el alcance),
-  `search-engines-standards` (buscador del sitio).
+**Not applicable**:
+- `frontend-frameworks-standards` — **the framework, the rendering model (SSG/SSR/ISR/islands) and
+  how data is loaded are theirs**. Here **which content event triggers which regeneration** and what
+  the data contract the framework consumes is. If `next/image` or Astro's `<Image>` is what serves
+  the image, that is theirs; **how much each transformation costs in the image CDN belongs here**.
+- `frontend-web-platform-standards` — the browser platform, the HTML/CSS, the CSP and page weight.
+  Here only the content injected into them and its sanitisation at the source.
+- `design-systems-standards` — **reciprocal**: the design system provides the components that render
+  what this content says. The content model does **not** define UI components, and the design system
+  does **not** define content types. If the content types are named the same as the components, you
+  have a CMS coupled to a redesign.
+- `caching-cdn-standards` — **the HTTP cache, the CDN, `Cache-Control`, surrogate keys and purging
+  are theirs**. Here only the **publish event** that triggers that purge and which keys it must
+  purge.
+- `api-design-standards` — **the content API contract** (REST/GraphQL, pagination, versioning, error
+  codes) is theirs. Here which fields it exposes and to whom.
+- `php-standards` — **WordPress and Drupal are PHP: the code, in-house plugins, Composer and code
+  quality are theirs**. Here the **platform decision and its operation**: if WordPress is chosen, how
+  it is updated, how it is protected and when headless is used.
+- `appsec-standards` (methodology and threat modelling; here the concrete CMS controls),
+  `identity-access-management-standards` (**editors' identity, SSO and MFA are theirs**; here that
+  they are mandatory and with which roles), `secrets-management-standards` (custody of CMS API
+  tokens and webhook secrets), `data-governance-quality-standards` (data and glossary ownership),
+  `privacy-engineering-standards` (personal data in forms, cookie consent),
+  `grc-compliance-standards`, `cicd-standards` (the pipeline that builds and deploys),
+  `object-storage-standards` (where the binaries live), `kubernetes-standards` (if the self-hosted
+  CMS runs there), `observability-standards`, `backup-recovery-standards` (**the CMS database backup
+  and its tested restore are theirs**; here that the content falls within scope),
+  `search-engines-standards` (site search).
 
-## 2. Decisiones por defecto
+## 2. Default decisions
 
-> Verificar la última versión, la licencia y **el precio vigente** por web antes de fijarlos (§8).
-> Versiones y licencias leídas del registro npm y del `LICENSE` en crudo a **ago-2026**; precios de la
-> web del proveedor. **Los precios cambian sin aviso y las fuentes secundarias se contradicen.**
+> Verify the latest version, the licence and **the current price** on the web before committing to
+> them (§8). Versions and licences read from the npm registry and from the raw `LICENSE` as of
+> **Aug-2026**; prices from the provider's website. **Prices change without notice and secondary
+> sources contradict each other.**
 
-### Decisión 0: ¿hace falta un CMS?
+### Decision 0: is a CMS needed at all?
 
-**El criterio real es de personas, no de tecnología: si quien edita no es quien despliega, hace falta
-CMS.** Todo lo demás es secundario.
+**The real criterion is about people, not technology: if whoever edits is not whoever deploys, a CMS
+is needed.** Everything else is secondary.
 
-| Situación | Respuesta |
+| Situation | Answer |
 |---|---|
-| El contenido lo escribe el mismo equipo que hace deploy, y sabe usar Git | **Ficheros en el repo**: Markdown/MDX con frontmatter tipado y un generador estático. Sin base de datos, sin proveedor, sin factura, revisable en PR, con historial y rollback gratis |
-| Documentación técnica, blog de ingeniería, changelog, notas de versión | **Ficheros en el repo**, siempre. Meter un CMS aquí es añadir un proveedor para que ingenieros escriban Markdown |
-| Marketing, redacción o negocio edita, y no va a abrir un PR | **CMS.** Y la discusión termina ahí: obligar a un editor no técnico a usar Git produce contenido desactualizado y un ingeniero haciendo de secretario |
-| Un editor no técnico pero pocos cambios al mes, en un repo | **Git-based CMS** (Decap, Tina): interfaz de edición sobre commits. Sin base de datos y sin bloqueo — el contenido sigue siendo tuyo, en tu repo |
-| Varios idiomas, flujos de aprobación, programación de publicación, muchos editores concurrentes | **CMS de verdad** (headless o acoplado). Un git-based CMS no sostiene concurrencia ni workflow |
-| Contenido consumido por web **y** app móvil **y** otro canal | **Headless**, por definición |
-| "Puede que algún día lo edite marketing" | **No es un argumento.** Migrar de ficheros a CMS es fácil (el contenido está estructurado y es exportable). Salir de un CMS SaaS es lo caro |
+| The content is written by the same team that deploys, and they know how to use Git | **Files in the repo**: Markdown/MDX with typed frontmatter and a static generator. No database, no provider, no invoice, reviewable in a PR, with history and rollback for free |
+| Technical documentation, engineering blog, changelog, release notes | **Files in the repo**, always. Putting a CMS here is adding a provider so engineers can write Markdown |
+| Marketing, copywriting or the business edits, and they are not going to open a PR | **CMS.** And the discussion ends there: forcing a non-technical editor to use Git produces stale content and an engineer acting as a secretary |
+| A non-technical editor but few changes a month, in a repo | **Git-based CMS** (Decap, Tina): an editing interface over commits. No database and no lock-in — the content is still yours, in your repo |
+| Several languages, approval workflows, scheduled publishing, many concurrent editors | **A real CMS** (headless or coupled). A git-based CMS does not sustain concurrency or workflow |
+| Content consumed by web **and** a mobile app **and** another channel | **Headless**, by definition |
+| "Maybe some day marketing will edit it" | **Not an argument.** Migrating from files to a CMS is easy (the content is structured and exportable). Getting out of a SaaS CMS is the expensive part |
 
-### Taxonomía y criterio de elección
+### Taxonomy and choice criteria
 
-| Modelo | Ejemplos | Elígelo cuando | El coste real |
+| Model | Examples | Choose it when | The real cost |
 |---|---|---|---|
-| **Contenido en el repo** | Markdown/MDX + colecciones tipadas del framework | Escriben técnicos; contenido versionado con el código | Cero editor visual, cero flujo de aprobación, cero concurrencia |
-| **Git-based** | Decap, Tina | Un editor no técnico y volumen bajo; quieres cero bloqueo | Cada publicación es un commit → un build. Sin borradores concurrentes ni workflow serio |
-| **Headless open source autoalojado** | Strapi, Directus, Payload, Keystone | Control del dato, requisitos de residencia, coste predecible, modelo de contenido a medida | **Tú operas el servicio**: base de datos, backups, parches, escalado, uptime. No es gratis, es "pagado en operación" |
-| **Headless SaaS** | Contentful, Sanity, Storyblok, Prismic, Hygraph | Quieres cero operación, disponibilidad y CDN de contenido incluidos | Factura que crece con el tráfico, límites que rompen el sitio al superarse, y bloqueo en un modelo de contenido propietario |
-| **Acoplado / tradicional** | WordPress, Drupal | El contenido *es* el producto; editores acostumbrados; ecosistema de plugins ya resuelve el requisito | Superficie de ataque grande y mantenimiento continuo obligatorio (§5) |
+| **Content in the repo** | Markdown/MDX + the framework's typed collections | Technical people write it; content versioned with the code | Zero visual editor, zero approval workflow, zero concurrency |
+| **Git-based** | Decap, Tina | One non-technical editor and low volume; you want zero lock-in | Every publish is a commit → a build. No concurrent drafts and no serious workflow |
+| **Self-hosted open-source headless** | Strapi, Directus, Payload, Keystone | Control of the data, residency requirements, predictable cost, a bespoke content model | **You operate the service**: database, backups, patching, scaling, uptime. It is not free, it is "paid in operations" |
+| **SaaS headless** | Contentful, Sanity, Storyblok, Prismic, Hygraph | You want zero operations, with availability and a content CDN included | An invoice that grows with traffic, limits that break the site when exceeded, and lock-in to a proprietary content model |
+| **Coupled / traditional** | WordPress, Drupal | The content *is* the product; editors are used to it; the plugin ecosystem already solves the requirement | A large attack surface and mandatory continuous maintenance (§5) |
 
-**Regla de honestidad**: "open source autoalojado" no significa gratis, significa que **el coste está en
-tu equipo de operaciones**, y "SaaS" no significa sin coste de ingeniería, significa que **el coste está
-en la factura y en la salida**.
+**Honesty rule**: "self-hosted open source" does not mean free, it means **the cost is in your
+operations team**, and "SaaS" does not mean no engineering cost, it means **the cost is in the
+invoice and in the exit**.
 
-### Estado verificado a ago-2026 — licencias y modelo de precio
+### Verified status as of Aug-2026 — licences and pricing model
 
-| Producto | Versión | Licencia | Modelo de precio y límites |
+| Product | Version | Licence | Pricing model and limits |
 |---|---|---|---|
-| **Strapi** | `@strapi/strapi` **5.51.1** | **Dual, leído del `LICENSE`**: lo que está fuera de `ee/` es **MIT**; todo lo que reside bajo un directorio `ee/` es **Enterprise Edition con licencia propietaria**. "Strapi es MIT" es media verdad | Community self-hosted sin límite de llamadas ni de contenido; las funciones de equipo (Releases, Content History, SSO, audit logs, review workflows) son de pago. Growth citado en **$45/mes con 3 asientos, +$15/asiento**; SSO como add-on aparte. Enterprise a medida. **Verificar en strapi.io** |
-| **Directus** | **12.2.0** | ⚠️ **Ya no es open source**: **Monospace Sustainable Core License (MSCL-1.0-GPL)**, copyright 2026 Monospace Inc. Source-available, derivada de la Fair Core License. Prohíbe el *Competing Use*; **cada versión pasa a GPLv3 a los 4 años**. Prohíbe además desactivar o eludir la comprobación de la clave de licencia | Uso comercial gratuito solo bajo la **Open Innovation Grant** (verificado: **<$5M de ingresos anuales y <50 empleados**), o dentro de los límites del *free core tier*; por encima, licencia de pago con clave. **Los SDK siguen siendo MIT.** Este cambio (v12) es el hallazgo más caro de esta tabla: **si tu empresa supera los umbrales, Directus deja de ser gratis** |
-| **Payload** | **3.87.0** | **MIT** | Autoalojado gratis. **Cambio de propiedad verificado: Figma adquirió Payload (jun-2025)**; el equipo entró en Figma, la licencia MIT y el repo siguen. **Payload Cloud cerró altas nuevas**: si contabas con su hosting gestionado, no es opción. El riesgo a nombrar es el patrón "adquirido y luego desatendido"; MIT limita el peor caso pero no obliga a nadie a mantenerlo |
-| **Keystone** | `@keystone-6/core` **8.0.2** | **MIT** (Thinkmill) | Autoalojado gratis. **Keystone 5 está en modo mantenimiento**; la línea viva es la 6. Proyecto de una sola consultora: nombra esa dependencia antes de elegirlo |
-| **Decap CMS** | `decap-cms-app` **3.15.1** | **MIT** | Gratis. Mantenido por la comunidad tras el traspaso desde Netlify (2023): **vivo pero de baja velocidad**. Sin base de datos y sin bloqueo — el contenido son ficheros de tu repo |
-| **Tina** | `tinacms` **3.11.0** | **Apache-2.0**, no MIT | Editor sobre Git; el backend gestionado (Tina Cloud) es de pago con plan gratuito. Autoalojable |
-| **Contentful** | SDK `contentful` **11.12.7** (MIT) | Servicio propietario | ⚠️ **Verificado en su propio changelog (anunciado 2025-12-09): al alcanzar el límite mensual de ancho de banda de assets o de API, el plan Free hace que Contentful "automatically pause delivery APIs (CDA, CPA, GraphQL)" hasta el mes siguiente o hasta que se pase a plan de pago.** No hay overage: **el sitio deja de servir contenido**. El salto al primer plan de pago es de miles de euros al año |
-| **Sanity** | SDK `@sanity/client` **7.26.0** (MIT) | Servicio propietario, con Studio open source | Precio **por uso**: al superar lo incluido **no te corta, te factura**. Es el modelo más benigno para disponibilidad y el más peligroso para el presupuesto. **Alertas de uso obligatorias desde el día uno** |
-| **Storyblok** | SDK `@storyblok/js` **6.3.0** (MIT) | Servicio propietario | Factura por **asientos + idiomas + llamadas a la CDN + espacios**. En los planes bajos, superar el límite **estrangula la API**: degradación silenciosa del sitio sin que nadie reciba una factura ni una alerta |
-| **Prismic / Hygraph** | — | Servicio propietario | Planes gratuitos con **cuota dura**; al agotarse, el servicio para. El primer escalón de pago es un salto grande. Verificar cifras en su web |
-| **WordPress** | **7.0.2** (verificado en `api.wordpress.org`) | GPLv2+ | Núcleo gratis; el coste está en hosting, plugins premium y **mantenimiento continuo** (§5). Ver el apartado propio |
-| **Drupal** | **11.4.4**; ramas soportadas **10.6, 11.3, 11.4** | GPLv2+ | Gratis; coste en operación y en actualizaciones de major, que son proyectos, no tareas |
+| **Strapi** | `@strapi/strapi` **5.51.1** | **Dual, read from the `LICENSE`**: anything outside `ee/` is **MIT**; everything residing under an `ee/` directory is the **Enterprise Edition under a proprietary licence**. "Strapi is MIT" is a half-truth | Community self-hosted with no call or content limit; the team features (Releases, Content History, SSO, audit logs, review workflows) are paid. Growth quoted at **$45/month with 3 seats, +$15/seat**; SSO as a separate add-on. Enterprise bespoke. **Verify on strapi.io** |
+| **Directus** | **12.2.0** | ⚠️ **No longer open source**: **Monospace Sustainable Core License (MSCL-1.0-GPL)**, copyright 2026 Monospace Inc. Source-available, derived from the Fair Core License. It forbids *Competing Use*; **each version becomes GPLv3 after 4 years**. It also forbids disabling or circumventing the licence key check | Free commercial use only under the **Open Innovation Grant** (verified: **<$5M annual revenue and <50 employees**), or within the limits of the *free core tier*; above that, a paid licence with a key. **The SDKs are still MIT.** This change (v12) is the most expensive finding in this table: **if your company exceeds the thresholds, Directus stops being free** |
+| **Payload** | **3.87.0** | **MIT** | Free self-hosted. **Ownership change verified: Figma acquired Payload (Jun-2025)**; the team joined Figma, the MIT licence and the repo remain. **Payload Cloud closed new sign-ups**: if you were counting on their managed hosting, it is not an option. The risk to name is the "acquired and then neglected" pattern; MIT bounds the worst case but obliges nobody to maintain it |
+| **Keystone** | `@keystone-6/core` **8.0.2** | **MIT** (Thinkmill) | Free self-hosted. **Keystone 5 is in maintenance mode**; the live line is 6. A single-consultancy project: name that dependency before choosing it |
+| **Decap CMS** | `decap-cms-app` **3.15.1** | **MIT** | Free. Maintained by the community after the handover from Netlify (2023): **alive but low velocity**. No database and no lock-in — the content is files in your repo |
+| **Tina** | `tinacms` **3.11.0** | **Apache-2.0**, not MIT | An editor over Git; the managed backend (Tina Cloud) is paid with a free plan. Self-hostable |
+| **Contentful** | SDK `contentful` **11.12.7** (MIT) | Proprietary service | ⚠️ **Verified in their own changelog (announced 2025-12-09): on reaching the monthly asset bandwidth or API limit, the Free plan makes Contentful "automatically pause delivery APIs (CDA, CPA, GraphQL)" until the following month or until moving to a paid plan.** There is no overage: **the site stops serving content**. The jump to the first paid plan is thousands of euros a year |
+| **Sanity** | SDK `@sanity/client` **7.26.0** (MIT) | Proprietary service, with an open-source Studio | **Usage-based** pricing: when you exceed what is included **it does not cut you off, it bills you**. It is the most benign model for availability and the most dangerous for the budget. **Usage alerts mandatory from day one** |
+| **Storyblok** | SDK `@storyblok/js` **6.3.0** (MIT) | Proprietary service | Billed by **seats + languages + CDN calls + spaces**. On the lower plans, exceeding the limit **throttles the API**: silent degradation of the site with nobody receiving an invoice or an alert |
+| **Prismic / Hygraph** | — | Proprietary service | Free plans with a **hard quota**; once exhausted, the service stops. The first paid tier is a big jump. Verify the figures on their site |
+| **WordPress** | **7.0.2** (verified on `api.wordpress.org`) | GPLv2+ | Free core; the cost is in hosting, premium plugins and **continuous maintenance** (§5). See the dedicated section |
+| **Drupal** | **11.4.4**; supported branches **10.6, 11.3, 11.4** | GPLv2+ | Free; the cost is in operations and in major upgrades, which are projects, not tasks |
 
-**Los tres comportamientos al superar el límite** — es el criterio de selección que más gente descubre
-tarde. Elige sabiendo cuál de los tres puedes tolerar:
+**The three behaviours on exceeding the limit** — it is the selection criterion most people discover
+too late. Choose knowing which of the three you can tolerate:
 
-| Comportamiento | Quién | Consecuencia |
+| Behaviour | Who | Consequence |
 |---|---|---|
-| **Corte duro** | Contentful (Free), Prismic (Free) | El sitio deja de servir contenido. Incidente de producción provocado por una factura |
-| **Estrangulamiento silencioso** | Storyblok (planes bajos) | El sitio se degrada y nadie se entera hasta que alguien se queja |
-| **Overage facturado** | Sanity, planes de pago de la mayoría | El sitio sigue en pie y la sorpresa llega en la factura |
+| **Hard cut-off** | Contentful (Free), Prismic (Free) | The site stops serving content. A production incident caused by an invoice |
+| **Silent throttling** | Storyblok (low plans) | The site degrades and nobody notices until someone complains |
+| **Billed overage** | Sanity, most paid plans | The site stays up and the surprise arrives in the invoice |
 
-Sea cual sea: **alerta de uso al 70% de cada cuota**, y el número de llamadas a la API del CMS es una
-métrica de producción con umbral, no una curiosidad del panel del proveedor.
+Whichever it is: **a usage alert at 70% of each quota**, and the number of calls to the CMS API is a
+production metric with a threshold, not a curiosity on the provider's dashboard.
 
-### WordPress: tratamiento propio por cuota de mercado
+### WordPress: treated separately because of its market share
 
-Es la plataforma más usada de la web (~42% de los sitios según W3Techs, mar-2026) y por eso la más atacada.
-Decidir sobre WordPress requiere mirar tres cosas que se suelen omitir:
+It is the most used platform on the web (~42% of sites according to W3Techs, Mar-2026) and therefore
+the most attacked. Deciding about WordPress requires looking at three things that are usually
+omitted:
 
-- **Gobernanza — hecho verificable, sin tomar partido.** Desde oct-2024 hay un **conflicto público y un
-  litigio abierto entre WP Engine y Automattic/Matt Mullenweg**, todavía activo en 2026 (medida cautelar
-  a favor de WP Engine en dic-2025; demanda enmendada en feb-2026; disputas de *discovery* y moción de
-  sanciones en jul-2026; conversaciones de acuerdo en curso). Estructuralmente: **wordpress.org no tiene
-  órgano de gobierno formal ni consejo de supervisión**, y la marca la tiene la WordPress Foundation con
-  licencia comercial exclusiva a Automattic. Un intento de reforma hacia una fundación independiente se
-  quedó sin financiación en 2026.
-  **Consecuencia de ingeniería, no de opinión**: el ecosistema depende de decisiones de una sola persona
-  sin proceso público. Eso es un **riesgo de proveedor** que se escribe en el registro de riesgos junto
-  al plan de contingencia (fork, salida a otro CMS, hosting alternativo). No es motivo automático para
-  descartar WordPress; **es motivo para no fingir que es un proyecto con gobierno neutral**.
-- **Superficie de ataque.** Datos verificados del informe *State of WordPress Security in 2026* de
-  Patchstack (publicado feb-2026, sobre datos de 2025): **11.334 vulnerabilidades nuevas en el ecosistema
-  (+42% interanual)**, de las cuales **~91% en plugins y ~9% en temas**, con **una cifra mínima en el
-  núcleo y de riesgo bajo**. El **70% de las explotadas se explota en los 7 primeros días** y una parte
-  significativa en las primeras horas; las defensas del hosting bloquearon una fracción pequeña.
-  **Lectura correcta: el núcleo de WordPress no es el problema; tus plugins sí.** Cada plugin es una
-  dependencia con permisos de administrador en tu sitio.
-- **Disciplina de actualización, no negociable si eliges WordPress**: núcleo con actualizaciones menores
-  automáticas activadas; parches de plugins **en menos de 24-48 h** para severidad alta, con ventana de
-  emergencia definida; entorno de *staging* con clon de producción; inventario de plugins con dueño y
-  justificación; **retirada** (no desactivación) de todo lo que no se use; y suscripción a una fuente de
-  advisories del ecosistema. Un sitio WordPress sin alguien responsable de aplicar parches semanalmente
-  es un incidente pendiente de fecha.
-- **Cuándo usarlo headless**: cuando el equipo editorial ya vive en WordPress y no lo vas a mover, pero
-  la capa de presentación necesita ser otra cosa. Aporta: el frontend deja de ejecutar PHP y de exponer
-  temas y plugins al visitante. **No aporta**: el backend de administración sigue expuesto, sigue siendo
-  el mismo objetivo y sigue necesitando el mismo mantenimiento. **Headless no es una medida de seguridad**;
-  es una separación de capas que reduce la superficie *pública*, no la real.
+- **Governance — a verifiable fact, taking no side.** Since Oct-2024 there has been a **public
+  conflict and open litigation between WP Engine and Automattic/Matt Mullenweg**, still active in
+  2026 (an injunction in WP Engine's favour in Dec-2025; an amended complaint in Feb-2026;
+  *discovery* disputes and a sanctions motion in Jul-2026; settlement talks ongoing).
+  Structurally: **wordpress.org has no formal governing body and no oversight board**, and the
+  trademark is held by the WordPress Foundation with an exclusive commercial licence to Automattic.
+  An attempt at reform towards an independent foundation ran out of funding in 2026.
+  **An engineering consequence, not an opinion**: the ecosystem depends on the decisions of a single
+  person with no public process. That is a **vendor risk** to be written into the risk register
+  alongside the contingency plan (fork, exit to another CMS, alternative hosting). It is not an
+  automatic reason to rule out WordPress; **it is a reason not to pretend it is a project with
+  neutral governance**.
+- **Attack surface.** Verified data from Patchstack's *State of WordPress Security in 2026* report
+  (published Feb-2026, on 2025 data): **11,334 new vulnerabilities in the ecosystem (+42%
+  year on year)**, of which **~91% in plugins and ~9% in themes**, with **a minimal figure in the
+  core and of low risk**. **70% of those exploited are exploited within the first 7 days** and a
+  significant share within the first hours; hosting defences blocked a small fraction.
+  **The correct reading: the WordPress core is not the problem; your plugins are.** Every plugin is a
+  dependency with administrator permissions on your site.
+- **Update discipline, non-negotiable if you choose WordPress**: core with automatic minor updates
+  enabled; plugin patches **within 24-48 h** for high severity, with a defined emergency window; a
+  *staging* environment with a clone of production; a plugin inventory with an owner and a
+  justification; **removal** (not deactivation) of everything unused; and a subscription to an
+  ecosystem advisory feed. A WordPress site with nobody responsible for applying patches weekly is
+  an incident pending a date.
+- **When to use it headless**: when the editorial team already lives in WordPress and you are not
+  going to move them, but the presentation layer needs to be something else. It provides: the
+  frontend stops running PHP and stops exposing themes and plugins to the visitor. **It does not
+  provide**: the admin backend is still exposed, is still the same target and still needs the same
+  maintenance. **Headless is not a security measure**; it is a separation of layers that reduces the
+  *public* surface, not the real one.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### Modelado de contenido: un esquema de contenido es un esquema de datos
+### Content modelling: a content schema is a data schema
 
-Y por tanto **se diseña, se versiona y se migra igual que un esquema de base de datos**. El error caro es
-tratarlo como configuración que se toca en una interfaz web sin dejar rastro.
+And therefore **it is designed, versioned and migrated just like a database schema**. The expensive
+mistake is treating it as configuration to be poked at in a web interface with no trace left behind.
 
-- **Modela por significado, no por aspecto.** Un tipo `Página` con campos `bloque1`, `bloque2`,
-  `colorDeFondo`, `columnaIzquierda` es un editor de HTML disfrazado: el contenido queda inservible para
-  un segundo canal y muere con el próximo rediseño. Los nombres de campo describen **qué es** el dato
-  (`resumen`, `fechaDePublicacion`, `autor`), nunca **dónde se pinta**.
-- **Referencias en vez de duplicados.** Autor, categoría o producto son entidades referenciadas. Copiar
-  el nombre del autor en cada artículo garantiza que 200 artículos queden mal el día que se casa.
-- **Campos obligatorios y validados en el CMS**, no solo en el frontend: longitud de título, texto
-  alternativo de imagen obligatorio, formato de fecha. **El texto alternativo es campo requerido**, no una
-  sugerencia — es la única forma de que la accesibilidad del contenido no dependa de la buena voluntad
-  (el criterio de conformidad es de `accessibility-standards`).
-- **El esquema vive en código y en control de versiones** (`sanity.config.ts`, tipos de Strapi/Payload,
-  scripts de migración de espacio de Contentful). Un esquema que solo existe en la interfaz web del
-  proveedor no se puede revisar, ni diferenciar entre entornos, ni recrear tras un desastre.
-- **Migraciones de contenido con script, idempotentes y reversibles**, ejecutadas primero en un entorno de
-  preproducción con una copia del contenido real. Renombrar un campo en producción "porque es rápido" es
-  cómo se pierde contenido sin que nadie lo note hasta semanas después.
-- **Localización decidida al principio**: campo traducible vs. entrada por idioma vs. árbol por región.
-  Cambiar de estrategia después es una migración completa. Y ojo: **en varios SaaS los idiomas son un eje
-  de facturación**, así que la decisión de modelado es también una decisión de coste.
-- El contenido enriquecido se guarda en un formato **estructurado y portable** (AST/Portable Text/bloques),
-  no en HTML crudo. HTML almacenado es contenido acoplado a un diseño y una fuente de XSS almacenado (§5).
-- Ficheros en el repo: frontmatter con **esquema validado en build** (colecciones tipadas del framework).
-  Un campo mal escrito debe romper el build, no aparecer vacío en producción.
+- **Model by meaning, not by appearance.** A `Page` type with `block1`, `block2`,
+  `backgroundColour`, `leftColumn` fields is an HTML editor in disguise: the content becomes useless
+  for a second channel and dies with the next redesign. Field names describe **what** the data **is**
+  (`summary`, `publicationDate`, `author`), never **where it is rendered**.
+- **References instead of duplicates.** Author, category or product are referenced entities. Copying
+  the author's name into every article guarantees 200 articles will be wrong the day they get
+  married.
+- **Fields required and validated in the CMS**, not just in the frontend: title length, mandatory
+  image alternative text, date format. **Alternative text is a required field**, not a suggestion —
+  it is the only way for content accessibility not to depend on goodwill (the conformance criteria
+  belong to `accessibility-standards`).
+- **The schema lives in code and in version control** (`sanity.config.ts`, Strapi/Payload types,
+  Contentful space migration scripts). A schema that only exists in the provider's web interface
+  cannot be reviewed, nor diffed between environments, nor recreated after a disaster.
+- **Content migrations by script, idempotent and reversible**, run first in a
+  pre-production environment with a copy of the real content. Renaming a field in production
+  "because it is quick" is how content is lost without anyone noticing until weeks later.
+- **Localisation decided at the start**: translatable field vs. an entry per language vs. a tree per
+  region. Changing strategy later is a full migration. And note: **in several SaaS products languages
+  are a billing axis**, so the modelling decision is also a cost decision.
+- Rich content is stored in a **structured, portable** format (AST/Portable Text/blocks),
+  not in raw HTML. Stored HTML is content coupled to a design and a source of stored XSS (§5).
+- Files in the repo: frontmatter with a **schema validated at build time** (the framework's typed
+  collections). A misspelled field must break the build, not appear empty in production.
 
-### Publicación, generación y el problema real: la invalidación de caché
+### Publishing, generation and the real problem: cache invalidation
 
-**Aquí falla la mayoría.** Publicar es fácil; hacer que el cambio aparezca —y solo donde debe— es lo
-difícil. El evento de publicación es un evento de sistema distribuido con todos sus problemas.
+**This is where most people fail.** Publishing is easy; making the change appear —and only where it
+should— is the hard part. The publish event is a distributed-system event with all its problems.
 
-- Elige la estrategia por tipo de página, no por sitio (el modelo de renderizado es de
-  `frontend-frameworks-standards`; aquí **qué lo dispara**):
-  - **SSG con rebuild completo**: correcto mientras el build dure minutos, no horas. Con miles de páginas
-    deja de serlo y nadie lo revisa hasta que publicar tarda 40 minutos.
-  - **Revalidación bajo demanda / purga por tag desde webhook**: el default para un sitio con contenido
-    que cambia a lo largo del día. Requiere **mapear cada entrada de contenido a las rutas y claves de
-    caché que afecta** — y ese mapeo es la parte que se olvida.
-  - **ISR / revalidación por tiempo**: aceptable como red de seguridad **detrás** de la purga, nunca como
-    único mecanismo: significa aceptar contenido obsoleto durante la ventana.
-- **La página del artículo no es la única afectada**: el índice, la home, el feed RSS, el sitemap, las
-  páginas de categoría, los "relacionados" y la navegación. **Purgar solo la URL editada es el bug
-  clásico** — el editor ve su cambio y jura que la home está rota.
-- **Purga por tag/surrogate key, no por URL** siempre que el CDN lo permita (la mecánica es de
-  `caching-cdn-standards`). Por URL no escala y siempre falta una.
-- **Un despublicado y un borrado deben purgar igual que una publicación**, y devolver 404/410 —no una
-  página cacheada. Es el caso que nadie prueba y el que acaba en incidente legal cuando lo despublicado
-  era un precio o una nota de prensa.
-- El webhook **falla**: reintentos con backoff, **cola con reintento manual** y una **reconciliación
-  periódica** (revalidación programada de todo lo publicado en las últimas N horas). Un sistema de
-  publicación cuyo único camino feliz es "el webhook llegó" produce el ticket "publiqué y no sale".
-- **Feedback al editor**: la interfaz debe decir si el cambio ya está en producción. Sin eso, el editor
-  publica cinco veces, dispara cinco builds y llama a soporte. Es la causa número uno de facturas de
-  build infladas.
-- Deduplica y agrupa: veinte cambios en un minuto no son veinte rebuilds. Debounce en el receptor del
-  webhook.
+- Choose the strategy per page type, not per site (the rendering model belongs to
+  `frontend-frameworks-standards`; here **what triggers it**):
+  - **SSG with a full rebuild**: correct as long as the build takes minutes, not hours. With
+    thousands of pages it stops being so and nobody reviews it until publishing takes 40 minutes.
+  - **On-demand revalidation / purge by tag from a webhook**: the default for a site with content
+    that changes over the course of the day. It requires **mapping every content entry to the routes
+    and cache keys it affects** — and that mapping is the part that gets forgotten.
+  - **ISR / time-based revalidation**: acceptable as a safety net **behind** the purge, never as the
+    only mechanism: it means accepting stale content for the duration of the window.
+- **The article's page is not the only one affected**: the index, the home page, the RSS feed, the
+  sitemap, the category pages, the "related" items and the navigation. **Purging only the edited URL
+  is the classic bug** — the editor sees their change and swears the home page is broken.
+- **Purge by tag/surrogate key, not by URL** whenever the CDN allows it (the mechanics belong to
+  `caching-cdn-standards`). By URL it does not scale and there is always one missing.
+- **An unpublish and a delete must purge just like a publish**, and return 404/410 —not a cached
+  page. It is the case nobody tests and the one that ends up in a legal incident when what was
+  unpublished was a price or a press release.
+- The webhook **fails**: retries with backoff, **a queue with manual retry** and a **periodic
+  reconciliation** (scheduled revalidation of everything published in the last N hours). A publishing
+  system whose only happy path is "the webhook arrived" produces the ticket "I published and it does
+  not show".
+- **Feedback to the editor**: the interface must say whether the change is already in production.
+  Without that, the editor publishes five times, triggers five builds and calls support. It is the
+  number one cause of inflated build bills.
+- Deduplicate and batch: twenty changes in a minute are not twenty rebuilds. Debounce in the
+  webhook receiver.
 
-### Previsualización y borradores
+### Preview and drafts
 
-- **La previsualización usa contenido en borrador y datos reales**, en una URL no indexable y **detrás de
-  autenticación o de un token firmado y de vida corta**. Una URL de preview adivinable es una filtración
-  de embargo — el caso típico es la nota de resultados o el lanzamiento de producto.
-- `X-Robots-Tag: noindex` en todo lo que sea preview, y comprobado. Una preview indexada es contenido
-  duplicado y a veces contenido confidencial en un buscador.
-- La preview **nunca se sirve desde la caché pública** ni comparte clave de caché con la producción: es la
-  vía directa a que un borrador aparezca a un usuario anónimo.
-- Contenido programado: la publicación futura la ejecuta un trabajo del sistema, y **debe purgar caché al
-  activarse**. Contenido "publicado a las 9:00" que aparece a las 11:00 porque nadie invalidó es el mismo
-  bug de siempre con otro disfraz.
+- **The preview uses draft content and real data**, on a non-indexable URL and **behind
+  authentication or a signed, short-lived token**. A guessable preview URL is an embargo leak — the
+  typical case is the earnings release or the product launch.
+- `X-Robots-Tag: noindex` on everything that is a preview, and checked. An indexed preview is
+  duplicate content and sometimes confidential content in a search engine.
+- The preview is **never served from the public cache** nor shares a cache key with production: it is
+  the direct route to a draft appearing to an anonymous user.
+- Scheduled content: future publication is executed by a system job, and **it must purge the cache
+  when it activates**. Content "published at 9:00" that appears at 11:00 because nobody invalidated
+  anything is the same old bug in a different disguise.
 
-### Imágenes y activos
+### Images and assets
 
-- Los binarios no viven en la base de datos del CMS ni en el repo Git (ver `object-storage-standards`).
-  En el repo, además, un `.psd` o un vídeo envenenan el historial para siempre.
-- **El CDN de imágenes se factura por transformación, por almacenamiento y por entrega, y las tres
-  cuentan.** Verificado a ago-2026 (**precios volátiles: confirmar en la web del proveedor, §8**):
-  - **Cloudflare Images**: primeras **5.000 transformaciones únicas/mes incluidas**, después **$0,50 por
-    1.000**; almacenamiento **$5 por 100.000 imágenes/mes**; entrega **$1 por 100.000/mes**. En plan Free,
-    superado el límite se siguen sirviendo las transformaciones ya cacheadas y **las nuevas devuelven
-    error 9422** — degradación parcial, sin cargo.
-  - **Cloudinary**: sistema de **créditos** fungibles (1 crédito ≈ 1.000 transformaciones **o** 1 GB de
-    almacenamiento **o** 1 GB de entrega). Free citado en **25 créditos/mes**. Al ser un único bote, **lo
-    que más consumas se come la cuota**, y normalmente es el ancho de banda.
-  - **imgix**: migrado a un modelo **de créditos** (antes por *origin images*); overage citado al 120% del
-    precio por crédito y posibilidad de bloqueo al alcanzar el límite.
-  - Consecuencia de diseño: **el conjunto de variantes es un presupuesto.** Cada tamaño × formato × recorte
-    es una transformación facturable. Fija una lista **cerrada** de anchos y formatos, no generes variantes
-    desde parámetros de URL abiertos al público, y **cachea agresivamente** — una URL de transformación
-    sin caché se paga cada vez.
-  - **Nunca aceptes parámetros de transformación desde la URL sin allowlist ni firma**: es a la vez una
-    factura abierta a cualquiera y un vector de amplificación.
-- Formatos y `srcset` los decide `frontend-web-platform-standards`; los umbrales de peso,
-  `web-performance-standards`. Aquí: que el CMS **obligue** a subir un original de calidad suficiente y
-  registre dimensiones y texto alternativo.
+- Binaries do not live in the CMS database or in the Git repo (see `object-storage-standards`).
+  In the repo, moreover, a `.psd` or a video poisons the history forever.
+- **The image CDN bills by transformation, by storage and by delivery, and all three count.**
+  Verified as of Aug-2026 (**volatile prices: confirm on the provider's site, §8**):
+  - **Cloudflare Images**: the first **5,000 unique transformations/month included**, then **$0.50
+    per 1,000**; storage **$5 per 100,000 images/month**; delivery **$1 per 100,000/month**. On the
+    Free plan, once the limit is exceeded the already-cached transformations keep being served and
+    **new ones return error 9422** — partial degradation, at no charge.
+  - **Cloudinary**: a system of fungible **credits** (1 credit ≈ 1,000 transformations **or** 1 GB of
+    storage **or** 1 GB of delivery). Free quoted at **25 credits/month**. Being a single pot,
+    **whatever you consume most eats the quota**, and it is usually bandwidth.
+  - **imgix**: migrated to a **credit** model (previously by *origin images*); overage quoted at 120%
+    of the price per credit and the possibility of blocking on reaching the limit.
+  - Design consequence: **the set of variants is a budget.** Each size × format × crop
+    is a billable transformation. Fix a **closed** list of widths and formats, do not generate
+    variants from URL parameters open to the public, and **cache aggressively** — an uncached
+    transformation URL is paid for every time.
+  - **Never accept transformation parameters from the URL without an allowlist or a signature**: it
+    is at once an open invoice to anyone and an amplification vector.
+- Formats and `srcset` are decided by `frontend-web-platform-standards`; the weight thresholds, by
+  `web-performance-standards`. Here: that the CMS **requires** uploading an original of sufficient
+  quality and records dimensions and alternative text.
 
-### Migración y salida: probada, no supuesta
+### Migration and exit: tested, not assumed
 
-- **Antes de firmar**, comprueba: ¿existe API de exportación completa (contenido, assets, referencias,
-  versiones, borradores y traducciones)? ¿está limitada por cuota? ¿el formato es reutilizable o es un
-  volcado propietario?
-- **Ejecuta la exportación completa en la fase de evaluación**, no cuando quieras irte. Si no puedes
-  exportarlo el primer mes, no vas a poder el tercer año.
-- **Exportación automatizada y periódica a almacenamiento propio** desde el día uno, con la misma
-  disciplina que un backup: verificada y con restauración probada (ver `backup-recovery-standards`). Un
-  CMS SaaS **no es tu copia de seguridad** — su SLA cubre su servicio, no tu derecho a llevarte el dato.
-- Lo que ata de verdad no es la API: son los **campos propietarios, el formato de texto enriquecido, las
-  transformaciones de imagen incrustadas en URLs del proveedor y el modelo de referencias**. Minimiza el
-  acoplamiento manteniendo una **capa de mapeo** entre la respuesta del CMS y el modelo que usa tu
-  aplicación. Sin esa capa, cambiar de CMS es reescribir el frontend.
-- Escribe el **coste y el plazo estimados de salida** en la decisión inicial. Si nadie sabe decirlo, aún
-  no has evaluado el proveedor.
+- **Before signing**, check: is there a complete export API (content, assets, references,
+  versions, drafts and translations)? is it quota-limited? is the format reusable or is it a
+  proprietary dump?
+- **Run the full export during the evaluation phase**, not when you want to leave. If you cannot
+  export it in the first month, you will not be able to in the third year.
+- **Automated, periodic export to your own storage** from day one, with the same
+  discipline as a backup: verified and with a tested restore (see `backup-recovery-standards`). A
+  SaaS CMS **is not your backup** — its SLA covers its service, not your right to take the data away.
+- What really ties you down is not the API: it is the **proprietary fields, the rich text format, the
+  image transformations embedded in the provider's URLs and the reference model**. Minimise the
+  coupling by keeping a **mapping layer** between the CMS response and the model your
+  application uses. Without that layer, changing CMS means rewriting the frontend.
+- Write the **estimated cost and timescale of the exit** into the initial decision. If nobody can
+  state it, you have not yet evaluated the provider.
 
-## 4. Calidad y gates de CI
+## 4. Quality and CI gates
 
-En orden de coste creciente; cada uno rompe el build o el despliegue:
+In increasing order of cost; each one breaks the build or the deployment:
 
-1. **Validación del esquema de contenido**: frontmatter/colecciones tipadas, campos obligatorios
-   presentes, referencias resolubles. Contenido inválido **rompe el build**, no se degrada en silencio.
-2. **Enlaces internos y activos**: un enlace roto o una imagen ausente es un defecto de contenido
-   detectable en CI. Enlaces externos, en un job programado aparte (fallan por causas ajenas).
-3. **Migraciones de esquema**: se ejecutan contra una copia del contenido de producción en
-   preproducción antes de tocar producción, con reversión probada.
-4. **Prueba del camino de publicación** —el que nadie prueba y el que siempre falla—: publicar en
-   preproducción y verificar automáticamente que (a) la página aparece, (b) **el índice y la home se
-   actualizan**, (c) un despublicado deja de servirse y devuelve 404/410, (d) un fallo del webhook se
-   recupera por reconciliación.
-5. **Preview**: verificar que una URL de preview **no** es accesible sin token y **no** es indexable.
-6. **Presupuesto de build**: duración del build y número de builds por publicación medidos. Si publicar
-   un typo cuesta 30 minutos de build, la estrategia de generación está mal elegida.
-7. **Cuotas del proveedor**: llamadas a la API, ancho de banda y transformaciones de imagen contra el
-   límite del plan, con alerta al 70%.
+1. **Content schema validation**: typed frontmatter/collections, mandatory fields
+   present, resolvable references. Invalid content **breaks the build**, it does not degrade
+   silently.
+2. **Internal links and assets**: a broken link or a missing image is a content defect
+   detectable in CI. External links, in a separate scheduled job (they fail for external reasons).
+3. **Schema migrations**: they are run against a copy of the production content in
+   pre-production before touching production, with a tested rollback.
+4. **Publishing path test** —the one nobody tests and the one that always fails—: publish in
+   pre-production and automatically verify that (a) the page appears, (b) **the index and the home
+   page are updated**, (c) an unpublish stops being served and returns 404/410, (d) a webhook failure
+   is recovered by reconciliation.
+5. **Preview**: verify that a preview URL is **not** accessible without a token and is **not**
+   indexable.
+6. **Build budget**: build duration and number of builds per publish, measured. If publishing
+   a typo costs 30 minutes of build, the generation strategy is badly chosen.
+7. **Provider quotas**: API calls, bandwidth and image transformations against the
+   plan limit, with an alert at 70%.
 
-## 5. Seguridad: el CMS es la superficie de ataque más común de un sitio corporativo
+## 5. Security: the CMS is the most common attack surface of a corporate site
 
-Un sitio estático sin CMS tiene una superficie mínima. En cuanto hay CMS, aparece un panel de
-administración expuesto a Internet, cuentas humanas, un editor que acepta HTML y un ecosistema de plugins.
-Es, con diferencia, el componente por el que entran.
+A static site with no CMS has a minimal surface. As soon as there is a CMS, an administration panel
+exposed to the Internet appears, along with human accounts, an editor that accepts HTML and a plugin
+ecosystem. It is, by far, the component they get in through.
 
-- **Cuentas de editor con MFA obligatorio y SSO** cuando exista la organización que lo permita (la
-  identidad es de `identity-access-management-standards`). Los ataques a WordPress y a paneles de CMS son
-  masivamente de credenciales: fuerza bruta, reutilización y phishing al equipo de marketing, que no
-  recibe la formación de seguridad que recibe el de ingeniería.
-- **Roles mínimos y revisados**: el editor edita, no instala plugins ni cambia el esquema ni ve la
-  configuración. **Nadie trabaja a diario con la cuenta de administrador.** Revisión trimestral de cuentas
-  y **baja inmediata al salir de la empresa o de la agencia** — las cuentas de agencias externas son el
-  agujero que sobrevive años a la relación comercial.
-- **Panel de administración no expuesto públicamente** cuando sea viable: restricción por IP, VPN o
-  autenticación previa en el borde. Si tiene que ser público, entonces MFA, rate limiting y bloqueo de
-  fuerza bruta son obligatorios.
-- **Plugins y extensiones son cadena de suministro con privilegios de administrador.** Regla: inventario
-  con dueño y justificación por plugin, mínimo posible, ninguno sin mantenimiento reciente, ninguno
-  "nulled"/pirata jamás, y **eliminados** (no desactivados) los que no se usan — un plugin desactivado
-  sigue siendo código en el disco y ha sido vector real de explotación. Datos de §2: **~91% de las
-  vulnerabilidades del ecosistema WordPress están en plugins**, y buena parte se explota en horas.
-- **XSS almacenado desde el editor de texto enriquecido**: es la vulnerabilidad estructural de todo CMS.
-  El editor guarda HTML y alguien lo pinta. Controles: guardar **formato estructurado, no HTML**;
-  **sanear en el servidor al guardar y al servir** (nunca solo en el cliente, nunca solo una vez);
-  allowlist de etiquetas y atributos, no denylist; y **prohibido incrustar `<script>`, `<iframe>` u
-  `onerror` desde el editor** — si de verdad hace falta un embed, es un tipo de campo específico con
-  proveedores en allowlist, no HTML libre. Un editor con privilegios no es un usuario de confianza: es
-  una cuenta que puede ser robada.
-- **Subida de ficheros**: validación por **contenido real**, no por extensión ni por `Content-Type`;
-  allowlist de tipos; nombre generado por el sistema; almacenamiento **fuera de la raíz web** o en
-  almacenamiento de objetos con **ejecución deshabilitada**; `Content-Disposition: attachment` y
-  `X-Content-Type-Options: nosniff` al servir; límite de tamaño; y **SVG tratado como código ejecutable**
-  (sanitizado o directamente prohibido). Un directorio de subidas que ejecuta PHP es la vía clásica a RCE.
-- **Exposición de la API de contenido**: el token de lectura que va al frontend es público de facto — que
-  sea **de solo lectura, solo del contenido publicado y de un único entorno**. **Nunca un token de
-  escritura o de gestión en el cliente ni en el bundle.** Y comprueba qué devuelve la API de verdad:
-  muchas exponen borradores, campos internos, correos de autores o el esquema completo si se pide bien.
-- **Secretos de webhook con firma verificada**, sin excepción: HMAC con secreto compartido, **comparación
-  en tiempo constante**, validación de la marca de tiempo para rechazar reenvíos, y **rechazo por defecto**
-  si no hay firma válida. Un endpoint de revalidación sin firma es un DoS gratuito contra tu build y tu
-  CDN, y a veces algo peor. Los secretos, en `secrets-management-standards`; rotación incluida.
-- **Separación de entornos**: el CMS de producción no comparte credenciales ni base de datos con el de
-  preproducción, y el contenido de prueba no llega a producción. Copiar producción a preproducción
-  arrastra datos personales: anonimiza (`privacy-engineering-standards`).
-- **Formularios y comentarios** son entrada no confiable en el sitio público: rate limiting, protección
-  anti-spam, validación en servidor y, si recogen datos personales, base legal y retención
+- **Editor accounts with mandatory MFA and SSO** where the organisation makes it possible (identity
+  belongs to `identity-access-management-standards`). Attacks on WordPress and on CMS panels are
+  massively credential-based: brute force, reuse and phishing of the marketing team, who do not get
+  the security training the engineering team gets.
+- **Minimal, reviewed roles**: the editor edits, does not install plugins nor change the schema nor
+  see the configuration. **Nobody works day to day with the administrator account.** Quarterly review
+  of accounts and **immediate deprovisioning on leaving the company or the agency** — external agency
+  accounts are the hole that survives the commercial relationship by years.
+- **The administration panel not publicly exposed** where feasible: IP restriction, VPN or
+  pre-authentication at the edge. If it has to be public, then MFA, rate limiting and brute-force
+  blocking are mandatory.
+- **Plugins and extensions are supply chain with administrator privileges.** Rule: an inventory
+  with an owner and a justification per plugin, as few as possible, none without recent maintenance,
+  never a "nulled"/pirated one, and **removal** (not deactivation) of the unused ones — a deactivated
+  plugin is still code on disk and has been a real exploitation vector. Data from §2: **~91% of the
+  WordPress ecosystem's vulnerabilities are in plugins**, and a good share are exploited within
+  hours.
+- **Stored XSS from the rich text editor**: it is the structural vulnerability of every CMS.
+  The editor stores HTML and someone renders it. Controls: store **structured format, not HTML**;
+  **sanitise on the server both on save and on serve** (never only on the client, never only once);
+  an allowlist of tags and attributes, not a denylist; and **embedding `<script>`, `<iframe>` or
+  `onerror` from the editor is forbidden** — if an embed is genuinely needed, it is a specific field
+  type with allowlisted providers, not free HTML. An editor with privileges is not a trusted user: it
+  is an account that can be stolen.
+- **File uploads**: validation by **real content**, not by extension or by `Content-Type`;
+  an allowlist of types; a system-generated name; storage **outside the web root** or in object
+  storage with **execution disabled**; `Content-Disposition: attachment` and
+  `X-Content-Type-Options: nosniff` when serving; a size limit; and **SVG treated as executable
+  code** (sanitised or outright forbidden). An uploads directory that executes PHP is the classic
+  route to RCE.
+- **Exposure of the content API**: the read token that goes to the frontend is public de facto — make
+  it **read-only, published content only and for a single environment**. **Never a write or
+  management token in the client or in the bundle.** And check what the API actually returns: many
+  expose drafts, internal fields, author emails or the whole schema if you ask correctly.
+- **Webhook secrets with a verified signature**, no exceptions: HMAC with a shared secret,
+  **constant-time comparison**, timestamp validation to reject replays, and **rejection by default**
+  if there is no valid signature. A revalidation endpoint with no signature is a free DoS against
+  your build and your CDN, and sometimes something worse. The secrets, in
+  `secrets-management-standards`; rotation included.
+- **Environment separation**: the production CMS does not share credentials or a database with the
+  pre-production one, and test content does not reach production. Copying production to
+  pre-production drags personal data along: anonymise it (`privacy-engineering-standards`).
+- **Forms and comments** are untrusted input on the public site: rate limiting, anti-spam
+  protection, server-side validation and, if they collect personal data, a legal basis and retention
   (`privacy-engineering-standards`).
-- **Copia de seguridad del contenido y de la base de datos con restauración probada**
-  (`backup-recovery-standards`). El escenario realista no es la caída del disco: es un editor que borra
-  200 entradas o un compromiso que las modifica.
+- **Backup of the content and of the database with a tested restore**
+  (`backup-recovery-standards`). The realistic scenario is not disk failure: it is an editor deleting
+  200 entries or a compromise that modifies them.
 
-## 6. Coste operativo, caché y caídas
+## 6. Operational cost, caching and outages
 
-- **El coste tiene cinco ejes y todos crecen con el éxito**: llamadas a la API del CMS, ancho de banda del
-  CDN, transformaciones de imagen, **minutos de build** y **asientos de editor**. Los asientos y los
-  idiomas son los que más sorprenden porque crecen por decisiones de negocio, no de tráfico.
-- **Modela el coste al doble del tráfico previsto antes de firmar.** Si a 2× el plan se vuelve inasumible,
-  ya sabes la fecha de tu migración forzosa.
-- **Alertas de uso al 70% de cada cuota**, con dueño. Descubrir el límite porque el sitio dejó de servir
-  contenido es un fallo de operación, no del proveedor.
-- **La caché es lo que te salva de la factura y de la caída a la vez**: si el frontend consulta la API del
-  CMS en cada petición de usuario, estás pagando por cada visita y tu disponibilidad es la del CMS. El
-  contenido publicado se sirve **desde HTML generado o desde caché del borde**, no desde el CMS en
-  caliente. La política concreta es de `caching-cdn-standards`.
-- **Qué se rompe cuando el proveedor cae** — esto se decide de antemano:
-  - Sitio **estático generado**: no se rompe nada visible. Solo deja de poder publicarse. **Es el argumento
-    de disponibilidad más fuerte a favor de generar**.
-  - Sitio con **fetch en tiempo de render**: cae con el proveedor. Mitigación obligatoria: `stale-if-error`
-    en el borde, timeouts cortos, y **una copia local del último contenido bueno** para servir degradado.
-  - **Imágenes**: si el CDN de imágenes cae y tus URLs apuntan a él, el sitio se ve roto aunque el HTML esté
-    servido. Considera dominio propio delante para poder repuntar.
-  - **Preview y panel de edición**: caen. Aceptable — no es tráfico de usuario final.
-- Un fallo de publicación **no puede tumbar el sitio**: el contenido anterior sigue servido. Si un webhook
-  malformado puede vaciar la caché entera, tienes un botón de autodestrucción expuesto.
-- Instrumenta: latencia y errores de la API del CMS, tasa de éxito de webhooks, retraso entre publicar y
-  aparecer (**el SLI real del sistema editorial**), duración y número de builds, y consumo frente a cuota.
+- **The cost has five axes and all of them grow with success**: CMS API calls, CDN bandwidth,
+  image transformations, **build minutes** and **editor seats**. Seats and languages are the most
+  surprising ones because they grow through business decisions, not traffic.
+- **Model the cost at twice the projected traffic before signing.** If at 2× the plan becomes
+  unaffordable, you already know the date of your forced migration.
+- **Usage alerts at 70% of each quota**, with an owner. Discovering the limit because the site
+  stopped serving content is an operational failure, not the provider's.
+- **The cache is what saves you from the invoice and from the outage at the same time**: if the
+  frontend queries the CMS API on every user request, you are paying per visit and your availability
+  is the CMS's. Published content is served **from generated HTML or from the edge cache**, not from
+  the CMS live. The concrete policy belongs to `caching-cdn-standards`.
+- **What breaks when the provider goes down** — this is decided in advance:
+  - **Statically generated** site: nothing visible breaks. Only publishing stops being possible.
+    **It is the strongest availability argument in favour of generating**.
+  - Site with **fetch at render time**: it goes down with the provider. Mandatory mitigation:
+    `stale-if-error` at the edge, short timeouts, and **a local copy of the last good content** to
+    serve degraded.
+  - **Images**: if the image CDN goes down and your URLs point at it, the site looks broken even
+    though the HTML is being served. Consider your own domain in front so you can repoint.
+  - **Preview and the editing panel**: they go down. Acceptable — it is not end-user traffic.
+- A publishing failure **must not take down the site**: the previous content keeps being served. If a
+  malformed webhook can empty the whole cache, you have an exposed self-destruct button.
+- Instrument: CMS API latency and errors, webhook success rate, the delay between publishing and
+  appearing (**the real SLI of the editorial system**), build duration and count, and consumption
+  against quota.
 
-## 7. Sostenibilidad y prohibiciones
+## 7. Sustainability and prohibitions
 
-- **Revisa el proveedor cada 12 meses**: precio, licencia, propiedad y cambios en el plan. Verificado en
-  esta misma ola que en menos de dos años cambiaron **la licencia de Directus** (v12, deja de ser open
-  source), **la propiedad de Payload** (Figma) con cierre de altas en su nube, y **la política del plan
-  gratuito de Contentful** (pausa de las APIs de entrega).
-- Actualizaciones del CMS autoalojado: parches de seguridad **inmediatos**; majors planificados como
-  proyecto con migración de esquema y pruebas. Un CMS autoalojado dos majors por detrás es una brecha
-  esperando fecha.
-- El contenido sobrevive al sitio: **la exportación periódica a formato propio** es el seguro de vida del
-  proyecto y se prueba, como un backup.
+- **Review the provider every 12 months**: price, licence, ownership and plan changes. Verified in
+  this very wave that in less than two years there were changes to **Directus's licence** (v12, it
+  stops being open source), **Payload's ownership** (Figma) with sign-ups closed on their cloud, and
+  **Contentful's free plan policy** (pausing the delivery APIs).
+- Updates of the self-hosted CMS: security patches **immediately**; majors planned as a
+  project with schema migration and testing. A self-hosted CMS two majors behind is a breach
+  waiting for a date.
+- The content outlives the site: **periodic export to your own format** is the project's life
+  insurance and it is tested, like a backup.
 
-**PROHIBIDO:**
-- ❌ Meter un CMS cuando quien edita es quien despliega. Documentación y blogs técnicos van en el repo.
-- ❌ Elegir un CMS SaaS **sin haber leído qué pasa al superar cada cuota** y sin modelar el coste a 2× el
-  tráfico. Verificado: Contentful **pausa las APIs de entrega** en el plan Free; Storyblok **estrangula**
-  en los planes bajos; Sanity **te factura el exceso**.
-- ❌ Afirmar la licencia de un CMS de memoria. Verificado a ago-2026: **Directus ya no es open source**
-  (MSCL-1.0-GPL, gratis solo bajo la Open Innovation Grant: <$5M de ingresos y <50 empleados), **Strapi es
-  dual** (`ee/` es propietario) y **Tina es Apache-2.0**.
-- ❌ Adoptar un CMS sin ejecutar **una exportación completa del contenido** durante la evaluación.
-- ❌ Modelar el contenido por su aspecto (`bloque1`, `columnaIzquierda`, `colorDeFondo`) en vez de por su
-  significado. Y ❌ duplicar entidades en vez de referenciarlas.
-- ❌ Cambiar el esquema de contenido directamente en la interfaz de producción, sin script, sin versionar
-  y sin ensayo en preproducción.
-- ❌ Purgar solo la URL editada: el índice, la home, el feed, el sitemap y las categorías también cambian.
-- ❌ Que el único mecanismo de frescura sea "el webhook llegó". Sin reintentos, cola y reconciliación
-  programada, hay contenido obsoleto garantizado.
-- ❌ Despublicar o borrar sin purgar caché y sin devolver 404/410.
-- ❌ URL de previsualización sin token de vida corta, sin `noindex` o servida desde la caché pública.
-- ❌ Token de escritura o de gestión del CMS en el cliente, en el bundle o en el repositorio.
-- ❌ Endpoint de revalidación o de webhook **sin verificación de firma** (HMAC, comparación en tiempo
-  constante, marca de tiempo). Y ❌ aceptarlo "porque la URL es secreta".
-- ❌ Guardar HTML crudo del editor de texto enriquecido y pintarlo sin sanear en el servidor. ❌ Permitir
-  `<script>`, `<iframe>` u `on*` desde el editor.
-- ❌ Subidas validadas por extensión o por `Content-Type`; directorio de subidas con ejecución habilitada;
-  SVG servido sin sanear.
-- ❌ Cuentas de editor sin MFA; editores con rol de administrador "porque es más cómodo"; cuentas de
-  agencias externas que sobreviven al contrato.
-- ❌ Plugin de WordPress/Drupal sin dueño ni justificación, sin mantenimiento reciente, o "nulled".
-  ❌ Dejar plugins desactivados en el servidor en vez de eliminarlos.
-- ❌ Operar WordPress sin alguien responsable de aplicar parches en 24-48 h. ❌ Vender "headless" como si
-  fuera una medida de seguridad del backend.
-- ❌ Consultar la API del CMS en cada petición de usuario sin caché: pagas por visita y heredas su
-  disponibilidad.
-- ❌ Generar variantes de imagen desde parámetros de URL abiertos, sin allowlist ni firma: es una factura
-  abierta a cualquiera.
-- ❌ Tratar el CMS SaaS como copia de seguridad del contenido.
+**FORBIDDEN:**
+- ❌ Putting in a CMS when whoever edits is whoever deploys. Documentation and technical blogs go in
+  the repo.
+- ❌ Choosing a SaaS CMS **without having read what happens when each quota is exceeded** and without
+  modelling the cost at 2× the traffic. Verified: Contentful **pauses the delivery APIs** on the Free
+  plan; Storyblok **throttles** on the low plans; Sanity **bills you for the excess**.
+- ❌ Stating a CMS's licence from memory. Verified as of Aug-2026: **Directus is no longer open
+  source** (MSCL-1.0-GPL, free only under the Open Innovation Grant: <$5M revenue and <50 employees),
+  **Strapi is dual** (`ee/` is proprietary) and **Tina is Apache-2.0**.
+- ❌ Adopting a CMS without running **a full content export** during the evaluation.
+- ❌ Modelling the content by its appearance (`block1`, `leftColumn`, `backgroundColour`) instead of
+  by its meaning. And ❌ duplicating entities instead of referencing them.
+- ❌ Changing the content schema directly in the production interface, with no script, no versioning
+  and no rehearsal in pre-production.
+- ❌ Purging only the edited URL: the index, the home page, the feed, the sitemap and the categories
+  change too.
+- ❌ Making "the webhook arrived" the only freshness mechanism. Without retries, a queue and scheduled
+  reconciliation, stale content is guaranteed.
+- ❌ Unpublishing or deleting without purging the cache and without returning 404/410.
+- ❌ A preview URL without a short-lived token, without `noindex` or served from the public cache.
+- ❌ A CMS write or management token in the client, in the bundle or in the repository.
+- ❌ A revalidation or webhook endpoint **without signature verification** (HMAC, constant-time
+  comparison, timestamp). And ❌ accepting it "because the URL is secret".
+- ❌ Storing raw HTML from the rich text editor and rendering it without sanitising on the server.
+  ❌ Allowing `<script>`, `<iframe>` or `on*` from the editor.
+- ❌ Uploads validated by extension or by `Content-Type`; an uploads directory with execution enabled;
+  SVG served without sanitising.
+- ❌ Editor accounts without MFA; editors with an administrator role "because it is more convenient";
+  external agency accounts that outlive the contract.
+- ❌ A WordPress/Drupal plugin with no owner or justification, with no recent maintenance, or
+  "nulled". ❌ Leaving deactivated plugins on the server instead of removing them.
+- ❌ Operating WordPress with nobody responsible for applying patches within 24-48 h. ❌ Selling
+  "headless" as if it were a security measure for the backend.
+- ❌ Querying the CMS API on every user request with no cache: you pay per visit and you inherit its
+  availability.
+- ❌ Generating image variants from open URL parameters, with no allowlist or signature: it is an open
+  invoice to anyone.
+- ❌ Treating the SaaS CMS as the content's backup.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar nada, comprobar online (registro npm y feeds Atom `https://github.com/OWNER/REPO/releases.atom`
-— **`api.github.com` da 403 sin autenticar**; **web oficial del proyecto y del proveedor para contrastar**,
-porque el feed de GitHub **no es la fuente de verdad**; `LICENSE` en crudo para licencias; **página de
-precios del proveedor** para el coste, nunca un agregador):
+Before committing to anything, check online (the npm registry and Atom feeds
+`https://github.com/OWNER/REPO/releases.atom` — **`api.github.com` gives 403 unauthenticated**; **the
+project's and the provider's official sites to cross-check**, because the GitHub feed **is not the
+source of truth**; the raw `LICENSE` for licences; **the provider's pricing page** for cost, never an
+aggregator):
 
-1. **Licencias, una por una y del `LICENSE` en crudo**: Directus (¿sigue MSCL?, ¿han cambiado los umbrales
-   de la Open Innovation Grant?), Strapi (¿qué queda fuera de `ee/`?), Payload, Keystone, Decap, Tina.
-   **Este es el dato que más ha cambiado en este dominio.**
-2. **Propiedad y estado del proyecto**: Payload bajo Figma (¿sigue mantenido?, ¿reabrió Payload Cloud?),
-   Keystone (¿la 6 sigue activa o siguió a la 5 al mantenimiento?), Decap (velocidad real de commits, no
-   el badge).
-3. **Precio y límites del plan gratuito, y qué pasa al superarlos**, en la web del proveedor: Contentful,
-   Sanity, Storyblok, Prismic, Hygraph, Strapi Growth/Cloud, Tina Cloud. Confirmar en particular si
-   Contentful mantiene la pausa de CDA/CPA/GraphQL en el plan Free.
-4. **Versiones**: WordPress (`https://api.wordpress.org/core/version-check/1.7/` da la vigente y el PHP
-   mínimo) y Drupal (`https://updates.drupal.org/release-history/drupal/current` da las ramas soportadas
-   y la EOL de la 10).
-5. **Estado del litigio y de la gobernanza de WordPress**: fuentes primarias (registro judicial, notas de
-   las partes). **Sin tomar partido**: el dato que importa es si el riesgo de proveedor cambió.
-6. **Datos de vulnerabilidades del ecosistema**: informe anual de Patchstack/Wordfence del año en curso, y
-   advisories de los plugins concretos que tengas instalados.
-7. **Precios de CDN de imágenes** (Cloudflare Images, Cloudinary, imgix, ImageKit, bunny.net): cambian de
-   modelo, no solo de precio — imgix ya migró de *origin images* a créditos.
-8. **CVEs del CMS elegido** (`github.com/advisories`, osv.dev, boletines del proyecto) antes de cada
-   despliegue y de forma continua.
+1. **Licences, one by one and from the raw `LICENSE`**: Directus (is it still MSCL? have the Open
+   Innovation Grant thresholds changed?), Strapi (what is left outside `ee/`?), Payload, Keystone,
+   Decap, Tina. **This is the datum that has changed most in this domain.**
+2. **Project ownership and status**: Payload under Figma (is it still maintained? did Payload Cloud
+   reopen?), Keystone (is 6 still active or did it follow 5 into maintenance?), Decap (real commit
+   velocity, not the badge).
+3. **Price and free-plan limits, and what happens when they are exceeded**, on the provider's site:
+   Contentful, Sanity, Storyblok, Prismic, Hygraph, Strapi Growth/Cloud, Tina Cloud. Confirm in
+   particular whether Contentful still pauses CDA/CPA/GraphQL on the Free plan.
+4. **Versions**: WordPress (`https://api.wordpress.org/core/version-check/1.7/` gives the current one
+   and the minimum PHP) and Drupal (`https://updates.drupal.org/release-history/drupal/current` gives
+   the supported branches and the EOL of 10).
+5. **Status of the WordPress litigation and governance**: primary sources (the court docket, the
+   parties' statements). **Taking no side**: the datum that matters is whether the vendor risk
+   changed.
+6. **Ecosystem vulnerability data**: the current year's annual Patchstack/Wordfence report, and
+   advisories for the specific plugins you have installed.
+7. **Image CDN prices** (Cloudflare Images, Cloudinary, imgix, ImageKit, bunny.net): they change
+   model, not just price — imgix has already migrated from *origin images* to credits.
+8. **CVEs for the chosen CMS** (`github.com/advisories`, osv.dev, project bulletins) before each
+   deployment and on a continuous basis.
 
-**Huecos no verificados a ago-2026** (no rellenar de memoria):
-- **Cifras exactas del plan Free de Contentful** (llamadas API/mes, ancho de banda, usuarios): **no
-  verificadas** — las fuentes secundarias se contradicen abiertamente (100K vs. 1M llamadas). Lo que **sí**
-  está verificado en fuente primaria es el **comportamiento al superarlo** (pausa de CDA/CPA/GraphQL).
-- **Precios de Strapi Growth/Enterprise, Sanity, Storyblok, Prismic e Hygraph**: **no verificados en fuente
-  primaria**; las cifras citadas en §2 vienen de análisis de terceros y deben confirmarse en la web del
-  proveedor antes de presupuestar.
-- **Límites exactos del *free core tier* de Directus** (por encima de la Open Innovation Grant): **no
-  verificados**. Sí verificados en su `LICENSE` y en su anuncio: la licencia MSCL, la conversión a GPLv3 a
-  los 4 años y los umbrales de la Grant (<$5M, <50 empleados).
-- **Precio y créditos actuales de Cloudinary e imgix**: **no verificados en fuente primaria** (los de
-  **Cloudflare Images sí** provienen de su documentación oficial).
-- **Estado de mantenimiento real de Keystone 6 y de Decap**: **no verificado** más allá de la fecha del
-  último release. Mira commits, issues cerradas y respuesta a advisories, no descargas.
-- Cuota de mercado de WordPress (~42%, W3Techs mar-2026): **cifra de tercero**, no re-verificada.
-- Coste real de operar un headless autoalojado (base de datos, backups, HA, guardia): **depende de tu
-  organización**; la tabla de §2 no lo estima.
+**Gaps not verified as of Aug-2026** (do not fill from memory):
+- **Exact figures for Contentful's Free plan** (API calls/month, bandwidth, users): **not
+  verified** — the secondary sources openly contradict each other (100K vs. 1M calls). What **is**
+  verified from a primary source is the **behaviour on exceeding it** (pausing CDA/CPA/GraphQL).
+- **Prices for Strapi Growth/Enterprise, Sanity, Storyblok, Prismic and Hygraph**: **not verified
+  from a primary source**; the figures quoted in §2 come from third-party analyses and must be
+  confirmed on the provider's site before budgeting.
+- **The exact limits of Directus's *free core tier*** (above the Open Innovation Grant): **not
+  verified**. What is verified, from their `LICENSE` and their announcement: the MSCL licence, the
+  conversion to GPLv3 after 4 years and the Grant thresholds (<$5M, <50 employees).
+- **Cloudinary's and imgix's current prices and credits**: **not verified from a primary source**
+  (**Cloudflare Images' are**, they come from their official documentation).
+- **The real maintenance status of Keystone 6 and of Decap**: **not verified** beyond the date of the
+  last release. Look at commits, closed issues and the response to advisories, not downloads.
+- WordPress's market share (~42%, W3Techs Mar-2026): **a third-party figure**, not re-verified.
+- The real cost of operating a self-hosted headless (database, backups, HA, on-call): **it depends on
+  your organisation**; the table in §2 does not estimate it.
 
-**Discrepancias declaradas**:
-- **Núcleo de WordPress en el informe de Patchstack 2026**: unas coberturas citan **seis** vulnerabilidades
-  en el núcleo en 2025 y otras **dos**; la propia estadística en vivo de 2026 muestra **0** en núcleo y un
-  reparto plugins/temas distinto al del informe anual (~80/20 frente a 91/9). **La conclusión no cambia**
-  —el riesgo está en plugins, no en el núcleo— pero **no cites la cifra exacta sin ir al informe**.
-- **Versión de WordPress**: múltiples trackers de terceros seguían listando 6.8 o 6.9.x como vigente en
-  2026. **`api.wordpress.org` devuelve 7.0.2**: manda la API oficial.
-- **Precio de entrada de Contentful tras el plan Free**: las fuentes citan $300/mes y "mínimo $3.600/año"
-  como el mismo salto; **no resuelto**. Manda contentful.com/pricing.
-- **Directus**: buena parte de la documentación y de los artículos de terceros siguen describiéndolo como
-  "open source" o bajo BSL. **El fichero `license` del repositorio dice MSCL-1.0-GPL, copyright 2026
-  Monospace Inc.** Manda el fichero.
-- **Decap**: hay listicles que lo dan por abandonado; el registro muestra releases en 2026. Esas listas
-  suelen ser marketing de un competidor — contrasta con el repositorio.
+**Declared discrepancies**:
+- **The WordPress core in Patchstack's 2026 report**: some coverage cites **six** vulnerabilities
+  in the core in 2025 and other coverage **two**; their own live 2026 statistics show **0** in the
+  core and a plugins/themes split different from the annual report's (~80/20 versus 91/9). **The
+  conclusion does not change** —the risk is in plugins, not in the core— but **do not quote the exact
+  figure without going to the report**.
+- **WordPress version**: several third-party trackers were still listing 6.8 or 6.9.x as current in
+  2026. **`api.wordpress.org` returns 7.0.2**: the official API wins.
+- **Contentful's entry price after the Free plan**: the sources quote $300/month and "a minimum of
+  $3,600/year" as the same jump; **unresolved**. contentful.com/pricing wins.
+- **Directus**: a good part of the documentation and of third-party articles still describe it as
+  "open source" or under BSL. **The repository's `license` file says MSCL-1.0-GPL, copyright 2026
+  Monospace Inc.** The file wins.
+- **Decap**: there are listicles that give it up for abandoned; the registry shows releases in 2026.
+  Those lists are usually a competitor's marketing — cross-check against the repository.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.

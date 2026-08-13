@@ -3,511 +3,511 @@ name: mlops-standards
 description: Use when the lifecycle of a model you train and own runs as production engineering — versioning datasets and training runs with DVC or lakeFS, tracking experiments in MLflow or Weights & Biases, promoting artifacts through a model registry with model cards, stages and approval, orchestrating training pipelines with Airflow, Kubeflow, Metaflow, Prefect or Dagster, a feature store (Feast) and train/serve skew, batch versus online versus streaming serving with shadow and canary rollout and model rollback to the previous weights and preprocessing, detecting data drift versus concept drift with Evidently when the label arrives late or never, proxy metrics and feedback loops where the model shapes its own future data, retraining triggered by schedule, threshold or event, training versus inference cost, model retirement, or fairness and bias measured as a system property.
 ---
 
-# Estándares de MLOps — el ciclo de vida del modelo como ingeniería de producción
+# MLOps standards — the model lifecycle as production engineering
 
-Criterios verificados a **agosto 2026**. Re-verificar por web antes de fijar nada (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
-## 1. Alcance y triggers
+## 1. Scope and triggers
 
-Aplica cuando **entrenas, registras, despliegas, vigilas, reentrenas y retiras un modelo propio**:
-ML clásico (tabular, series, visión, texto), *fine-tuning* de un modelo abierto, o cualquier
-artefacto entrenado cuyo comportamiento dependa de datos que tú controlas. Cubre el dato como
-artefacto versionado, la experimentación, el registro de modelos como frontera hacia producción,
-el pipeline de entrenamiento, las *features* y el *skew*, el despliegue y el *rollback*, la
-monitorización en producción (deriva, métricas *proxy*, bucles de retroalimentación), el
-reentrenamiento, el coste y la retirada.
+Applies when you **train, register, deploy, monitor, retrain and retire a model of your own**:
+classical ML (tabular, series, vision, text), *fine-tuning* of an open model, or any
+trained artifact whose behaviour depends on data you control. It covers data as a
+versioned artifact, experimentation, the model registry as the boundary into production,
+the training pipeline, *features* and *skew*, deployment and *rollback*,
+production monitoring (drift, *proxy* metrics, feedback loops), retraining, cost and retirement.
 
-Triggers: "el modelo ha empeorado", "reentrenar", "deriva", "drift", "data drift", "concept
-drift", "train/serve skew", "feature store", "registro de modelos", "model registry", "promover a
-producción", "model card", "versionar el dataset", `dvc.yaml`, `.dvc`, `dvc repro`, `lakectl`,
-`mlflow.log_metric`, `mlflow.register_model`, `MLmodel`, `MLproject`, `wandb.init`, `dag.py` de
-entrenamiento, `KFP`/`@dsl.pipeline`, `@step` de Metaflow, `@flow`/`@task`, `@asset`,
+Triggers: "the model has got worse", "retrain", "drift", "data drift", "concept
+drift", "train/serve skew", "feature store", "model registry",
+"promote to production", "model card", "version the dataset", `dvc.yaml`, `.dvc`, `dvc repro`, `lakectl`,
+`mlflow.log_metric`, `mlflow.register_model`, `MLmodel`, `MLproject`, `wandb.init`, a training
+`dag.py`, `KFP`/`@dsl.pipeline`, Metaflow's `@step`, `@flow`/`@task`, `@asset`,
 `feature_store.yaml`, `get_historical_features` vs. `get_online_features`, `Evidently`,
-`predict_proba` en batch nocturno, *shadow deployment*, "volver al modelo anterior", "la etiqueta
-tarda semanas", "el notebook con el que entrenamos el bueno", coste de inferencia por predicción,
-sesgo y *fairness* medidos.
+`predict_proba` in a nightly batch, *shadow deployment*, "go back to the previous model", "the label
+takes weeks", "the notebook we trained the good one with", inference cost per prediction,
+bias and *fairness* measured.
 
-**Tesis del dominio — se aplica en todo el documento**: **un sistema de ML no falla como falla el
-software; se degrada en silencio con el código intacto.** Tres consecuencias que ordenan el resto:
+**Domain thesis — it applies throughout this document**: **an ML system does not fail the way
+software fails; it degrades silently with the code untouched.** Three consequences that order the rest:
 
-1. **El código es la parte pequeña.** La mayor parte del sistema es dato, configuración,
-   extracción de *features*, verificación y monitorización — la "deuda técnica oculta" del ML.
-   Un repo impecable con un pipeline de datos sin contratos es un sistema frágil.
-2. **La entrada cambia sola.** Nadie despliega y sin embargo la precisión cae: cambió el mundo,
-   el proveedor del dato o el comportamiento del usuario. Sin monitorización del **dato**, la
-   primera señal es una queja de negocio meses tarde.
-3. **Reproducibilidad es un requisito funcional, no higiene.** Si no puedes reconstruir el modelo
-   que está sirviendo hoy —datos, código, hiperparámetros, entorno, semilla—, no puedes
-   depurarlo, auditarlo ni revertirlo. Y tarde o temprano tendrás que hacer las tres cosas.
+1. **The code is the small part.** Most of the system is data, configuration,
+   *feature* extraction, verification and monitoring — the "hidden technical debt" of ML.
+   An impeccable repo with a data pipeline without contracts is a fragile system.
+2. **The input changes on its own.** Nobody deploys and yet accuracy falls: the world changed,
+   the data provider did, or user behaviour did. Without monitoring the **data**, the
+   first signal is a business complaint months late.
+3. **Reproducibility is a functional requirement, not hygiene.** If you cannot rebuild the model
+   serving today — data, code, hyperparameters, environment, seed — you cannot
+   debug it, audit it or roll it back. And sooner or later you will have to do all three.
 
-**No aplica**:
+**Not applicable**:
 
-- `timeseries-db-standards`: **el motor de la serie temporal y su política de retención son
-  suyos**, y esa política es una **restricción de esta skill, no un detalle de almacenamiento**:
-  el *rollup* que baja la resolución del histórico destruye el conjunto de entrenamiento y con él
-  la reproducibilidad que aquí se exige. Regla: **antes de aceptar un downsampling, declara qué
-  señales alimentan un modelo y consérvalas crudas**; si no se puede, el modelo deja de ser
-  reconstruible y eso se registra como deuda, no se descubre al reentrenar.
-- `data-engineering-standards`: **el pipeline de datos que alimenta al modelo
-  es suyo** — ingesta, ELT, idempotencia, *backfill*, Parquet, coste de escaneo, frescura y
-  observabilidad del dato. Comparten orquestador (Airflow, Dagster, Prefect) y eso es solape
-  inherente, no de propiedad. **Regla de arbitraje: si el artefacto producido es una tabla que
-  consume gente o BI, es suya; si es un modelo entrenado o las *features* que lo alimentan, es de
-  esta skill.** El *feature store* y el *train/serve skew* son de aquí.
-- `classical-ml-standards`, `deep-learning-standards` y `model-finetuning-standards`
-  (**frontera de "antes y después"**): **cómo se entrena y se evalúa un modelo es suyo**
-  —partición y fuga de datos, validación, métricas y calibración, umbral de decisión, bucle de
-  entrenamiento, y el orden prompt → recuperación → **ajuste fino**—; **el ciclo de vida en
-  producción es de aquí**: registro, versionado, *feature store*, despliegue, deriva, reentrenamiento
-  y *train/serve skew*. Corrección de esta skill: donde decía que *"un fine-tuning propio cruza a
-  esta skill"*, **el criterio de ajuste fino es ahora de `model-finetuning-standards`**; lo que
-  sigue siendo de aquí es el registro, la promoción y la operación del artefacto resultante.
-- `r-standards` y `julia-standards`: **el ciclo de vida del modelo es de esta
-  skill** —registro, versionado, *feature store*, despliegue, monitorización de deriva,
-  reentrenamiento, *train/serve skew*—, **con independencia del lenguaje en que se entrene**;
-  **cómo se escribe ese R o ese Julia** —`renv` y reproducibilidad de la librería, estabilidad de
-  tipos, tests, estilo, empaquetado— es de esas skills. El caso peligroso que ambas partes deben
-  reconocer: **un análisis exploratorio que se convierte en servicio sin reescribirse** es deuda
-  que aquí se cobra en producción.
-- `data-warehouse-modeling-standards`: grano, hechos y dimensiones, SCD,
-  dimensiones conformadas y la definición canónica de una métrica de negocio. **Una tabla de
-  *features* no es un mart** y no se rige por su modelado; pero si tus *features* se derivan de
-  marts, su grano y su historización son de allí.
-- `llm-app-engineering-standards` (*la confusión más común de este dominio,
-  y se declara explícitamente*): **construir producto sobre un LLM de terceros no es MLOps.** No
-  entrenas nada, no tienes pesos, no hay deriva de *tu* modelo sino cambios de versión del
-  proveedor, y el "registro de modelos" es una cadena en un fichero de configuración. Allí viven
-  prompts versionados, salida estructurada, ventana de contexto, caché, reintentos y límites de
-  gasto. **Regla de arbitraje: si el artefacto que promueves son pesos que tú produjiste, es de
-  esta skill; si es un prompt y un identificador de modelo ajeno, es suya.** Un *fine-tuning*
-  propio cruza a esta skill; llamar a un modelo afinado por el proveedor, no.
-- `llm-evaluation-standards`: **la medición de calidad es suya** — conjuntos
-  de evaluación, LLM-as-judge y su calibración, assertions deterministas, significancia, gates de
-  regresión en CI, anotación de trazas. Aquí se **exige la evaluación como gate** (§4) y se define
-  **qué se registra para que sea reproducible y comparable entre versiones de modelo**; la
-  metodología de medir vive allí. Frontera fina: **el número lo produce ella, la decisión de
-  promover o revertir con ese número es de aquí.**
-- `mlsecops-standards`: lo **adversario y la cadena de suministro del
-  modelo** — procedencia e integridad de pesos de terceros, `safetensors` frente a formatos con
-  `pickle`, `trust_remote_code`, `picklescan`/`modelscan`, firma de artefactos y pin por digest,
-  AIBOM/ML-BOM, envenenamiento de datos y de pesos, *backdoors*, extracción, inversión e
-  inferencia de pertenencia, *red teaming* con `garak`/`PyRIT`, y el mapeo a MITRE ATLAS y OWASP
-  GenAI. Aquí, la **operación del ciclo de vida**. Fronteras compartidas, resueltas así: **el
-  formato de artefacto y el pin por digest los exige esta skill como requisito de reproducibilidad
-  y los razona ella como amenaza**; la deserialización insegura (§5) y el incidente de cadena de
-  suministro se **enuncian aquí como prohibición operativa** y se **analizan allí**. Si la
-  pregunta es "¿me pueden atacar por aquí?", es suya; si es "¿cómo lo despliego y lo vigilo?", es
-  de esta skill.
-- `ai-governance-standards`: **decide y responde; aquí se
-  opera.** El **registro de modelos** (artefactos que tú entrenas y sirves, con sus métricas y su
-  linaje) es de esta skill; el **inventario de sistemas de IA** —que incluye herramientas de
-  terceros que tú no operas, SaaS con IA embebida y la IA en la sombra— es suyo. La clasificación
-  de riesgo del AI Act, la supervisión humana como obligación, la evaluación de impacto y la
-  rendición de cuentas son suyas; **el *fairness* como propiedad medible del sistema es de aquí**
-  (§6.5) — tú produces el número, ella decide qué umbral es aceptable y quién firma.
-- `data-platform-standards`: el **almacén** — PostgreSQL, Kafka, particionado, réplicas, PITR,
-  retención del motor. Aquí, el dataset **como artefacto versionado y reproducible**, no la base
-  de datos que lo aloja.
-- `object-storage-standards`: **dónde viven datasets y artefactos** (S3/MinIO/Ceph), versionado
-  de objetos, clases de almacenamiento, ciclo de vida y coste de egreso. Un *checkpoint* de
-  decenas de GB por experimento tiene factura: el criterio de retención del bucket es suyo.
-- `sre-practice-standards`: SLO, error budget, guardia y *capacity planning* del **servicio** que
-  sirve el modelo. Aquí, las métricas **del modelo**, que un SLO de latencia no ve: un servicio
-  con 99,99 % de disponibilidad puede estar sirviendo predicciones basura.
-- `cicd-standards`: el **pipeline genérico** — runners, OIDC, SBOM, firma, gates. Aquí, qué gate
-  específico de ML añade (§4) y por qué "los tests pasan" no significa "el modelo sirve".
-- `kubernetes-standards` (manifiestos, Helm, GitOps del despliegue), `gpu-computing-standards`
-  (**la GPU como recurso**: driver, MIG, DCGM, coste y refrigeración — aquí solo el trabajo que
-  la usa), `local-inference-standards` (**servir modelos abiertos**: vLLM, cuantización, caché KV
-  — si sirves pesos abiertos sin entrenarlos, manda esa skill), `observability-standards` (OTel,
-  Prometheus, alertas — aquí solo **qué** métrica de modelo importa), `iac-standards`,
-  `python-standards` (código de entrenamiento como código de producción),
-  `incident-management-standards` (un modelo degradado que causa impacto **es un incidente** y se
-  gestiona allí), `bcdr-standards`, `identity-access-management-standards`,
-  `secrets-management-standards`, `vulnerability-management-standards` (triaje y SLA de los CVE
-  de §5), `privacy-engineering-standards` (**dato personal en entrenamiento, minimización,
-  memorización, DPIA** — si el dataset tiene PII, la base de licitud y la retención se deciden
-  allí, no aquí), `grc-compliance-standards` (marco de gestión y evidencia de auditoría),
-  `rag-standards` y `ai-agents-standards` (capa de aplicación), `mcp-standards`.
-- **`claude-api`** (sin sufijo `-standards`, **skill instalada, referencia canónica del lado
-  Anthropic**): IDs de modelo, precios, parámetros, caché, batches. **Ningún dato de modelos
-  Claude se afirma de memoria**; si comparas el coste de entrenar y servir propio contra una API
-  gestionada, el lado de Anthropic sale de ahí.
+- `timeseries-db-standards`: **the time-series engine and its retention policy are
+  theirs**, and that policy is a **constraint on this skill, not a storage detail**:
+  the *rollup* that lowers the resolution of the history destroys the training set and with it
+  the reproducibility required here. Rule: **before accepting a downsampling, declare which
+  signals feed a model and keep them raw**; if that is not possible, the model stops being
+  rebuildable and that is recorded as debt, not discovered at retraining time.
+- `data-engineering-standards`: **the data pipeline that feeds the model
+  is theirs** — ingestion, ELT, idempotency, *backfill*, Parquet, scan cost, freshness and
+  data observability. They share the orchestrator (Airflow, Dagster, Prefect) and that is inherent
+  overlap, not an ownership question. **Arbitration rule: if the artifact produced is a table
+  consumed by people or BI, it is theirs; if it is a trained model or the *features* that feed it, it
+  belongs to this skill.** The *feature store* and *train/serve skew* belong here.
+- `classical-ml-standards`, `deep-learning-standards` and `model-finetuning-standards`
+  (**a "before and after" boundary**): **how a model is trained and evaluated is theirs**
+  — splitting and data leakage, validation, metrics and calibration, decision threshold, the
+  training loop, and the order prompt → retrieval → **fine-tuning**; **the production lifecycle
+  belongs here**: registry, versioning, *feature store*, deployment, drift, retraining
+  and *train/serve skew*. Correction to this skill: where it said that *"a fine-tuning of your own
+  crosses into this skill"*, **the fine-tuning criteria now belong to `model-finetuning-standards`**;
+  what still belongs here is the registration, promotion and operation of the resulting artifact.
+- `r-standards` and `julia-standards`: **the model lifecycle belongs to this
+  skill** — registry, versioning, *feature store*, deployment, drift monitoring,
+  retraining, *train/serve skew* — **regardless of the language it is trained in**;
+  **how that R or that Julia is written** — `renv` and library reproducibility, type
+  stability, tests, style, packaging — belongs to those skills. The dangerous case both sides must
+  recognise: **an exploratory analysis that becomes a service without being rewritten** is debt
+  that is collected here, in production.
+- `data-warehouse-modeling-standards`: grain, facts and dimensions, SCD,
+  conformed dimensions and the canonical definition of a business metric. **A *feature*
+  table is not a mart** and is not governed by its modelling; but if your *features* derive from
+  marts, their grain and their historisation belong there.
+- `llm-app-engineering-standards` (*the most common confusion in this domain,
+  and it is declared explicitly*): **building a product on top of a third-party LLM is not MLOps.** You
+  do not train anything, you have no weights, there is no drift of *your* model but rather version
+  changes from the provider, and the "model registry" is a string in a configuration file. There live
+  versioned prompts, structured output, the context window, caching, retries and spend limits.
+  **Arbitration rule: if the artifact you promote is weights you produced, it belongs to
+  this skill; if it is a prompt and someone else's model identifier, it is theirs.** A *fine-tuning*
+  of your own crosses into this skill; calling a model fine-tuned by the provider does not.
+- `llm-evaluation-standards`: **quality measurement is theirs** — evaluation
+  sets, LLM-as-judge and its calibration, deterministic assertions, significance, CI regression
+  gates, trace annotation. Here, evaluation is **required as a gate** (§4) and it is defined
+  **what gets recorded so that it is reproducible and comparable between model versions**; the
+  methodology of measuring lives there. Fine boundary: **they produce the number, the decision to
+  promote or roll back with that number belongs here.**
+- `mlsecops-standards`: the **adversarial and model supply chain** side — provenance and integrity of
+  third-party weights, `safetensors` versus formats with `pickle`, `trust_remote_code`,
+  `picklescan`/`modelscan`, artifact signing and digest pinning,
+  AIBOM/ML-BOM, data and weight poisoning, *backdoors*, extraction, inversion and membership
+  inference, *red teaming* with `garak`/`PyRIT`, and the mapping to MITRE ATLAS and OWASP
+  GenAI. Here, **lifecycle operations**. Shared boundaries, resolved thus: **the
+  artifact format and digest pinning are required by this skill as a reproducibility requirement
+  and reasoned about there as a threat**; insecure deserialization (§5) and supply chain
+  incidents are **stated here as an operational prohibition** and **analysed there**. If the
+  question is "can I be attacked through here?", it is theirs; if it is "how do I deploy and monitor
+  it?", it belongs to this skill.
+- `ai-governance-standards`: **it decides and answers for it; here it is
+  operated.** The **model registry** (artifacts you train and serve, with their metrics and their
+  lineage) belongs to this skill; the **AI system inventory** — which includes third-party tools
+  you do not operate, SaaS with embedded AI and shadow AI — is theirs. AI Act risk
+  classification, human oversight as an obligation, impact assessment and
+  accountability are theirs; **fairness as a measurable property of the system belongs here**
+  (§6.5) — you produce the number, they decide which threshold is acceptable and who signs it.
+- `data-platform-standards`: the **store** — PostgreSQL, Kafka, partitioning, replicas, PITR,
+  engine retention. Here, the dataset **as a versioned and reproducible artifact**, not the
+  database that hosts it.
+- `object-storage-standards`: **where datasets and artifacts live** (S3/MinIO/Ceph), object
+  versioning, storage classes, lifecycle and egress cost. A *checkpoint* of
+  tens of GB per experiment has a bill: the bucket's retention criteria are theirs.
+- `sre-practice-standards`: SLOs, error budget, on-call and *capacity planning* for the **service**
+  that serves the model. Here, the metrics **of the model**, which a latency SLO does not see: a
+  service with 99.99% availability can be serving garbage predictions.
+- `cicd-standards`: the **generic pipeline** — runners, OIDC, SBOM, signing, gates. Here, which
+  ML-specific gate it adds (§4) and why "the tests pass" does not mean "the model works".
+- `kubernetes-standards` (manifests, Helm, GitOps for the deployment), `gpu-computing-standards`
+  (**the GPU as a resource**: driver, MIG, DCGM, cost and cooling — here only the job that
+  uses it), `local-inference-standards` (**serving open models**: vLLM, quantisation, KV cache
+  — if you serve open weights without training them, that skill rules), `observability-standards` (OTel,
+  Prometheus, alerts — here only **which** model metric matters), `iac-standards`,
+  `python-standards` (training code as production code),
+  `incident-management-standards` (a degraded model causing impact **is an incident** and is
+  managed there), `bcdr-standards`, `identity-access-management-standards`,
+  `secrets-management-standards`, `vulnerability-management-standards` (triage and SLA for the §5
+  CVEs), `privacy-engineering-standards` (**personal data in training, minimisation,
+  memorisation, DPIA** — if the dataset has PII, the lawful basis and the retention are decided
+  there, not here), `grc-compliance-standards` (management framework and audit evidence),
+  `rag-standards` and `ai-agents-standards` (the application layer), `mcp-standards`.
+- **`claude-api`** (no `-standards` suffix, **an installed skill, the canonical reference for the
+  Anthropic side**): model IDs, prices, parameters, caching, batches. **No datum about Claude models
+  is asserted from memory**; if you compare the cost of training and serving your own against a
+  managed API, the Anthropic side comes from there.
 
-## 2. Decisiones por defecto / Toolchain
+## 2. Default decisions / Toolchain
 
-> Verificar la última versión, la licencia y el estado del proyecto por web antes de fijarlo en
-> un proyecto real (§8). **Este ecosistema cambia de dueño y de licencia con frecuencia**: en los
-> últimos meses lakeFS (Treeverse) absorbió DVC y Prefect compró Dagster (§7).
+> Verify the latest version, the licence and the project's status on the web before committing to it
+> in a real project (§8). **This ecosystem changes owner and licence frequently**: in
+> recent months lakeFS (Treeverse) absorbed DVC and Prefect bought Dagster (§7).
 
-| Decisión | Por defecto | Alternativa justificable / Prohibido |
+| Decision | Default | Justifiable alternative / Forbidden |
 |---|---|---|
-| Versionado de dataset (proyecto pequeño/mediano, ficheros) | **DVC 3.67.x** (Apache-2.0). **Cambio de titularidad**: lakeFS/Treeverse adquirió el proyecto a Iterative.ai (anunciado nov-2025); el repo vive ya en `treeverse/dvc`. Licencia sin cambios | Un `git-lfs` sin linaje ni pipeline: versiona el fichero, no el experimento |
-| Versionado de dataset (data lake, escala, muchos consumidores) | **lakeFS 1.85.x** (Apache-2.0): ramas y *commits* sobre el propio object storage | Formatos de tabla con *time travel* (Iceberg/Delta) si el dato ya vive ahí — **es la opción más barata y a menudo la correcta**: no metas una pieza nueva si tu almacén ya versiona |
-| Seguimiento de experimentos | **MLflow 3.15.x** (Apache-2.0) — de facto el estándar, autoalojable, con registro integrado | **Aviso de gobernanza**: MLflow está en la Linux Foundation desde 2020, pero el desarrollo y la dirección siguen dominados por Databricks. No se localizó ningún cambio de gobernanza en 2026 (**hueco declarado, §8**): trátalo como proyecto *single-vendor* de facto y valora ese riesgo antes de casarte con él |
-| Alternativa gestionada de seguimiento | **Weights & Biases**: SDK cliente MIT, **servidor propietario/SaaS**. Excelente producto, *lock-in* real | No confundir "SDK open source" con "plataforma open source". Si el requisito es autoalojar sin licencia comercial, no es candidato |
-| Registro de modelos | El de **MLflow** salvo requisito que lo descarte | Registro casero en una tabla: acaba sin *linaje*, sin aprobación y sin quien lo mantenga |
-| Orquestación (el equipo ya tiene Airflow) | **Apache Airflow 3.3.x** (Apache-2.0) | **No introduzcas un orquestador nuevo solo por ML.** El coste operativo de una segunda plataforma casi nunca lo paga el beneficio |
-| Orquestación (equipo de ciencia de datos, Python primero) | **Metaflow 2.19.x** (Apache-2.0, Netflix): el que menos ceremonia impone por unidad de valor | Prefect 3.8.x / Dagster 1.13.x (ambos Apache-2.0): **Prefect anunció la adquisición de Dagster Labs el 13-jul-2026** (marca combinada Prefect desde ago-2026; Dagster y Dagster+ conservan nombre, precio y hoja de ruta) — dos productos, un dueño; exige plan de convergencia antes de adoptar cualquiera de los dos a largo plazo |
-| Orquestación (ya vives en Kubernetes y lo operas bien) | **Kubeflow Pipelines** (Apache-2.0, v1.10.x) | **Kubeflow completo es la pieza que más veces pesa más de lo que aporta**: si no tienes un equipo de plataforma dedicado, es una plataforma que te opera a ti |
-| Feature store | **Ninguno por defecto.** Se añade cuando hay *skew* medido o *reuso real* de features entre equipos | **Feast 0.65.x** (Apache-2.0) si se justifica. Un feature store para un equipo y tres modelos es complejidad gratuita: el mismo resultado se consigue con **una sola función compartida de transformación** importada por entrenamiento e inferencia |
-| Monitorización de modelo | **Evidently** (Apache-2.0) para deriva y calidad de dato, exportando a Prometheus/OTel | **Verificar actividad**: última release del feed observada en mar-2026 — comprobar mantenimiento antes de adoptarlo (§8). WhyLabs: verificar estado y modelo de licencia antes de recomendarlo |
-| Serving en línea | **KServe 0.19.x/0.20.x** (Apache-2.0) si ya hay Kubernetes; **BentoML 1.4.x** (Apache-2.0) si no | **Seldon Core v2 está bajo Business Source License 1.1 desde ene-2024 — NO es open source**: uso en producción comercial requiere licencia de pago. `Change License` a Apache-2.0 a los cuatro años de cada release. **Descartado por defecto**; si aparece en una arquitectura heredada, es deuda con factura |
-| Formato de artefacto | **ONNX** o **safetensors** cuando el framework lo permita | **`pickle`/`joblib` es ejecución de código arbitraria al cargar** (§5). Si es inevitable, el artefacto va firmado y su origen es un registro con control de acceso |
-| Documentación del modelo | **Model card** obligatoria como condición de registro (§3.3) | Formato: el YAML estructurado del *hub* + narrativa. **No hay estándar normativo con tracción**: la capa de metadatos (YAML, Croissant para datasets) sí está estandarizada y automatizada; la narrativa (limitaciones, sesgo, procedencia) es la peor cubierta del ecosistema — precisamente la que te van a pedir en una auditoría |
+| Dataset versioning (small/medium project, files) | **DVC 3.67.x** (Apache-2.0). **Change of ownership**: lakeFS/Treeverse acquired the project from Iterative.ai (announced Nov-2025); the repo now lives at `treeverse/dvc`. Licence unchanged | A `git-lfs` with no lineage or pipeline: it versions the file, not the experiment |
+| Dataset versioning (data lake, scale, many consumers) | **lakeFS 1.85.x** (Apache-2.0): branches and *commits* over the object storage itself | Table formats with *time travel* (Iceberg/Delta) if the data already lives there — **it is the cheapest option and often the right one**: do not add a new piece if your store already versions |
+| Experiment tracking | **MLflow 3.15.x** (Apache-2.0) — de facto the standard, self-hostable, with an integrated registry | **Governance warning**: MLflow has been in the Linux Foundation since 2020, but development and direction remain dominated by Databricks. No governance change was located in 2026 (**declared gap, §8**): treat it as a de facto *single-vendor* project and weigh that risk before marrying it |
+| Managed tracking alternative | **Weights & Biases**: MIT client SDK, **proprietary/SaaS server**. Excellent product, real *lock-in* | Do not confuse "open source SDK" with "open source platform". If the requirement is self-hosting without a commercial licence, it is not a candidate |
+| Model registry | **MLflow**'s unless a requirement rules it out | A home-made registry in a table: it ends up with no *lineage*, no approval and nobody to maintain it |
+| Orchestration (the team already has Airflow) | **Apache Airflow 3.3.x** (Apache-2.0) | **Do not introduce a new orchestrator just for ML.** The operational cost of a second platform is almost never paid for by the benefit |
+| Orchestration (data science team, Python first) | **Metaflow 2.19.x** (Apache-2.0, Netflix): the one imposing the least ceremony per unit of value | Prefect 3.8.x / Dagster 1.13.x (both Apache-2.0): **Prefect announced the acquisition of Dagster Labs on 13-Jul-2026** (combined Prefect brand since Aug-2026; Dagster and Dagster+ keep their name, price and roadmap) — two products, one owner; demand a convergence plan before adopting either for the long term |
+| Orchestration (you already live in Kubernetes and operate it well) | **Kubeflow Pipelines** (Apache-2.0, v1.10.x) | **Full Kubeflow is the piece that most often weighs more than it contributes**: without a dedicated platform team, it is a platform that operates you |
+| Feature store | **None by default.** It is added when there is measured *skew* or *real reuse* of features between teams | **Feast 0.65.x** (Apache-2.0) if justified. A feature store for one team and three models is free complexity: the same result is achieved with **a single shared transformation function** imported by training and inference |
+| Model monitoring | **Evidently** (Apache-2.0) for drift and data quality, exporting to Prometheus/OTel | **Verify activity**: the last release observed in the feed was Mar-2026 — check maintenance before adopting it (§8). WhyLabs: verify status and licence model before recommending it |
+| Online serving | **KServe 0.19.x/0.20.x** (Apache-2.0) if there is already Kubernetes; **BentoML 1.4.x** (Apache-2.0) if not | **Seldon Core v2 has been under the Business Source License 1.1 since Jan-2024 — it is NOT open source**: use in commercial production requires a paid licence. `Change License` to Apache-2.0 four years after each release. **Discarded by default**; if it appears in a legacy architecture, it is debt with an invoice |
+| Artifact format | **ONNX** or **safetensors** when the framework allows it | **`pickle`/`joblib` is arbitrary code execution on load** (§5). If it is unavoidable, the artifact is signed and its origin is a registry with access control |
+| Model documentation | A **model card**, mandatory as a condition of registration (§3.3) | Format: the *hub*'s structured YAML + narrative. **There is no normative standard with traction**: the metadata layer (YAML, Croissant for datasets) is standardised and automated; the narrative (limitations, bias, provenance) is the worst-covered part of the ecosystem — precisely the one you will be asked for in an audit |
 
-**Regla de adopción**: cada pieza de este cuadro cuesta operación, actualizaciones y CVEs. La
-arquitectura por defecto de un equipo pequeño es **git + un almacén de objetos versionado + MLflow
-+ el orquestador que ya usas + un job de monitorización**. Todo lo demás se gana un sitio con un
-problema medido, no con un diagrama de referencia.
+**Adoption rule**: every piece in this table costs operations, upgrades and CVEs. The
+default architecture for a small team is **git + a versioned object store + MLflow
++ the orchestrator you already use + a monitoring job**. Everything else earns its place with a
+measured problem, not with a reference diagram.
 
-## 3. Estructura y convenciones
+## 3. Structure and conventions
 
-### 3.1 Reproducibilidad — el requisito, no la aspiración
+### 3.1 Reproducibility — the requirement, not the aspiration
 
-Un modelo en producción no existe si no puedes reconstruirlo. **Cinco ejes, todos obligatorios**:
+A model in production does not exist if you cannot rebuild it. **Five axes, all mandatory**:
 
-| Eje | Cómo se fija | Fallo típico |
+| Axis | How it is pinned | Typical failure |
 |---|---|---|
-| **Datos** | Snapshot inmutable identificado por hash/commit/versión de tabla, no por ruta ni por `WHERE fecha > ...` ejecutado hoy | "El dataset" es una consulta que devuelve algo distinto cada día |
-| **Código** | Commit de git, con el árbol limpio. CI se niega a entrenar desde un árbol sucio | Se entrenó con cambios locales sin commitear |
-| **Hiperparámetros y config** | Fichero versionado en el repo, no argumentos de línea de comandos escritos a mano | El valor bueno vive en el historial de la shell de alguien |
-| **Entorno** | Lockfile (`uv.lock`, `poetry.lock`) **y** imagen de contenedor por digest; versión de CUDA/driver anotada | "Funcionaba con la versión anterior de la librería" |
-| **Semillas y no determinismo** | Semilla fijada y registrada; **y documentado qué sigue siendo no determinista** (GPU, paralelismo, orden de datos) | Prometer bit-a-bit lo que el hardware no da: se registra la **tolerancia**, no una igualdad falsa |
+| **Data** | An immutable snapshot identified by hash/commit/table version, not by path or by a `WHERE date > ...` run today | "The dataset" is a query that returns something different every day |
+| **Code** | A git commit, with a clean tree. CI refuses to train from a dirty tree | It was trained with uncommitted local changes |
+| **Hyperparameters and config** | A versioned file in the repo, not hand-typed command-line arguments | The good value lives in somebody's shell history |
+| **Environment** | A lockfile (`uv.lock`, `poetry.lock`) **and** a container image by digest; CUDA/driver version noted | "It worked with the previous version of the library" |
+| **Seeds and non-determinism** | A seed fixed and recorded; **and documented what remains non-deterministic** (GPU, parallelism, data order) | Promising bit-for-bit what the hardware does not give: the **tolerance** is recorded, not a false equality |
 
-**El antipatrón central: "el notebook que entrenó el modelo bueno".** Un notebook tiene estado
-oculto, orden de ejecución no reproducible, dependencias implícitas y no pasa por revisión.
-Sirve para explorar; **no es el artefacto de entrenamiento**. La regla dura: *el modelo que sirve
-producción se produjo con un pipeline ejecutado por CI/orquestador desde un commit*, y el notebook
-—si existe— es un anexo desechable. Un notebook en la ruta crítica es un *bus factor* de uno.
+**The central antipattern: "the notebook that trained the good model".** A notebook has
+hidden state, non-reproducible execution order, implicit dependencies and does not go through review.
+It is good for exploring; **it is not the training artifact**. The hard rule: *the model serving
+production was produced with a pipeline run by CI/the orchestrator from a commit*, and the notebook
+— if it exists — is a disposable annex. A notebook on the critical path is a *bus factor* of one.
 
-### 3.2 Layout de referencia
+### 3.2 Reference layout
 
 ```
-proyecto/
-  pipelines/          # definición del pipeline (dvc.yaml / flow.py / dag.py)
+project/
+  pipelines/          # pipeline definition (dvc.yaml / flow.py / dag.py)
   src/
-    features/         # transformaciones — IMPORTADAS por entrenamiento e inferencia (§3.5)
+    features/         # transformations — IMPORTED by training and inference (§3.5)
     training/
     inference/
-  conf/               # hiperparámetros y config versionados
+  conf/               # versioned hyperparameters and config
   tests/
-    test_data_contract.py   # esquema, rangos, nulos, cardinalidad
-    test_features.py        # invariantes de transformación
-    test_model_contract.py  # forma de E/S, latencia, casos conocidos
-  notebooks/          # exploración desechable, fuera de la ruta crítica
+    test_data_contract.py   # schema, ranges, nulls, cardinality
+    test_features.py        # transformation invariants
+    test_model_contract.py  # I/O shape, latency, known cases
+  notebooks/          # disposable exploration, off the critical path
   model_card.md
 ```
 
-### 3.3 Registro de modelos — la frontera hacia producción
+### 3.3 Model registry — the boundary into production
 
-El registro es **el único camino a producción**. Un artefacto no registrado no se despliega.
-Metadatos mínimos, sin los cuales el registro rechaza la versión:
+The registry is **the only path to production**. An unregistered artifact is not deployed.
+Minimum metadata, without which the registry rejects the version:
 
-- **Linaje**: commit de código, versión/hash del dataset, config de hiperparámetros, imagen del
-  entorno por digest, y el ID de la ejecución que lo produjo.
-- **Métricas** de evaluación sobre un conjunto de prueba **congelado y versionado**, y sobre los
-  **segmentos** relevantes (no solo el agregado: la media esconde el subgrupo donde falla).
-- **Dueño** identificable (persona o equipo), no un buzón genérico.
-- **Propósito y ámbito de uso**: para qué se entrenó y **para qué no debe usarse**.
-- **Limitaciones conocidas**: poblaciones infrarrepresentadas, rango de validez de las entradas,
-  supuestos que si dejan de cumplirse invalidan el modelo.
-- **Model card** enlazada (§2). Sin ella, no se promueve.
+- **Lineage**: code commit, dataset version/hash, hyperparameter config, environment image
+  by digest, and the ID of the run that produced it.
+- **Metrics** of evaluation over a **frozen and versioned** test set, and over the
+  relevant **segments** (not just the aggregate: the mean hides the subgroup where it fails).
+- **An identifiable owner** (person or team), not a generic mailbox.
+- **Purpose and scope of use**: what it was trained for and **what it must not be used for**.
+- **Known limitations**: under-represented populations, valid input range,
+  assumptions whose violation invalidates the model.
+- **A linked model card** (§2). Without it, it is not promoted.
 
-**Promoción por etapas** (`dev` → `staging` → `production` → `archived`) con **aprobación humana
-explícita y registrada** en el salto a producción. La aprobación la firma alguien que puede
-explicar qué mide la métrica; no es un botón. Toda promoción y toda reversión quedan en un
-registro inmutable: eso es la evidencia que pedirá auditoría y la que necesitarás a las 3 de la
-mañana.
+**Promotion by stages** (`dev` → `staging` → `production` → `archived`) with **explicit and recorded
+human approval** at the jump into production. The approval is signed by someone who can
+explain what the metric measures; it is not a button. Every promotion and every rollback is left in an
+immutable log: that is the evidence audit will ask for and the one you will need at 3 in the
+morning.
 
-### 3.4 Pipeline de entrenamiento
+### 3.4 Training pipeline
 
-Etapas explícitas y cacheables: `ingesta → validación → features → entrenamiento → evaluación →
-registro`. Criterio, no catálogo:
+Explicit and cacheable stages: `ingestion → validation → features → training → evaluation →
+registration`. Criteria, not a catalogue:
 
-- **La validación de datos es una etapa que falla el pipeline**, no un aviso. Contrato de esquema,
-  rangos, nulos, cardinalidad y distribución esperada. *Garbage in* no se detecta después.
-- **La evaluación decide el registro**: si el modelo nuevo no supera al de producción en el
-  conjunto congelado **y en cada segmento vigilado**, no se registra. La comparación es contra el
-  modelo en producción, no contra la ejecución anterior.
-- **Idempotencia y reanudación**: una etapa que se re-ejecuta con las mismas entradas produce lo
-  mismo o reutiliza caché. Un pipeline que hay que ejecutar entero por un fallo en la última
-  etapa es un pipeline que nadie ejecuta.
-- **Un pipeline no es un DAG bonito**: si el orquestador te obliga a escribir más código de
-  pegamento del que tiene tu lógica, has elegido mal. Es señal de adoptar lo que ya operas.
+- **Data validation is a stage that fails the pipeline**, not a warning. Schema contract,
+  ranges, nulls, cardinality and expected distribution. *Garbage in* is not detected afterwards.
+- **Evaluation decides registration**: if the new model does not beat the production one on the
+  frozen set **and on every monitored segment**, it is not registered. The comparison is against the
+  production model, not against the previous run.
+- **Idempotency and resumability**: a stage re-run with the same inputs produces the
+  same thing or reuses the cache. A pipeline that must be run in full because of a failure in the last
+  stage is a pipeline nobody runs.
+- **A pipeline is not a pretty DAG**: if the orchestrator forces you to write more glue
+  code than your logic contains, you chose badly. It is a signal to adopt what you already operate.
 
-### 3.5 Features y el *train/serve skew*
+### 3.5 Features and *train/serve skew*
 
-El fallo más caro y más silencioso del ML en producción: **la misma feature se calcula distinto en
-entrenamiento y en inferencia**. Casos típicos: la media se calcula sobre todo el histórico en
-entrenamiento y sobre la ventana móvil en producción; un `NULL` se imputa distinto; el
-entrenamiento usa un valor que en el momento de la predicción todavía no existe (**fuga temporal**
-— el modelo evalúa maravillosamente y en producción no sirve para nada).
+The most expensive and most silent failure of ML in production: **the same feature is computed
+differently in training and in inference**. Typical cases: the mean is computed over the whole
+history in training and over a sliding window in production; a `NULL` is imputed differently; the
+training uses a value that does not yet exist at prediction time (**temporal leakage**
+— the model evaluates wonderfully and in production is worth nothing).
 
-**Orden de soluciones, de más barata a más cara**:
+**Order of solutions, cheapest to most expensive**:
 
-1. **Una sola implementación de la transformación**, importada por ambos caminos. Resuelve la
-   mayoría de los casos y cuesta cero infraestructura.
-2. **Registro de la feature calculada en el momento de la predicción** y comparación offline
-   contra la recalculada en entrenamiento: detecta el *skew* aunque no lo evites.
-3. **Feature store** (Feast): tiene sentido cuando hay **reuso real entre equipos**, o cuando
-   necesitas *point-in-time correctness* sobre histórico (`get_historical_features`) porque
-   evitar la fuga temporal a mano es inviable. Fuera de ese caso es dos almacenes más que operar
-   y sincronizar. **La sincronía offline/online es ella misma una fuente de *skew***: no
-   compraste una garantía, compraste un problema distinto.
+1. **A single implementation of the transformation**, imported by both paths. It solves
+   most cases and costs zero infrastructure.
+2. **Logging the feature computed at prediction time** and comparing it offline
+   against the one recomputed in training: it detects the *skew* even if you do not prevent it.
+3. **A feature store** (Feast): it makes sense when there is **real reuse between teams**, or when
+   you need *point-in-time correctness* over history (`get_historical_features`) because
+   avoiding temporal leakage by hand is unfeasible. Outside that case it is two more stores to operate
+   and synchronise. **The offline/online synchronisation is itself a source of *skew***: you did
+   not buy a guarantee, you bought a different problem.
 
-### 3.6 Despliegue
+### 3.6 Deployment
 
-| Modo | Cuándo | Trampa |
+| Mode | When | Trap |
 |---|---|---|
-| **Batch** | La predicción se consume con horas o días de retraso (scoring nocturno, segmentación) | Es el modo por defecto y el más barato de operar. **Empieza aquí**: mucha gente monta *serving* en línea para un caso que se resolvía con un job nocturno |
-| **En línea** | La predicción es parte de una petición de usuario | Añade SLO de latencia, autoescalado, y el coste de tener el modelo caliente 24×7 |
-| **Streaming** | La decisión debe tomarse sobre el evento en vuelo | La complejidad de estado y de reproceso rara vez se paga fuera de fraude/tiempo real duro |
+| **Batch** | The prediction is consumed hours or days later (nightly scoring, segmentation) | It is the default mode and the cheapest to operate. **Start here**: many people build online *serving* for a case a nightly job would have solved |
+| **Online** | The prediction is part of a user request | It adds a latency SLO, autoscaling, and the cost of keeping the model warm 24×7 |
+| **Streaming** | The decision must be taken on the event in flight | The state and reprocessing complexity is rarely paid for outside fraud/hard real time |
 
-**Rollout**: *shadow* (el modelo nuevo recibe tráfico real y **no** responde al usuario; se
-comparan predicciones) es la técnica de mayor rendimiento por unidad de riesgo — úsala antes de
-cualquier canary. Después, canary por porcentaje con criterio de aborto **basado en métricas de
-negocio o proxy**, no solo en errores HTTP.
+**Rollout**: *shadow* (the new model receives real traffic and does **not** respond to the user;
+predictions are compared) is the technique with the highest return per unit of risk — use it before
+any canary. Then a percentage canary with abort criteria **based on business or proxy metrics**,
+not just on HTTP errors.
 
-**Rollback de un modelo — más difícil de lo que la gente cree.** Volver atrás exige tener
-simultáneamente disponibles y compatibles: los **pesos anteriores**, el **preprocesado anterior**
-(el que va con esos pesos, no el actual), el **contrato de features** que esperaba, y la
-**configuración** con la que se sirvió. Reglas:
+**Rolling a model back — harder than people think.** Going back requires having
+simultaneously available and compatible: the **previous weights**, the **previous preprocessing**
+(the one that goes with those weights, not the current one), the **feature contract** it expected, and
+the **configuration** it was served with. Rules:
 
-- El artefacto desplegable **empaqueta modelo + preprocesado + contrato** juntos, versionados como
-  una unidad. Un modelo sin su preprocesado no es reversible.
-- La versión N-1 se mantiene **desplegable y probada**, no solo almacenada. Un `rollback` que
-  nadie ha ejercitado no existe (mismo criterio que un backup).
-- Si el reentrenamiento cambió el esquema de features, el rollback **también revierte el pipeline
-  de features**. Si eso no es posible, no era un rollback: era un despliegue nuevo hacia atrás.
+- The deployable artifact **packages model + preprocessing + contract** together, versioned as
+  a unit. A model without its preprocessing is not reversible.
+- Version N-1 is kept **deployable and tested**, not merely stored. A `rollback` that
+  nobody has exercised does not exist (the same criterion as a backup).
+- If the retraining changed the feature schema, the rollback **also rolls back the feature
+  pipeline**. If that is not possible, it was not a rollback: it was a new deployment backwards.
 
-## 4. Calidad y gates
+## 4. Quality and gates
 
-Gates que **rompen el build o bloquean la promoción**, en orden de coste creciente:
+Gates that **break the build or block promotion**, in order of increasing cost:
 
-1. **Formatter + linter + type checker** sobre el código de entrenamiento e inferencia. El código
-   de ML es código de producción; ver `python-standards`.
-2. **Tests unitarios de transformaciones de features**: invariantes, bordes (vacío, un solo
-   registro, todo nulo, categoría no vista) y errores. Sin lógica en el test.
-3. **Test de contrato de datos**: esquema, tipos, rangos, nulos, cardinalidad. Falla el pipeline.
-4. **Test de determinismo**: mismo commit + mismo dataset + misma semilla → métricas dentro de la
-   tolerancia declarada. Si esto falla, todo lo demás es ruido.
-5. **Detección de fuga temporal**: comprobación explícita de que ninguna feature usa información
-   posterior al instante de la predicción. Es la causa nº 1 de "funcionaba en el notebook".
-6. **Gate de evaluación**: métricas agregadas **y por segmento** contra el modelo en producción,
-   sobre conjunto congelado. Metodología en `llm-evaluation-standards` cuando aplique.
-7. **Gate de *fairness***: métricas de disparidad por grupo dentro del umbral acordado (§6.5). El
-   umbral lo fija gobierno (`ai-governance-standards`); el gate lo ejecuta el pipeline.
-8. **Gate de completitud del registro**: metadatos de §3.3 presentes, model card enlazada, dueño
-   asignado. Sin ellos el registro rechaza la versión — es el punto de control más barato que
-   existe y el más olvidado.
-9. **Prueba de *rollback*** en preproducción, con periodicidad: desplegar N-1 y verificar que
-   sirve. Trimestral como mínimo.
-10. **Test de carga / coste por predicción** antes de habilitar tráfico real (§6.4).
+1. **Formatter + linter + type checker** over training and inference code. ML
+   code is production code; see `python-standards`.
+2. **Unit tests of feature transformations**: invariants, edges (empty, a single
+   record, all null, unseen category) and errors. No logic in the test.
+3. **Data contract test**: schema, types, ranges, nulls, cardinality. It fails the pipeline.
+4. **Determinism test**: same commit + same dataset + same seed → metrics within the
+   declared tolerance. If this fails, everything else is noise.
+5. **Temporal leakage detection**: an explicit check that no feature uses information
+   later than the prediction instant. It is the number 1 cause of "it worked in the notebook".
+6. **Evaluation gate**: aggregate **and per-segment** metrics against the production model,
+   over the frozen set. Methodology in `llm-evaluation-standards` where applicable.
+7. ***Fairness* gate**: per-group disparity metrics within the agreed threshold (§6.5). The
+   threshold is set by governance (`ai-governance-standards`); the gate is run by the pipeline.
+8. **Registry completeness gate**: the §3.3 metadata present, model card linked, owner
+   assigned. Without them the registry rejects the version — it is the cheapest control point that
+   exists and the most forgotten.
+9. ***Rollback* drill** in pre-production, periodically: deploy N-1 and verify that it
+   serves. Quarterly at a minimum.
+10. **Load / cost-per-prediction test** before enabling real traffic (§6.4).
 
-**Prohibido tratar "los tests pasan" como "el modelo sirve"**: la suite verde con un modelo que
-predice la clase mayoritaria es el escenario normal, no el excepcional. La métrica de negocio es
-la que decide.
+**Forbidden to treat "the tests pass" as "the model works"**: a green suite with a model that
+predicts the majority class is the normal scenario, not the exceptional one. The business metric is
+the one that decides.
 
-## 5. Seguridad del stack
+## 5. Stack security
 
-- **Deserialización insegura es la vulnerabilidad estructural del dominio.** `pickle`, `joblib`,
-  `torch.load(weights_only=False)` y `cloudpickle` **ejecutan código al cargar**. La familia
-  CVE-2024-37054/37055/37059 de MLflow (RCE por artefacto PyFunc/PyTorch/pmdarima malicioso,
-  CWE-502) tiene PoC público reciente y sigue explotándose: **actualizar MLflow muy por encima de
-  2.14.1** y **restringir el API de artefactos**. Un artefacto de modelo es **código**, no dato.
-- **Servidor de tracking/registro nunca expuesto a internet ni sin autenticación.** Un MLflow
-  abierto es RCE mediante artefacto y, además, fuga completa de datos de entrenamiento y métricas.
-  Autenticación delegada al IdP (`identity-access-management-standards`), red segmentada.
-- **Cadena de suministro de paquetes de ML — objetivo activo en 2026.** Precedentes verificados:
-  compromiso de **LiteLLM en PyPI (mar-2026, versiones 1.82.7/1.82.8)** originado en un **Trivy
-  comprometido usado en CI**, con ejecución vía ficheros `.pth` en `site-packages` **sin necesidad
-  de importar el paquete**; **telnyx** (mar-2026); **`mistralai==2.4.6`** (may-2026); campaña
-  **Hades** sobre `ensmallen` y paquetes de bioinformática en PyPI (jun-2026). Consecuencias
-  operativas no negociables: **lockfile con hashes**, **pin exacto de toda herramienta invocada en
-  CI** (incluidos los escáneres de seguridad), builds en entorno efímero y sin credenciales
-  persistentes, y verificación de que un `pip install` no ejecuta nada por sí solo.
-- **Datasets y pesos con control de acceso y linaje.** Quién puede leer el dataset de
-  entrenamiento es una decisión de seguridad, no de comodidad; si contiene dato personal, manda
-  `privacy-engineering-standards`.
-- **Credenciales del pipeline**: identidad efímera (OIDC) hacia el almacén y el registro; nunca
-  claves estáticas en el código del experimento ni en el notebook. Ver
+- **Insecure deserialization is the structural vulnerability of the domain.** `pickle`, `joblib`,
+  `torch.load(weights_only=False)` and `cloudpickle` **execute code on load**. MLflow's
+  CVE-2024-37054/37055/37059 family (RCE via a malicious PyFunc/PyTorch/pmdarima artifact,
+  CWE-502) has a recent public PoC and is still being exploited: **upgrade MLflow well beyond
+  2.14.1** and **restrict the artifact API**. A model artifact is **code**, not data.
+- **A tracking/registry server is never exposed to the Internet or left without authentication.** An
+  open MLflow is RCE via artifact and, on top of that, a complete leak of training data and metrics.
+  Authentication delegated to the IdP (`identity-access-management-standards`), segmented network.
+- **The ML package supply chain — an active target in 2026.** Verified precedents:
+  the compromise of **LiteLLM on PyPI (Mar-2026, versions 1.82.7/1.82.8)** originating in a **compromised
+  Trivy used in CI**, with execution via `.pth` files in `site-packages` **without the package needing
+  to be imported**; **telnyx** (Mar-2026); **`mistralai==2.4.6`** (May-2026); the
+  **Hades** campaign against `ensmallen` and bioinformatics packages on PyPI (Jun-2026). Non-negotiable
+  operational consequences: **a lockfile with hashes**, **an exact pin for every tool invoked in
+  CI** (including the security scanners), builds in an ephemeral environment with no persistent
+  credentials, and verification that a `pip install` does not execute anything by itself.
+- **Datasets and weights with access control and lineage.** Who can read the training
+  dataset is a security decision, not a convenience one; if it contains personal data,
+  `privacy-engineering-standards` rules.
+- **Pipeline credentials**: ephemeral identity (OIDC) towards the store and the registry; never
+  static keys in the experiment code or in the notebook. See
   `secrets-management-standards`.
-- **Registro de auditoría inmutable** de quién promovió qué modelo, cuándo y con qué métricas.
-- El **modelo entrenado puede filtrar sus datos de entrenamiento** (memorización, inferencia de
-  pertenencia): la evaluación de ese riesgo es de `privacy-engineering-standards`; el ataque
-  adversario, de `mlsecops-standards`.
+- **An immutable audit log** of who promoted which model, when and with what metrics.
+- The **trained model can leak its training data** (memorisation, membership
+  inference): the assessment of that risk belongs to `privacy-engineering-standards`; the
+  adversarial attack, to `mlsecops-standards`.
 
-## 6. Rendimiento y operabilidad
+## 6. Performance and operability
 
-### 6.1 Monitorización — la parte que casi nadie hace bien
+### 6.1 Monitoring — the part almost nobody does well
 
-Tres capas, y la mayoría de equipos solo tiene la primera:
+Three layers, and most teams only have the first:
 
-1. **Servicio**: latencia, errores, saturación. Es lo que ya sabes hacer y **no dice nada del
-   modelo**. `sre-practice-standards`.
-2. **Dato de entrada**: distribución de cada feature, tasa de nulos, categorías no vistas,
-   volumen. **Es la señal más temprana disponible y no necesita etiquetas.** Si no vigilas nada
-   más, vigila esto.
-3. **Calidad de la predicción**: distribución de la salida, y —cuando llegue— métrica real contra
-   la etiqueta.
+1. **Service**: latency, errors, saturation. It is what you already know how to do and **says nothing
+   about the model**. `sre-practice-standards`.
+2. **Input data**: the distribution of each feature, null rate, unseen categories,
+   volume. **It is the earliest signal available and it needs no labels.** If you monitor nothing
+   else, monitor this.
+3. **Prediction quality**: the distribution of the output, and — when it arrives — the real metric
+   against the label.
 
-### 6.2 Deriva de datos frente a deriva de concepto
+### 6.2 Data drift versus concept drift
 
-- **Deriva de datos (covariate shift)**: cambia la distribución de la entrada. Detectable **hoy y
-  sin etiquetas** (tests de distribución, distancia entre poblaciones). **Detectarla no implica
-  que el modelo haya empeorado**: la alarma por deriva estadística sin impacto medido es la
-  primera fuente de fatiga de alertas del dominio — vigila las features que el modelo realmente
-  usa, con umbrales calibrados sobre histórico, no `p < 0.05` sobre cien columnas.
-- **Deriva de concepto**: cambia la **relación** entre entrada y salida. La entrada puede parecer
-  idéntica y el modelo estar equivocándose. **Solo se detecta con etiquetas o con un proxy**, y es
-  la que de verdad te hace daño.
+- **Data drift (covariate shift)**: the input distribution changes. Detectable **today and
+  without labels** (distribution tests, distance between populations). **Detecting it does not imply
+  the model has got worse**: an alarm on statistical drift with no measured impact is the
+  domain's number one source of alert fatigue — monitor the features the model actually
+  uses, with thresholds calibrated over history, not `p < 0.05` over a hundred columns.
+- **Concept drift**: the **relationship** between input and output changes. The input can look
+  identical while the model is getting it wrong. **It is only detected with labels or with a proxy**, and
+  it is the one that really hurts you.
 
-### 6.3 El problema de la etiqueta que tarda (o no llega)
+### 6.3 The problem of the label that is late (or never arrives)
 
-En muchos sistemas la verdad tarda semanas (impago, renovación, recaída) o **no llega nunca**
-porque el modelo la impidió (no concediste el crédito: no sabes si habría pagado).
+In many systems the truth takes weeks (default, renewal, relapse) or **never arrives**
+because the model prevented it (you did not grant the credit: you do not know whether they would have paid).
 
-- Define **métricas proxy** explícitas y **documenta su sesgo**: tasa de aceptación, distribución
-  de scores, tasa de intervención humana, tasa de anulación por el operador.
-- **Reserva un porcentaje de tráfico sin modelo** (o con decisión aleatorizada) cuando sea ética y
-  legalmente admisible: es la única forma de obtener etiquetas no censuradas y de medir de verdad
-  si el modelo aporta. Es un coste deliberado, con dueño y presupuesto.
-- **Bucles de retroalimentación**: si el modelo influye en los datos con los que se reentrenará,
-  se realimenta a sí mismo y su sesgo se amplifica en cada ciclo (recomendadores, priorización de
-  colas, detección de fraude). **Es un riesgo de diseño, no un detalle**: identifícalo por escrito
-  en la model card, y mide contra una muestra no afectada por el modelo. Sin esa muestra, no
-  tienes forma de distinguir "el modelo funciona" de "el modelo se está dando la razón".
+- Define explicit **proxy metrics** and **document their bias**: acceptance rate, score
+  distribution, human intervention rate, operator override rate.
+- **Reserve a percentage of traffic with no model** (or with a randomised decision) where it is
+  ethically and legally admissible: it is the only way to obtain uncensored labels and to really
+  measure whether the model adds anything. It is a deliberate cost, with an owner and a budget.
+- **Feedback loops**: if the model influences the data it will be retrained on,
+  it feeds back into itself and its bias is amplified in each cycle (recommenders, queue
+  prioritisation, fraud detection). **It is a design risk, not a detail**: identify it in writing
+  in the model card, and measure against a sample unaffected by the model. Without that sample, you
+  have no way of distinguishing "the model works" from "the model is proving itself right".
 
-### 6.4 Reentrenamiento y coste
+### 6.4 Retraining and cost
 
-**Disparadores** — elige uno explícito y escríbelo; un reentrenamiento sin criterio es una
-lotería periódica:
+**Triggers** — pick an explicit one and write it down; a retraining without criteria is a
+periodic lottery:
 
-| Disparador | Cuándo | Riesgo |
+| Trigger | When | Risk |
 |---|---|---|
-| **Por calendario** | El dato se renueva a ritmo conocido y estable | Reentrena cuando no hace falta (coste, riesgo de regresión) y no reentrena cuando sí |
-| **Por umbral** | Hay métrica real o proxy fiable en producción | Requiere la señal que §6.3 dice que a menudo no tienes; umbral mal calibrado = oscilación |
-| **Por evento** | Cambio conocido del negocio, del proveedor de datos o de la regulación | Depende de que alguien avise: exige acoplarlo a gestión del cambio |
+| **By calendar** | The data renews at a known and stable rate | It retrains when it is not needed (cost, regression risk) and does not retrain when it is |
+| **By threshold** | There is a reliable real or proxy metric in production | It requires the signal §6.3 says you often do not have; a badly calibrated threshold = oscillation |
+| **By event** | A known change of the business, the data provider or the regulation | It depends on somebody warning you: it requires coupling it to change management |
 
-**Reglas duras del reentrenamiento**: pasa por **los mismos gates** que el primer entrenamiento
-(§4) — un modelo reentrenado no es una actualización menor, es un modelo nuevo; se despliega con
-*shadow*/canary como cualquier otro; y **reentrenar no arregla la deriva de concepto si la causa
-es que el problema cambió**: puede estar aprendiendo el mundo roto. Antes de reentrenar
-automáticamente, pregunta si el fallo es de dato o de formulación.
+**Hard rules of retraining**: it passes through **the same gates** as the first training
+(§4) — a retrained model is not a minor update, it is a new model; it is deployed with
+*shadow*/canary like any other; and **retraining does not fix concept drift if the cause
+is that the problem changed**: it may be learning the broken world. Before retraining
+automatically, ask whether the failure is one of data or of formulation.
 
-**Coste**: el entrenamiento es un pico visible y presupuestado; **la inferencia es un goteo
-continuo que a medio plazo domina la factura** y casi nadie la atribuye por modelo. Instrumenta
-**coste por predicción** y **coste por punto de métrica ganado**: un modelo un 0,3 % mejor que
-triplica el coste de inferencia es una mala decisión de ingeniería disfrazada de mejora. Batch
-antes que en línea; modelo pequeño antes que grande; caché de predicciones repetidas antes que
-más réplicas. Ver `gpu-computing-standards` para la utilización como métrica FinOps.
+**Cost**: training is a visible and budgeted spike; **inference is a continuous drip
+that dominates the bill in the medium term** and almost nobody attributes it per model. Instrument
+**cost per prediction** and **cost per point of metric gained**: a model 0.3% better that
+triples the inference cost is a bad engineering decision disguised as an improvement. Batch
+before online; a small model before a big one; caching repeated predictions before
+more replicas. See `gpu-computing-standards` for utilisation as a FinOps metric.
 
-### 6.5 Fairness y sesgo como propiedad medible
+### 6.5 Fairness and bias as a measurable property
 
-**Aquí se mide; en `ai-governance-standards` se decide qué es aceptable y quién responde.**
+**It is measured here; in `ai-governance-standards` it is decided what is acceptable and who answers for it.**
 
-- Las métricas de equidad son **mutuamente incompatibles**: paridad demográfica, igualdad de
-  oportunidades y calibración por grupo no pueden satisfacerse a la vez salvo en casos
-  degenerados. **Elegir cuál aplica es una decisión de producto y de gobierno, documentada**, no
-  una opción por defecto de una librería.
-- Se mide **por segmento y en el gate de evaluación** (§4.7), sobre datos representativos, y se
-  vuelve a medir **en producción**: un modelo justo en el conjunto de prueba puede no serlo con
-  la población real.
-- El sesgo casi nunca está "en el modelo": está en el dato histórico, en la etiqueta (que suele
-  registrar la decisión pasada, no la verdad) y en el bucle de §6.3. Auditar solo la salida es
-  llegar tarde.
-- **Los atributos protegidos que se necesitan para medir equidad suelen ser categoría especial de
-  dato personal**: cómo obtenerlos y tratarlos legalmente es de `privacy-engineering-standards`.
-  No los recojas por tu cuenta para "hacer un análisis".
+- Fairness metrics are **mutually incompatible**: demographic parity, equality of
+  opportunity and per-group calibration cannot be satisfied at once except in
+  degenerate cases. **Choosing which one applies is a product and governance decision, documented**, not
+  a library's default option.
+- It is measured **per segment and at the evaluation gate** (§4.7), over representative data, and it is
+  measured again **in production**: a model that is fair on the test set may not be so with
+  the real population.
+- Bias is almost never "in the model": it is in the historical data, in the label (which usually
+  records the past decision, not the truth) and in the §6.3 loop. Auditing only the output means
+  arriving late.
+- **The protected attributes needed to measure fairness are usually a special category of
+  personal data**: how to obtain and process them lawfully belongs to `privacy-engineering-standards`.
+  Do not collect them on your own to "do an analysis".
 
-### 6.6 Retirada del modelo
+### 6.6 Model retirement
 
-La fase que no está en ningún diagrama y que todo el mundo omite. Un modelo se retira cuando:
-ya no supera al baseline, su dominio cambió, su dueño desapareció, o el coste supera el valor.
-Procedimiento mínimo:
+The phase that is on no diagram and that everybody omits. A model is retired when:
+it no longer beats the baseline, its domain changed, its owner disappeared, or the cost exceeds the value.
+Minimum procedure:
 
-1. **Identificar consumidores reales** por telemetría, no por documentación. Casi siempre hay uno
-   que nadie recordaba.
-2. **Anunciar y fijar fecha**; ofrecer sustituto o degradación explícita (regla de negocio,
-   baseline, decisión humana).
-3. **Apagar sirviendo error explícito**, nunca devolviendo un valor por defecto silencioso: una
-   predicción constante disfrazada de predicción es peor que un fallo.
-4. **Conservar artefacto, model card, dataset y métricas** según la política de retención — puede
-   hacer falta para auditar una decisión pasada mucho después de apagarlo.
-5. Marcar `archived` en el registro y **retirarlo del inventario de sistemas de IA** con
+1. **Identify real consumers** by telemetry, not by documentation. There is almost always one
+   nobody remembered.
+2. **Announce and set a date**; offer a replacement or an explicit degradation (business rule,
+   baseline, human decision).
+3. **Shut it down serving an explicit error**, never returning a silent default value: a
+   constant prediction disguised as a prediction is worse than a failure.
+4. **Keep the artifact, model card, dataset and metrics** according to the retention policy — it may
+   be needed to audit a past decision long after switching it off.
+5. Mark it `archived` in the registry and **remove it from the AI system inventory** with
    `ai-governance-standards`.
 
-## 7. Sostenibilidad a largo plazo
+## 7. Long-term sustainability
 
-- **Cadencia**: revisar el toolchain cada **3 meses** — este ecosistema cambia de dueño y de
-  licencia más rápido que casi ningún otro del catálogo. Evidencia reciente: **lakeFS adquirió
-  DVC** (nov-2025), **Prefect adquirió Dagster** (anunciado 13-jul-2026), **Seldon Core v2 pasó a BSL 1.1**
-  (ene-2024). Antes de adoptar cualquier herramienta: leer el `LICENSE` **del repo**, no la página
-  de marketing, y comprobar la fecha de la última release.
-- **Criterio de adopción**: una herramienta entra si resuelve un problema **medido**, tiene dueño
-  claro y su coste operativo cabe en el equipo. Sale si lleva 6 meses sin releases, si cambia a
-  licencia restrictiva o si nadie sabe operarla.
-- **Deuda consciente**: si entrenas sin versionar el dataset o sin gate de fairness porque hoy no
-  puedes, queda escrito con motivo y fecha en la model card. Deuda declarada es deuda gestionable.
+- **Cadence**: review the toolchain every **3 months** — this ecosystem changes owner and
+  licence faster than almost any other in the catalogue. Recent evidence: **lakeFS acquired
+  DVC** (Nov-2025), **Prefect acquired Dagster** (announced 13-Jul-2026), **Seldon Core v2 moved to BSL 1.1**
+  (Jan-2024). Before adopting any tool: read the `LICENSE` **in the repo**, not the marketing
+  page, and check the date of the last release.
+- **Adoption criteria**: a tool goes in if it solves a **measured** problem, has a clear
+  owner and its operational cost fits the team. It goes out if it has had no releases for 6 months, if it moves to
+  a restrictive licence or if nobody knows how to operate it.
+- **Conscious debt**: if you train without versioning the dataset or without a fairness gate because
+  today you cannot, it is written down with a reason and a date in the model card. Declared debt is
+  manageable debt.
 
-**PROHIBIDO**
-- ❌ Desplegar un modelo entrenado desde un notebook o desde un árbol de git sucio.
-- ❌ Un modelo en producción que no se puede reconstruir (datos, código, config, entorno, semilla).
-- ❌ Promover a producción sin pasar por el registro, sin dueño, sin model card y sin aprobación
-  humana registrada.
-- ❌ Desplegar sin plan de *rollback* **probado**, o sin la versión N-1 desplegable con **su**
-  preprocesado.
-- ❌ Servir un modelo sin monitorización de la distribución de entrada. Sin eso, operas a ciegas.
-- ❌ Confundir alerta de deriva estadística con degradación del modelo, y despertar a alguien por
-  un `p-valor`.
-- ❌ Reentrenamiento automático que se despliega sin gates de evaluación ni canary.
-- ❌ Calcular una feature dos veces, en dos sitios, con dos implementaciones distintas.
-- ❌ Evaluar solo con la métrica agregada: la media esconde el segmento donde el modelo falla.
-- ❌ Cargar artefactos `pickle`/`joblib` de origen no controlado; exponer MLflow sin autenticación.
-- ❌ Usar herramientas de CI (incluidos escáneres) sin pin exacto de versión — precedente LiteLLM.
-- ❌ Introducir feature store, Kubeflow completo u orquestador nuevo sin un problema medido que lo
-  exija: en este dominio, la mayoría de la complejidad instalada no se ha ganado su sitio.
-- ❌ Adoptar una herramienta sin leer su `LICENSE` y su última fecha de release.
-- ❌ Presentar una mejora de métrica sin su coste de inferencia asociado.
-- ❌ Recoger atributos protegidos "para medir sesgo" sin base legal (ver `privacy-engineering`).
-- ❌ Apagar un modelo devolviendo un valor por defecto silencioso.
-- ❌ Dar por bueno un modelo cuya única evidencia es una demo.
+**FORBIDDEN**
+- ❌ Deploying a model trained from a notebook or from a dirty git tree.
+- ❌ A model in production that cannot be rebuilt (data, code, config, environment, seed).
+- ❌ Promoting to production without going through the registry, without an owner, without a model card and without recorded
+  human approval.
+- ❌ Deploying without a **tested** *rollback* plan, or without version N-1 deployable with **its**
+  preprocessing.
+- ❌ Serving a model without monitoring the input distribution. Without that, you operate blind.
+- ❌ Confusing a statistical drift alert with model degradation, and waking somebody up over
+  a `p-value`.
+- ❌ Automatic retraining that deploys without evaluation gates or a canary.
+- ❌ Computing a feature twice, in two places, with two different implementations.
+- ❌ Evaluating only with the aggregate metric: the mean hides the segment where the model fails.
+- ❌ Loading `pickle`/`joblib` artifacts of uncontrolled origin; exposing MLflow without authentication.
+- ❌ Using CI tools (including scanners) without an exact version pin — the LiteLLM precedent.
+- ❌ Introducing a feature store, full Kubeflow or a new orchestrator without a measured problem that
+  demands it: in this domain, most of the installed complexity has not earned its place.
+- ❌ Adopting a tool without reading its `LICENSE` and its last release date.
+- ❌ Presenting a metric improvement without its associated inference cost.
+- ❌ Collecting protected attributes "to measure bias" without a lawful basis (see `privacy-engineering`).
+- ❌ Switching off a model by returning a silent default value.
+- ❌ Accepting a model whose only evidence is a demo.
 
-## 8. Verificación web obligatoria
+## 8. Mandatory web verification
 
-Antes de fijar cualquier versión, licencia o recomendación de herramienta:
+Before committing to any version, licence or tool recommendation:
 
-1. **Licencia real del repo** (`LICENSE` en `HEAD`), no la web de marketing. Comprobado ago-2026:
-   Apache-2.0 en MLflow, DVC, lakeFS, Metaflow, Prefect, Dagster, Airflow, Feast, Evidently,
-   BentoML, KServe; **Seldon Core v2 en BSL 1.1** (no open source); **W&B con SDK MIT y servidor
-   propietario**. Re-verificar: los cambios de licencia en este sector son frecuentes.
-2. **Última release y actividad** vía el feed Atom del repo (`/releases.atom`) o PyPI — la API
-   REST de GitHub está limitada por tasa y su HTML induce a error de fecha. Observado ago-2026:
-   MLflow 3.15.1, DVC 3.67.1 (mar-2026), lakeFS 1.85.0, Airflow 3.3.0, Metaflow 2.19.35, Prefect
-   3.8.x, Dagster 1.13.16, Feast 0.65.0, Evidently 0.7.21 (mar-2026), KServe 0.19/0.20-rc,
+1. **The repo's real licence** (`LICENSE` at `HEAD`), not the marketing site. Checked Aug-2026:
+   Apache-2.0 in MLflow, DVC, lakeFS, Metaflow, Prefect, Dagster, Airflow, Feast, Evidently,
+   BentoML, KServe; **Seldon Core v2 under BSL 1.1** (not open source); **W&B with an MIT SDK and a
+   proprietary server**. Re-verify: licence changes in this sector are frequent.
+2. **Last release and activity** via the repo's Atom feed (`/releases.atom`) or PyPI — GitHub's
+   REST API is rate limited and its HTML misleads on dates. Observed Aug-2026:
+   MLflow 3.15.1, DVC 3.67.1 (Mar-2026), lakeFS 1.85.0, Airflow 3.3.0, Metaflow 2.19.35, Prefect
+   3.8.x, Dagster 1.13.16, Feast 0.65.0, Evidently 0.7.21 (Mar-2026), KServe 0.19/0.20-rc,
    BentoML 1.4.39, Kubeflow 1.10.0, Seldon Core 1.19.0.
-3. **Cambios de titularidad y consolidación**: lakeFS↔DVC, Prefect↔Dagster. Comprobar si hay
-   nuevos movimientos y si alguno derivó en cambio de licencia o de mantenimiento.
-4. **CVEs del stack**: MLflow (familia CWE-502), Kubeflow, KServe, BentoML, y el runtime de
-   serialización que uses. Triaje y SLA en `vulnerability-management-standards`.
-5. **Incidentes de cadena de suministro en PyPI/npm** que afecten a paquetes de ML o a
-   herramientas invocadas en CI. Precedentes 2026: Trivy (mar), LiteLLM (mar), telnyx (mar),
-   mistralai (may), campaña Hades/`ensmallen` (jun).
-6. **Estándares de documentación de modelo/dataset**: si ha aparecido un formato con tracción real
-   o una obligación normativa que fije el contenido de la documentación técnica.
+3. **Ownership changes and consolidation**: lakeFS↔DVC, Prefect↔Dagster. Check whether there are
+   new moves and whether any led to a licence or maintenance change.
+4. **Stack CVEs**: MLflow (the CWE-502 family), Kubeflow, KServe, BentoML, and the
+   serialization runtime you use. Triage and SLA in `vulnerability-management-standards`.
+5. **Supply chain incidents on PyPI/npm** affecting ML packages or
+   tools invoked in CI. 2026 precedents: Trivy (Mar), LiteLLM (Mar), telnyx (Mar),
+   mistralai (May), the Hades/`ensmallen` campaign (Jun).
+6. **Model/dataset documentation standards**: whether a format with real traction has appeared
+   or a regulatory obligation that fixes the content of the technical documentation.
 
-**Huecos declarados (no rellenados de memoria):**
-- **Gobernanza de MLflow**: no se localizó ningún cambio de gobernanza en 2026 más allá de su
-  pertenencia a la Linux Foundation desde 2020; el proyecto sigue siendo *single-vendor* de facto
-  (Databricks). **Si existe un cambio reciente, este documento no lo recoge — verifícalo en el
-  fichero de gobernanza del repo y en el blog de LF AI & Data antes de decidir la adopción.**
-- **Estado de mantenimiento de Evidently**: última release observada en el feed en mar-2026;
-  no se ha confirmado si el ritmo es deliberado o señal de abandono.
-- **WhyLabs**: estado del producto y modelo de licencia **no verificados**. No recomendado hasta
-  comprobarlo.
-- **Prefect↔Dagster**: no se ha localizado un plan público de convergencia de producto. Tratar la
-  continuidad a largo plazo de cualquiera de los dos como incierta.
-- **Feast**: gobernanza y patrocinio actuales no verificados en detalle.
+**Declared gaps (not filled from memory):**
+- **MLflow governance**: no governance change was located in 2026 beyond its
+  membership of the Linux Foundation since 2020; the project remains de facto *single-vendor*
+  (Databricks). **If there is a recent change, this document does not capture it — verify it in the
+  repo's governance file and in the LF AI & Data blog before deciding on adoption.**
+- **Evidently's maintenance status**: the last release observed in the feed was Mar-2026;
+  it has not been confirmed whether the pace is deliberate or a sign of abandonment.
+- **WhyLabs**: product status and licence model **not verified**. Not recommended until
+  checked.
+- **Prefect↔Dagster**: no public product convergence plan has been located. Treat the
+  long-term continuity of either as uncertain.
+- **Feast**: current governance and sponsorship not verified in detail.
 
-Si la web contradice este documento, **manda la web** y señala la discrepancia.
+If the web contradicts this document, **the web wins** — flag the discrepancy.
