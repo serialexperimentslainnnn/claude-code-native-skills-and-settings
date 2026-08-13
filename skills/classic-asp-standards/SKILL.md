@@ -5,7 +5,7 @@ description: Classic ASP (ASP 3.0) on IIS - the worst attack surface in the Micr
 
 # Classic ASP (ASP 3.0) standards
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -223,7 +223,7 @@ COM component in the inventory; CVEs of IIS and of those components.
 phase 2 (VBScript disabled by default) and of phase 3 (retirement) are not verified verbatim as of
 Aug 2026** — the official Microsoft documentation consulted describes the phases *"in future Windows
 releases"* **without giving a year**, and the figures circulating in the technical press do not agree with each other; **do not
-write a date into a plan without getting it from the primary source**. Also unverified: whether
+write a date into a plan without getting it from the primary source**. Also a **Declared gap**: whether
 the IIS ASP feature is still installable on the latest published version of Windows Server (test it,
 do not assume); number of Classic ASP sites in production or market share — there is no reliable public
 figure, do not cite any.

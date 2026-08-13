@@ -69,6 +69,21 @@ when the skill activates. Optimise the description for routing, the body for use
 
 ## 4. Quality and verification
 
+**How a gate must be written, before the list of gates itself.** These are the two ways a gate stops
+measuring what it claims to measure, and both produce a **false green** — which is worse than a red
+build, because a red build gets fixed and a green one gets trusted:
+
+- **Match the exact declared literal, never a substring of it.** A gate that greps `Not applicable`
+  instead of `**Not applicable**:`, or the phrase `the web wins` anywhere in the file instead of the
+  §8 closing sentence, passes files that do not conform. The document then says the gate enforces
+  something it does not, and nobody finds out.
+- **A gate loosened for a migration is retired the day the migration ends.** While it accepts two
+  forms it **cannot distinguish a finished migration from a regression**. Loosening one is a decision
+  with an expiry date attached, not a permanent convenience.
+- Related: the *absence* of a gate is invisible. Any criterion the catalogue declares mandatory and
+  no gate checks (a verification date, the existence of cited slugs) is enforced by discipline alone,
+  which is to say not at all. And a figure a gate reports must count what is really paid.
+
 Gates before calling a skill good:
 
 1. **Valid frontmatter**: `grep -c '^name:'` and `name` == directory name.

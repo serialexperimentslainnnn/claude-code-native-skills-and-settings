@@ -125,9 +125,84 @@ The shape, always the same three levels:
    catch myself producing the mass of the output by hand, the partition was wrong.
 2. **Floor of 4 agents** on any substantial task. Four is the minimum, not the target: size the
    fleet to the work and pass it if the partition asks for it.
-3. **Each agent may fan out to ≤4 subagents of its own** when its slice decomposes — and then it
+3. **Each agent fans out to ≤4 subagents of its own** whenever its slice decomposes — and then it
    **reviews and refines what they returned before reporting up**. The review is the point: an agent
    that only concatenates its subagents' output has added a level of indirection and nothing else.
+   **The criterion is not left to taste**: decompose when the slice holds **more than ~4 independent
+   units** (files, domains, subsystems) or **two different kinds of work** (e.g. research + writing,
+   or migrate + verify). Do not decompose when the work is homogeneous and short. When in doubt,
+   decompose: the cost is one extra hop, the benefit is a review layer.
+
+> **⚠️ A subagent inherits nothing — harness fact, verified against the documentation.**
+> *"Subagents receive only this system prompt plus basic environment details like the working
+> directory, **not the full Claude Code system prompt**."* No `CLAUDE.md`, no `core-directives.md`
+> (its hook fires on `UserPromptSubmit`, and a subagent's prompt is not a user prompt), none of this
+> doctrine by osmosis. Observed failure: a fleet of four launched without the rules in their prompts
+> produced four agents that never delegated — and they were disobeying nothing.
+> **When writing doctrine the question is not only "is it right?" but "by what route does it reach
+> whoever must comply with it?"**
+
+### The route is the agent type, not the prompt
+
+Pasting the rules into every prompt is discipline, and discipline is the failure mode being fixed.
+**The body of an agent definition *is* the subagent's system prompt**, so the doctrine is carried by
+the harness on every spawn, including nested ones. Two types live in `agents/`, installed to
+`~/.claude/agents/` by `./install.sh`:
+
+- **`fleet-lead`** — tier 1. Partitions, spawns verifiers, **re-runs the gates over its whole
+  subtree** once they land, and **reviews and refines** what came back. Integration is where
+  independently-correct slices break, and this is the first tier that sees them together.
+- **`fleet-verifier`** — tier 2. Partitions, spawns writers, then **runs the checks scoped to
+  exactly the files those writers touched** and sends failures back down.
+- **`fleet-writer`** — tier 3. **Writes only. Runs no test, gate, linter or review.**
+
+### Separation of powers by depth — who writes, who checks, who reviews
+
+The tiers are not the same job at different scales. **The writer does not grade its own homework**,
+which is the weakest verification there is because it hides exactly what the writer could not see
+while writing.
+
+| Tier | Writes | Verifies | Scope of its checks |
+|---|---|---|---|
+| 3 `fleet-writer` | yes | **never** | — |
+| 2 `fleet-verifier` | delegates it | yes | exactly the files its writers reported in `DONE` |
+| 1 `fleet-lead` | delegates it | yes | its **whole subtree**, together |
+| 0 me | no | yes | the **whole repository**, plus `/code-review` and `/security-review` |
+
+**A failing check goes back down, it is not silently repaired.** Resume the agent that produced it
+with `SendMessage` — never relaunch, its transcript holds work already paid for — and re-run.
+Escalate after two failures. A verifier that quietly fixes its writers' output has become a writer
+with no verifier.
+
+**The global barrier is mine and cannot be delegated**: a lead cannot know the whole fleet landed,
+because siblings are invisible to each other. So a lead verifies its subtree; **I** run the
+repository-wide gates and the reviews once everything is in.
+
+### The two-round pipeline: build, then remediate
+
+1. **Round 1 — BUILD.** Writers write, verifiers check their writers' files, leads check their
+   subtrees and review.
+2. **Barrier — mine.** Global gates over the whole repository, then **`/code-review` and
+   `/security-review`** over the accumulated diff. *(Verify both are available in the session before
+   promising them; `/security-review` is a bundled skill, `/code-review` is referenced by `simplify`
+   but confirm it resolves.)*
+3. **Round 2 — REMEDIATION.** I dispatch a second fleet carrying the findings, each to the slice
+   they fall in. **Leads and verifiers clean up and optimise what their subagents delivered**:
+   duplication no single writer could see, divergent solutions to the same problem, abstractions
+   that stopped earning their place once the whole slice existed. Gates re-run afterwards — a
+   cleanup that breaks a gate is a regression, and the reviews will not run again.
+   **Behaviour must not change in this round.** A bug found is reported, not fixed in passing.
+
+**Always pass `subagent_type`.** A `general-purpose` agent has none of this and will behave like the
+four that never delegated.
+
+Nesting is on by default — *"a subagent can spawn subagents of its own, up to three layers below the
+main conversation"* — and is tunable with `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`. **Never set
+`tools:` on a fleet type**: restricting the list can strip `Agent` and silently disable fan-out.
+
+What still belongs in **the prompt**, because it is per-task and cannot live in a system prompt:
+the skills to arm, the slice and its boundary, and the relevant fragment of `PROJECTMAP.md`
+(§4.6) — including any minefield touching those files.
 
 **Three tiers buy vertical review, never lateral.** Each level validates the one below it, and that
 is real — but **siblings cannot see each other**, at any depth. Nothing in the hierarchy catches the
@@ -167,9 +242,70 @@ roadmap, any convention document. Four steps, always the same:
 3. **Delta up.** Every agent ends with what the document got **wrong**, what its work made
    **stale**, and what it had to discover because the document did not say. Empty is stated, not
    implied. Each tier merges and deduplicates its children's deltas before adding its own.
-4. **Single writer applies.** **I** fold the deltas into the documents, in one pass, in the turn the
-   fleet lands. Agents never edit a governing document: they are single files, N writers is a
-   lost-update bug, and doctrine edited by whoever happened to touch it last is not doctrine.
+4. **Single writer applies — and it is the closing act of the turn, always.** Agents report two
+   mandatory fields and never edit these documents themselves: **`MAPDELTA`** (the repository index,
+   `PROJECTMAP.md`: what moved, was created or renamed, and what the map got wrong) and
+   **`DOCDELTA`** (everything else the work made stale — a README figure, a comment describing
+   behaviour that changed, a document citing a renamed file, a convention nobody had written down).
+   They are single files: N writers on them is a lost-update bug, and doctrine edited by whoever
+   touched it last is not doctrine.
+>
+> **⏹ The last thing I do before ending a turn is apply them.** `PROJECTMAP.md` gets updated **every
+> turn in which anything it names changed** — mine or a fleet's — and the other documents with it.
+> Not "at the end of the task", not "when I remember": the turn does not close with the map
+> describing a repository that no longer exists. A map nobody trusts is worse than no map, and it
+> only takes one uncorrected turn to get there.
+
+### Documents hold state. Memory holds process.
+
+**Never write process into a document.** No incidents, no dates of what happened, no "fixed on the
+13th", no anecdotes, no notes about how the work went, no running commentary. Not in
+`PROJECTMAP.md`, not in a skill, not in a comment, not in a README. A document states **what is true
+now and what must be done** — a reader arriving cold should not have to walk through the history of
+how it got that way to find the rule.
+
+**The line, precisely, because it is easy to get wrong:**
+
+- **Mechanism stays** — it is criteria: *"never set `tools:` on a fleet type: it can strip `Agent`
+  and disable fan-out"*. A rule without its mechanism looks arbitrary and gets dropped by the next
+  session.
+- **The incident goes to memory** — it is process: *"on the 13th a fleet of four never delegated
+  because…"*. Evidence for me, noise for the document.
+
+**Memory is the per-project layer, and it is where all of that goes.** The four layers, and nothing
+belongs in two of them:
+
+| Layer | Holds | Scope |
+|---|---|---|
+| `CLAUDE.md` | how work is done, always | every project |
+| `skills/` | domain criteria: what is decided, forbidden, verified | every project |
+| `PROJECTMAP.md` | where things are in this repository | this repo |
+| **memory** | **context and personal directives for this project**, and **the data that stops me repeating a mistake** | this project |
+
+So memory holds: the context of *this* project and how the user wants it worked; the standard
+procedures that turned out to be right here; and — the part that pays for itself — **what failed and
+why, so it is not repeated**. A trap that cost a session, a tool that lied, an order of steps that
+had to be undone, a wrong assumption I made and the user corrected. **Written the moment it is
+learned, not at the end**, because the value is entirely in the next session and by then I will not
+remember it.
+
+**If the project has no memory, create it** — and **before initialising it, ask the user whatever
+needs asking**. A memory seeded with my assumptions about the project is worse than none: it looks
+like established context and it is guesswork.
+
+**Memory never gets flattened into a file.** Not into a document, not into a comment, not into a
+skill, not into the map — **no file of the project, ever**. Memory is read and it informs what I do;
+it is not a source to copy from. The moment a memory is pasted into a versioned file it stops being
+memory and becomes process written into documentation, which is the thing this rule forbids.
+
+**It does travel into agent prompts when it earns its place.** An agent starts blank and will repeat
+a trap I already paid for, so when a memory is relevant to its slice — a tool that lies, an order of
+steps that had to be undone, a constraint of this project — **I put it in the prompt**, as context
+for its decisions. That is transient and correct. **What it must never do is write that context into
+a file**: it informs the work, it is not part of the work.
+
+**Agents have no memory.** They report process in `NOTES`, it reaches me, and **I decide what becomes
+a memory**. They never write it into a document, for the same reason they never edit one.
 
 **Why this is worth the ceremony**: it makes ordinary work improve the standards as a byproduct.
 Every fleet run becomes a distributed verification pass over the doctrine — parallel readers, real

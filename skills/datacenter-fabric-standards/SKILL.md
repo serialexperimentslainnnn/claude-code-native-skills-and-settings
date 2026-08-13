@@ -21,7 +21,7 @@ Triggers: "leaf-spine", "Clos", "spine", "leaf", "border leaf", "superspine", "o
 `802.1Qbb`, `dcbx`, `ets`, `ecn`, `wred`, `dcqcn`, "lossless", "RoCE", "DCI", "VXLAN stretch",
 "MLAG", "vPC", "ESI-LAG".
 
-**Not applicable** — each skill **decides** a different thing:
+**Not applicable**: each skill **decides** a different thing:
 `networking-standards` (**the backbone, the parent**: it decides **addressing and IPAM, which VLAN exists,
 BGP/OSPF fundamentals, design MTU/MSS, proxies and host overlays, NetBox as the SoT**; none of that is
 reopened here, here we decide **the fabric's topology and control plane**);

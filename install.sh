@@ -41,7 +41,11 @@ run() { if [ "$DRY_RUN" = 1 ]; then log "[dry-run] $*"; else "$@"; fi; }
 # Lo que se plancha: <ruta en el repo>:<ruta bajo ~/.claude>. Nada más. El resto del repo
 # (roadmap, plantilla, planes) es material de trabajo y no pinta nada en la instalación.
 FILES=( "CLAUDE.md:CLAUDE.md" "core-directives.md:core-directives.md" )
-DIRS=( "skills:skills" )
+# `agents/` son las definiciones de tipo de agente. Su CUERPO es el system prompt del subagente, y
+# es la única vía por la que la doctrina de flota llega a los pisos 2 y 3: un subagente NO hereda
+# CLAUDE.md, ni el system prompt completo, ni nada que reinyecte un hook (que solo dispara en
+# UserPromptSubmit). Sin esto, la jerarquía depende de que alguien pegue las reglas en cada prompt.
+DIRS=( "skills:skills" "agents:agents" )
 
 # El hook que reinyecta `core-directives.md` en cada turno. Es lo único que impide que las
 # directrices se diluyan según crece la conversación: un documento cargado al inicio pierde contra

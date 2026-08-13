@@ -25,7 +25,7 @@ Triggers: `httpd.conf`, `apache2.conf`, `.htaccess`, `nginx.conf` (`server` bloc
 `worker_connections`, `MaxRequestWorkers`, `pm.max_children`, `LimitNOFILE`, "502 Bad Gateway",
 "504 Gateway Timeout", "application pool", "recycling", `javax` → `jakarta`.
 
-**Not applicable** — distribution already has an owner: **`load-balancing-standards` owns the balancer and the
+**Not applicable**: distribution already has an owner — **`load-balancing-standards` owns the balancer and the
 reverse proxy, its health checks, draining and edge TLS termination** (here the
 **origin server** serving behind it and the checks it *exposes*), **`caching-cdn-standards`
 the cache policy, the CDN and the headers that govern it**, `networking-standards` and
@@ -225,12 +225,12 @@ late.
    a plan with GA in Jul 2026 while the project's page at `jakarta.ee` marks it "Under
    Development" targeting a final release in **Q2-2027**. Do not pin a date without rereading the project's
    own source.
-4. **Unverified gap — WebLogic**: the exact Premier/Extended Support date for 14.1.2 lives in
+4. **Declared gap — WebLogic**: the exact Premier/Extended Support date for 14.1.2 lives in
    the Fusion Middleware *Lifetime Support Policy* document and in article **KB65053 of My
    Oracle Support**, which **requires a login and is not publicly verifiable**. The public policy
    confirms that Fusion Middleware 12c ends Premier in **Dec 2026** and Extended in **Dec 2027**;
    for 14c **you have to consult MOS with an account**. It is not filled in here.
-5. **Unverified gap — JBoss EAP 8.1**: Red Hat publishes the policy (7 years: 4 of Full Support +
+5. **Declared gap — JBoss EAP 8.1**: Red Hat publishes the policy (7 years: 4 of Full Support +
    3 of Maintenance, plus optional ELS) but the concrete dates for 8.1 have to be taken from the
    *Product Life Cycles* table on the portal at decision time.
 6. **The state of the nginx ecosystem after the forks**: **not re-verified here**, it is owned by

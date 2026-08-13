@@ -269,7 +269,7 @@ parallel and none of it reaches the index. So the return leg is mandatory, not a
   `Z` owns …"*, *"minefield stale: the `.htaccess` warning no longer applies"*. A delta you have to
   interpret is a delta you will apply wrong.
 
-**A command you have not run is not written as verified.** Either run it, or mark it `unverified`.
+**A command you have not run is not written as verified.** Either run it, or mark it `Declared gap`.
 
 ## 5. Keeping it honest
 
@@ -306,7 +306,7 @@ parallel and none of it reaches the index. So the return leg is mandatory, not a
 - ❌ **Hand-written notes inside a generated section.** They are silently destroyed on the next
   regeneration. Keep *where* (generated) and *why/careful* (hand-written) in separate sections.
 - ❌ **Writing what you have not verified.** No "the tests are probably run with…". Either check it
-  or mark it `unverified`.
+  or mark it `Declared gap`.
 - ❌ **Storing a measurement instead of the command that produces it** (§2.2): counts, totals,
   progress percentages. They are stale on the next commit and they get quoted as if they were not.
 - ❌ **Shipping a content repository's map without the per-file index** (§2.1) and calling it done.

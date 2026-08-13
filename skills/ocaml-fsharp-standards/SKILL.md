@@ -5,7 +5,7 @@ description: OCaml and F# language engineering standards (the strict ML family).
 
 # OCaml and F# standards
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -255,7 +255,7 @@ Before pinning a version, a flag or claiming the state of the ecosystem, **verif
 4. **OCaml tooling**: dune (3.24.0, 2026-06-30), ocamlformat (0.29.0, 2026-03-17), opam (≥2.5.2), Merlin (5.7.1-504) and ocaml-lsp (1.26.0). Merlin is paired to the compiler version: check the suffix.
 5. **OCaml concurrency**: Eio (1.4, 2026-07-23) and Lwt (6.1.2 on opam, 2026-04-29, MIT). Lwt's release feed mixes the 5.x and 6.x lines — **cross-check with `ocaml.org/p/lwt`, which is the correct source**. State and maturity of Async outside the Jane Street ecosystem.
 6. **F# and its SDK**: the F# version comes with the SDK — verify on `learn.microsoft.com/dotnet/fsharp/whats-new` which one the current SDK brings (as of Aug 2026: **F# 10 with .NET 10 LTS**) and **that SDK's support dates in `dotnet-standards`**, not here. Confirm the `ParallelCompilation` default in the specific version and the state of nullable reference annotation in F#.
-7. **F# tooling and licences**: **Fantomas — verified Apache-2.0; version discrepancy declared in §2 (NuGet 7.0.5 of Dec 2025 versus GitHub releases of Apr 2026): check both sources before pinning.** Expecto (11.1.0, 2026-06-17) and FsCheck (3.3.4, 2026-07-25): versions verified, **licences NOT verified**. FsUnit and FsToolkit: unverified. Precedents that force you to look at the licence and the maintenance mode before pinning a tool: Trivy (licence change), gitleaks (*feature complete* + an action with a commercial licence for organisations since v2).
+7. **F# tooling and licences**: **Fantomas — verified Apache-2.0; version discrepancy declared in §2 (NuGet 7.0.5 of Dec 2025 versus GitHub releases of Apr 2026): check both sources before pinning.** Expecto (11.1.0, 2026-06-17) and FsCheck (3.3.4, 2026-07-25): versions verified, **licences NOT verified**. FsUnit and FsToolkit: **Declared gap**. Precedents that force you to look at the licence and the maintenance mode before pinning a tool: Trivy (licence change), gitleaks (*feature complete* + an action with a commercial licence for organisations since v2).
 
 **Declared gaps (not verified as of Aug 2026, do not fill from memory):**
 - Versions and maintenance state of **Alcotest, QCheck, ppx_expect, bisect_ppx, odoc, yojson, caqti, Dream/opium** and of the **OpenTelemetry** binding for OCaml.

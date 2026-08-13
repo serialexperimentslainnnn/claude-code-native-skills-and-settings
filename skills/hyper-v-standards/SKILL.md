@@ -5,7 +5,7 @@ description: Hyper-V on Windows Server and Azure Local as a production virtualiz
 
 # Hyper-V (Windows Server / Azure Local) standards
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 > **Hard premise**: **Hyper-V is the hypervisor you have already paid for if you have Windows Server.** Its
 > advantage is economic and one of domain integration, not technical: it does not beat KVM or vSphere at

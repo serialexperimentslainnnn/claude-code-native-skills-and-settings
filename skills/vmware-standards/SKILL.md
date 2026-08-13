@@ -5,7 +5,7 @@ description: VMware vSphere / VCF as a production platform under Broadcom, and t
 
 # VMware vSphere / VMware Cloud Foundation standards
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 > **Hard premise**: in 2026 the VMware decision on the table in almost every organisation is not
 > technical, it is **economic**: stay or exit. The platform is still technically competent; what

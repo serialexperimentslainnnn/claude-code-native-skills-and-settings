@@ -5,7 +5,7 @@ description: Use when writing, reviewing or upgrading Ruby code and Rails applic
 
 # Ruby and Rails standards
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 

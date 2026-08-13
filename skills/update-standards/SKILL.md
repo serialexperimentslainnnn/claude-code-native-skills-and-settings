@@ -102,6 +102,13 @@ Order matters; steps 1 and 2 are what keep the cost bounded.
 3. **Extract every checkable claim** into a list: version, EOL, licence, CVE, advisory, feature or
    flag name, standard revision, price, project home, maintenance status. That list is the work; the
    prose is not.
+   **An inherited defect report is itself a claim, and it expires like any other.** A backlog of
+   "known problems" is a **queue of claims to verify, never a work order**: a report inherits the
+   confidence of whoever wrote it and none of the evidence, and applying one that is wrong writes a
+   falsehood into a file that was correct — under a commit message saying "fix". Verify each one
+   against the source before acting, and expect some to be false. The same scepticism applies to what
+   a document asserts about **its own state**: pending counts, "this was never run", "N files
+   remain". Those are measurements, and measurements in prose are stale by definition.
 4. **Verify each against its primary source** under §8. One claim, one source, dated.
 5. **Rewrite only what changed** — including the consequence, not just the number. Leave everything
    else byte-identical: an incidental rewording is invisible in review and is how scope leaks.

@@ -5,7 +5,7 @@ description: Use when choosing or structuring a frontend framework application -
 
 # Frontend frameworks standards
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -332,7 +332,7 @@ because the GitHub feed **is not the source of truth**; raw `LICENSE` for licenc
 6. **Platform requirements** of each major: minimum Node version, Vite version and ESM-only (React Router 8
    stopped publishing CJS; Astro 7 requires Node 22.12+).
 
-**Gaps not verified as of Aug 2026** (do not fill in from memory):
+**Declared gaps as of Aug 2026** (do not fill in from memory):
 - The exact version and GA status of **TanStack Start** ("v1" is documented but **the specific stable version
   number is not verified**; the repo feed is dominated by `2.0.0-beta.x` betas of the router
   packages).

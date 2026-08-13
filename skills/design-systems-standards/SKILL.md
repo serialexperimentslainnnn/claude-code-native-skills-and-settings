@@ -410,7 +410,7 @@ raw `LICENSE` for licences; the vendor's pricing page for cost):
 8. **Advisories** for the libraries entering the system (`github.com/advisories`, osv.dev): a CVE in
    your component base is a CVE in all your products.
 
-**Gaps not verified as of Aug-2026** (do not fill from memory):
+**Declared gaps as of Aug-2026** (do not fill from memory):
 - **Exact price of MUI X Pro and Premium after 2026-04-08**: **not verified**. The official
   announcement confirms the date, the per-application licence and the 15-seat minimum for
   Enterprise, but **refers to the pricing page for the figures**. The ~$15/dev/month and

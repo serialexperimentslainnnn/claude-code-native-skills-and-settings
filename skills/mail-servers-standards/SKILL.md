@@ -5,7 +5,7 @@ description: Running your own mail server — the decision first, the daemons se
 
 # Mail server standards — the decision weighs more than the configuration
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -34,7 +34,7 @@ Outlook.com/Hotmail/Live for domains sending more than 5,000 messages/day, initi
 Junk; (3) **building reputation takes months and is destroyed in hours**. With that on the table,
 the right question is not "which MTA do I use?" but "**why not a managed relay?**".
 
-**Not applicable** — the catalogue split: **`email-security-standards` owns SPF, DKIM,
+**Not applicable**: the catalogue split: **`email-security-standards` owns SPF, DKIM,
 DMARC, MTA-STS, TLS-RPT, BIMI, antiphishing filtering, BEC and mail policy**; here only
 **the server that implements them** (where the key lives, what it signs and what it verifies), and **not
 a single record is duplicated**; **`dns-standards` owns the records** —MX, PTR, TXT and their operation—,

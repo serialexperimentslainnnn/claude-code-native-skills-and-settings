@@ -23,7 +23,7 @@ Triggers: `IOS-XE`, `NX-OS`, `IOS-XR`, `Junos`, `Junos Evolved`, `EOS`, `RouterO
 `license smart url`, SLAC, CSSM, CSLU, Catalyst Center, CloudVision/CVaaS, Winbox, ZTP;
 "EoS", "LDoS", "PSIRT", "TAC", "RMA", "licence renewal", "vendor change".
 
-**Not applicable** — the catalogue already splits this up: `networking-standards` is the **trunk**
+**Not applicable**: the catalogue already splits this up: `networking-standards` is the **trunk**
 (addressing, VLAN, MTU, OOB plane, choice of edge platform) and **already delegates the
 depth**; `routing-switching-standards` decides **what the campus and edge configuration must say**
 (STP, MLAG, VRRP, BGP policy, RPKI, CoPP, AAA — here only **what that translates into** on each

@@ -5,7 +5,7 @@ description: Applied computer vision as a data problem, not a model problem. Use
 
 # Computer vision standards
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 

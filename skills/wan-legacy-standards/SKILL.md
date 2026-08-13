@@ -23,7 +23,7 @@ vManage/Catalyst SD-WAN, Versa, VeloCloud, Silver Peak; "WLR withdrawal", "stop 
 switch-off", "PSTN switch-off", "all-IP"; `service-policy`, `shape average`, `priority`, LLQ,
 CBWFQ, LFI; "ISDN backup", "telecontrol line", "point-to-point circuit".
 
-**Not applicable** — the catalogue already divides this up: `networking-standards` is the **trunk**
+**Not applicable**: the catalogue already divides this up — `networking-standards` is the **trunk**
 (addressing, VLAN, MTU/MSS, proxies, overlays, OOB plane) and **already delegates the depth**;
 `routing-switching-standards` decides the **BGP policy** towards the outside, the site IGP, RPKI and
 campus QoS (**here only the QoS of the slow WAN link and the CE-PE**);

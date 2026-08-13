@@ -5,7 +5,7 @@ description: Zig engineering standards (staff-level). Trigger on .zig and .zon f
 
 # Zig standards
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -121,6 +121,6 @@ A frequent adoption reason **without writing a single line of Zig**, and a legit
 6. **glibc version range and targets** of `zig cc` in the version being used (`zig targets`, `zig libc`), and the license of any library that gets vendored.
 7. **ZSF health**: annual financial report and devlog (`ziglang.org/news/`) before basing a multi-year adoption decision on it.
 
-**Gaps not verified as of Aug 2026**: the exact path and name of the project-local package directory introduced in 0.16 and the local *override* flags **not verified** against the official 0.16 documentation (only against the release notes headline); the exact scope of the build system breakage announced for 0.17 **not verified** (0.17 not published); the long-term maintenance status of `zlint` (not official) **not verified** beyond its release cadence.
+**Declared gaps, not verified as of Aug 2026**: the exact path and name of the project-local package directory introduced in 0.16 and the local *override* flags **not verified** against the official 0.16 documentation (only against the release notes headline); the exact scope of the build system breakage announced for 0.17 **not verified** (0.17 not published); the long-term maintenance status of `zlint` (not official) **not verified** beyond its release cadence.
 
 If the web contradicts this document, **the web wins** — flag the discrepancy.

@@ -5,7 +5,7 @@ description: Use when writing or reviewing Groovy code - .groovy and .gvy files,
 
 # Groovy standards (reference: August 2026)
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -281,7 +281,7 @@ Before pinning versions or APIs, **verify online** (WebSearch/WebFetch and the A
    and JUnit Platform versions.
 6. CVEs of Groovy, Gradle and the Jenkins plugins in use (osv.dev / GitHub Advisories).
 
-**Gaps not verified as of Aug 2026** (do not fill in from memory):
+**Declared gaps as of Aug 2026** (do not fill in from memory):
 - **CodeNarc**: current version, licence and maintenance status **not verified**. Before pinning it
   as the default linter in a project, check its latest release and its raw `LICENSE`. If it is
   stalled, the Groovy quality gate rests on `@CompileStatic` + compilation + the tests, which

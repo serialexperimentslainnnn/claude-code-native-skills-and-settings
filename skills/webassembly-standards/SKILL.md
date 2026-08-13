@@ -392,7 +392,7 @@ Before committing to a version, target, runtime or feature status, **verify onli
 7. **Wasm on Kubernetes**: the status of `runwasi`, `containerd-shim-*` and SpinKube (versions,
    maturity, compatibility with the cluster's containerd/K8s version).
 
-**Gaps not verified as of Aug-2026** (marked on purpose, left unfilled):
+**Declared gaps, not verified as of Aug-2026** (marked on purpose, left unfilled):
 
 - **WasmGC browser support with current figures**: the claim in §5 comes from Flutter's
   documentation (Chromium ≥119; Firefox 120 announced but *"currently doesn't work"*;

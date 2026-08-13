@@ -24,11 +24,12 @@ written only by `./install.sh`. Editing `~/.claude/skills` directly is how diver
 | **Re-verify an existing skill** against the web | `skills/update-standards/SKILL.md` | Cadence, the `Criteria verified as of` line, closing a `Declared gap`, and the verification traps. **Bounded to `skills/` in this repo** |
 | Know how a skill must be structured | `SKILL-TEMPLATE.md` (91 lines) | Canonical 8 sections + the enforced literals. Deliberately **outside `skills/`**: any dir with a `SKILL.md` registers as an active skill |
 | Change how skills are authored/judged | `skills/claude-code-skills-standards/SKILL.md` | The meta-skill. **§4.3 holds the trigger-collision gate** (Python script + `STOP` list) |
+| Change how **subagents** behave | `agents/fleet-{lead,verifier,writer}.md` | **The body of each file IS that subagent's system prompt** — the only route by which doctrine reaches tiers 2 and 3, which inherit neither `CLAUDE.md` nor the hook. **Never add `tools:`**: it can strip `Agent` and silently disable fan-out |
 | Change how *I* work (doctrine, not facts) | `CLAUDE.md` (315 lines) | Global preferences. Its opening block marks a **core that must not be edited without asking** |
 | Change what is re-injected **every turn** | `core-directives.md` (43 lines) | Payload of the `UserPromptSubmit` hook. ~3 KB, paid on every prompt — the anti-dilution mechanism |
 | Find project state / what to do next | `SKILLS-ROADMAP.md` (1559 lines) | Read the **topmost `CONTINUATION POINT`** (2026-08-13) first; everything below is history |
 | Run the mechanical gates | `./check.sh` | 3 gates over `skills/`; exit 0 = green |
-| Push the repo onto `~/.claude` | `./install.sh` | Mirrors `CLAUDE.md` + `core-directives.md` + `skills/`, and merges the hook into `settings.json`. **`--dry-run` first** |
+| Push the repo onto `~/.claude` | `./install.sh` | Mirrors `CLAUDE.md` + `core-directives.md` + `skills/` + `agents/`, and merges the hook into `settings.json`. **`--dry-run` first** |
 | Read the original plan | `plans/validated-swimming-treehouse.md` | Historical; the roadmap superseded it |
 | See cross-session memory | `memory/` | **Currently empty.** Symlinked into `~/.claude/projects/<slug>/memory` by the installer |
 
@@ -40,8 +41,14 @@ written only by `./install.sh`. Editing `~/.claude/skills` directly is how diver
   than domains. **Two directories are untracked and must go in the next commit**:
   `backup-recovery-standards` (was swallowed by `.gitignore`, see Minefields) and
   `update-standards`.
+- `agents/` — **subagent type definitions**, one file per type, mirrored to `~/.claude/agents/` by
+  `install.sh`. Three tiers with separated powers: `fleet-writer` writes and **verifies nothing**,
+  `fleet-verifier` runs the checks scoped to exactly the files its writers touched, `fleet-lead`
+  re-runs them over its whole subtree and reviews. The **body of each file is the system prompt**
+  the subagent receives — and it is *all* it receives.
 - `memory/` — holds only `.gitkeep` so far. That file exists **so the directory survives a clone**:
-  without it `install.sh:163` leaves a dangling symlink (see Minefields).
+  without it `install.sh:163` leaves a dangling symlink (see Minefields). Note it is gitignored, so
+  the `.gitkeep` is not tracked and the defect is not actually closed yet.
 - `plans/` — one historical planning document.
 - Root — the two scripts, five docs (`CLAUDE.md`, `core-directives.md`, `README.md`,
   `SKILL-TEMPLATE.md`, `SKILLS-ROADMAP.md`), this map, `LICENSE`, `.gitignore`.

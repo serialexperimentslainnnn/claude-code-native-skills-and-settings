@@ -5,7 +5,7 @@ description: Use when writing or reviewing Dart code and its tooling - .dart fil
 
 # Dart standards (language and tooling)
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -360,7 +360,7 @@ Before pinning any version, flag or capability in a real project, **verify onlin
 7. **CVEs and advisories** for every direct dependency (osv.dev, GitHub Advisories) and the maintenance
    status on pub.dev before pinning it.
 
-**Gap not verified as of Aug 2026**: this drafting did not check the current state of `mockito`
+**Declared gap as of Aug 2026**: this drafting did not check the current state of `mockito`
 (version, maintenance) or that of `freezed` 3.x beyond the context of the macros cancellation; nor the
 concrete figures for `build_runner` cost in large projects, which are repo-dependent and must be
 measured, not quoted.

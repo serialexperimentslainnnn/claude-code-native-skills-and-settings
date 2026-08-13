@@ -5,7 +5,7 @@ description: Legacy Java web applications built on JSP and Apache Struts - a sec
 
 # JSP and Apache Struts standards (legacy Java web)
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 

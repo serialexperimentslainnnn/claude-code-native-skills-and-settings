@@ -5,7 +5,7 @@ description: Load balancing as a failure-handling decision, not just traffic sha
 
 # Load balancing standards — sharing traffic is easy; failing well is not
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -19,7 +19,7 @@ Triggers: `haproxy.cfg`, `nginx.conf` (`upstream`, `proxy_pass`), Envoy bootstra
 service", "health check", "readiness", "drain", "sticky session", "consistent hashing", "maglev",
 "PROXY protocol", "X-Forwarded-For", "SNI passthrough", "ECMP", "anycast", "outlier detection".
 
-**Not applicable** — the catalogue already splits this up: `networking-standards` is the **trunk** (proxies and
+**Not applicable**: the catalogue already splits this up: `networking-standards` is the **trunk** (proxies and
 balancing as a principle, VLAN, MTU, addressing) and **already delegates the depth**, while
 `routing-switching-standards` owns the campus, BGP policy and control-plane security
 —**including the BGP announcement that makes anycast possible**—, `datacenter-fabric-standards` owns the

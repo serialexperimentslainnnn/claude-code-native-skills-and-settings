@@ -5,7 +5,7 @@ description: Campus and edge switching/routing design decisions that outlive the
 
 # Switching and routing standards — campus and edge
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -21,7 +21,7 @@ Triggers: `spanning-tree`, `rstp`/`mstp`, `bpduguard`, `root guard`, `storm-cont
 `rpki`/`origin-validation`, `routinator`, `rpki-client`, `stayrtr`, `as-set`, `MANRS`, `bfd`,
 `ttl-security`, `copp`, `dot1x`, `macsec`, `snmpv3`, `tacacs+`, "hijack", "route leak", "DSCP".
 
-**Not applicable** — each skill **decides** a different thing:
+**Not applicable**: each skill **decides** a different thing —
 `networking-standards` (**trunk, the mother skill**: it decides **addressing and IPAM, which VLAN exists,
 BGP/OSPF fundamentals, proxies and load balancing, host overlays, MTU/MSS and NetBox as SoT**; none of that
 is reopened here, here we decide **how the switched network converges and what exactly the BGP policy

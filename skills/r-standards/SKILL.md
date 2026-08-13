@@ -371,10 +371,10 @@ Atom feeds of GitHub Releases and the CRAN pages — not the summariser over Git
    Posit statement putting open source Shiny Server into maintenance mode, but its last *release*
    on GitHub is from **2024-09-30**; treat its future as an open risk, not as a fact.
 6. Vulnerability auditing: the state of `oysteR` and whether a maintained alternative already exists
-   (post-check: as of Aug 2026 there is none). **Gap not verified as of Aug 2026**: the real coverage
+   (post-check: as of Aug 2026 there is none). **Declared gap, not verified as of Aug 2026**: the real coverage
    of CRAN in OSV/OSS Index (what percentage of packages have advisories) I have not been able to
    quantify — do not assert it.
-7. **Gap not verified as of Aug 2026**: the maturity of **S7** as the default object system and
+7. **Declared gap, not verified as of Aug 2026**: the maturity of **S7** as the default object system and
    whether it has already entered base R; and the state of `cpp11` versus `Rcpp` after the header
    change in R 4.6.0.
 8. Breaking changes in `roxygen2` 8.x and in R's 4.6 series (graphics API 16→17, headers) from the

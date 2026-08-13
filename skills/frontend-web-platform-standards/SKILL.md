@@ -5,7 +5,7 @@ description: Use when deciding what the browser itself must do - .html, .css, .b
 
 # Web platform (frontend) standards
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -375,7 +375,7 @@ official changelogs; GitHub Atom feeds for versions — `api.github.com` returns
 7. **Your audience's data**: your own analytics beats any global statistic when choosing
    the browser target.
 
-**Unverified gaps as of Aug 2026** (do not fill them from memory; check before using):
+**Declared gaps as of Aug 2026** (do not fill them from memory; check before using):
 - Exact Baseline status of `light-dark()` and `oklch()`: **not verified**.
 - Status of anchor positioning, scroll-driven animations and CSS masonry: **not verified** beyond
   being declared Interop targets.

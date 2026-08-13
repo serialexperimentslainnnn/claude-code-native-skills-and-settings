@@ -23,7 +23,7 @@ Triggers: `5GC`, `AMF`, `SMF`, `UPF`, `AUSF`, `UDM`, `NRF`, `NSSF`, `PCF`, `SBI`
 `URLLC`, `eMBB`, `mMTC`, ETSI MEC; "private 5G network", "campus network", "autoprestación",
 "2G/3G sunset", "SIM with a static IP".
 
-**Not applicable** — hard boundaries: **the Wi-Fi radio link belongs to `wireless-standards`**
+**Not applicable**: hard boundaries — **the Wi-Fi radio link belongs to `wireless-standards`**
 (802.11ax/be, 6 GHz, site survey, WPA3, 802.1X over WLAN — here only **when private cellular wins or
 loses against Wi-Fi**); **edge compute belongs to `edge-computing-standards`**
 (here only the local UPF and what MEC enables, not how the compute platform is

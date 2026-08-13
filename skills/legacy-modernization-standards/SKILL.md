@@ -110,7 +110,7 @@ extraction and reprocessing pipelines themselves); `testing-qa-standards` (test 
 - **Gartner (Richard Watson), *"Migrating Applications to the Cloud: Rehost, Refactor, Revise,
   Rebuild, or Replace?"*** — five alternatives. It is the origin the others cite; **the document is
   paywalled and I could not read the original**, so the date (2010 according to secondary sources, 2011 according to
-  whoever cites it) **is declared as unverified** (§8).
+  whoever cites it) **is a Declared gap** (§8).
 - **AWS Prescriptive Guidance**, *About the migration strategies*, **verbatim**: *"There are seven
   migration strategies for moving applications to the cloud, known as the 7 Rs"* — **retire, retain,
   rehost, relocate, repurchase, replatform, refactor or re-architect**. Origin of the "6 R": Stephen

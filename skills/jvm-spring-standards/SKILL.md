@@ -12,7 +12,7 @@ Version data verified as of **2026-08**: ALWAYS re-verify on the web before pinn
 
 - Applies to: Java/Kotlin backend services, REST/gRPC APIs, workers/batch, internal JVM libraries.
 - Triggers: `.java`, `.kt`, `.kts`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `pom.xml`, `application.yml|properties` files; mentions of Spring Boot/Security/Data, JPA, Gradle, Maven, JUnit, Testcontainers, GraalVM.
-- **Not applicable**: Android and mobile-app Kotlin (see `mobile-standards`). **Java legacy has its own
+**Not applicable**: Android and mobile-app Kotlin (see `mobile-standards`). **Java legacy has its own
   owner**: `jsp-struts-standards` (JSP with *scriptlets*, Struts 1 and 2,
   `struts-config.xml`, *tag libs*, and the legacy application servers with their
   `javax` → `jakarta` barrier). **What is ours: the destination of that migration** — Spring Boot, the

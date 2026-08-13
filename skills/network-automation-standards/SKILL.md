@@ -22,7 +22,7 @@ Triggers: `*.clab.yml`, `containerlab`, `netlab`, `vrnetlab`, `nornir_config.yam
 "config template", "source of truth", "drift", "pre-check"/"post-check", "commit-confirm",
 "streaming telemetry", "dial-in"/"dial-out".
 
-**Not applicable** — each skill **decides** a different thing:
+**Not applicable**: each skill **decides** a different thing:
 `networking-standards` (**the trunk, the parent**: decides **addressing and IPAM, VLANs, routing
 fundamentals, MTU/MSS and that NetBox is the intent SoT**; none of that is repeated here, here what
 gets decided is **how that intent is modelled, how the configuration is generated and how it reaches
@@ -248,7 +248,7 @@ the default today is premature**.
 imperfect**, and gNMI is **weaker than NETCONF for transactional configuration** (although the
 specification requires that a `SetRequest` spanning several *origins* be treated as a transaction
 with rollback). **No authoritative adoption-share figure was found**: treat any number about
-OpenConfig or gNMI adoption as unverified.
+OpenConfig or gNMI adoption as a **Declared gap**.
 
 **RFCs verified one by one against `rfc-editor.org`**: NETCONF **RFC 6241** (Jun 2011, updated by
 7803 and 8526); RESTCONF **RFC 8040** (Feb 2017, updated by 8527); YANG 1.1 **RFC 7950** (Aug 2016,

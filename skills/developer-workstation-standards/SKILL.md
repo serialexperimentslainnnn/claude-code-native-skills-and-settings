@@ -556,7 +556,7 @@ Before fixing any datum of this document in a real team:
    it foreseeable that there are.
 7. **Licences verified in the raw `LICENSE` as of August 2026**: Homebrew **BSD-2-Clause**,
    `winget-cli` **MIT**, `mise` **MIT**, `asdf` **MIT**, `direnv` **MIT**, `devenv`
-   **Apache-2.0**, `devcontainers/cli` **MIT**. **`chezmoi` remains unverified in this pass**:
+   **Apache-2.0**, `devcontainers/cli` **MIT**. **`chezmoi` remains a Declared gap in this pass**:
    read its raw `LICENSE` before fixing it (§2.1). Remember that **the GitHub releases feed is not
    the source of truth**: cross-check with the project's official site, which in several cases in
    the catalogue publishes in another registry.

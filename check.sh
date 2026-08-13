@@ -41,11 +41,20 @@ else report "arbitration close in §8" "ok"; fi
 # `disable-model-invocation: true` keeps its description OUT of context, so counting it overstates
 # the per-turn cost and punishes the right choice for side-effecting skills.
 indexed="$(grep -L '^disable-model-invocation: true' */SKILL.md)"
-manual_only=$(( $(ls -d */ | wc -l) - $(wc -w <<<"$indexed") ))
+manual_only=$(( $(ls -d */ | wc -l) - $(grep -c . <<<"$indexed") ))
+
+# Guard the empty case: with no indexed skills, an unquoted expansion would leave grep reading
+# stdin and the script would hang. Strip the `description:` key itself — counting it inflated the
+# figure by one word per skill.
+if [ -n "$indexed" ]; then
+  index_words=$(grep -h '^description:' $indexed | sed 's/^description: *//' | wc -w)
+else
+  index_words=0
+fi
 
 echo
 echo "skills: $(ls -d */ | wc -l)   lines: $(cat */SKILL.md | wc -l)"
-echo "index cost: $(grep -h '^description:' $indexed | wc -w) words injected on every turn   (manual-only, not indexed: $manual_only)"
+echo "index cost: $index_words words injected on every turn   (manual-only, not indexed: $manual_only)"
 echo
 echo "The trigger-collision test lives in claude-code-skills-standards/SKILL.md §4.3."
 exit $fail

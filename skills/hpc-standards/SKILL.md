@@ -101,7 +101,7 @@ Spack **1.2.x**, Lustre LTS **2.15.x** with feature branch **2.17.x**.
     projects that add it (Volcano, Kueue, Slinky/Slurm-on-K8s). **The criteria for queues and
     *gang scheduling* inside the cluster belong to `kubernetes-standards` §6**, which has them
     verified; **the criteria for when that workload must not run on Kubernetes belong here** and
-    win over the choice of tool. Slinky remains unverified (§8).
+    win over the choice of tool. Slinky remains a Declared gap (§8).
   - The native equivalent of **fairshare and per-project consumption accounting** is missing, and that is
     the whole reason a shared cluster exists.
   - **When it does fit**: service workloads, inference, portals, CI and data flows around the

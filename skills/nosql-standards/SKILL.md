@@ -418,7 +418,7 @@ memory**, verify before using):
 - **FerretDB's activity status** after v2.7.0 (Nov 2025): not verified whether the cadence
   has resumed or the project has changed model.
 - **Cosmos DB and Firestore**: no specific fact was verified (quotas, consistency
-  models, prices) — treat everything relating to them as unverified here.
+  models, prices) — treat everything relating to them as a **Declared gap** here.
 - **CVEs for Couchbase, DynamoDB and DocumentDB**: not reviewed.
 
 If the web contradicts this document, **the web wins** — flag the discrepancy.

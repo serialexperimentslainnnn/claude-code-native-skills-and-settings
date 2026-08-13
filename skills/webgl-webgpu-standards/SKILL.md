@@ -5,7 +5,7 @@ description: Use when the browser drives the GPU - <canvas> with getContext("web
 
 # Browser GPU graphics and compute standards (WebGL2 / WebGPU)
 
-Criteria verified as of **Aug 2026**. Re-verify on the web before committing to anything (§8).
+Criteria verified as of **August 2026**. Re-verify on the web before committing to anything (§8).
 
 ## 1. Scope and triggers
 
@@ -422,7 +422,7 @@ W3C for the specification's status, NVD for CVEs, GitHub Atom feeds for versions
 7. **Baseline of the supporting APIs**: `OffscreenCanvas` (widely), `prefers-reduced-motion` (widely),
    `canvas-context-lost` (**limited, no Safari**), WebGL2 (widely).
 
-**Gaps not verified as of Aug 2026** (do not fill them from memory; check before using):
+**Declared gaps, not verified as of Aug 2026** (do not fill them from memory; check before using):
 - **WebGPU support in Android WebView and in Chromium-derived browsers** (Samsung Internet,
   Opera; BCD marks them as `mirror`, which does not guarantee real parity per device): **not verified**.
 - **WebGPU status in Firefox for Linux and Android** beyond "in development": **not verified**;

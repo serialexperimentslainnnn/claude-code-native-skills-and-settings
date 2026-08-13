@@ -12,7 +12,7 @@ Version data verified as of **2026-08**: ALWAYS re-verify on the web before pinn
 
 - Applies to: C# backend services (APIs, workers, gRPC), internal NuGet libraries, CLI tooling in .NET.
 - Triggers: `.cs`, `.csproj`, `.sln`/`.slnx`, `Directory.Build.props`, `Directory.Packages.props`, `global.json`, `appsettings*.json`, `.editorconfig` files; mentions of .NET, ASP.NET Core, EF Core, NuGet, xUnit, Native AOT.
-- **Not applicable**: Unity (its own C#/runtime version). **Microsoft legacy has its own
+**Not applicable**: Unity (its own C#/runtime version). **Microsoft legacy has its own
   owners**, and the boundary runs in both directions: `dotnet-framework-legacy-standards`
   (**.NET Framework 4.x**: maintenance, what has no port —WebForms, server-side WCF,
   Workflow, `AppDomain`, *remoting*— and the migration route), `vbnet-standards` (**the

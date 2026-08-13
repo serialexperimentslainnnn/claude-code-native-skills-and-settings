@@ -19,7 +19,7 @@ manager", "LID", "P_Key", "SHARP", `rdma-core`, `ibv_devinfo`, `rdma link`, `mlx
 v2", "iWARP", "GPUDirect", "verbs", "UCX", "NCCL"/"RCCL", "MPI", "fat-tree", "dragonfly", "NVMe-oF",
 `nvme connect`, "SMB Direct", "NFS over RDMA", "Ultra Ethernet"/"UEC".
 
-**Not applicable** — the catalogue already splits this up: `networking-standards` is the **trunk**
+**Not applicable**: the catalogue already splits this up: `networking-standards` is the **trunk**
 (VLANs, addressing, MTU, management plane) and **already delegates the depth**, while
 `datacenter-fabric-standards` **owns the Ethernet that carries RoCE** — Clos, VXLAN/EVPN and **all
 the mechanics of the lossless network: PFC, ETS, DCBX, ECN and DCQCN, with their thresholds and
