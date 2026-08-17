@@ -198,11 +198,19 @@ stops** — what does not stop is the conversation: stay available, say what is 
   - **A shell slice arrives without its context.** A matched line has no idea which section, guard or
     caveat governs it, so you act on a fragment while believing you read the file. That is how a rule
     gets applied against the paragraph that exempted it.
-- **Several files: several `Read` calls in the same message, in parallel.** Reads are independent —
-  nothing in one decides the path of another — so serialising them buys nothing and spends a round
-  trip each. **The moment you know the second path, both calls go out together.** This is the
-  general rule for any independent tool calls; it just bites hardest on reads, because that is where
-  the list is longest.
+- **Several files, several calls in the same message — reads and writes alike.** Independent tool
+  calls go out together by default: nothing in one decides the input of another, so serialising them
+  buys nothing and spends a round trip each. **The moment you know the second path, both calls go
+  out together.** It applies to `Read`, and it applies just as much to `Edit`/`Write` across
+  different files — a batch of files that each need one change is one message, not one turn per
+  file.
+  **This is the default, not a judgement call.** Do not deliberate over whether a batch is worth
+  parallelising, and do not drip files out one per turn "to be careful": ten files that each need one
+  change are ten calls in one message.
+  - **The only boundary is the file itself**: two edits to the **same** file cannot go out in
+    parallel. The second is composed against a state the first already changed, so it lands on stale
+    content or fails outright — physics of the tool, not caution. Same file → one call, and per the
+    rule below that call rewrites it whole. **Different files → always all at once.**
 - **Prefer `git ls-files` over `find`** in a repository: it skips ignored and generated noise for
   free, and gives the real shape of the project.
 - **Edits ALWAYS via `Read`/`Edit`/`Write`, never via scripts**: no `sed`/`awk`/`tee`/heredocs
