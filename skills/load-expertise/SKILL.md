@@ -1,6 +1,6 @@
 ---
 name: load-expertise
-description: Derive and load the skills a task actually activates, before writing anything. Use at the start of every substantial task, and again whenever the work turns - the files being touched change family, a new layer enters (data, network, identity, money, personal data), the request moves from designing to operating, or you catch yourself asserting a version, flag, threshold or default from memory instead of from a document. Covers deriving the domains from the artefacts in the repo rather than from the words in the request, the always-on set that no request ever names, how much of each skill to read, reconciling several co-activated skills through their §1 boundary lines, declaring a contradiction instead of silently resolving it, and what to do when no skill owns the domain.
+description: Derive and invoke the skills a task actually activates, before writing anything. Use at the start of every substantial task, and again whenever the work turns - the files being touched change family, a new layer enters (data, network, identity, money, personal data), the request moves from designing to operating, or you catch yourself asserting a version, flag, threshold or default from memory instead of from a document. Covers deriving the domains from the artefacts in the repo rather than from the words in the request, the always-on set that no request ever names, invoking each skill with the Skill tool rather than reading its file, reconciling several co-activated skills through their §1 boundary lines, declaring a contradiction instead of silently resolving it, and what to do when no skill owns the domain.
 ---
 
 # Load expertise — arming before writing
@@ -33,9 +33,16 @@ Criteria verified as of **August 2026**. Re-verify on the web before committing 
   previous question, not this one.
 
 What this skill does **not** do: it cannot invoke another skill on your behalf. There is no
-mechanism for that — skills activate because their own description matched, or because you invoke
-them. This is the procedure that decides *which*, and it is worthless unless the loading actually
-happens in the same turn.
+mechanism for that — a skill activates because its own description matched, because the user typed
+`/name`, or because **you call the `Skill` tool with its name**. This is the procedure that decides
+*which*, and it is worthless unless the invocation actually happens in the same turn.
+
+**Invoking is not reading, and the difference is not cosmetic.** `Read` on a `SKILL.md` puts the
+same characters in context, and that is where the equivalence ends. What `Read` returns is file
+content — material to weigh — while an invoked skill enters as the instructions the turn runs under;
+and only the invocation appears in the transcript as an invocation, which is what lets the user
+catch a wrong arming (§6). **`Read` is how you inspect a skill you are editing. The `Skill` tool is
+how you arm one.**
 
 **Not applicable**: see `project-map` (step ①, where things live in *this* repo — it answers
 *where*, this one answers *under what criteria*), `claude-code-skills-standards` (authoring, naming
@@ -50,9 +57,10 @@ armed), `knowledge-management-standards` (documentation for humans).
 |---|---|---|
 | How many skills | **However many the change touches — almost never one** | A real task crosses domains; picking the single best match is the commonest arming failure |
 | When | **Before writing**, never after | A skill consulted to justify what you already wrote is decoration |
+| **How to load one** | **The `Skill` tool**, never `Read` on its `SKILL.md` | `Read` returns the file as content and leaves nothing in the transcript the user can correct; invoking enters it as the turn's instructions. `Read` on a `SKILL.md` means you are editing that skill, not using it |
+| How much of each | **The whole body — the tool has no partial mode** | Loading §1+§2 alone is not something `Skill` can do, and asking for it silently forces `Read`. A neighbour not worth a whole body is one you route around from its `description`, not one you peek at |
 | Routing source | **The injected `description` lines already in context** | They are the index, and they are free — they are paid for on every turn whether used or not |
 | Repo index (`skills/PROJECTMAP.md`) | **Only inside the config repo** | `install.sh` excludes it (`--exclude=PROJECTMAP.md`): it is repo navigation, not installed product. In any other session it does not exist |
-| How much of each | **Whole body** of the owning skills; **§1 + §2** of the neighbours | §1 tells you whether it is yours at all, §2 gives the default decision. The rest is only worth its tokens once the skill is confirmed to own the call |
 | Announcing | **One line naming them**, at the start and at every re-arm | Naming is what makes an omission visible — to you and to the user |
 | No owning skill | **Say so explicitly**, then verify on the web and fall back to `lean-code-standards` | A declared gap is recoverable; silent improvisation is exactly what the catalogue exists to prevent |
 | Contradiction between two | **Declare it**, resolve with their §1 boundary lines | Silently picking one hides that the catalogue has a routing defect |
@@ -113,6 +121,9 @@ The arming is a step with a failure mode, so it gets checked like any other:
   skill. Stop, arm, redo the claim.
 - **Re-arm is a gate, not a courtesy.** When a §1 trigger fires mid-task, the announcement happens
   before the next edit, not in the summary at the end.
+- **Every skill you name in the announcement has a matching `Skill` call in the same turn.** A named
+  skill with no invocation behind it is a claim, and it is the one arming failure that reads exactly
+  like success.
 
 ## 5. Security is assumed, never derived
 
@@ -133,28 +144,32 @@ so it does not wait to be implied by the request:
 
 - **The index is prepaid**: every description is injected every turn regardless. Reading them is
   free; only the bodies cost.
-- **Bodies are the budget.** Two or three whole bodies plus §1+§2 of the neighbours is the normal
-  shape of a well-armed task. Ten bodies loaded speculatively is not thoroughness — it is context
-  spent on documents that will not decide anything.
-- **Load late for the far domains.** Arm the ones that shape the design now; pull a skill for a
+- **Bodies are the budget, and they come whole.** Two or three invoked bodies is the normal shape of
+  a well-armed task. There is no half-body option, so a skill you are not willing to spend a whole
+  body on is one you route around from its `description`. Ten bodies invoked speculatively is not
+  thoroughness — it is context spent on documents that will not decide anything.
+- **Load late for the far domains.** Arm the ones that shape the design now; invoke a skill for a
   sub-decision when that sub-decision arrives.
-- **The announcement is the operability surface.** One line, naming them, is what lets the user
-  correct the routing before the work is done rather than after.
+- **The announcement is the operability surface, and the invocations are its evidence.** One line
+  naming them, plus a `Skill` call per name in the same turn, is what lets the user correct the
+  routing before the work is done rather than after.
 
 ## 7. Prohibitions
 
 - ❌ **Writing before arming.** Loading a skill afterwards to justify what already exists is
   decoration, and it reliably confirms rather than corrects.
+- ❌ **`Read`-ing a `SKILL.md` in order to use it.** Same characters, different status, and nothing
+  in the transcript for the user to catch. `Read` is for the skill you are editing.
 - ❌ **Picking the single best match** when the change crosses domains. One skill is the answer
   roughly never.
 - ❌ **Silently resolving a contradiction** between two co-activated skills. Declare it.
-- ❌ **Claiming a skill was applied without having read its body.** The description is a trigger, not
+- ❌ **Claiming a skill was applied without having invoked it.** The description is a trigger, not
   content.
 - ❌ **Skipping the announcement.** An unnamed skill set cannot be corrected by the user and cannot
   be audited by you.
 - ❌ **Treating "I do not know a skill for this" as an excuse.** The descriptions are in context on
   every turn; not checking them is the defect, not the absence.
-- ❌ **Loading bodies speculatively** to look thorough. Context spent is context unavailable for the
+- ❌ **Invoking bodies speculatively** to look thorough. Context spent is context unavailable for the
   work.
 - ❌ **Carrying interaction 5's skill set into interaction 60.** The set expires when the work turns.
 - ❌ **Deciding a domain question from memory** once a skill for it exists — that is the exact case
@@ -169,7 +184,8 @@ so it does not wait to be implied by the request:
 3. **Against the web**, for anything the skill states as a moving fact — versions, EOLs, flags, CVEs,
    prices, product names. The skill is dated; the web is not.
 4. **Against Claude Code's own documentation**, for how skills are discovered and invoked: whether
-   descriptions are still the only injected field, and what `disable-model-invocation` does to that.
-   That mechanism is the premise of this whole file, and it is a product that changes.
+   descriptions are still the only injected field, what the `Skill` tool loads and whether it has
+   gained any partial mode, and what `disable-model-invocation` does to that. That mechanism is the
+   premise of this whole file, and it is a product that changes.
 
 If the web contradicts this document, **the web wins** — flag the discrepancy.
