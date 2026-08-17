@@ -40,18 +40,16 @@ run() { if [ "$DRY_RUN" = 1 ]; then log "[dry-run] $*"; else "$@"; fi; }
 
 # Lo que se plancha: <ruta en el repo>:<ruta bajo ~/.claude>. Nada más. El resto del repo
 # (roadmap, plantilla, planes) es material de trabajo y no pinta nada en la instalación.
-FILES=( "CLAUDE.md:CLAUDE.md" "core-directives.md:core-directives.md" )
-# `agents/` son las definiciones de tipo de agente. Su CUERPO es el system prompt del subagente, y
-# es la única vía por la que la doctrina de flota llega a los pisos 2 y 3: un subagente NO hereda
-# CLAUDE.md, ni el system prompt completo, ni nada que reinyecte un hook (que solo dispara en
-# UserPromptSubmit). Sin esto, la jerarquía depende de que alguien pegue las reglas en cada prompt.
-DIRS=( "skills:skills" "agents:agents" )
+FILES=( "CLAUDE.md:CLAUDE.md" )
+DIRS=( "skills:skills" )
 
-# El hook que reinyecta `core-directives.md` en cada turno. Es lo único que impide que las
-# directrices se diluyan según crece la conversación: un documento cargado al inicio pierde contra
-# el patrón de los últimos turnos, y el harness sí lo reinyecta siempre.
+# El circuito de subagentes está DESMONTADO. No hay tipos de agente que instalar y no hay hook que
+# reinyecte nada: el reglamento entero es `CLAUDE.md`, que la sesión principal carga por sí sola.
+# Los restos de las dos eras anteriores (la entrada del hook en settings.json, el fichero que la
+# alimentaba y el directorio de tipos de agente) se desmontan del destino en cada instalación,
+# porque un destino que no se reinstala desde entonces los sigue usando en silencio.
 SETTINGS="$CLAUDE_HOME/settings.json"
-HOOK_CMD='jq -n --rawfile d "$HOME/.claude/core-directives.md" '"'"'{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$d}}'"'"' 2>/dev/null || true'
+HOOK_MARKER="core-directives.md"
 
 # La memoria de Claude Code vive bajo un directorio por proyecto cuyo nombre deriva de la ruta de
 # trabajo: cada '/' y cada '.' se sustituyen por '-'.
@@ -65,58 +63,67 @@ sanity_check() {
   done
   [ "$missing" = 0 ] || { echo "Repositorio incompleto; abortando." >&2; exit 1; }
   command -v rsync >/dev/null || { echo "Falta rsync; abortando." >&2; exit 1; }
-  command -v jq >/dev/null || { echo "Falta jq (lo necesita el hook de directrices); abortando." >&2; exit 1; }
+  command -v jq >/dev/null || { echo "Falta jq (lo necesita el desmontaje del hook); abortando." >&2; exit 1; }
 }
 
-# Fusiona el hook en settings.json SIN pisar el resto: ese fichero es del usuario (env, permisos,
-# modelo) y aquí solo se añade una entrada. Idempotente: si ya está exactamente igual, no toca nada.
-install_hook() {
-  local tmp existing
-  [ -f "$SETTINGS" ] || { log "creando $SETTINGS"; run mkdir -p "$CLAUDE_HOME"; [ "$DRY_RUN" = 1 ] || echo '{}' > "$SETTINGS"; }
-
-  if [ -f "$SETTINGS" ] && ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
-    echo "settings.json no es JSON válido; no lo toco. Arréglalo y reinstala." >&2
-    return 1
-  fi
-
-  existing="$(jq -r --arg c "$HOOK_CMD" '
-      [.hooks.UserPromptSubmit // [] | .[] | .hooks[]? | select(.command == $c)] | length
-    ' "$SETTINGS" 2>/dev/null || echo 0)"
-  if [ "$existing" != "0" ]; then log "hook de directrices ya instalado"; return 0; fi
-
-  backup "$SETTINGS"
-  log "hook: UserPromptSubmit -> reinyecta core-directives.md en cada turno"
-  if [ "$DRY_RUN" = 1 ]; then
-    log "[dry-run] jq merge del hook en $SETTINGS"
-    return 0
-  fi
-  tmp="$(mktemp)"
-  # Se eliminan primero las versiones antiguas de ESTE hook (identificadas por el marcador) para no
-  # acumular duplicados al reinstalar tras cambiar el comando.
-  jq --arg c "$HOOK_CMD" '
-    .hooks //= {}
-    | .hooks.UserPromptSubmit //= []
-    | .hooks.UserPromptSubmit |= map(
-        .hooks |= map(select((.command // "") | contains("core-directives.md") | not))
-      ) | .hooks.UserPromptSubmit |= map(select((.hooks | length) > 0))
-    | .hooks.UserPromptSubmit += [{
-        hooks: [{
-          type: "command",
-          command: $c,
-          timeout: 10,
-          statusMessage: "Re-anchoring core directives"
-        }]
-      }]
-  ' "$SETTINGS" > "$tmp" && mv -- "$tmp" "$SETTINGS"
-}
-
-# Respalda el destino solo si existe y difiere de lo que vamos a poner.
+# Respalda el destino solo si existe.
 backup() {
   local dest="$1"
   [ -e "$dest" ] || [ -L "$dest" ] || return 0
   run mkdir -p "$BACKUP"
   log "respaldo: $dest -> $BACKUP/"
   run cp -a -- "$dest" "$BACKUP/"
+}
+
+# Quita el hook de reinyección de settings.json SIN tocar el resto: ese fichero es del usuario (env,
+# permisos, modelo) y aquí solo se elimina una entrada, identificada por su marcador. Idempotente: si
+# no está, no toca nada. Se ejecuta en cada instalación porque una instalación anterior pudo dejarlo
+# puesto, y un hook huérfano apuntando a un fichero que ya no se instala falla en cada turno.
+remove_hook() {
+  local tmp
+  [ -f "$SETTINGS" ] || return 0
+
+  if ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
+    echo "settings.json no es JSON válido; no lo toco. Arréglalo y reinstala." >&2
+    return 1
+  fi
+
+  if ! jq -e --arg m "$HOOK_MARKER" '[.hooks.UserPromptSubmit // [] | .[] | .hooks[]? |
+        select((.command // "") | contains($m))] | length > 0' "$SETTINGS" >/dev/null 2>&1; then
+    log "hook de directrices: no está (correcto)"
+    return 0
+  fi
+
+  backup "$SETTINGS"
+  log "hook: quitando la reinyección de core-directives.md de $SETTINGS"
+  if [ "$DRY_RUN" = 1 ]; then
+    log "[dry-run] jq: eliminar el hook de $SETTINGS"
+    return 0
+  fi
+  tmp="$(mktemp)"
+  jq --arg m "$HOOK_MARKER" '
+    if .hooks.UserPromptSubmit then
+      .hooks.UserPromptSubmit |= map(
+        .hooks |= map(select((.command // "") | contains($m) | not))
+      ) | .hooks.UserPromptSubmit |= map(select((.hooks | length) > 0))
+    else . end
+    | if (.hooks.UserPromptSubmit // []) == [] then del(.hooks.UserPromptSubmit) else . end
+    | if (.hooks // {}) == {} then del(.hooks) else . end
+  ' "$SETTINGS" > "$tmp" && mv -- "$tmp" "$SETTINGS"
+}
+
+# Restos jubilados en el destino: el fichero que alimentaba el hook y el directorio de tipos de
+# agente. Ninguno de los dos está ya en FILES/DIRS, así que `rsync --delete` no los alcanza y se
+# quedarían para siempre. Dejarlos es peor que borrarlos: un tipo de agente en ~/.claude/agents/
+# RECARGA EN CALIENTE, así que el circuito seguiría vivo en la sesión aunque el repo ya no lo tenga.
+remove_retired() {
+  local stale
+  for stale in "$CLAUDE_HOME/core-directives.md" "$CLAUDE_HOME/agents"; do
+    [ -e "$stale" ] || continue
+    backup "$stale"
+    log "quitando jubilado: $stale"
+    run rm -rf -- "$stale"
+  done
 }
 
 install_all() {
@@ -138,11 +145,12 @@ install_all() {
     backup "${dest%/}"
     log "espejo: $dest <- $src   (se elimina lo que sobre en el destino)"
     # --delete: el destino queda idéntico al repo. Es lo que significa planchar.
+    # --exclude PROJECTMAP.md: los mapas locales son navegación DEL REPO, no producto instalable.
     if [ "$DRY_RUN" = 1 ]; then
-      rsync -a --delete --itemize-changes --dry-run -- "$src" "$dest" | sed 's/^/    /'
+      rsync -a --delete --exclude=PROJECTMAP.md --itemize-changes --dry-run -- "$src" "$dest" | sed 's/^/    /'
     else
       run mkdir -p "$dest"
-      run rsync -a --delete -- "$src" "$dest"
+      run rsync -a --delete --exclude=PROJECTMAP.md -- "$src" "$dest"
     fi
   done
 
@@ -167,13 +175,14 @@ install_all() {
     run ln -s "$REPO/memory" "$MEMORY_TARGET"
   fi
 
-  install_hook
+  remove_hook
+  remove_retired
 
   echo
   echo "Hecho. Abre una sesión con:  cd $REPO && claude"
   [ -d "$BACKUP" ] && echo "Lo anterior quedó en: $BACKUP"
   echo "Comprueba los gates con:     ./check.sh"
-  echo "Revisa el hook con:          /hooks   (o jq .hooks $SETTINGS)"
+  echo "Confirma que no hay hook:    jq .hooks $SETTINGS"
 }
 
 uninstall_all() {
@@ -192,24 +201,8 @@ uninstall_all() {
     run rm -f -- "$MEMORY_TARGET"
   fi
 
-  # El hook se quita del settings.json sin tocar el resto de la configuración del usuario.
-  if [ -f "$SETTINGS" ] && jq -e '[.hooks.UserPromptSubmit // [] | .[] | .hooks[]? |
-        select((.command // "") | contains("core-directives.md"))] | length > 0' "$SETTINGS" >/dev/null 2>&1; then
-    backup "$SETTINGS"
-    log "quitando hook de directrices de $SETTINGS"
-    if [ "$DRY_RUN" != 1 ]; then
-      tmp="$(mktemp)"
-      jq '
-        if .hooks.UserPromptSubmit then
-          .hooks.UserPromptSubmit |= map(
-            .hooks |= map(select((.command // "") | contains("core-directives.md") | not))
-          ) | .hooks.UserPromptSubmit |= map(select((.hooks | length) > 0))
-        else . end
-        | if (.hooks.UserPromptSubmit // []) == [] then del(.hooks.UserPromptSubmit) else . end
-        | if (.hooks // {}) == {} then del(.hooks) else . end
-      ' "$SETTINGS" > "$tmp" && mv -- "$tmp" "$SETTINGS"
-    fi
-  fi
+  remove_hook
+  remove_retired
 
   local last
   last="$(find "$CLAUDE_HOME" -maxdepth 1 -type d -name 'backup-*' | sort | tail -1)"

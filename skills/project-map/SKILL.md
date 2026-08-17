@@ -71,6 +71,16 @@ in this section follows from that, and getting it backwards is why most maps are
   finds both the map row and the definition. Do not pretty-print, pluralise or translate names.
 - A human may read it, and that is fine. But **no line earns its place by being nice to read** —
   only by answering a question that would otherwise cost a tool call.
+- **It is consumed with one `Read`, whole — never `grep`ped, paged with `sed` or sampled.** The size
+  ceilings in §2.1 exist precisely so a single pass is affordable; searching inside it is the
+  behaviour the map was built to remove. A matched line arrives without the section that gave it
+  meaning — which heading it sat under, which minefield qualified it — so the reader guesses or
+  searches again and pays twice for a worse answer. **A map being grepped is a map that failed**:
+  either it is too long for one pass, or its consumer was never given the fragment it needed
+  (§4.6). Fix the map or fix the routing; do not normalise the grep.
+- **`sed`/`awk` never touch it at all.** On a governing document that is editing, and edits go
+  through the single writer that applies the deltas (§4.7) — never through whoever happened to open
+  it last.
 
 ### 2.1 How deep, really
 
@@ -243,6 +253,13 @@ Two traps that make the difference between this working and it causing an incide
 - **The slice inherits the map's honesty, amplified.** A wrong line handed to one reader is one
   mistake; handed to eight agents it is eight, made simultaneously and confidently. Regenerate the
   fragments from the current map on every run — never from a cached copy of a previous one.
+- **The prompt is the only channel, so agents never open the map themselves.** If they may fetch what
+  the fragment lacks, the fragment stops being a boundary and becomes a suggestion — and the routing
+  defect that produced the gap is hidden instead of fixed. **An agent whose fragment is missing,
+  incomplete or contradicted by disk reports that and works from the files**; the tier above amends
+  the brief in flight. That is what keeps the boundary absolute while still being survivable: an
+  agent starved of context has a way out that does not involve reading rows it was never meant to
+  see, and the gap gets fixed once, above, for every sibling at the same time.
 
 **Make the surprise rule (§5) travel too**: require each agent to report back when the fragment
 failed it — a path that does not exist, a command that does not run, a convention that turned out

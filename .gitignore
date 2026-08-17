@@ -3,7 +3,16 @@
 # out of the repository.
 /backup-*/
 memory/
+# The session workshop: scripts left behind so the next session does not re-derive
+# them. Anchored to the root, and this line must exist BEFORE the directory does
+# — see skills/session-tooling-standards/. Never tracked, never holds a secret.
+/.claudetools/
 # Environment noise
 .idea/
 .DS_Store
 *.swp
+# Build artifacts. Running the documented verification command generates these,
+# so ignoring them is not optional: without this rule every test run dirties
+# `git status` and the next reader cannot tell noise from work.
+__pycache__/
+*.py[cod]
