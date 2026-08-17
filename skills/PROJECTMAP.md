@@ -11,8 +11,9 @@
 This is a content repository, so the per-file index below **is** the map — it is what answers *"which
 skill decides X?"* without a `grep`. Directories are never nested: `skills/<name>/SKILL.md`, always.
 
-Two names are **procedural** rather than domains — they govern this repo's own upkeep:
-`project-map/` (this format) and `update-standards/` (re-verifying the catalogue against the web).
+Three names are **procedural** rather than domains — two govern this repo's own upkeep,
+`project-map/` (this format) and `update-standards/` (re-verifying the catalogue against the web),
+and `load-expertise/` governs how the catalogue is *consumed*: which skills a task activates.
 Every other name carries the `-standards` suffix.
 
 **No directory holding a `SKILL.md` may exist outside this one**, or it silently registers as an
@@ -53,7 +54,7 @@ from each file's own `description:` (first sentence) or, when that opens with a 
 | `cicd-standards` | CI/CD standards for GitHub Actions and GitLab CI | 214 |
 | `classical-ml-standards` | Classical (non-deep) machine learning on tabular data as an engineering discipline | 293 |
 | `classic-asp-standards` | Classic ASP (ASP 3.0) on IIS - the worst attack surface in the Microsoft legacy catalogue, and the migrate-or-isolate decision | 231 |
-| `claude-code-skills-standards` | Claude Code skill authoring standards | 292 |
+| `claude-code-skills-standards` | Claude Code skill authoring standards | 293 |
 | `clojure-standards` | Clojure and ClojureScript engineering standards (staff-level) | 187 |
 | `cloud-security-posture-standards` | Cloud security posture as a transversal discipline across AWS, Azure and Google Cloud at once — what the per-provider skills cannot answer | 385 |
 | `cmdb-inventory-standards` | Knowing what you actually own — asset inventory and CMDB as engineering artifacts, not audit paperwork | 264 |
@@ -144,6 +145,7 @@ from each file's own `description:` (first sentence) or, when that opens with a 
 | `llm-app-engineering-standards` | Provider-agnostic engineering standards for product code backed by an LLM | 577 |
 | `llm-evaluation-standards` | Measuring non-deterministic LLM systems as an engineering discipline | 496 |
 | `load-balancing-standards` | Load balancing as a failure-handling decision, not just traffic sharing — health checks, draining and TLS termination are where the value is | 258 |
+| `load-expertise` | Derive and load the skills a task actually activates, before writing anything | 175 |
 | `local-inference-standards` | Local inference standards | 551 |
 | `lowcode-governance-standards` | Governance of low-code and no-code platforms - shadow IT, ownership, data policies and the cost that shows up later | 419 |
 | `lua-standards` | Lua standards (reference: August 2026) | 318 |
@@ -192,7 +194,7 @@ from each file's own `description:` (first sentence) or, when that opens with a 
 | `privacy-engineering-standards` | Privacy engineering standards | 515 |
 | `product-discovery-standards` | Reducing the risk of building something nobody needs, before it is built | 386 |
 | `project-management-standards` | Project and delivery management standards | 512 |
-| `project-map` | Build and maintain PROJECTMAP.md, the orientation index of whatever repository you are working in, so the same grep/find/read is never paid for twice | 360 |
+| `project-map` | Build and maintain PROJECTMAP.md, the orientation index of whatever repository you are working in, so the same grep/find/read is never paid for twice | 363 |
 | `prolog-standards` | Logic programming in Prolog and its constraint solving niche | 222 |
 | `proxmox-ve-standards` | Proxmox VE and Proxmox Backup Server as a production virtualization platform | 439 |
 | `pwa-standards` | PWA standards (installable web app) | 532 |

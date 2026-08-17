@@ -67,7 +67,8 @@ Two steps, in this order, **before touching anything**. They are not preparation
 *are* the first part of the work, and skipping them is how output drops to generic quality.
 
 **① Orient — `PROJECTMAP.md`.** Read it. If it does not exist, build it (see below).
-**② Arm — load the skills the task touches.** Name them, out loud, before writing.
+**② Arm — load the skills the task touches.** Name them, out loud, before writing. The derivation
+itself is not improvised either: it is the `load-expertise` skill.
 
 - **Derive the domains from the actual context**, not from the words in the request: the stack in the
   repo, the files being touched, the layer being changed, what breaks if it is wrong. A request that
@@ -122,11 +123,12 @@ triggers it. This document therefore does not repeat any of it.
 5. **No skill replaces what is here**: this document sets how work is done and what is always
    non-negotiable; they set how each thing is done well.
 
-**Four named rather than discovered**: **`project-map`**, which governs step ① and is not to be
-improvised; **`lean-code-standards`**, which applies to **any code in any language** and has no
-artifact of its own, so skipping it is invisible; **`claude-code-skills-standards`**, which governs
-how the catalogue itself is authored; and **`session-tooling-standards`**, which governs
-`.claudetools/`.
+**Five named rather than discovered**: **`project-map`**, which governs step ① and is not to be
+improvised; **`load-expertise`**, which governs step ② — how the domains are derived from the
+artefacts, what is always on, and how co-activated skills are reconciled; **`lean-code-standards`**,
+which applies to **any code in any language** and has no artifact of its own, so skipping it is
+invisible; **`claude-code-skills-standards`**, which governs how the catalogue itself is authored;
+and **`session-tooling-standards`**, which governs `.claudetools/`.
 
 Rough routing by family, to know where to look: languages and runtimes · cloud (AWS/Azure/GCP) ·
 platform and containers · infrastructure and on-prem · networking · security (AppSec, SOC, offensive,

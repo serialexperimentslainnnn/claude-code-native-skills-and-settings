@@ -1,9 +1,7 @@
 # Map of `claudeonstereoids`
 
-> Refreshed **2026-08-14** against `8a1443f`, **with the working tree well ahead of it**: the whole
-> subagent circuit was demolished in that tree and nothing of it is committed yet. If anything here
-> does not match the repo, **the repo wins**: fix the line and move on. Maintained per the
-> `project-map` skill.
+> Refreshed **2026-08-17** against `a187cb1`. If anything here does not match the repo, **the repo
+> wins**: fix the line and move on. Maintained per the `project-map` skill.
 
 ## What this repo is
 
@@ -27,6 +25,7 @@ The repo is the **single source of truth**; `~/.claude` is a *destination*, writ
 | **Re-verify an existing skill** against the web | `skills/update-standards/SKILL.md` | Cadence, the `Criteria verified as of` line, closing a `Declared gap`, and the verification traps |
 | Know how a skill must be structured | `SKILL-TEMPLATE.md` | Canonical 8 sections + the enforced literals. Deliberately **outside `skills/`**: any dir with a `SKILL.md` registers as an active skill |
 | Change how skills are authored/judged | `skills/claude-code-skills-standards/SKILL.md` | The meta-skill. **§4.3 holds the trigger-collision gate** (Python script + `STOP` list) |
+| Change **which** skills a task loads | `skills/load-expertise/SKILL.md` | Step ② of the start-of-work routine: the derivation, the always-on set, and how co-activated skills are reconciled |
 | Change how *I* work — doctrine, not facts | `CLAUDE.md` | **The whole rulebook**, installed verbatim as `~/.claude/CLAUDE.md`. Its opening block marks a **core that must not be edited without asking** |
 | Change the rules for the `.claudetools/` workshop | `skills/session-tooling-standards/SKILL.md` | The gate, the mirrored placement, the ban on secrets |
 | Find project state / what to do next | `SKILLS-ROADMAP.md` | Read the **topmost `PUNTO DE CONTINUACIÓN`** first; everything below is history, in Spanish, kept on purpose |
@@ -47,18 +46,17 @@ The repo is the **single source of truth**; `~/.claude` is a *destination*, writ
 ├── SKILL-TEMPLATE.md   canonical skill shape; outside skills/ on purpose
 ├── SKILLS-ROADMAP.md   continuity file, append-heavy, Spanish
 ├── check.sh · install.sh   the only two executables
-└── *.bak · agents.bak/     frozen copies of the demolished circuit — never edited, never deleted
+└── core-directives.md.bak   frozen copy of the demolished circuit — never edited, never deleted
 ```
 
 ## Subdirectories — what each one holds
 
 | Directory | What lives there | Local map |
 |---|---|---|
-| `skills/` | The catalogue: `skills/<name>/SKILL.md`, never nested. All but `project-map/` and `update-standards/` carry the `-standards` suffix | `skills/PROJECTMAP.md` |
+| `skills/` | The catalogue: `skills/<name>/SKILL.md`, never nested. All but `project-map/`, `update-standards/` and `load-expertise/` carry the `-standards` suffix | `skills/PROJECTMAP.md` |
 | `plans/` | One historical planning document with the taxonomy by family | — (one file) |
 | `memory/` | One fact per file plus `MEMORY.md` as index. **Gitignored**, and `.gitkeep` is what keeps the directory alive for the installer's symlink | — (flat) |
 | `.claudetools/` | Executable tooling only, mirrored to the tree it covers. **Gitignored, never tracked, never holds a secret** | — (rules live in the skill) |
-| `agents.bak/` | Frozen subagent type definitions from the demolished circuit. **Read-only history**; nothing installs from here | — |
 
 There is **no source code, no build, no test suite, no CI**. Everything here is markdown plus two
 bash scripts; the "tests" are `check.sh` and the collision script in the meta-skill.
@@ -106,10 +104,10 @@ The date is the last time the command was seen to run clean, nothing more.
 
 ## Minefields
 
-- **The subagent circuit was demolished on 2026-08-14 and its remains are deliberate.**
-  `agents.bak/`, `CLAUDE.md.bak`, `CLAUDE.md.bak.bak` and `core-directives.md.bak` are frozen copies
-  kept by explicit decision: **do not edit them, do not delete them, and never cite them as current
-  doctrine.** Their fleet vocabulary is the only place that language should still appear.
+- **The subagent circuit is demolished and its one remaining artefact is deliberate.**
+  `core-directives.md.bak` is a frozen copy kept by explicit decision: **do not edit it, do not
+  delete it, and never cite it as current doctrine.** Its fleet vocabulary is the only place that
+  language should still appear.
 - **A stale destination keeps the circuit alive.** Agent types in `~/.claude/agents/` **reload hot**,
   and `rsync --delete` cannot reach a directory that is no longer in `DIRS`. That is why
   `install.sh:remove_retired()` deletes `~/.claude/agents/` and `~/.claude/core-directives.md`

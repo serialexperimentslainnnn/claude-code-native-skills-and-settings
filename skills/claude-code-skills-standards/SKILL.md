@@ -170,7 +170,8 @@ Gates before calling a skill good:
    gateway upstream bootstrap proxy termination timeouts blocks prefix routed
    spectrum roaming standalone ghz controls poisoning sla idempotent retries
    non-deterministic article articles duties
-   date expiry landscape functional local option private""".split())
+   date expiry landscape functional local option private
+   catch start substantial whenever yourself""".split())
    d={}
    for p in glob.glob("*/SKILL.md"):
        desc=re.search(r'^description:\s*(.+)$',open(p).read(),re.M).group(1)

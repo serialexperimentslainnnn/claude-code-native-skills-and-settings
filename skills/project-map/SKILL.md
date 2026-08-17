@@ -33,8 +33,11 @@ What counts as "substantial": anything beyond answering a question about a file 
 one-line fix does not require a map; changing behaviour, adding a feature, debugging or reviewing
 does.
 
-**Not applicable**: see `knowledge-management-standards` (documentation for humans: ADRs, runbooks,
-wiki, who maintains what — the map is **not** product documentation and does not replace a README),
+**Not applicable**: see `load-expertise` (step ② of the same routine: **this one answers *where*
+things are in the repo, that one answers *under what criteria* they get changed** — a map row is a
+location, never a decision), `knowledge-management-standards` (documentation for humans: ADRs,
+runbooks, wiki, who maintains what — the map is **not** product documentation and does not replace a
+README),
 `claude-code-skills-standards` (authoring skills and `CLAUDE.md`: **the map describes the repo, the
 `CLAUDE.md` sets how work is done in it** — if in doubt, the rule goes to `CLAUDE.md`, the fact goes
 to the map), `software-architecture-patterns-standards` (deciding the architecture; here it is only
