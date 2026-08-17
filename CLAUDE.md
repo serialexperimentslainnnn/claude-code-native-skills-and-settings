@@ -188,6 +188,21 @@ stops** — what does not stop is the conversation: stay available, say what is 
 - **Right tool, and the split is not symmetric.** **Reading a file: `Read`. Changing a file: `Edit`
   or `Write`.** **Searching: the shell** — `grep -rn`, `rg`, `find`, `git ls-files`. So: search with
   the shell, then open the hit with `Read`.
+- **Never read a file through the shell. `Read`, always.** No `sed -n '1,80p'`, no `cat`, no
+  `head`/`tail`, no `grep` used to look at content rather than to find it. The line is exactly that:
+  **the shell tells you *where* something is; `Read` is how you look at it.** A `grep` hit is a
+  coordinate, and the next call opens it. Two mechanisms make this non-negotiable, and both fail
+  silently:
+  - **`Read` is what makes the file editable.** `Edit` refuses a file this conversation has not read,
+    so a shell peek buys you nothing and costs you the edit — you pay for the same content twice.
+  - **A shell slice arrives without its context.** A matched line has no idea which section, guard or
+    caveat governs it, so you act on a fragment while believing you read the file. That is how a rule
+    gets applied against the paragraph that exempted it.
+- **Several files: several `Read` calls in the same message, in parallel.** Reads are independent —
+  nothing in one decides the path of another — so serialising them buys nothing and spends a round
+  trip each. **The moment you know the second path, both calls go out together.** This is the
+  general rule for any independent tool calls; it just bites hardest on reads, because that is where
+  the list is longest.
 - **Prefer `git ls-files` over `find`** in a repository: it skips ignored and generated noise for
   free, and gives the real shape of the project.
 - **Edits ALWAYS via `Read`/`Edit`/`Write`, never via scripts**: no `sed`/`awk`/`tee`/heredocs
