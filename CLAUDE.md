@@ -249,18 +249,42 @@ established context and is guesswork.
 
 ## Work
 
-- Do not `commit`/`push` unless explicitly asked.
+- **Commit every change, atomically and descriptively. No permission needed, and no exceptions.** A
+  turn does not close with work sitting uncommitted. **One commit per logical unit** — one change,
+  one reason, one message: two unrelated changes in the same turn are two commits, and a change plus
+  the map update or the test it forces are one. **Never `git add -A` blind**: read `git status`,
+  stage the paths you touched.
+  - **Message**: Conventional Commits — `<type>(<scope>): <subject>` in the imperative — with a body
+    stating **why** whenever the reason is not obvious from the diff. The diff already says *what*.
+    The reader is whoever runs `blame` or `bisect` two years from now; write for them.
+  - **`push` is still his, and so is the rest of the outward-facing surface.** A local commit is
+    undone with `reset`; a published one costs a force-push and everybody else's clone. Do not
+    `push`, tag or open a PR unless asked.
 - **Every commit is signed with the YubiKey GPG key, as Lain.** Default identity:
-  `Lain <lain.agent604@passmail.com>`, key `6CD306756132C6FDDEE88A74CD0C12D83C04435A`
-  (signing subkey `CD0C12D83C04435A`, card serial 32861026). It is already in the global
-  `~/.gitconfig` (`user.name`, `user.email`, `user.signingkey`, `commit.gpgsign=true`,
-  `tag.gpgsign=true`), so **it is enough not to override it** — but check `git config user.email`
-  before committing in a new repo, in case there is a local override.
-  - Other keys live in the keyring (**Digital Experiments**, **Angel Porlán**): **none of them is the
-    right one** for public repos. Someone else's identity on a public remote forces a history rewrite
-    and a force-push — check before, not after.
-  - If pinentry does not appear: `export GPG_TTY=$(tty)`. Signing asks for the PIN and a **physical
-    touch** of the key; the command waiting is normal — do not assume it hung.
+  `Lain <lain.agent604@passmail.com>`, key `14A02B44864670606E169DCA732002D46D8CF641` (ed25519,
+  primary `[SC]` — it signs directly, there is no separate signing subkey), on the **YubiKey 5 Nano,
+  card serial 27263482**. It is already in the global `~/.gitconfig` (`user.name`, `user.email`,
+  `user.signingkey`, `commit.gpgsign=true`, `tag.gpgsign=true`), so **it is enough not to override
+  it** — but check `git config user.email` before committing in a new repo, in case there is a local
+  override.
+  - **More than one YubiKey is normally plugged in, and only one of them is this identity.** Card
+    `32861026` (5C NFC) holds `The Matrix Intermediate CA` — a CA key, not a commit identity. Other
+    keys live in the keyring (**Digital Experiments**, **Angel Porlán**): **none of them is the right
+    one** for public repos. Someone else's identity on a public remote forces a history rewrite and a
+    force-push — check before, not after.
+  - **No physical touch is required**: the signature key's touch policy is `Off` and the card is set
+    to `Require PIN for signature: Once`, so the PIN is asked once and then cached by `gpg-agent`
+    (`default-cache-ttl 3600`). A run of commits costs one PIN, not one each. **If that ever changes
+    on the card, this line is what is wrong** — the card is the source, not this document.
+  - If pinentry does not appear: `export GPG_TTY=$(tty)`. The command sitting there waiting for the
+    PIN is normal — do not assume it hung.
+  - **A signing failure is a question, never a retry.** `Bad PIN`, `Operation cancelled`, `gpg failed
+    to sign the data`, or the command dying while it waited: every one of them means the key was not
+    attended, not that the commit was wrong. **Ask him whether he is at the YubiKey, and retry only
+    once he answers.** Retrying blind burns the OpenPGP PIN counter — three failures block the card
+    until the Admin PIN unblocks it — and `--no-gpg-sign` is never the fallback: an unsigned commit
+    here is a defect, not a workaround. **Check `git log -1` before retrying**: the failure may have
+    come after the commit landed, and a blind retry then commits the same change twice.
   - After pushing, **verify** GitHub accepts it:
     `gh api repos/OWNER/REPO/commits/SHA --jq .commit.verification` → `verified: true`.
   - Release tags are signed the same way (`git tag -s`).
