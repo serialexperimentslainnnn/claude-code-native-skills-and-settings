@@ -173,8 +173,14 @@ outward-facing, or a task you have not scoped because scoping it is the hard par
 
 - **`Explore` for search fan-out** (read-only, returns excerpts), **`general-purpose` for multi-step
   work**. Say how broad: "medium", or "very thorough" when naming conventions may vary.
-- **Several independent agents go out in one message.** Sequential spawns are the same wasted round
-  trip as sequential reads.
+- **Several independent agents go out in one message**, up to **five at once and no more**.
+  Sequential spawns are the same wasted round trip as sequential reads; a sixth in flight is width
+  bought at the price of everything else.
+- **Continue an agent; never respawn it.** A follow-up on work an agent already did goes through
+  `SendMessage` to its ID or name, which keeps its context intact. A second `Agent` call for the
+  same thread starts a stranger from zero and pays the entire system prefix again — the single
+  largest avoidable cost in delegation. `ListAgents` finds the ID. **A fresh `Agent` call is
+  justified only by a genuinely new thread of work.**
 - **The agent's final report is not shown to the user. Relay what matters** — it does not reach him
   on its own.
 - **Never fabricate or predict a pending agent's result.** If asked before the notification lands,
@@ -208,12 +214,38 @@ the output.
 - **No filesystem and no shell from the script.** Agents act; the script only coordinates.
 - **`Date.now()`, `new Date()` and `Math.random()` throw** — they would break resume. Pass
   timestamps through `args`; vary randomness by index.
-- **Caps: 16 concurrent agents, 1,000 per run.** The session's size guideline (`medium` by default,
-  under 15 agents) is advice, not a cap.
+- **Ceiling: never more than five agents running at once.** This is a rule, not a guideline, and it
+  bounds **width, not total** — a run may still take two hundred items through a five-wide pool, and
+  should. Depth is what makes the result good; width is only what makes it expensive.
+- **Nothing enforces that ceiling for you, so the script does.** The runtime's own cap is 16
+  concurrent (fewer on a small machine) and 1,000 per run, and the `workflowSizeGuideline` setting
+  bounds the *total* — the wrong magnitude, and setting it to `small` would shrink runs instead of
+  narrowing them. **`parallel()` over forty thunks hands the runtime all forty.** Keep five in
+  flight and start the next as one lands:
+
+  ```javascript
+  async function pool(items, width, fn) {
+    const out = new Array(items.length)
+    let next = 0
+    await Promise.all(Array.from({length: Math.min(width, items.length)}, async () => {
+      while (next < items.length) { const i = next++; out[i] = await fn(items[i], i) }
+    }))
+    return out
+  }
+  ```
 - **No mid-run user input.** If a stage needs sign-off, it is its own workflow.
+- **A stopped or edited run is resumed, never relaunched.** `Workflow({scriptPath, resumeFromRunId})`
+  returns every unchanged completed agent from cache instantly and runs only the first edited call
+  onward. Relaunching from scratch discards finished work and pays for it twice.
 - **Resume replays in start order**, and cached results stop at the first agent that did not finish
   — everything started after it re-runs even if it completed. **Therefore: many small agents, not
   few long ones.** It is a resumability property, not a style preference.
+- **Inside a run there is no agent reuse to have: `agent()` always spawns a new one.** What stands in
+  for it is the **shared prompt cache** — siblings matching on model, effort, agent type, tools,
+  output schema and working directory build the same prefix and read it from the first one instead
+  of each processing it uncached. **So keep a fan-out homogeneous**: an `opts.model` or `opts.effort`
+  set on one stage for no reason splits the cache and every agent in it pays the prefix again. Leave
+  the stagger alone (`CLAUDE_CODE_WORKFLOW_PREFIX_STAGGER_MS`); it exists to make that sharing work.
 - **`pipeline()` by default; `parallel()` only for a genuine barrier** — dedup across the whole
   result set, an early exit on zero, or a stage that must compare findings against each other. "I
   need to flatten first" is not a barrier; do it inside a stage.
