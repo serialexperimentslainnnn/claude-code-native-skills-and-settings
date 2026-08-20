@@ -94,6 +94,11 @@ different question:
 - **`git-workflow-standards`** whenever history itself is the deliverable: commit granularity and
   message, branching, tags, releases.
 - **`session-tooling-standards`** the moment you write a script instead of running a command.
+- **`tool-usage-standards`** on any turn that reads, searches, edits, runs, delegates or
+  orchestrates — which is every substantial turn. It governs the *act* of working rather than the
+  subject, so no request ever names it and skipping it is invisible: the answer simply arrives
+  having used a `grep` where the index was available, a recollection where a lookup was, and one
+  unverified pass where a check was.
 
 ### 3.2 Reconciling several at once
 

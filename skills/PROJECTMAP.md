@@ -231,6 +231,7 @@ from each file's own `description:` (first sentence) or, when that opens with a 
 | `testing-qa-standards` | Test strategy across languages - deciding what to test and in what proportion, not which runner to use | 474 |
 | `threat-intelligence-standards` | Cyber threat intelligence as a production discipline — producing, scoring, ageing out and retiring knowledge about the adversary | 251 |
 | `timeseries-db-standards` | Time-series database standards | 532 |
+| `tool-usage-standards` | Which instrument does a job inside the harness itself — routing, the IDE index, delegation, workflows and the session window | 344 |
 | `typescript-standards` | TypeScript / Node / React standards (reference: August 2026) | 192 |
 | `update-standards` | Re-verify the criteria documents this repository emits against the web, and refresh what has decayed **manual-only** | 239 |
 | `vb6-standards` | Visual Basic 6.0 legacy applications - freeze, isolate or rewrite | 211 |
