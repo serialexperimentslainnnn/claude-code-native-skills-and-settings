@@ -50,6 +50,7 @@ tool named, stop.
 | **Run the project's own entry point** | `mcp__jetbrains__get_run_configurations` → `execute_run_configuration` | Reconstructing the command from memory and getting the env wrong |
 | **Debug a running process** | the `mcp__jetbrains__xdebug_*` family | Adding print statements and re-running |
 | **Ask a database anything** | `mcp__jetbrains__list_database_connections`, `introspect_schema`, `execute_sql_query`, `preview_table_data` | Guessing the schema, or shelling out to a client with a password on the command line |
+| **Ask the forge anything** — PRs, MRs, issues, CI runs, releases, reviews | `gh` (GitHub) or `glab` (GitLab) through `Bash`; `gh api` / `glab api` for whatever the porcelain does not cover | `WebFetch` on the web UI, which returns a rendered page for an authenticated resource and cannot see a private repo at all |
 | **Know a fact that moves** — version, flag, CVE, price, API, EOL | `WebSearch`, then `WebFetch` on the primary source | Memory. The cutoff is real and the cost of being wrong is not five seconds |
 | **Decide anything inside a domain** | `Skill`, invoked — never `Read` on its `SKILL.md` | Deciding from memory while a document that owns the decision sits unloaded |
 | **Answer a question that spans many files** | `Agent` (`Explore` for search, `general-purpose` for multi-step) | Twenty sequential reads that fill the context with material you will not reuse |
@@ -81,6 +82,14 @@ debugger and the database all belong to it, and a text search is the degraded su
 one tool to the model, `mcp__ide__getDiagnostics`. The `mcp__jetbrains__*` family is a **separate**
 MCP server; when the tools are absent, that server is not connected and no amount of retrying
 connects it.
+
+**What the IDE does *not* give you, however much of it you can see on screen: the forge.** Its
+GitHub and GitLab integration is a feature of the IDE's own UI and is **not projected onto MCP** —
+signing in there adds no tool. The whole VCS surface exposed to the model is two read-only calls,
+`git_status` and `get_repositories`, both strictly weaker than `git` through `Bash`. **Pull
+requests, merge requests, issues, CI runs, reviews and releases live behind `gh` and `glab`, and
+nowhere else.** Assuming otherwise because the IDE is logged in is the exact shape of error this
+document exists to prevent: a capability that is visible, adjacent, and not yours.
 
 **Three carve-outs stay with the native tools. Each is a mechanism, not a preference** — which is
 why they survive a rule that otherwise says "JetBrains first":
