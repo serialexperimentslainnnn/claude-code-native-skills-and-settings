@@ -284,6 +284,34 @@ read — and **when the projection overshoots, say so before spending, not after
 projects to, and which lever is being pulled. Burning the window silently and discovering it at
 100 % is the failure this section exists to prevent.
 
+**Where the numbers are.** Session transcripts live under the per-project directory in
+`~/.claude/projects/`, one JSONL per session, and every assistant turn carries
+`.message.usage` with `input_tokens`, `output_tokens`, `cache_creation_input_tokens` and
+`cache_read_input_tokens`, plus a `cache_creation` split between `ephemeral_1h_input_tokens` and
+`ephemeral_5m_input_tokens` that says which cache lifetime is actually being paid. Aggregate the last
+five hours with the cutoff from `date -u -d '5 hours ago'`:
+
+```bash
+jq -r 'select(.message.usage != null and .timestamp >= "<cutoff>")
+       | [.message.usage.input_tokens, .message.usage.output_tokens,
+          .message.usage.cache_creation_input_tokens, .message.usage.cache_read_input_tokens]
+       | @tsv' ~/.claude/projects/<slug>/*.jsonl \
+  | awk -F'\t' '{i+=$1;o+=$2;cc+=$3;cr+=$4;n++}
+                END {print n, i, o, cc, cr, i+o+cc, 100*cr/(cr+cc)}'
+```
+
+**Read the composition, not only the total.** A low cache-hit ratio means the context is being
+rebuilt rather than reused, which is lever 1 and lever 2 failing together, and it is the signal that
+arrives before the bar moves.
+
+**Two limits, both stated rather than papered over.** The figure covers **this project only** — usage
+from other projects, other devices and the web app counts against the same plan window and is not
+here, so the number is a **lower bound and a rate, never a percentage of plan**. And under a
+permission guard that inspects command text, this pipeline may be unrunnable by the assistant at all:
+`$1` in `awk`, `$cut` in `jq` and `>=` inside a quoted program are indistinguishable from a shell
+variable and a redirection to a static parser. **When that happens, the command is handed to the
+user rather than reshaped until it slips through** — a refusal is an answer.
+
 ## 7. Sustainability and prohibitions
 
 - **Re-verify the tool surface on every harness update.** Tools are added, renamed and withdrawn
