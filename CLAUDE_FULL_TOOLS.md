@@ -69,13 +69,22 @@ program. Symbol lookup, call graphs, inspections, refactors, formatting, run con
 debugger and the database all belong to it, and a text search is the degraded substitute.
 
 **The precondition is real and it fails silently.** The JetBrains MCP server answers only for
-**projects currently open in the IDE**; a call for any other path is refused. Therefore:
+projects open in **the IDE instance that server belongs to** — which is not necessarily the IDE you
+are sitting in. Therefore:
 
 - **Always pass `projectPath`.** It is optional in the schema and omitting it buys an ambiguous call.
-- **The first JetBrains call of a session is the probe.** If it comes back saying the path is not an
-  open project, that is the answer, not an obstacle: **say so in one line — "the IDE is not bound to
-  this project, falling back to `Read` and the shell" — and fall back.** Degrading silently is the
-  failure; degrading loudly is correct.
+- **The first JetBrains call of a session is the probe.** A refusal names its own cause and
+  **enumerates the projects the server can see**, which is what identifies the instance you reached.
+- **Read that list before concluding anything.** If it names projects you did not expect, you are
+  talking to a different IDE, and the fix is on the IDE side, not in the call.
+- **Two IDEs running is the common cause, and the mechanism is a port race.** The plugin binds a
+  fixed default port; whichever IDE started first claims it and the rest fall back to arbitrary
+  ports that do not survive a restart. The MCP client points at the default, so **the first IDE
+  launched owns the connection** regardless of which one you are working in. Cheapest fix: open the
+  project in the IDE that won the port. Repointing the client at the loser's port breaks on its next
+  restart.
+- **Say the degradation out loud in one line** — "the MCP server is bound to another IDE instance,
+  falling back to `Read` and the shell" — and fall back. Degrading silently is the failure.
 - Never retry the same call hoping for a different result, and never invent a `projectPath`.
 
 **Note which server you are talking to.** The plugin's own built-in server (`ide`) exposes exactly
