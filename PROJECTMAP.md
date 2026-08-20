@@ -26,6 +26,7 @@ The repo is the **single source of truth**; `~/.claude` is a *destination*, writ
 | Know how a skill must be structured | `SKILL-TEMPLATE.md` | Canonical 8 sections + the enforced literals. Deliberately **outside `skills/`**: any dir with a `SKILL.md` registers as an active skill |
 | Change how skills are authored/judged | `skills/claude-code-skills-standards/SKILL.md` | The meta-skill. **§4.3 holds the trigger-collision gate** (Python script + `STOP` list) |
 | Change **which** skills a task loads | `skills/load-expertise/SKILL.md` | Step ② of the start-of-work routine: the derivation, the always-on set, and how co-activated skills are reconciled |
+| Change how I use **tools** — routing, JetBrains priority, delegation, workflows | `CLAUDE_FULL_TOOLS.md` | **Draft awaiting review.** Merges into `CLAUDE.md` §`Tools and mechanics` and is deleted then; it is not a third layer |
 | Change how *I* work — doctrine, not facts | `CLAUDE.md` | **The whole rulebook**, installed verbatim as `~/.claude/CLAUDE.md`. Its opening block marks a **core that must not be edited without asking** |
 | Change the rules for the `.claudetools/` workshop | `skills/session-tooling-standards/SKILL.md` | The gate, the mirrored placement, the ban on secrets |
 | Find project state / what to do next | `SKILLS-ROADMAP.md` | Read the **topmost `PUNTO DE CONTINUACIÓN`** first; everything below is history, in Spanish, kept on purpose |
@@ -43,6 +44,7 @@ The repo is the **single source of truth**; `~/.claude` is a *destination*, writ
 ├── memory/          cross-session memory; gitignored, symlinked into ~/.claude
 ├── .claudetools/    the session workshop; gitignored  → skills/session-tooling-standards/
 ├── CLAUDE.md        the entire rulebook, installed as ~/.claude/CLAUDE.md
+├── CLAUDE_FULL_TOOLS.md   **draft**, pending merge into CLAUDE.md and deletion
 ├── SKILL-TEMPLATE.md   canonical skill shape; outside skills/ on purpose
 ├── SKILLS-ROADMAP.md   continuity file, append-heavy, Spanish
 ├── check.sh · install.sh   the only two executables
