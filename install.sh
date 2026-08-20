@@ -40,8 +40,13 @@ run() { if [ "$DRY_RUN" = 1 ]; then log "[dry-run] $*"; else "$@"; fi; }
 
 # Lo que se plancha: <ruta en el repo>:<ruta bajo ~/.claude>. Nada más. El resto del repo
 # (roadmap, plantilla, planes) es material de trabajo y no pinta nada en la instalación.
+#
+# workflows/: guiones de orquestación que Claude Code registra como comandos /<nombre>. Se planchan
+# igual que las skills y por el mismo motivo: el repo es la fuente y el destino queda idéntico. Ojo
+# al orden de precedencia, que NO es el de las skills: si un proyecto tiene .claude/workflows/ con un
+# nombre repetido, gana el del proyecto, no éste.
 FILES=( "CLAUDE.md:CLAUDE.md" )
-DIRS=( "skills:skills" )
+DIRS=( "skills:skills" "workflows:workflows" )
 
 # El circuito de subagentes está DESMONTADO. No hay tipos de agente que instalar y no hay hook que
 # reinyecte nada: el reglamento entero es `CLAUDE.md`, que la sesión principal carga por sí sola.

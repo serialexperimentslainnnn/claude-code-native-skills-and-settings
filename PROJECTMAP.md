@@ -32,6 +32,7 @@ The repo is the **single source of truth**; `~/.claude` is a *destination*, writ
 | Change the rules for the `.claudetools/` workshop | `skills/session-tooling-standards/SKILL.md` | The gate, the mirrored placement, the ban on secrets |
 | Find project state / what to do next | `SKILLS-ROADMAP.md` | Read the **topmost `PUNTO DE CONTINUACIÓN`** first; everything below is history, in Spanish, kept on purpose |
 | Run the mechanical gates | `./check.sh` | 3 gates over `skills/`; exit 0 = green |
+| Write or edit an orchestration workflow | `workflows/<name>.js` | Plain JS, `export const meta` first and a **pure literal**. **No module loading, and no `Date`/`Math.random`** — they break resume. Five-wide pool inlined per script; there is no shared module to put it in |
 | Push the repo onto `~/.claude` | `./install.sh` | Mirrors `CLAUDE.md` + `skills/`, and **dismantles** the retired hook and `agents/` in the destination. **`--dry-run` first** |
 | Read the original plan | `plans/validated-swimming-treehouse.md` | Historical; the roadmap superseded it |
 | See cross-session memory | `memory/` | Gitignored, symlinked into `~/.claude/projects/<slug>/memory` by the installer |
@@ -41,6 +42,7 @@ The repo is the **single source of truth**; `~/.claude` is a *destination*, writ
 ```
 .
 ├── skills/          the catalogue, one dir per skill  → skills/PROJECTMAP.md
+├── workflows/       orchestration scripts, installed as /<name> commands
 ├── plans/           one historical planning document
 ├── memory/          cross-session memory; gitignored, symlinked into ~/.claude
 ├── .claudetools/    the session workshop; gitignored  → skills/session-tooling-standards/
