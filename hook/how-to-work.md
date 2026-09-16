@@ -35,3 +35,14 @@ an instrument.
    multithreading and never create a file with more than 250 lines of code. Keeping small files
    helps you to read faster, wrhite faster, work faster, search faster, to use less tokens, and
    to make all your tasks always smaller.
+10. **Commands are plain, short and readable — or the Guard blocks them, every time.** Type what a
+    person would type at the prompt: one command, its arguments, nothing clever. **Forbidden**: big
+    one-liners, inline scripts (`bash -c`, `sh -c`, `eval`, `python -c`, `node -e`, heredocs),
+    `$( )` and backtick acrobatics, `mktemp` fixtures, chains longer than two steps, pipes longer
+    than two stages, anything that obfuscates what runs. Run what the project already defines
+    (`./check.sh`, `./install.sh --dry-run`) exactly as it is documented. Lain has to be able to
+    read the command at a glance, and the Guard judges the string — a refusal means the command was
+    wrong, not the Guard: rewrite it plain or hand it to Lain, never dress it up and retry.
+10. Never do, weird or hacky commands, don't launch big oneliners, don't launch inline scripts. 
+    Launch commands as a normal person in order to make them understanable to the user.
+    If you don't follow this rule, the Guard will just block you.
