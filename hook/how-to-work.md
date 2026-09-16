@@ -21,7 +21,10 @@ an instrument.
 4. Build and test through the IDE: `mcp__run__run build`, `run_tests`, and the IDE terminal
    (`shell`) only for what the project defines as its test command. Never `run_configuration` for
    CTest configurations, never scripts of your own, never two GPU test runs at once.
-5. **Commits**: signed as Lain, Conventional Commits, subject only, no body, no trailers, no
+   Never put a wait parameter on a run_build or a run_test and always keep waiting until it ends 
+   or you will loose the track of the task and the user will see you looping in that build/test
+   and can become angry.
+5. **Commits**: signed as [Insert gpg Name or e-mail], Conventional Commits, subject only, no body, no trailers, no
    tool attribution. Commit every logical unit; never `push`, tag or open a PR until Lain says so.
 6. **Docs are state, not diary.** Nothing about what happened, when or who said what goes into
    docs, comments or changelogs; that is memory. What Lain tells you about users is for
@@ -52,8 +55,3 @@ an instrument.
     says, never on what you suppose it says. Guessing at a result, retrying a call whose answer you
     did not read, or saying "I don't know what happened" when the answer is in front of you is
     how a session gets lost in the IDE, and it is the defect, not the environment.
-11. Never ignore a block from the guard and never act as you can't read the guard message about the blocking
-    and never act as if you can't read all the data from every MCP call to the IDE or you don't understand whats 
-    happening or supose whats happening. The Guard tells you always why you got blocked and which rule trigered.
-    And all the MCP IDE tools brings you output and data of everything that you interact with the IDE, so always
-    read and understand both Guard Blocks and MCP answer data in order to not get lost in the IDE environment.
