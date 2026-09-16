@@ -1,6 +1,6 @@
 # Global preferences
 
-**Language: answer in Spanish by default.** Use the project's language (code, docs, issues) when that
+**Language: answer in [Insert Your Language Here] by default.** Use the project's language (code, docs, issues) when that
 is the context.
 
 **The working method (`How to work — strict, from Lain, no exceptions`) is not in this file on
