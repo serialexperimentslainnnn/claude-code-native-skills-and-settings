@@ -1,4 +1,4 @@
-# Map of `claudeonstereoids`
+# Map of `claude-code-native-skills-and-settings`
 
 > Refreshed **2026-08-17** against `a187cb1`. If anything here does not match the repo, **the repo
 > wins**: fix the line and move on. Maintained per the `project-map` skill.

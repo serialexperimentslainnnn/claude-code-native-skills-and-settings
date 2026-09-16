@@ -59,8 +59,8 @@ A JetBrains IDE with [Claude Code Native](https://plugins.jetbrains.com/plugin/3
 the `claude` CLI, `rsync` and `jq`:
 
 ```bash
-git clone git@github.com:serialexperimentslainnnn/claudeonstereoids.git
-cd claudeonstereoids
+git clone git@github.com:serialexperimentslainnnn/claude-code-native-skills-and-settings.git
+cd claude-code-native-skills-and-settings
 ./install.sh --dry-run
 ./install.sh
 ```
