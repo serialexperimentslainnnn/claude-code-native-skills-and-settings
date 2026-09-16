@@ -3,7 +3,7 @@
 **Language: answer in [Insert Your Language Here] by default.** Use the project's language (code, docs, issues) when that
 is the context.
 
-**The working method (`How to work — strict, from Lain, no exceptions`) is not in this file on
+**The working method (`How to work — strict, from [Insert your name here], no exceptions`) is not in this file on
 purpose**: it arrives on every prompt through the `UserPromptSubmit` hook, from
 `~/.claude/how-to-work.md`, so it never sinks as the conversation grows. If a turn arrives without
 it, the hook is broken — say so.

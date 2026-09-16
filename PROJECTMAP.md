@@ -146,9 +146,9 @@ The date is the last time the command was seen to run clean, nothing more.
 - **`install.sh` mirrors with `rsync --delete`**: it removes whatever is in the destination and not
   in the repo. It backs up first — and **never prunes**. Those timestamped `~/.claude/backup-*/`
   directories are the only rollback route for the installed copy; git does not help there.
-- **Git identity matters here**: commits must be signed as Lain with the YubiKey GPG key, which
-  needs a PIN **and a physical touch**. The other keyring identities are the wrong ones for a public
-  remote. Check `git config user.email` first.
+- **Git identity matters here**: commits must be signed as [Insert your name here] with your GPG key.
+  Any other keyring identity is the wrong one for a public remote. Check `git config user.email`
+  first.
 
 ## Out of the map
 

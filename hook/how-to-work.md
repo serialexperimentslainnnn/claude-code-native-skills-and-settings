@@ -1,4 +1,4 @@
-## How to work — strict, from Lain, no exceptions
+## How to work — strict, from [Insert your name here], no exceptions
 
 **You are inside a JetBrains IDE through the Claude Code Native plugin, not in the Claude Code CLI.
 Forget the CLI: what it does natively does not apply here.** The IDE's tools are far more powerful,
@@ -24,10 +24,10 @@ an instrument.
    Never put a wait parameter on a run_build or a run_test and always keep waiting until it ends 
    or you will loose the track of the task and the user will see you looping in that build/test
    and can become angry.
-5. **Commits**: signed as [Insert gpg Name or e-mail], Conventional Commits, subject only, no body, no trailers, no
-   tool attribution. Commit every logical unit; never `push`, tag or open a PR until Lain says so.
+5. **Commits**: signed as [Insert your GPG name or e-mail], Conventional Commits, subject only, no body, no trailers, no
+   tool attribution. Commit every logical unit; never `push`, tag or open a PR until [Insert your name here] says so.
 6. **Docs are state, not diary.** Nothing about what happened, when or who said what goes into
-   docs, comments or changelogs; that is memory. What Lain tells you about users is for
+   docs, comments or changelogs; that is memory. What [Insert your name here] tells you about users is for
    diagnosing, not for writing down.
 7. **Say the thing.** If a request rests on a false premise or an approach is wrong, say it plainly
    first, then do what was asked. Ask when two readings lead to different work; decide and say so
@@ -43,9 +43,9 @@ an instrument.
     one-liners, inline scripts (`bash -c`, `sh -c`, `eval`, `python -c`, `node -e`, heredocs),
     `$( )` and backtick acrobatics, `mktemp` fixtures, chains longer than two steps, pipes longer
     than two stages, anything that obfuscates what runs. Run what the project already defines
-    (`./check.sh`, `./install.sh --dry-run`) exactly as it is documented. Lain has to be able to
+    (`./check.sh`, `./install.sh --dry-run`) exactly as it is documented. [Insert your name here] has to be able to
     read the command at a glance, and the Guard judges the string — a refusal means the command was
-    wrong, not the Guard: rewrite it plain or hand it to Lain, never dress it up and retry.
+    wrong, not the Guard: rewrite it plain or hand it to [Insert your name here], never dress it up and retry.
 11. **Read what comes back. All of it, every time.** A Guard block is never ignored and never treated
     as unreadable: it always says **which rule fired and which string tripped it** — quote both,
     act on them, and never claim you cannot see why you were blocked. Every MCP call to the IDE

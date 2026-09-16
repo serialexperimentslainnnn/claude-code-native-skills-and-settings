@@ -487,7 +487,7 @@ fresh search budget.
 **Estado: 218 skills, 80.388 líneas — EL CATÁLOGO ESTÁ COMPLETO (218/218).** Los tres gates
 mecánicos en verde (`./check.sh`, EXIT=0). Coste de índice: 25.383 palabras/turno. Nada quedó
 a medias en disco. **Sin commitear**: ~130 ficheros modificados + 3 skills nuevas (el usuario
-no ha pedido commit; identidad Lain + GPG YubiKey, verificar `git config user.email` antes).
+no ha pedido commit; identidad [Insert your name here] + GPG YubiKey, verificar `git config user.email` antes).
 
 ### Hecho en la sesión del 2026-08-10
 
@@ -835,7 +835,7 @@ reciprocidad.
    symlink), validado con `--dry-run` pero **NO ejecutado todavía**. `~/.claude/skills` sigue siendo
    una copia vieja y divergente. La memoria del proyecto **sí** quedó enlazada al repo.
 6. **Commit**: hay ~101 ficheros sin commitear. El usuario no pidió commit; recordar la identidad
-   (Lain + GPG de la YubiKey) y verificar `git config user.email` antes.
+   ([Insert your name here] + GPG de la YubiKey) y verificar `git config user.email` antes.
 
 ### Fronteras arbitradas a mano en esta sesión (no repetir el análisis)
 - **`cryptography-pki` cedió la transición post-cuántica** a `post-quantum-crypto-standards`: sección
