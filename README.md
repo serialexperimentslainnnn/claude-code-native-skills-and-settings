@@ -1,21 +1,54 @@
 # Claude Code Native — Skills and Settings
 
-The Claude Code configuration for **[Claude Code Native](https://github.com/serialexperimentslainnnn/claude-code-native)**,
-the plugin that runs Claude Code inside a JetBrains IDE and hands it the IDE itself: a rulebook, a
-per-prompt hook, and an **IT engineering skill catalogue** — one criteria document per domain, verified
-against primary sources — with a skill that tells Claude which of the IDE's tools does each job.
+**More than two hundred engineering-standards skills, the doctrine that makes Claude apply them, and the
+settings that bind it all to a JetBrains IDE through
+[Claude Code Native](https://github.com/serialexperimentslainnnn/claude-code-native).** Install it and
+the Claude you get is the one this catalogue was built for: staff-level by default, verified against
+primary sources, batching every call, and refusing to assert a version, a flag or a licence from memory.
 
-It is written for a session that lives in the IDE. The CLI's native tools (`Read`, `Edit`, `Write`,
-`Grep`, `Glob`, `Bash`) are retired there: the plugin serves four MCP servers — `code`, `run`, `vcs`,
-`ops` — that read through the index, edit through the document model, build, test, debug, drive Git and
-the forge, and work the Services panel, batching a whole list per call for a fraction of the tokens. This
-repository makes Claude use them, and keeps using them as the conversation grows.
+## The catalogue
+
+`skills/` holds one criteria document per domain — languages and runtimes, cloud, platform and
+containers, infrastructure and on-prem, networking, the whole security family (AppSec, SOC, offensive,
+GRC, privacy), data and analytics, AI/ML and LLM, frontend and web, engineering craft, management,
+legacy platforms, industry verticals. For the exact count, line total and index cost run `./check.sh`;
+the per-domain index is `skills/PROJECTMAP.md`.
+
+A skill here **does not teach** — the model already knows how to program. It fixes **what gets decided,
+what is forbidden and what must be verified before asserting it**: default toolchains with the reason,
+structure, the CI gates that break the build, the stack's security, operability, an explicit list of
+vetoed anti-patterns, and what to check on the web before deciding — every body closes with *if the web
+contradicts this document, the web wins*. No concrete fact from memory: versions, end-of-support dates,
+licences (read raw from the file), RFC numbers and figures are verified, and what cannot be verified is a
+**declared gap**, never filler. Folklore figures with no primary source were thrown out.
+
+Each skill's one-line `description` is the only thing in context every turn, so triggers are **concrete
+artifacts** — extensions, config files, binaries, commands — and every skill names in its §1 what is
+*not* its business, so neighbours do not collide. The always-on set no request ever names:
+`load-expertise` derives which skills a task activates, `lean-code-standards` keeps the diff the
+smallest correct one, `tool-usage-standards` and `ide-tools-standards` decide the instrument.
+
+## Inside the IDE
+
+This configuration is written for a session that lives in the IDE. There the CLI's native tools
+(`Read`, `Edit`, `Write`, `Grep`, `Glob`, `Bash`) are retired: the plugin serves four MCP servers —
+`code`, `run`, `vcs`, `ops` — that read through the index, edit through the document model, refactor
+with the refactoring engine, build, test and debug through the run system, drive Git and the forge
+through the IDE's own account, and work the Services panel, a whole list per call for a fraction of the
+tokens. Two pieces make Claude use them and keep using them as the conversation grows:
+
+- `hook/how-to-work.md` — the working method, **re-injected on every prompt** by a `UserPromptSubmit`
+  hook: the IDE's servers are the tools, the batched `search_text` → `read_file` → `replace_text` loop,
+  write everything first and build and test once at the end, signed atomic commits, docs as state.
+- `skills/ide-tools-standards/` — which of the IDE's tools does each job, the `domains()` →
+  `tools(domain)` → `run(tool, args)` ladder, batching, the Security Guard, and the inventory of the
+  plugin's tools in `references/{code,run,vcs,ops}.md`.
 
 ## Install
 
-Requirements: a JetBrains IDE with the
-[Claude Code Native](https://plugins.jetbrains.com/plugin/31965-claude-code-native) plugin, the `claude`
-CLI it runs, `rsync` and `jq`.
+With the plugin — a JetBrains IDE with
+[Claude Code Native](https://plugins.jetbrains.com/plugin/31965-claude-code-native), the `claude` CLI it
+runs, `rsync` and `jq`:
 
 ```bash
 git clone git@github.com:serialexperimentslainnnn/claudeonstereoids.git
@@ -27,41 +60,35 @@ cd claudeonstereoids
 The repository is the single source of truth and `~/.claude` is a destination: **you work here, then you
 install**. The installer copies `CLAUDE.md`, `hook/how-to-work.md`, `skills/` and `workflows/` onto
 `~/.claude` (one-way, deleting in the destination what the repo no longer has, with a timestamped backup
-first), writes the `UserPromptSubmit` hook into `~/.claude/settings.json` without touching your `env`,
-`permissions` or `model`, and symlinks the project memory into the repo. `./install.sh --uninstall`
-reverses all of it. Then open the project in the IDE and start a chat.
+first), writes the hook into `~/.claude/settings.json` without touching your `env`, `permissions` or
+`model`, and symlinks the project memory into the repo. `./install.sh --uninstall` reverses all of it.
+
+**Without the plugin**, take only the catalogue — the skills work in any Claude Code; the hook and the
+rulebook assume the IDE and would tell a terminal session it is somewhere it is not:
+
+```bash
+rsync -a --exclude=PROJECTMAP.md skills/ ~/.claude/skills/
+```
 
 ## What is here
 
 | Path | What it is |
 |---|---|
-| `CLAUDE.md` | The rulebook, installed as `~/.claude/CLAUDE.md`: language, how skills load. |
-| `hook/how-to-work.md` | The working method, **re-injected on every prompt** by the hook so it never fades: the IDE's servers are the tools, the batched loop, one build and one test run at the end, commits, docs as state. |
-| `hook/settings.sh` | The only code that touches `~/.claude/settings.json`: installs, deduplicates and removes the hook. Sourced by `install.sh`. |
-| `skills/ide-tools-standards/` | Which IDE tool does each job, the `domains()` → `tools()` → `run()` ladder, batching, the Security Guard; the inventory of the plugin's tools in `references/{code,run,vcs,ops}.md`. |
-| `skills/<domain>-standards/` | The catalogue: what gets decided, what is forbidden and what must be verified before asserting it, per domain. Index: `skills/PROJECTMAP.md`. |
+| `skills/<domain>-standards/` | The catalogue. Index: `skills/PROJECTMAP.md`. |
+| `skills/ide-tools-standards/` | The IDE's tools: routing, the ladder, the guard, the inventory. |
+| `hook/how-to-work.md` · `hook/settings.sh` | The per-prompt method, and the only code that touches `~/.claude/settings.json`. |
+| `CLAUDE.md` | The rulebook, installed as `~/.claude/CLAUDE.md`. |
 | `workflows/` | Orchestration scripts, installed as `/<name>` commands. |
 | `SKILL-TEMPLATE.md` | The canonical skill shape. Outside `skills/` on purpose: any directory with a `SKILL.md` registers as a skill. |
 | `PROJECTMAP.md` | The index of this repository. |
 | `install.sh` · `check.sh` | Installer and mechanical gates. |
 
-## How a skill is written
+## Writing a skill
 
-Eight fixed sections, body in English, a one-line `description` with triggers by **concrete artifact**
-(extensions, config files, binaries, commands): that line is the only thing injected every turn, and
-whether the skill activates depends on it. A skill fixes criteria; it does not teach. No concrete fact
-from memory — versions, end-of-support dates, licences and figures are verified on the web, and what
-cannot be verified is a **declared gap**, never filler. The rules are in
-`skills/claude-code-skills-standards/SKILL.md`.
-
-## Gates
-
-```bash
-./check.sh
-```
-
-Front-matter `name` equals the directory, every skill declares its `**Not applicable**` boundary, and
-every §8 closes with the arbitration formula. The trigger-collision test lives in the meta-skill, §4.3.
+Eight fixed sections, body in English, triggers by concrete artifact, a `**Not applicable**` boundary in
+§1 and the arbitration close in §8. The rules are `skills/claude-code-skills-standards/SKILL.md`; the
+shape is `SKILL-TEMPLATE.md`; `./check.sh` enforces the literals, and the trigger-collision test lives in
+the meta-skill's §4.3. Contributions follow the same gates.
 
 ## Licence
 
