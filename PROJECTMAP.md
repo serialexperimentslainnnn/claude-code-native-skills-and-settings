@@ -12,9 +12,10 @@ those are measurements, and per `project-map` §2.2 this file stores the command
 The repo is the **single source of truth**; `~/.claude` is a *destination*, written only by
 `./install.sh`. Editing `~/.claude/skills` directly is how divergence starts.
 
-**Two layers, and there is no third.** `CLAUDE.md` is the whole rulebook, loaded once per session;
-`skills/` holds the domain criteria, loaded when their triggers fire. **There is no hook and no
-`agents/` directory** — both existed until 2026-08-14 and were removed on purpose (see Minefields).
+**Two layers and one hook.** `CLAUDE.md` is the rulebook, loaded once per session; `skills/`
+holds the domain criteria, loaded when their triggers fire; `hook/how-to-work.md` is the working
+method, re-injected on **every prompt** by the `UserPromptSubmit` hook that `install.sh` keeps in
+`~/.claude/settings.json`. **There is no `agents/` directory** — removed on purpose (see Minefields).
 
 ## I want to change… → go to…
 
@@ -27,12 +28,14 @@ The repo is the **single source of truth**; `~/.claude` is a *destination*, writ
 | Change how skills are authored/judged | `skills/claude-code-skills-standards/SKILL.md` | The meta-skill. **§4.3 holds the trigger-collision gate** (Python script + `STOP` list) |
 | Change **which** skills a task loads | `skills/load-expertise/SKILL.md` | Step ② of the start-of-work routine: the derivation, the always-on set, and how co-activated skills are reconciled |
 | Change **which instrument** does a job — routing, the IDE index, delegation, workflows, the session window | `skills/tool-usage-standards/SKILL.md` | The detail. Loaded on **every** substantial turn: it is in `load-expertise` §3.1's always-on set, because no request ever names it |
-| Change how *I* work — doctrine, not facts | `CLAUDE.md` | **The whole rulebook**, installed verbatim as `~/.claude/CLAUDE.md`. Its opening block marks a **core that must not be edited without asking** |
+| Change how *I* work — doctrine, not facts | `CLAUDE.md` | The rulebook, installed verbatim as `~/.claude/CLAUDE.md`. The method block is **not** here — next row |
+| Change what I **know about the IDE's tools** | `skills/ide-tools-standards/` | `SKILL.md` routes (native → IDE tool, the ladder, batching, the guard); `references/{code,run,vcs,ops}.md` hold the inventory, one file per server, read on demand. Its `description` is the per-turn cost; the body never rides the hook |
+| Change the **working method** re-injected every turn | `hook/how-to-work.md` | Installed as `~/.claude/how-to-work.md`; the hook that `cat`s it is written by `hook/settings.sh`. Not in `CLAUDE.md` on purpose: loaded once there, it sinks as the conversation grows |
 | Change the rules for the `.claudetools/` workshop | `skills/session-tooling-standards/SKILL.md` | The gate, the mirrored placement, the ban on secrets |
 | Find project state / what to do next | `SKILLS-ROADMAP.md` | Read the **topmost `PUNTO DE CONTINUACIÓN`** first; everything below is history, in Spanish, kept on purpose |
 | Run the mechanical gates | `./check.sh` | 3 gates over `skills/`; exit 0 = green |
 | Write or edit an orchestration workflow | `workflows/<name>.js` | Plain JS, `export const meta` first and a **pure literal**. **No module loading, and no `Date`/`Math.random`** — they break resume. Five-wide pool inlined per script; there is no shared module to put it in |
-| Push the repo onto `~/.claude` | `./install.sh` | Mirrors `CLAUDE.md` + `skills/`, and **dismantles** the retired hook and `agents/` in the destination. **`--dry-run` first** |
+| Push the repo onto `~/.claude` | `./install.sh` | Mirrors `CLAUDE.md`, `hook/how-to-work.md`, `skills/` and `workflows/`, **installs the hook** (`hook/settings.sh`), and dismantles the retired `core-directives.md` hook and `agents/` in the destination. **`--dry-run` first** |
 | Read the original plan | `plans/validated-swimming-treehouse.md` | Historical; the roadmap superseded it |
 | See cross-session memory | `memory/` | Gitignored, symlinked into `~/.claude/projects/<slug>/memory` by the installer |
 
@@ -42,10 +45,11 @@ The repo is the **single source of truth**; `~/.claude` is a *destination*, writ
 .
 ├── skills/          the catalogue, one dir per skill  → skills/PROJECTMAP.md
 ├── workflows/       orchestration scripts, installed as /<name> commands
+├── hook/            how-to-work.md (re-injected every prompt) + settings.sh (sourced by install.sh; the only code that touches settings.json)
 ├── plans/           one historical planning document
 ├── memory/          cross-session memory; gitignored, symlinked into ~/.claude
 ├── .claudetools/    the session workshop; gitignored  → skills/session-tooling-standards/
-├── CLAUDE.md        the entire rulebook, installed as ~/.claude/CLAUDE.md
+├── CLAUDE.md        the rulebook, installed as ~/.claude/CLAUDE.md
 ├── CLAUDE.md.bak    the rulebook as it stood before the tool doctrine was merged in
 ├── SKILL-TEMPLATE.md   canonical skill shape; outside skills/ on purpose
 ├── SKILLS-ROADMAP.md   continuity file, append-heavy, Spanish
@@ -58,11 +62,12 @@ The repo is the **single source of truth**; `~/.claude` is a *destination*, writ
 | Directory | What lives there | Local map |
 |---|---|---|
 | `skills/` | The catalogue: `skills/<name>/SKILL.md`, never nested. All but `project-map/`, `update-standards/` and `load-expertise/` carry the `-standards` suffix | `skills/PROJECTMAP.md` |
+| `hook/` | `how-to-work.md`, the method block, installed as `~/.claude/how-to-work.md`; `settings.sh`, `hook_install`/`hook_remove` over `~/.claude/settings.json`, sourced by `install.sh` | — (two files) |
 | `plans/` | One historical planning document with the taxonomy by family | — (one file) |
 | `memory/` | One fact per file plus `MEMORY.md` as index. **Gitignored**, and `.gitkeep` is what keeps the directory alive for the installer's symlink | — (flat) |
 | `.claudetools/` | Executable tooling only, mirrored to the tree it covers. **Gitignored, never tracked, never holds a secret** | — (rules live in the skill) |
 
-There is **no source code, no build, no test suite, no CI**. Everything here is markdown plus two
+There is **no source code, no build, no test suite, no CI**. Everything here is markdown plus three
 bash scripts; the "tests" are `check.sh` and the collision script in the meta-skill.
 
 ## Entry points
@@ -85,8 +90,8 @@ The date is the last time the command was seen to run clean, nothing more.
 | Trigger-collision gate | Python block in `skills/claude-code-skills-standards/SKILL.md` §4.3, run from `skills/` | 2026-08-13 |
 | Skills still in Spanish | `cd skills && grep -lE '^\*\*No aplica\*\*' */SKILL.md` — **anchor the pattern**: a bare `grep -l 'No aplica'` also matches the two files that merely *document* the literal | 2026-08-13 |
 | Skills with no verification date | `grep -LE '^(Criteria verified as of\|Criterios verificados)' skills/*/SKILL.md` — the top of the `update-standards` queue | 2026-08-13 |
-| Destination in sync with the repo | `diff -rq --exclude=PROJECTMAP.md skills ~/.claude/skills` and `diff -q CLAUDE.md ~/.claude/CLAUDE.md` — empty output = in sync | 2026-08-14 |
-| No hook survives in the destination | `jq '.hooks // "no hooks"' ~/.claude/settings.json` | 2026-08-14 |
+| Destination in sync with the repo | `diff -rq --exclude=PROJECTMAP.md skills ~/.claude/skills`, `diff -q CLAUDE.md ~/.claude/CLAUDE.md` and `diff -q hook/how-to-work.md ~/.claude/how-to-work.md` — empty output = in sync | 2026-09-16 |
+| The hook is installed, once, and points at the installed file | `jq '.hooks.UserPromptSubmit' ~/.claude/settings.json` — exactly one command, `cat -- '<CLAUDE_HOME>/how-to-work.md'` | 2026-09-16 |
 | Install onto `~/.claude` | `./install.sh --dry-run` then `./install.sh` | 2026-08-14 |
 
 ## Conventions and invariants
@@ -115,9 +120,15 @@ The date is the last time the command was seen to run clean, nothing more.
 - **A stale destination keeps the circuit alive.** Agent types in `~/.claude/agents/` **reload hot**,
   and `rsync --delete` cannot reach a directory that is no longer in `DIRS`. That is why
   `install.sh:remove_retired()` deletes `~/.claude/agents/` and `~/.claude/core-directives.md`
-  outright, and `remove_hook()` strips the `UserPromptSubmit` entry from `settings.json`. **Both run
-  on every install and every uninstall** — removing either call silently resurrects the old circuit
-  on any machine that has not reinstalled since.
+  outright, and `hook_install()` strips any `UserPromptSubmit` entry carrying the retired
+  `core-directives.md` marker while writing the live one. **Both run on every install and every
+  uninstall** — removing either call silently resurrects the old circuit on any machine that has not
+  reinstalled since.
+- **The hook is matched by marker and deduplicated by exact command.** `hook/settings.sh` looks for
+  `how-to-work.md` (and `core-directives.md`) inside `.command`, and skips the write only when the
+  exact command string is already there. A hand-edited command in `~/.claude/settings.json` gets
+  removed and rewritten on the next install; a hand-added hook without the marker is left alone. Do
+  not edit that entry by hand — change `hook/` and reinstall.
 - **`.claudetools/` must be in `.gitignore` before it exists.** It is, anchored as `/.claudetools/`.
   Creating the directory first and excluding it after means one `git add -A` puts the workshop in
   the history permanently.

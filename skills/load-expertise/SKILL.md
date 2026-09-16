@@ -94,6 +94,9 @@ different question:
 - **`git-workflow-standards`** whenever history itself is the deliverable: commit granularity and
   message, branching, tags, releases.
 - **`session-tooling-standards`** the moment you write a script instead of running a command.
+- **`ide-tools-standards`** whenever a JetBrains IDE is bound through the Claude Code Native plugin
+  — which, in that host, is every turn: it says which of the IDE's tools does the job and that the
+  CLI's native tools do not apply there.
 - **`tool-usage-standards`** on any turn that reads, searches, edits, runs, delegates or
   orchestrates — which is every substantial turn. It governs the *act* of working rather than the
   subject, so no request ever names it and skipping it is invisible: the answer simply arrives

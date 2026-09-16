@@ -123,6 +123,7 @@ from each file's own `description:` (first sentence) or, when that opens with a 
 | `i18n-standards` | Internationalisation (i18n) standards | 548 |
 | `iac-standards` | Infrastructure as Code standards (staff/principal level) | 157 |
 | `ibm-i-rpg-standards` | IBM i (AS/400, iSeries, System i) application engineering on Power | 531 |
+| `ide-tools-standards` | The IDE's own MCP tools (`code`, `run`, `vcs`, `ops`) and the rule that the CLI's native tools do not apply inside a JetBrains IDE; inventory in `references/` | 142 |
 | `identity-access-management-standards` | Identity and access management standards | 294 |
 | `identity-threat-detection-standards` | ITDR — detecting and responding to attacks against identity itself, which is where the perimeter actually is | 457 |
 | `incident-management-standards` | Incident management standards — the process, whatever the cause | 417 |

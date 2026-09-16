@@ -25,7 +25,10 @@ with `grep` when the IDE is bound; an `Edit` about to be replaced by `sed`; a lo
 be waited on; a fact about to be asserted from memory; a subagent about to be spawned that already
 exists; a `Workflow` about to be launched; a session window about to be overspent.
 
-**Not applicable**: see `claude-code-skills-standards` (how a `SKILL.md` is authored, its frontmatter
+**Not applicable**: see `ide-tools-standards` (**the IDE's own MCP tools** — `code`, `run`, `vcs`,
+`ops` — which replace this document's file, search, edit, shell and forge rows whenever a JetBrains
+IDE is bound through the Claude Code Native plugin; that one decides among the IDE's tools, this one
+among the harness's), `claude-code-skills-standards` (how a `SKILL.md` is authored, its frontmatter
 and its `description` triggers — that one **builds** the catalogue, this one **operates** the
 harness), `load-expertise` (**which** skills a task activates and how they are reconciled; this one
 assumes the arming already happened and governs the instruments used afterwards), `mcp-standards`
