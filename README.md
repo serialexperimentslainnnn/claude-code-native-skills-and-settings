@@ -1,13 +1,21 @@
-# claudeonstereoids
+# Claude Code Native — Skills and Settings
 
-Claude Code configuration and an **IT engineering skill catalogue**: one criteria document per
-domain, written and verified one by one against primary sources. For the exact count and line total,
-run `./check.sh` — this README stores the command, not the figure.
+The Claude Code configuration for **[Claude Code Native](https://github.com/serialexperimentslainnnn/claude-code-native)**,
+the plugin that runs Claude Code inside a JetBrains IDE and hands it the IDE itself: a rulebook, a
+per-prompt hook, and an **IT engineering skill catalogue** — one criteria document per domain, verified
+against primary sources — with a skill that tells Claude which of the IDE's tools does each job.
 
-A skill in this catalogue **does not teach** — the model already knows how to program. It fixes
-**what gets decided, what is forbidden and what must be verified before asserting it**.
+It is written for a session that lives in the IDE. The CLI's native tools (`Read`, `Edit`, `Write`,
+`Grep`, `Glob`, `Bash`) are retired there: the plugin serves four MCP servers — `code`, `run`, `vcs`,
+`ops` — that read through the index, edit through the document model, build, test, debug, drive Git and
+the forge, and work the Services panel, batching a whole list per call for a fraction of the tokens. This
+repository makes Claude use them, and keeps using them as the conversation grows.
 
 ## Install
+
+Requirements: a JetBrains IDE with the
+[Claude Code Native](https://plugins.jetbrains.com/plugin/31965-claude-code-native) plugin, the `claude`
+CLI it runs, `rsync` and `jq`.
 
 ```bash
 git clone git@github.com:serialexperimentslainnnn/claudeonstereoids.git
@@ -16,69 +24,35 @@ cd claudeonstereoids
 ./install.sh
 ```
 
-The repo is the single source of truth: **you work here, then you install**. The installer
-**flattens** the global `CLAUDE.md` and the skill catalogue onto `~/.claude` (copy, one-way
-repo → home, deleting in the destination whatever no longer exists in the repo). It copies instead
-of symlinking on purpose: a half-written skill does not become active in your session until you
-decide to install it. Anything that was there before is backed up with a timestamp; nothing is ever
-deleted without a copy. `./install.sh --uninstall` reverses it and tells you how to restore.
-
-Two things it also does, and they matter:
-
-- **Dismantles the previous era.** Earlier versions installed a `UserPromptSubmit` hook that
-  re-injected a `core-directives.md` on every turn, plus a directory of subagent types under
-  `~/.claude/agents/`. Both are gone. The installer now **removes them from the destination** —
-  stripping only that hook entry from `settings.json`, without touching your `env`, `permissions` or
-  `model`. This is not cosmetic: agent types **reload hot**, so a leftover directory keeps the old
-  circuit alive in your session even though the repo no longer defines it.
-- **Symlinks the project memory** instead of copying it: Claude Code writes it under
-  `~/.claude/projects/<slug>/memory` during the session, so this way it lands inside the repo.
-
-Then always work from the repository root:
-
-```bash
-cd claudeonstereoids && claude
-```
+The repository is the single source of truth and `~/.claude` is a destination: **you work here, then you
+install**. The installer copies `CLAUDE.md`, `hook/how-to-work.md`, `skills/` and `workflows/` onto
+`~/.claude` (one-way, deleting in the destination what the repo no longer has, with a timestamped backup
+first), writes the `UserPromptSubmit` hook into `~/.claude/settings.json` without touching your `env`,
+`permissions` or `model`, and symlinks the project memory into the repo. `./install.sh --uninstall`
+reverses all of it. Then open the project in the IDE and start a chat.
 
 ## What is here
 
 | Path | What it is |
 |---|---|
-| `skills/<name>-standards/SKILL.md` | The catalogue. One skill per directory. Index: `skills/PROJECTMAP.md`. |
-| `CLAUDE.md` | The user's engineering doctrine, in full (installed as `~/.claude/CLAUDE.md`). |
-| `PROJECTMAP.md` | Index of this repository, maintained per the `project-map` skill. |
-| `SKILLS-ROADMAP.md` | **Continuity file**: state, waves, method, lessons and findings. |
-| `SKILL-TEMPLATE.md` | Canonical template. Deliberately outside `skills/`: any directory holding a `SKILL.md` registers as an activatable skill. |
-| `plans/` | Original plan with the full taxonomy by family. |
-| `memory/` | Persistent project memory. |
+| `CLAUDE.md` | The rulebook, installed as `~/.claude/CLAUDE.md`: language, how skills load. |
+| `hook/how-to-work.md` | The working method, **re-injected on every prompt** by the hook so it never fades: the IDE's servers are the tools, the batched loop, one build and one test run at the end, commits, docs as state. |
+| `hook/settings.sh` | The only code that touches `~/.claude/settings.json`: installs, deduplicates and removes the hook. Sourced by `install.sh`. |
+| `skills/ide-tools-standards/` | Which IDE tool does each job, the `domains()` → `tools()` → `run()` ladder, batching, the Security Guard; the inventory of the plugin's tools in `references/{code,run,vcs,ops}.md`. |
+| `skills/<domain>-standards/` | The catalogue: what gets decided, what is forbidden and what must be verified before asserting it, per domain. Index: `skills/PROJECTMAP.md`. |
+| `workflows/` | Orchestration scripts, installed as `/<name>` commands. |
+| `SKILL-TEMPLATE.md` | The canonical skill shape. Outside `skills/` on purpose: any directory with a `SKILL.md` registers as a skill. |
+| `PROJECTMAP.md` | The index of this repository. |
 | `install.sh` · `check.sh` | Installer and mechanical gates. |
-| `*.bak`, `agents.bak/` | Frozen copies of a subagent circuit that was demolished in August 2026. History, not doctrine. |
 
-## State
+## How a skill is written
 
-**The catalogue is complete.** Waves 0-7 done, trigger-collision test re-run and arbitrated,
-delegation graph clean, and a composition pass over eight multi-domain scenarios applied. The exact
-state and the pending tasks in order live in the topmost `PUNTO DE CONTINUACIÓN` block of
-`SKILLS-ROADMAP.md`, which is **the first thing to read** when picking the work back up.
-
-The Spanish-to-English migration of the bodies is finished; `check.sh` gates on the English strings.
-
-## How a skill is written here
-
-Eight fixed sections, body in English, a one-line English `description` with triggers by **concrete
-artifact** (extensions, config files, binaries, commands) — because that line is the only thing
-injected every turn, and whether the skill activates depends on its precision.
-
-Three rules that are expensive to learn and are already paid for here:
-
-1. **No concrete fact from memory.** Versions, end-of-support dates, licences, RFC numbers and
-   figures are verified on the web. Cannot verify → **declared gap**, never filler.
-2. **A figure with a source and a methodology, or it does not get written.** This catalogue has
-   discarded as folklore the Standish CHAOS Report, the "10x developer", the 10×/100× cost of a late
-   bug, the "23 minutes" to recover from an interruption, and the COBOL lines-of-code figures.
-3. **The licence is read from the file, raw.** Fourteen wrongly assumed cases in the catalogue, with
-   the file named `COPYING`, `LICENSE.txt`, `LICENSE.md` or `license.txt`, and living on `master`,
-   `7.0` or `development` instead of `main`. GitHub's automatic classification gets it wrong too.
+Eight fixed sections, body in English, a one-line `description` with triggers by **concrete artifact**
+(extensions, config files, binaries, commands): that line is the only thing injected every turn, and
+whether the skill activates depends on it. A skill fixes criteria; it does not teach. No concrete fact
+from memory — versions, end-of-support dates, licences and figures are verified on the web, and what
+cannot be verified is a **declared gap**, never filler. The rules are in
+`skills/claude-code-skills-standards/SKILL.md`.
 
 ## Gates
 
@@ -86,11 +60,11 @@ Three rules that are expensive to learn and are already paid for here:
 ./check.sh
 ```
 
-Checks that the front-matter `name` matches the directory, that every skill declares its
-`**Not applicable**` boundary, and that it closes §8 with the arbitration formula (*if the web
-contradicts this document, the web wins*). The **trigger-collision test** lives inside the
-meta-skill `skills/claude-code-skills-standards/SKILL.md` §4.3.
+Front-matter `name` equals the directory, every skill declares its `**Not applicable**` boundary, and
+every §8 closes with the arbitration formula. The trigger-collision test lives in the meta-skill, §4.3.
 
 ## Licence
 
-GPL-3.0. See [LICENSE](LICENSE).
+GPL-3.0 — see [LICENSE](LICENSE). *Claude* and *Claude Code* are trademarks of Anthropic, PBC;
+*JetBrains* and the IDE names are trademarks of JetBrains s.r.o. This project is not affiliated with,
+sponsored by, or endorsed by either.
