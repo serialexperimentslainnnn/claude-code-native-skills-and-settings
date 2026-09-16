@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Instala esta configuración de Claude Code: plancha el CLAUDE.md global y el catálogo de skills
-# sobre ~/.claude.
+# Instala esta configuración de Claude Code: plancha el CLAUDE.md global, el catálogo de skills y
+# los workflows sobre ~/.claude, y deja puesto el hook que reinyecta el método en cada turno.
 #
 # El repositorio es la ÚNICA fuente de verdad. Aquí se trabaja; instalar es un acto explícito que
 # COPIA el estado actual del repo sobre ~/.claude. Se copia en vez de enlazar a propósito: así una
@@ -41,20 +41,22 @@ run() { if [ "$DRY_RUN" = 1 ]; then log "[dry-run] $*"; else "$@"; fi; }
 # Lo que se plancha: <ruta en el repo>:<ruta bajo ~/.claude>. Nada más. El resto del repo
 # (roadmap, plantilla, planes) es material de trabajo y no pinta nada en la instalación.
 #
+# hook/how-to-work.md: el bloque de método que la sesión necesita presente en CADA turno. Va a
+# ~/.claude/how-to-work.md y lo vuelca el hook UserPromptSubmit que hook/settings.sh deja en
+# settings.json. No está en CLAUDE.md a propósito: ahí se cargaría una vez y se hundiría según
+# crece la conversación.
+#
 # workflows/: guiones de orquestación que Claude Code registra como comandos /<nombre>. Se planchan
 # igual que las skills y por el mismo motivo: el repo es la fuente y el destino queda idéntico. Ojo
 # al orden de precedencia, que NO es el de las skills: si un proyecto tiene .claude/workflows/ con un
 # nombre repetido, gana el del proyecto, no éste.
-FILES=( "CLAUDE.md:CLAUDE.md" )
+FILES=( "CLAUDE.md:CLAUDE.md" "hook/how-to-work.md:how-to-work.md" )
 DIRS=( "skills:skills" "workflows:workflows" )
 
-# El circuito de subagentes está DESMONTADO. No hay tipos de agente que instalar y no hay hook que
-# reinyecte nada: el reglamento entero es `CLAUDE.md`, que la sesión principal carga por sí sola.
-# Los restos de las dos eras anteriores (la entrada del hook en settings.json, el fichero que la
-# alimentaba y el directorio de tipos de agente) se desmontan del destino en cada instalación,
-# porque un destino que no se reinstala desde entonces los sigue usando en silencio.
+# settings.json es del usuario (env, permisos, modelo). La única entrada que este repo gestiona ahí
+# es el hook, y todo lo que lo toca vive en hook/settings.sh.
 SETTINGS="$CLAUDE_HOME/settings.json"
-HOOK_MARKER="core-directives.md"
+. "$REPO/hook/settings.sh"
 
 # La memoria de Claude Code vive bajo un directorio por proyecto cuyo nombre deriva de la ruta de
 # trabajo: cada '/' y cada '.' se sustituyen por '-'.
@@ -68,7 +70,7 @@ sanity_check() {
   done
   [ "$missing" = 0 ] || { echo "Repositorio incompleto; abortando." >&2; exit 1; }
   command -v rsync >/dev/null || { echo "Falta rsync; abortando." >&2; exit 1; }
-  command -v jq >/dev/null || { echo "Falta jq (lo necesita el desmontaje del hook); abortando." >&2; exit 1; }
+  command -v jq >/dev/null || { echo "Falta jq (lo necesita el hook); abortando." >&2; exit 1; }
 }
 
 # Respalda el destino solo si existe.
@@ -80,47 +82,11 @@ backup() {
   run cp -a -- "$dest" "$BACKUP/"
 }
 
-# Quita el hook de reinyección de settings.json SIN tocar el resto: ese fichero es del usuario (env,
-# permisos, modelo) y aquí solo se elimina una entrada, identificada por su marcador. Idempotente: si
-# no está, no toca nada. Se ejecuta en cada instalación porque una instalación anterior pudo dejarlo
-# puesto, y un hook huérfano apuntando a un fichero que ya no se instala falla en cada turno.
-remove_hook() {
-  local tmp
-  [ -f "$SETTINGS" ] || return 0
-
-  if ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
-    echo "settings.json no es JSON válido; no lo toco. Arréglalo y reinstala." >&2
-    return 1
-  fi
-
-  if ! jq -e --arg m "$HOOK_MARKER" '[.hooks.UserPromptSubmit // [] | .[] | .hooks[]? |
-        select((.command // "") | contains($m))] | length > 0' "$SETTINGS" >/dev/null 2>&1; then
-    log "hook de directrices: no está (correcto)"
-    return 0
-  fi
-
-  backup "$SETTINGS"
-  log "hook: quitando la reinyección de core-directives.md de $SETTINGS"
-  if [ "$DRY_RUN" = 1 ]; then
-    log "[dry-run] jq: eliminar el hook de $SETTINGS"
-    return 0
-  fi
-  tmp="$(mktemp)"
-  jq --arg m "$HOOK_MARKER" '
-    if .hooks.UserPromptSubmit then
-      .hooks.UserPromptSubmit |= map(
-        .hooks |= map(select((.command // "") | contains($m) | not))
-      ) | .hooks.UserPromptSubmit |= map(select((.hooks | length) > 0))
-    else . end
-    | if (.hooks.UserPromptSubmit // []) == [] then del(.hooks.UserPromptSubmit) else . end
-    | if (.hooks // {}) == {} then del(.hooks) else . end
-  ' "$SETTINGS" > "$tmp" && mv -- "$tmp" "$SETTINGS"
-}
-
-# Restos jubilados en el destino: el fichero que alimentaba el hook y el directorio de tipos de
-# agente. Ninguno de los dos está ya en FILES/DIRS, así que `rsync --delete` no los alcanza y se
-# quedarían para siempre. Dejarlos es peor que borrarlos: un tipo de agente en ~/.claude/agents/
-# RECARGA EN CALIENTE, así que el circuito seguiría vivo en la sesión aunque el repo ya no lo tenga.
+# Restos jubilados en el destino: el fichero que alimentaba el hook de la era anterior y el
+# directorio de tipos de agente. Ninguno de los dos está en FILES/DIRS, así que `rsync --delete` no
+# los alcanza y se quedarían para siempre. Dejarlos es peor que borrarlos: un tipo de agente en
+# ~/.claude/agents/ RECARGA EN CALIENTE, así que el circuito seguiría vivo en la sesión aunque el
+# repo ya no lo tenga.
 remove_retired() {
   local stale
   for stale in "$CLAUDE_HOME/core-directives.md" "$CLAUDE_HOME/agents"; do
@@ -180,14 +146,14 @@ install_all() {
     run ln -s "$REPO/memory" "$MEMORY_TARGET"
   fi
 
-  remove_hook
+  hook_install
   remove_retired
 
   echo
   echo "Hecho. Abre una sesión con:  cd $REPO && claude"
   [ -d "$BACKUP" ] && echo "Lo anterior quedó en: $BACKUP"
   echo "Comprueba los gates con:     ./check.sh"
-  echo "Confirma que no hay hook:    jq .hooks $SETTINGS"
+  echo "Confirma el hook con:        jq .hooks.UserPromptSubmit $SETTINGS"
 }
 
 uninstall_all() {
@@ -206,7 +172,7 @@ uninstall_all() {
     run rm -f -- "$MEMORY_TARGET"
   fi
 
-  remove_hook
+  hook_remove
   remove_retired
 
   local last
