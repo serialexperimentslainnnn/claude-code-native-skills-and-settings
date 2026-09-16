@@ -26,7 +26,7 @@ This repository makes Claude use them and keep using them as the conversation gr
 
 `skills/` holds one file per domain — languages, cloud, containers, infrastructure, networking,
 security, data, AI/ML, frontend, engineering craft, management, legacy platforms, verticals. Count
-and index cost: `./check.sh`; index: `skills/PROJECTMAP.md`.
+and index cost: `./check.sh`.
 
 A skill is a criteria document, not a tutorial. Eight sections: scope and triggers, default
 decisions with the reason, structure, quality gates, security, operability, forbidden anti-patterns,
@@ -75,20 +75,19 @@ the project memory into the repo. `./install.sh --uninstall` reverses it. Replac
 the rulebook assume the IDE:
 
 ```bash
-rsync -a --exclude=PROJECTMAP.md skills/ ~/.claude/skills/
+rsync -a skills/ ~/.claude/skills/
 ```
 
 ## Layout
 
 | Path | What it is |
 |---|---|
-| `skills/<domain>-standards/` | The catalogue. Index: `skills/PROJECTMAP.md` |
+| `skills/<domain>-standards/` | The catalogue |
 | `skills/ide-tools-standards/` | The IDE's tools: routing, the ladder, the guard, the inventory |
 | `hook/how-to-work.md` · `hook/settings.sh` | The per-prompt method; the only code that touches `~/.claude/settings.json` |
 | `workflows/*.js` | The five orchestration scripts |
 | `CLAUDE.md` | The rulebook, installed as `~/.claude/CLAUDE.md` |
 | `SKILL-TEMPLATE.md` | The canonical skill shape; outside `skills/` because any dir with a `SKILL.md` registers as a skill |
-| `PROJECTMAP.md` | Index of this repository |
 | `install.sh` · `check.sh` | Installer; gates (`name` = directory, `**Not applicable**` boundary, §8 close) |
 
 ## Licence

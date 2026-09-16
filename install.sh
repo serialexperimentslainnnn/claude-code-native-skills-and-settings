@@ -116,12 +116,11 @@ install_all() {
     backup "${dest%/}"
     log "espejo: $dest <- $src   (se elimina lo que sobre en el destino)"
     # --delete: el destino queda idéntico al repo. Es lo que significa planchar.
-    # --exclude PROJECTMAP.md: los mapas locales son navegación DEL REPO, no producto instalable.
     if [ "$DRY_RUN" = 1 ]; then
-      rsync -a --delete --exclude=PROJECTMAP.md --itemize-changes --dry-run -- "$src" "$dest" | sed 's/^/    /'
+      rsync -a --delete --itemize-changes --dry-run -- "$src" "$dest" | sed 's/^/    /'
     else
       run mkdir -p "$dest"
-      run rsync -a --delete --exclude=PROJECTMAP.md -- "$src" "$dest"
+      run rsync -a --delete -- "$src" "$dest"
     fi
   done
 
