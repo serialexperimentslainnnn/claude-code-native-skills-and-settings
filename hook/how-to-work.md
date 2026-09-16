@@ -43,6 +43,17 @@ an instrument.
     (`./check.sh`, `./install.sh --dry-run`) exactly as it is documented. Lain has to be able to
     read the command at a glance, and the Guard judges the string — a refusal means the command was
     wrong, not the Guard: rewrite it plain or hand it to Lain, never dress it up and retry.
-10. Never do, weird or hacky commands, don't launch big oneliners, don't launch inline scripts. 
-    Launch commands as a normal person in order to make them understanable to the user.
-    If you don't follow this rule, the Guard will just block you.
+11. **Read what comes back. All of it, every time.** A Guard block is never ignored and never treated
+    as unreadable: it always says **which rule fired and which string tripped it** — quote both,
+    act on them, and never claim you cannot see why you were blocked. Every MCP call to the IDE
+    answers with the data of what it touched — the file, the lines, the problems, the hashes, the
+    exit code, the tail, `status: running` with its `job`, `truncated` with its `max` — and that
+    answer **is** the state of the IDE: read it whole before the next call and act on what it
+    says, never on what you suppose it says. Guessing at a result, retrying a call whose answer you
+    did not read, or saying "I don't know what happened" when the answer is in front of you is
+    how a session gets lost in the IDE, and it is the defect, not the environment.
+11. Never ignore a block from the guard and never act as you can't read the guard message about the blocking
+    and never act as if you can't read all the data from every MCP call to the IDE or you don't understand whats 
+    happening or supose whats happening. The Guard tells you always why you got blocked and which rule trigered.
+    And all the MCP IDE tools brings you output and data of everything that you interact with the IDE, so always
+    read and understand both Guard Blocks and MCP answer data in order to not get lost in the IDE environment.
