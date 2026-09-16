@@ -51,8 +51,8 @@ With the plugin — a JetBrains IDE with
 runs, `rsync` and `jq`:
 
 ```bash
-git clone git@github.com:serialexperimentslainnnn/claudeonstereoids.git
-cd claudeonstereoids
+git clone git@github.com:serialexperimentslainnnn/claude-code-native-skills-and-settings.git
+cd claude-code-native-skills-and-settings
 ./install.sh --dry-run   # shows what it will do, touching nothing
 ./install.sh
 ```
