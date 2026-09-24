@@ -65,6 +65,20 @@ cd claude-code-native-skills-and-settings
 ./install.sh
 ```
 
+On **Windows**, PowerShell 7 (`winget install Microsoft.PowerShell`) replaces `rsync` and `jq`:
+
+```powershell
+git clone git@github.com:serialexperimentslainnnn/claude-code-native-skills-and-settings.git
+cd claude-code-native-skills-and-settings
+pwsh -File .\install.ps1 -WhatIf
+pwsh -File .\install.ps1
+```
+
+It does the same as `install.sh`: `robocopy /MIR` mirrors the directories, the memory is linked
+with a junction (no administrator, no Developer Mode), and the hook runs with `"shell": "powershell"`,
+so it works with or without Git Bash. `-Uninstall` reverses it. A clone downloaded as a zip needs
+`Unblock-File .\install.ps1, .\hook\settings.ps1` first.
+
 The repo is the source; `~/.claude` is the destination. The installer copies `CLAUDE.md`,
 `hook/how-to-work.md`, `skills/` and `workflows/` (one-way, timestamped backup first), writes the
 hook into `~/.claude/settings.json` without touching `env`, `permissions` or `model`, and symlinks
@@ -84,11 +98,11 @@ rsync -a skills/ ~/.claude/skills/
 |---|---|
 | `skills/<domain>-standards/` | The catalogue |
 | `skills/ide-tools-standards/` | The IDE's tools: routing, the ladder, the guard, the inventory |
-| `hook/how-to-work.md` · `hook/settings.sh` | The per-prompt method; the only code that touches `~/.claude/settings.json` |
+| `hook/how-to-work.md` · `hook/settings.sh` · `hook/settings.ps1` | The per-prompt method; the only code that touches `~/.claude/settings.json` |
 | `workflows/*.js` | The five orchestration scripts |
 | `CLAUDE.md` | The rulebook, installed as `~/.claude/CLAUDE.md` |
 | `SKILL-TEMPLATE.md` | The canonical skill shape; outside `skills/` because any dir with a `SKILL.md` registers as a skill |
-| `install.sh` · `check.sh` | Installer; gates (`name` = directory, `**Not applicable**` boundary, §8 close) |
+| `install.sh` · `install.ps1` · `check.sh` | Installer (Linux/macOS, Windows); gates (`name` = directory, `**Not applicable**` boundary, §8 close) |
 
 ## Licence
 
